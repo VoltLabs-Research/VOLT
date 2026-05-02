@@ -9,7 +9,7 @@ import type { GetOrCreateChatInputDTO } from '../../api/dtos/chat';
 interface ChatActionDependencies {
     queryClient: QueryClient;
     navigate: NavigateFunction;
-};
+}
 
 export const getOrCreateChatAction = async (
     dependencies: ChatActionDependencies,

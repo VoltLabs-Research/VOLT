@@ -11,7 +11,7 @@ export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
 interface ClusterInstallCommandModalProps {
     clusterId: string | null;
     enrollmentToken: string | null;
-};
+}
 
 const ClusterInstallCommandModal = ({ clusterId, enrollmentToken }: ClusterInstallCommandModalProps) => {
     const installCommand = clusterId && enrollmentToken

@@ -13,12 +13,11 @@ interface UpdateTeamInvitationByIdInput {
     invitationId: string;
     data: Partial<TeamInvitationProps>;
     options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
-};
+}
 
 @injectable()
 export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInput, PersistedOutput<TeamInvitationProps>, ApplicationError> {
     constructor(
-        
         private readonly repository: TeamInvitationRepository
     ) {}
 
@@ -32,4 +31,4 @@ export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateT
         }
         return Result.ok(toPersistedOutput(entity));
     }
-};
+}

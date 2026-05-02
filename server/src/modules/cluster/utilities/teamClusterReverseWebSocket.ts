@@ -3,12 +3,12 @@ import { EventEmitter } from 'node:events';
 export interface TeamClusterReverseWebSocketMessage {
     data: Buffer;
     isBinary: boolean;
-};
+}
 
 export interface TeamClusterReverseWebSocketClosePayload {
     code?: number;
     message?: string;
-};
+}
 
 type TeamClusterReverseWebSocketDataListener = (payload: TeamClusterReverseWebSocketMessage) => void;
 type TeamClusterReverseWebSocketEndListener = (payload: TeamClusterReverseWebSocketClosePayload) => void;
@@ -90,4 +90,4 @@ export class TeamClusterReverseWebSocketStream {
     ): void {
         this.emitter.on(event, listener);
     }
-};
+}

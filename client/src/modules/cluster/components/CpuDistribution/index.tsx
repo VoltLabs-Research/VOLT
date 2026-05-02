@@ -16,11 +16,11 @@ import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metr
 interface CpuDistributionProps {
     history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-};
+}
 
 interface DataPoint {
     [key: string]: number;
-};
+}
 
 const BASE_CORE_COLORS = [
     '#0A84FF', '#30D158', '#FF9F0A', '#FF453A',

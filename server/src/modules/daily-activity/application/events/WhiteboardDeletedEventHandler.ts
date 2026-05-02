@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('whiteboard.deleted')
 export default class WhiteboardDeletedEventHandler implements IEventHandler<WhiteboardDeletedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class WhiteboardDeletedEventHandler implements IEventHandler<Whit
             description
         );
     }
-};
+}

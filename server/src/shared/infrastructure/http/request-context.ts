@@ -3,19 +3,19 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export enum HttpRequestAuthType {
     User = 'user',
     SecretKey = 'secret-key'
-};
+}
 
 export enum HttpRequestTeamContextSource {
     SecretKey = 'secret-key',
     Repository = 'repository'
-};
+}
 
 export interface HttpRequestAuthContext {
     authType: HttpRequestAuthType;
     subjectId: string;
     durationMs: number;
     cached: boolean;
-};
+}
 
 export interface HttpRequestTeamContext {
     teamId: string;
@@ -24,7 +24,7 @@ export interface HttpRequestTeamContext {
     cached: boolean;
     source: HttpRequestTeamContextSource;
     permissions: string[];
-};
+}
 
 export interface HttpRequestContext {
     traceId: string;
@@ -33,7 +33,7 @@ export interface HttpRequestContext {
     path: string;
     auth?: HttpRequestAuthContext;
     team?: HttpRequestTeamContext;
-};
+}
 
 const httpRequestContextStorage = new AsyncLocalStorage<HttpRequestContext>();
 

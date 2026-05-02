@@ -3,4 +3,4 @@ export interface GetContainersParams {
     limit: number;
     folderId?: string;
     search?: string;
-};
+}

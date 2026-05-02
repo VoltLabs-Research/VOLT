@@ -5,6 +5,6 @@ export interface SecretKeyDeletedEventPayload {
     teamId: string;
     userId: string;
     secretKeyName: string;
-};
+}
 
-export default class SecretKeyDeletedEvent extends createTeamDomainEvent<SecretKeyDeletedEventPayload>('secret-key.deleted') {};
+export default class SecretKeyDeletedEvent extends createTeamDomainEvent<SecretKeyDeletedEventPayload>('secret-key.deleted') {}

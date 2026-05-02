@@ -1,6 +1,5 @@
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { Document, Model, Schema } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { LatexAssetProps } from '@modules/latex/domain/entities/LatexAsset';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
@@ -8,9 +7,9 @@ export enum LatexAssetRelation {
     Team = 'team',
     Document = 'document',
     CreatedBy = 'createdBy'
-};
+}
 
-export interface LatexAssetDocument extends Persistable<LatexAssetProps, `${LatexAssetRelation}`>, Document {};
+export interface LatexAssetDocument extends Persistable<LatexAssetProps, `${LatexAssetRelation}`>, Document {}
 
 const LatexAssetSchema: Schema<LatexAssetDocument> = new Schema({
     team: {

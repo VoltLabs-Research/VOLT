@@ -23,13 +23,13 @@ interface ContainerTerminalProps {
         id: number;
         data: string;
     } | null;
-};
+}
 
 interface ContainerTerminalSocketError {
     code: string;
     message: string;
     details?: string;
-};
+}
 
 const isContainerTerminalSocketError = (value: unknown): value is ContainerTerminalSocketError => {
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;

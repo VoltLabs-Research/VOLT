@@ -3,8 +3,8 @@ import { ValidationCodes } from '@core/constants/validation-codes';
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
-interface ContainerEnvironmentVariableDocument extends ContainerEnvironmentVariable {};
-interface ContainerPortMappingDocument extends ContainerPortMapping {};
+interface ContainerEnvironmentVariableDocument extends ContainerEnvironmentVariable {}
+interface ContainerPortMappingDocument extends ContainerPortMapping {}
 
 export interface IContainer extends Document {
     name: string;
@@ -25,7 +25,7 @@ export interface IContainer extends Document {
     createdBy: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 const internalIpField = {
     type: String,

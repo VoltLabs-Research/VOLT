@@ -5,51 +5,51 @@ export interface CpuMetrics {
     cores: number;
     coresUsage: number[];
     loadAvg: number[];
-};
+}
 
 export interface MemoryMetrics {
     total: number;
     used: number;
     free: number;
     usagePercent: number;
-};
+}
 
 export interface DiskMetrics {
     total: number;
     used: number;
     free: number;
     usagePercent: number;
-};
+}
 
 export interface NetworkMetrics {
     incoming: number;
     outgoing: number;
-};
+}
 
 export interface ResponseTimes {
     mongodb: number;
     redis: number;
     minio: number;
     self: number;
-};
+}
 
 export interface DatabaseMetrics {
     queries: number;
     connections: number;
     latency: number;
-};
+}
 
 export interface DiskOperationsMetrics {
     read: number;
     write: number;
     speed: number;
-};
+}
 
 export enum ClusterStatus {
     Healthy = 'Healthy',
     Warning = 'Warning',
     Critical = 'Critical'
-};
+}
 
 export interface ClusterMetrics {
     timestamp?: Date | string;
@@ -68,6 +68,6 @@ export interface ClusterMetrics {
     diskOperations?: DiskOperationsMetrics;
     uptime: number;
     analysisCount?: number;
-};
+}
 
 export interface ClusterHistoryMetric extends ClusterMetrics {};

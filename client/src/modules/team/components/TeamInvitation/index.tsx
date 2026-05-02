@@ -21,7 +21,7 @@ import type { Params } from 'react-router-dom';
 import './TeamInvitation.css';
 interface TeamInvitationRouteParams extends Params {
     invitationId: string;
-};
+}
 
 const ACCEPT_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Accepting invitation...',

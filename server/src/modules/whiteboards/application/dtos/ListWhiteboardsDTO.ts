@@ -17,6 +17,6 @@ export interface WhiteboardListItem {
     lastEditedBy?: WhiteboardProps['lastEditedBy'];
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export type ListWhiteboardsOutputDTO = TeamScopedPaginatedOutputDTO<WhiteboardListItem>;

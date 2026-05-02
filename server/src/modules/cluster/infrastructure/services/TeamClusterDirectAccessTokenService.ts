@@ -1,7 +1,6 @@
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import jwt from 'jsonwebtoken';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 
 type DirectAccessRequesterKind = 'daemon' | 'server';

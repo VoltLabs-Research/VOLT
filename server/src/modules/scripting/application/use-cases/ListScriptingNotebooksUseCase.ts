@@ -14,7 +14,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository
     ) {}
 
@@ -54,4 +53,4 @@ export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNote
             data: result.data.map(toScriptingNotebookDTO)
         });
     }
-};
+}

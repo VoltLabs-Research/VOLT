@@ -17,10 +17,7 @@ export class MoveWhiteboardUseCase
     extends MoveCatalogItemUseCase<MoveWhiteboardInputDTO, WhiteboardFolder, WhiteboardFolderProps, WhiteboardProps>
     implements IUseCase<MoveWhiteboardInputDTO, MoveWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        
         whiteboardRepository: WhiteboardRepository,
-
-        
         whiteboardFolderRepository: WhiteboardFolderRepository
     ) {
         super(whiteboardRepository, whiteboardFolderRepository, {
@@ -29,4 +26,4 @@ export class MoveWhiteboardUseCase
             getItemId: (input) => input.whiteboardId
         });
     }
-};
+}

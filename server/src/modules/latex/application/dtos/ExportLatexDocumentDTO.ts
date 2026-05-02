@@ -7,4 +7,4 @@ export interface ExportLatexDocumentOutputDTO {
     stream: Readable;
     headers: Record<string, string>;
     prepare?: () => Promise<void>;
-};
+}

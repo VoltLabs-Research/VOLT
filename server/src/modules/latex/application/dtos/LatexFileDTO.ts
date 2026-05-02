@@ -7,4 +7,4 @@ export interface LatexFileDTO {
     isEntrypoint: boolean;
     createdAt: Date;
     updatedAt: Date;
-};
+}

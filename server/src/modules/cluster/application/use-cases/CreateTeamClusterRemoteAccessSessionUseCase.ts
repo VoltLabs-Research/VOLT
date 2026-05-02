@@ -21,16 +21,9 @@ export default class CreateTeamClusterRemoteAccessSessionUseCase implements IUse
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly userRepository: UserRepository,
-
-        
         private readonly passwordHasher: BcryptPasswordHasher,
-
-        
         private readonly sessionService: TeamClusterRemoteAccessSessionService
     ) {}
 

@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('secret-key.deleted')
 export default class SecretKeyDeletedEventHandler implements IEventHandler<SecretKeyDeletedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class SecretKeyDeletedEventHandler implements IEventHandler<Secre
             description
         );
     }
-};
+}

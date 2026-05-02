@@ -13,11 +13,11 @@ import type { PipelineStage } from 'mongoose';
 
 interface AggregateIdResult {
     _id: mongoose.Types.ObjectId;
-};
+}
 
 interface CountResult {
     total: number;
-};
+}
 
 @Singleton()
 export default class SceneArtifactRepository
@@ -125,9 +125,9 @@ export default class SceneArtifactRepository
         ]).exec();
 
         const orderById = new Map(ids.map((id, index) => [id.toString(), index]));
-        const sortedDocs = docs.sort((left, right) => {
-            return (orderById.get(left._id.toString()) ?? 0) - (orderById.get(right._id.toString()) ?? 0);
-        });
+        const sortedDocs = docs.sort((left, right) => (
+            (orderById.get(left._id.toString()) ?? 0) - (orderById.get(right._id.toString()) ?? 0)
+        ));
         const total = countRows[0]?.total ?? 0;
 
         return {
@@ -177,4 +177,4 @@ export default class SceneArtifactRepository
 
         return pipeline;
     }
-};
+}

@@ -25,13 +25,13 @@ interface AtomsBinaryControllerOptions<TInput extends GetAtomsColumnarInputDTO> 
     ) => TInput;
 }
 
-const getParamValue = (value: string | string[] | undefined): string => {
-    return (Array.isArray(value) ? value[0] : value) as string;
-};
+const getParamValue = (value: string | string[] | undefined): string => (
+    (Array.isArray(value) ? value[0] : value) as string
+);
 
-const getOptionalNumber = (value: unknown): number | undefined => {
-    return value ? Number(value) : undefined;
-};
+const getOptionalNumber = (value: unknown): number | undefined => (
+    value ? Number(value) : undefined
+);
 
 const sendAtomsBinary = (
     res: Response,
@@ -109,7 +109,7 @@ export const createAtomsBinaryController = <TInput extends GetAtomsColumnarInput
 
             sendAtomsBinary(res, result.value);
         }
-    };
+    }
 
     return AtomsBinaryController;
 };

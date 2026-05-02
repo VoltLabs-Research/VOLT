@@ -6,9 +6,9 @@ export interface SignUpInputDTO {
     lastName: string;
     password: string;
     passwordConfirm: string;
-};
+}
 
 export interface SignUpOutputDTO {
     user: User;
     token: string;
-};
+}

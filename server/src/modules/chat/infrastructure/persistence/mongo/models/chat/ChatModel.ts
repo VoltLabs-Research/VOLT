@@ -10,11 +10,11 @@ enum ChatRelation {
     Admins = 'admins',
     CreatedBy = 'createdBy',
     LastMessage = 'lastMessage'
-};
+}
 
 type ChatRelationKey = `${ChatRelation}`;
 
-export interface ChatDocument extends Persistable<ChatProps, ChatRelationKey>, Document {};
+export interface ChatDocument extends Persistable<ChatProps, ChatRelationKey>, Document {}
 
 const ChatSchema: Schema<ChatDocument> = new Schema({
     participants: [{

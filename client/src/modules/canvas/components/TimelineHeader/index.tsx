@@ -17,26 +17,26 @@ export enum TimelineTab {
     Particles = 'particles',
     SimulationCell = 'simulation-cell',
     Log = 'log'
-};
+}
 
 interface TimelineDownloadContext {
     pluginId?: string;
     analysisId?: string;
     trajectoryId?: string;
-};
+}
 
 interface TimelineFrameOption {
     value: number | undefined;
     onChange: (value: number | undefined) => void;
     title: string;
-};
+}
 
 export interface TimelineTabOption {
     id: string;
     label: string;
     icon?: ReactNode;
     exposureId?: string;
-};
+}
 
 interface TimelineHeaderProps {
     activeTab: string;
@@ -56,7 +56,7 @@ interface TimelineHeaderProps {
     helperText?: string;
     onDownloadExposureListing?: (params: DownloadPluginListingParams) => void;
     downloadContext?: TimelineDownloadContext;
-};
+}
 
 const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
 const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];

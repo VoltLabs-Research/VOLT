@@ -1,12 +1,11 @@
 import ApplicationError from '@shared/application/errors/ApplicationError';
-
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 
 export interface OwnedTeamClusterInput {
     teamClusterId: string;
     teamId: string;
-};
+}
 
 type TeamClusterLoader = (teamClusterId: string) => Promise<TeamCluster | null>;
 

@@ -7,7 +7,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class UpdateContainerFolderUseCase extends UpdateCatalogFolderUseCase<ContainerFolder, ContainerFolderProps> {
     constructor(
-        
         containerFolderRepository: ContainerFolderRepository
     ) {
         super(containerFolderRepository, { folderLabel: 'Container folder' });

@@ -22,7 +22,7 @@ interface ImportedFrameInput {
     natoms: number;
     simulationCell: Record<string, unknown> | null;
     size: number;
-};
+}
 
 export interface ProcessDaemonTrajectoryImportInputDTO {
     teamClusterId: string;
@@ -34,11 +34,11 @@ export interface ProcessDaemonTrajectoryImportInputDTO {
     frames?: ImportedFrameInput[];
     failureCode?: string;
     failureDetails?: string;
-};
+}
 
 interface ProcessDaemonTrajectoryImportOutputDTO {
     acknowledged: boolean;
-};
+}
 
 @Singleton()
 export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
@@ -47,18 +47,10 @@ export default class ProcessDaemonTrajectoryImportUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly simulationCellRepository: SimulationCellRepository,
-
-        
         private readonly storagePlacementService: StoragePlacementService,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

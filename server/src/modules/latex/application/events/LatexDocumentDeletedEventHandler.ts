@@ -16,12 +16,8 @@ import { inject } from 'tsyringe';
 @Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     constructor(
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -36,4 +32,4 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
             this.latexFileRepository.deleteMany({ document: documentId })
         ]);
     }
-};
+}

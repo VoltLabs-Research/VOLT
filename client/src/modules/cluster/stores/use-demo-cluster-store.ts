@@ -6,7 +6,7 @@ interface DemoClusterState {
     expiresAt: Date | null;
     setFromCluster: (cluster: TeamCluster | null) => void;
     clear: () => void;
-};
+}
 
 const toDate = (value: Date | string | null | undefined): Date | null => {
     if (!value) return null;

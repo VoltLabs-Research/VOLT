@@ -19,7 +19,7 @@ interface PluginExecutionConfigFieldsProps {
     frameOptions?: SelectOption[];
     noClustersMessage?: string;
     allowTemplateReferenceMode?: boolean;
-};
+}
 
 const PluginExecutionConfigFields = ({
     argumentsDefinitions,

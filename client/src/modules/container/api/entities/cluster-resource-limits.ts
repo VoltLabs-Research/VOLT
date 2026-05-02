@@ -5,4 +5,4 @@ export interface ClusterResourceLimits {
     maxMemoryMB: number | null;
     status: ClusterResourceStatus | null;
     lastUpdatedAt: string | null;
-};
+}

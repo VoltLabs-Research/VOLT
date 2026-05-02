@@ -14,11 +14,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private chatRepo: ChatRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -58,4 +55,4 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
 
         return Result.ok(persistedMessage);
     }
-};
+}

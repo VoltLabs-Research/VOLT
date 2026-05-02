@@ -59,7 +59,7 @@ const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
 
 interface TeamScopedValue {
     teamId?: unknown;
-};
+}
 
 const hasTeamScopedValue = (value: unknown): value is TeamScopedValue => {
     return typeof value === 'object' && value !== null && 'teamId' in value;

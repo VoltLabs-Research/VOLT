@@ -2,13 +2,13 @@ import { Box3, Vector3, Sphere, MathUtils, Group, Object3D, PerspectiveCamera } 
 
 interface ObjectWithOptionalScene extends Object3D {
     scene?: Object3D;
-};
+}
 
 interface TransformVector {
     x: number;
     y: number;
     z: number;
-};
+}
 
 interface ModelTransformParams {
     position: TransformVector;
@@ -16,7 +16,7 @@ interface ModelTransformParams {
     scale: number;
     disableAutoTransform?: boolean;
     useFixedReference?: boolean;
-};
+}
 
 export type BoundsInfo = {
     box: Box3;
@@ -133,4 +133,4 @@ export class ModelTransform {
         model.updateMatrixWorld(true);
         return ModelTransform.boundsFromObject(model);
     }
-};
+}

@@ -5,6 +5,6 @@ export interface TeamRoleDeletedEventPayload {
     teamId: string;
     userId: string;
     roleName: string;
-};
+}
 
-export default class TeamRoleDeletedEvent extends createTeamDomainEvent<TeamRoleDeletedEventPayload>('team-role.deleted') {};
+export default class TeamRoleDeletedEvent extends createTeamDomainEvent<TeamRoleDeletedEventPayload>('team-role.deleted') {}

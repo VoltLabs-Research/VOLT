@@ -17,4 +17,4 @@ export interface ListTeamClusterRemoteExplorerEntriesOutputDTO {
     target: TeamClusterRemoteAccessTargetDTO;
     path: string;
     entries: TeamClusterRemoteExplorerEntryDTO[];
-};
+}

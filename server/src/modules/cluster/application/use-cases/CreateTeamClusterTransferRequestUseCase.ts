@@ -22,16 +22,9 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly storagePlacementService: StoragePlacementService,
-
-        
         private readonly clusterTransferCoordinator: ClusterTransferCoordinator,
-
-        
         private readonly clusterTransferRunner: ClusterTransferRunner
     ) {}
 

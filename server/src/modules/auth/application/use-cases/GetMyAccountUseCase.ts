@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetMyAccountUseCase implements IUseCase<GetMyAccountInputDTO, GetMyAccountOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly userRepository: UserRepository
     ) {}
 
@@ -30,4 +29,4 @@ export default class GetMyAccountUseCase implements IUseCase<GetMyAccountInputDT
             fullName
         });
     }
-};
+}

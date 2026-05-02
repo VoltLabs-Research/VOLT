@@ -172,7 +172,7 @@ export const colorExtras = (
 interface SelectFieldOption {
     title: string;
     value: string;
-};
+}
 
 export const selectField = (
     key: string,

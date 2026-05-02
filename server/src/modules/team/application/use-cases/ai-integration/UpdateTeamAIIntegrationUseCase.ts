@@ -15,15 +15,9 @@ import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 @injectable()
 export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly integrationRepository: TeamAIIntegrationRepository,
-
-        
         private readonly providerCatalog: TeamAIProviderCatalog,
-
-        
         private readonly secretCipher: TeamAIIntegrationSecretCipher,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -92,4 +86,4 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
             integration: toTeamAIIntegrationItemDTO(persisted, this.providerCatalog)
         });
     }
-};
+}

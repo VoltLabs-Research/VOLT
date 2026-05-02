@@ -4,8 +4,8 @@ export interface ListTeamAIIntegrationsResponse {
     teamId: string;
     integrations: TeamAIIntegration[];
     providers: AIProviderCatalogItem[];
-};
+}
 
 export interface GetTeamAIIntegrationsInputDTO {
     teamId: string;
-};
+}

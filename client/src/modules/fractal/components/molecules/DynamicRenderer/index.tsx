@@ -11,11 +11,11 @@ import type { WebGLRenderer } from 'three';
 
 interface DynamicRendererProps {
     settings: RendererRuntimeState;
-};
+}
 
 interface WebGLRendererWithOutputColorSpace extends WebGLRenderer {
     outputColorSpace: string;
-};
+}
 
 const DynamicRenderer = ({ settings }: DynamicRendererProps) => {
     const { gl } = useThree();

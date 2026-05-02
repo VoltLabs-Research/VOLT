@@ -3,4 +3,4 @@ export interface CreateNotificationInputDTO {
     title: string;
     content: string;
     link?: string;
-};
+}

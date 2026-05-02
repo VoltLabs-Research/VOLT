@@ -19,21 +19,11 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly invitationRepository: TeamInvitationRepository,
-
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly userRepository: UserRepository,
-
-        
         private readonly teamRoleRepository: TeamRoleRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
@@ -116,4 +106,4 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
 
         return Result.ok(toPersistedOutput(invitation));
     }
-};
+}

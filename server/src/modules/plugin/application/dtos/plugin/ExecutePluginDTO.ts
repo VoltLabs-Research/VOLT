@@ -8,4 +8,4 @@ export interface ExecutePluginInputDTO {
     selectedTimesteps?: number[];
     config: Record<string, unknown>;
     timestep?: number;
-};
+}

@@ -9,10 +9,10 @@ export interface AnalysisStatusChangedEventPayload {
     completedFrames?: number;
     totalFrames?: number;
     failedFrames?: number;
-};
+}
 
 export default class AnalysisStatusChangedEvent extends BaseDomainEvent<AnalysisStatusChangedEventPayload> {
     constructor(payload: AnalysisStatusChangedEventPayload) {
         super('analysis.status.changed', payload);
     }
-};
+}

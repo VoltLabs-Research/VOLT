@@ -18,10 +18,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntrypointInputDTO, LatexFileDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository
     ) {}
 
@@ -86,4 +83,4 @@ export class SetLatexFileEntrypointUseCase implements IUseCase<SetLatexFileEntry
             ));
         }
     }
-};
+}

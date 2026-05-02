@@ -16,7 +16,6 @@ import {
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-
 const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
     WorkflowNodeType.Context,
     WorkflowNodeType.ForEach
@@ -58,7 +57,6 @@ const resolvePluginNodeExecutionMode = (
 @Singleton()
 export class WorkflowValidatorService implements IWorkflowValidatorService {
     constructor(
-        
         private readonly pluginDependencyResolverService: PluginDependencyResolverService
     ) {}
 
@@ -600,4 +598,4 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
 
         return false;
     }
-};
+}

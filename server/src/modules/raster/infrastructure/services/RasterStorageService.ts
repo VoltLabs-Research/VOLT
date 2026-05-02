@@ -20,8 +20,6 @@ export class RasterStorageService {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
@@ -180,4 +178,4 @@ export class RasterStorageService {
             throw error;
         }
     }
-};
+}

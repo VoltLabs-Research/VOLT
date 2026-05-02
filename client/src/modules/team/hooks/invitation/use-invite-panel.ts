@@ -19,7 +19,7 @@ interface EmailFieldBind {
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     onBlur: () => void;
     error?: string;
-};
+}
 
 interface UseInvitePanelReturn {
     emailField: EmailFieldBind;
@@ -30,7 +30,7 @@ interface UseInvitePanelReturn {
     loadingInvitations: boolean;
     cancelingId: string | null;
     handleCancelInvitation: (id: string) => Promise<void>;
-};
+}
 
 const CANCEL_INVITATION_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Cancelling invitation...',

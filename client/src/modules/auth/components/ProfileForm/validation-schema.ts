@@ -3,7 +3,7 @@ import { z } from 'zod';
 export interface ProfileForm {
     fullName: string;
     email: string;
-};
+}
 
 export const profileSchema = z.object({
     fullName: z

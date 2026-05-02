@@ -13,7 +13,7 @@ export enum ExecState {
     Loading = 'loading',
     Success = 'success',
     Error = 'error'
-};
+}
 
 const RESERVED_RUNTIME_ARGUMENTS = {
     selectedTimesteps: 'selectedTimesteps'
@@ -55,15 +55,15 @@ interface ExecutePluginArgs {
     config: Record<string, unknown>;
     selectedTimesteps?: number[];
     timestep?: number;
-};
+}
 
 interface ExecutePluginResult {
     analysisId: string;
-};
+}
 
 interface BeforeExecuteResult {
     proceed: boolean;
-};
+}
 
 interface UsePluginExecutionArgs {
     trajectoryId?: string;
@@ -74,7 +74,7 @@ interface UsePluginExecutionArgs {
     executePlugin: (args: ExecutePluginArgs) => Promise<ExecutePluginResult>;
     pluginConfigs?: Record<string, Record<string, unknown>>;
     beforeExecute?: (option: ModifierOption) => Promise<BeforeExecuteResult>;
-};
+}
 
 const usePluginExecution = ({
     trajectoryId,

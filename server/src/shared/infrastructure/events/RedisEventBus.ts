@@ -7,10 +7,10 @@ import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @singleton()
-export default class RedisEventBus implements IEventBus{
+export default class RedisEventBus implements IEventBus {
     private publisher: Redis;
     private subscriber: Redis;
-  
+
     private handlers: Map<string, IEventHandler<IDomainEvent>[]> = new Map();
     private subscribedChannels: Set<string> = new Set();
     private pendingSubscriptions: Map<string, Promise<void>> = new Map();
@@ -18,14 +18,14 @@ export default class RedisEventBus implements IEventBus{
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         redisClient: Redis
-    ){
+    ) {
         this.publisher = redisClient.duplicate();
         this.subscriber = redisClient.duplicate();
 
         this.initializeSubscriberListener();
     }
 
-    public async publish(event: IDomainEvent): Promise<void>{
+    public async publish(event: IDomainEvent): Promise<void> {
         const payload = JSON.stringify(event);
         await this.publisher.publish(event.name, payload);
         logger.info(`@redis-event-bus: Published ${event.name} to Redis`);
@@ -34,20 +34,20 @@ export default class RedisEventBus implements IEventBus{
     public async subscribe<T extends IDomainEvent>(
         eventName: string,
         handler: IEventHandler<T>
-    ): Promise<void>{
-        if(!this.handlers.has(eventName)){
+    ): Promise<void> {
+        if (!this.handlers.has(eventName)) {
             this.handlers.set(eventName, []);
         }
 
         this.handlers.get(eventName)!.push(handler);
         logger.info(`@redis-event-bus: ${handler.constructor.name} registered for ${eventName}`);
 
-        if(this.subscribedChannels.has(eventName)){
+        if (this.subscribedChannels.has(eventName)) {
             return;
         }
 
         const pendingSubscription = this.pendingSubscriptions.get(eventName);
-        if(pendingSubscription){
+        if (pendingSubscription) {
             await pendingSubscription;
             return;
         }
@@ -69,7 +69,7 @@ export default class RedisEventBus implements IEventBus{
         await subscription;
     }
 
-    private initializeSubscriberListener(): void{
+    private initializeSubscriberListener(): void {
         this.subscriber.on('message', async (channel, message) => {
             const handlers = this.handlers.get(channel);
             if (!handlers || handlers.length === 0) return;
@@ -79,17 +79,17 @@ export default class RedisEventBus implements IEventBus{
             const snapshot = handlers.slice();
 
             let eventData: unknown;
-            try{
+            try {
                 eventData = JSON.parse(message);
-            }catch(error){
+            } catch (error) {
                 logger.error(`@redis-event-bus: error parsing message on channel ${channel}: ${error}`);
                 return;
             }
 
             const results = await Promise.allSettled(snapshot.map((handler) => handler.handle(eventData as IDomainEvent)));
-            for(let i = 0; i < results.length; i++){
+            for (let i = 0; i < results.length; i++) {
                 const result = results[i];
-                if(result.status === 'rejected'){
+                if (result.status === 'rejected') {
                     logger.error(
                         result.reason,
                         `@redis-event-bus: handler[${i}] for channel "${channel}" rejected`
@@ -98,4 +98,4 @@ export default class RedisEventBus implements IEventBus{
             }
         });
     }
-};
+}

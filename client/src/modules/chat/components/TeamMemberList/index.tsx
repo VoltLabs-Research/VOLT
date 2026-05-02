@@ -14,7 +14,7 @@ interface TeamMemberListProps {
     selectedIds: string[];
     currentUserId?: string;
     onToggle: (userId: string) => void;
-};
+}
 
 const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamMemberListProps) => {
     const filteredMembers = members.filter((m) => m._id !== currentUserId);

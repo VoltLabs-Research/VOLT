@@ -6,17 +6,17 @@ export interface GetAnalysesByTeamIdInputDTO {
     page?: number;
     limit?: number;
     search?: string;
-};
+}
 
 export interface AnalysisListTeamCluster {
     _id: string;
     name?: string;
-};
+}
 
 export interface AnalysisListTrajectory {
     _id: string;
     name?: string;
-};
+}
 
 export interface AnalysisListUser {
     _id: string;
@@ -24,7 +24,7 @@ export interface AnalysisListUser {
     lastName?: string;
     email?: string;
     avatar?: string;
-};
+}
 
 export interface GetAnalysesByTeamIdItemDTO {
     _id: string;
@@ -43,6 +43,6 @@ export interface GetAnalysesByTeamIdItemDTO {
     status: string;
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
-export interface GetAnalysesByTeamIdOutputDTO extends PaginatedResult<GetAnalysesByTeamIdItemDTO> {};
+export interface GetAnalysesByTeamIdOutputDTO extends PaginatedResult<GetAnalysesByTeamIdItemDTO> {}

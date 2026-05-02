@@ -7,7 +7,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class ContainerOwnershipService {
     constructor(
-        
         private readonly repository: ContainerRepository
     ) {}
 
@@ -20,4 +19,4 @@ export class ContainerOwnershipService {
 
         return container;
     }
-};
+}

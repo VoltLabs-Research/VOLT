@@ -14,15 +14,12 @@ import { injectable } from 'tsyringe';
 
 interface ListTeamClustersFilter extends Record<string, unknown> {
     team: string;
-};
+}
 
 @injectable()
 export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ){}
 
@@ -98,4 +95,4 @@ export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTea
             }))
         });
     }
-};
+}

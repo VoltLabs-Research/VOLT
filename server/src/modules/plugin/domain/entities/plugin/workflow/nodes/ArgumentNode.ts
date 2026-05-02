@@ -1,4 +1,4 @@
-export enum ArgumentType{
+export enum ArgumentType {
     Select = 'select',
     Number = 'number',
     Frame = 'frame',
@@ -6,12 +6,12 @@ export enum ArgumentType{
     String = 'string',
     List = 'list',
     PluginReference = 'pluginReference'
-};
+}
 
-export interface ArgumentOption{
+export interface ArgumentOption {
     key: string;
     label: string;
-};
+}
 
 export const ArgumentVisibilityOperators = [
     'equals',
@@ -22,22 +22,22 @@ export const ArgumentVisibilityOperators = [
 
 export type ArgumentVisibilityOperator = (typeof ArgumentVisibilityOperators)[number];
 
-export interface ArgumentVisibilityCondition{
+export interface ArgumentVisibilityCondition {
     argument: string;
     operator: ArgumentVisibilityOperator;
     value?: string | number | boolean;
     values?: Array<string | number | boolean>;
-};
+}
 
-export interface PluginReferenceArgumentMapping{
+export interface PluginReferenceArgumentMapping {
     sourceArgument: string;
     targetArgument: string;
     targetPluginId?: string;
     targetPluginKey?: string;
     valueMap?: Record<string, unknown>;
-};
+}
 
-export interface ArgumentDefinition{
+export interface ArgumentDefinition {
     argument: string;
     type: ArgumentType;
     label: string;
@@ -55,8 +55,8 @@ export interface ArgumentDefinition{
     max?: number;
     step?: number;
     visibleWhen?: ArgumentVisibilityCondition;
-};
+}
 
-export interface ArgumentsNodeData{
+export interface ArgumentsNodeData {
     arguments: ArgumentDefinition[];
-};
+}

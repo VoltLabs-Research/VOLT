@@ -8,6 +8,6 @@ export interface ListScriptingNotebooksInputDTO {
     scope?: ScriptingNotebookScope;
     page?: number;
     limit?: number;
-};
+}
 
-export interface ListScriptingNotebooksOutputDTO extends PaginatedResult<ScriptingNotebookDTO> {};
+export interface ListScriptingNotebooksOutputDTO extends PaginatedResult<ScriptingNotebookDTO> {}

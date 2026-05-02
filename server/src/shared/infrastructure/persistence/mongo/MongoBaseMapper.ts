@@ -4,17 +4,17 @@ import type { HydratedDocument } from 'mongoose';
 
 interface EntityConstructor<TDomain, TProps> {
     new (_id: string, props: TProps): TDomain;
-};
+}
 
 type EntityFactory<TDomain, TProps> = (_id: string, props: TProps) => TDomain;
 
 interface IdentifierValue {
     toString(): string;
-};
+}
 
 interface DomainWithProps<TProps> {
     props: TProps;
-};
+}
 
 const isIdentifierValue = (value: unknown): value is IdentifierValue => {
     return typeof value === 'object' && value !== null && 'toString' in value;
@@ -48,7 +48,7 @@ export class BaseMapper<
         private readonly entityCreator: EntityConstructor<TDomain, TProps> | EntityFactory<TDomain, TProps>,
         private readonly relationKeys: Array<Extract<keyof TProps, string>> = [],
         private readonly useFactory = false
-    ){}
+    ) {}
 
     private createEntity(_id: string, props: TProps): TDomain {
         return this.useFactory
@@ -106,4 +106,4 @@ export class BaseMapper<
 
         return persistenceData;
     }
-};
+}

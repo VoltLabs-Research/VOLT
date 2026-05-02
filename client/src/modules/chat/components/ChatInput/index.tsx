@@ -21,7 +21,7 @@ interface ChatInputProps {
     onTyping: () => void;
     onSendText: (text: string) => Promise<unknown>;
     onSendFiles: (files: File[]) => Promise<unknown>;
-};
+}
 
 const ChatInput = ({ disabled, isSending = false, onTyping, onSendText, onSendFiles }: ChatInputProps) => {
     useTip('chat-file-attachments');

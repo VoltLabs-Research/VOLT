@@ -7,7 +7,7 @@ interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
     isClickable?: boolean;
     isRelative?: boolean;
     overflowHidden?: boolean;
-};
+}
 
 const DashboardCard = ({
     children,

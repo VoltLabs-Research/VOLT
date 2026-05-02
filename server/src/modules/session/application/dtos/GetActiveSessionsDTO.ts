@@ -2,7 +2,7 @@ import type { PersistedSessionDTO } from '@modules/session/application/dtos/Pers
 
 export interface GetActiveSessionsInputDTO {
     userId: string;
-};
+}
 
 export interface GetActiveSessionsOutputDTO extends PersistedSessionDTO {
-};
+}

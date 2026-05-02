@@ -3,7 +3,7 @@ import type { ChatUserReference } from '@modules/chat/domain/entities/chat/Chat'
 export enum ChatMessageType {
     Text = 'text',
     File = 'file'
-};
+}
 
 export interface ChatMessageMetadata {
     fileName: string;
@@ -11,12 +11,12 @@ export interface ChatMessageMetadata {
     fileType: string;
     fileUrl: string;
     filePath: string;
-};
+}
 
 interface ChatReaction {
     emoji: string;
     users: string[];
-};
+}
 
 export interface ChatMessageProps {
     chat: string;
@@ -33,7 +33,7 @@ export interface ChatMessageProps {
     reactions: ChatReaction[];
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class ChatMessage {
     constructor(
@@ -82,4 +82,4 @@ export default class ChatMessage {
             });
         }
     }
-};
+}

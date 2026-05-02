@@ -56,4 +56,4 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
 
         return userId;
     }
-};
+}

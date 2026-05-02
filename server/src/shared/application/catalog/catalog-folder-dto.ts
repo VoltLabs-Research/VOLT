@@ -7,7 +7,7 @@ export interface CatalogFolderDTO {
     parent: string | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export type CreateCatalogFolderInputDTO = TeamUserScopedInputDTO & {
     title: string;

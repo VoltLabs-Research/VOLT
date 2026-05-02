@@ -31,4 +31,4 @@ export default class LatexAssetRepository
             .exec();
         return doc ? this.mapper.toDomain(doc) : null;
     }
-};
+}

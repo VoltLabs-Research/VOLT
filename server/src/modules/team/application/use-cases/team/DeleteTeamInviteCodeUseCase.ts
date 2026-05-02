@@ -10,10 +10,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamInviteCodeUseCase implements IUseCase<DeleteTeamInviteCodeInputDTO, DeleteTeamInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 
@@ -29,4 +26,4 @@ export default class DeleteTeamInviteCodeUseCase implements IUseCase<DeleteTeamI
 
         return Result.ok({ message: 'Invite code deleted successfully' });
     }
-};
+}

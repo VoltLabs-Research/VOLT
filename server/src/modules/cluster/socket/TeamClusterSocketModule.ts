@@ -45,12 +45,12 @@ import { z } from 'zod/v4';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
-};
+}
 
 interface ClusterMetricsHistorySocketPayload {
     clusterId: string;
     minutes?: number;
-};
+}
 
 const MAX_CLUSTER_METRICS_HISTORY_MINUTES = 60;
 
@@ -77,42 +77,18 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly teamClusterHeartbeatMonitor: TeamClusterHeartbeatMonitor,
-
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-        
         private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,
-
-        
         private readonly recordTeamClusterHeartbeatUseCase: RecordTeamClusterHeartbeatUseCase,
-
-        
         private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
-
-        
         private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
-
-        
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
-
-        
         private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase,
-
-        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-
-        
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
-
-        
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {
         super(emitter, roomManager, eventRegistry);
@@ -276,7 +252,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             if (teamClusterId) {
                 try {
                     await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
-                } catch (error: unknown) {
+                } catch {
                     logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${teamClusterId}`);
                 }
             }
@@ -472,4 +448,4 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             }
         });
     }
-};
+}

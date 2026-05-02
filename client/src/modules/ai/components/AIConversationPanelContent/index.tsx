@@ -11,7 +11,7 @@ interface ToolApprovalResponseParams {
     id: string;
     approved: boolean;
     reason?: string;
-};
+}
 
 interface AIConversationPanelContentProps {
     conversationId?: string;

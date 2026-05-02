@@ -4,4 +4,4 @@ export interface CreateLatexFileParams {
     path?: string;
     content?: string;
     isEntrypoint?: boolean;
-};
+}

@@ -21,12 +21,12 @@ import type { ClusterMetrics, ClusterHistoryMetric } from '../api/entities/clust
 
 interface UseClusterMetricsOptions {
     clusterId?: string | null;
-};
+}
 
 interface ClusterMetricsHistoryEvent {
     clusterId: string;
     history: ClusterHistoryMetric[];
-};
+}
 
 const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
     const queryClient = useQueryClient();

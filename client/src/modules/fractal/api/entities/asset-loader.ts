@@ -6,4 +6,4 @@ export default interface IFractalAssetLoader {
         onProgress?: (progress: number) => void,
         signal?: AbortSignal
     ): Promise<THREE.Group>;
-};
+}

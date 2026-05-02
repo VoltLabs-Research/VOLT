@@ -15,13 +15,8 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 @Singleton()
 export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingNotebookInputDTO, ScriptingNotebookDTO, ApplicationError> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -132,4 +127,4 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
             ));
         }
     }
-};
+}

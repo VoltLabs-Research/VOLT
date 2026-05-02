@@ -11,7 +11,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import { injectable } from 'tsyringe';
-
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
@@ -62,13 +61,8 @@ export default class DownloadTeamClusterRemoteExplorerObjectUseCase implements I
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
-
-        
         private readonly remoteExplorerDaemonGateway: RemoteExplorerDaemonGateway
     ) {}
 

@@ -20,13 +20,13 @@ enum Tab {
     General = 'general',
     Members = 'members',
     Admins = 'admins'
-};
+}
 
 interface GroupManagementTab {
     id: Tab;
     label: string;
     icon: ReactNode;
-};
+}
 
 interface GroupManagementModalProps {
     chat: Chat | null;
@@ -36,7 +36,7 @@ interface GroupManagementModalProps {
     onAddMembers: (chatId: string, memberIds: string[]) => Promise<unknown>;
     onUpdateAdmins: (chatId: string, adminIds: string[], action: 'add' | 'remove') => Promise<unknown>;
     onLeaveGroup: (chatId: string) => Promise<unknown>;
-};
+}
 
 const TABS: GroupManagementTab[] = [
     {

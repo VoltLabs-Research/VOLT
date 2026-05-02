@@ -12,7 +12,7 @@ import { Result } from '@shared/domain/port/Result';
 export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, GetPluginByIdOutputDTO, ApplicationError> {
     constructor(
         private pluginRepository: PluginRepository
-    ){}
+    ) {}
 
     async execute(input: GetPluginByIdInputDTO): Promise<Result<GetPluginByIdOutputDTO, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
@@ -25,4 +25,4 @@ export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, Get
 
         return Result.ok(mapPluginToPersistedDTO(plugin));
     }
-};
+}

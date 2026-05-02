@@ -6,4 +6,4 @@ export interface ExportListingByAnalysisInputDTO {
     includeConfig?: boolean;
     selectedListingIds?: string[];
     selectedSubListingIds?: string[];
-};
+}

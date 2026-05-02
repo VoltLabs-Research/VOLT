@@ -19,7 +19,7 @@ interface CachedConnection {
     lastUsed: number;
     configHash: string;
     isClosing: boolean;
-};
+}
 
 interface SSHConnectionConfig {
     host: string;
@@ -28,12 +28,12 @@ interface SSHConnectionConfig {
     password: string;
     readyTimeout?: number;
     keepAliveInterval?: number;
-};
+}
 
 interface SSH2Connection {
     client: Client;
     sftp: SFTPWrapper;
-};
+}
 
 @Singleton()
 export default class SSHConnectionService implements ISSHConnectionService {
@@ -50,7 +50,6 @@ export default class SSHConnectionService implements ISSHConnectionService {
     private readonly STREAM_HIGH_WATER_MARK = 1024 * 1024;
 
     constructor(
-        
         private readonly sshCredentialsCipher: SSHCredentialsCipher
     ) {
         setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
@@ -490,12 +489,6 @@ export default class SSHConnectionService implements ISSHConnectionService {
         }
 
         const sshError = error as Error & { code?: unknown };
-
-        if (sshError.code === 2 || sshError.code === 'ENOENT') {
-            return true;
-        }
-
-        return false;
+        return sshError.code === 2 || sshError.code === 'ENOENT';
     }
-
-};
+}

@@ -39,11 +39,8 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService
     ) {
         super(emitter, roomManager, eventRegistry);

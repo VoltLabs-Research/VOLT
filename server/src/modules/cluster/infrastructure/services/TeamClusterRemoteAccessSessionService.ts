@@ -13,7 +13,7 @@ interface CreateRemoteAccessSessionParams {
     teamId: string;
     teamClusterId: string;
     target: TeamClusterRemoteAccessTargetDTO;
-};
+}
 
 interface ValidateRemoteAccessSessionParams {
     sessionId: string;
@@ -21,12 +21,12 @@ interface ValidateRemoteAccessSessionParams {
     teamId?: string;
     teamClusterId?: string;
     target?: TeamClusterRemoteAccessTargetDTO;
-};
+}
 
 interface StoredRemoteAccessSession extends TeamClusterRemoteAccessSessionDTO {
     userId: string;
     teamId: string;
-};
+}
 
 const REMOTE_ACCESS_SESSION_TTL_MS = 15 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;

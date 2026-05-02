@@ -10,25 +10,25 @@ export enum TeamClusterStatus {
     DeleteFailed = 'delete-failed',
     Updating = 'updating',
     UpdateFailed = 'update-failed'
-};
+}
 
 export interface TeamClusterServiceProps {
     port: number | null;
     username?: string;
     password?: string;
-};
+}
 
 export interface TeamClusterDaemonServiceProps {
     port: number | null;
     password?: string;
-};
+}
 
 export interface TeamClusterServicesProps {
     minio: TeamClusterServiceProps;
     redis: TeamClusterServiceProps;
     mongodb: TeamClusterServiceProps;
     daemon: TeamClusterDaemonServiceProps;
-};
+}
 
 export interface TeamClusterQueueConcurrencyProps {
     analysis: number;
@@ -36,12 +36,12 @@ export interface TeamClusterQueueConcurrencyProps {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitProps {
     maxRunningPerTrajectory: number;
     maxRunningPerTeam: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitsProps {
     analysisProcessing: TeamClusterQueueScopeLimitProps;
@@ -50,19 +50,19 @@ export interface TeamClusterQueueScopeLimitsProps {
     trajectoryGlbConversion: TeamClusterQueueScopeLimitProps;
     cloudUpload: TeamClusterQueueScopeLimitProps;
     trajectoryCompression: TeamClusterQueueScopeLimitProps;
-};
+}
 
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export interface TeamClusterRoleCapabilitiesProps {
     canStore: boolean;
     canCompute: boolean;
-};
+}
 
 export interface TeamClusterRoleDrainProps {
     compute: boolean;
     storage: boolean;
-};
+}
 
 export interface TeamClusterRuntimeRoleConfigProps {
     desiredRole: TeamClusterRole;
@@ -70,14 +70,14 @@ export interface TeamClusterRuntimeRoleConfigProps {
     runtimeVersion: number;
     draining: TeamClusterRoleDrainProps;
     lastAppliedAt?: Date | null;
-};
+}
 
 export interface TeamClusterEffectiveCapabilitiesProps {
     acceptsComputeJobs: boolean;
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
-};
+}
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
     analysis: 8,
@@ -204,7 +204,7 @@ export interface TeamClusterProps {
     effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class TeamCluster {
     constructor(
@@ -219,4 +219,4 @@ export default class TeamCluster {
     public get effectiveCapabilities(): TeamClusterEffectiveCapabilitiesProps {
         return resolveEffectiveCapabilitiesFromRoleConfig(this.props.roleConfig);
     }
-};
+}

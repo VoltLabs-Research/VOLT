@@ -232,4 +232,4 @@ export default class LatexSocketModule extends BaseSocketModule {
         lastName: connection.user?.lastName,
         isAnonymous: !connection.user
     });
-};
+}

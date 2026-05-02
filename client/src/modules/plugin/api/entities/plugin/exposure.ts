@@ -7,7 +7,7 @@ import type {
 export interface IComputedArgumentOption {
     key: string;
     label: string;
-};
+}
 
 export interface IExposureComputed {
     _id: string;
@@ -16,13 +16,13 @@ export interface IExposureComputed {
     results: string;
     hasListing: boolean;
     export: IExposureExport | null;
-};
+}
 
 export interface IExposureExport {
     exporter: string;
     type: string;
     options?: Record<string, unknown>;
-};
+}
 
 export interface IComputedArgumentDefinition {
     argument: string;
@@ -42,15 +42,15 @@ export interface IComputedArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: IArgumentVisibilityCondition;
-};
+}
 
 export interface IListingExposure {
     exposureId: string;
     name: string;
-};
+}
 
 export interface IListingsWithExposures {
     pluginName: string;
     pluginId: string;
     exposures: IListingExposure[];
-};
+}

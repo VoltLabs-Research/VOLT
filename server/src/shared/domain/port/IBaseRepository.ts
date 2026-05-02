@@ -2,7 +2,7 @@ export interface PopulatePath {
     path: string;
     select?: string[];
     populate?: PopulatePath | PopulatePath[];
-};
+}
 
 export interface FindOptions<T> {
     filter?: RepositoryFilter<T>;
@@ -11,7 +11,7 @@ export interface FindOptions<T> {
     sort?: Record<string, 1 | -1>;
     limit?: number;
     skip?: number;
-};
+}
 
 export type RepositoryFilter<T> = Partial<T> | Record<string, unknown>;
 
@@ -22,21 +22,21 @@ export interface PaginatedResult<T> {
     totalPages: number;
     limit: number;
     _meta?: Record<string, unknown>;
-};
+}
 
 export interface PaginationOptions {
     page?: number;
     limit?: number;
-};
+}
 
 export enum ExportType {
     Json = 'json',
     Csv = 'csv'
-};
+}
 
 export interface EntityIdFilter {
     _id: string;
-};
+}
 
 export interface IBaseRepository<T, TProps> {
     /**
@@ -113,4 +113,4 @@ export interface IBaseRepository<T, TProps> {
      * Check if any entity matches the filter.
      */
     exists(filter: RepositoryFilter<TProps> | EntityIdFilter): Promise<boolean>;
-};
+}

@@ -18,13 +18,8 @@ import { randomUUID } from 'node:crypto';
 @Singleton()
 export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-        
         private readonly jupyterNotebookService: JupyterNotebookService,
-
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
@@ -70,4 +65,4 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
             ));
         }
     }
-};
+}

@@ -23,7 +23,7 @@ export interface DecodedEnvelope {
     opId: number;
     kind: EnvelopeKind;
     payload: Uint8Array;
-};
+}
 
 const assertUint32 = (value: number, field: string): void => {
     if (!Number.isInteger(value) || value < 0 || value > 0xFFFFFFFF) {

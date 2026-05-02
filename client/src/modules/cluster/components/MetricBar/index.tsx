@@ -6,7 +6,7 @@ interface MetricBarProps {
     segments?: number;
     color?: string;
     glow?: string;
-};
+}
 
 const MetricBar = ({
     value,

@@ -18,7 +18,7 @@ export interface FrameMetadata {
             };
         };
     };
-};
+}
 
 export interface ParseResult {
     metadata: FrameMetadata;
@@ -28,12 +28,12 @@ export interface ParseResult {
     properties?: { [name: string]: Float32Array };
     min: [number, number, number];
     max: [number, number, number];
-};
+}
 
 export interface ParseOptions {
     includeIds?: boolean;
     properties?: string[];
-};
+}
 
 export interface AtomPageEntry {
     id: number;
@@ -42,7 +42,7 @@ export interface AtomPageEntry {
     y: number;
     z: number;
     [property: string]: number;
-};
+}
 
 export interface AtomPageResult {
     atoms: AtomPageEntry[];
@@ -50,4 +50,4 @@ export interface AtomPageResult {
     nativeProperties: string[];
     analysisPropertyNames?: string[];
     analysisAtoms?: Record<string, unknown>[];
-};
+}

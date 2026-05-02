@@ -9,7 +9,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO, ListWhiteboardsOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository
     ) {}
 
@@ -55,4 +54,4 @@ export class ListWhiteboardsUseCase implements IUseCase<ListWhiteboardsInputDTO,
 
         return Result.ok(value);
     }
-};
+}

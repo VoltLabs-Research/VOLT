@@ -5,7 +5,7 @@ export interface DemoCountdownSnapshot {
     seconds: number;
     totalMs: number;
     expired: boolean;
-};
+}
 
 export const useDemoClusterCountdown = (expiresAt: Date | null | undefined): DemoCountdownSnapshot => {
     const compute = (): DemoCountdownSnapshot => {

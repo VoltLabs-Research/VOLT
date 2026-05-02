@@ -23,4 +23,4 @@ export interface Container extends BaseEntity {
     volume?: string;
     mountDockerSocket?: boolean;
     accessiblePorts?: ContainerAccessiblePort[];
-};
+}

@@ -20,7 +20,7 @@ interface LatexAIPanelProps {
     width?: number;
     height?: number;
     onClose: () => void;
-};
+}
 
 const buildDocumentContext = (documentId: string, documentTitle: string, files: LatexFileEntry[]): string => {
     const fileList = files.map((f) => `- ${f.name} (ID: ${f._id})`).join('\n');

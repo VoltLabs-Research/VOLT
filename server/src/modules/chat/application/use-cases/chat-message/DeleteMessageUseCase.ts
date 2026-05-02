@@ -10,9 +10,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -44,4 +42,4 @@ export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, nul
 
         return Result.ok(null);
     }
-};
+}

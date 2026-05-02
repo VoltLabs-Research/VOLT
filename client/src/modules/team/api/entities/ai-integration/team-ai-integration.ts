@@ -11,12 +11,12 @@ export interface TeamAIIntegration extends BaseEntity {
     metadata?: Record<string, unknown>;
     hasApiKey: boolean;
     createdBy?: string;
-};
+}
 
 export interface TeamAIModelMetadata {
     id: string;
     name: string;
-};
+}
 
 export interface TeamAIProviderModelsCatalog {
     provider: AIProvider;
@@ -24,16 +24,16 @@ export interface TeamAIProviderModelsCatalog {
     defaultModel?: string;
     metadata?: Record<string, unknown>;
     models: TeamAIModelMetadata[];
-};
+}
 
 export interface TeamAIModelListItem extends TeamAIModelMetadata {
     provider: AIProvider;
     providerName: string;
     isDefault: boolean;
-};
+}
 
 export interface AIProviderCatalogItem {
     id: string;
     name: string;
     description: string;
-};
+}

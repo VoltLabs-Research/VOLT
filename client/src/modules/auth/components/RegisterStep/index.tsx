@@ -13,7 +13,7 @@ interface RegisterStepProps {
     isLoading: boolean;
     onSubmit: FormEventHandler<HTMLFormElement>;
     onBack: () => void;
-};
+}
 
 const RegisterStep = ({
     email,

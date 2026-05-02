@@ -14,7 +14,7 @@ interface MessageControlsProps {
     onReact: (emoji: string) => void;
     onEdit: () => void;
     onDelete: () => void;
-};
+}
 
 const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: MessageControlsProps) => {
     const handleEmojiSelect = (close: () => void, emoji: string) => {

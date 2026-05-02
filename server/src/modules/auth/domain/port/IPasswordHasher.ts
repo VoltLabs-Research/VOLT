@@ -8,4 +8,4 @@ export interface IPasswordHasher{
      * Compare plain text password with hash.
      */
     compare(password: string, hash: string): Promise<boolean>;
-};
+}

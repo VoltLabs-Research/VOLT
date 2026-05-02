@@ -61,7 +61,7 @@ import type {
 export interface ClusterMetricsHistoryResponse {
     clusterId: string;
     history: ClusterHistoryMetric[];
-};
+}
 
 export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
     await emitWithReport(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, {

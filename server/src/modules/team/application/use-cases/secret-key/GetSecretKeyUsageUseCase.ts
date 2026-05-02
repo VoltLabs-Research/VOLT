@@ -11,20 +11,15 @@ import { injectable } from 'tsyringe';
 interface SecretKeyRolePopulate {
     path: 'role';
     select: ['name'];
-};
+}
 
 @injectable()
 export default class GetSecretKeyUsageUseCase
     implements IUseCase<GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, ApplicationError> {
 
     constructor(
-        
         private readonly secretKeyRepo: SecretKeyRepository,
-
-        
         private readonly usageLogRepo: SecretKeyUsageLogRepository,
-
-        
         private readonly metricsMapper: SecretKeyUsageMetricsMapper
     ) {}
 
@@ -59,4 +54,4 @@ export default class GetSecretKeyUsageUseCase
             ...metrics
         });
     }
-};
+}

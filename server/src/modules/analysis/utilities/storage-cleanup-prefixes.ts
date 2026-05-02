@@ -3,7 +3,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 export interface AnalysisStorageCleanupTarget {
     bucket: string;
     prefix: string;
-};
+}
 
 export const getAnalysisStorageCleanupTargets = (
     trajectoryId: string,

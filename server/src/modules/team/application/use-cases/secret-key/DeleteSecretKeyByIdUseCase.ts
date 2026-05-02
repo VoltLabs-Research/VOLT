@@ -12,9 +12,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecretKeyByIdInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly secretKeyRepository: SecretKeyRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -47,4 +45,4 @@ export default class DeleteSecretKeyByIdUseCase implements IUseCase<DeleteSecret
 
         return Result.ok(null);
     }
-};
+}

@@ -184,9 +184,7 @@ export default class FileExtractorService implements IFileExtractorService {
         );
 
         const results = await Promise.all(tasks);
-        const extracted = results.filter((r): r is ExtractedFile => r !== null);
-
-        return extracted;
+        return results.filter((r): r is ExtractedFile => r !== null);
     }
 
     public async getFilesRecursive(dir: string): Promise<string[]> {
@@ -197,4 +195,4 @@ export default class FileExtractorService implements IFileExtractorService {
         }));
         return Array.prototype.concat(...files);
     }
-};
+}

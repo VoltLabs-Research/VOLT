@@ -8,7 +8,7 @@ interface ReactionsDisplayProps {
     reactions?: ChatReaction[];
     currentUserId?: string;
     onToggle: (emoji: string) => void;
-};
+}
 
 const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: ReactionsDisplayProps) => {
     const validReactions = reactions.filter((r) => (r.users?.length ?? 0) > 0);

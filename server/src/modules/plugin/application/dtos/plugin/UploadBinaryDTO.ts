@@ -4,10 +4,10 @@ interface UploadBinaryFile {
     originalName?: string;
     mimetype?: string;
     size: number;
-};
+}
 
 export interface UploadBinaryInputDTO {
     pluginId: string;
     teamId: string;
     file: UploadBinaryFile;
-};
+}

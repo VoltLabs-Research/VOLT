@@ -6,9 +6,9 @@ export interface UpdatePasswordInputDTO{
     password: string;
     userAgent: string;
     ip: string;
-};
+}
 
 export interface UpdatePasswordOutputDTO{
     token: string;
     user: PersistedUserDTO;
-};
+}

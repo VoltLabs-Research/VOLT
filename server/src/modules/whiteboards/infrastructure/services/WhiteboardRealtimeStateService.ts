@@ -13,7 +13,7 @@ interface StoredWhiteboardScene {
     revision?: number;
     elements?: unknown[];
     appState?: WhiteboardAppState;
-};
+}
 
 interface WhiteboardRoomState {
     whiteboardId: string;
@@ -28,14 +28,14 @@ interface WhiteboardRoomState {
     persistTimer: ReturnType<typeof setTimeout> | null;
     lastEditedBy: string | null;
     lastPersistedRevision: number;
-};
+}
 
 interface WhiteboardSceneSnapshot {
     whiteboardId: string;
     revision: number;
     elements: WhiteboardElement[];
     appState: WhiteboardAppState;
-};
+}
 
 interface WhiteboardSceneDelta {
     whiteboardId: string;
@@ -43,13 +43,13 @@ interface WhiteboardSceneDelta {
     elements: WhiteboardElement[];
     appState: WhiteboardAppState;
     elementOrder?: string[];
-};
+}
 
 interface MergeSceneResult {
     changed: boolean;
     revision: number;
     delta?: WhiteboardSceneDelta;
-};
+}
 
 const PERSIST_DEBOUNCE_MS = 500;
 
@@ -64,23 +64,23 @@ const getElementId = (element: WhiteboardElement): string | null => {
     return typeof id === 'string' && id.length > 0 ? id : null;
 };
 
-const getElementVersion = (element: WhiteboardElement): number => {
-    return typeof element.version === 'number' && Number.isFinite(element.version)
+const getElementVersion = (element: WhiteboardElement): number => (
+    typeof element.version === 'number' && Number.isFinite(element.version)
         ? element.version
-        : 0;
-};
+        : 0
+);
 
-const getElementUpdated = (element: WhiteboardElement): number => {
-    return typeof element.updated === 'number' && Number.isFinite(element.updated)
+const getElementUpdated = (element: WhiteboardElement): number => (
+    typeof element.updated === 'number' && Number.isFinite(element.updated)
         ? element.updated
-        : 0;
-};
+        : 0
+);
 
-const getElementVersionNonce = (element: WhiteboardElement): number => {
-    return typeof element.versionNonce === 'number' && Number.isFinite(element.versionNonce)
+const getElementVersionNonce = (element: WhiteboardElement): number => (
+    typeof element.versionNonce === 'number' && Number.isFinite(element.versionNonce)
         ? element.versionNonce
-        : 0;
-};
+        : 0
+);
 
 const getElementSignature = (element: WhiteboardElement): string | null => {
     try {
@@ -139,16 +139,16 @@ const normalizeElements = (value: unknown): WhiteboardElement[] => {
         return [];
     }
 
-    return value.filter((element): element is WhiteboardElement => {
-        return typeof element === 'object' && element !== null && typeof (element as WhiteboardElement).id === 'string';
-    });
+    return value.filter((element): element is WhiteboardElement => (
+        typeof element === 'object' && element !== null && typeof (element as WhiteboardElement).id === 'string'
+    ));
 };
 
-const normalizeAppState = (value: unknown): WhiteboardAppState => {
-    return typeof value === 'object' && value !== null
+const normalizeAppState = (value: unknown): WhiteboardAppState => (
+    typeof value === 'object' && value !== null
         ? { ...(value as WhiteboardAppState) }
-        : {};
-};
+        : {}
+);
 
 const areStringArraysEqual = (left: string[], right: string[]): boolean => {
     if (left.length !== right.length) {
@@ -170,9 +170,7 @@ export default class WhiteboardRealtimeStateService {
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}

@@ -20,7 +20,7 @@ interface ChatDetailsPanelProps {
     currentUserId?: string;
     presence?: PresenceStatus;
     onClose?: () => void;
-};
+}
 
 const ChatDetailsPanel = ({
     chat,

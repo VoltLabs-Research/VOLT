@@ -7,11 +7,11 @@ export enum CanvasWorkspace {
     Scene = 'scene',
     Raster = 'raster',
     Scripting = 'scripting'
-};
+}
 
 interface UpdateOptions {
     replace?: boolean;
-};
+}
 
 const CANVAS_WORKSPACES = new Set<string>(Object.values(CanvasWorkspace));
 

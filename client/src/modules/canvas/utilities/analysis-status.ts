@@ -8,7 +8,7 @@ export type CanvasAnalysisStatus = AnalysisStatus;
 export interface CanvasAnalysisStatusEntry {
     status: CanvasAnalysisStatus;
     trajectoryId?: string;
-};
+}
 
 export const isCanvasAnalysisInProgress = (status?: CanvasAnalysisStatus): boolean => {
     return status === AnalysisStatus.Pending || status === AnalysisStatus.Running;

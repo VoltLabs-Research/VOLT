@@ -5,6 +5,6 @@ export interface ListPluginTeamClustersInputDTO {
     teamId: string;
     page: number;
     limit: number;
-};
+}
 
 export type ListPluginTeamClustersOutputDTO = PaginatedResponse<PluginTeamClusterOption>;

@@ -4,8 +4,8 @@ export interface PluginExposureExportParams {
     analysisId: string;
     trajectoryId: string;
     pluginName: string;
-};
+}
 
 export interface IPluginExposureExportService {
     exportAnalysisExposureBundle(params: PluginExposureExportParams): Promise<DownloadStreamOutputDTO>;
-};
+}

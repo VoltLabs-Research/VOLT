@@ -12,7 +12,6 @@ export class ListContainersAITool extends AITool {
     readonly parameters = z.object({ page: z.number().optional().default(1), limit: z.number().optional().default(50) });
 
     constructor(
-        
         protected readonly useCase: ListContainersUseCase
     ) {
         super();
@@ -28,4 +27,4 @@ export class ListContainersAITool extends AITool {
         if (!result.success) throw result.error;
         return { summary: `Found ${result.value.total} containers.`, data: result.value.data };
     }
-};
+}

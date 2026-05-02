@@ -46,7 +46,7 @@ export interface ISocketEmitter {
      * @param data - Data payload to send
      */
     broadcast(
-        event: string, 
+        event: string,
         data: unknown
     ): void;
-};
+}

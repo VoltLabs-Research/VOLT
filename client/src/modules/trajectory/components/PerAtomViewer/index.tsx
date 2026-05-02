@@ -21,23 +21,23 @@ interface PerAtomViewerContext {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
-};
+}
 
 interface AtomListingRow extends AtomData {
     _id: string;
-};
+}
 
 interface PaginationRequestParams {
     page: number;
     limit: number;
-};
+}
 
 type PerAtomViewerFetchParams = PaginationRequestParams & PerAtomViewerContext;
 
 interface ColumnSkeletonConfig {
     variant: 'text';
     width: number;
-};
+}
 
 const ID_SKELETON: ColumnSkeletonConfig = {
     variant: 'text',

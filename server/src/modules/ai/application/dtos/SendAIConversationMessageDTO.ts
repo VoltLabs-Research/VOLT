@@ -12,10 +12,10 @@ export interface SendAIConversationMessageInputDTO {
     title?: string;
     provider?: TeamAIProvider;
     model?: string;
-};
+}
 
 export interface SendAIConversationMessageOutputDTO {
     streamResult: AIChatReplyStream;
     userMessage?: AIMessageDTO;
     assistantMessage?: Promise<AIMessageDTO | undefined>;
-};
+}

@@ -12,7 +12,6 @@ export default class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
 
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 
@@ -46,4 +45,4 @@ export default class TeamClusterHeartbeatMonitor {
             this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff)
         ]);
     }
-};
+}

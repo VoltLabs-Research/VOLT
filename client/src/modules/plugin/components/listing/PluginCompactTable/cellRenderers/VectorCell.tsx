@@ -3,7 +3,7 @@ import { formatScientific, vectorMagnitude, safeJsonStringify } from '@/modules/
 
 interface VectorCellProps {
     value: unknown;
-};
+}
 
 const isNumberArray = (input: unknown): input is number[] => {
     return Array.isArray(input) && input.every((entry) => typeof entry === 'number');

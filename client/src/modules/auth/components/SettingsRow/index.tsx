@@ -35,7 +35,7 @@ export interface SettingsRowProps {
      * Additional CSS classes
      */
     className?: string;
-};
+}
 
 const SettingsRow = ({
     icon,

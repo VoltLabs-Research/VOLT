@@ -4,32 +4,32 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ContainerPortProxyAccessTokenSignOptions extends SignOptions {
     expiresIn: number;
-};
+}
 
 interface ContainerPortProxyAccessTokenContext {
     sessionId: string;
     relayPort: number;
     userId: string;
-};
+}
 
 interface BuildContainerPortProxyRelayUrlInput extends ContainerPortProxyAccessTokenContext {
     advertisedHost: string;
     protocol: 'http' | 'https';
     createAccessToken: (input: ContainerPortProxyAccessTokenContext) => string;
-};
+}
 
 interface ContainerPortProxyAccessTokenClaims extends JwtPayload {
     type: 'container-port-proxy';
     sessionId: string;
     relayPort: number;
     userId: string;
-};
+}
 
 export interface VerifiedContainerPortProxyAccessToken {
     sessionId: string;
     relayPort: number;
     userId: string;
-};
+}
 
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 export const CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltContainerPortProxyAccessToken';

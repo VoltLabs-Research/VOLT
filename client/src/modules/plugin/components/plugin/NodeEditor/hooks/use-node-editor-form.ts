@@ -12,13 +12,13 @@ interface UseNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey ext
     node: Node<INodeData>;
     dataKey: TDataKey;
     defaults: TFormValues;
-};
+}
 
 interface CreateNodeEditorFormOptions<TFormValues extends FieldValues, TDataKey extends keyof INodeData> {
     schema: ZodSchema;
     defaults: TFormValues;
     dataKey: TDataKey;
-};
+}
 
 const useNodeEditorForm = <TFormValues extends FieldValues, TDataKey extends keyof INodeData>(
     options: UseNodeEditorFormOptions<TFormValues, TDataKey>

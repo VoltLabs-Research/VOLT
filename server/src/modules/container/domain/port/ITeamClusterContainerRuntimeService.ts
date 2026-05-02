@@ -11,7 +11,7 @@ export interface RuntimeContainerSummary {
     Id: string;
     State?: string;
     Status?: string;
-};
+}
 
 export interface ITeamClusterContainerRuntimeService {
     listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]>;
@@ -26,4 +26,4 @@ export interface ITeamClusterContainerRuntimeService {
     readFile(teamClusterId: string, containerId: string, path: string): Promise<string>;
     attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment>;
     getProcesses(teamClusterId: string, containerId: string): Promise<ContainerProcessInfo[]>;
-};
+}

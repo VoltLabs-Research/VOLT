@@ -9,7 +9,7 @@ interface EditableTrajectoryNameProps {
     name: string;
     className?: string;
     allowSingleClickPropagation?: boolean;
-};
+}
 
 export default function EditableTrajectoryName({
     trajectoryId,

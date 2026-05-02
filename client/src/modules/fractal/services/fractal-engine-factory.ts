@@ -11,7 +11,7 @@ interface FractalSurface {
     camera: THREE.Camera;
     gl: THREE.WebGLRenderer;
     invalidate: () => void;
-};
+}
 
 type FractalEngineCallbacks = {
     onModelLoaded?: (bounds: BoundsInfo) => void;
@@ -30,7 +30,7 @@ class FractalEngineFactory {
     ): FractalEngine {
         return new FractalEngine(surface, params, assetLoader, callbacks);
     }
-};
+}
 
 const engineFactory = new FractalEngineFactory();
 

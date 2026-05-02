@@ -4,7 +4,7 @@ export interface TriggerRasterizationInputDTO {
     trajectoryId: string;
     teamId: string;
     config?: RasterTriggerConfig;
-};
+}
 
 export interface TriggerRasterizationOutputDTO {
     trajectoryId: string;
@@ -13,4 +13,4 @@ export interface TriggerRasterizationOutputDTO {
     duplicateJobs: number;
     skippedJobs: number;
     alreadyRasterizedJobs: number;
-};
+}

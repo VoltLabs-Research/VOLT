@@ -41,4 +41,4 @@ export class JupyterNotebookService {
         const raw = await fs.readFile(templatePath, 'utf8');
         return this.applyPlaceholders(raw, context);
     }
-};
+}

@@ -37,4 +37,4 @@ export interface IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable>;
-};
+}

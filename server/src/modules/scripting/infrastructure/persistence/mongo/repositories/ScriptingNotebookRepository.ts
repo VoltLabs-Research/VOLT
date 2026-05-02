@@ -62,4 +62,4 @@ export default class ScriptingNotebookRepository
         const doc = await this.model.findOne(query).exec();
         return doc ? this.mapper.toDomain(doc) : null;
     }
-};
+}

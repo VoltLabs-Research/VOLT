@@ -1,7 +1,6 @@
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import type { OwnedTeamClusterInput } from '@modules/cluster/application/utilities/team-cluster-ownership';
@@ -11,13 +10,13 @@ interface ValidateRemoteExplorerSessionInput extends OwnedTeamClusterInput {
     sessionId: string;
     target: TeamClusterRemoteAccessTargetDTO;
     userId: string;
-};
+}
 
 export interface RemoteExplorerPreflightContext {
     teamCluster: TeamCluster;
     teamClusterId: string;
     target: TeamClusterRemoteAccessTargetDTO;
-};
+}
 
 export const validateRemoteExplorerSession = (
     sessionService: TeamClusterRemoteAccessSessionService,

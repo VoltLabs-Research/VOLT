@@ -22,12 +22,12 @@ import { injectable } from 'tsyringe';
 
 interface MongoDuplicateKeyError {
     code?: number;
-};
+}
 
 interface GeneratedServiceCredentials {
     username: string;
     password: string;
-};
+}
 
 const isMongoDuplicateKeyError = (error: unknown): error is MongoDuplicateKeyError => {
     return typeof error === 'object' && error !== null && 'code' in error;
@@ -45,13 +45,8 @@ const createServiceCredentials = (serviceName: string): GeneratedServiceCredenti
 @injectable()
 export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-
-        
         private readonly userRepository: UserRepository
     ){}
 
@@ -140,4 +135,4 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             enrollmentToken
         });
     }
-};
+}

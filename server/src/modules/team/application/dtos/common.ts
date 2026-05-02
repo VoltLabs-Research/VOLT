@@ -3,21 +3,21 @@ import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persiste
 
 export interface TeamScopedInputDTO {
     teamId: string;
-};
+}
 
 export interface TeamUserScopedInputDTO extends TeamScopedInputDTO {
     userId: string;
-};
+}
 
-export interface PaginatedTeamScopedInputDTO extends TeamScopedInputDTO, PaginationOptions {};
+export interface PaginatedTeamScopedInputDTO extends TeamScopedInputDTO, PaginationOptions {}
 
 export interface UserScopedInputDTO {
     userId: string;
-};
+}
 
 export interface ProviderScopedInputDTO extends TeamScopedInputDTO {
     provider: string;
-};
+}
 
 export type EntityIdInputDTO<TKey extends string> = {
     [Key in TKey]: string;
@@ -37,7 +37,7 @@ export type TeamScopedPaginatedOutputDTO<TData> = PaginatedOutputDTO<TData>;
 
 export interface MessageOutputDTO {
     message: string;
-};
+}
 
 export type EntityPropsOutputDTO<TProps> = PersistedEntityDTO<TProps>;
 
@@ -45,4 +45,4 @@ export type PaginatedOutputDTO<TData> = PaginatedResult<TData>;
 
 export interface OperationSuccessDTO {
     success: boolean;
-};
+}

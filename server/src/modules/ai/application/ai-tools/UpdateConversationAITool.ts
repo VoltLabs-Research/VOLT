@@ -15,7 +15,6 @@ export class UpdateConversationAITool extends AITool {
     });
 
     constructor(
-        
         protected readonly useCase: UpdateAIConversationUseCase
     ) {
         super();
@@ -31,4 +30,4 @@ export class UpdateConversationAITool extends AITool {
         if (!result.success) throw result.error;
         return result.value;
     }
-};
+}

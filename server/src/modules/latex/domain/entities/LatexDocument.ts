@@ -4,7 +4,7 @@ interface PopulatedLatexUser {
     lastName?: string;
     email?: string;
     avatar?: string;
-};
+}
 
 export interface LatexDocumentProps {
     team: string;
@@ -14,12 +14,12 @@ export interface LatexDocumentProps {
     folder: string | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface LatexDocument {
     readonly _id: string;
     props: LatexDocumentProps;
-};
+}
 
 export const createLatexDocument = (_id: string, props: LatexDocumentProps): LatexDocument => ({
     _id,

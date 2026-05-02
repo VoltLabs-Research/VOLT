@@ -24,7 +24,7 @@ import type { MutableRefObject, ReactNode } from 'react';
 interface GizmoColors {
     axisColors: [string, string, string];
     labelColor: string;
-};
+}
 
 interface FractalScenePipelineProps {
     config: FractalSceneConfig;
@@ -40,7 +40,7 @@ interface FractalScenePipelineProps {
     onControlsRef?: (ref: OrbitControlsHandle | null) => void;
     markInteracting: (active: boolean) => void;
     children?: ReactNode;
-};
+}
 
 const FractalScenePipeline = ({
     config,

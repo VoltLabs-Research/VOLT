@@ -12,12 +12,11 @@ interface UpdateAIConversationLookup {
     _id: string;
     teamId: string;
     userId: string;
-};
+}
 
 @Singleton()
 export default class UpdateAIConversationUseCase implements IUseCase<UpdateAIConversationInputDTO, AIConversationDTO, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository
     ) {}
 
@@ -53,4 +52,4 @@ export default class UpdateAIConversationUseCase implements IUseCase<UpdateAICon
             ...updatedConversation.props
         });
     }
-};
+}

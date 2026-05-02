@@ -28,8 +28,7 @@ const computeCapacityBytes = (): number => {
     const defaultMemoryGb = 4;
     const memoryGb = typeof deviceMemory === 'number' && deviceMemory > 0 ? deviceMemory : defaultMemoryGb;
     // Allocate 20% of estimated RAM, capped at 2 GB.
-    const budget = Math.min(2 * 1024 * 1024 * 1024, Math.floor(memoryGb * 1024 * 1024 * 1024 * 0.2));
-    return budget;
+    return Math.min(2 * 1024 * 1024 * 1024, Math.floor(memoryGb * 1024 * 1024 * 1024 * 0.2));
 };
 
 const OPFS_DIR_NAME = 'volt-glb-cache';

@@ -6,7 +6,7 @@ export interface GetListingRowsByAnalysisIdInputDTO {
     page?: number;
     limit?: number;
     sortAsc?: boolean;
-};
+}
 
 export interface ListingRowByAnalysisData {
     _id: string;
@@ -17,9 +17,9 @@ export interface ListingRowByAnalysisData {
     trajectoryName: string;
     timestep: number;
     row: Record<string, unknown>;
-};
+}
 
-export interface GetListingRowsByAnalysisIdOutputDTO extends PaginatedResult<ListingRowByAnalysisData> {};
+export interface GetListingRowsByAnalysisIdOutputDTO extends PaginatedResult<ListingRowByAnalysisData> {}
 
 export interface ExportListingRowsByAnalysisIdInputDTO {
     analysisId: string;
@@ -29,14 +29,14 @@ export interface ExportListingRowsByAnalysisIdInputDTO {
     selectedListingIds?: string[];
     selectedSubListingIds?: string[];
     sortAsc?: boolean;
-};
+}
 
 export interface AnalysisListingExportData {
     listingId: string;
     listingName: string;
     rows: Record<string, unknown>[];
     columns: string[];
-};
+}
 
 export interface AnalysisSubListingExportData {
     exposureId: string;
@@ -45,7 +45,7 @@ export interface AnalysisSubListingExportData {
     timestep: number;
     rows: Record<string, unknown>[];
     columns: string[];
-};
+}
 
 export interface ExportListingRowsByAnalysisIdOutputDTO {
     analysisId: string;
@@ -53,4 +53,4 @@ export interface ExportListingRowsByAnalysisIdOutputDTO {
     config?: Record<string, unknown>;
     listings: AnalysisListingExportData[];
     subListings: AnalysisSubListingExportData[];
-};
+}

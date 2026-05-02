@@ -10,7 +10,7 @@ export interface GetPluginListingDocumentsInputDTO {
     page?: number;
     limit?: number;
     sortAsc?: boolean;
-};
+}
 
 export interface ExportPluginListingDocumentsInputDTO {
     pluginId: string;
@@ -21,7 +21,7 @@ export interface ExportPluginListingDocumentsInputDTO {
     exposureName?: string;
     sortAsc?: boolean;
     format?: ExportType;
-};
+}
 
 export interface ColumnDef {
     key?: string;
@@ -29,7 +29,7 @@ export interface ColumnDef {
     title?: string;
     sortable: boolean;
     width?: number;
-};
+}
 
 export interface ListingRowData {
     _id: string;
@@ -39,7 +39,7 @@ export interface ListingRowData {
     exposureId: string;
     trajectoryName: string;
     [key: string]: unknown;
-};
+}
 
 export interface PluginListingDocumentsMeta extends Record<string, unknown> {
     pluginId: string;
@@ -47,7 +47,7 @@ export interface PluginListingDocumentsMeta extends Record<string, unknown> {
     exposureId: string;
     columns: ColumnDef[];
     subListingNames: string[];
-};
+}
 
 export interface PluginListingExportMeta {
     pluginId: string;
@@ -57,13 +57,13 @@ export interface PluginListingExportMeta {
     total: number;
     columns: ColumnDef[];
     format: ExportType;
-};
+}
 
 export interface GetPluginListingDocumentsOutputDTO extends PaginatedResult<ListingRowData> {
     _meta: PluginListingDocumentsMeta;
-};
+}
 
 export interface ExportPluginListingDocumentsOutputDTO {
     meta: PluginListingExportMeta;
     data: ListingRowData[];
-};
+}

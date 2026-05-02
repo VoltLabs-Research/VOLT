@@ -12,7 +12,7 @@ import type { RefObject } from 'react';
 
 interface ChatMessagesPayload {
     messages: UIMessage[];
-};
+}
 
 const createDeferredTransport = () => ({
     sendMessages: async () => {
@@ -64,7 +64,7 @@ interface UseAIChatStreamOptions {
     messagesQueryParams?: ConversationMessagesQueryParams;
     messagesResult: UseQueryResult<PaginatedResponse<AIConversationMessage>>;
     skipNextMessageLoadRef: RefObject<boolean>;
-};
+}
 
 const useAIChatStream = ({
     teamId,

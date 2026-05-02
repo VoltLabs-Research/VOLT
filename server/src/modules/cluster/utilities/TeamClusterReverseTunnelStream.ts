@@ -3,12 +3,12 @@ import { Duplex } from 'node:stream';
 interface TunnelChunk {
     data: Buffer;
     isBinary: boolean;
-};
+}
 
 interface TeamClusterReverseTunnelStreamOptions {
     onWrite: (chunk: TunnelChunk) => void;
     onClose: () => void;
-};
+}
 
 export interface TeamClusterTunnelStream extends Duplex {
     pushChunk(chunk: Buffer): void;
@@ -77,4 +77,4 @@ export class TeamClusterReverseTunnelStream extends Duplex implements TeamCluste
         this.options.onClose();
         callback(error);
     }
-};
+}

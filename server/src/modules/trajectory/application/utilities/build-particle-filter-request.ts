@@ -34,18 +34,16 @@ const buildPropertyCondition = (input: {
     operator?: string;
     value?: string | number;
     exposureId?: string;
-}): ParticleFilterCondition => {
-    return {
-        property: input.property || '',
-        operator: resolveFilterOperator(input.operator),
-        value: Number(input.value ?? 0),
-        ...(input.exposureId ? { exposureId: input.exposureId } : {})
-    };
-};
+}): ParticleFilterCondition => ({
+    property: input.property || '',
+    operator: resolveFilterOperator(input.operator),
+    value: Number(input.value ?? 0),
+    ...(input.exposureId ? { exposureId: input.exposureId } : {})
+});
 
-const resolveCondition = (condition: ParticleFilterConditionDTO): ParticleFilterCondition => {
-    return buildPropertyCondition(condition);
-};
+const resolveCondition = (condition: ParticleFilterConditionDTO): ParticleFilterCondition => (
+    buildPropertyCondition(condition)
+);
 
 export const buildParticleFilterRequest = (
     input: ParticleFilterRequestInputLike

@@ -31,7 +31,7 @@ interface ClusterResourceSelectionPanelProps {
     clusterDescription?: string;
     resourcesTitle?: string;
     resourcesDescription?: string;
-};
+}
 
 const getClusterFieldError = (
     isTeamSelected: boolean,

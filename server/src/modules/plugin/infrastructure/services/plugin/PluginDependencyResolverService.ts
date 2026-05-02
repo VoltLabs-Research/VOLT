@@ -13,18 +13,18 @@ import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 interface PluginDependencyTraversalResult {
     dependencies: Plugin[];
     errors: string[];
-};
+}
 
 interface PluginDependencyReference {
     nodeId: string;
     pluginId: string;
-};
+}
 
 interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
     config: Record<string, unknown>;
-};
+}
 
 interface PluginReferenceValidationTarget extends PluginReferenceExecutionRequest {
     allowedPluginIds: string[];

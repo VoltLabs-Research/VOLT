@@ -1,5 +1,4 @@
-import { ColorGradient } from '../../hooks/use-color-coding';
-import useColorCoding from '../../hooks/use-color-coding';
+import useColorCoding, { ColorGradient } from '../../hooks/use-color-coding';
 import GradientPreview from '../GradientPreview';
 
 import { memo } from 'react';
@@ -10,7 +9,7 @@ import Stack from '@/shared/presentation/primitives/Stack';
 interface SelectOption {
     value: string;
     title: string;
-};
+}
 
 interface SelectFieldConfig {
     key: string;
@@ -18,27 +17,27 @@ interface SelectFieldConfig {
     value: string;
     onChange: (value: string) => void;
     options: SelectOption[];
-};
+}
 
 interface NumberFieldConfig {
     key: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
-};
+}
 
 interface BooleanFieldConfig {
     key: string;
     label: string;
     value: boolean;
     onChange: (value: boolean) => void;
-};
+}
 
 interface ColorCodingProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-};
+}
 
 interface ColorCodingFormProps {
     propertyValue: string;
@@ -57,7 +56,7 @@ interface ColorCodingFormProps {
     setAutomaticRange: (value: boolean) => void;
     symmetricRange: boolean;
     setSymmetricRange: (value: boolean) => void;
-};
+}
 
 const ColorCodingForm = ({
     propertyValue,

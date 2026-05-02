@@ -13,7 +13,6 @@ export default class CompleteTeamClusterDeletionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

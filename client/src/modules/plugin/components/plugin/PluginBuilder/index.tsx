@@ -24,7 +24,7 @@ const nodeTypesList = Object.values(NODE_CONFIGS);
 interface PluginBuilderProps {
     onBack: () => void;
     bottomSidebarContent?: ReactNode;
-};
+}
 
 const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => {
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');

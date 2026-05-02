@@ -17,7 +17,7 @@ interface InlineSubListingViewProps {
     activeName: string;
     onActiveNameChange: (name: string) => void;
     onClose: () => void;
-};
+}
 
 const MIN_WIDTH_BY_KIND: Record<InferredCellKind, number> = {
     empty: 80,

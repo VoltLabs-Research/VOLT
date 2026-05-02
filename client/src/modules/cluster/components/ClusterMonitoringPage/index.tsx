@@ -13,7 +13,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
 interface IdleCallbackHandle {
     cancel: () => void;
-};
+}
 
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/CpuDistribution'));
 const DiskOperations = lazy(() => import('@/modules/cluster/components/DiskOperations'));

@@ -12,12 +12,11 @@ import { injectable } from 'tsyringe';
 interface GetTeamByIdInput {
     teamId: string;
     options?: Pick<FindOptions<unknown>, 'populate' | 'select'>;
-};
+}
 
 @injectable()
 export default class GetTeamByIdUseCase implements IUseCase<GetTeamByIdInput, PersistedOutput<TeamProps>, ApplicationError> {
     constructor(
-        
         private readonly repository: TeamRepository
     ) {}
 
@@ -31,4 +30,4 @@ export default class GetTeamByIdUseCase implements IUseCase<GetTeamByIdInput, Pe
         }
         return Result.ok(toPersistedOutput(entity));
     }
-};
+}

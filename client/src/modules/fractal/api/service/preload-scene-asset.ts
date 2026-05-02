@@ -4,7 +4,7 @@ import type { ComputeGlbUrlParams } from '@/modules/fractal/api/service/compute-
 
 interface PreloadFractalSceneAssetOptions {
     signal?: AbortSignal;
-};
+}
 
 export const preloadFractalSceneAsset = async (
     params: ComputeGlbUrlParams,

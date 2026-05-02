@@ -4,6 +4,6 @@ export interface AddUsersToGroupInputDTO {
     userId: string;
     chatId: string;
     userIds: string[];
-};
+}
 
-export interface AddUsersToGroupOutputDTO extends PersistedChatDTO {};
+export interface AddUsersToGroupOutputDTO extends PersistedChatDTO {}

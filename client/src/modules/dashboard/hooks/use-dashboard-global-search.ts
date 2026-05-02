@@ -27,12 +27,12 @@ export interface DashboardGlobalSearchItem {
     subtitle: string;
     path: string;
     teamId?: string;
-};
+}
 
 export interface DashboardGlobalSearchSection {
     key: GlobalSearchSectionKey;
     items: DashboardGlobalSearchItem[];
-};
+}
 
 const ensureArray = <T>(value: T[] | undefined | null): T[] => {
     if (Array.isArray(value)) {

@@ -62,7 +62,7 @@ interface AnalysisTreeNodeProps {
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
-};
+}
 
 const SCENE_ICON_COLOR = 'var(--accent-blue)';
 

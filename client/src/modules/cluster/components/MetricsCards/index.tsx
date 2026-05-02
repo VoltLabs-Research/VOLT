@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 
 interface MetricsCardsProps {
     metrics: ClusterMetrics | null;
-};
+}
 
 interface MetricCardItem {
     icon: ReactNode;
@@ -18,7 +18,7 @@ interface MetricCardItem {
     trend: string;
     trendUp: boolean;
     subtitle: string;
-};
+}
 
 const renderTrendIcon = (trendUp: boolean) => {
     if (trendUp) {

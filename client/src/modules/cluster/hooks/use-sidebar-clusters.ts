@@ -22,7 +22,7 @@ interface SidebarClustersResult {
     handleExploreMinio: (cluster: TeamCluster) => void;
     revealCredentials: (password: string) => Promise<void>;
     setCredentialsCluster: (cluster: TeamCluster | null) => void;
-};
+}
 
 /**
  * Lightweight hook for sidebar cluster actions. Fetches the team's clusters

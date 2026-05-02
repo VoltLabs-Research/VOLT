@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, PersistedChatDTO[], ApplicationError> {
     constructor(
-        
         private chatRepo: ChatRepository,
     ){}
 
@@ -17,4 +16,4 @@ export class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, Persi
         const result = await this.chatRepo.findChatsByUserId(input.userId);
         return Result.ok(result);
     }
-};
+}

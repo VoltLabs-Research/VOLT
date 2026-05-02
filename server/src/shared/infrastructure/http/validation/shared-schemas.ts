@@ -3,7 +3,7 @@ import { z } from 'zod/v4';
 interface PaginationQuerySchemaOptions {
     maxLimit: number;
     includeSearch?: boolean;
-};
+}
 
 export const objectIdSchema = z.string().trim().regex(/^[a-fA-F0-9]{24}$/);
 export const domainExposureIdSchema = z.string().trim().min(1);

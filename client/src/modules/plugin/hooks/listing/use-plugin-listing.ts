@@ -30,7 +30,7 @@ interface PluginListingContext {
     trajectoryId?: string;
     analysisId?: string;
     teamId?: string;
-};
+}
 
 interface UsePluginListingReturn {
     columns: ColumnConfig[];
@@ -40,7 +40,7 @@ interface UsePluginListingReturn {
     subListingNames: string[];
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
     getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
-};
+}
 
 const usePluginListing = ({
     pluginId,

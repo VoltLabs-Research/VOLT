@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetPasswordInfoUseCase implements IUseCase<GetPasswordInfoInputDTO, GetPasswordInfoOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly userRepository: UserRepository
     ) {}
 
@@ -27,4 +26,4 @@ export default class GetPasswordInfoUseCase implements IUseCase<GetPasswordInfoI
             lastChanged: user.props.passwordChangedAt?.toISOString()
         });
     }
-};
+}

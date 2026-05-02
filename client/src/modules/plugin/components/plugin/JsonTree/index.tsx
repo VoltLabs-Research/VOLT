@@ -11,12 +11,12 @@ interface TruncatedArray {
     totalLength: number;
     preview: unknown[];
 
-};
+}
 
 interface JsonTreeProps {
     data: JsonTreeData;
     defaultExpanded?: boolean;
-};
+}
 
 const isTruncatedArray = (value: unknown): value is TruncatedArray => {
     if (!isRecord(value)) {

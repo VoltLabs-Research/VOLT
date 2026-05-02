@@ -3,4 +3,4 @@ export interface IDomainEvent<TPayload = unknown> {
     name: string;
     eventId: string;
     payload: TPayload;
-};
+}

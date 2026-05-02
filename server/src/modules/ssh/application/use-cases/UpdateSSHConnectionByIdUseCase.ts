@@ -18,13 +18,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
-        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
-
-        
         private readonly sshConnRepository: SSHConnectionRepository,
-
-        
         private readonly sshCredentialsCipher: SSHCredentialsCipher
     ){}
 
@@ -89,4 +84,4 @@ export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnect
 
         return Result.ok(toSafeSSHConnectionDTO(result));
     }
-};
+}

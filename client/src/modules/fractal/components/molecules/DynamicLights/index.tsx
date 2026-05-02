@@ -9,21 +9,21 @@ import type { FC } from 'react';
 interface ResolvedLightConfig {
     color: Color;
     position: [number, number, number];
-};
+}
 
 interface ResolvedSpotLightConfig extends ResolvedLightConfig {
     target: [number, number, number];
-};
+}
 
 interface ResolvedHemisphereLightConfig {
     sky: Color;
     ground: Color;
     position: [number, number, number];
-};
+}
 
 interface ResolvedRectAreaLightConfig extends ResolvedLightConfig {
     lookAt: [number, number, number];
-};
+}
 
 export { LightingPreset };
 
@@ -31,14 +31,14 @@ interface DynamicLightsProps {
     settings?: LightsState;
     preset?: LightingPreset;
     darkTheme: boolean;
-};
+}
 
 interface PresetLightColors {
     ambientIntensity: number;
     keyColor: string;
     fillColor: string;
     hemisphereGroundColor: string;
-};
+}
 
 interface PresetShadowConfig {
     mapSize: [number, number];
@@ -49,7 +49,7 @@ interface PresetShadowConfig {
     right: number;
     top: number;
     bottom: number;
-};
+}
 
 const TRAJECTORY_PRESET_SHADOW: PresetShadowConfig = {
     mapSize: [1024, 1024],

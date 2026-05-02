@@ -7,7 +7,7 @@ import type { TypingUser } from '@/modules/chat/api/entities/shared/chat-events'
 
 interface TypingIndicatorProps {
     users: TypingUser[];
-};
+}
 
 const TypingIndicator = ({ users }: TypingIndicatorProps) => {
     const typingUsers = users.filter((u) => u.isTyping);

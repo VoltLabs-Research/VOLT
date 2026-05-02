@@ -3,7 +3,7 @@ export interface ExtractedFile {
     originalname: string;
     size: number;
     mimetype?: string;
-};
+}
 
 export interface UploadedFile {
     path?: string;
@@ -11,7 +11,7 @@ export interface UploadedFile {
     originalname?: string;
     mimetype?: string;
     buffer?: Buffer;
-};
+}
 
 export interface IFileExtractorService {
     /**
@@ -24,4 +24,4 @@ export interface IFileExtractorService {
      * Recursively gets all files in a directory.
      */
     getFilesRecursive(dir: string): Promise<string[]>;
-};
+}

@@ -42,27 +42,27 @@ type ProviderFactoryProvider = Exclude<AIProvider, AIProvider.Ollama>;
 
 interface ProviderFactoryOptions {
     apiKey: string;
-};
+}
 
 interface ProviderConfig {
     provider: AIProvider;
     model: string;
     apiKey: string;
     metadata?: Record<string, unknown>;
-};
+}
 
 type ModelInputMessage = Omit<AIConversationMessage, 'id'>;
 
 interface AIStreamToolCall {
     toolName: string;
     input: unknown;
-};
+}
 
 interface AIStreamToolResult {
     toolName: string;
     input: unknown;
     output: unknown;
-};
+}
 
 type ProviderFactory = (options: ProviderFactoryOptions) => (modelId: string) => LanguageModel;
 
@@ -120,18 +120,13 @@ class AISDKReplyStream implements AIChatReplyStream {
     pipeToResponse(response: Response): void {
         this.result.pipeUIMessageStreamToResponse(response);
     }
-};
+}
 
 @Singleton()
 export default class AISDKChatTransport implements IAIChatTransport {
     constructor(
-        
         private readonly toolService: AIToolService,
-
-        
         private readonly integrationRepo: TeamAIIntegrationRepository,
-
-        
         private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
@@ -359,4 +354,4 @@ export default class AISDKChatTransport implements IAIChatTransport {
             `Provider "${provider}" is not supported. Available: ${AI_PROVIDERS.join(', ')}`
         );
     }
-};
+}

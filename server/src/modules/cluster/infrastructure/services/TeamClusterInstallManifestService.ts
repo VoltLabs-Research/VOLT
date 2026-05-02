@@ -16,7 +16,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import path from 'node:path';
-
 import type {
     TeamClusterInstallManifestDTO,
     TeamClusterInstallManifestFileDTO,
@@ -27,10 +26,7 @@ import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/m
 @Singleton()
 export default class TeamClusterInstallManifestService {
     constructor(
-        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository
     ){}
 
@@ -132,4 +128,4 @@ export default class TeamClusterInstallManifestService {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
     }
-};
+}

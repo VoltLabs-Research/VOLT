@@ -1,6 +1,5 @@
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
-import type { Analysis } from '@modules/analysis/domain/entities/Analysis';
-import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import type { Analysis, AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -17,19 +16,16 @@ import { injectable } from 'tsyringe';
 
 interface TeamAnalysesFilter extends Partial<AnalysisProps> {
     team: string;
-};
+}
 
 interface AnalysisSort extends Record<string, 1 | -1> {
     createdAt: -1;
-};
+}
 
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        
         private analysisRepo: AnalysisRepository,
-
-        
         private trajectoryRepo: TrajectoryRepository
     ) {}
 
@@ -97,4 +93,4 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             data: mappedData
         });
     }
-};
+}

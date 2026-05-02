@@ -12,7 +12,7 @@ import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketI
 
 interface SubscribePayload extends Record<string, unknown> {
     whiteboardId: string;
-};
+}
 
 interface WhiteboardPatchPayload extends Record<string, unknown> {
     whiteboardId: string;
@@ -21,7 +21,7 @@ interface WhiteboardPatchPayload extends Record<string, unknown> {
     elements: Record<string, unknown>[];
     appState: Record<string, unknown>;
     elementOrder?: string[];
-};
+}
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -32,7 +32,6 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly realtimeStateService: WhiteboardRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);

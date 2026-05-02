@@ -8,4 +8,4 @@ export interface LatexAssetDTO {
     mimetype: string;
     size: number;
     createdAt: Date;
-};
+}

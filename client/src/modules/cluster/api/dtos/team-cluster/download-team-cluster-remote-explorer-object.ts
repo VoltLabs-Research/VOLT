@@ -11,4 +11,4 @@ export interface DownloadTeamClusterRemoteExplorerObjectInputDTO {
     sessionId: string;
     target: TeamClusterRemoteAccessTarget;
     path: string;
-};
+}

@@ -4,7 +4,7 @@ export interface TeamUsageOverviewAnalytics {
     totalRequests: number;
     successRequests: number;
     avgResponseTime: number;
-};
+}
 
 export interface TeamUsagePerKeyAnalytics {
     secretKeyId: string;
@@ -12,30 +12,30 @@ export interface TeamUsagePerKeyAnalytics {
     successRequests: number;
     avgResponseTime: number;
     lastRequestAt: Date | null;
-};
+}
 
 export interface TeamUsageDailyAnalytics {
     date: string;
     secretKeyId: string;
     count: number;
-};
+}
 
 export interface TeamUsageAnalytics {
     overview: TeamUsageOverviewAnalytics;
     perKey: TeamUsagePerKeyAnalytics[];
     daily: TeamUsageDailyAnalytics[];
     topEndpoints: TeamUsageMetrics['topEndpoints'];
-};
+}
 
 export interface KeyUsageOverviewAnalytics extends TeamUsageOverviewAnalytics {
     requests24h: number;
     requests7d: number;
-};
+}
 
 export interface UsageCountByLabelAnalytics {
     label: string;
     count: number;
-};
+}
 
 export interface KeyUsageRecentRequestAnalytics {
     method: string;
@@ -44,7 +44,7 @@ export interface KeyUsageRecentRequestAnalytics {
     responseTime: number;
     ip: string;
     createdAt: Date;
-};
+}
 
 export interface KeyUsageAnalytics {
     overview: KeyUsageOverviewAnalytics;
@@ -54,4 +54,4 @@ export interface KeyUsageAnalytics {
     statusDistribution: KeyUsageMetrics['statusDistribution'];
     peakHour: number | null;
     recentRequests: KeyUsageRecentRequestAnalytics[];
-};
+}

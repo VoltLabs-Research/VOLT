@@ -15,4 +15,4 @@ export interface CreateContainerParams {
     cmd?: string[];
     mountDockerSocket?: boolean;
     useImageCmd?: boolean;
-};
+}

@@ -22,4 +22,4 @@ export default class SimulationCellRepository
         const inserted = await this.model.insertMany(persistenceDocs, { ordered: true });
         return inserted.map((doc) => this.mapper.toDomain(doc as SimulationCellDocument));
     }
-};
+}

@@ -8,10 +8,7 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ScriptingNotebook> {
     constructor(
-        
         protected readonly repository: ScriptingNotebookRepository,
-
-        
         private readonly deleteScriptingNotebookUseCase: DeleteScriptingNotebookUseCase
     ) {
         super();
@@ -23,4 +20,4 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
             teamId: event.payload.teamId
         });
     }
-};
+}

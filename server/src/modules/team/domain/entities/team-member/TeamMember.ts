@@ -7,14 +7,14 @@ export interface PopulatedTeamMemberUser {
     lastSeenAt?: Date;
     createdAt?: Date;
     isOnline?: boolean;
-};
+}
 
 export interface PopulatedTeamMemberRole {
     _id: string;
     name?: string;
     permissions?: string[];
     isSystem?: boolean;
-};
+}
 
 export interface TeamMemberProps {
     team: string | { _id: string };
@@ -23,15 +23,15 @@ export interface TeamMemberProps {
     joinedAt: Date;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
-export const isPopulatedTeamMemberUser = (value: TeamMemberProps['user']): value is PopulatedTeamMemberUser => {
-    return typeof value !== 'string';
-};
+export const isPopulatedTeamMemberUser = (value: TeamMemberProps['user']): value is PopulatedTeamMemberUser => (
+    typeof value !== 'string'
+);
 
-export const isPopulatedTeamMemberRole = (value: TeamMemberProps['role']): value is PopulatedTeamMemberRole => {
-    return typeof value !== 'string';
-};
+export const isPopulatedTeamMemberRole = (value: TeamMemberProps['role']): value is PopulatedTeamMemberRole => (
+    typeof value !== 'string'
+);
 
 export const getTeamMemberUserId = (value: TeamMemberProps['user']): string => {
     if (typeof value === 'string') {
@@ -66,4 +66,4 @@ export default class TeamMember {
     public get id(): string {
         return this._id;
     }
-};
+}

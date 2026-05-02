@@ -32,7 +32,7 @@ interface ScreenshotCaptureProps {
     orbitRef?: MutableRefObject<OrbitControlsHandle | null>;
     modelWorldBounds?: ModelWorldBounds | null;
     screenshotComposition?: ScreenshotComposition;
-};
+}
 
 interface ScreenshotViewSnapshot {
     position: Vector3;

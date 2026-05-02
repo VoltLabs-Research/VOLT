@@ -21,12 +21,9 @@ import { inject } from 'tsyringe';
 export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, CreatePluginOutputDTO> {
     constructor(
         private pluginRepository: PluginRepository,
-
-        
         private readonly workflowValidator: WorkflowValidatorService,
-
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
         const validation = await this.workflowValidator.validate(input.workflow, undefined, WorkflowValidationMode.Draft);
@@ -59,4 +56,4 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
             plugin: mapPluginToPersistedDTO(plugin)
         });
     }
-};
+}

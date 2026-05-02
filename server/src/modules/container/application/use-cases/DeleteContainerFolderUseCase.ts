@@ -23,11 +23,8 @@ export class DeleteContainerFolderUseCase
     >
     implements IUseCase<DeleteContainerFolderInputDTO, DeleteContainerFolderOutputDTO, ApplicationError> {
     constructor(
-        
         containerFolderRepository: ContainerFolderRepository,
-        
         containerRepository: ContainerRepository,
-        
         deleteContainerUseCase: DeleteContainerUseCase
     ) {
         super(

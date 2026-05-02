@@ -17,10 +17,7 @@ export default class GetAnalysisFrameLogUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService
     ) {}
 

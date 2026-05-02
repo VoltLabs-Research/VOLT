@@ -2,7 +2,7 @@ interface BuildAtomsViewerPathParams {
     trajectoryId: string;
     timestep: number;
     analysisId?: string;
-};
+}
 
 export const buildAtomsViewerPath = ({
     trajectoryId,

@@ -14,7 +14,7 @@ interface AvatarUploadProps {
     avatarUrl: string | null;
     isUploading: boolean;
     onUpload: (file: File) => Promise<void>;
-};
+}
 
 const AvatarUpload = ({
     avatarUrl,

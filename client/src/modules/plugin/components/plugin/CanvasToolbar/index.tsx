@@ -15,7 +15,7 @@ interface CanvasToolbarProps {
     saveStatus: SaveStatus;
     onSave: () => void;
     zoom: number;
-};
+}
 
 const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     const { zoomIn, zoomOut, fitView } = useReactFlow();

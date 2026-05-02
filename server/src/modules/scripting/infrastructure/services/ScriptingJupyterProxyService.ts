@@ -40,36 +40,36 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 interface ProxyableRequest extends Request {
     rawBody?: Buffer;
-};
+}
 
 interface AuthorizedProxyContext {
     teamId: string;
     runtimeNotebookId: string;
     teamClusterId: string;
     userId: string;
-};
+}
 
 interface TeamMemberRolePopulate {
     path: 'role';
     select: ['permissions'];
-};
+}
 
 interface ProxyTarget {
     proxiedPath: string;
     rawQuery: string;
-};
+}
 
 interface AuthorizedProxyCacheEntry {
     expiresAt: number;
     contextPromise?: Promise<AuthorizedProxyContext>;
     contextValue?: AuthorizedProxyContext;
-};
+}
 
 interface NotebookRuntimeCacheEntry {
     expiresAt: number;
     runtimePromise?: Promise<TeamClusterDaemonNotebookRuntime>;
     runtimeValue?: TeamClusterDaemonNotebookRuntime;
-};
+}
 
 interface HttpProxySessionEntry {
     agent: http.Agent;
@@ -80,7 +80,7 @@ interface HttpProxySessionEntry {
     runtimeNotebookId: string;
     teamClusterId: string;
     tunnel: Duplex;
-};
+}
 
 const JUPYTER_NATIVE_TOKEN_QUERY_PARAM = 'token';
 const UPGRADE_ACTION = Action.READ;
@@ -163,16 +163,9 @@ export class ScriptingJupyterProxyService {
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
 
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly accessTokenService: ScriptingJupyterAccessTokenService
     ) {
         this.startHttpProxySessionSweep();
@@ -1024,4 +1017,4 @@ export class ScriptingJupyterProxyService {
 
         return [value];
     }
-};
+}

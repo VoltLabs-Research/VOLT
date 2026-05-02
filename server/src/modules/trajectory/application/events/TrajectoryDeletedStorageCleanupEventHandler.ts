@@ -16,14 +16,8 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-
-        
         private readonly storagePlacementRepository: StoragePlacementRepository,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 
@@ -84,4 +78,4 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
             );
         });
     }
-};
+}

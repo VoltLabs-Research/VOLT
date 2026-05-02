@@ -3,11 +3,11 @@ import { normalizeError, sendNormalizedError } from '@shared/infrastructure/http
 import type { Response } from 'express';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-export default class BaseResponse{
+export default class BaseResponse {
     /**
      * Success respones for single item.
      */
-    static success<T>(res: Response, data: T, statusCode: number = 200): void{
+    static success<T>(res: Response, data: T, statusCode: number = 200): void {
         res.status(statusCode).json({
             status: 'success',
             data
@@ -17,7 +17,7 @@ export default class BaseResponse{
     /**
      * Paginated response.
      */
-    static paginated<T>(res: Response, result: PaginatedResult<T>, metadata?: Record<string, unknown>, statusCode: number = 200): void{
+    static paginated<T>(res: Response, result: PaginatedResult<T>, metadata?: Record<string, unknown>, statusCode: number = 200): void {
         res.status(statusCode).json({
             status: 'success',
             data: result.data,
@@ -40,7 +40,7 @@ export default class BaseResponse{
         message: string,
         statusCode: number = HttpStatus.InternalServerError,
         code?: string
-    ): void{
+    ): void {
         sendNormalizedError(res, {
             ...(code ? { code } : {}),
             message,
@@ -60,4 +60,4 @@ export default class BaseResponse{
     static fromError(res: Response, error: unknown): void {
         sendNormalizedError(res, normalizeError(error));
     }
-};
+}

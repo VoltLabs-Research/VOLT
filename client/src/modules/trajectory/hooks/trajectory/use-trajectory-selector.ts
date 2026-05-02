@@ -9,14 +9,14 @@ import type { Trajectory } from '../../api/entities/trajectory';
 export interface UseTrajectorySelectorOptions {
     allowEmpty?: boolean;
     emptyLabel?: string;
-};
+}
 
 export interface UseTrajectorySelectorReturn {
     options: SelectOption[];
     isLoading: boolean;
     hasMore: boolean;
     loadMore: () => void;
-};
+}
 
 const DEFAULT_LIMIT = 20;
 

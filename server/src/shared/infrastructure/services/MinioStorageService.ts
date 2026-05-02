@@ -12,7 +12,7 @@ import type { MinioClientConfig } from '@core/config/minio';
 
 interface MinioError {
     code?: string;
-};
+}
 
 const isMinioError = (error: unknown): error is MinioError => {
     return typeof error === 'object' && error !== null && 'code' in error;
@@ -105,7 +105,7 @@ export default class MinioStorageService implements IStorageService {
         for await (const obj of stream) {
             if (obj.name) yield obj.name;
         }
-    };
+    }
 
     async deleteByPrefix(bucket: string, prefix: string): Promise<void> {
         const stream = this.client.listObjectsV2(bucket, prefix, true);
@@ -128,4 +128,4 @@ export default class MinioStorageService implements IStorageService {
         logger.info(`@minio-storage-service: deleting batch of ${keys.length} items from ${bucket}`);
         await this.client.removeObjects(bucket, keys);
     }
-};
+}

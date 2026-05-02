@@ -11,13 +11,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class LeaveTeamUseCase implements IUseCase<TeamUserScopedInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly teamMembershipService: TeamMembershipService
     ){}
 
@@ -44,4 +39,4 @@ export default class LeaveTeamUseCase implements IUseCase<TeamUserScopedInputDTO
 
         return Result.ok(null);
     }
-};
+}

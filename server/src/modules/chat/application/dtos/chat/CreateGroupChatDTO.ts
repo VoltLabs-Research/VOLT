@@ -6,6 +6,6 @@ export interface CreateGroupChatInputDTO {
     groupName: string;
     groupDescription?: string;
     participantIds: string[];
-};
+}
 
-export interface CreateGroupChatOutputDTO extends PersistedChatDTO {};
+export interface CreateGroupChatOutputDTO extends PersistedChatDTO {}

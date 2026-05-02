@@ -22,7 +22,7 @@ import type { StateCreator } from 'zustand';
 
 export interface PerformanceSlice {
     performanceSettings: PerformanceSettingsStore;
-};
+}
 
 const getInitialPerformanceSettings = (): PerformanceSettingsState => {
     return getValidatedPerformanceSettingsState(getPerformancePresetState(DEFAULT_PERFORMANCE_PRESET));

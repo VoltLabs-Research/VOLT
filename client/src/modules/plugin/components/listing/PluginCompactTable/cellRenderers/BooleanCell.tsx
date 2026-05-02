@@ -1,6 +1,6 @@
 interface BooleanCellProps {
     value: unknown;
-};
+}
 
 const BooleanCell = ({ value }: BooleanCellProps) => {
     if(value === true){

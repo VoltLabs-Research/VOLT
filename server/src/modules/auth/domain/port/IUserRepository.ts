@@ -4,7 +4,7 @@ import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 
 export interface UserWithPassword extends User {
     password: string;
-};
+}
 
 export interface IUserRepository extends IBaseRepository<User, UserProps>{
     /**
@@ -64,4 +64,4 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      * Update last login timestamp.
      */
     updateLastLogin(userId: string): Promise<void>;
-};
+}

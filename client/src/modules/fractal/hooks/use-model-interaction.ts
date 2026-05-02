@@ -4,18 +4,18 @@ import useModelKeyboardInteraction from '@/modules/fractal/hooks/use-model-keybo
 
 interface RotatableObject {
     rotation: Euler;
-};
+}
 
 interface InteractionState {
     currentRotation: Euler;
     targetRotation: Euler | null;
     selectedObject: RotatableObject | null;
-};
+}
 
 interface UseModelInteractionParams {
     onSelect?: () => void;
     onInvalidate?: () => void;
-};
+}
 
 interface UseModelInteractionReturn {
     isSelected: boolean;
@@ -30,7 +30,7 @@ interface UseModelInteractionReturn {
     rotateZPositive: () => void;
     setSelectedObject: (target: RotatableObject | null) => void;
     onHoverChange: (hovered: boolean) => void;
-};
+}
 
 const LERP_ROTATION = 0.18;
 const ROTATION_STEP = Math.PI / 24;

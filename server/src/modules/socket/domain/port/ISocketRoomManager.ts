@@ -10,7 +10,7 @@ export interface PresenceUser {
     email?: string;
     isAnonymous: boolean;
     [key: string]: unknown;
-};
+}
 
 /**
  * Port interface for managing socket rooms.

@@ -29,29 +29,22 @@ const REMOVABLE_STATUSES = new Set<string>([
 interface ClusterActionResponse {
     affectedJobs: number;
     affectedJobIds: string[];
-};
+}
 
 interface PartitionedJobs {
     daemonJobs: TeamJobSummary[];
     localJobs: TeamJobSummary[];
-};
+}
 
 @Singleton()
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        
         private readonly teamJobsService: TeamJobsService,
-
-        
         private readonly trajectoryBackgroundProcessor: TrajectoryBackgroundProcessor
     ) {}
 

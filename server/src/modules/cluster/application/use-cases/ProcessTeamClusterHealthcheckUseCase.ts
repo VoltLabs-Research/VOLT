@@ -15,7 +15,6 @@ export default class ProcessTeamClusterHealthcheckUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

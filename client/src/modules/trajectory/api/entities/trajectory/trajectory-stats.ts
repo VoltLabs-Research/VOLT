@@ -3,4 +3,4 @@ export interface TrajectoryStats {
     totalFrames: number;
     totalSize: number;
     atomTypes: string[];
-};
+}

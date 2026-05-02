@@ -17,7 +17,7 @@ import { GoPersonAdd } from 'react-icons/go';
 interface DashboardHeaderProps {
     setSidebarOpen: (status: boolean) => void;
     globalSearchBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
-};
+}
 
 const DashboardHeader = ({
     setSidebarOpen,

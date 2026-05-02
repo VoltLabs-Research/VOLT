@@ -9,7 +9,7 @@ interface InvitationRowProps {
     createdAt: Date | string;
     onCancel: () => void;
     isLoading?: boolean;
-};
+}
 
 export const InvitationRow = ({
     email,

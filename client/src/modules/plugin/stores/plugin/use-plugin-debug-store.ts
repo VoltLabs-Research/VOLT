@@ -6,7 +6,7 @@ export enum DebugNodeStatus {
     Completed = 'completed',
     Failed = 'failed',
     Skipped = 'skipped'
-};
+}
 
 type DebugContextSnapshot = Record<string, Record<string, unknown>>;
 
@@ -30,7 +30,7 @@ export interface DebugNodeState {
     reason?: string;
     nestedTrace?: DebugTraceNode[];
     logSegments?: DebugExecutionLogSegment[];
-};
+}
 
 export interface DebugTraceNode {
     traceId: string;
@@ -50,7 +50,7 @@ export interface DebugTraceNode {
 interface ExecutionOrderItem {
     nodeId: string;
     type: string;
-};
+}
 
 interface PluginDebugState {
     // Session state
@@ -83,7 +83,7 @@ interface PluginDebugState {
     // Results
     totalDuration: number | null;
     sessionError: string | null;
-};
+}
 
 interface PluginDebugActions {
     // Session lifecycle
@@ -103,7 +103,7 @@ interface PluginDebugActions {
     setDebugConfig: (config: Record<string, unknown>) => void;
     setShowArgumentsPanel: (show: boolean) => void;
     reset: () => void;
-};
+}
 
 type PluginDebugStore = PluginDebugState & PluginDebugActions;
 

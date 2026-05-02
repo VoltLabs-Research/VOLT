@@ -22,7 +22,7 @@ interface DashboardSidebarProps {
     collapsed: boolean;
     onToggleCollapse: () => void;
     onExpandSidebar: () => void;
-};
+}
 
 const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse, onExpandSidebar }: DashboardSidebarProps) => {
     const [settingsExpanded, setSettingsExpanded] = useState(false);

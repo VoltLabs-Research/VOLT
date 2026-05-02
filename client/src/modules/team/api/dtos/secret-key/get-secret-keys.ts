@@ -3,4 +3,4 @@ export interface GetSecretKeysInputDTO {
     page?: number;
     limit?: number;
     sort?: string;
-};
+}

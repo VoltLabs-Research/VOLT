@@ -8,7 +8,7 @@ interface SelectedTimestepsFieldProps {
     availableTimesteps: number[];
     selectedTimesteps?: number[];
     onChange: (selectedTimesteps?: number[]) => void;
-};
+}
 
 const SelectedTimestepsField = ({
     availableTimesteps,

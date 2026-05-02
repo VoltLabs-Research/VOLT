@@ -7,4 +7,4 @@ export interface ListTeamSceneArtifactsInputDTO {
     type?: SceneArtifactSourceType;
     analysisId?: string;
     timestep?: number;
-};
+}

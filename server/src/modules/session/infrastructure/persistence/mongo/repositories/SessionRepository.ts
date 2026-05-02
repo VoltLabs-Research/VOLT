@@ -72,4 +72,4 @@ export default class SessionRepository
 
         return sessionMapper.toDomain(doc);
     }
-};
+}

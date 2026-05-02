@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 interface UseDashboardHeaderContentOptions {
     globalSearchBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
-};
+}
 
 const useDashboardHeaderContent = ({
     globalSearchBreadcrumb

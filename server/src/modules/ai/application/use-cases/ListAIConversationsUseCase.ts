@@ -10,12 +10,11 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 interface ListAIConversationsFilter extends Partial<AIConversationProps> {
     teamId: string;
     userId: string;
-};
+}
 
 @Singleton()
 export default class ListAIConversationsUseCase implements IUseCase<ListAIConversationsInputDTO, PaginatedResult<AIConversationDTO>, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository
     ) {}
 
@@ -53,4 +52,4 @@ export default class ListAIConversationsUseCase implements IUseCase<ListAIConver
             data
         });
     }
-};
+}

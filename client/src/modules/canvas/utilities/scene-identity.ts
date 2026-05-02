@@ -10,7 +10,7 @@ interface MaybeParticleFilterCondition {
     operator?: string;
     value?: number;
     exposureId?: string;
-};
+}
 
 interface MaybeScene {
     sceneType?: string;
@@ -26,7 +26,7 @@ interface MaybeScene {
     startValue?: string;
     endValue?: string;
     gradient?: string;
-};
+}
 
 const normalizeParticleFilterConditionSignature = (condition: MaybeParticleFilterCondition): Record<string, unknown> => {
     return {

@@ -20,7 +20,7 @@ interface GradientPreviewProps {
     gradient: string;
     startValue: number;
     endValue: number;
-};
+}
 
 const formatValue = (value: number): string => {
     const absValue = Math.abs(value);

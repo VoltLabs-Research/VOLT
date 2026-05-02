@@ -36,4 +36,4 @@ export class RedisScriptingSessionLock implements IScriptingSessionLock {
             }
         };
     }
-};
+}

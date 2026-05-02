@@ -5,7 +5,7 @@ interface BuildSubListingsPathParams {
     timestep: number;
     subListingNames: string[];
     activeSubListingName?: string;
-};
+}
 
 export const buildSubListingsPath = ({
     trajectoryId,

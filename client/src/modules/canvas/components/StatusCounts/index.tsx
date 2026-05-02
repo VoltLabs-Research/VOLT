@@ -8,7 +8,7 @@ interface StatusCountsProps {
     queued: number;
     running: number;
     completed: number;
-};
+}
 
 const ICON_STYLE = { width: 10, height: 10 };
 

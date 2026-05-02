@@ -20,9 +20,8 @@ export class CreateContainerAITool extends AITool {
     });
 
     constructor(
-        
         protected readonly useCase: CreateContainerUseCase
     ) {
         super();
     }
-};
+}

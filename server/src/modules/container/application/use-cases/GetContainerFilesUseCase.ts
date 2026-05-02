@@ -29,4 +29,4 @@ export class GetContainerFilesUseCase implements IUseCase<GetContainerFilesInput
 
         return teamClusterId;
     }
-};
+}

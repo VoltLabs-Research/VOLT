@@ -12,7 +12,7 @@ import './ArgumentOptionsEditor.css';
 interface ArgumentOptionsEditorProps {
     options: IArgumentOption[];
     onOptionsChange: (nextOptions: IArgumentOption[]) => void;
-};
+}
 
 const KEY_PLACEHOLDER = 'key';
 const LABEL_PLACEHOLDER = 'Human-readable label';
@@ -27,7 +27,7 @@ interface OptionRowProps {
     onLabelChange: (label: string) => void;
     onRemove: () => void;
     onEnterOnLast: () => void;
-};
+}
 
 const OptionRow = ({
     option,

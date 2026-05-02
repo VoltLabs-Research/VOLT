@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('latex-document.created')
 export default class LatexDocumentCreatedEventHandler implements IEventHandler<LatexDocumentCreatedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class LatexDocumentCreatedEventHandler implements IEventHandler<L
             description
         );
     }
-};
+}

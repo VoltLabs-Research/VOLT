@@ -14,12 +14,8 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFolderRepository: LatexFolderRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -87,4 +83,4 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
             ));
         }
     }
-};
+}

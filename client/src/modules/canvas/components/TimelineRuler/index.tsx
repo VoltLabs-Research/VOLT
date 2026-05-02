@@ -5,7 +5,7 @@ interface TimelineRulerTick {
     frame: number;
     major: boolean;
     tone?: TimelineTickTone;
-};
+}
 
 interface TimelineRulerProps {
     rulerRef: RefObject<HTMLDivElement | null>;
@@ -21,7 +21,7 @@ interface TimelineRulerProps {
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
     onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
     onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
-};
+}
 
 const TimelineRuler = ({
     rulerRef,

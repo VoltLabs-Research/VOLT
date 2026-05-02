@@ -14,12 +14,12 @@ enum ProfileSaveState {
     Saving = 'saving',
     Saved = 'saved',
     Error = 'error'
-};
+}
 
 interface ProfileFormProps {
     initialValues: ProfileFormType;
     onUpdate: (data: ProfileFormType) => Promise<void>;
-};
+}
 
 const AUTO_SAVE_DELAY = 1000;
 const PROFILE_FORM_FIELDS: Array<keyof ProfileFormType> = ['fullName', 'email'];

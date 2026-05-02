@@ -1,3 +1,3 @@
-export interface DeleteBinaryInputDTO{
+export interface DeleteBinaryInputDTO {
     pluginId: string;
-};
+}

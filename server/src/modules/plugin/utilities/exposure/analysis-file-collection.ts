@@ -9,12 +9,12 @@ export interface AnalysisFileRef {
     objectName: string;
     type: AnalysisFileType;
     timestep: number;
-};
+}
 
 export interface ExposurePayloadObject {
     objectName: string;
     timestep: number;
-};
+}
 
 interface PrefixCollectionConfig {
     bucket: string;
@@ -22,11 +22,11 @@ interface PrefixCollectionConfig {
     type: AnalysisFileType;
     timestepRegex: RegExp;
     extensionFilter?: string;
-};
+}
 
 interface CollectionOptions {
     ignoreErrors?: boolean;
-};
+}
 
 const sortByTimestepAndName = (left: AnalysisFileRef, right: AnalysisFileRef): number => {
     if (left.timestep !== right.timestep) {

@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('container.deleted')
 export default class ContainerDeletedEventHandler implements IEventHandler<ContainerDeletedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class ContainerDeletedEventHandler implements IEventHandler<Conta
             description
         );
     }
-};
+}

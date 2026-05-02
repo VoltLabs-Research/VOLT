@@ -17,7 +17,7 @@ interface DaemonSubListingRow {
     _id: string;
     row?: Record<string, unknown>;
     [key: string]: unknown;
-};
+}
 
 interface DaemonPaginatedResult {
     data: DaemonSubListingRow[];
@@ -25,7 +25,7 @@ interface DaemonPaginatedResult {
     page: number;
     totalPages: number;
     limit: number;
-};
+}
 
 const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
     subListingName,
@@ -40,10 +40,7 @@ const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
 @injectable()
 export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO> {
     constructor(
-        
         private analysisRepository: AnalysisRepository,
-
-        
         private daemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -100,4 +97,4 @@ export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, Get
             limit: daemonResult.limit || limit
         });
     }
-};
+}

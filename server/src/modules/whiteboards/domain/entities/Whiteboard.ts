@@ -4,7 +4,7 @@ interface PopulatedWhiteboardUser {
     lastName?: string;
     email?: string;
     avatar?: string;
-};
+}
 
 export interface WhiteboardProps {
     team: string;
@@ -16,12 +16,12 @@ export interface WhiteboardProps {
     lastEditedBy?: string | PopulatedWhiteboardUser | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface Whiteboard {
     readonly _id: string;
     props: WhiteboardProps;
-};
+}
 
 export const createWhiteboard = (_id: string, props: WhiteboardProps): Whiteboard => ({
     _id,

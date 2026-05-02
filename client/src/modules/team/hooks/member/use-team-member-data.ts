@@ -7,7 +7,7 @@ interface UseTeamMemberDataOptions {
     teamId?: string | null;
     page?: number;
     limit?: number;
-};
+}
 
 export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMemberDataOptions = {}) {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();

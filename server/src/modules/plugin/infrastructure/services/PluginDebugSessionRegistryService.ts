@@ -12,7 +12,6 @@ export default class PluginDebugSessionRegistryService {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(
-        
         private readonly emitter: SocketIOEmitter
     ) {}
 

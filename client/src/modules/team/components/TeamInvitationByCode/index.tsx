@@ -22,14 +22,14 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import type { Params } from 'react-router-dom';
 interface TeamInvitationByCodeRouteParams extends Params {
     code: string;
-};
+}
 
 enum TeamInvitationByCodeStatus {
     Ready = 'ready',
     Joining = 'joining',
     AlreadyMember = 'already-member',
     Error = 'error'
-};
+}
 
 const isAlreadyMemberError = (message: string): boolean => {
     return message.toLowerCase().includes('already a member');

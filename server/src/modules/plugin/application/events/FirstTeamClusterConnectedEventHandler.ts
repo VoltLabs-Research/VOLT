@@ -8,9 +8,8 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('team-cluster.first-connected')
 export default class FirstTeamClusterConnectedEventHandler implements IEventHandler<FirstTeamClusterConnectedEvent> {
     constructor(
-        
         private readonly defaultPluginBootstrapService: DefaultPluginBootstrapService
-    ){}
+    ) {}
 
     async handle(event: FirstTeamClusterConnectedEvent): Promise<void> {
         const { teamId, teamClusterId } = event.payload;
@@ -26,4 +25,4 @@ export default class FirstTeamClusterConnectedEventHandler implements IEventHand
             logger.error(`Failed to import default plugins after the first team cluster connected teamClusterId=${teamClusterId} teamId=${teamId}`);
         }
     }
-};
+}

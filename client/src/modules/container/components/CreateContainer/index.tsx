@@ -19,7 +19,7 @@ enum StepKey {
     Image = 'image',
     Config = 'config',
     Review = 'review'
-};
+}
 
 const STEP_ORDER: StepKey[] = [StepKey.Image, StepKey.Config, StepKey.Review];
 

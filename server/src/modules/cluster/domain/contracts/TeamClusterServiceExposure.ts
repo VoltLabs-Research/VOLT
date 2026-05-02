@@ -5,7 +5,7 @@ export enum TeamClusterServiceExposureAccessMode {
     Http = 'http',
     Tcp = 'tcp',
     WebSocket = 'websocket'
-};
+}
 
 /**
  * Describes the operational state of an exposure registered by a team cluster daemon.
@@ -13,7 +13,7 @@ export enum TeamClusterServiceExposureAccessMode {
 export enum TeamClusterServiceExposureStatus {
     Active = 'active',
     Unavailable = 'unavailable'
-};
+}
 
 /**
  * Describes where a team cluster service exposure originates.
@@ -21,7 +21,7 @@ export enum TeamClusterServiceExposureStatus {
 export enum TeamClusterServiceExposureSourceKind {
     Container = 'container',
     Daemon = 'daemon'
-};
+}
 
 /**
  * Represents a single persistent service exposure published by a team cluster daemon.
@@ -40,4 +40,4 @@ export interface TeamClusterServiceExposure {
     containerId?: string;
     containerName?: string;
     containerPort?: number;
-};
+}

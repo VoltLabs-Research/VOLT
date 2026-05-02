@@ -7,7 +7,7 @@ interface TeamPresenceState{
     addOnlineUser: (id: string) => void;
     removeOnlineUser: (id: string) => void;
     reset: () => void;
-};
+}
 
 const createInitialState = () => ({
     onlineUserIds: new Set<string>(),

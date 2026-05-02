@@ -12,7 +12,7 @@ interface CreateGroupModalProps {
     teamMembers: User[];
     currentUserId?: string;
     onCreateGroup: (name: string, description: string, memberIds: string[]) => Promise<void>;
-};
+}
 
 const CreateGroupModal = ({ teamMembers, currentUserId, onCreateGroup }: CreateGroupModalProps) => {
     const [groupName, setGroupName] = useState('');

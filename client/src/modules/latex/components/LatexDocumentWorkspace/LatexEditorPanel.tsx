@@ -42,7 +42,7 @@ interface LatexEditorPanelProps {
     onSplitDown?: (tab?: LatexWorkspaceTab) => void;
     onDuplicateTabToOtherGroup?: (tab: LatexWorkspaceTab) => void;
     onCloseGroup?: () => void;
-};
+}
 
 enum AssetKind {
     Pdf = 'pdf',

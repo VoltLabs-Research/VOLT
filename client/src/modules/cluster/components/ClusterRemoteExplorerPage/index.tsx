@@ -14,7 +14,7 @@ interface SegmentTargetMapping {
     segment: string;
     target: TeamClusterRemoteAccessTarget;
     title: string;
-};
+}
 
 const SEGMENT_TARGET_MAP: SegmentTargetMapping[] = [
     { segment: 'mongo', target: TeamClusterRemoteAccessTarget.MongoDocuments, title: 'Mongo Explorer' },

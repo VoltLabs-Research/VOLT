@@ -14,9 +14,7 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     DownloadStreamOutputDTO
 > {
     constructor(
-        
         private readonly listingRowsExportPresenter: ListingRowsExportPresenter,
-        
         private readonly analysisListingExportCatalogService: AnalysisListingExportCatalogService
     ) {}
 

@@ -5,7 +5,7 @@ import type { RenderGroup } from '../CanvasRenderSections/types';
 
 interface RenderGroupSubmenuContentProps {
     group: RenderGroup;
-};
+}
 
 const RenderGroupSubmenuContent = ({ group }: RenderGroupSubmenuContentProps) => {
     const visibleSubsections = group.subsections.filter((subsection) => subsection.visible !== false);

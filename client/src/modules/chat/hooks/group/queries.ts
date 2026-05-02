@@ -11,7 +11,7 @@ import type {
 
 interface LeaveGroupParams {
     chatId: string;
-};
+}
 
 export const useCreateGroupMutation = createMutation<Chat, CreateGroupChatDTO>(groupService.createGroup);
 export const useAddUsersToGroupMutation = createMutation<Chat, AddUsersToGroupInputDTO>(groupService.addUsersToGroup);

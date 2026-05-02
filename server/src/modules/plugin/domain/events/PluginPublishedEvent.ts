@@ -7,10 +7,10 @@ export interface PluginPublishedEventPayload {
     requirementsFile?: string;
     entrypointScript?: string;
     binaryHash?: string;
-};
+}
 
 export default class PluginPublishedEvent extends BaseDomainEvent<PluginPublishedEventPayload> {
     constructor(payload: PluginPublishedEventPayload) {
         super('plugin.published', payload);
     }
-};
+}

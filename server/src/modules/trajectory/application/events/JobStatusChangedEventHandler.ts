@@ -17,7 +17,6 @@ const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 @Subscribe('job.status.changed')
 export default class JobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
-        
         private readonly trajectoryRepo: TrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -51,4 +50,4 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
             }
         }
     }
-};
+}

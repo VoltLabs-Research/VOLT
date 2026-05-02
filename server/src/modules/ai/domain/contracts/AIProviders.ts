@@ -12,7 +12,7 @@ export enum AIProvider {
     TogetherAI = 'togetherai',
     Fireworks = 'fireworks',
     Ollama = 'ollama'
-};
+}
 
 export const AI_PROVIDERS = [
     AIProvider.OpenAI,

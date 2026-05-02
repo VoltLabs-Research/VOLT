@@ -9,4 +9,4 @@ export interface LatexFile {
     isEntrypoint: boolean;
     createdAt: Date;
     updatedAt: Date;
-};
+}

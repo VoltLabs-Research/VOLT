@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 enum UserInfoVariant {
     Default = 'default',
     Compact = 'compact'
-};
+}
 
 interface UserInfoProps {
     user: User | null;
@@ -18,7 +18,7 @@ interface UserInfoProps {
     variant?: UserInfoVariant;
     suffix?: ReactNode;
     className?: string;
-};
+}
 
 const UserInfo = ({ 
     user, 

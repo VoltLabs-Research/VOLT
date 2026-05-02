@@ -6,6 +6,6 @@ export interface ListContainersInputDTO extends Partial<PaginationOptions> {
     userId: string;
     folderId?: string;
     search?: string;
-};
+}
 
-export interface ListContainersOutputDTO extends PaginatedResult<Container> {};
+export interface ListContainersOutputDTO extends PaginatedResult<Container> {}

@@ -28,7 +28,7 @@ export interface FileTreeNode {
     folderPath: string;
     data?: LatexFileEntry | LatexAsset;
     children: FileTreeNode[];
-};
+}
 
 const sortTreeNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
     nodes.sort((left, right) => {

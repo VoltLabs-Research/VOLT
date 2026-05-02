@@ -2,7 +2,7 @@ import { formatScientific, safeJsonStringify } from '@/modules/plugin/components
 
 interface NumberArrayCellProps {
     value: unknown;
-};
+}
 
 const isNumberArray = (input: unknown): input is number[] => {
     return Array.isArray(input) && input.every((entry) => typeof entry === 'number');

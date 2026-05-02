@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly invitationRepository: TeamInvitationRepository
     ){}
 
@@ -44,4 +43,4 @@ export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamI
             message: 'Invitation rejected successfully'
         });
     }
-};
+}

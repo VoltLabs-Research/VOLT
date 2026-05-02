@@ -13,7 +13,7 @@ interface InvitationEmailInputProps {
     isSubmitting: boolean;
     buttonState: InviteButtonState;
     disabled?: boolean;
-};
+}
 
 export const InvitationEmailInput = ({
     value,

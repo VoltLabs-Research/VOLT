@@ -37,7 +37,7 @@ interface UseInviteCodeReturn {
     handleGenerate: () => Promise<void>;
     handleDelete: () => Promise<void>;
     handleCopy: () => Promise<void>;
-};
+}
 
 export default function useInviteCode(): UseInviteCodeReturn {
     const teamId = useSelectedTeamId();

@@ -52,7 +52,7 @@ interface ClusterRemoteExplorerContentProps {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => Promise<Blob>;
-};
+}
 
 const toExplorerPath = (path: string): string => {
     return path ? `/${path.replace(/^\/+/g, '')}` : '/';

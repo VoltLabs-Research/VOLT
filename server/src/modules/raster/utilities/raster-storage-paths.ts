@@ -42,7 +42,7 @@ export const parseRasterTimestep = (fileKey: string): number | null => {
 export interface ParsedAnalysisRasterFrameKey {
     timestep: number;
     model: string;
-};
+}
 
 export const parseAnalysisRasterFrameKey = (fileKey: string): ParsedAnalysisRasterFrameKey | null => {
     const fileName = fileKey.split('/').pop();

@@ -15,7 +15,7 @@ export interface ComputeGlbUrlParams {
     analysisId: string;
     activeScene?: SceneObjectType;
     mode?: CanvasAccessMode;
-};
+}
 
 const DEFAULT_ANALYSIS_ID = 'default';
 

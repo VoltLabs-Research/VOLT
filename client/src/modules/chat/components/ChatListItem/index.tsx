@@ -14,7 +14,7 @@ interface ChatListItemProps {
     currentUserId?: string;
     isActive?: boolean;
     onClick: () => void;
-};
+}
 
 const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemProps) => {
     const displayName = getChatDisplayName(chat, currentUserId);

@@ -54,24 +54,22 @@ const createZstdStream = (args: string[], input: Readable): ZstdSpawnResult => {
     };
 };
 
-export const createZstdDecompressionStream = (input: Readable): ZstdSpawnResult => {
-    return createZstdStream(['-d', '-q', '-c'], input);
-};
+export const createZstdDecompressionStream = (input: Readable): ZstdSpawnResult => (
+    createZstdStream(['-d', '-q', '-c'], input)
+);
 
-export const buildTrajectoryDumpObjectName = (trajectoryId: string, timestep: string | number): string => {
-    return `trajectory-${trajectoryId}/timestep-${timestep}${TRAJECTORY_DUMP_ZSTD_EXTENSION}`;
-};
+export const buildTrajectoryDumpObjectName = (trajectoryId: string, timestep: string | number): string => (
+    `trajectory-${trajectoryId}/timestep-${timestep}${TRAJECTORY_DUMP_ZSTD_EXTENSION}`
+);
 
-export const buildTrajectoryGlbObjectName = (trajectoryId: string, timestep: string | number): string => {
-    return `trajectory-${trajectoryId}/timestep-${timestep}${TRAJECTORY_GLB_ZSTD_EXTENSION}`;
-};
+export const buildTrajectoryGlbObjectName = (trajectoryId: string, timestep: string | number): string => (
+    `trajectory-${trajectoryId}/timestep-${timestep}${TRAJECTORY_GLB_ZSTD_EXTENSION}`
+);
 
-export const isZstdObjectName = (objectName: string): boolean => {
-    return objectName.endsWith('.zst');
-};
+export const isZstdObjectName = (objectName: string): boolean => objectName.endsWith('.zst');
 
-export const stripTrailingZstdExtension = (objectName: string): string => {
-    return isZstdObjectName(objectName)
+export const stripTrailingZstdExtension = (objectName: string): string => (
+    isZstdObjectName(objectName)
         ? objectName.slice(0, -'.zst'.length)
-        : objectName;
-};
+        : objectName
+);

@@ -12,4 +12,4 @@ export interface CreateWhiteboardOutputDTO {
     payloadKey: string;
     createdAt: Date;
     updatedAt: Date;
-};
+}

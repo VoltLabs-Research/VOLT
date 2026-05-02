@@ -13,12 +13,12 @@ import type { StateCreator } from 'zustand';
 export interface VisualSettingsSlice {
     grid: CanvasGridSettingsStore;
     environment: EnvironmentConfigStore;
-};
+}
 
 interface GridThemeDefaults {
     sectionColor: string;
     cellColor: string;
-};
+}
 
 const resolveFogConfigUpdate = (config: Partial<FogConfig>): Partial<FogConfig> => {
     if (typeof config.fogColor === 'string') {

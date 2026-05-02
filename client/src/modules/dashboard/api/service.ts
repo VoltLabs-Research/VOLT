@@ -7,12 +7,12 @@ import type { GlobalSearchInputDTO, GlobalSearchOutputDTO } from './dtos/global-
 interface ApiResponse<T> {
     status: string;
     data: T;
-};
+}
 
 interface SearchQueryParams extends Record<string, unknown> {
     query: string;
     limit: number;
-};
+}
 
 const MIN_SEARCH_QUERY_LENGTH = 2;
 

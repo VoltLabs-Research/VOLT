@@ -10,7 +10,7 @@ export interface GetGlobalSearchInputDTO {
     userId: string;
     query?: string;
     limit?: number | string;
-};
+}
 
 export interface GetGlobalSearchOutputDTO {
     analyses: GetAnalysesByTeamIdItemDTO[];
@@ -19,7 +19,7 @@ export interface GetGlobalSearchOutputDTO {
     teams: ListUserTeamsOutputDTO[];
     plugins: PersistedPluginDTO[];
     chats: PersistedChatDTO[];
-};
+}
 
 export const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchOutputDTO = {
     analyses: [],

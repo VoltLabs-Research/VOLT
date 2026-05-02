@@ -2,7 +2,7 @@ export interface FilterExpression {
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
     value: number;
-};
+}
 
 export interface ExposureAtomConfig {
     exposureId: string;
@@ -10,12 +10,12 @@ export interface ExposureAtomConfig {
     iterableKey?: string;
     perAtomProperties: string[];
     schemaKeysMap: Map<string, string[]>;
-};
+}
 
 export interface AnalysisAllAtomsResult {
     propertyNames: string[];
     atoms: Record<string, unknown>[];
-};
+}
 
 export interface IAtomPropertiesService {
     getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>>;
@@ -63,4 +63,4 @@ export interface IAtomPropertiesService {
         property: string,
         maxValues?: number
     ): Promise<number[]>;
-};
+}

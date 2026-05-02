@@ -22,11 +22,11 @@ interface DaemonNotebookJupyterResponse {
     url?: string;
     ready: boolean;
     containerStage?: NotebookContainerStage;
-};
+}
 
 interface DaemonNotebookSessionResponse {
     jupyter: DaemonNotebookJupyterResponse;
-};
+}
 
 interface DaemonNotebookSessionSnapshot {
     [key: string]: unknown;
@@ -34,7 +34,7 @@ interface DaemonNotebookSessionSnapshot {
     teamId: string;
     notebookPath: string;
     content?: Record<string, unknown>;
-};
+}
 
 interface DaemonNotebookSessionRequest {
     [key: string]: unknown;
@@ -45,7 +45,7 @@ interface DaemonNotebookSessionRequest {
         memoryMB: number;
     };
     notebook: DaemonNotebookSessionSnapshot;
-};
+}
 
 const getNotebookTeamClusterId = (teamCluster: string | null | undefined): string | null => {
     return teamCluster ?? null;
@@ -54,19 +54,10 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
 @Singleton()
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
-
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-
-
         private readonly notebookService: JupyterNotebookService,
-
-
         private readonly accessTokenService: ScriptingJupyterAccessTokenService
     ) {}
 
@@ -170,4 +161,4 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
     private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {
         return jupyter.internalPath;
     }
-};
+}

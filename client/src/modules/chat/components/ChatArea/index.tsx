@@ -1,6 +1,5 @@
 import ChatInput from '../ChatInput';
-import { EDIT_MESSAGE_MODAL_ID } from '../EditMessageModal';
-import EditMessageModal from '../EditMessageModal';
+import EditMessageModal, { EDIT_MESSAGE_MODAL_ID } from '../EditMessageModal';
 import ChatHeader from '../ChatHeader';
 import MessageBubble from '../MessageBubble';
 import MessageControls from '../MessageControls';
@@ -22,7 +21,7 @@ import './ChatArea.css';
 interface EditingMessage {
     _id: string;
     content: string;
-};
+}
 
 interface ChatAreaProps {
     chat: Chat | null;
@@ -43,7 +42,7 @@ interface ChatAreaProps {
     onDeleteMessage: (messageId: string) => Promise<unknown>;
     onToggleReaction: (messageId: string, emoji: string) => Promise<unknown>;
     onInfoClick?: () => void;
-};
+}
 
 const ChatArea = ({
     chat,

@@ -1,11 +1,11 @@
 interface ChatIdentifierValue {
     toString(): string;
-};
+}
 
 export interface ChatUserReference {
     _id?: ChatIdentifierValue;
     toString(): string;
-};
+}
 
 export type ChatParticipant = string | ChatUserReference;
 
@@ -25,7 +25,7 @@ export interface ChatProps {
     groupAvatar: string;
     admins: string[];
     createdBy: string;
-};
+}
 
 export default class Chat {
     constructor(
@@ -36,4 +36,4 @@ export default class Chat {
     public isAdmin(userId: string): boolean {
         return this.props.admins.includes(userId);
     }
-};
+}

@@ -1,5 +1,4 @@
-import { fetchTrajectorySamples } from './queries';
-import { useDownloadSampleMutation } from './queries';
+import { fetchTrajectorySamples, useDownloadSampleMutation } from './queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useState } from 'react';
@@ -7,17 +6,17 @@ import { useCallback, useState } from 'react';
 interface UseDownloadSamplesReturn {
     downloadAllSamples: () => Promise<void>;
     isDownloading: boolean;
-};
+}
 
 interface ToastState {
     title: string;
-};
+}
 
 interface DownloadSamplesToastConfig {
     loading: ToastState;
     success: ToastState;
     error: ToastState;
-};
+}
 
 const DOWNLOAD_SAMPLES_TOAST: DownloadSamplesToastConfig = {
     loading: { title: 'Downloading samples...' },

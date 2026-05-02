@@ -18,4 +18,4 @@ export interface ITeamClusterRepository extends IBaseRepository<TeamCluster, Tea
         data: Partial<TeamClusterProps>,
         preconditions?: TeamClusterLifecycleUpdatePreconditions
     ): Promise<TeamCluster | null>;
-};
+}

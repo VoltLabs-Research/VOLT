@@ -9,9 +9,8 @@ import { Result } from '@shared/domain/port/Result';
 @Singleton()
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {
     constructor(
-        
         private readonly validatorService: WorkflowValidatorService
-    ){}
+    ) {}
 
     async execute(input: ValidateWorkflowInputDTO): Promise<Result<ValidateWorkflowOutputDTO>> {
         const validation = await this.validatorService.validate(input.workflow, input.pluginId, WorkflowValidationMode.Strict);
@@ -22,4 +21,4 @@ export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDT
             modifier: validation.modifier
         });
     }
-};
+}

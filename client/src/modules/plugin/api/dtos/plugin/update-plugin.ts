@@ -5,4 +5,4 @@ export interface UpdatePluginInputDTO {
     _id: string;
     workflow?: IWorkflow;
     status?: PluginStatus;
-};
+}

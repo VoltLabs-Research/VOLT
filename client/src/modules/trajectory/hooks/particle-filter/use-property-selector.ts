@@ -10,7 +10,7 @@ interface UsePropertySelectorParams {
     trajectoryId?: string;
     analysisId?: string;
     timestep?: number;
-};
+}
 
 interface UsePropertySelectorResult {
     property: string;
@@ -19,7 +19,7 @@ interface UsePropertySelectorResult {
     propertyOptions: PropertyOption[];
     isLoading: boolean;
     handlePropertyChange: (value: string) => void;
-};
+}
 
 const findDefaultPropertyOption = (propertyOptions: PropertyOption[]): PropertyOption | undefined => {
     const typeOption = propertyOptions.find((option) => option.exposureId === null && option.property.toLowerCase() === 'type');

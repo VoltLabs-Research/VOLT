@@ -24,7 +24,7 @@ type RepositoryDocument<TDocument extends Document> = HydratedDocument<TDocument
 interface GroupedCountResult {
     _id: string;
     count: number;
-};
+}
 
 interface CountGroupedByMatchStage {
     $match: {
@@ -32,7 +32,7 @@ interface CountGroupedByMatchStage {
             $in: string[];
         };
     };
-};
+}
 
 interface CountGroupedByGroupStage {
     $group: {
@@ -41,7 +41,7 @@ interface CountGroupedByGroupStage {
             $sum: number;
         };
     };
-};
+}
 
 const toFilterQuery = <TDocument extends Document, TProps>(
     filter?: RepositoryFilter<TProps>
@@ -75,7 +75,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
     constructor(
         protected readonly model: Model<TDocument>,
         protected readonly mapper: IMapper<TDomain, TProps, TDocument>
-    ){}
+    ) {}
 
     private toDomainEntity(doc: RepositoryDocument<TDocument>): TDomain {
         return this.mapper.toDomain(doc);
@@ -196,7 +196,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
         return result.modifiedCount;
     }
 
-    async insertMany(data: Partial<TProps> | Array<Partial<TProps>>): Promise<void>{
+    async insertMany(data: Partial<TProps> | Array<Partial<TProps>>): Promise<void> {
         const documents = Array.isArray(data)
             ? data
             : [data];
@@ -242,4 +242,4 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
     async exists(filter: RepositoryFilter<TProps>): Promise<boolean> {
         return !!(await this.model.exists(toFilterQuery<TDocument, TProps>(filter)));
     }
-};
+}

@@ -9,7 +9,7 @@ export interface RecordTeamClusterHeartbeatInputDTO {
         roleConfig: TeamClusterRuntimeRoleConfigProps;
     };
     metrics?: TeamClusterHeartbeatMetricsDTO;
-};
+}
 
 export interface TeamClusterHeartbeatMetricsDTO {
     timestamp: string;
@@ -46,8 +46,8 @@ export interface TeamClusterHeartbeatMetricsDTO {
     };
     cloudLatencyMs: number | null;
     connectedToCloud: boolean;
-};
+}
 
 export interface RecordTeamClusterHeartbeatOutputDTO {
     teamCluster: TeamClusterDTO;
-};
+}

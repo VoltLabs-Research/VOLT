@@ -120,4 +120,4 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
         return teamClusterId;
     }
-};
+}

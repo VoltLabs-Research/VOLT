@@ -4,4 +4,4 @@ import type LatexDocument from '@modules/latex/domain/entities/LatexDocument';
 
 export interface ILatexDocumentRepository extends IBaseRepository<LatexDocument, LatexDocumentProps> {
     findByTeamAndDocumentId(teamId: string, documentId: string): Promise<LatexDocument | null>;
-};
+}

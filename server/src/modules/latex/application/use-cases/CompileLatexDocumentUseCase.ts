@@ -25,19 +25,11 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly tempFileService: TempFileService
     ) {}
 

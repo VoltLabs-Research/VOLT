@@ -24,7 +24,7 @@ interface UseKeyboardShortcutsParams {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     availableTimesteps: number[];
-};
+}
 
 const useKeyboardShortcuts = ({
     trajectoryId,

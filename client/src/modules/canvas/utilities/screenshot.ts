@@ -6,7 +6,7 @@ export interface ScreenshotSettings {
     customWidth: number;
     customHeight: number;
     anglePreset: ScreenshotAnglePreset;
-};
+}
 
 export interface ScreenshotRequest extends ScreenshotSettings {
     id: number;
@@ -15,7 +15,7 @@ export interface ScreenshotRequest extends ScreenshotSettings {
 export interface ScreenshotSize {
     width: number;
     height: number;
-};
+}
 
 export const SCREENSHOT_RESOLUTION_PRESETS: Record<Exclude<ScreenshotResolutionPreset, 'viewport' | 'custom'>, ScreenshotSize> = {
     hd: { width: 1280, height: 720 },

@@ -10,9 +10,8 @@ export default class GetMyNotificationsUseCase
     implements IUseCase<GetMyNotificationsInputDTO, GetMyNotificationsOutputDTO, ApplicationError> {
 
     constructor(
-        
         private notificationRepo: NotificationRepository
-    ){}
+    ) {}
 
     async execute(input: GetMyNotificationsInputDTO): Promise<Result<GetMyNotificationsOutputDTO, ApplicationError>> {
         const { userId } = input;
@@ -31,4 +30,4 @@ export default class GetMyNotificationsUseCase
             totalPages: result.totalPages
         });
     }
-};
+}

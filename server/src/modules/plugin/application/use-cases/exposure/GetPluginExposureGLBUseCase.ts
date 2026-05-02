@@ -31,11 +31,8 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository,
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
@@ -139,4 +136,4 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             response.contentEncoding
         ));
     }
-};
+}

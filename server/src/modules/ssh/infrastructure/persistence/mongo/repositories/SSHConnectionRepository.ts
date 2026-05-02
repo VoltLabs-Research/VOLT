@@ -17,4 +17,4 @@ export default class SSHConnectionRepository
         const doc = await this.model.findById(id).select('+encryptedPassword');
         return doc ? this.mapper.toDomain(doc) : null;
     }
-};
+}

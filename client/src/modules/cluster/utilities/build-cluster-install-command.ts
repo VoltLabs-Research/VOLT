@@ -3,7 +3,7 @@ export enum ClusterInstallPlatform {
     MacOS = 'macos',
     Linux = 'linux',
     Unknown = 'unknown'
-};
+}
 
 const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/clusterdaemon/main/scripts';
 

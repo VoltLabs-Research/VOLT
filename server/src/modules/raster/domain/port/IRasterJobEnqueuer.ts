@@ -1,5 +1,5 @@
 export interface RasterTriggerConfig extends Record<string, unknown> {
-};
+}
 
 export interface RasterJobEnqueueResult {
     queuedJobs: number;
@@ -16,7 +16,7 @@ export interface RasterJobEnqueueResult {
         trajectoryName?: string;
         timestep?: number;
     }>;
-};
+}
 
 export interface IRasterJobEnqueuer {
     triggerRasterization(
@@ -24,4 +24,4 @@ export interface IRasterJobEnqueuer {
         teamId: string,
         config?: RasterTriggerConfig
     ): Promise<RasterJobEnqueueResult>;
-};
+}

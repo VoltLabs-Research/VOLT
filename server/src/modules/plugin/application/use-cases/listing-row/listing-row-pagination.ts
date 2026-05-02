@@ -1,12 +1,12 @@
 interface ListingPaginationInput {
     page?: number;
     limit?: number;
-};
+}
 
 interface ListingPagination {
     page: number;
     limit: number;
-};
+}
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 50;

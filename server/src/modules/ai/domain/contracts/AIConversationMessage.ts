@@ -2,7 +2,7 @@ export enum AIConversationMessageRole {
     User = 'user',
     Assistant = 'assistant',
     System = 'system'
-};
+}
 
 export type AIConversationMessagePart = {
     type: string;
@@ -14,4 +14,4 @@ export interface AIConversationMessage {
     id: string;
     role: AIConversationMessageRole;
     parts: AIConversationMessageParts;
-};
+}

@@ -8,7 +8,7 @@ import type { EnvironmentConfigState } from '@/modules/fractal/stores/contracts/
 interface DynamicEnvironmentProps {
     settings: EnvironmentConfigState;
     darkTheme: boolean;
-};
+}
 
 const DynamicEnvironment = ({ settings, darkTheme }: DynamicEnvironmentProps) => {
     const { scene } = useThree();

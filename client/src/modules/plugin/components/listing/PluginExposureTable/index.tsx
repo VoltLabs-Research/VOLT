@@ -36,7 +36,7 @@ interface InlineSubListingState {
     timestep: number;
     subListingNames: string[];
     activeName: string;
-};
+}
 
 const normalizeListingColumns = (columns: ListingColumnConfig[] | undefined): ListingColumnConfig[] => {
     if (!columns?.length) return [];

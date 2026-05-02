@@ -11,9 +11,8 @@ export class DeleteContainerAITool extends AITool {
     readonly parameters = z.object({ containerId: z.string(), reason: z.string().optional() });
 
     constructor(
-        
         protected readonly useCase: DeleteContainerUseCase
     ) {
         super();
     }
-};
+}

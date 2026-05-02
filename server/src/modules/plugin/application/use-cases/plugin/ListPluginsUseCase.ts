@@ -11,7 +11,7 @@ import { Result } from '@shared/domain/port/Result';
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
     constructor(
         private pluginRepository: PluginRepository
-    ){}
+    ) {}
 
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {
         const result = await this.pluginRepository.findAll({
@@ -30,4 +30,4 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
             data
         });
     }
-};
+}

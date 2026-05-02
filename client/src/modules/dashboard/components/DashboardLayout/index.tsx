@@ -22,13 +22,15 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { sileo } from 'sileo';
-import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import type { DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import type {
+    DashboardGlobalSearchBreadcrumb,
+    DashboardHeaderContext
+} from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import './DashboardLayout.css';
 
 interface DashboardLocationState {
     fromNotFound?: boolean;
-};
+}
 
 // Sibling routes under these prefixes share a persistent nested layout
 // (e.g. tabs under /dashboard/containers/:id). Collapsing them to one key

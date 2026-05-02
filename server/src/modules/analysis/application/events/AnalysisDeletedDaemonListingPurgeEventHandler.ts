@@ -12,7 +12,6 @@ const DAEMON_LISTING_DOCUMENT_TYPES: DaemonListingDocumentType[] = ['listing', '
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -40,4 +39,4 @@ export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IE
             }
         }
     }
-};
+}

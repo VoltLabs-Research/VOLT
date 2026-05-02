@@ -17,6 +17,6 @@ class UserMapper extends BaseMapper<User, UserProps, UserDocument>{
         const user = this.toDomain(doc);
         return Object.assign(user, { password: doc.password || '' });
     }
-};
+}
 
 export default new UserMapper();

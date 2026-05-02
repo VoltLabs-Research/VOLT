@@ -14,19 +14,19 @@ import './SubListingsPage.css';
 
 interface SubListingRow extends Record<string, unknown> {
     _id: string;
-};
+}
 
 interface TabColumnSnapshot {
     columns: ColumnConfig<SubListingRow>[];
     inferredTypes: Record<string, InferredColumnType>;
-};
+}
 
 interface SubListingFetchContext extends Record<string, unknown> {
     subListingName: string;
     analysisId: string;
     exposureId: string;
     timestep: number;
-};
+}
 
 const MIN_WIDTH_BY_KIND: Record<InferredCellKind, number> = {
     empty: 80,

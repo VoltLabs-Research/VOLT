@@ -4,4 +4,4 @@ export interface PluginTeamClusterOption {
     _id: string;
     name: string;
     roleConfig?: Pick<TeamClusterRuntimeRoleConfig, 'desiredRole' | 'effectiveRole'>;
-};
+}

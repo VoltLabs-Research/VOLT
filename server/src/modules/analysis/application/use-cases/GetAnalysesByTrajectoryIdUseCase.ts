@@ -11,16 +11,15 @@ import { injectable } from 'tsyringe';
 interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
     trajectory: string;
     team?: string;
-};
+}
 
 interface AnalysisSort extends Record<string, 1 | -1> {
     createdAt: -1;
-};
+}
 
 @injectable()
 export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository
     ) {}
 
@@ -64,4 +63,4 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
             data
         });
     }
-};
+}

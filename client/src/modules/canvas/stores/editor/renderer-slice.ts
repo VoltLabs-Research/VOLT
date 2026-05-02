@@ -15,7 +15,7 @@ import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {
     rendererSettings: RendererSettingsStore;
-};
+}
 
 const getInitialRendererSettings = (): RendererSettingsState => ({
     create: getDefaultRendererCreateSettings(),

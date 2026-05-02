@@ -14,7 +14,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
-
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
@@ -36,11 +35,11 @@ export interface ProcessDaemonSceneArtifactUpsertInputDTO {
     displayName: string;
     status: SceneArtifactStatus;
     metadata?: Record<string, unknown>;
-};
+}
 
 interface ProcessDaemonSceneArtifactUpsertOutputDTO {
     acknowledged: boolean;
-};
+}
 
 interface PreparedSceneArtifactUpsertEntry {
     objectName: string;
@@ -67,18 +66,10 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

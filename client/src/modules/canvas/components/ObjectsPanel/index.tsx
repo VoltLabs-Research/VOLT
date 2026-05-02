@@ -23,8 +23,7 @@ import Button from '@/shared/presentation/primitives/Button';
 import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import Stack from '@/shared/presentation/primitives/Stack';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
-import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -49,7 +48,7 @@ interface ObjectsPanelProps {
     onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
     onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
     pluginsContent?: ReactNode;
-};
+}
 
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
 const TREE_MODIFIER_ICON_SIZE = 12;

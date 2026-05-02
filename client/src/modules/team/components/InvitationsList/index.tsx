@@ -8,7 +8,7 @@ interface InvitationsListProps {
     isLoading: boolean;
     cancelingId: string | null;
     onCancelInvitation: (id: string) => void;
-};
+}
 
 export const InvitationsList = ({
     invitations,

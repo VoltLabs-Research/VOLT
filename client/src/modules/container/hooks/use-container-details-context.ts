@@ -13,7 +13,7 @@ export interface ContainerDetailsContext {
     onUpdateEnv: (env: EnvVariable[]) => Promise<void>;
     onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
     setHeaderActions: (actions: ReactNode) => void;
-};
+}
 
 const useContainerDetailsContext = () => {
     return useOutletContext<ContainerDetailsContext>();

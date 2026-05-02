@@ -11,7 +11,6 @@ export class GetAnalysisListingExportOptionsUseCase implements IUseCase<
     GetAnalysisListingExportOptionsOutputDTO
 > {
     constructor(
-        
         private readonly analysisListingExportCatalogService: AnalysisListingExportCatalogService
     ) {}
 

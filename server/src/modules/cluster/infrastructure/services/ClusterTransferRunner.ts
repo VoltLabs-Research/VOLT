@@ -10,7 +10,6 @@ export default class ClusterTransferRunner {
     private running = false;
 
     constructor(
-        
         private readonly clusterTransferCoordinator: ClusterTransferCoordinator
     ) {}
 

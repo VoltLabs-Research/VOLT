@@ -22,7 +22,7 @@ interface OptionalVec3 {
     x?: number;
     y?: number;
     z?: number;
-};
+}
 
 interface AutoFitBoxTransforms {
     scale: number;
@@ -32,7 +32,7 @@ interface AutoFitBoxTransforms {
         z: number;
     };
     groundOffset?: number;
-};
+}
 
 const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
 
@@ -108,7 +108,7 @@ interface SingleModelViewerProps {
     onSelect?: () => void;
     isSelected?: boolean;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
-};
+}
 
 const SingleModelViewer: FC<SingleModelViewerProps> = ({
     teamId,

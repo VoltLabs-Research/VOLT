@@ -1,6 +1,6 @@
 import { isSameScene, isSameSceneRenderMetadata } from '../utilities/scene-identity';
 import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
-import { DEFAULT_ENTRY } from './use-exposure-manager';
+import useExposureManager, { DEFAULT_ENTRY } from './use-exposure-manager';
 import {
     extractTrajectoryTimesteps,
     getNearestTimestep,
@@ -8,7 +8,6 @@ import {
 } from '../utilities/selected-timestep-analysis';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState from './use-canvas-url-state';
-import useExposureManager from './use-exposure-manager';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
@@ -41,12 +40,12 @@ export interface AnalysisSectionData {
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
     userConfig: Record<string, unknown>;
-};
+}
 
 interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
-};
+}
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();

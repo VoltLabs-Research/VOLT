@@ -6,7 +6,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 
 interface UseCanvasHandlersOptions {
     reactFlowInstance: ReactFlowInstance | null;
-};
+}
 
 const useCanvasHandlers = ({ reactFlowInstance }: UseCanvasHandlersOptions) => {
     const addNode = usePluginBuilderStore((state) => state.addNode);

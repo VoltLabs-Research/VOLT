@@ -3,10 +3,10 @@ import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory
 
 interface IdentifiableEntity {
     readonly _id: string;
-};
+}
 
 export abstract class CascadeDeleteEachOnTrajectoryDeletedHandler<TEntity extends IdentifiableEntity>
     extends CascadeDeleteEachOnEntityDeletedHandler<TrajectoryDeletedEvent, TEntity> {
     protected readonly payloadKey = 'trajectoryId';
     protected readonly filterField = 'trajectory';
-};
+}

@@ -63,13 +63,13 @@ interface DelayJobOnQueueScopeContentionOptions {
     delayMs?: number;
 }
 
-const buildQueueScopeKey = (queueName: string, constraint: QueueScopeConstraint): string => {
-    return `queue-scope:${queueName}:${constraint.scope}:${constraint.scopeId}`;
-};
+const buildQueueScopeKey = (queueName: string, constraint: QueueScopeConstraint): string => (
+    `queue-scope:${queueName}:${constraint.scope}:${constraint.scopeId}`
+);
 
-const createScopeLabel = (constraint: QueueScopeConstraint): string => {
-    return `${constraint.scope}:${constraint.scopeId}`;
-};
+const createScopeLabel = (constraint: QueueScopeConstraint): string => (
+    `${constraint.scope}:${constraint.scopeId}`
+);
 
 const tryAcquireSlot = async (
     redis: IORedis,

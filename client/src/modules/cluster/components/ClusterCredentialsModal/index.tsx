@@ -17,14 +17,14 @@ interface ClusterCredentialsModalProps {
     teamCluster: TeamCluster | null;
     credentials: TeamClusterCredentialServices | null;
     onReveal: (password: string) => Promise<void>;
-};
+}
 
 interface ClusterCredentialCard {
     label: string;
     port: number | null;
     username?: string;
     password: string;
-};
+}
 
 const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: ClusterCredentialsModalProps) => {
     const [password, setPassword] = useState('');

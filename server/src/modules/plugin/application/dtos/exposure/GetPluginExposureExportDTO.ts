@@ -3,6 +3,6 @@ import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/p
 export interface GetPluginExposureExportInputDTO {
     teamId: string;
     analysisId: string;
-};
+}
 
 export type GetPluginExposureExportOutputDTO = DownloadStreamOutputDTO;

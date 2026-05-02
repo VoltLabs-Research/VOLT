@@ -11,7 +11,7 @@ import type { Column } from '@/shared/presentation/primitives/Table';
 
 interface ContainerProcessesProps {
     containerId: string;
-};
+}
 
 interface ProcessInfo {
     PID: string;
@@ -21,7 +21,7 @@ interface ProcessInfo {
     MemB: string;
     Cpu: string;
     Command: string;
-};
+}
 
 const formatMemory = (kbStr: string): string => {
     const kb = parseInt(kbStr, 10);

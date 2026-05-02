@@ -29,19 +29,10 @@ interface ResolvedPlacementDefinition {
 @Singleton()
 export default class StoragePlacementService {
     constructor(
-        
         private readonly storagePlacementRepository: StoragePlacementRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly pluginRepository: PluginRepository,
-
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository
     ) {}
 

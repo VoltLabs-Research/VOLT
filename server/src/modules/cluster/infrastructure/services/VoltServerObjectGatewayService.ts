@@ -52,9 +52,7 @@ const toHeadResponse = (stat: FileMetadata): ServerObjectHeadResponse => {
 @Singleton()
 export default class VoltServerObjectGatewayService {
     constructor(
-        
         private readonly storagePlacementRepository: StoragePlacementRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}

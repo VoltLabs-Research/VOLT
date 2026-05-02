@@ -2,7 +2,7 @@ export interface SlicePlaneNormal {
     x: number;
     y: number;
     z: number;
-};
+}
 
 export type SlicePlaneNormalAxis = keyof SlicePlaneNormal;
 
@@ -12,12 +12,12 @@ export interface SlicePlaneConfig {
     normal: SlicePlaneNormal;
     reverseOrientation: boolean;
     visualizePlane: boolean;
-};
+}
 
 export enum ParticleFilterSceneCombinator {
     And = 'AND',
     Or = 'OR'
-};
+}
 
 export interface ParticleFilterPropertySceneCondition {
     kind?: 'property';
@@ -25,19 +25,19 @@ export interface ParticleFilterPropertySceneCondition {
     operator: string;
     value: number;
     exposureId?: string;
-};
+}
 export type ParticleFilterSceneCondition = ParticleFilterPropertySceneCondition;
 
 export interface SceneRenderMetadata {
     exporter?: string;
     exportType?: string;
     defaultLineWidth?: number;
-};
+}
 
 export interface SceneVisualOverride {
     opacity?: number;
     lineWidth?: number;
-};
+}
 
 export type SceneVisualOverrides = Record<string, SceneVisualOverride>;
 

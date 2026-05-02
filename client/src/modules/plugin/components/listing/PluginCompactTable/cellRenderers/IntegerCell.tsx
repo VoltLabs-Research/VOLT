@@ -1,6 +1,6 @@
 interface IntegerCellProps {
     value: unknown;
-};
+}
 
 const IntegerCell = ({ value }: IntegerCellProps) => {
     if(typeof value === 'number' && Number.isFinite(value)){

@@ -12,4 +12,4 @@ export default class TeamClusterCredentialsCipher implements ITeamClusterCredent
     async decrypt(value: string): Promise<string> {
         return decrypt(value);
     }
-};
+}

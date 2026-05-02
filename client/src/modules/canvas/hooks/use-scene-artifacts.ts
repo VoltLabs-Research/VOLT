@@ -10,7 +10,7 @@ import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-arti
 
 interface UseSceneArtifactsOptions {
     trajectoryId?: string;
-};
+}
 
 const isSceneArtifact = (item: unknown): item is SceneArtifact => {
     if (!item || typeof item !== 'object') return false;

@@ -16,4 +16,4 @@ export interface GetTeamClusterRemoteExplorerNodeOutputDTO {
     teamClusterId: string;
     target: TeamClusterRemoteAccessTargetDTO;
     node: TeamClusterRemoteExplorerNodeDTO;
-};
+}

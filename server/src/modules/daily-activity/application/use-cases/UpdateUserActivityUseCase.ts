@@ -10,7 +10,6 @@ import logger from '@shared/infrastructure/logger';
 @Singleton()
 export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly repository: DailyActivityRepository
     ) {}
 
@@ -37,4 +36,4 @@ export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserAct
             ));
         }
     }
-};
+}

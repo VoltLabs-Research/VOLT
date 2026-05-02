@@ -47,18 +47,12 @@ const computeSha256 = (buffer: Buffer): string => {
 @Singleton()
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
-        
         private pluginRepo: PluginRepository,
-
-        
         private readonly storagePlacementService: StoragePlacementService,
-
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService,
-
-        
         private readonly workflowValidator: WorkflowValidatorService
-    ){}
+    ) {}
 
     private async persistWorkflow(pluginId: string, workflow: Workflow): Promise<void> {
         const projection = WorkflowProjectionService.project(workflow, pluginId);
@@ -132,7 +126,7 @@ export default class PluginStorageService implements IPluginStorageService {
 
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const oldBinaryPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
-        if(oldBinaryPath){
+        if (oldBinaryPath) {
             await this.storageService.delete(SYS_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
                 logger.warn(`@plugin-storage-service: failed to delete old binary ${oldBinaryPath}: ${err}`);
             });
@@ -171,7 +165,7 @@ export default class PluginStorageService implements IPluginStorageService {
 
     async exportPlugin(pluginId: string): Promise<Readable> {
         const plugin = await this.pluginRepo.findById(pluginId);
-        if(!plugin){
+        if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -294,7 +288,7 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryFileName,
                 binaryHash
             });
-            
+
             await this.persistWorkflow(newPlugin._id, newPlugin.props.workflow);
             await this.storagePlacementService.ensurePlacement('plugin-binary', newPlugin.id);
 
@@ -332,4 +326,4 @@ export default class PluginStorageService implements IPluginStorageService {
             binaryImported
         };
     }
-};
+}

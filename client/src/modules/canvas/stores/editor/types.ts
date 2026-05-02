@@ -10,7 +10,7 @@ import type { ModelStore, PlaybackStore, TimestepStore } from '@/modules/fractal
 
 interface EditorStoreActions {
     resetAll: () => void;
-};
+}
 
 export type EditorStore =
     ModelStore &

@@ -6,7 +6,7 @@ export interface PendingExecutionIntent {
     selectedTimesteps?: number[];
     timestep?: number;
     targetClusterId: string;
-};
+}
 
 export interface CloneFlowEntry {
     jobId: string;
@@ -17,7 +17,7 @@ export interface CloneFlowEntry {
     totalFrames: number;
     copiedFrames: number;
     state: 'queued' | 'preparing' | 'copying' | 'completed' | 'failed';
-};
+}
 
 interface TrajectoryCloneFlowState {
     entries: Record<string, CloneFlowEntry>;
@@ -26,7 +26,7 @@ interface TrajectoryCloneFlowState {
     setToastId: (destinationTrajectoryId: string, toastId: string | undefined) => void;
     consumeIntent: (destinationTrajectoryId: string) => PendingExecutionIntent | undefined;
     removeEntry: (destinationTrajectoryId: string) => void;
-};
+}
 
 export const useTrajectoryCloneFlowStore = create<TrajectoryCloneFlowState>((set, get) => ({
     entries: {},

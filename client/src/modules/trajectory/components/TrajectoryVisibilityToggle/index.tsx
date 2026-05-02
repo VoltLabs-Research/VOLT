@@ -15,7 +15,7 @@ interface TrajectoryVisibilityToggleProps {
     isPublic: boolean;
     disabled?: boolean;
     onChange?: (nextIsPublic: boolean) => void;
-};
+}
 
 const TrajectoryVisibilityToggle = ({
     trajectoryId,

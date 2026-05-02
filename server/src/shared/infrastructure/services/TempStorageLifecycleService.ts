@@ -8,18 +8,18 @@ import path from 'node:path';
 interface TempStoragePolicyMatcher {
     value: string;
     mode: TempStoragePolicyMatchMode;
-};
+}
 
 interface TempStorageCleanupPolicy {
     name: string;
     matcher: TempStoragePolicyMatcher;
     execute: (entryPath: string) => Promise<void>;
-};
+}
 
 enum TempStoragePolicyMatchMode {
     Exact = 'exact',
     Prefix = 'prefix'
-};
+}
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const TEMP_STORAGE_CLEANUP_INTERVAL_MS = HOUR_IN_MS;
@@ -133,7 +133,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
 
             try {
                 await policy.execute(entryPath);
-            } catch (error: unknown) {
+            } catch {
                 logger.warn(`@temp-storage-lifecycle-service: cleanup policy failed entryName=${entry.name} policy=${policy.name}`);
             }
         }
@@ -300,7 +300,7 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
                 recursive,
                 force: true
             });
-        } catch (error: unknown) {
+        } catch {
             logger.warn(`@temp-storage-lifecycle-service: failed to delete temp path targetPath=${targetPath}`);
             return false;
         }
@@ -314,4 +314,4 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
             return false;
         }
     }
-};
+}

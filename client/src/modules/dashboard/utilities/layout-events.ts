@@ -9,21 +9,21 @@ export const DASHBOARD_LAYOUT_EVENTS = {
 interface DashboardWorkspaceChromeOptions {
     collapseSidebar?: boolean;
     hideHeader?: boolean;
-};
+}
 
 interface DashboardWorkspaceChromeRegistryEntry {
     collapseSidebar: boolean;
     hideHeader: boolean;
-};
+}
 
 interface DashboardWorkspaceChromeRegistry {
     entries: Record<string, DashboardWorkspaceChromeRegistryEntry>;
-};
+}
 
 export interface DashboardWorkspaceChromeState {
     sidebarCollapsed: boolean;
     headerHidden: boolean;
-};
+}
 
 type DashboardWorkspaceChromeListener = () => void;
 

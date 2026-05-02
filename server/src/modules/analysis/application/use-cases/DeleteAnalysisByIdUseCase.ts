@@ -11,14 +11,12 @@ import { inject, injectable } from 'tsyringe';
 
 interface DeleteAnalysisByIdOutputDTO {
     success: boolean;
-};
+}
 
 @injectable()
 export default class DeleteAnalysisByIdUseCase {
     constructor(
-        
         private readonly repository: AnalysisRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -63,4 +61,4 @@ export default class DeleteAnalysisByIdUseCase {
             success: true
         });
     }
-};
+}

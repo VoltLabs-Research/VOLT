@@ -10,7 +10,7 @@ export enum AnalysisStatus {
     Running = 'running',
     Completed = 'completed',
     Failed = 'failed'
-};
+}
 
 export interface OrbitControlsHandle {
     enabled: boolean;
@@ -21,7 +21,7 @@ export interface OrbitControlsHandle {
     maxDistance: number;
     addEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
     removeEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
-};
+}
 
 export type { BoxBounds, Pos3D, ModelLoadingState };
 

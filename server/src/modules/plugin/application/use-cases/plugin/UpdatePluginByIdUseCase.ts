@@ -22,19 +22,15 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO> {
     constructor(
-        
         private pluginRepository: PluginRepository,
-
-        
         private workflowValidator: WorkflowValidatorService,
-
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: UpdatePluginByIdInputDTO): Promise<Result<UpdatePluginByIdOutputDTO>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -42,15 +38,15 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         }
 
         const update: Partial<PluginProps> = {};
-        if(input.status) update.status = input.status;
+        if (input.status) update.status = input.status;
 
-        if(input.workflow){
+        if (input.workflow) {
             const effectiveStatus = input.status ?? plugin.props.status;
             const validationMode = effectiveStatus === PluginStatus.Published
                 ? WorkflowValidationMode.Strict
                 : WorkflowValidationMode.Draft;
             const { isValid, errors } = await this.workflowValidator.validate(input.workflow, plugin.id, validationMode);
-            if(effectiveStatus === PluginStatus.Published && !isValid){
+            if (effectiveStatus === PluginStatus.Published && !isValid) {
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
@@ -58,15 +54,15 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             }
 
             // Binary fields (binaryObjectPath, binaryFileName, binary) are managed
-            // exclusively by PluginStorageService (upload/delete endpoints). 
+            // exclusively by PluginStorageService (upload/delete endpoints).
             // Preserve them from the current DB state to prevent frontend overwrites.
-            if(!input._allowBinaryFieldUpdate){
+            if (!input._allowBinaryFieldUpdate) {
                 const currentEntrypoint = plugin.props.workflow.props.nodes
                     .find((n) => n.type === WorkflowNodeType.Entrypoint);
                 const incomingEntrypoint = input.workflow.nodes
                     .find((n) => n.type === WorkflowNodeType.Entrypoint);
 
-                if(currentEntrypoint?.data?.entrypoint && incomingEntrypoint?.data?.entrypoint){
+                if (currentEntrypoint?.data?.entrypoint && incomingEntrypoint?.data?.entrypoint) {
                     const { binary, binaryObjectPath, binaryFileName, binaryHash } = currentEntrypoint.data.entrypoint;
                     incomingEntrypoint.data.entrypoint = {
                         ...incomingEntrypoint.data.entrypoint,
@@ -88,10 +84,10 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             update.listingExposures = projection.listingExposures;
         }
 
-        if(input.status === PluginStatus.Published && !input.workflow){
+        if (input.status === PluginStatus.Published && !input.workflow) {
             // No workflow provided with publish request - validate the existing workflow.
             const { isValid, errors } = await this.workflowValidator.validate(plugin.props.workflow.props, plugin.id, WorkflowValidationMode.Strict);
-            if(!isValid){
+            if (!isValid) {
                 return Result.fail(ApplicationError.badRequest(
                     ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
                     `Plugin not valid, cannot publish: ${(errors ?? []).join(', ')}`
@@ -101,7 +97,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         const updatedPlugin = await this.pluginRepository.updateById(input.pluginId, update);
 
-        if(!updatedPlugin){
+        if (!updatedPlugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -130,4 +126,4 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         return Result.ok(mapPluginToPersistedDTO(updatedPlugin));
     }
-};
+}
