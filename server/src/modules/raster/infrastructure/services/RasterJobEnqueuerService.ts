@@ -19,21 +19,14 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     teamId: string;
     storageClusterId?: string;
     config?: RasterTriggerConfig;
-};
+}
 
 @Singleton()
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ) {}
 
@@ -107,4 +100,4 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
             );
         }
     }
-};
+}

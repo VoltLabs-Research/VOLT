@@ -5,7 +5,7 @@ import type { Trajectory } from '../../api/entities/trajectory';
 interface UseGetTrajectoryByIdParams {
     trajectoryId?: string;
     enabled?: boolean;
-};
+}
 
 interface UseGetTrajectoryByIdResult {
     trajectory: Trajectory | null;
@@ -15,7 +15,7 @@ interface UseGetTrajectoryByIdResult {
     accessDenied: boolean;
     accessDeniedMessage: string | undefined;
     refetch: () => Promise<void>;
-};
+}
 
 export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams = {}): UseGetTrajectoryByIdResult {
     const { trajectoryId, enabled = true } = params;

@@ -7,4 +7,4 @@ export interface TimestepInfo {
     fileId?: string;
     simulationCell?: SimulationCell;
     boxBounds?: BoxBounds;
-};
+}

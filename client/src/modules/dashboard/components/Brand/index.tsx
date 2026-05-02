@@ -8,7 +8,7 @@ import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 interface BrandProps {
     collapsed?: boolean;
     onToggleCollapse?: () => void;
-};
+}
 
 const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
     let brandContent = <Heading level={3} size='lg' weight='medium' tone='primary' className='sidebar-brand-title'>Volt</Heading>;

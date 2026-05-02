@@ -13,7 +13,6 @@ import { inject } from 'tsyringe';
 @Subscribe('PluginExecutionRequest')
 export class MarkTrajectoryQueuedHandler implements IEventHandler<PluginExecutionRequestEvent>{
     constructor(
-        
         private readonly trajectoryRepo: TrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -33,4 +32,4 @@ export class MarkTrajectoryQueuedHandler implements IEventHandler<PluginExecutio
             updatedAt: new Date()
         }));
     }
-};
+}

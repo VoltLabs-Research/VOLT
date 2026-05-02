@@ -8,7 +8,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export default class RetryTeamFailedJobsUseCase implements IUseCase<RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
@@ -17,4 +16,4 @@ export default class RetryTeamFailedJobsUseCase implements IUseCase<RetryTeamFai
 
         return Result.ok(outcome);
     }
-};
+}

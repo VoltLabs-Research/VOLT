@@ -55,6 +55,6 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
             workflow: source.workflow.props as unknown as PluginDocument['workflow']
         };
     }
-};
+}
 
 export default new PluginMapper();

@@ -13,12 +13,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamAIIntegrationUseCase implements IUseCase<ProviderScopedInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly integrationRepository: TeamAIIntegrationRepository,
-
-        
         private readonly providerCatalog: TeamAIProviderCatalog,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -51,4 +47,4 @@ export default class DeleteTeamAIIntegrationUseCase implements IUseCase<Provider
 
         return Result.ok(null);
     }
-};
+}

@@ -3,11 +3,11 @@ import { z } from 'zod/v4';
 export interface LatexOpenDocumentPayload extends Record<string, unknown> {
     documentId: string;
     teamId: string;
-};
+}
 
 export interface LatexCloseDocumentPayload extends Record<string, unknown> {
     documentId: string;
-};
+}
 
 export interface LatexUpdateContentPayload extends Record<string, unknown> {
     documentId: string;
@@ -16,7 +16,7 @@ export interface LatexUpdateContentPayload extends Record<string, unknown> {
     fileId: string;
     content: string;
     timestamp: number;
-};
+}
 
 const nonEmptyString = z.string().trim().min(1);
 

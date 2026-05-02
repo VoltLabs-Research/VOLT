@@ -8,8 +8,8 @@ export interface ClusterResourceLimitsDTO {
     maxMemoryMB: number | null;
     status: SystemStatus | null;
     lastUpdatedAt: string | null;
-};
+}
 
 export interface GetClusterResourceLimitsOutputDTO {
     resourceLimits: ClusterResourceLimitsDTO;
-};
+}

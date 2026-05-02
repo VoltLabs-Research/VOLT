@@ -9,7 +9,7 @@ interface UserBadgeProps{
     label: string;
     email: string;
     onChangeClick: () => void;
-};
+}
 
 const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
     <Row radius='md' p='1' justify='between' gap='1' className='user-badge'>

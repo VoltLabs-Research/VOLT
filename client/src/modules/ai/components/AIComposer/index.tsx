@@ -21,7 +21,7 @@ interface AIComposerProps {
     onChange: (message: string) => void;
     onModelChange: (model: string) => void;
     onSend: () => void;
-};
+}
 
 const AIComposer = ({
     value,

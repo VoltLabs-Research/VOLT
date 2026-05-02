@@ -4,4 +4,4 @@ export interface SendMessageInputDTO {
     chatId: string;
     content: string;
     messageType: ChatMessageType;
-};
+}

@@ -11,13 +11,13 @@ interface EnrichDaemonListingRowsInput {
     analysisRepository: IAnalysisRepository;
     trajectoryRepository: ITrajectoryRepository;
     fallbackAnalysisId?: string;
-};
+}
 
 interface ColumnFactoryInput {
     key: string;
     label: string;
     sortable?: boolean;
-};
+}
 
 const TRAJECTORY_COLUMN_KEY = 'trajectoryName';
 const TIMESTEP_COLUMN_KEY = 'timestep';

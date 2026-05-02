@@ -3,7 +3,7 @@ import type { ChatMessageMetadata, ChatMessageProps } from '@modules/chat/domain
 
 export interface PersistedChatMessageDTO extends ChatMessageProps {
     _id: string;
-};
+}
 
 export interface SendChatMessageInputDTO {
     userId: string;
@@ -11,6 +11,6 @@ export interface SendChatMessageInputDTO {
     content: string;
     messageType: ChatMessageType;
     metadata?: ChatMessageMetadata;
-};
+}
 
-export interface SendChatMessageOutputDTO extends PersistedChatMessageDTO {};
+export interface SendChatMessageOutputDTO extends PersistedChatMessageDTO {}

@@ -11,9 +11,8 @@ export class GetContainerByIdAITool extends AITool {
     readonly parameters = z.object({ containerId: z.string() });
 
     constructor(
-        
         protected readonly useCase: GetContainerByIdUseCase
     ) {
         super();
     }
-};
+}

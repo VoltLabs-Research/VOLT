@@ -15,7 +15,7 @@ interface ScreenshotActions {
     clearPendingRequest: () => void;
     setIsCapturing: (isCapturing: boolean) => void;
     reset: () => void;
-};
+}
 
 const initialState: ScreenshotState = {
     pendingRequest: null,

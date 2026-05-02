@@ -3,7 +3,7 @@ import type { ModelDragOffset } from '@/modules/fractal/stores/contracts/editor/
 export interface ModelDragEvent {
     sceneKey: string;
     offset: ModelDragOffset;
-};
+}
 
 type Listener = (event: ModelDragEvent) => void;
 

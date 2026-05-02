@@ -26,7 +26,7 @@ interface ChatSidebarProps {
     error?: Error | null;
     onSelectChat: (chatId: string) => void;
     onStartChatWithMember: (memberId: string) => void;
-};
+}
 
 const ChatSidebar = ({
     chats,

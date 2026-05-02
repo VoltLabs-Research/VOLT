@@ -6,8 +6,8 @@ export interface ExecutePluginInputDTO {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-};
+}
 
 export interface ExecutePluginOutputDTO {
     analysisId: string;
-};
+}

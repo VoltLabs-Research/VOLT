@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListLatexFoldersUseCase extends ListCatalogFoldersUseCase<LatexFolder, LatexFolderProps> {
     constructor(
-        
         latexFolderRepository: LatexFolderRepository
     ) {
         super(latexFolderRepository);

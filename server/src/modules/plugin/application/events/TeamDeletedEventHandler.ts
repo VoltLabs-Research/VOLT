@@ -9,10 +9,7 @@ import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/r
 @Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Plugin> {
     constructor(
-        
         protected readonly repository: PluginRepository,
-
-        
         private readonly deletePluginByIdUseCase: DeletePluginByIdUseCase
     ) {
         super();
@@ -21,4 +18,4 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
     protected async deleteOne(pluginId: string): Promise<void> {
         await this.deletePluginByIdUseCase.execute({ pluginId });
     }
-};
+}

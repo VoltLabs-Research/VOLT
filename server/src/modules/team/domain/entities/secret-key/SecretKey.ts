@@ -2,14 +2,14 @@ export interface PopulatedRole {
     _id: string;
     name: string;
     permissions?: string[];
-};
+}
 
 export interface PopulatedUser {
     _id: string;
     firstName?: string;
     lastName?: string;
     email?: string;
-};
+}
 
 export interface SecretKeyProps {
     team: string;
@@ -22,11 +22,11 @@ export interface SecretKeyProps {
     lastUsedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
-export const isPopulatedSecretKeyRole = (value: SecretKeyProps['role']): value is PopulatedRole => {
-    return typeof value !== 'string';
-};
+export const isPopulatedSecretKeyRole = (value: SecretKeyProps['role']): value is PopulatedRole => (
+    typeof value !== 'string'
+);
 
 export default class SecretKey {
     constructor(
@@ -61,4 +61,4 @@ export default class SecretKey {
 
         return this.props.createdBy;
     }
-};
+}

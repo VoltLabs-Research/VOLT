@@ -4,11 +4,10 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
 @Subscribe('invitation.sent')
-export default class InvitationSentEventHandler implements IEventHandler<InvitationSentIntegrationEvent>{
+export default class InvitationSentEventHandler implements IEventHandler<InvitationSentIntegrationEvent> {
     constructor(
-        
         private readonly createNotificationUseCase: CreateNotificationUseCase
-    ){}
+    ) {}
 
     async handle(event: InvitationSentIntegrationEvent): Promise<void>{
         const { teamName, invitedUserId, invitationId } = event.payload;
@@ -20,4 +19,4 @@ export default class InvitationSentEventHandler implements IEventHandler<Invitat
             link: `/team-invitation/${invitationId}`
         });
     }
-};
+}

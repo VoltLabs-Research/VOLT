@@ -3,9 +3,9 @@ import type { TeamClusterDTO } from '@modules/cluster/application/dtos/TeamClust
 
 export interface CreateTeamClusterInputDTO extends TeamUserScopedInputDTO {
     name: string;
-};
+}
 
 export interface CreateTeamClusterOutputDTO {
     teamCluster: TeamClusterDTO;
     enrollmentToken: string;
-};
+}

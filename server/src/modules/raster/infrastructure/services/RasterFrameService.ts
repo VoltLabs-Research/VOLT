@@ -10,13 +10,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class RasterFrameService implements IRasterFrameReader {
     constructor(
-        
         private readonly rasterStorage: RasterStorageService,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly analysisRepository: AnalysisRepository
     ) {}
 
@@ -67,4 +62,4 @@ export class RasterFrameService implements IRasterFrameReader {
             teamClusterId
         );
     }
-};
+}

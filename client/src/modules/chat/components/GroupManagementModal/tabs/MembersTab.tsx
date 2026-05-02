@@ -16,7 +16,7 @@ interface MembersTabProps {
     canEdit: boolean;
     onToggleSelected: (id: string) => void;
     onAddMembers: () => void;
-};
+}
 
 const MembersTab = ({
     chat,

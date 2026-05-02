@@ -19,7 +19,7 @@ interface DebugSessionCreatedEvent {
     executionOrder: Array<{ nodeId: string; type: string }>;
     forEachNodeId: string | null;
     totalIterations: number;
-};
+}
 
 interface DebugNodeStartedEvent {
     sessionId: string;
@@ -27,7 +27,7 @@ interface DebugNodeStartedEvent {
     nodeType: string;
     index: number;
     total: number;
-};
+}
 
 interface DebugNodeCompletedEvent {
     sessionId: string;
@@ -38,7 +38,7 @@ interface DebugNodeCompletedEvent {
     durationMs: number;
     index: number;
     contextSnapshot: Record<string, Record<string, unknown>>;
-};
+}
 
 interface DebugNodeSkippedEvent {
     sessionId: string;
@@ -46,7 +46,7 @@ interface DebugNodeSkippedEvent {
     nodeType: string;
     reason: string;
     nestedTrace?: DebugTraceNode[];
-};
+}
 
 interface DebugNodeErrorEvent {
     sessionId: string;
@@ -55,13 +55,13 @@ interface DebugNodeErrorEvent {
     error: string;
     stack?: string;
     nestedTrace?: DebugTraceNode[];
-};
+}
 
 interface DebugSessionCompletedEvent {
     sessionId: string;
     exposureResults: unknown[];
     totalDuration: number;
-};
+}
 
 interface DebugNodeLogChunkEvent {
     sessionId: string;
@@ -72,7 +72,7 @@ interface DebugNodeLogChunkEvent {
 interface DebugSessionErrorEvent {
     sessionId?: string;
     error: string;
-};
+}
 
 interface DebugStartPayload {
     pluginId: string;

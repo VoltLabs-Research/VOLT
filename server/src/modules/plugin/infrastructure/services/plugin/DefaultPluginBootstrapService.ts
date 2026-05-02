@@ -69,9 +69,7 @@ const readModifierKeyFromPluginZip = async (fileBuffer: Buffer): Promise<string>
 @Singleton()
 export class DefaultPluginBootstrapService implements IDefaultPluginBootstrapService {
     constructor(
-        
         private readonly pluginStorageService: PluginStorageService,
-        
         private readonly pluginRepository: PluginRepository
     ) {}
 
@@ -122,4 +120,4 @@ export class DefaultPluginBootstrapService implements IDefaultPluginBootstrapSer
             failedPlugins
         };
     }
-};
+}

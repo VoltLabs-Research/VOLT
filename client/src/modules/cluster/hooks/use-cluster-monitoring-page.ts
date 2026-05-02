@@ -12,7 +12,7 @@ export interface ClusterMonitoringPageViewModel extends ClusterPageState {
     metricsByClusterId: Record<string, ClusterMetrics>;
     hasClusters: boolean;
     isMetricsConnected: boolean;
-};
+}
 
 const useClusterMonitoringPage = (): ClusterMonitoringPageViewModel => {
     const state = useClusterPageState();

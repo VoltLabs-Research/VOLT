@@ -14,9 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 @Singleton()
 export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -58,4 +56,4 @@ export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAs
             ));
         }
     }
-};
+}

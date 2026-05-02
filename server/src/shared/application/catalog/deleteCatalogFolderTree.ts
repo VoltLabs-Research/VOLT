@@ -15,7 +15,7 @@ interface DeleteCatalogFolderTreeOptions<
     deleteItem: (item: TItem, teamId: string) => Promise<void>;
     teamField?: keyof TItemProps & string;
     folderField?: keyof TItemProps & string;
-};
+}
 
 export const deleteCatalogFolderTree = async <
     TFolder extends CatalogFolderEntity<TFolderProps>,

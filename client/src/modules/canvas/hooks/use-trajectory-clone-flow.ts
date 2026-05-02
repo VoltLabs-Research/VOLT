@@ -15,7 +15,7 @@ interface CloneAndRunArgs {
     sourceTrajectoryId: string;
     targetClusterId: string;
     intent: PendingExecutionIntent;
-};
+}
 
 const formatProgressMessage = (copied: number, total: number): string => {
     if (total > 0) {

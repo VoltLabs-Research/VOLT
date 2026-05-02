@@ -15,7 +15,7 @@ interface DeleteClusterModalProps {
     teamCluster: TeamCluster | null;
     onDelete: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
     onClose: () => void;
-};
+}
 
 const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterModalProps) => {
     const [password, setPassword] = useState('');

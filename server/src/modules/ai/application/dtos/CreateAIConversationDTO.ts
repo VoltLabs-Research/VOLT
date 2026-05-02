@@ -6,9 +6,9 @@ export interface CreateAIConversationInputDTO {
     userId: string;
     title?: string;
     message?: string;
-};
+}
 
 export interface CreateAIConversationOutputDTO {
     conversation: AIConversationDTO;
     userMessage?: AIMessageDTO;
-};
+}

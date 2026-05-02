@@ -4,4 +4,4 @@ import type Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 
 export interface IWhiteboardRepository extends IBaseRepository<Whiteboard, WhiteboardProps> {
     findByTeamAndWhiteboardId(teamId: string, whiteboardId: string): Promise<Whiteboard | null>;
-};
+}

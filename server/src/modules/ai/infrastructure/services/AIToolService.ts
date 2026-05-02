@@ -7,7 +7,7 @@ import { injectAll } from 'tsyringe';
 export interface AIToolScope {
     teamId: string;
     userId: string;
-};
+}
 
 @Singleton()
 export default class AIToolService {
@@ -24,4 +24,4 @@ export default class AIToolService {
         }
         return allTools;
     }
-};
+}

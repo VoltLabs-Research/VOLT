@@ -6,7 +6,7 @@ import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
 interface UseLatexFilesInput {
     documentId: string;
     onFileSelected?: (file: LatexFile) => void;
-};
+}
 
 const CREATE_FILE_TOAST = {
     loading: { title: 'Creating file...' },

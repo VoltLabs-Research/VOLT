@@ -6,4 +6,4 @@ export interface UpdateScriptingNotebookInputDTO {
     title?: string;
     teamClusterId?: string;
     containerResources?: ScriptingNotebookContainerResourcesDTO;
-};
+}

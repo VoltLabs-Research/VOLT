@@ -12,11 +12,11 @@ import './TeamInvitePanel.css';
 enum InviteTab {
     Share = 'Share',
     InvitationCode = 'Invitation Code'
-};
+}
 
 interface TeamInvitePanelProps {
     onClose?: () => void;
-};
+}
 
 export const TeamInvitePanel = ({
     onClose

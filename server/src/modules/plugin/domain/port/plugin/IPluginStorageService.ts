@@ -8,20 +8,20 @@ export interface PluginBinaryFile {
     originalName?: string;
     mimetype?: string;
     size: number;
-};
+}
 
-export interface BinaryUploadResult{
+export interface BinaryUploadResult {
     objectPath: string;
     fileName: string;
     size: number;
-};
+}
 
-export interface PluginImportResult{
+export interface PluginImportResult {
     plugin: Plugin;
     binaryImported: boolean;
-};
+}
 
-export interface IPluginStorageService{
+export interface IPluginStorageService {
     uploadBinary(
         pluginId: string,
         teamId: string,
@@ -35,8 +35,8 @@ export interface IPluginStorageService{
     exportPlugin(pluginId: string): Promise<Readable>;
 
     importPlugin(
-        fileBuffer: Buffer, 
+        fileBuffer: Buffer,
         teamId: string,
         status?: PluginStatus
     ): Promise<PluginImportResult>;
-};
+}

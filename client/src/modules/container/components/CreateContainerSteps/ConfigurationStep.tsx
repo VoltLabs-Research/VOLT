@@ -22,12 +22,12 @@ import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-s
 interface PortMappingFormItem extends Record<string, unknown> {
     private: number;
     public?: number;
-};
+}
 
 interface EnvVariableFormItem extends Record<string, unknown> {
     key: string;
     value: string;
-};
+}
 
 type PortMappingSourceItem = ContainerConfig['ports'][number] | PortMappingFormItem;
 
@@ -46,7 +46,7 @@ const getPortMappingFormItem = (item: PortMappingSourceItem): PortMappingFormIte
 
 interface ValueChangeTarget {
     value: string | boolean;
-};
+}
 
 interface ConfigurationStepProps {
     config: ContainerConfig;
@@ -62,7 +62,7 @@ interface ConfigurationStepProps {
     onTeamClusterChange: (teamClusterId: string | null) => void;
     onBack: () => void;
     onNext: () => void;
-};
+}
 
 const PORT_FIELDS: FieldConfig[] = [
     {

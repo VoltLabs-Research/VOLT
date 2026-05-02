@@ -1,6 +1,6 @@
 interface DateCellProps {
     value: unknown;
-};
+}
 
 const DateCell = ({ value }: DateCellProps) => {
     if(!(value instanceof Date) || Number.isNaN(value.getTime())){

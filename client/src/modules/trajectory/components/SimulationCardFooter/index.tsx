@@ -34,22 +34,22 @@ interface SimulationCardFooterProps {
     processingMessage?: string;
     onMoveToFolder?: () => void;
     onDelete?: (_id: string) => void;
-};
+}
 
 interface ToastState {
     title: string;
     description?: string;
-};
+}
 
 interface ToastStateResolver<T> {
     (_data: T): ToastState;
-};
+}
 
 interface PromiseToastConfig<T> {
     loading: ToastState;
     success: ToastState | ToastStateResolver<T>;
     error: ToastState;
-};
+}
 
 interface SimulationCardActionItem {
     icon: ReactNode;
@@ -58,18 +58,18 @@ interface SimulationCardActionItem {
     isDanger?: boolean;
     isLoading?: boolean;
     disabled?: boolean;
-};
+}
 
 interface RasterizeTrajectoryToastResult {
     queuedJobs: number;
     duplicateJobs: number;
     skippedJobs: number;
     alreadyRasterizedJobs: number;
-};
+}
 
 interface RasterizationJobStatusCounts {
     pending: number;
-};
+}
 
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
 

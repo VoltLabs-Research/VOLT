@@ -18,7 +18,7 @@ export interface FractalSceneRef {
     getCurrentZoom: () => number;
     resetCamera: () => void;
     subscribeZoom: (listener: (zoom: number) => void) => () => void;
-};
+}
 
 type OrbitControlsSceneProps = Omit<FractalSceneConfig['orbitControls'], 'target'>;
 
@@ -33,7 +33,7 @@ interface FractalSceneProps {
     screenshotRequest?: ScreenshotRequest | null;
     screenshotComposition?: ScreenshotComposition;
     onScreenshotCaptureHandled?: () => void;
-};
+}
 
 const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     config,

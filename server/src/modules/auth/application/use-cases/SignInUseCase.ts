@@ -14,13 +14,9 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly userRepository: UserRepository,
-        
         private readonly passwordHasher: BcryptPasswordHasher,
-        
         private readonly sessionRepository: SessionRepository,
-        
         private readonly authSessionService: AuthSessionService
     ) {}
 
@@ -69,4 +65,4 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
             user: toPersistedUserDTO(user)
         });
     }
-};
+}

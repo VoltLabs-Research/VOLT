@@ -5,7 +5,7 @@ interface ScriptingNotebookDocument extends Record<string, unknown> {
     cells: Record<string, unknown>[];
     nbformat?: number;
     nbformat_minor?: number;
-};
+}
 
 export const DEFAULT_SCRIPTING_NOTEBOOK_TITLE = 'Untitled Notebook';
 

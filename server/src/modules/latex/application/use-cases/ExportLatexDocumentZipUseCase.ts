@@ -26,15 +26,9 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -105,4 +99,4 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
             ));
         }
     }
-};
+}

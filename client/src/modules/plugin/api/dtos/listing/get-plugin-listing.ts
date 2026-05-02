@@ -8,7 +8,7 @@ export interface PluginListingMeta extends Record<string, unknown> {
     exposureId: string;
     columns: ColumnConfig[];
     subListingNames: string[];
-};
+}
 
 export interface GetPluginListingInputDTO {
     pluginId: string;
@@ -18,8 +18,8 @@ export interface GetPluginListingInputDTO {
     analysisId?: string;
     page?: number;
     limit?: number;
-};
+}
 
 export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
     _meta?: PluginListingMeta;
-};
+}

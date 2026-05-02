@@ -12,10 +12,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDTO, ListSSHFilesOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
-
-        
         private readonly sshConnService: SSHConnectionService
     ){}
 
@@ -35,17 +32,13 @@ export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDT
             const remotePath = path || '.';
             const files = await this.sshConnService.listFiles(sshConnectionResult.value, remotePath);
 
-            const entries: SSHFileEntryDTO[] = files.map((file) => {
-                const type = file.isDirectory ? 'dir' : 'file';
-
-                return {
-                    type,
-                    name: file.name,
-                    relPath: file.path,
-                    size: file.size,
-                    mtime: file.mtime.toISOString()
-                };
-            });
+            const entries: SSHFileEntryDTO[] = files.map((file) => ({
+                type: file.isDirectory ? 'dir' : 'file',
+                name: file.name,
+                relPath: file.path,
+                size: file.size,
+                mtime: file.mtime.toISOString()
+            }));
 
             return Result.ok({
                 cwd: remotePath,
@@ -59,4 +52,4 @@ export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDT
             ));
         }
     }
-};
+}

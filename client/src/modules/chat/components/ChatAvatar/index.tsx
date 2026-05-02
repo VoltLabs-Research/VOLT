@@ -15,7 +15,7 @@ interface ChatAvatarProps {
     showStatus?: boolean;
     isOnline?: boolean;
     className?: string;
-};
+}
 
 const GROUP_ICON_SIZES: Record<AvatarSize, number> = {
     xs: 14,

@@ -9,7 +9,6 @@ import {
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Readable } from 'node:stream';
 
-
 import type {
     AnalysisListingExportData,
     AnalysisSubListingExportData,
@@ -128,4 +127,4 @@ export class ListingRowsExportPresenter {
             }
         });
     }
-};
+}

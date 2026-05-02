@@ -35,7 +35,7 @@ interface ToolApprovalResponseParams {
     id: string;
     approved: boolean;
     reason?: string;
-};
+}
 
 interface AIConversationThreadProps {
     conversationId?: string;
@@ -48,7 +48,7 @@ interface AIConversationThreadProps {
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
     starterInput?: ReactNode;
     onRetry?: () => void;
-};
+}
 
 interface NormalizedToolInvocation {
     toolCallId: string;
@@ -57,53 +57,53 @@ interface NormalizedToolInvocation {
     state: string;
     args: unknown;
     result: unknown;
-};
+}
 
 interface OpenSpreadsheetButtonProps {
     onClick: () => void;
     isActive?: boolean;
     embedded?: boolean;
-};
+}
 
 interface TextPart {
     type: 'text';
     text: string;
-};
+}
 
 interface ReasoningPart {
     type: 'reasoning';
     text: string;
-};
+}
 
 interface MarkdownTableProps extends ComponentPropsWithoutRef<'table'> {
     children?: ReactNode;
-};
+}
 
 interface AIArtifactImagePayload {
     url?: string;
     width?: number;
     height?: number;
-};
+}
 
 interface TextSegment {
     type: 'text';
     content: string;
-};
+}
 
 interface ReasoningSegment {
     type: 'reasoning';
     content: string;
-};
+}
 
 interface ToolSegment {
     type: 'tool';
     invocation: NormalizedToolInvocation;
-};
+}
 
 interface ArtifactSegment {
     type: 'artifact';
     artifact: AIMessageArtifact;
-};
+}
 
 type MessageSegment = TextSegment | ReasoningSegment | ToolSegment | ArtifactSegment;
 
@@ -113,7 +113,7 @@ interface NormalizedConversationMessage extends UIMessage {
     reasoning: string;
     artifacts: AIMessageArtifact[];
     toolInvocations: NormalizedToolInvocation[];
-};
+}
 
 /** Stable reference to avoid re-creating the array on every render. */
 const REMARK_PLUGINS = [remarkGfm];
@@ -309,7 +309,7 @@ interface AIMessageItemProps {
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
     activeTableArtifactId?: string | null;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
-};
+}
 
 const resolveImagePayload = (artifact: AIMessageArtifact): AIArtifactImagePayload | null => {
     if (!isRecord(artifact.payload)) {

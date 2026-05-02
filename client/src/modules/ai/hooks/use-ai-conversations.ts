@@ -17,7 +17,7 @@ interface UseAIConversationsOptions {
     onConversationChange?: (conversationId?: string) => void;
     onConversationCreated?: () => void;
     checkAccessDeniedError: (error: unknown) => boolean;
-};
+}
 
 const sortConversations = (conversations: AIConversation[]) => {
     return [...conversations].sort((left, right) => {

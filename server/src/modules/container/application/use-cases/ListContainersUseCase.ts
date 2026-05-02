@@ -14,9 +14,9 @@ import { injectable } from 'tsyringe';
 interface ListContainersFilter extends Record<string, unknown> {
     team: string;
     folder?: string | null;
-};
+}
 
-interface ContainerRuntimeDriftUpdate extends Partial<Pick<IContainerProps, 'status' | 'internalIp' | 'ports'>> {};
+interface ContainerRuntimeDriftUpdate extends Partial<Pick<IContainerProps, 'status' | 'internalIp' | 'ports'>> {}
 
 interface PopulatedContainerTeamCluster {
     _id: string;
@@ -263,4 +263,4 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             container.ports = update.ports;
         }
     }
-};
+}

@@ -10,7 +10,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetAnalysisByIdUseCase {
     constructor(
-        
         private readonly repository: AnalysisRepository
     ) {}
 
@@ -38,4 +37,4 @@ export default class GetAnalysisByIdUseCase {
             plugin: extractPluginId(persisted.plugin)
         });
     }
-};
+}

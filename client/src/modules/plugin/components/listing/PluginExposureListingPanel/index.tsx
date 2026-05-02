@@ -12,7 +12,7 @@ interface PluginExposureListingPanelProps {
     inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
-};
+}
 
 const PluginExposureListingPanel = ({
     pluginId,

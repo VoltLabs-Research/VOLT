@@ -11,7 +11,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvitePermissionInputDTO, CheckInvitePermissionOutputDTO, ApplicationError>{
     constructor(
-        
         private teamMemberRepository: TeamMemberRepository
     ){}
 
@@ -34,4 +33,4 @@ export default class CheckInvitePermissionUseCase implements IUseCase<CheckInvit
 
         return Result.ok({ canInvite });
     }
-};
+}

@@ -9,4 +9,4 @@ export abstract class BaseDomainEvent<T> implements IDomainEvent {
         public readonly name: string,
         public readonly payload: T
     ) {}
-};
+}

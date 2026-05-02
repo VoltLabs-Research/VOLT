@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 interface ModifierConfigProps {
     children?: ReactNode;
-};
+}
 
 const ModifierConfig = ({ children }: ModifierConfigProps) => (
     <Stack gap='05'>

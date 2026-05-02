@@ -3,7 +3,7 @@ import type { IExposureComputed } from '@/modules/plugin/api/entities/plugin/exp
 export interface ListingRelevantExposure {
     exposureId: string;
     name: string;
-};
+}
 
 export const getListingRelevantExposures = (
     exposures: IExposureComputed[] | undefined | null

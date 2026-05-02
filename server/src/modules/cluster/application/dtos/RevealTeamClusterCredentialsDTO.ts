@@ -6,4 +6,4 @@ export type RevealTeamClusterCredentialsInputDTO = PasswordConfirmedTeamClusterI
 export interface RevealTeamClusterCredentialsOutputDTO {
     teamClusterId: string;
     services: TeamClusterCredentialServicesDTO;
-};
+}

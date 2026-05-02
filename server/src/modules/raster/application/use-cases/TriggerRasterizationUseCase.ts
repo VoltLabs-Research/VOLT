@@ -54,4 +54,4 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
             ));
         }
     }
-};
+}

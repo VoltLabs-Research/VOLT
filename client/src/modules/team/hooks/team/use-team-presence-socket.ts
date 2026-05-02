@@ -5,17 +5,17 @@ import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presen
 
 interface TeamPresenceSnapshotUser {
     _id: string;
-};
+}
 
 interface TeamPresenceSnapshotEvent {
     teamId: string;
     users: TeamPresenceSnapshotUser[];
-};
+}
 
 interface TeamPresenceUserEvent {
     teamId: string;
     userId: string;
-};
+}
 
 export default function useTeamPresenceSocket(): void {
     const teamId = useSelectedTeamId();

@@ -22,12 +22,12 @@ interface AIArtifactSpreadsheetPanelProps {
     artifact: AIMessageArtifact;
     onClose: () => void;
     width?: number;
-};
+}
 
 interface CellAddress {
     row: number;
     col: number;
-};
+}
 
 const stringifyValue = (value: unknown): string => {
     if (value == null) return '';

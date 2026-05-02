@@ -5,4 +5,4 @@ export type GetTeamClusterByIdInputDTO = TeamScopedEntityIdInputDTO<'teamCluster
 
 export interface GetTeamClusterByIdOutputDTO {
     teamCluster: TeamClusterDTO;
-};
+}

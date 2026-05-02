@@ -12,7 +12,7 @@ interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
     settingsExpanded: boolean;
     collapsed?: boolean;
-};
+}
 
 const SETTINGS_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Settings);
 

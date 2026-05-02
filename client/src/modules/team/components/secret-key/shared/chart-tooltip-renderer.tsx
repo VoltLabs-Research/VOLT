@@ -5,7 +5,7 @@ import type { ValueType, NameType } from 'recharts/types/component/DefaultToolti
 
 interface TooltipPayloadRecord {
     [key: string]: string | number;
-};
+}
 
 const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord => {
     if (typeof value !== 'object' || value === null) {

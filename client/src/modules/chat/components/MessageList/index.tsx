@@ -13,7 +13,7 @@ interface MessageListProps {
     hasMore?: boolean;
     onLoadMore?: () => void;
     renderMessage: (message: ChatMessage) => ReactNode;
-};
+}
 
 const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }: MessageListProps) => {
     let loadMoreIndicator: ReactNode = null;

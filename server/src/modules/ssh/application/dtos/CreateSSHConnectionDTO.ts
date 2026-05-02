@@ -14,4 +14,4 @@ export interface CreateSSHConnectionInputDTO{
     userId: string;
     teamId: string;
     username: string;
-};
+}

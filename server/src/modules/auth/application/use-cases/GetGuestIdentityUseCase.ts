@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly avatarService: AvatarService
     ) {}
 
@@ -26,4 +25,4 @@ export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentit
             lastName: shortHash
         });
     }
-};
+}

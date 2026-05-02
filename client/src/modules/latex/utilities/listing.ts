@@ -4,22 +4,22 @@ import type { LatexDocument } from '@/modules/latex/api/entities/latex-document'
 export enum LatexListingRowType {
     Folder = 'folder',
     Document = 'document'
-};
+}
 
 enum LatexListingDndPrefix {
     Folder = 'folder',
     Document = 'document'
-};
+}
 
 export interface LatexFolderRow extends LatexFolder {
     rowType: LatexListingRowType.Folder;
     createdBy: null;
     lastEditedBy: null;
-};
+}
 
 export interface LatexDocumentRow extends LatexDocument {
     rowType: LatexListingRowType.Document;
-};
+}
 
 export type LatexListingRow = LatexFolderRow | LatexDocumentRow;
 

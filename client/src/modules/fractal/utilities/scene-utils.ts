@@ -5,7 +5,7 @@ interface SceneKeyConfig {
     sceneType: string;
     analysisId?: string;
     exposureId?: string;
-};
+}
 
 export const getSceneKey = (sceneConfig: SceneKeyConfig) => {
     if (sceneConfig.source === 'plugin') {

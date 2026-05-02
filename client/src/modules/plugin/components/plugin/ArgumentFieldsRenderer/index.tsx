@@ -30,11 +30,11 @@ interface ArgumentFieldsRendererProps {
     path?: string;
     autocompleteOptions?: FormFieldAutocompleteOption[];
     allowTemplateReferenceMode?: boolean;
-};
+}
 
 interface ListItemValue {
     [key: string]: unknown;
-};
+}
 
 interface PrimitiveFieldConfig {
     fieldType: 'input' | 'select' | 'checkbox';
@@ -46,7 +46,7 @@ interface PrimitiveFieldConfig {
         min?: number;
         max?: number;
     };
-};
+}
 
 const getPrimitiveFieldConfig = (
     argument: IArgumentDefinition,

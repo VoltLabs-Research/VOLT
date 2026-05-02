@@ -8,7 +8,7 @@ export interface SecretKeyUsageLogProps {
     ip: string;
     userAgent: string;
     createdAt: Date;
-};
+}
 
 export default class SecretKeyUsageLog {
     constructor(
@@ -19,4 +19,4 @@ export default class SecretKeyUsageLog {
     public get id(): string {
         return this._id;
     }
-};
+}

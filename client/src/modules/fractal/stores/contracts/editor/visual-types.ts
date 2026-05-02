@@ -25,7 +25,7 @@ export interface CameraUpdateState {
     up?: CameraSettingsState['up'];
     perspective?: Partial<PerspectiveSettings>;
     orthographic?: Partial<OrthographicSettings>;
-};
+}
 
 export interface CanvasGridSettingsState {
     enabled: boolean;
@@ -42,18 +42,18 @@ export interface CanvasGridSettingsState {
     cellColorFollowsTheme: boolean;
     position: [number, number, number];
     rotation: [number, number, number];
-};
+}
 
 export interface CanvasGridSettingsActions {
     setGrid: (partial: Partial<CanvasGridSettingsState>) => void;
     reset: () => void;
-};
+}
 
 export interface EnvironmentConfigActions {
     setBackgroundColor: (color: string) => void;
     setFogConfig: (config: Partial<FogConfig>) => void;
     reset: () => void;
-};
+}
 
 export interface CameraSettingsActions {
     setType: (type: CameraSettingsState['type']) => void;
@@ -63,7 +63,7 @@ export interface CameraSettingsActions {
     setOrthographic: (partial: Partial<OrthographicSettings>) => void;
     setCamera: (partial: CameraUpdateState) => void;
     reset: () => void;
-};
+}
 
 export interface EffectsConfigActions {
     setSSAOEffect: (config: Partial<SSAOEffectConfig>) => void;
@@ -74,7 +74,7 @@ export interface EffectsConfigActions {
     setNoise: (config: Partial<NoiseEffectConfig>) => void;
     setSepia: (config: Partial<SepiaEffectConfig>) => void;
     reset: () => void;
-};
+}
 
 export type PerspectiveSettings = PerspectiveCameraSettings;
 export type OrthographicSettings = OrthographicCameraSettings;
@@ -100,4 +100,4 @@ export interface OrbitControlsActions {
     set: (partial: Partial<OrbitControlsState>) => void;
     setTarget: (t: [number, number, number]) => void;
     reset: () => void;
-};
+}

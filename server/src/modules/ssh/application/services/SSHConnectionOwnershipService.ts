@@ -8,12 +8,11 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 enum SSHConnectionLoadMode {
     Plain = 'plain',
     WithCredentials = 'with-credentials'
-};
+}
 
 @Singleton()
 export class SSHConnectionOwnershipService {
     constructor(
-        
         private readonly repository: SSHConnectionRepository
     ){}
 
@@ -30,13 +29,9 @@ export class SSHConnectionOwnershipService {
         teamId: string,
         loadMode: SSHConnectionLoadMode
     ): Promise<Result<SSHConnection, ApplicationError>> {
-        let sshConnection: SSHConnection | null;
-
-        if (loadMode === SSHConnectionLoadMode.WithCredentials) {
-            sshConnection = await this.repository.findByIdWithCredentials(sshConnectionId);
-        } else {
-            sshConnection = await this.repository.findById(sshConnectionId);
-        }
+        const sshConnection = loadMode === SSHConnectionLoadMode.WithCredentials
+            ? await this.repository.findByIdWithCredentials(sshConnectionId)
+            : await this.repository.findById(sshConnectionId);
 
         if (!sshConnection || sshConnection.props.team !== teamId) {
             return Result.fail(ApplicationError.notFound(
@@ -47,4 +42,4 @@ export class SSHConnectionOwnershipService {
 
         return Result.ok(sshConnection);
     }
-};
+}

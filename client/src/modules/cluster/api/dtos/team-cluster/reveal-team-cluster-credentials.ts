@@ -4,9 +4,9 @@ export interface RevealTeamClusterCredentialsInputDTO {
     teamId: string;
     teamClusterId: string;
     password: string;
-};
+}
 
 export interface RevealTeamClusterCredentialsOutputDTO {
     teamClusterId: string;
     services: TeamClusterCredentialServices;
-};
+}

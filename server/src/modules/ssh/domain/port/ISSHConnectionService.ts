@@ -6,14 +6,14 @@ export interface SSHFileEntry{
     isDirectory: boolean;
     size: number;
     mtime: Date;
-};
+}
 
 export interface DownloadProgress{
     totalBytes: number;
     downloadedBytes: number;
     currentFile: string;
     percent: number;
-};
+}
 
 export interface ISSHConnectionService{
     testConnection(
@@ -47,4 +47,4 @@ export interface ISSHConnectionService{
         localPath: string,
         onProgress?: (progress: DownloadProgress) => void
     ): Promise<string[]>;
-};
+}

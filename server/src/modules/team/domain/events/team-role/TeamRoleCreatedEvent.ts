@@ -5,6 +5,6 @@ export interface TeamRoleCreatedEventPayload {
     teamId: string;
     name: string;
     userId: string;
-};
+}
 
-export default class TeamRoleCreatedEvent extends createTeamDomainEvent<TeamRoleCreatedEventPayload>('team-role.created') {};
+export default class TeamRoleCreatedEvent extends createTeamDomainEvent<TeamRoleCreatedEventPayload>('team-role.created') {}

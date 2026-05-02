@@ -7,7 +7,7 @@ import { useId, useLayoutEffect } from 'react';
 interface DashboardWorkspaceChromeOptions {
     collapseSidebar?: boolean;
     hideHeader?: boolean;
-};
+}
 
 const useDashboardWorkspaceChrome = ({
     collapseSidebar = false,

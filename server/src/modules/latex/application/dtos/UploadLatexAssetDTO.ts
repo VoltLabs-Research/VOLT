@@ -13,4 +13,4 @@ export interface UploadLatexAssetOutputDTO {
     /** Number of files that could not be processed. */
     failedCount: number;
     total: number;
-};
+}

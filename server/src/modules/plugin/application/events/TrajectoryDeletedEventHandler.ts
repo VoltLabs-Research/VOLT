@@ -7,9 +7,8 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository
-    ){}
+    ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { trajectoryId } = event.payload;
@@ -17,4 +16,4 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<Traj
 
         await this.sceneArtifactRepository.deleteMany({ ...query, sourceType: 'plugin-exposure' });
     }
-};
+}

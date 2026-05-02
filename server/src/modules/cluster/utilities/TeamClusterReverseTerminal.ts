@@ -1,5 +1,4 @@
 import { PassThrough } from 'node:stream';
-
 import type {
     ContainerTerminalExec,
     ContainerTerminalSize,
@@ -12,7 +11,7 @@ export class TeamClusterReverseTerminalExec implements ContainerTerminalExec {
     async resize(size: ContainerTerminalSize): Promise<void> {
         this.onResize(size);
     }
-};
+}
 
 export class TeamClusterReverseTerminalStream implements ContainerTerminalStream {
     public destroyed = false;
@@ -59,4 +58,4 @@ export class TeamClusterReverseTerminalStream implements ContainerTerminalStream
 
         this.stream.on('error', args[1]);
     }
-};
+}

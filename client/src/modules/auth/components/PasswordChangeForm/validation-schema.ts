@@ -7,7 +7,7 @@ export interface PasswordChangeForm {
     currentPassword: string;
     newPassword: string;
     confirmPassword: string;
-};
+}
 
 export const passwordChangeSchema = z.object({
     currentPassword: z.string(),

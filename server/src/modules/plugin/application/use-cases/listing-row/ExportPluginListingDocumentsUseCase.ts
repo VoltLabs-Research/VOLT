@@ -28,13 +28,10 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
     DownloadStreamOutputDTO
 > {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-        
         private readonly daemonClient: TeamClusterDaemonClient
-    ){}
+    ) {}
 
     async execute(input: ExportPluginListingDocumentsInputDTO): Promise<Result<DownloadStreamOutputDTO>> {
         const format = input.format ?? ExportType.Json;
@@ -122,4 +119,4 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
 
         return null;
     }
-};
+}

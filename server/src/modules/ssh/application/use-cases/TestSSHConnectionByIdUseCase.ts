@@ -11,10 +11,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
-
-        
         private readonly sshConnService: SSHConnectionService
     ){}
 
@@ -40,4 +37,4 @@ export class TestSSHConnectionByIdUseCase implements IUseCase<TestSSHConnectionB
             ));
         }
     }
-};
+}

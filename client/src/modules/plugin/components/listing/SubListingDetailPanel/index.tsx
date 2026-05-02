@@ -12,13 +12,13 @@ export interface SubListingDetailColumn {
     title?: string;
     label?: string;
     path?: string;
-};
+}
 
 interface SubListingDetailPanelProps {
     row: Record<string, unknown> | null;
     columns: SubListingDetailColumn[];
     onClose: () => void;
-};
+}
 
 const FULL_WIDTH_KINDS: ReadonlySet<InferredCellKind> = new Set<InferredCellKind>([
     'vector', 'numberArray', 'points', 'matrix', 'object', 'mixed'

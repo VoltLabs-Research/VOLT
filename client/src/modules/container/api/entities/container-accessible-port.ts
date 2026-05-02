@@ -5,4 +5,4 @@ export interface ContainerAccessiblePort {
     browserAccessible: boolean;
     status: 'available' | 'unavailable';
     label?: string;
-};
+}

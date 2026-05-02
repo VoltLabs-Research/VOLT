@@ -16,7 +16,7 @@ import './TeamSelector.css';
 
 interface TeamSelectorProps {
     className?: string;
-};
+}
 
 const toOptionalDescription = (value: string | null | undefined): string | undefined => {
     if (typeof value !== 'string') {

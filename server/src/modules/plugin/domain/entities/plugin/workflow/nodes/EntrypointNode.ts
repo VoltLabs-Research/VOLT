@@ -3,9 +3,9 @@ export enum EntrypointNodeType {
     PythonScript = 'python-script',
     PackagedExecutable = 'packaged-executable',
     Wasm = 'wasm'
-};
+}
 
-export interface EntrypointNodeData{
+export interface EntrypointNodeData {
     binary?: string;
     binaryObjectPath?: string;
     binaryFileName?: string;
@@ -14,4 +14,4 @@ export interface EntrypointNodeData{
     arguments: string;
     requirementsFile?: string;
     entrypointScript?: string;
-};
+}

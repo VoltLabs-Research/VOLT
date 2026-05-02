@@ -20,11 +20,11 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
     constructor(
         private pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: ClonePluginInputDTO): Promise<Result<ClonePluginOutputDTO>> {
         const original = await this.pluginRepository.findById(input.pluginId);
-        if(!original){
+        if (!original) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -32,7 +32,7 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
         }
 
         const clonedNodes = original.props.workflow.props.nodes.map((node) => {
-            if(node.type !== WorkflowNodeType.Modifier) return node;
+            if (node.type !== WorkflowNodeType.Modifier) return node;
             return {
                 ...node,
                 data: {
@@ -72,4 +72,4 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
             plugin: mapPluginToPersistedDTO(plugin)
         });
     }
-};
+}

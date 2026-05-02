@@ -9,7 +9,7 @@ import type { DeleteTeamRoleInputDTO } from '../../api/dtos/role/delete-team-rol
 interface TeamRolesAggregateQueryParams {
     teamId: string;
     limit: number;
-};
+}
 
 export const teamRolesResource = createTeamScopedPaginatedResource({
     baseKey: 'team-roles',

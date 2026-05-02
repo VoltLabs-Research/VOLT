@@ -97,7 +97,7 @@ export interface CreateGetByIdControllerOptions<TEntity extends EntityWithProps<
     select?: string[];
     /** Zod schema (or {body,query,params} map) attached to the controller's validation pipeline. */
     validationSchema?: ValidationSchemaInput;
-};
+}
 
 export const createGetByIdController = <TProps, TEntity extends EntityWithProps<TProps>>(
     options: CreateGetByIdControllerOptions<TEntity, TProps>
@@ -151,7 +151,7 @@ export const createGetByIdController = <TProps, TEntity extends EntityWithProps<
         protected override getParams(req: AuthenticatedRequest): ReadControllerParams {
             return buildControllerParams(req, this.getValidatedRequestData(req)) as ReadControllerParams;
         }
-    };
+    }
 
     return GeneratedGetByIdController;
 };
@@ -175,7 +175,7 @@ interface CreateListByControllerBaseOptions<TEntity extends EntityWithProps<TPro
     select?: string[];
     sort?: Record<string, 1 | -1>;
     validationSchema?: ValidationSchemaInput;
-};
+}
 
 export interface CreatePaginatedListByControllerOptions<TEntity extends EntityWithProps<TProps>, TProps>
     extends CreateListByControllerBaseOptions<TEntity, TProps> {
@@ -184,14 +184,14 @@ export interface CreatePaginatedListByControllerOptions<TEntity extends EntityWi
     defaultLimit?: number;
     /** Fallback page number when the request omits `page`. Defaults to 1. */
     defaultPage?: number;
-};
+}
 
 export interface CreateFlatListByControllerOptions<TEntity extends EntityWithProps<TProps>, TProps>
     extends CreateListByControllerBaseOptions<TEntity, TProps> {
     paginated: false;
     /** Optional hard cap on the number of returned rows (maps to FindOptions.limit). */
     defaultLimit?: number;
-};
+}
 
 export type CreateListByControllerOptions<TEntity extends EntityWithProps<TProps>, TProps> =
     | CreatePaginatedListByControllerOptions<TEntity, TProps>
@@ -227,7 +227,7 @@ export function createListByController<TProps, TEntity extends EntityWithProps<T
     }
 
     return buildFlatListController(options);
-};
+}
 
 const buildPaginatedListController = <TProps, TEntity extends EntityWithProps<TProps>>(
     options: CreatePaginatedListByControllerOptions<TEntity, TProps>
@@ -281,7 +281,7 @@ const buildPaginatedListController = <TProps, TEntity extends EntityWithProps<TP
         protected override getParams(req: AuthenticatedRequest): ReadControllerParams {
             return buildControllerParams(req, this.getValidatedRequestData(req)) as ReadControllerParams;
         }
-    };
+    }
 
     return GeneratedPaginatedListController;
 };
@@ -344,7 +344,7 @@ const buildFlatListController = <TProps, TEntity extends EntityWithProps<TProps>
         ): void {
             BaseResponse.success(res, value, HttpStatus.OK);
         }
-    };
+    }
 
     return GeneratedFlatListController;
 };

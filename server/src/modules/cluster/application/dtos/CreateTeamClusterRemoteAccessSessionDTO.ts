@@ -16,4 +16,4 @@ export type CreateTeamClusterRemoteAccessSessionInputDTO = PasswordConfirmedTeam
  */
 export interface CreateTeamClusterRemoteAccessSessionOutputDTO {
     session: TeamClusterRemoteAccessSessionDTO;
-};
+}

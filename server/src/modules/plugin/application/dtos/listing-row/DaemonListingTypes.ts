@@ -13,7 +13,7 @@ export interface DaemonListingRow {
     subListingNames?: string[];
     row?: Record<string, unknown>;
     [key: string]: unknown;
-};
+}
 
 export interface DaemonPaginatedResult {
     data: DaemonListingRow[];
@@ -23,7 +23,7 @@ export interface DaemonPaginatedResult {
     limit: number;
     columns?: string[];
     subListingNames?: string[];
-};
+}
 
 export const SYSTEM_KEYS = new Set([
     '_id',

@@ -1,5 +1,4 @@
-import usePluginCatalog from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import usePluginCatalog, { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
@@ -16,12 +15,12 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 interface FallbackListingExposure {
     exposureId: string;
     name: string;
-};
+}
 
 interface UseCanvasTimelineTabsParams {
     trajectory: Trajectory | null | undefined;
     analysisId?: string;
-};
+}
 
 const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabsParams) => {
     const { ensurePluginById } = usePluginCatalog();

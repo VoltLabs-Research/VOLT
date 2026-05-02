@@ -4,7 +4,7 @@ interface SceneInteractionState {
     isInteracting: boolean;
     setSceneInteracting: (isInteracting: boolean) => void;
     resetSceneInteraction: () => void;
-};
+}
 
 const useSceneInteractionStore = create<SceneInteractionState>((set) => ({
     isInteracting: false,

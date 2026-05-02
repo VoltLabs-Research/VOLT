@@ -10,7 +10,7 @@ interface CanvasBannersProps {
     collaborationOwner?: WorkspacePresenceUser;
     isWorkspaceOwner: boolean;
     onLeaveCollaboration?: () => void;
-};
+}
 
 const formatPeerName = (peer: WorkspacePresenceUser): string => {
     const trimmedFirst = peer.firstName?.trim();

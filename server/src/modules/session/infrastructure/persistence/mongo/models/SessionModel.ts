@@ -9,12 +9,12 @@ import type { Document, Model } from 'mongoose';
 interface SessionPersistenceUserProps {
     user: Types.ObjectId | null;
     failureReason?: string;
-};
+}
 
 type SessionPersistenceProps = Omit<Persistable<SessionProps>, 'user'> & SessionPersistenceUserProps;
 
 export interface SessionDocument extends SessionPersistenceProps, Document {
-};
+}
 
 const SessionSchema: Schema<SessionDocument> = new Schema({
     user: {

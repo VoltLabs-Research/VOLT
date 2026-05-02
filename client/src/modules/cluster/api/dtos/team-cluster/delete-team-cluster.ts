@@ -4,7 +4,7 @@ export interface DeleteTeamClusterInputDTO {
     teamId: string;
     teamClusterId: string;
     password: string;
-};
+}
 
 export interface DeleteTeamClusterOutputDTO {
     success: boolean;
@@ -13,4 +13,4 @@ export interface DeleteTeamClusterOutputDTO {
     message: string;
     manualUninstallCommand?: string;
     teamCluster?: TeamCluster;
-};
+}

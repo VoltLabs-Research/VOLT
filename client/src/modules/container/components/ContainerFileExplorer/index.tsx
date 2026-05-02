@@ -17,7 +17,7 @@ import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {
     containerId: string;
-};
+}
 
 const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const [searchParams, setSearchParams] = useSearchParams();

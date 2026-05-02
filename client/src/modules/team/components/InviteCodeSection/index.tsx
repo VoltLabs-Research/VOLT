@@ -14,7 +14,7 @@ interface InviteCodeSectionProps {
     onGenerate: () => Promise<void>;
     onDelete: () => Promise<void>;
     onCopy: () => Promise<void>;
-};
+}
 
 export const InviteCodeSection = ({
     inviteCode,

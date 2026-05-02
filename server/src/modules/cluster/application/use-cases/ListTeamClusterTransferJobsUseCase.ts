@@ -25,10 +25,7 @@ export default class ListTeamClusterTransferJobsUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 

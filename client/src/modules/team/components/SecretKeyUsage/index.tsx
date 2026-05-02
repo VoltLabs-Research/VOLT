@@ -36,11 +36,11 @@ import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
 interface SecretKeyUsageRouteParams extends Params {
     secretKeyId: string;
-};
+}
 
 interface TooltipPayloadRecord {
     [key: string]: string | number;
-};
+}
 
 const STATUS_COLORS: Record<string, string> = {
     '2xx': 'var(--status-success)',

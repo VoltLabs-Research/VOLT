@@ -5,6 +5,6 @@ export interface SecretKeyCreatedEventPayload {
     teamId: string;
     name: string;
     userId: string;
-};
+}
 
-export default class SecretKeyCreatedEvent extends createTeamDomainEvent<SecretKeyCreatedEventPayload>('secret-key.created') {};
+export default class SecretKeyCreatedEvent extends createTeamDomainEvent<SecretKeyCreatedEventPayload>('secret-key.created') {}

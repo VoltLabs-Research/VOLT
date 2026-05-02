@@ -5,7 +5,6 @@ import { ContainerModel } from '@modules/container/infrastructure/persistence/mo
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Transient } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
 import type { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
@@ -109,4 +108,4 @@ export class ContainerRepository extends MongooseBaseRepository<Container, ICont
         }
         return container;
     }
-};
+}

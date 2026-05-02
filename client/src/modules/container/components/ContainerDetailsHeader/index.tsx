@@ -21,7 +21,7 @@ type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 
 interface ContainerDetailsTabOption extends SegmentedTabOption<ContainerDetailsTabId> {
     path: string;
-};
+}
 
 const TABS: ReadonlyArray<ContainerDetailsTabOption> = [
     { id: 'overview', label: 'Overview', path: '' },
@@ -47,7 +47,7 @@ export interface ContainerDetailsHeaderProps {
     onAction: (action: ContainerAction | 'delete') => void;
     actionLoading: boolean;
     contextualActions?: ReactNode;
-};
+}
 
 const ContainerDetailsHeader = ({
     container,

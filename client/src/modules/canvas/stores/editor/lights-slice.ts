@@ -15,7 +15,7 @@ import type { StateCreator } from 'zustand';
 
 export interface LightsSlice {
     lights: LightsStore;
-};
+}
 
 const resolveDirectionalUpdate = (partial: Partial<DirLight>): Partial<DirLight> => {
     if (typeof partial.color === 'string') {

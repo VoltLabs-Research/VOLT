@@ -13,7 +13,7 @@ interface PasswordStepProps {
     isLoading: boolean;
     onSubmit: FormEventHandler<HTMLFormElement>;
     onBack: () => void;
-};
+}
 
 const PasswordStep = ({ email, control, isLoading, onSubmit, onBack }: PasswordStepProps) => (
     <Stack gap='1'>

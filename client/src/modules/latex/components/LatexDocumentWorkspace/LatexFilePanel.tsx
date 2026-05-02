@@ -62,7 +62,7 @@ interface LatexFilePanelProps {
     onUploadEntries: (entries: FileWithPath[]) => Promise<void>;
     onUploadFiles: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
     onUploadFolders: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
-};
+}
 
 type WebKitDataTransferItem = DataTransferItem & {
     webkitGetAsEntry?: () => FileSystemEntry | null;

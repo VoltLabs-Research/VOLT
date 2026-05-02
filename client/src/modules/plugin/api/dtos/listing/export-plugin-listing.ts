@@ -7,4 +7,4 @@ export interface ExportPluginListingInputDTO {
     analysisId?: string;
     exposureName?: string;
     format: ExportType;
-};
+}

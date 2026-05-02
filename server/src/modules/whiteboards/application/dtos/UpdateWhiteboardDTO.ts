@@ -8,4 +8,4 @@ export interface UpdateWhiteboardOutputDTO {
     _id: string;
     title: string;
     updatedAt: Date;
-};
+}

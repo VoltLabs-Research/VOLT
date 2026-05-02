@@ -14,7 +14,7 @@ interface OAuthProvider {
     key: OAuthProviderKey;
     label: string;
     icon: ReactNode;
-};
+}
 
 interface EmailStepProps {
     control: Control<SignInForm>;
@@ -22,7 +22,7 @@ interface EmailStepProps {
     onSubmit: FormEventHandler<HTMLFormElement>;
     onOAuth: (provider: OAuthProviderKey) => void;
     availableProviders: OAuthProviderKey[];
-};
+}
 
 const oauthProviders: OAuthProvider[] = [{
     key: 'github',

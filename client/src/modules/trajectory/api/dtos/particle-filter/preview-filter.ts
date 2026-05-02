@@ -1,7 +1,7 @@
 export enum ParticleFilterCombinator {
     And = 'AND',
     Or = 'OR'
-};
+}
 
 export interface ParticleFilterConditionDTO {
     kind?: 'property';
@@ -9,7 +9,7 @@ export interface ParticleFilterConditionDTO {
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
     value: number;
     exposureId?: string;
-};
+}
 
 export interface PreviewFilterInputDTO {
     trajectoryId: string;
@@ -21,9 +21,9 @@ export interface PreviewFilterInputDTO {
     exposureId?: string;
     combinator?: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionDTO[];
-};
+}
 
 export interface PreviewFilterOutputDTO {
     matchCount: number;
     totalAtoms: number;
-};
+}

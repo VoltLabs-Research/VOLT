@@ -5,7 +5,7 @@ export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
 interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
-};
+}
 
 type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
     [ANALYSIS_EXECUTION_METADATA_KEY]?: AnalysisExecutionMetadata;

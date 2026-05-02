@@ -54,7 +54,7 @@ import type {
 
 interface TrajectoryScopedParams {
     trajectoryId: string;
-};
+}
 
 export interface CanvasDataAccess {
     getAtoms: (params: GetAtomsInputDTO) => Promise<GetAtomsOutputDTO>;
@@ -71,7 +71,7 @@ export interface CanvasDataAccess {
     getAnalysesByTrajectory: (params: GetAnalysesByTrajectoryParams) => Promise<PaginatedResponse<Analysis>>;
     getAnalysisFrameLog: (params: TrajectoryScopedParams & GetAnalysisFrameLogParams) => Promise<GetAnalysisFrameLogResponse>;
     getRasterMetadata: (params: GetRasterMetadataParams) => Promise<GetRasterMetadataResponse>;
-};
+}
 
 const buildPublic = (): CanvasDataAccess => ({
     getAtoms: (params) => canvasService.getAtoms(params),

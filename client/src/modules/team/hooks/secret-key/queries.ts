@@ -9,35 +9,35 @@ interface SecretKeyUsageQueryParams {
     teamId: string;
     secretKeyId: string;
     days?: number;
-};
+}
 
 interface SecretKeyTeamMetricsQueryParams {
     teamId: string;
     days?: number;
-};
+}
 
 interface SecretKeyUsageKeyParams {
     teamId: string;
     secretKeyId: string;
     days?: number;
-};
+}
 
 interface SecretKeyTeamMetricsKeyParams {
     teamId: string;
     days?: number;
-};
+}
 
 interface SecretKeyQueryKeyMap {
     secretKeysListing: string;
-};
+}
 
 interface SecretKeyUsageQueryKeyMap {
     secretKeyUsageByParams: SecretKeyUsageKeyParams;
-};
+}
 
 interface SecretKeyTeamMetricsQueryKeyMap {
     secretKeyTeamMetricsByParams: SecretKeyTeamMetricsKeyParams;
-};
+}
 
 const secretKeyKeys = buildKeys<SecretKeyQueryKeyMap>('secret-keys');
 

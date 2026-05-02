@@ -19,7 +19,7 @@ interface SimulationCellTransforms {
         z: number;
     };
     groundOffset?: number;
-};
+}
 
 interface SimulationCellBoxProps {
     sceneKey: string;
@@ -29,7 +29,7 @@ interface SimulationCellBoxProps {
     orbitControlsRef?: RefObject<{ enabled: boolean } | null>;
     onSelect?: (target: THREE.Group | null) => void;
     onHoverChange?: (hovered: boolean) => void;
-};
+}
 
 // Reusable scratch vectors to avoid allocations in the hot drag path.
 const _decomposePos = new THREE.Vector3();

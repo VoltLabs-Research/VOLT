@@ -26,13 +26,8 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -88,7 +83,7 @@ export default class UpdateTeamClusterRoleUseCase implements IUseCase<
                 } else {
                     logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} role=${input.role} reason=${liveApplyResult.reason}`);
                 }
-            } catch (error: unknown) {
+            } catch {
                 logger.warn(`Persisted desired role but failed to request live daemon role apply teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} role=${input.role}`);
             }
         }

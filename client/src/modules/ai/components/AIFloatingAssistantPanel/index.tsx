@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
     triggerRef: RefObject<HTMLButtonElement | null>;
-};
+}
 
 const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
     if (!container) {

@@ -16,36 +16,36 @@ export interface IWorkflow {
     nodes: IWorkflowNode[];
     edges: IWorkflowEdge[];
     viewport?: IViewport;
-};
+}
 
 export interface IViewport {
     x: number;
     y: number;
     zoom: number;
-};
+}
 
 export interface IWorkflowNode {
     id: string;
     type: NodeType;
     position: IPosition;
     data: INodeData;
-};
+}
 
 export interface IPosition {
     x: number;
     y: number;
-};
+}
 
 export type NodeConnectorSide = 'left' | 'right' | 'top' | 'bottom';
 
 export interface INodeConnectorPlacement {
     side: NodeConnectorSide;
     offset: number;
-};
+}
 
 export interface INodeConnectorLayout {
     [handleId: string]: INodeConnectorPlacement;
-};
+}
 
 export interface IWorkflowEdge {
     id: string;
@@ -53,19 +53,19 @@ export interface IWorkflowEdge {
     sourceHandle?: string;
     target: string;
     targetHandle?: string;
-};
+}
 
 export interface IArgumentOption {
     key: string;
     label: string;
-};
+}
 
 export interface IArgumentVisibilityCondition {
     argument: string;
     operator: ArgumentVisibilityOperator;
     value?: string | number | boolean;
     values?: Array<string | number | boolean>;
-};
+}
 
 export interface IPluginReferenceArgumentMapping {
     sourceArgument: string;
@@ -73,7 +73,7 @@ export interface IPluginReferenceArgumentMapping {
     targetPluginId?: string;
     targetPluginKey?: string;
     valueMap?: Record<string, unknown>;
-};
+}
 
 export interface IArgumentDefinition {
     argument: string;
@@ -93,16 +93,16 @@ export interface IArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: IArgumentVisibilityCondition;
-};
+}
 
 export interface IPluginReferenceSelection {
     pluginId: string;
     config?: Record<string, unknown>;
-};
+}
 
 export interface IPluginReferenceValue {
     selections: IPluginReferenceSelection[];
-};
+}
 
 export interface IModifierData {
     key?: string;
@@ -112,21 +112,21 @@ export interface IModifierData {
     version?: string;
     homepage?: string;
     description?: string;
-};
+}
 
 export interface IArgumentsData {
     arguments: IArgumentDefinition[];
-};
+}
 
 export interface IContextData {
     source: ModifierContext;
     [key: string]: unknown;
-};
+}
 
 export interface IForEachData {
     iterableSource: string;
     [key: string]: unknown;
-};
+}
 
 export interface IEntrypointData {
     binary: string;
@@ -137,7 +137,7 @@ export interface IEntrypointData {
     arguments: string;
     requirementsFile?: string;
     entrypointScript?: string;
-};
+}
 
 export interface IPluginNodeData {
     executionMode?: PluginNodeExecutionMode;
@@ -148,40 +148,40 @@ export interface IPluginNodeData {
     selectedTimesteps?: number[];
     config?: Record<string, unknown>;
     configByPluginId?: Record<string, Record<string, unknown>>;
-};
+}
 
 export interface IExposureData {
     name: string;
     icon?: string;
     results: string;
     [key: string]: unknown;
-};
+}
 
 export interface IExportData {
     exporter: Exporter;
     type: ExportType_;
     options?: Record<string, unknown>;
-};
+}
 
 export interface ICondition {
     type: ConditionType;
     leftExpr: string;
     handler: ConditionHandler;
     rightExpr: string;
-};
+}
 
 export interface IIfStatementData {
     conditions: ICondition[];
-};
+}
 
 export interface ISwitchStatementData {
     expression: string;
-};
+}
 
 export interface ISwitchCaseData {
     value: string;
     defaultCase?: boolean;
-};
+}
 
 export interface INodeData {
     modifier?: IModifierData;
@@ -197,4 +197,4 @@ export interface INodeData {
     switchCase?: ISwitchCaseData;
     connectorLayout?: INodeConnectorLayout;
     [key: string]: unknown;
-};
+}

@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 interface SimulationCellViewProps {
     trajectory: Trajectory | null | undefined;
     currentTimestep: number | undefined;
-};
+}
 
 const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewProps) => {
     const teamId = typeof trajectory?.team === 'object' ? trajectory.team._id : trajectory?.team;

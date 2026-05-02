@@ -23,13 +23,8 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
     implements IUseCase<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO, ApplicationError> {
 
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -92,7 +87,7 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
                 if (!queueConcurrencyCommandResult.accepted) {
                     logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} reason=${queueConcurrencyCommandResult.reason} queueConcurrency=${queueConcurrencyPayload.queueConcurrency}`);
                 }
-            } catch (error: unknown) {
+            } catch {
                 logger.warn(`Persisted team cluster queue concurrency but failed to request live daemon apply teamClusterId=${updatedTeamCluster.id} teamId=${input.teamId} queueConcurrency=${updatedTeamCluster.props.queueConcurrency}`);
             }
         }

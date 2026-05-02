@@ -4,7 +4,7 @@ import type { StatusBadgeProps } from '@/shared/presentation/primitives/StatusBa
 
 export interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;
-};
+}
 
 export const TEAM_CLUSTER_ROLE_OPTIONS: TeamClusterRoleOption[] = [
     {

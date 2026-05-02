@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecretKeyByIdInputDTO, RevokeSecretKeyByIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly secretKeyRepository: SecretKeyRepository
     ) {}
 
@@ -42,4 +41,4 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
             updatedAt: updated.props.updatedAt
         });
     }
-};
+}

@@ -6,7 +6,7 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 export enum SimulationCellRelation {
     Team = 'team',
     Trajectory = 'trajectory'
-};
+}
 
 type SimulationCellRelations = SimulationCellRelation.Team | SimulationCellRelation.Trajectory;
 
@@ -14,7 +14,7 @@ export interface SimulationCellDocument extends Persistable<
     SimulationCellProps,
     SimulationCellRelations
 >, Document {
-};
+}
 
 const SimulationCellDimsSchema: Schema<SimulationCellDims> = new Schema({
     width: { type: Number, required: true },

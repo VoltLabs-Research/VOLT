@@ -16,13 +16,13 @@ interface ThemePreviewStyles extends CSSProperties {
     '--theme-preview-header-border': string;
     '--theme-preview-panel-start': string;
     '--theme-preview-panel-end': string;
-};
+}
 
 interface SystemPreviewStyles extends CSSProperties {
     '--theme-preview-light-bg': string;
     '--theme-preview-dark-bg': string;
     '--theme-preview-dark-fg': string;
-};
+}
 
 interface ThemePreviewConfig {
     bgStart: string;
@@ -33,11 +33,11 @@ interface ThemePreviewConfig {
     headerBorder: string;
     panelStart: string;
     panelEnd: string;
-};
+}
 
 interface ThemeTokenMap {
     [tokenName: string]: string;
-};
+}
 
 type VisualTheme = Theme.Light | Theme.Dark;
 
@@ -115,7 +115,7 @@ interface ThemeCardProps {
     onClick: () => void;
     onKeyDown: ButtonHTMLAttributes<HTMLButtonElement>['onKeyDown'];
     tabIndex: number;
-};
+}
 
 const ThemeCard = forwardRef<HTMLButtonElement, ThemeCardProps>(({
     theme,

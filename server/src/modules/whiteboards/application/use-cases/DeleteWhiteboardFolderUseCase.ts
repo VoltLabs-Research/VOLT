@@ -23,11 +23,8 @@ export class DeleteWhiteboardFolderUseCase
     >
     implements IUseCase<DeleteWhiteboardFolderInputDTO, DeleteWhiteboardFolderOutputDTO, ApplicationError> {
     constructor(
-        
         whiteboardFolderRepository: WhiteboardFolderRepository,
-        
         whiteboardRepository: WhiteboardRepository,
-        
         deleteWhiteboardUseCase: DeleteWhiteboardUseCase
     ) {
         super(

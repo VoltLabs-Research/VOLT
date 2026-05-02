@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('whiteboard.created')
 export default class WhiteboardCreatedEventHandler implements IEventHandler<WhiteboardCreatedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class WhiteboardCreatedEventHandler implements IEventHandler<Whit
             description
         );
     }
-};
+}

@@ -9,7 +9,7 @@ export interface FileMetadata {
     etag?: string;
     lastModified?: Date;
     [key: string]: FileMetadataValue;
-};
+}
 
 export interface IStorageService {
     upload(
@@ -65,4 +65,4 @@ export interface IStorageService {
         objectName: string,
         destPath: string
     ): Promise<void>;
-};
+}

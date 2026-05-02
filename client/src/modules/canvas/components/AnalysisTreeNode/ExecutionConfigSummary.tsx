@@ -44,7 +44,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 interface RenderedValue {
     node: ReactNode;
     mono: boolean;
-};
+}
 
 const MutedPlaceholder = () => <Text tone='muted'>—</Text>;
 
@@ -111,12 +111,12 @@ interface ConfigRow {
     label: string;
     value: ReactNode;
     mono: boolean;
-};
+}
 
 interface ConfigColumn {
     title: string;
     rows: ConfigRow[];
-};
+}
 
 const buildColumn = (title: string, source: Record<string, unknown>): ConfigColumn => {
     const rows = Object.entries(source).map(([key, value]) => {
@@ -148,7 +148,7 @@ const buildScopeColumn = (metadata: unknown): ConfigColumn | undefined => {
 
 interface ExecutionConfigSummaryProps {
     config: Record<string, unknown>;
-};
+}
 
 const ExecutionConfigSummary = ({ config }: ExecutionConfigSummaryProps) => {
     const columns = useMemo<ConfigColumn[]>(() => {

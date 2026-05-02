@@ -28,7 +28,7 @@ export interface UseSlicePlaneReturn {
     handleNormalChange: (axis: SlicePlaneNormalAxis) => (_fieldKey: string, value: string | number | boolean) => void;
     handleReverseOrientationChange: (_fieldKey: string, value: string | number | boolean) => void;
     handleVisualizePlaneChange: (_fieldKey: string, value: string | number | boolean) => void;
-};
+}
 
 const useSlicePlane = (): UseSlicePlaneReturn => {
     const {

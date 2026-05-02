@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseCatalogFolderRepository } from '@shared/infrastructure/persistence/mongo/MongooseCatalogFolderRepository';
 import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 
-
 @Singleton()
 export default class LatexFolderRepository
     extends MongooseCatalogFolderRepository<LatexFolder, LatexFolderProps, CatalogFolderDocument>

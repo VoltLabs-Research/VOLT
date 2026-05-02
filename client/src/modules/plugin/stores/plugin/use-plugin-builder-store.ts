@@ -49,7 +49,7 @@ interface PluginBuilderState {
     saveError: string | null;
     validationResult: ValidationResult | null;
     graphVersion: number;
-};
+}
 
 interface PluginBuilderActions {
     setNodes: (nodesOrUpdater: NodesUpdater) => void;
@@ -74,7 +74,7 @@ interface PluginBuilderActions {
     undo: () => void;
     redo: () => void;
     reset: () => void;
-};
+}
 
 type PluginBuilderStore = PluginBuilderState & PluginBuilderActions;
 

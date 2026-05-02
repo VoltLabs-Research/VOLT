@@ -8,7 +8,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO> {
     constructor(
-        
         private readonly secretKeyRepository: SecretKeyRepository
     ) {}
 
@@ -31,25 +30,23 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
             ]
         });
 
-        const data = result.data.map((secretKey) => {
-            return {
-                _id: secretKey._id,
-                teamId: String(secretKey.props.team),
-                roleId: secretKey.getRoleId(),
-                roleName: secretKey.getRoleName(),
-                name: secretKey.props.name,
-                keyPrefix: secretKey.props.keyPrefix,
-                createdBy: secretKey.props.createdBy,
-                isActive: secretKey.props.isActive,
-                lastUsedAt: secretKey.props.lastUsedAt,
-                createdAt: secretKey.props.createdAt,
-                updatedAt: secretKey.props.updatedAt
-            } satisfies SecretKeyListItemDTO;
-        });
+        const data = result.data.map((secretKey) => ({
+            _id: secretKey._id,
+            teamId: String(secretKey.props.team),
+            roleId: secretKey.getRoleId(),
+            roleName: secretKey.getRoleName(),
+            name: secretKey.props.name,
+            keyPrefix: secretKey.props.keyPrefix,
+            createdBy: secretKey.props.createdBy,
+            isActive: secretKey.props.isActive,
+            lastUsedAt: secretKey.props.lastUsedAt,
+            createdAt: secretKey.props.createdAt,
+            updatedAt: secretKey.props.updatedAt
+        } satisfies SecretKeyListItemDTO));
 
         return Result.ok({
             ...result,
             data
         });
     }
-};
+}

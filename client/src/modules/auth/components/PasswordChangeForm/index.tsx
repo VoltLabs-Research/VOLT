@@ -16,7 +16,7 @@ interface PasswordChangeFormProps {
     isOpen: boolean;
     onSubmit: (data: ChangePasswordInputDTO) => Promise<void>;
     onCancel: () => void;
-};
+}
 
 const PasswordChangeForm = ({
     passwordInfo,

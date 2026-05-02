@@ -18,4 +18,4 @@ export interface TeamInvitation extends BaseEntity {
     expiresAt: Date;
     acceptedAt?: Date;
     status: TeamInvitationStatus;
-};
+}

@@ -7,7 +7,7 @@ interface UseTrajectoryFilePickerResult {
     handlePickerChange: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     openFilePicker: () => void;
     isUploading: boolean;
-};
+}
 
 const resolveUploadName = (files: FileWithPath[]): string => {
     if (files.length === 0) return `upload_${Date.now()}`;

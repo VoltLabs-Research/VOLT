@@ -4,7 +4,7 @@ import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface DeletableRepository {
     deleteMany(filter: Record<string, string>): Promise<number>;
-};
+}
 
 const getPayloadValue = (payload: unknown, key: string): string => {
     if (!isRecord(payload) || typeof payload[key] !== 'string') {
@@ -25,4 +25,4 @@ export abstract class DeleteManyOnEntityDeletedHandler<TEvent extends IDomainEve
         const value = getPayloadValue(event.payload, this.payloadKey);
         await this.repository.deleteMany({ [this.filterField]: value });
     }
-};
+}

@@ -5,11 +5,11 @@ import logger from '@shared/infrastructure/logger';
 
 interface IdentifiableEntity {
     readonly _id: string;
-};
+}
 
 interface IterableRepository<T extends IdentifiableEntity> {
     export(options: { filter: Record<string, string>; select?: string[] }): Promise<T[]>;
-};
+}
 
 const getPayloadValue = (payload: unknown, key: string): string => {
     if (!isRecord(payload) || typeof payload[key] !== 'string') {
@@ -68,4 +68,4 @@ export abstract class CascadeDeleteEachOnEntityDeletedHandler<
 
         await runWithConcurrency(tasks, this.concurrency);
     }
-};
+}

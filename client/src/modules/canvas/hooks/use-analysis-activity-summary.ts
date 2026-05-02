@@ -16,7 +16,7 @@ interface AnalysisActivitySummary {
     queuedLabel: string;
     runningTitle: string;
     queuedTitle: string;
-};
+}
 
 const EMPTY_SUMMARY: AnalysisActivitySummary = {
     runningCount: 0,

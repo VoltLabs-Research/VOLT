@@ -11,4 +11,4 @@ export abstract class PaginatedBaseController<
     protected override handleSuccess(_req: AuthenticatedRequest, res: Response, value: PaginatedResult<unknown>): void {
         BaseResponse.paginated(res, value, value._meta);
     }
-};
+}

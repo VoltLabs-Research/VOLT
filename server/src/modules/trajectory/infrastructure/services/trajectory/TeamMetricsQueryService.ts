@@ -80,10 +80,7 @@ const toMonthChange = (current: number, previous: number): number => {
 @Singleton()
 export default class TeamMetricsQueryService implements ITeamMetricsQueryService {
     constructor(
-        
         private readonly trajectoryRepo: TrajectoryRepository,
-
-        
         private readonly analysisRepo: AnalysisRepository
     ) {}
 
@@ -155,4 +152,4 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
             weekly
         };
     }
-};
+}

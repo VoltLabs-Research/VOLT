@@ -9,7 +9,7 @@ export interface SceneArtifactParticleFilterPropertyCondition {
     operator: string;
     value: number;
     exposureId?: string;
-};
+}
 export type SceneArtifactParticleFilterCondition = SceneArtifactParticleFilterPropertyCondition;
 
 export interface SceneArtifactParams {
@@ -23,22 +23,22 @@ export interface SceneArtifactParams {
     exposureId?: string;
     combinator?: 'AND' | 'OR';
     conditions?: SceneArtifactParticleFilterCondition[];
-};
+}
 
 export interface SceneArtifactTrajectory {
     _id: string;
     name?: string;
     storageClusterId?: TeamCluster | string | null;
-};
+}
 
 export interface SceneArtifactAnalysis {
     _id: string;
-};
+}
 
 export interface SceneArtifactPlugin {
     _id: string;
     name?: string;
-};
+}
 
 export interface SceneArtifact extends BaseEntity {
     trajectory: SceneArtifactTrajectory | string;
@@ -53,4 +53,4 @@ export interface SceneArtifact extends BaseEntity {
     displayName: string;
     status: 'ready' | 'failed';
     metadata?: Record<string, unknown>;
-};
+}

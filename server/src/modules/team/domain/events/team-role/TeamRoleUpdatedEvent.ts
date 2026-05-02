@@ -5,6 +5,6 @@ export interface TeamRoleUpdatedEventPayload {
     teamId: string;
     name?: string;
     permissions?: string[];
-};
+}
 
-export default class TeamRoleUpdatedEvent extends createTeamDomainEvent<TeamRoleUpdatedEventPayload>('team-role.updated') {};
+export default class TeamRoleUpdatedEvent extends createTeamDomainEvent<TeamRoleUpdatedEventPayload>('team-role.updated') {}

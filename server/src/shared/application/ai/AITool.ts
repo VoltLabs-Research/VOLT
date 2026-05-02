@@ -61,4 +61,4 @@ export abstract class AITool<
             [this.name]: tool(toolDefinition as unknown as Tool<TInput, TResult>)
         };
     }
-};
+}

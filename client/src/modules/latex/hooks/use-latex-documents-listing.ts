@@ -46,7 +46,7 @@ interface LatexMoveTarget {
     _id: string;
     title: string;
     folder: string | null;
-};
+}
 
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
 export const NEW_LATEX_FOLDER_MODAL_ID = 'new-latex-folder-modal';

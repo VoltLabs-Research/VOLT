@@ -42,4 +42,4 @@ export default class LatexFileRepository
             { $set: { isEntrypoint: false } }
         ).exec();
     }
-};
+}

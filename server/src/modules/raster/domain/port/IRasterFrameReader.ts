@@ -6,7 +6,7 @@ export interface RasterFrameResult {
     contentType: string;
     cacheControl?: string;
     filename?: string;
-};
+}
 
 export interface IRasterFrameReader {
     getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult>;
@@ -17,4 +17,4 @@ export interface IRasterFrameReader {
         timestep: number,
         model: string
     ): Promise<RasterFrameResult>;
-};
+}

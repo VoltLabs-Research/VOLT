@@ -5,7 +5,7 @@ export interface JupyterProxyAccessTokenContext {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
-};
+}
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;
@@ -13,12 +13,12 @@ interface BuildJupyterProxyUrlInput {
     notebookPath?: string;
     daemonPath?: string;
     accessToken?: string;
-};
+}
 
 interface JupyterProxyPathMatch {
     teamId: string;
     runtimeNotebookId: string;
-};
+}
 
 export const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
 export const JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';

@@ -16,7 +16,7 @@ import {
 
 interface UseMessageActionsOptions {
     chatId?: string;
-};
+}
 
 const useMessageActions = ({ chatId }: UseMessageActionsOptions) => {
     const sendMessageMutationResult = useSendMessageMutation();

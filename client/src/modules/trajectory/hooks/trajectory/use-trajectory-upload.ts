@@ -17,7 +17,7 @@ const UPLOAD_TRAJECTORY_TOAST = {
 interface UseTrajectoryUploadResult {
     uploadTrajectory: (files: FileWithPath[], folderName: string) => Promise<void>;
     isUploading: boolean;
-};
+}
 
 export default function useTrajectoryUpload(folderId?: string | null): UseTrajectoryUploadResult {
     const [isUploading, setIsUploading] = useState(false);

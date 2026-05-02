@@ -1,15 +1,15 @@
-export interface TempFileOptions{
+export interface TempFileOptions {
     prefix?: string;
     extension?: string;
     subdir?: string;
-};
+}
 
-export interface DeleteOptions{
+export interface DeleteOptions {
     recursive?: boolean;
     force?: boolean;
-};
+}
 
-export interface ITempFileService{
+export interface ITempFileService {
     readonly rootPath: string;
 
     ensureDir(dirPath: string): Promise<void>;
@@ -20,4 +20,4 @@ export interface ITempFileService{
         targetPath: string,
         options?: DeleteOptions
     ): Promise<boolean>;
-};
+}

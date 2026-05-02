@@ -37,7 +37,7 @@ import type {
 interface TeamClusterQueryKeyMap {
     byTeam: string;
     transferJobs: ListTeamClusterTransferJobsInputDTO;
-};
+}
 
 const TEAM_CLUSTER_STALE_TIME = 5 * 60 * 1000;
 

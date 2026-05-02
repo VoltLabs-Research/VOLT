@@ -1,7 +1,7 @@
 interface StorageObjectErrorLike {
     code?: string;
     statusCode?: number;
-};
+}
 
 export const isStorageObjectNotFoundError = (error: unknown): error is StorageObjectErrorLike => {
     if (typeof error !== 'object' || error === null) {

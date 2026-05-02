@@ -2,7 +2,7 @@ export interface AvatarResult{
     buffer: Buffer;
     mimeType: string;
     extension: string;
-};
+}
 
 export interface IAvatarService{
     generateIdenticon(
@@ -18,4 +18,4 @@ export interface IAvatarService{
         id: string,
         inputBuffer: Buffer
     ): Promise<string>;
-};
+}

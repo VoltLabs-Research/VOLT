@@ -12,11 +12,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private chatRepo: ChatRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -51,4 +48,4 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
 
         return Result.ok(persistedMessage);
     }
-};
+}

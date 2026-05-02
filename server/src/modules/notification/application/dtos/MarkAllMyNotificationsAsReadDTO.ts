@@ -1,3 +1,3 @@
-export interface MarkAllMyNotificationsAsReadInputDTO{
+export interface MarkAllMyNotificationsAsReadInputDTO {
     userId: string;
-};
+}

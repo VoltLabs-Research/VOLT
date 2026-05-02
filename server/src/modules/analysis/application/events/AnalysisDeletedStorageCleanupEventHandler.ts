@@ -16,14 +16,8 @@ export default class AnalysisDeletedStorageCleanupEventHandler implements IEvent
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-
-        
         private readonly storagePlacementRepository: StoragePlacementRepository,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 

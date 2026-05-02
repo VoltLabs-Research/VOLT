@@ -9,7 +9,7 @@ import type { Subsection } from './types';
 interface CanvasRenderSubsectionContentProps {
     subsection: Subsection;
     className?: string;
-};
+}
 
 const CanvasRenderSubsectionContent = ({
     subsection,

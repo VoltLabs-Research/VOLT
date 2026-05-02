@@ -3,7 +3,7 @@ import { summarizeScalar, safeJsonStringify } from '@/modules/plugin/components/
 
 interface ObjectCellProps {
     value: unknown;
-};
+}
 
 const MAX_SUMMARY_KEYS = 2;
 

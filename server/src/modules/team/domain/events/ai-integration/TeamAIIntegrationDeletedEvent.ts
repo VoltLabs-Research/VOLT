@@ -5,6 +5,6 @@ export interface TeamAIIntegrationDeletedEventPayload {
     teamAIIntegrationId: string;
     teamId: string;
     provider: TeamAIProvider;
-};
+}
 
-export default class TeamAIIntegrationDeletedEvent extends createTeamDomainEvent<TeamAIIntegrationDeletedEventPayload>('team-ai-integration.deleted') {};
+export default class TeamAIIntegrationDeletedEvent extends createTeamDomainEvent<TeamAIIntegrationDeletedEventPayload>('team-ai-integration.deleted') {}

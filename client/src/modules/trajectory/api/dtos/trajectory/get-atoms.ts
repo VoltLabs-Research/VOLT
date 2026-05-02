@@ -4,7 +4,7 @@ export interface GetAtomsInputDTO {
     timestep: number;
     page?: number;
     limit?: number;
-};
+}
 
 export type AtomColumnDType = 'f32' | 'u32' | 'u16';
 
@@ -12,7 +12,7 @@ export interface AtomColumnView {
     name: string;
     dtype: AtomColumnDType;
     values: Float32Array | Uint32Array | Uint16Array;
-};
+}
 
 export interface GetAtomsOutputDTO {
     count: number;
@@ -23,7 +23,7 @@ export interface GetAtomsOutputDTO {
     propertyNames: string[];
     columns: AtomColumnView[];
     getColumn: (name: string) => AtomColumnView | undefined;
-};
+}
 
 /**
  * Per-atom row projection, reconstructed lazily from the columnar body when a
@@ -38,4 +38,4 @@ export interface AtomData {
     y: number;
     z: number;
     [key: string]: unknown;
-};
+}

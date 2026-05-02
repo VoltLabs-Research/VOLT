@@ -86,14 +86,14 @@ interface JobTrajectoryContext {
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
-};
+}
 
 interface DaemonJobInputBase {
     teamClusterId: string;
     jobId: string;
     teamId: string;
     error?: string;
-};
+}
 
 interface DaemonJobCompletionInput extends DaemonJobInputBase {
     name: string;
@@ -101,19 +101,19 @@ interface DaemonJobCompletionInput extends DaemonJobInputBase {
     trajectoryId?: string;
     timestep?: number;
     success: boolean;
-};
+}
 
 interface DaemonRasterJobStatusInput extends DaemonJobInputBase {
     trajectoryId: string;
     timestep?: number;
     status: JobStatus;
-};
+}
 
 interface DaemonGlbJobStatusInput extends DaemonJobInputBase {
     trajectoryId: string;
     timestep?: number;
     status: JobStatus;
-};
+}
 
 interface DaemonAnalysisJobStatusInput extends DaemonJobInputBase {
     name: string;
@@ -121,19 +121,19 @@ interface DaemonAnalysisJobStatusInput extends DaemonJobInputBase {
     trajectoryId?: string;
     timestep?: number;
     status: JobStatus;
-};
+}
 
 interface DaemonSshImportJobStatusInput extends DaemonJobInputBase {
     trajectoryId: string;
     status: JobStatus;
-};
+}
 
 interface DaemonArtifactUploadJobStatusInput extends DaemonJobInputBase {
     analysisId: string;
     trajectoryId: string;
     timestep?: number;
     status: JobStatus;
-};
+}
 
 interface QueuedJobNotification {
     jobId: string;
@@ -144,7 +144,7 @@ interface QueuedJobNotification {
     trajectoryName?: string;
     analysisId: string;
     queueType: string;
-};
+}
 
 interface QueuedDaemonJobNotification {
     jobId: string;
@@ -155,7 +155,7 @@ interface QueuedDaemonJobNotification {
     trajectoryId?: string;
     trajectoryName?: string;
     timestep?: number;
-};
+}
 
 interface ProjectedJobStatusInput {
     jobId: string;
@@ -168,34 +168,27 @@ interface ProjectedJobStatusInput {
     analysisId?: string;
     trajectoryContext: JobTrajectoryContext;
     error?: string;
-};
+}
 
 interface ResolvedTrajectoryOwnership {
     teamId: string;
     trajectory: Trajectory;
     trajectoryContext: JobTrajectoryContext;
-};
+}
 
 interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
-};
+}
 
 @Singleton()
 export default class DaemonAnalysisCompletionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        
         private readonly analysisRepo: AnalysisRepository,
-
-        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-
-        
         private readonly trajectoryRepo: TrajectoryRepository
     ) {}
 
@@ -760,4 +753,4 @@ export default class DaemonAnalysisCompletionService {
         return this.sessionKeys('daemon-glb', trajectoryId);
     }
 
-};
+}

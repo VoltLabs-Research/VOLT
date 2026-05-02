@@ -4,4 +4,4 @@ export interface ContainerPortProxySession {
     url: string;
     expiresAt: string;
     port: ContainerAccessiblePort;
-};
+}

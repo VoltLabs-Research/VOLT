@@ -28,13 +28,13 @@ export interface ServerRow {
     uptime: string;
     analysisCount: number | null;
     activeTransfers: ClusterTransferJob[];
-};
+}
 
 interface TransformClusterToRowParams {
     teamCluster: TeamCluster;
     metrics: ClusterMetrics | null;
     isMetricsConnected: boolean;
-};
+}
 
 const calculateCpuUsage = (metrics: ClusterMetrics | null): number | null => {
     if (!metrics) {

@@ -11,12 +11,12 @@ const MAX_KEYS_PER_TEAM = 500;
 
 interface SecretKeyTeamFilter {
     team: string;
-};
+}
 
 interface SecretKeyRolePopulate {
     path: 'role';
     select: ['name'];
-};
+}
 
 interface EnrichedSecretKeyMetric {
     secretKeyId: string;
@@ -28,20 +28,15 @@ interface EnrichedSecretKeyMetric {
     successRequests: number;
     avgResponseTime: number;
     lastRequestAt: Date | null;
-};
+}
 
 @injectable()
 export default class GetSecretKeyTeamMetricsUseCase
     implements IUseCase<GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO, ApplicationError> {
 
     constructor(
-        
         private readonly secretKeyRepo: SecretKeyRepository,
-
-        
         private readonly usageLogRepo: SecretKeyUsageLogRepository,
-
-        
         private readonly metricsMapper: SecretKeyUsageMetricsMapper
     ) {}
 
@@ -97,4 +92,4 @@ export default class GetSecretKeyTeamMetricsUseCase
             perKey: enrichedPerKey
         });
     }
-};
+}

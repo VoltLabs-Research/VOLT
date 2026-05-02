@@ -3,4 +3,4 @@ export interface CreateGroupChatDTO {
     groupName: string;
     groupDescription?: string;
     participantIds: string[];
-};
+}

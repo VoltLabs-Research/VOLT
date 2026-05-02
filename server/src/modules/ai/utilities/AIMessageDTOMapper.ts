@@ -2,7 +2,6 @@ import type { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversati
 import type AIMessage from '@modules/ai/domain/entities/AIMessage';
 import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 const VALID_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
@@ -63,4 +62,4 @@ export default class AIMessageDTOMapper {
 
         return items;
     }
-};
+}

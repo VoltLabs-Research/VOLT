@@ -11,9 +11,8 @@ export class ListContainerFilesAITool extends AITool {
     readonly parameters = z.object({ containerId: z.string(), path: z.string().optional().default('/') });
 
     constructor(
-        
         protected readonly useCase: GetContainerFilesUseCase
     ) {
         super();
     }
-};
+}

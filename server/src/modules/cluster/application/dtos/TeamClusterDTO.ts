@@ -9,30 +9,30 @@ import type { ClusterTransferJobDTO } from '@modules/cluster/application/dtos/Cl
 
 export interface TeamClusterServiceDTO {
     port: number | null;
-};
+}
 
 export interface TeamClusterServicesDTO {
     minio: TeamClusterServiceDTO;
     redis: TeamClusterServiceDTO;
     mongodb: TeamClusterServiceDTO;
     daemon: TeamClusterServiceDTO;
-};
+}
 
 export interface TeamClusterCredentialServiceDTO extends TeamClusterServiceDTO {
     username: string;
     password: string;
-};
+}
 
 export interface TeamClusterDaemonCredentialServiceDTO extends TeamClusterServiceDTO {
     password: string;
-};
+}
 
 export interface TeamClusterCredentialServicesDTO {
     minio: TeamClusterCredentialServiceDTO;
     redis: TeamClusterCredentialServiceDTO;
     mongodb: TeamClusterCredentialServiceDTO;
     daemon: TeamClusterDaemonCredentialServiceDTO;
-};
+}
 
 export interface TeamClusterQueueConcurrencyDTO {
     analysis: number;
@@ -40,12 +40,12 @@ export interface TeamClusterQueueConcurrencyDTO {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitDTO {
     maxRunningPerTrajectory: number;
     maxRunningPerTeam: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitsDTO {
     analysisProcessing: TeamClusterQueueScopeLimitDTO;
@@ -54,7 +54,7 @@ export interface TeamClusterQueueScopeLimitsDTO {
     trajectoryGlbConversion: TeamClusterQueueScopeLimitDTO;
     cloudUpload: TeamClusterQueueScopeLimitDTO;
     trajectoryCompression: TeamClusterQueueScopeLimitDTO;
-};
+}
 
 export interface TeamClusterRuntimeRoleConfigDTO {
     desiredRole: TeamClusterRuntimeRoleConfigProps['desiredRole'];
@@ -65,14 +65,14 @@ export interface TeamClusterRuntimeRoleConfigDTO {
         storage: boolean;
     };
     lastAppliedAt?: Date | null;
-};
+}
 
 export interface TeamClusterEffectiveCapabilitiesDTO {
     acceptsComputeJobs: boolean;
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
-};
+}
 
 export interface TeamClusterDTO {
     _id: string;
@@ -91,7 +91,7 @@ export interface TeamClusterDTO {
     activeTransfers?: ClusterTransferJobDTO[];
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 const toServiceDTO = (service: TeamClusterServiceProps | TeamClusterDaemonServiceProps): TeamClusterServiceDTO => {
     return {

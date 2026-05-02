@@ -43,7 +43,7 @@ interface LatexQueryKeys extends Record<string, unknown> {
     files: ListLatexFilesParams;
     folders: ListLatexFoldersParams;
     folder: GetLatexFolderParams;
-};
+}
 
 const KEYS = buildKeys<LatexQueryKeys>('latex');
 

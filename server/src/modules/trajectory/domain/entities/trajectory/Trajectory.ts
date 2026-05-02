@@ -5,7 +5,7 @@ export enum TrajectoryStatus {
     Completed = 'completed',
     Analyzing = 'analyzing',
     Failed = 'failed'
-};
+}
 
 export interface TrajectoryFrameSimulationCellEmbed {
     _id: string;
@@ -20,7 +20,7 @@ export interface TrajectoryFrameSimulationCellEmbed {
     timestep: number;
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 export interface TrajectoryFrame {
     timestep: number;
@@ -29,12 +29,12 @@ export interface TrajectoryFrame {
     // populated simulation-cell payload (read path — what HTTP consumers need
     // to render box bounds client-side). The repository maps accordingly.
     simulationCell: string | TrajectoryFrameSimulationCellEmbed;
-};
+}
 
 export interface TrajectoryStats {
     totalFiles: number;
     totalSize: number;
-};
+}
 
 export interface TrajectoryProps {
     name: string;
@@ -64,7 +64,7 @@ export interface TrajectoryProps {
     stats: TrajectoryStats;
     updatedAt: Date;
     createdAt: Date;
-};
+}
 
 export default class Trajectory {
     constructor(
@@ -75,4 +75,4 @@ export default class Trajectory {
     get id(): string {
         return this._id;
     }
-};
+}

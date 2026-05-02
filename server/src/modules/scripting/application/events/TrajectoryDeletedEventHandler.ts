@@ -7,10 +7,7 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-        
         private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator
     ) {}
 
@@ -19,4 +16,4 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<Traj
         await this.scriptingSessionOrchestrator.deleteSession(trajectoryId);
         await this.scriptingNotebookRepository.removeTrajectory(trajectoryId);
     }
-};
+}

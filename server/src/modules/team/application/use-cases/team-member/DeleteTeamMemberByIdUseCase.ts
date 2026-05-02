@@ -12,9 +12,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedEntityIdInputDTO<'teamMemberId'>, null, ApplicationError>{
     constructor(
-        
         private teamMemberRepository: TeamMemberRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
@@ -36,4 +34,4 @@ export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedE
 
         return Result.ok(null);
     }
-};
+}

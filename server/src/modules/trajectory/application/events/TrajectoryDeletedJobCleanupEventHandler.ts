@@ -7,7 +7,6 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        
         private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
@@ -26,4 +25,4 @@ export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHa
             );
         }
     }
-};
+}

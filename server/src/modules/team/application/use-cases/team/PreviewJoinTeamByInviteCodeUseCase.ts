@@ -15,15 +15,12 @@ interface PopulatedTeamOwner {
         firstName?: string;
         lastName?: string;
     };
-};
+}
 
 @injectable()
 export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<PreviewJoinTeamByInviteCodeInputDTO, PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 

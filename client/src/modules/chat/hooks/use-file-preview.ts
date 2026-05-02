@@ -1,11 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import type { RefObject } from 'react';
+import type { ChangeEvent, RefObject } from 'react';
 
 interface FilePreview {
     file: File;
     preview: string;
-};
+}
 
 interface UseFilePreviewReturn {
     files: File[];
@@ -17,7 +16,7 @@ interface UseFilePreviewReturn {
     handleInputChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
     openFilePicker: () => void;
     hasFiles: boolean;
-};
+}
 
 const getImagePreview = async (file: File): Promise<string> => {
     return await new Promise((resolve) => {

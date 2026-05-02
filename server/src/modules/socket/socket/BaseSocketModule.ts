@@ -17,13 +17,8 @@ export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;
 
     constructor(
-        
         protected readonly emitter: SocketIOEmitter,
-        
-        
         protected readonly roomManager: SocketIORoomManager,
-
-        
         protected readonly eventRegistry: SocketIOEventRegistry
     ){}
 
@@ -205,4 +200,4 @@ export default abstract class BaseSocketModule implements ISocketModule{
             }
         });
     }
-};
+}

@@ -12,7 +12,7 @@ interface TransportControlsProps {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     availableTimesteps: number[];
-};
+}
 
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {

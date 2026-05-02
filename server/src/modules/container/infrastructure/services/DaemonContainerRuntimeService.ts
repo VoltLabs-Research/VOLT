@@ -18,7 +18,7 @@ type ContainerRuntimeAction = 'start' | 'stop' | 'restart';
 
 interface ReadContainerFileResponse {
     contents: string;
-};
+}
 
 const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
 const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
@@ -37,7 +37,6 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
     private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
 
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -169,4 +168,4 @@ export class DaemonContainerRuntimeService implements ITeamClusterContainerRunti
         this.pendingStats.delete(cacheKey);
         this.pendingProcesses.delete(cacheKey);
     }
-};
+}

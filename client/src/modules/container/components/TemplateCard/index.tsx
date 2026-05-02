@@ -8,7 +8,7 @@ interface TemplateCardProps {
     isSelected: boolean;
     onClick: () => void;
     variant?: 'default' | 'custom';
-};
+}
 
 const TemplateCard = ({
     name,

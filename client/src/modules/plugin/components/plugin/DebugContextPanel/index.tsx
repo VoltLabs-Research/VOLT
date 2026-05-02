@@ -13,16 +13,16 @@ interface SplitContextEntries {
     forEachEntry: DebugContextEntry | null;
     postForEach: DebugContextEntry[];
     currentIndex: number;
-};
+}
 
 interface ChevronProps {
     expanded: boolean;
     size?: number;
-};
+}
 
 interface NodeLabelData {
     label?: string;
-};
+}
 
 const DebugContextPanel = () => {
     const contextSnapshot = usePluginDebugStore((s) => s.contextSnapshot);

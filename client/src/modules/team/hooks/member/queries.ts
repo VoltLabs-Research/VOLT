@@ -8,7 +8,7 @@ import type { RemoveTeamMemberInputDTO } from '../../api/dtos/member/remove-team
 interface TeamMembersAggregateQueryParams {
     teamId: string;
     limit: number;
-};
+}
 
 export const teamMembersResource = createTeamScopedPaginatedResource({
     baseKey: 'team-members',

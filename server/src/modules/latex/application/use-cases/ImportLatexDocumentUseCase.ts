@@ -32,18 +32,10 @@ const MAIN_TEX_FILENAME = 'main.tex';
 @Singleton()
 export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentInputDTO, ImportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFolderRepository: LatexFolderRepository,
-
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -360,4 +352,4 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         const cleaned = base.trim().replace(/[_-]+/g, ' ');
         return cleaned || 'Imported Document';
     }
-};
+}

@@ -13,9 +13,7 @@ export interface CreateSessionInput {
 @Singleton()
 export default class AuthSessionService {
     constructor(
-        
         private readonly tokenService: JwtTokenService,
-        
         private readonly sessionRepository: SessionRepository
     ) {}
 

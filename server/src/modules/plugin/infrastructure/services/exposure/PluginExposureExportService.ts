@@ -48,11 +48,7 @@ export class PluginExposureExportService implements IPluginExposureExportService
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
@@ -225,4 +221,4 @@ export class PluginExposureExportService implements IPluginExposureExportService
             }
         });
     }
-};
+}

@@ -1,3 +1,3 @@
-export interface ForEachNodeData{
+export interface ForEachNodeData {
     iterableSource: string;
-};
+}

@@ -1,7 +1,7 @@
 interface InMemoryAbsoluteExpiryStoreOptions<TValue> {
     getExpiresAt: (value: TValue) => number;
     sweepIntervalMs: number;
-};
+}
 
 /**
  * Stores entries in memory until their absolute expiration time passes.
@@ -43,4 +43,4 @@ export class InMemoryAbsoluteExpiryStore<TKey, TValue> {
     public isExpired(value: TValue, now: number = Date.now()): boolean {
         return this.options.getExpiresAt(value) <= now;
     }
-};
+}

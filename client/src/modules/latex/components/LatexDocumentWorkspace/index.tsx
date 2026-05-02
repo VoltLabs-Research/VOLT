@@ -34,30 +34,30 @@ interface PanelWidths {
     preview: number;
     ai: number;
     editorTop: number;
-};
+}
 
 interface DragState {
     panel: 'files' | 'preview' | 'ai' | 'editor';
     startX: number;
     startY: number;
     startDimension: number;
-};
+}
 
 interface KeyboardResizeConfig {
     panel: DragState['panel'];
     key: string;
-};
+}
 
 interface LoadingPlaceholderBlock {
     key: string;
     width: string;
-};
+}
 
 interface LoadingSkeletonProps {
     width: string | number;
     height: string | number;
     borderRadius?: string | number;
-};
+}
 
 const STORAGE_KEY = 'volt:latex-panel-widths';
 const FILES_MIN = 160;

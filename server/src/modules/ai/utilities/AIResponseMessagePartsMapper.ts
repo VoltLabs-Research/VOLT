@@ -1,12 +1,11 @@
 import type { AIConversationMessageParts } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
 import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface AIResponseMessagePartsMappingResult {
     parts: AIConversationMessageParts;
     textContent: string;
-};
+}
 
 @Singleton()
 export default class AIResponseMessagePartsMapper {
@@ -185,4 +184,4 @@ export default class AIResponseMessagePartsMapper {
             textContent
         };
     }
-};
+}

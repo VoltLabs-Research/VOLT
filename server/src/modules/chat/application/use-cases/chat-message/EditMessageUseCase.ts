@@ -12,9 +12,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -55,4 +53,4 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, Persist
 
         return Result.ok(persistedMessage);
     }
-};
+}

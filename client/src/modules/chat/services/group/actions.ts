@@ -9,7 +9,7 @@ import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } fro
 interface GroupActionDependencies {
     queryClient: QueryClient;
     navigate: NavigateFunction;
-};
+}
 
 export const createGroupAction = async (
     dependencies: GroupActionDependencies,

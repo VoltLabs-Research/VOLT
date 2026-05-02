@@ -18,8 +18,7 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useTip from '@/shared/tips/use-tip';
 import { Folder, Upload } from 'lucide-react';
 import { useMemo } from 'react';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { LatexListingRowType } from '@/modules/latex/utilities/listing';
 

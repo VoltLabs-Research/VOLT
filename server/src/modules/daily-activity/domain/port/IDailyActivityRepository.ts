@@ -15,7 +15,7 @@ export type DailyActivityRecord = PersistedOutput<Omit<DailyActivityProps, 'user
     user: string | DailyActivityUserSummary;
 };
 
-export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps>{
+export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps> {
     /**
      * Add daily activity.
      */
@@ -40,4 +40,4 @@ export interface IDailyActivityRepository extends IBaseRepository<DailyActivity,
         date: Date,
         minutes: number
     ): Promise<void>;
-};
+}

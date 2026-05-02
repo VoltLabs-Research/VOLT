@@ -22,7 +22,7 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
     constructor(
         private pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.StorageService) private storageService: IStorageService
-    ){}
+    ) {}
 
     async execute(input: DownloadPluginBinaryInputDTO): Promise<Result<DownloadPluginBinaryOutputDTO, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
@@ -87,4 +87,4 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
             fileName
         });
     }
-};
+}

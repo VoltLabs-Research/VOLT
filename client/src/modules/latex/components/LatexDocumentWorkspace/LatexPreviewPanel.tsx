@@ -9,7 +9,7 @@ interface LatexPreviewPanelProps {
     compileError: string | null;
     onExportPdf: () => void;
     width: number;
-};
+}
 
 const LatexPreviewPanel = ({
     panelId,

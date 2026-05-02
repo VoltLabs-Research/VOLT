@@ -38,7 +38,7 @@ interface ControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> 
      * throwing a typed ApplicationError from the use case over using this.
      */
     handleUnexpectedError?: ControllerUnexpectedErrorHandler;
-};
+}
 
 type DerivedControllerOptions<TUseCase extends UseCaseInstance = UseCaseInstance> = Omit<
     ControllerOptions<TUseCase>,
@@ -49,7 +49,7 @@ interface StreamControllerOptions<TUseCase extends IUseCase<unknown, StreamableO
     extends DerivedControllerOptions<TUseCase> {
     getHeaders?: (resultValue: UseCaseOutput<TUseCase>) => Record<string, string>;
     prepareOutput?: (resultValue: UseCaseOutput<TUseCase>) => Promise<void>;
-};
+}
 
 type PreparedDownloadStreamControllerOptions<
     TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
@@ -168,7 +168,7 @@ export const createController = <TUseCase extends UseCaseInstance>(
 
             return super.handleSuccess(req, res, value);
         }
-    };
+    }
 
     return GeneratedController;
 };
@@ -212,7 +212,7 @@ export const createPaginatedController = <
 
             super.handleSuccess(req, res, value as PaginatedResult<unknown>);
         }
-    };
+    }
 
     return GeneratedPaginatedController;
 };
@@ -268,7 +268,7 @@ export const createStreamController = <
 
             await super.handleSuccess(req, res, value);
         }
-    };
+    }
 
     return GeneratedStreamController;
 };

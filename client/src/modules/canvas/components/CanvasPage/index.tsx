@@ -1,12 +1,11 @@
 import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
 import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../hooks/use-canvas-coordinator';
-import useCanvasUrlState from '../../hooks/use-canvas-url-state';
+import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
 import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-workspace';
 import useLiveModelDrag from '@/modules/canvas/collaboration/use-live-model-drag';
 import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
@@ -14,7 +13,7 @@ import WorkspaceCursorsOverlay from '../WorkspaceCursorsOverlay';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import useDownloadPluginListing from '../../hooks/use-download-plugin-listing';
 import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
-import useResizable from '../../hooks/use-resizable';
+import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
 import useViewportNarrow from '../../hooks/use-viewport-narrow';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
@@ -36,7 +35,6 @@ import TopToolbar from '../TopToolbar';
 import Viewport from '../Viewport';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
-import { ResizeDirection } from '@/modules/canvas/hooks/use-resizable';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -72,7 +70,7 @@ interface DownloadExposureListingParams {
     analysisId?: string;
     trajectoryId?: string;
     exposureName?: string;
-};
+}
 
 const CanvasPage = () => {
     usePageTitle('Canvas');

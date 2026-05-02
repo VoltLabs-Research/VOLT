@@ -32,7 +32,7 @@ interface ArgumentDefinitionSectionProps {
     onRemoveArgument: (index: number) => void;
     onUpdateArgument: (index: number, nextArgument: IArgumentDefinition) => void;
     level?: number;
-};
+}
 
 const ARGUMENT_TYPE_LABELS: Record<string, string> = ARGUMENT_TYPE_OPTIONS.reduce<Record<string, string>>(
     (accumulator, option) => {

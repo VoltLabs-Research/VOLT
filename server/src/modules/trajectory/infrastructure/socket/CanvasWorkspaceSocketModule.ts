@@ -57,7 +57,6 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly realtimeState: CanvasWorkspaceRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);

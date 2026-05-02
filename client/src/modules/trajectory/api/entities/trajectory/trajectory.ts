@@ -35,4 +35,4 @@ export interface Trajectory extends BaseEntity {
     createdBy?: User | string;
     storageClusterId?: TeamCluster | string | null;
     availableModels?: AvailableModels;
-};
+}

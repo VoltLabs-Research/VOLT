@@ -13,18 +13,13 @@ interface ListAIConversationMessagesLookup {
     _id: string;
     teamId: string;
     userId: string;
-};
+}
 
 @Singleton()
 export default class ListAIConversationMessagesUseCase implements IUseCase<ListAIConversationMessagesInputDTO, PaginatedResult<AIMessageDTO>, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository,
-
-        
         private readonly messageRepository: AIMessageRepository,
-
-        
         private readonly messageDTOMapper: AIMessageDTOMapper
     ) {}
 
@@ -63,4 +58,4 @@ export default class ListAIConversationMessagesUseCase implements IUseCase<ListA
             data
         });
     }
-};
+}

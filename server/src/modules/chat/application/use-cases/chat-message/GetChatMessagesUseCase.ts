@@ -12,24 +12,22 @@ import { injectable } from 'tsyringe';
 
 interface GetChatMessagesFilter {
     chat: string;
-};
+}
 
 interface GetChatMessagesSort extends Record<string, 1 | -1> {
     createdAt: 1;
-};
+}
 
 interface GetChatMessagesFindOptions extends FindOptions<GetChatMessagesFilter>, PaginationOptions {
     filter: GetChatMessagesFilter;
     sort: GetChatMessagesSort;
-};
+}
 
 
 @injectable()
 export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, PaginatedResult<PersistedChatMessageDTO>, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private chatRepo: ChatRepository
     ){}
 
@@ -58,4 +56,4 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
             data: messages.data.map((message) => toPersistedEntity(message))
         });
     }
-};
+}

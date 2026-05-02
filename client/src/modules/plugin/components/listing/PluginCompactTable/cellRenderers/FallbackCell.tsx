@@ -2,7 +2,7 @@ import { formatUnknownValue } from '@/shared/utils/format';
 
 interface FallbackCellProps {
     value: unknown;
-};
+}
 
 const FallbackCell = ({ value }: FallbackCellProps) => {
     if(value === null || value === undefined){

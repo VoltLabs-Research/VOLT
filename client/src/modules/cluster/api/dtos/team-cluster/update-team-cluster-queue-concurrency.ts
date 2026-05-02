@@ -6,12 +6,12 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitInputDTO {
     maxRunningPerTrajectory: number;
     maxRunningPerTeam: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimitsInputDTO {
     analysisProcessing: TeamClusterQueueScopeLimitInputDTO;
@@ -20,17 +20,17 @@ export interface TeamClusterQueueScopeLimitsInputDTO {
     trajectoryGlbConversion: TeamClusterQueueScopeLimitInputDTO;
     cloudUpload: TeamClusterQueueScopeLimitInputDTO;
     trajectoryCompression: TeamClusterQueueScopeLimitInputDTO;
-};
+}
 
 export interface UpdateTeamClusterQueueConcurrencyInputDTO {
     teamId: string;
     teamClusterId: string;
     queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
     queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
-};
+}
 
 export interface UpdateTeamClusterQueueConcurrencyOutputDTO {
     message: string;
     restartRequested: boolean;
     teamCluster: TeamCluster;
-};
+}

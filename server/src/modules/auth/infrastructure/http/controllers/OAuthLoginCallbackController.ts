@@ -50,4 +50,4 @@ export default class OAuthLoginCallbackController {
         const frontendUrl = process.env.OAUTH_SUCCESS_REDIRECT || 'http://localhost:3000/auth/oauth/success';
         res.redirect(appendQueryParameter(frontendUrl, 'token', request.token));
     }
-};
+}

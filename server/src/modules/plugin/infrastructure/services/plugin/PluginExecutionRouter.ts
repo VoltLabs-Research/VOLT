@@ -31,13 +31,13 @@ const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
 interface DaemonPluginSyncResponse {
     synced: boolean;
     objectKey: string;
-};
+}
 
 interface DaemonAnalysisStartResponse {
     queued: boolean;
     totalJobs: number;
     jobs: DaemonAnalysisJob[];
-};
+}
 
 interface DaemonAnalysisJob {
     jobId: string;
@@ -47,7 +47,7 @@ interface DaemonAnalysisJob {
     trajectoryId: string;
     analysisId: string;
     queueType: string;
-};
+}
 
 interface WorkflowSerializable {
     nodes: Array<{
@@ -63,7 +63,7 @@ interface WorkflowSerializable {
         sourceHandle?: string;
         targetHandle?: string;
     }>;
-};
+}
 
 interface DaemonAnalysisPayload {
     _id: string;
@@ -82,7 +82,7 @@ interface DaemonAnalysisPayload {
     status: string;
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
     return {
@@ -108,13 +108,13 @@ const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
 interface NestedPluginDefinition {
     pluginId: string;
     workflow: WorkflowSerializable;
-};
+}
 
 interface TrajectoryFramePayload {
     timestep: number;
     natoms: number;
     simulationCell: string;
-};
+}
 
 interface PluginDispatchPayload extends Record<string, unknown> {
     analysis: DaemonAnalysisPayload;
@@ -136,7 +136,7 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-};
+}
 
 interface DispatchCleanupSummary {
     duplicateDependencyCount: number;
@@ -144,7 +144,7 @@ interface DispatchCleanupSummary {
     duplicatePluginReferenceExecutionCount: number;
     uniquePluginSyncCount: number;
     payloadBytes: number;
-};
+}
 
 const COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES = 1024;
 
@@ -153,7 +153,7 @@ interface EncodedDispatchSection<T> {
     storedBytes: number;
     compressedValue?: string;
     rawValue?: T;
-};
+}
 
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => {
     return {
@@ -234,16 +234,11 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
-
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis
-    ){}
+    ) {}
 
     private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection<unknown>>>();
     private readonly inflightPluginSyncs = new Map<string, Promise<void>>();
@@ -475,4 +470,4 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             ? directHash
             : undefined;
     }
-};
+}

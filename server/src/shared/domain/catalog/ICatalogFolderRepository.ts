@@ -11,4 +11,4 @@ export interface ICatalogFolderRepository<
         options: PaginationOptions
     ): Promise<PaginatedResult<TFolder>>;
     findByTeamAndFolderId(teamId: string, folderId: string): Promise<TFolder | null>;
-};
+}

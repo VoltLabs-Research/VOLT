@@ -6,4 +6,4 @@ export interface UpdateSSHConnectionByIdInputDTO{
     password?: string;
     sshConnectionId: string;
     teamId: string;
-};
+}

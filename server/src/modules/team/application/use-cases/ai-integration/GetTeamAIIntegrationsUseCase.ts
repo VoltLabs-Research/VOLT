@@ -9,10 +9,7 @@ import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 @injectable()
 export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO> {
     constructor(
-        
         private readonly integrationRepository: TeamAIIntegrationRepository,
-
-        
         private readonly providerCatalog: TeamAIProviderCatalog
     ) {}
 
@@ -25,4 +22,4 @@ export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAII
             providers: this.providerCatalog.getAllProviderMetadata()
         });
     }
-};
+}

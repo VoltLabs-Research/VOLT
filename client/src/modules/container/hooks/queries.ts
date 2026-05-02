@@ -37,7 +37,7 @@ interface ContainerQueryKeys extends Record<string, unknown> {
         teamClusterId: string;
     };
     stats: string;
-};
+}
 
 const KEYS = buildKeys<ContainerQueryKeys>(BASE_KEY);
 

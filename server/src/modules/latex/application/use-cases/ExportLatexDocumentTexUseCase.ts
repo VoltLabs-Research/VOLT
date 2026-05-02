@@ -16,10 +16,7 @@ import { Readable } from 'node:stream';
 @Singleton()
 export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository
     ) {}
 
@@ -73,4 +70,4 @@ export class ExportLatexDocumentTexUseCase implements IUseCase<ExportLatexDocume
             ));
         }
     }
-};
+}

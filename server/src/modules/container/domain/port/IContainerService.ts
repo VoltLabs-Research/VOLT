@@ -3,12 +3,12 @@ import type Docker from 'dockerode';
 export interface ContainerEnvironmentVariable {
     key: string;
     value: string;
-};
+}
 
 export interface ContainerPortMapping {
     private: number;
     public?: number;
-};
+}
 
 export interface CreateRuntimeContainerOptions {
     image: string;
@@ -23,12 +23,12 @@ export interface CreateRuntimeContainerOptions {
     binds?: string[];
     groupAdd?: string[];
     cmd?: string[];
-};
+}
 
 export interface ContainerResourceReference {
     id: string;
     name: string;
-};
+}
 
 export type ContainerProcessInfo = Record<string, unknown>;
 
@@ -43,12 +43,12 @@ export interface ContainerFileEntry {
     owner: string;
     group: string;
     date: string;
-};
+}
 
 export interface ContainerTerminalSize {
     rows: number;
     cols: number;
-};
+}
 
 export interface ContainerTerminalStream {
     destroyed?: boolean;
@@ -58,16 +58,16 @@ export interface ContainerTerminalStream {
     on(event: 'data', listener: (chunk: Buffer) => void): void;
     on(event: 'end', listener: () => void): void;
     on(event: 'error', listener: (error: Error) => void): void;
-};
+}
 
 export interface ContainerTerminalExec {
     resize(size: ContainerTerminalSize): Promise<void>;
-};
+}
 
 export interface ContainerTerminalAttachment {
     stream: ContainerTerminalStream;
     exec: ContainerTerminalExec;
-};
+}
 
 export interface IContainerService {
     createContainer(config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo>;
@@ -94,4 +94,4 @@ export interface IContainerService {
 
     commitContainer(containerId: string, repo: string, tag: string): Promise<void>;
     attachTerminal(containerId: string): Promise<ContainerTerminalAttachment>;
-};
+}

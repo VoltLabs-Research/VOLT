@@ -11,10 +11,7 @@ export default class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTr
     protected readonly repository: IAnalysisRepository;
 
     constructor(
-        
         analysisRepository: AnalysisRepository,
-
-        
         private readonly deleteAnalysisByIdUseCase: DeleteAnalysisByIdUseCase
     ) {
         super();
@@ -28,4 +25,4 @@ export default class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTr
             userId: event.payload.userId
         });
     }
-};
+}

@@ -5,10 +5,10 @@ export interface WhiteboardDeletedEventPayload {
     teamId: string;
     userId: string;
     whiteboardTitle: string;
-};
+}
 
 export default class WhiteboardDeletedEvent extends BaseDomainEvent<WhiteboardDeletedEventPayload> {
     constructor(payload: WhiteboardDeletedEventPayload) {
         super('whiteboard.deleted', payload);
     }
-};
+}

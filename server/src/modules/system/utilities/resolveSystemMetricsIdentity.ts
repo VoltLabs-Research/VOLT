@@ -4,7 +4,7 @@ export interface SystemMetricsIdentity {
     clusterId: string;
     serverId: string;
     teamClusterId: string | null;
-};
+}
 
 const readIdentityEnv = (key: string): string | null => {
     const value = process.env[key]?.trim();

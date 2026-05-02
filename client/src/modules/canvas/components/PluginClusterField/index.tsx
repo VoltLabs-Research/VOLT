@@ -7,7 +7,7 @@ interface PluginClusterFieldProps {
     fieldValue: string;
     options: SelectOption[];
     onFieldChange: (key: string, value: string | number | boolean) => void;
-};
+}
 
 const PluginClusterField = ({ fieldKey, fieldValue, options, onFieldChange }: PluginClusterFieldProps) => {
     return (

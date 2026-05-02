@@ -8,7 +8,7 @@ interface UseTeamClusterResourceSelectionInput {
     selectedTeamClusterId: string | null;
     onSelectedTeamClusterIdChange: (teamClusterId: string | null) => void;
     autoSelectFirstCluster?: boolean;
-};
+}
 
 const toTeamClusterOptions = (teamClusters: Array<{ _id: string; name: string; status: string }>): TeamClusterOption[] => {
     return teamClusters.map((teamCluster) => ({

@@ -6,7 +6,7 @@ interface TrajectorySharePanelPopoverProps {
     trajectoryId: string;
     isPublic: boolean;
     canManageVisibility: boolean;
-};
+}
 
 const TrajectorySharePanelPopover = ({
     trajectoryId,

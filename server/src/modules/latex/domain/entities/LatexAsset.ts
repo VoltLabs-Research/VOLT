@@ -11,12 +11,12 @@ export interface LatexAssetProps {
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface LatexAsset {
     readonly _id: string;
     props: LatexAssetProps;
-};
+}
 
 export const createLatexAsset = (_id: string, props: LatexAssetProps): LatexAsset => ({
     _id,

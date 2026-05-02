@@ -6,8 +6,8 @@ export interface UpdateTeamClusterLifecycleInputDTO {
     daemonPassword: string;
     status: TeamClusterStatus;
     installedVersion?: string;
-};
+}
 
 export interface UpdateTeamClusterLifecycleOutputDTO {
     teamCluster: TeamClusterDTO;
-};
+}

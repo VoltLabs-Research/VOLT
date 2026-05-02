@@ -10,7 +10,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError> {
     constructor(
-        
         private chatRepo: ChatRepository
     ){}
 
@@ -27,4 +26,4 @@ export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO,
         const result = await this.chatRepo.findOrCreateChat(userId, targetUserId, teamId);
         return Result.ok(toPersistedEntity(result));
     }
-};
+}

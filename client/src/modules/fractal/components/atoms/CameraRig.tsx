@@ -11,7 +11,7 @@ import type { PerspectiveCamera as ThreePerspective } from 'three';
 interface CameraRigProps {
     orbitRef?: RefObject<OrbitControlsHandle | null>;
     camera: CameraSettingsState;
-};
+}
 
 const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
     const type = camera.type;

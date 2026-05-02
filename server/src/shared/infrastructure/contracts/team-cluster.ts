@@ -91,7 +91,7 @@ export const ChannelCommands = Object.freeze({
 
 interface ResolvedTeamClusterDaemonConnection {
     teamClusterId: string;
-};
+}
 
 export interface ResolvedTeamClusterRedisConnection {
     teamClusterId: string;
@@ -100,7 +100,7 @@ export interface ResolvedTeamClusterRedisConnection {
     username: string;
     password: string;
     db: number;
-};
+}
 
 export interface ResolvedTeamClusterMinioConnection {
     teamClusterId: string;
@@ -109,20 +109,20 @@ export interface ResolvedTeamClusterMinioConnection {
     useSSL: boolean;
     accessKey: string;
     secretKey: string;
-};
+}
 
 export interface ResolvedTeamClusterServices {
     daemon: ResolvedTeamClusterDaemonConnection;
     redis: ResolvedTeamClusterRedisConnection;
     minio: ResolvedTeamClusterMinioConnection;
     services: TeamClusterServicesProps;
-};
+}
 
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {
     [key: string]: unknown;
     queueConcurrency: TeamClusterQueueConcurrencyProps;
     queueScopeLimits: TeamClusterQueueScopeLimitsProps;
-};
+}
 
 export interface TeamClusterDaemonRoleApplyPayload {
     [key: string]: unknown;

@@ -55,13 +55,10 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
     GetPluginListingDocumentsOutputDTO
 > {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-        
         private readonly daemonClient: TeamClusterDaemonClient
-    ){}
+    ) {}
 
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
         const { page, limit } = resolveListingPagination(input);
@@ -136,4 +133,4 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<
 
         return null;
     }
-};
+}

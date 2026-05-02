@@ -7,9 +7,8 @@ import { IEventHandler } from '@shared/application/events/IEventHandler';
 @Subscribe('plugin.deleted')
 export default class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
     constructor(
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository
-    ){}
+    ) {}
 
     async handle(event: PluginDeletedEvent): Promise<void> {
         const { pluginId } = event.payload;
@@ -17,4 +16,4 @@ export default class PluginDeletedEventHandler implements IEventHandler<PluginDe
 
         await this.sceneArtifactRepository.deleteMany({ ...query, sourceType: 'plugin-exposure' });
     }
-};
+}

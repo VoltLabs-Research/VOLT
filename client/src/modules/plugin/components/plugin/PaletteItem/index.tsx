@@ -10,7 +10,7 @@ interface PaletteItemProps {
     config: NodeTypeConfig;
     onDragStart: (event: DragEvent, nodeType: NodeType) => void;
     onAdd?: (nodeType: NodeType) => void;
-};
+}
 
 const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     const nodes = usePluginBuilderStore((state) => state.nodes);

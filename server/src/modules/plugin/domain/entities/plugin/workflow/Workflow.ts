@@ -2,30 +2,30 @@ import { EntrypointNodeData } from './nodes/EntrypointNode';
 import { WorkflowEdge } from './WorkflowEdge';
 import { WorkflowNode, WorkflowNodeType } from './WorkflowNode';
 
-export interface WorkflowViewport{
+export interface WorkflowViewport {
     x: number;
     y: number;
     zoom: number;
-};
+}
 
-export interface WorkflowProps{
+export interface WorkflowProps {
     nodes: WorkflowNode[];
     edges: WorkflowEdge[];
     viewport?: WorkflowViewport;
-};
+}
 
-export default class Workflow{
+export default class Workflow {
     constructor(
         public id: string,
         public props: WorkflowProps
-    ){}
+    ) {}
 
-    updateEntrypoint(update: Partial<EntrypointNodeData>){
+    updateEntrypoint(update: Partial<EntrypointNodeData>) {
         const entrypointNode = this.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
-        if(!entrypointNode || !entrypointNode.data?.entrypoint){
+        if (!entrypointNode || !entrypointNode.data?.entrypoint) {
             return;
         }
-    
+
         entrypointNode.data.entrypoint = {
             ...entrypointNode.data.entrypoint,
             ...update
@@ -35,9 +35,9 @@ export default class Workflow{
     /**
      * Node lookup map.
      */
-    getNodeMap(): Map<string, WorkflowNode>{
+    getNodeMap(): Map<string, WorkflowNode> {
         const map = new Map<string, WorkflowNode>();
-        for(const node of this.props.nodes){
+        for (const node of this.props.nodes) {
             map.set(node.id, node);
         }
         return map;
@@ -46,9 +46,9 @@ export default class Workflow{
     /**
      * Edge lookup for finding connected exposures.
      */
-    getParentMap(): Map<string, string[]>{
+    getParentMap(): Map<string, string[]> {
         const map = new Map<string, string[]>();
-        for(const edge of this.props.edges){
+        for (const edge of this.props.edges) {
             const parents = map.get(edge.target) || [];
             parents.push(edge.source);
             map.set(edge.target, parents);
@@ -59,7 +59,7 @@ export default class Workflow{
     /**
      * Traverse the graph from a specific handle (branch) to find all downstream nodes.
      */
-    findDescendantNodesOnBranch(startNodeId: string, sourceHandle: string): string[]{
+    findDescendantNodesOnBranch(startNodeId: string, sourceHandle: string): string[] {
         const result: string[] = [];
         const visited = new Set<string>();
 
@@ -71,9 +71,9 @@ export default class Workflow{
         const queue = [...initialChildren];
 
         // BFS to find all descendants of those children
-        while(queue.length > 0){
+        while (queue.length > 0) {
             const nodeId = queue.shift()!;
-            if(visited.has(nodeId)) continue;
+            if (visited.has(nodeId)) continue;
 
             visited.add(nodeId);
             result.push(nodeId);
@@ -91,7 +91,7 @@ export default class Workflow{
     /**
      * Locates the ID of the exposure node corresponding to the requested listing exposure name.
      */
-    findExposureByName(exposureName: string): string | null{
+    findExposureByName(exposureName: string): string | null {
         const node = this.props.nodes.find((node) => node.type === WorkflowNodeType.Exposure && node?.data?.exposure?.name === exposureName);
         return node?.id ?? null;
     }
@@ -99,12 +99,12 @@ export default class Workflow{
     /**
      * Find immediate parent node of specified type.
      */
-    findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null{
+    findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const parentEdge = this.props.edges.find((edge) => edge.target === nodeId);
-        if(!parentEdge) return null;
+        if (!parentEdge) return null;
 
         const parentNode = this.props.nodes.find((node) => node.id === parentEdge.source);
-        if(parentNode?.type === type) return parentNode;
+        if (parentNode?.type === type) return parentNode;
 
         return this.findParentByType(parentEdge.source, type);
     }
@@ -112,19 +112,19 @@ export default class Workflow{
     /**
      * Find any ancestor node of specified type (BFS).
      */
-    findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null{
+    findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const visited = new Set<string>();
         const queue = [nodeId];
 
-        while(queue.length > 0){
+        while (queue.length > 0) {
             const currentId = queue.shift()!;
-            if(visited.has(currentId)) continue;
+            if (visited.has(currentId)) continue;
             visited.add(currentId);
 
             const parentEdges = this.props.edges.filter((edge) => edge.target === currentId);
-            for(const edge of parentEdges){
+            for (const edge of parentEdges) {
                 const parentNode = this.props.nodes.find((node) => node.id === edge.source);
-                if(parentNode?.type === type) return parentNode;
+                if (parentNode?.type === type) return parentNode;
                 queue.push(edge.source);
             }
         }
@@ -135,37 +135,37 @@ export default class Workflow{
     /**
      * Find descendant node of specified type (BFS)
      */
-    findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null{
+    findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const visited = new Set<string>();
         const queue = [nodeId];
 
-        while(queue.length > 0){
+        while (queue.length > 0) {
             const currentId = queue.shift()!;
-            if(visited.has(currentId)) continue;
+            if (visited.has(currentId)) continue;
             visited.add(currentId);
 
             const childEdges = this.props.edges.filter((edge) => edge.source === currentId);
-            for(const edge of childEdges){
+            for (const edge of childEdges) {
                 const childNode = this.props.nodes.find((node) => node.id === edge.target);
-                if(childNode?.type === type) return childNode;
-                if(childNode) queue.push(edge.target);
+                if (childNode?.type === type) return childNode;
+                if (childNode) queue.push(edge.target);
             }
         }
 
         return null;
     }
 
-    topologicalSort(): WorkflowNode[]{
+    topologicalSort(): WorkflowNode[] {
         const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
         const inDegree = new Map<string, number>();
         const adjacency = new Map<string, string[]>();
 
-        for(const node of this.props.nodes){
+        for (const node of this.props.nodes) {
             inDegree.set(node.id, 0);
             adjacency.set(node.id, []);
         }
 
-        for(const edge of this.props.edges){
+        for (const edge of this.props.edges) {
             const adj = adjacency.get(edge.source) || [];
             adj.push(edge.target);
             adjacency.set(edge.source, adj);
@@ -173,23 +173,23 @@ export default class Workflow{
         }
 
         const queue: string[] = [];
-        for(const [id, degree] of inDegree){
-            if(degree === 0) queue.push(id);
+        for (const [id, degree] of inDegree) {
+            if (degree === 0) queue.push(id);
         }
 
         const result: WorkflowNode[] = [];
-        while(queue.length > 0){
+        while (queue.length > 0) {
             const nodeId = queue.shift()!;
             const node = nodeMap.get(nodeId);
-            if(node) result.push(node);
+            if (node) result.push(node);
 
-            for(const neighbor of adjacency.get(nodeId) || []){
+            for (const neighbor of adjacency.get(nodeId) || []) {
                 const newDegree = (inDegree.get(neighbor) || 0) - 1;
                 inDegree.set(neighbor, newDegree);
-                if(newDegree === 0) queue.push(neighbor);
+                if (newDegree === 0) queue.push(neighbor);
             }
         }
-        
+
         return result;
     }
-};
+}

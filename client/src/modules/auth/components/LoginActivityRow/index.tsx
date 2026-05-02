@@ -4,7 +4,7 @@ import { Activity } from 'lucide-react';
 
 interface LoginActivityRowProps {
     onViewActivity: () => void;
-};
+}
 
 const LoginActivityRow = ({ onViewActivity }: LoginActivityRowProps) => {
     return (

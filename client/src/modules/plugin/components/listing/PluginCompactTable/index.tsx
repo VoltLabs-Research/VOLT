@@ -34,7 +34,7 @@ interface TableRowProps {
     inferredColumnTypes?: Record<string, InferredColumnType>;
     onRowClick?: (row: Record<string, unknown>) => void;
     isSelected?: boolean;
-};
+}
 
 const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): string => {
     const candidate = row._id ?? row.id;

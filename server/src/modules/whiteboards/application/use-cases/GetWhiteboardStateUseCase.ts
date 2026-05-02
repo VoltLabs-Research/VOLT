@@ -17,9 +17,7 @@ const EMPTY_SCENE_JSON = JSON.stringify({ revision: 0, elements: [], appState: {
 @Singleton()
 export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -60,4 +58,4 @@ export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInp
             ));
         }
     }
-};
+}

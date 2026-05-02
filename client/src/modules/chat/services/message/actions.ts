@@ -6,7 +6,7 @@ import type { ChatMessage } from '../../api/entities/message';
 
 interface MessageActionDependencies {
     chatId?: string;
-};
+}
 
 export const sendTextMessageAction = async (
     { chatId }: MessageActionDependencies,

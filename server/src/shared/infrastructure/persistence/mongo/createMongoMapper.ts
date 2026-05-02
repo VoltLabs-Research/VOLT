@@ -4,7 +4,7 @@ import type { HydratedDocument } from 'mongoose';
 
 interface EntityConstructor<TDomain, TProps> {
     new (_id: string, props: TProps): TDomain;
-};
+}
 
 export const createMongoMapper = <
     TDomain,

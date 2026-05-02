@@ -22,7 +22,7 @@ interface PluginConfigFieldProps {
     fieldKey: string;
     frameOptions?: SelectOption[];
     autocompleteOptions?: FormFieldAutocompleteOption[];
-};
+}
 
 const getSelectionTitle = (selection: IPluginReferenceSelection, pluginOptions: SelectOption[]): string => {
     return pluginOptions.find((option) => option.value === selection.pluginId)?.title ?? selection.pluginId;

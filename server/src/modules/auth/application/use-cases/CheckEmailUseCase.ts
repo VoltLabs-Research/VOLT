@@ -8,7 +8,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class CheckEmailUseCase implements IUseCase<CheckEmailInputDTO, CheckEmailOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly userRepository: UserRepository
     ) {}
 
@@ -16,4 +15,4 @@ export default class CheckEmailUseCase implements IUseCase<CheckEmailInputDTO, C
         const exists = await this.userRepository.emailExists(input.email);
         return Result.ok({ exists });
     }
-};
+}

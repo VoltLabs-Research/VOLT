@@ -30,15 +30,15 @@ import { inject } from 'tsyringe';
 
 interface ExecutePluginOutputDTO {
     analysisId: string;
-};
+}
 
 interface TrajectoryFrameReference {
     timestep: number;
-};
+}
 
 interface AnalysisExecutionMetadata {
     selectedTimesteps?: number[];
-};
+}
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 const SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY = 'selectedTimesteps';
@@ -111,36 +111,18 @@ const createAnalysisConfig = (
 @Singleton()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, ExecutePluginOutputDTO, ApplicationError> {
     constructor(
-        
         private pluginRepo: PluginRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus,
-
-        
         private analysisRepo: AnalysisRepository,
-
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-
-        
         private trajectoryRepo: TrajectoryRepository,
-
-        
         private trajectoryFrameRepo: TrajectoryFrameRepository,
-
-        
         private readonly pluginExecutionRouter: PluginExecutionRouter,
-
-        
         private readonly workflowValidator: WorkflowValidatorService,
-
-        
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
-
-        
         private readonly storagePlacementService: StoragePlacementService
-    ){}
+    ) {}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([
@@ -330,4 +312,4 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
 
         return Result.ok({ analysisId: analysis._id });
     }
-};
+}

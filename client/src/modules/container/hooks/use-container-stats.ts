@@ -6,12 +6,12 @@ import type { ContainerStatsViewData, CpuData, MemoryData } from '../services/co
 interface PreviousCpuStats {
     total: number;
     system: number;
-};
+}
 
 interface UseContainerStatsProps {
     containerId: string | undefined;
     isRunning: boolean;
-};
+}
 
 const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): ContainerStatsViewData => {
     const [cpu, setCpu] = useState<CpuData | null>(null);

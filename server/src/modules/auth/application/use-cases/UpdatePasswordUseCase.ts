@@ -13,11 +13,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly userRepository: UserRepository,
-        
         private readonly passwordHasher: BcryptPasswordHasher,
-        
         private readonly authSessionService: AuthSessionService
     ) {}
 
@@ -76,4 +73,4 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
             user: toPersistedUserDTO(updatedUser)
         });
     }
-};
+}

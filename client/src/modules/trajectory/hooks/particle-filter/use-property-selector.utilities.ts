@@ -5,7 +5,7 @@ export interface PropertyOption {
     title: string;
     property: string;
     exposureId: string | null;
-};
+}
 
 const buildDumpPropertyValue = (property: string): string => `dump:${property}`;
 

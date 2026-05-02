@@ -16,7 +16,6 @@ export default class UpdateTeamClusterLifecycleUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

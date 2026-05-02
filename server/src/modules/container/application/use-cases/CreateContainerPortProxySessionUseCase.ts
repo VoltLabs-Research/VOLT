@@ -14,13 +14,8 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
     CreateContainerPortProxySessionOutputDTO
 > {
     constructor(
-        
         private readonly ownershipService: ContainerOwnershipService,
-
-        
         private readonly accessiblePortResolver: ContainerAccessiblePortResolver,
-
-        
         private readonly relayService: ContainerPortProxyRelayService
     ) {}
 

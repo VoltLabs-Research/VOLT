@@ -32,16 +32,9 @@ const decryptRequiredValue = async (
 @injectable()
 export default class RevealTeamClusterCredentialsUseCase implements IUseCase<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-
-        
         private readonly userRepository: UserRepository,
-
-        
         private readonly passwordHasher: BcryptPasswordHasher
     ){}
 
@@ -126,4 +119,4 @@ export default class RevealTeamClusterCredentialsUseCase implements IUseCase<Rev
             services: revealedServices
         });
     }
-};
+}

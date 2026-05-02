@@ -43,5 +43,4 @@ export interface ISocketEventRegistry {
         socketId: string,
         handler: (connection: ISocketConnection) => void | Promise<void>
     ): void;
-
-};
+}

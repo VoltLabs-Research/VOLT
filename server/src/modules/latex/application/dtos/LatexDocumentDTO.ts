@@ -8,4 +8,4 @@ export interface LatexDocumentDTO {
     lastEditedBy?: LatexDocumentProps['lastEditedBy'];
     createdAt: Date;
     updatedAt: Date;
-};
+}

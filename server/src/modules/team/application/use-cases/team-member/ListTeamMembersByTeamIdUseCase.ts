@@ -14,30 +14,17 @@ import { injectable } from 'tsyringe';
 
 interface TeamMemberFilter {
     team: string;
-};
+}
 
 @injectable()
 export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
-        
         private readonly dailyActivityRepository: DailyActivityRepository,
-
-        
         private readonly teamPresenceService: TeamPresenceService
     ) {}
 
@@ -55,9 +42,7 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             limit: input.limit
         });
 
-        const userIds = teamMembers.data.map((member) => {
-            return getTeamMemberUserId(member.props.user);
-        });
+        const userIds = teamMembers.data.map((member) => getTeamMemberUserId(member.props.user));
 
         const [dailyActivities, trajectoryCounts, analysisCounts, latexCounts, whiteboardCounts] = await Promise.all([
             this.dailyActivityRepository.findActivityByTeamId(teamId, 7),
@@ -69,12 +54,9 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
 
         const activityByUser = new Map<string, number>();
         for (const activity of dailyActivities) {
-            let activityUserId: string;
-            if (typeof activity.user === 'string') {
-                activityUserId = activity.user;
-            } else {
-                activityUserId = activity.user._id.toString();
-            }
+            const activityUserId = typeof activity.user === 'string'
+                ? activity.user
+                : activity.user._id.toString();
             const current = activityByUser.get(activityUserId) || 0;
             activityByUser.set(activityUserId, current + (activity.minutesOnline || 0));
         }
@@ -112,4 +94,4 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             data
         });
     }
-};
+}

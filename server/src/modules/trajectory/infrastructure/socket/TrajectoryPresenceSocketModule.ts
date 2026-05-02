@@ -9,7 +9,7 @@ import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 interface TrajectoryPresencePayload extends Record<string, unknown> {
     trajectoryId: string;
-};
+}
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -89,4 +89,4 @@ export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
         lastName: connection.user?.lastName,
         isAnonymous: !connection.user
     });
-};
+}

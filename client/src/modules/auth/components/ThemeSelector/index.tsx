@@ -3,15 +3,14 @@ import ThemeCard from '@/modules/auth/components/ThemeCard';
 import { Theme, useTheme } from '@/shared/presentation/hooks/use-theme';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useRef } from 'react';
-import type { KeyboardEvent } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 interface ThemeOption {
     theme: Theme;
     label: string;
     previewClassName: string;
     icon: ReactNode;
-};
+}
 
 const ThemeSelector = () => {
     const { preference, setTheme } = useTheme();

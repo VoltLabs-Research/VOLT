@@ -10,4 +10,4 @@ export interface User extends BaseEntity {
     lastLoginAt?: string;
     lastSeenAt?: string | null;
     isOnline?: boolean;
-};
+}

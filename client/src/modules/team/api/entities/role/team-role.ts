@@ -5,4 +5,4 @@ export interface TeamRole extends BaseEntity {
     name: string;
     permissions: string[];
     isSystem: boolean;
-};
+}

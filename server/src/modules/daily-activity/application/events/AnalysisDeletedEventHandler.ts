@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             description
         );
     }
-};
+}

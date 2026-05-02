@@ -8,9 +8,9 @@ export interface CreateScriptingJupyterSessionInputDTO {
     notebookId?: string;
     teamClusterId?: string;
     containerResources?: ScriptingNotebookContainerResourcesDTO;
-};
+}
 
 export interface CreateScriptingJupyterSessionOutputDTO {
     notebookId: string;
     jupyter: ScriptingSessionJupyterInfo;
-};
+}

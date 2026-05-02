@@ -36,7 +36,7 @@ interface CreateContainerPortProxyRelaySessionInput {
     teamClusterId: string;
     internalIp: string;
     privatePort: number;
-};
+}
 
 interface ContainerPortProxyRelaySession {
     sessionId: string;
@@ -50,12 +50,12 @@ interface ContainerPortProxyRelaySession {
     expiresAt: number;
     server: http.Server;
     cleanupTimer: NodeJS.Timeout;
-};
+}
 
 interface ProxyTarget {
     proxiedPath: string;
     rawQuery: string;
-};
+}
 
 const DEFAULT_SESSION_TTL_MS = 600_000;
 const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
@@ -101,10 +101,7 @@ export class ContainerPortProxyRelayService {
     });
 
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly accessTokenService: ContainerPortProxyAccessTokenService
     ) {}
 

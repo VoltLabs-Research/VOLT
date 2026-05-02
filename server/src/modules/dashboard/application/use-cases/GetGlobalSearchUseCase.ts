@@ -82,22 +82,11 @@ const getLastMessageContent = (chat: PersistedChatDTO): string | undefined => {
 export default class GetGlobalSearchUseCase
 implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly containerRepository: ContainerRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly pluginRepository: PluginRepository,
-
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly chatRepository: ChatRepository
     ) {}
 

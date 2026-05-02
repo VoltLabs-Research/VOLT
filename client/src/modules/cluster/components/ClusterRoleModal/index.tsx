@@ -25,7 +25,7 @@ interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;
     onSave: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleOutputDTO>;
     onClose: () => void;
-};
+}
 
 export const CLUSTER_ROLE_MODAL_ID = 'cluster-role-modal';
 

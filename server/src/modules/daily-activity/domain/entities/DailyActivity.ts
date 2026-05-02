@@ -2,7 +2,7 @@ export interface ActivityProps {
     type: ActivityType;
     createdAt: Date;
     description: string;
-};
+}
 
 export interface DailyActivityProps {
     team: string;
@@ -10,7 +10,7 @@ export interface DailyActivityProps {
     date: Date;
     activity: ActivityProps[];
     minutesOnline: number;
-};
+}
 
 export enum ActivityType {
     TrajectoryUpload = 'trajectory-upload',
@@ -27,12 +27,12 @@ export enum ActivityType {
     RoleDeletion = 'role-deletion',
     SecretKeyCreation = 'secret-key-creation',
     SecretKeyDeletion = 'secret-key-deletion'
-};
+}
 
 export interface DailyActivity {
     _id: string;
     props: DailyActivityProps;
-};
+}
 
 export const createDailyActivity = (_id: string, props: DailyActivityProps): DailyActivity => ({
     _id,

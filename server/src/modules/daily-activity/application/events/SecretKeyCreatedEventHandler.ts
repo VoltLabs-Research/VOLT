@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('secret-key.created')
 export default class SecretKeyCreatedEventHandler implements IEventHandler<SecretKeyCreatedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class SecretKeyCreatedEventHandler implements IEventHandler<Secre
             description
         );
     }
-};
+}

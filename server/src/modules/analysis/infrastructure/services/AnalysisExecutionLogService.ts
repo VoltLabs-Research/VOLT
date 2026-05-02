@@ -131,11 +131,8 @@ export default class AnalysisExecutionLogService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly emitter: SocketIOEmitter
     ) {}
 
@@ -467,7 +464,7 @@ export default class AnalysisExecutionLogService {
                         cursor,
                         segment: JSON.parse(serializedSegment) as AnalysisExecutionLogSegment
                     };
-                } catch (error: unknown) {
+                } catch {
                     logger.warn(`Failed to parse analysis log segment from Redis stream cursor=${cursor}`);
                     return null;
                 }

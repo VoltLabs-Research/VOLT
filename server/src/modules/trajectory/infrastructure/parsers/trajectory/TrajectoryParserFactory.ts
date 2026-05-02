@@ -43,13 +43,15 @@ export default class TrajectoryParserFactory {
 
         if (this.dumpParser.canParse(headerLines)) {
             return this.dumpParser.parseMetadataOnly(headerLines);
-        } else if (this.dataParser.canParse(headerLines)) {
-            return this.dataParser.parseMetadataOnly(headerLines);
-        } else {
-            throw ApplicationError.badRequest(
-                ErrorCodes.TRAJECTORY_FORMAT_UNSUPPORTED,
-                'Unsupported trajectory format'
-            );
         }
+
+        if (this.dataParser.canParse(headerLines)) {
+            return this.dataParser.parseMetadataOnly(headerLines);
+        }
+
+        throw ApplicationError.badRequest(
+            ErrorCodes.TRAJECTORY_FORMAT_UNSUPPORTED,
+            'Unsupported trajectory format'
+        );
     }
-};
+}

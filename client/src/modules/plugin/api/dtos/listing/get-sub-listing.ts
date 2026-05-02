@@ -5,12 +5,12 @@ export interface GetSubListingInputDTO {
     subListingName: string;
     page?: number;
     limit?: number;
-};
+}
 
 export interface SubListingColumn {
     label: string;
     sortable: boolean;
-};
+}
 
 export interface GetSubListingOutputDTO {
     subListingName: string;
@@ -20,4 +20,4 @@ export interface GetSubListingOutputDTO {
     page: number;
     totalPages: number;
     limit: number;
-};
+}

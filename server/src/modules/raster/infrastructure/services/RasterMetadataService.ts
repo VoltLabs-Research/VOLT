@@ -19,26 +19,19 @@ import logger from '@shared/infrastructure/logger';
 
 interface RasterFramesByTimestep {
     [timestep: number]: Set<string>;
-};
+}
 
 interface ResolvedTrajectoryRasterMetadata {
     rasterizedFrames: number;
     trajectory: RasterTrajectoryMetadata | null;
-};
+}
 
 @Singleton()
 export class RasterMetadataService {
     constructor(
-        
         private readonly rasterStorage: RasterStorageService,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
-
-        
         private readonly analysisRepository: AnalysisRepository
     ) {}
 
@@ -201,4 +194,4 @@ export class RasterMetadataService {
             frames
         };
     }
-};
+}

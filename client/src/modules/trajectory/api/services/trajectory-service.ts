@@ -31,12 +31,12 @@ import type { UpdateTrajectoryFolderParams } from '../dtos/trajectory/update-tra
 
 interface GetTrajectoryByIdParams {
     trajectoryId: string;
-};
+}
 
 interface CreateTrajectoryApiResponse {
     status: 'success';
     data: Trajectory;
-};
+}
 
 const MULTIPART_FORM_HEADERS: Record<string, string> = {
     'Content-Type': 'multipart/form-data'

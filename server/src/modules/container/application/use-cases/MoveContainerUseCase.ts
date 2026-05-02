@@ -14,9 +14,7 @@ export class MoveContainerUseCase
     extends MoveCatalogItemUseCase<MoveContainerInputDTO, ContainerFolder, ContainerFolderProps, IContainerProps>
     implements IUseCase<MoveContainerInputDTO, MoveContainerOutputDTO, ApplicationError> {
     constructor(
-        
         containerRepository: ContainerRepository,
-        
         containerFolderRepository: ContainerFolderRepository
     ) {
         super(containerRepository, containerFolderRepository, {

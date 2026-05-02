@@ -6,7 +6,7 @@ interface WebSocketDuplexBridgeOptions {
     duplexCloseMessage: string;
     duplexEndMessage: string;
     duplexErrorMessage: string;
-};
+}
 
 const isWebSocketOpen = (webSocket: WebSocket): boolean => webSocket.readyState === WebSocket.OPEN;
 
@@ -41,8 +41,7 @@ const safeSendWebSocket = (webSocket: WebSocket, payload: Buffer | string, isBin
 
     webSocket.send(payload, {
         binary: isBinary
-    }, () => {
-    });
+    }, () => {});
 };
 
 const safeCloseWebSocket = (webSocket: WebSocket, code?: number, reason?: string): void => {

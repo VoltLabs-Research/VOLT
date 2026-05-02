@@ -14,7 +14,7 @@ import type {
 
 interface MarkAsReadParams {
     chatId: string;
-};
+}
 
 const endpoints = {
     getMessages: paginated<GetChatMessagesInputDTO, PaginatedResponse<ChatMessage>>('/:chatId/messages'),

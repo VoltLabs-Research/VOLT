@@ -13,13 +13,13 @@ interface NormalizedError {
     code?: string;
     message?: string;
     statusCode: number;
-};
+}
 
 interface NormalizedErrorMetadata {
     code?: string;
     message?: string;
     statusCode?: number;
-};
+}
 
 const isStatusCode = (value: unknown): value is number => {
     return typeof value === 'number' && Number.isInteger(value);

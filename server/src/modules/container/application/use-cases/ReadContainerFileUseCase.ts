@@ -29,4 +29,4 @@ export class ReadContainerFileUseCase implements IUseCase<ReadContainerFileInput
 
         return teamClusterId;
     }
-};
+}

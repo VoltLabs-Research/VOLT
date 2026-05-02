@@ -9,19 +9,19 @@ export enum PointCloudDetailLevel {
     Performance = 'performance',
     Balanced = 'balanced',
     Quality = 'quality'
-};
+}
 
 export enum PointCloudStyleMode {
     Flat = 'flat',
     Softened = 'softened'
-};
+}
 
 export interface PointCloudSettingsState {
     overridesEnabled: boolean;
     detailLevel: PointCloudDetailLevel;
     useSceneOpacity: boolean;
     style: PointCloudStyleMode;
-};
+}
 
 interface TrajectoryGLBs {
     trajectory: string;
@@ -30,18 +30,18 @@ interface TrajectoryGLBs {
     dislocations: string;
     core_atoms: string;
     atoms_colored_by_type: string;
-};
+}
 
 export interface ModelData {
     modelBounds?: BoundsInfo | null;
     glbs: TrajectoryGLBs | null;
-};
+}
 
 export interface ModelDragOffset {
     x: number;
     y: number;
     z: number;
-};
+}
 
 export interface ModelState {
     activeScene: SceneObjectType;
@@ -59,7 +59,7 @@ export interface ModelState {
     modelDragOffsets: Record<string, ModelDragOffset>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
-};
+}
 
 interface ModelActions {
     selectModel: (glbs: TrajectoryGLBs | null) => void;
@@ -87,7 +87,7 @@ interface ModelActions {
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
-};
+}
 
 export type ModelStore = ModelActions & ModelState;
 
@@ -105,7 +105,7 @@ export interface PlaybackState {
     // dataset metadata (LAMMPS dump frequency → FPS) so each trajectory plays
     // at its native rhythm.
     targetFps: number;
-};
+}
 
 interface PlaybackActions {
     togglePlay: (params: PlaybackTimelineParams) => void;
@@ -122,7 +122,7 @@ interface PlaybackActions {
      * rAF loop. Reuses the single rAF already scheduled by the renderer.
      */
     tick: (now: number) => void;
-};
+}
 
 export type PlaybackStore = PlaybackState & PlaybackActions;
 type TimelineGLBMap = Record<number, string>;
@@ -130,11 +130,11 @@ type TimelineGLBMap = Record<number, string>;
 export interface PlaybackTimelineParams {
     trajectoryId?: string;
     timesteps: number[];
-};
+}
 
 interface TimestepActions {
     loadModels: (params: LoadTimelineModelsParams) => Promise<TimelineGLBMap>;
-};
+}
 
 interface LoadTimelineModelsParams {
     trajectoryId: string;
@@ -143,6 +143,6 @@ interface LoadTimelineModelsParams {
     maxFramesToPreload?: number;
     currentFrameIndex?: number;
     signal?: AbortSignal;
-};
+}
 
 export type TimestepStore = TimestepActions;

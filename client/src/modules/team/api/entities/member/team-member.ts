@@ -8,7 +8,7 @@ export interface TeamMember extends BaseEntity {
     user: User;
     role: TeamRole;
     joinedAt: Date;
-};
+}
 
 export interface TeamMemberStats extends TeamMember {
     timeSpentLast7Days: number;
@@ -16,4 +16,4 @@ export interface TeamMemberStats extends TeamMember {
     analysesCount: number;
     latexCount: number;
     whiteboardsCount: number;
-};
+}

@@ -108,4 +108,4 @@ export default class DailyActivityRepository
             { upsert: true }
         );
     }
-};
+}

@@ -7,12 +7,12 @@ export interface LatexWorkspaceDragData {
     id: string;
     label: string;
     folderPath: string;
-};
+}
 
 export interface LatexWorkspaceDropData {
     folderPath: string;
     label: string;
-};
+}
 
 export const LATEX_WORKSPACE_ROOT_DROP_ID = 'latex-workspace-drop:__root__';
 

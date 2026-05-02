@@ -7,11 +7,11 @@ export interface CreateTeamAIIntegrationParams {
     defaultModel?: string;
     enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
-};
+}
 
 export interface CreateTeamAIIntegrationResponse {
     integration: TeamAIIntegration;
-};
+}
 
 export interface CreateTeamAIIntegrationInputDTO {
     teamId: string;
@@ -21,4 +21,4 @@ export interface CreateTeamAIIntegrationInputDTO {
     defaultModel?: string;
     enabledModels?: TeamAIModelMetadata[];
     metadata?: Record<string, unknown>;
-};
+}

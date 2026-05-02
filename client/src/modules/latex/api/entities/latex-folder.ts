@@ -4,4 +4,4 @@ export interface LatexFolder {
     parent: string | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}

@@ -110,13 +110,9 @@ const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 @Singleton()
 export class AnalysisListingExportCatalogService {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-        
         private readonly pluginRepository: PluginRepository,
-        
         private readonly daemonClient: TeamClusterDaemonClient
     ) {}
 

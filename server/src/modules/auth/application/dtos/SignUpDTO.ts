@@ -7,9 +7,9 @@ export interface SignUpInputDTO{
     password: string;
     ip: string;
     userAgent: string;
-};
+}
 
 export interface SignUpOutputDTO{
     token: string;
     user: PersistedUserDTO
-};
+}

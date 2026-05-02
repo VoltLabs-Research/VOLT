@@ -12,15 +12,12 @@ export interface ContainerDeploymentProgressPayload {
     containerName?: string;
     containerId?: string;
     timestamp: string;
-};
+}
 
 @injectable()
 export class ContainerDeploymentProgressService {
     constructor(
-        
         private readonly socketEmitter: SocketIOEmitter,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository
     ) {}
 

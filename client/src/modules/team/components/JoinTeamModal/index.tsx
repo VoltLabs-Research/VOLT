@@ -17,7 +17,7 @@ const JOIN_TEAM_FORM_ID = 'join-team-form';
 interface JoinTeamModalProps {
     onSuccess?: (result: JoinByInviteCodeOutputDTO) => void | Promise<void>;
     onClose?: () => void;
-};
+}
 
 export const JoinTeamModal = ({
     onSuccess,

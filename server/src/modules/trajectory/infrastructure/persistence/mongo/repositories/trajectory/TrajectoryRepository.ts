@@ -38,8 +38,6 @@ export default class TrajectoryRepository
     constructor(
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository
     ) {
         super(TrajectoryModel, trajectoryMapper);
@@ -118,4 +116,4 @@ export default class TrajectoryRepository
 
         return docs.map((doc) => doc._id.toString());
     }
-};
+}

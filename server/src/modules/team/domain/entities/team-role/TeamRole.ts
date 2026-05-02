@@ -5,7 +5,7 @@ export interface TeamRoleProps{
     isSystem: boolean;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class TeamRole{
     constructor(
@@ -60,4 +60,4 @@ export default class TeamRole{
             updatedAt: now
         };
     }
-};
+}

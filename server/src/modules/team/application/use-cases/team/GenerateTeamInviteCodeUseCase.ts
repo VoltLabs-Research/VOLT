@@ -24,10 +24,7 @@ const generateCode = (): string => {
 @injectable()
 export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 
@@ -61,4 +58,4 @@ export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateT
 
         return Result.ok(toPersistedOutput(updated));
     }
-};
+}

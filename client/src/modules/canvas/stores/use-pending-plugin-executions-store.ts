@@ -9,7 +9,7 @@ export interface PendingPluginExecution {
     toastId?: string;
     completedFrames?: number;
     totalFrames?: number;
-};
+}
 
 interface PendingPluginExecutionsState {
     entries: Record<string, PendingPluginExecution>;
@@ -17,7 +17,7 @@ interface PendingPluginExecutionsState {
     update: (analysisId: string, patch: Partial<PendingPluginExecution>) => void;
     get: (analysisId: string) => PendingPluginExecution | undefined;
     remove: (analysisId: string) => PendingPluginExecution | undefined;
-};
+}
 
 export const usePendingPluginExecutionsStore = create<PendingPluginExecutionsState>((set, getState) => ({
     entries: {},

@@ -7,16 +7,15 @@ import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, PersistedDailyActivityDTO[], ApplicationError>{
+export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, PersistedDailyActivityDTO[], ApplicationError> {
     constructor(
-        
         private dailyActivityRepository: DailyActivityRepository
-    ){}
+    ) {}
 
     async execute(input: FindActivityByTeamIdInputDTO): Promise<Result<PersistedDailyActivityDTO[], ApplicationError>> {
         const { teamId, range } = input;
         const result = await this.dailyActivityRepository.findActivityByTeamId(teamId, range);
-        
+
         return Result.ok(result);
     }
-};
+}

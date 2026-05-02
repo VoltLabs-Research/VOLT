@@ -9,7 +9,7 @@ export interface ListTeamClusterRemoteExplorerEntriesInputDTO {
     sessionId: string;
     target: TeamClusterRemoteAccessTarget;
     path: string;
-};
+}
 
 /**
  * Returns the navigable entries for the current remote explorer path.
@@ -19,4 +19,4 @@ export interface ListTeamClusterRemoteExplorerEntriesOutputDTO {
     target: TeamClusterRemoteAccessTarget;
     path: string;
     entries: TeamClusterRemoteExplorerEntry[];
-};
+}

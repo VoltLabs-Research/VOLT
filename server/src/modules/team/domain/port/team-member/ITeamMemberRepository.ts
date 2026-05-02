@@ -16,4 +16,4 @@ export interface ITeamMemberRepository extends IBaseRepository<TeamMember, TeamM
      * Get team IDs for all teams a user belongs to
      */
     getTeamIdsByUserId(userId: string): Promise<string[]>;
-};
+}

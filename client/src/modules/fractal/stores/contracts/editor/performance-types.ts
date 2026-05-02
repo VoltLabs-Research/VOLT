@@ -35,6 +35,6 @@ export interface PerformanceSettingsActions {
     selectCanvasDpr: (opts: CanvasRuntimeResolutionOptions) => number | [number, number];
     selectCanvasProps: (opts: CanvasRuntimeResolutionOptions) => ResolvedCanvasRuntimeProps;
     selectAdaptiveDprProps: () => AdaptiveDprProps;
-};
+}
 
 export type PerformanceSettingsStore = PerformanceSettingsState & PerformanceSettingsActions;

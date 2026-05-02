@@ -6,7 +6,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('chat.deleted')
 export default class ChatDeletedEventHandler implements IEventHandler<ChatDeletedEvent> {
     constructor(
-        
         private readonly chatMessageRepository: ChatMessageRepository
     ){}
 
@@ -15,4 +14,4 @@ export default class ChatDeletedEventHandler implements IEventHandler<ChatDelete
 
         await this.chatMessageRepository.deleteMany({ chat: chatId });
     }
-};
+}

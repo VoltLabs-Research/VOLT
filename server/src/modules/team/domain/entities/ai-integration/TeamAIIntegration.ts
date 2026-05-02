@@ -5,7 +5,7 @@ export type TeamAIProvider = AIProvider;
 export interface EnabledModel {
     id: string;
     name: string;
-};
+}
 
 type TeamAIIntegrationCreatedBy = string | { _id?: unknown; toString?: () => string };
 
@@ -20,7 +20,7 @@ export interface TeamAIIntegrationProps {
     createdBy: TeamAIIntegrationCreatedBy;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class TeamAIIntegration {
     constructor(
@@ -101,4 +101,4 @@ export default class TeamAIIntegration {
 
         return value.toString?.() ?? '';
     }
-};
+}

@@ -12,9 +12,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly userRepository: UserRepository,
-        
         private readonly authSessionService: AuthSessionService
     ) {}
 
@@ -65,4 +63,4 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
             token 
         });
     }
-};
+}

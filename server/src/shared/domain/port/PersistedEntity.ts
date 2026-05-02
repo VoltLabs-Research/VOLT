@@ -10,7 +10,7 @@ export type PersistedOutput<TProps> = PersistedEntityOutput<TProps>;
 
 interface EntityWithProps<TProps> {
     props: TProps;
-};
+}
 
 const hasStringId = (entity: EntityWithProps<unknown>): entity is PersistedEntity<unknown> => {
     return '_id' in entity && typeof entity._id === 'string';

@@ -15,12 +15,9 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -75,4 +72,4 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             ));
         }
     }
-};
+}

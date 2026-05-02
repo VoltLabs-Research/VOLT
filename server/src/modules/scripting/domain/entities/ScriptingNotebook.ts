@@ -1,7 +1,7 @@
 export interface ScriptingNotebookContainerResources {
     cpus: number;
     memoryMB: number;
-};
+}
 
 export interface ScriptingNotebookProps {
     team: string;
@@ -16,12 +16,12 @@ export interface ScriptingNotebookProps {
     lastOpenedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface ScriptingNotebook {
     readonly _id: string;
     props: ScriptingNotebookProps;
-};
+}
 
 export const createScriptingNotebook = (_id: string, props: ScriptingNotebookProps): ScriptingNotebook => ({
     _id,

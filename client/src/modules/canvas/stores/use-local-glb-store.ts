@@ -9,7 +9,7 @@ interface LocalGlbState {
     setLocalModelWorldBounds: (bounds: ModelWorldBounds | null) => void;
     setLocalAutoSimulationCellWorldBounds: (bounds: ModelWorldBounds | null) => void;
     clearLocalGlb: () => void;
-};
+}
 
 let lastObjectUrl: string | null = null;
 

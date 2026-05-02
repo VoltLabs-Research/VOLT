@@ -9,11 +9,11 @@ enum ChatMessageRelation {
     Sender = 'sender',
     ReadBy = 'readBy',
     DeletedBy = 'deletedBy'
-};
+}
 
 type ChatMessageRelationKey = `${ChatMessageRelation}`;
 
-export interface ChatMessageDocument extends Persistable<ChatMessageProps, ChatMessageRelationKey>, Document {};
+export interface ChatMessageDocument extends Persistable<ChatMessageProps, ChatMessageRelationKey>, Document {}
 
 const chatReactionEmojiField = {
     type: String,

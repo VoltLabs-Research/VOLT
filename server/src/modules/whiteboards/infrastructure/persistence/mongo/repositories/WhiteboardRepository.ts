@@ -21,4 +21,4 @@ export default class WhiteboardRepository
         const doc = await this.model.findOne({ _id: whiteboardId, team: teamId }).exec();
         return doc ? this.mapper.toDomain(doc) : null;
     }
-};
+}

@@ -10,4 +10,4 @@ export interface DeleteTeamClusterByIdOutputDTO {
     message: string;
     manualUninstallCommand?: string;
     teamCluster?: TeamClusterDTO;
-};
+}

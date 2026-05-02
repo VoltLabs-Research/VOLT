@@ -2,12 +2,12 @@ export enum OAuthProvider{
     GitHub = 'github',
     Microsoft = 'microsoft',
     Google = 'google'
-};
+}
 
 export enum UserRole{
     Admin = 'admin',
     User = 'user'
-};
+}
 
 export interface UserProps{
     email: string;
@@ -27,12 +27,12 @@ export interface UserProps{
 
     oauthProvider?: OAuthProvider;
     oauthId?: string;
-};
+}
 
 export interface SplitFullNameResult {
     firstName: string;
     lastName?: string;
-};
+}
 
 export default class User{
     constructor(
@@ -75,4 +75,4 @@ export default class User{
 
         return false;
     }
-};
+}

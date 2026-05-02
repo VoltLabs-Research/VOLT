@@ -4,6 +4,6 @@ export interface GetOrCreateChatInputDTO {
     userId: string;
     targetUserId: string;
     teamId: string;
-};
+}
 
-export interface GetOrCreateChatOutputDTO extends PersistedChatDTO {};
+export interface GetOrCreateChatOutputDTO extends PersistedChatDTO {}

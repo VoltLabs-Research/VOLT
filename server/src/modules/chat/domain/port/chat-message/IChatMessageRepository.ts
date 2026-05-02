@@ -7,4 +7,4 @@ export interface IChatMessageRepository extends IBaseRepository<ChatMessage, Cha
         chatId: string,
         userId: string
     ): Promise<void>;
-};
+}

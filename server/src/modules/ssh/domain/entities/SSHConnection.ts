@@ -6,14 +6,14 @@ export interface SSHConnectionProps{
     username: string;
     encryptedPassword: string;
     user: string;
-};
+}
 
 export default class SSHConnection{
     constructor(
         public _id: string,
         public props: SSHConnectionProps
     ){}
-    
+
     public static create(
         _id: string,
         input: {
@@ -30,7 +30,7 @@ export default class SSHConnection{
             return null;
         }
 
-        const instance = new SSHConnection(_id, {
+        return new SSHConnection(_id, {
             name: input.name,
             host: input.host,
             port: input.port,
@@ -39,7 +39,5 @@ export default class SSHConnection{
             user: input.userId,
             encryptedPassword: input.encryptedPassword
         });
-
-        return instance;
     }
-};
+}

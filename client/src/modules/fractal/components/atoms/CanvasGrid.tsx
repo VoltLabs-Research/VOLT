@@ -5,12 +5,12 @@ import type { CanvasGridSettingsState } from '@/modules/fractal/stores/contracts
 interface CanvasGridProps {
     settings: CanvasGridSettingsState;
     darkTheme: boolean;
-};
+}
 
 interface GridThemeDefaults {
     sectionColor: string;
     cellColor: string;
-};
+}
 
 const DARK_GRID_DEFAULTS: GridThemeDefaults = {
     sectionColor: '#262626',

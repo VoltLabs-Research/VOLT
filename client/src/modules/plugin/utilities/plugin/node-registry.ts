@@ -15,17 +15,17 @@ import type { Node } from '@xyflow/react';
 interface NodePosition {
     x: number;
     y: number;
-};
+}
 
 interface NodeOption<TValue> {
     value: TValue;
     label: string;
-};
+}
 
 export interface AllowedNodeConnections {
     from: NodeType[];
     to: NodeType[];
-};
+}
 
 export interface NodeTypeConfig {
     type: NodeType;
@@ -35,11 +35,11 @@ export interface NodeTypeConfig {
     inputs: number;
     outputs: number;
     allowedConnections: AllowedNodeConnections;
-};
+}
 
 export interface PluginNodeRegistryEntry extends NodeTypeConfig {
     createDefaultData: () => INodeData;
-};
+}
 
 export const CONTEXT_OPTIONS: NodeOption<ModifierContext>[] = [{
     value: ModifierContext.TRAJECTORY_DUMPS,

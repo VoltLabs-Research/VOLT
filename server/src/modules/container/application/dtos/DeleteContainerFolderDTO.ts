@@ -2,6 +2,6 @@ import type { DeleteCatalogFolderInputDTO } from '@shared/application/catalog/ca
 
 export interface DeleteContainerFolderInputDTO extends DeleteCatalogFolderInputDTO {
     userId: string;
-};
+}
 
 export type DeleteContainerFolderOutputDTO = null;

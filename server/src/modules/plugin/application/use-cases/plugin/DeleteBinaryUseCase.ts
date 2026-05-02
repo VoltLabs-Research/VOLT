@@ -9,12 +9,11 @@ import { Result } from '@shared/domain/port/Result';
 @Singleton()
 export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly storageService: PluginStorageService
-    ){}
+    ) {}
 
     async execute(input: DeleteBinaryInputDTO): Promise<Result<null, ApplicationError>> {
         await this.storageService.deleteBinary(input.pluginId);
         return Result.ok(null);
     }
-};
+}

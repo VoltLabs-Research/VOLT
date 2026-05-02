@@ -7,13 +7,13 @@ export interface InspectorRow {
     label: string;
     value: ReactNode;
     copyValue?: string;
-};
+}
 
 export interface ContainerInspectorListProps {
     title?: string;
     rows: InspectorRow[];
     className?: string;
-};
+}
 
 const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspectorListProps) => {
     const visibleRows = rows.filter((row) => row.value !== null && row.value !== undefined && row.value !== '');

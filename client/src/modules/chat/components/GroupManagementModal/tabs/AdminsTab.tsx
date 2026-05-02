@@ -11,7 +11,7 @@ interface AdminsTabProps {
     isOwner: boolean;
     isLoading: boolean;
     onToggleAdmin: (userId: string) => void;
-};
+}
 
 const AdminsTab = ({ chat, isOwner, isLoading, onToggleAdmin }: AdminsTabProps) => {
     const renderMember = (member: Chat['participants'][number]) => {

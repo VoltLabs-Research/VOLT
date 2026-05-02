@@ -18,12 +18,12 @@ interface DataPoint {
     read: number;
     write: number;
     iops: number;
-};
+}
 
 interface DiskOperationsProps {
     history: ClusterMetrics[];
     metrics: ClusterMetrics | null;
-};
+}
 
 const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
     const chartData = useMemo<DataPoint[]>(() => {

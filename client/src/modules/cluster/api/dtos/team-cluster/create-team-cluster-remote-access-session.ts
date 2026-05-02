@@ -8,11 +8,11 @@ export interface CreateTeamClusterRemoteAccessSessionInputDTO {
     teamClusterId: string;
     password: string;
     target: TeamClusterRemoteAccessTarget;
-};
+}
 
 /**
  * Returns the temporary session metadata used by a single remote action flow.
  */
 export interface CreateTeamClusterRemoteAccessSessionOutputDTO {
     session: TeamClusterRemoteAccessSession;
-};
+}

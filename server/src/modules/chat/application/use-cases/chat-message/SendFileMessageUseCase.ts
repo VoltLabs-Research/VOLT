@@ -10,7 +10,6 @@ import { SendChatMessageUseCase } from './SendChatMessageUseCase';
 @Singleton()
 export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO, PersistedChatMessageDTO, ApplicationError> {
     constructor(
-        
         private sendChatMessage: SendChatMessageUseCase
     ){}
 
@@ -33,4 +32,4 @@ export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO,
             metadata
         });
     }
-};
+}

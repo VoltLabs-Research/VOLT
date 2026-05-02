@@ -259,16 +259,9 @@ export default class TeamClusterObjectGatewayClient {
     private readonly pendingSessionCreations = new Map<string, number>();
 
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
-
-        
         private readonly directAccessTokenService: TeamClusterDirectAccessTokenService
     ) {}
 

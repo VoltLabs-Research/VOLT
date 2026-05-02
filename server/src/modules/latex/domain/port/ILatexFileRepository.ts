@@ -6,4 +6,4 @@ export interface ILatexFileRepository extends IBaseRepository<LatexFile, LatexFi
     findAllByDocument(documentId: string): Promise<LatexFile[]>;
     findByDocumentAndFileId(documentId: string, fileId: string): Promise<LatexFile | null>;
     clearEntrypointForDocument(documentId: string): Promise<void>;
-};
+}

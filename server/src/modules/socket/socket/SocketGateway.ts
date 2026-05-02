@@ -27,7 +27,7 @@ interface SocketConnectionRuntimeData extends ISocketConnectionData {
     authDurationMs?: number;
     authState?: ISocketAuthenticationResult['state'];
     authReason?: ISocketAuthenticationResult['reason'];
-};
+}
 
 const SOCKET_CORS_ORIGINS = collectAllowedClientOrigins([
     process.env.CLIENT_DEV_HOST,
@@ -37,7 +37,7 @@ const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
 
 interface AuthenticatedSocket extends Socket{
     user?: ISocketConnectionUser | null;
-};
+}
 
 /**
  * Central gateway that creates and holds the Socket.IO server instance.
@@ -57,19 +57,10 @@ export default class SocketGateway{
     private pingInterval = 25_000;
 
     constructor(
-        
         private socketEmitter: SocketIOEmitter,
-
-        
         private socketRoomManager: SocketIORoomManager,
-
-        
         private socketEventRegistry: SocketIOEventRegistry,
-
-        
         private authenticateSocketConnectionUseCase: AuthenticateSocketConnectionUseCase,
-
-        
         private socketMapper: SocketConnectionMapper
     ){}
 
@@ -356,4 +347,4 @@ export default class SocketGateway{
     private getSocketEventRegistryRuntime(): ISocketEventRegistryRuntime {
         return this.socketEventRegistry as ISocketEventRegistryRuntime;
     }
-};
+}

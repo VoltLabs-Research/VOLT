@@ -84,4 +84,4 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             limit: daemonResult.limit || limit
         });
     }
-};
+}

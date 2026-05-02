@@ -9,12 +9,12 @@ import type { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse }
 interface AIIntegrationQueryKeyMap {
     aiIntegrations: void;
     teamAIIntegrations: string;
-};
+}
 
 interface AIIntegrationModelsQueryKeyMap {
     aiIntegrationModels: void;
     teamAIIntegrationModels: string;
-};
+}
 
 const aiIntegrationKeys = buildKeys<AIIntegrationQueryKeyMap>('team-ai-integrations');
 

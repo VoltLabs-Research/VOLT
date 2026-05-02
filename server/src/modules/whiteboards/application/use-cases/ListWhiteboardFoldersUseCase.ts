@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListWhiteboardFoldersUseCase extends ListCatalogFoldersUseCase<WhiteboardFolder, WhiteboardFolderProps> {
     constructor(
-        
         whiteboardFolderRepository: WhiteboardFolderRepository
     ) {
         super(whiteboardFolderRepository);

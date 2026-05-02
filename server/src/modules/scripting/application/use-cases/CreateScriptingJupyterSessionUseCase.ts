@@ -85,16 +85,9 @@ const selectExistingTrajectoryNotebook = (
 @Singleton()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
-        
         private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator,
-
-        
         private readonly scriptingSessionLock: RedisScriptingSessionLock,
-
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
@@ -374,4 +367,4 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             500
         ));
     }
-};
+}

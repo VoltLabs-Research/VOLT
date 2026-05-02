@@ -12,7 +12,6 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInputDTO, DeleteAccountOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly userRepository: UserRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -36,4 +35,4 @@ export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInput
 
         return Result.ok({ success: true });
     }
-};
+}

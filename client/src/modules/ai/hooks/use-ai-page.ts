@@ -9,7 +9,7 @@ import { useRef } from 'react';
 interface UseAIPageOptions {
     navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;
-};
+}
 
 const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const selectedTeam = useSelectedTeam();

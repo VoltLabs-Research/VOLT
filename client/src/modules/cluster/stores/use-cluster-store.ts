@@ -3,13 +3,13 @@ import { create } from 'zustand';
 interface ClusterState {
     selectedClusterId: string | null;
     isConnected: boolean;
-};
+}
 
 interface ClusterActions {
     setSelectedClusterId: (id: string | null) => void;
     setConnected: (connected: boolean) => void;
     reset: () => void;
-};
+}
 
 type ClusterStore = ClusterState & ClusterActions;
 

@@ -14,7 +14,6 @@ export class DeleteConversationAITool extends AITool {
     });
 
     constructor(
-        
         protected readonly useCase: DeleteAIConversationUseCase
     ) {
         super();
@@ -29,4 +28,4 @@ export class DeleteConversationAITool extends AITool {
         if (!result.success) throw result.error;
         return { deleted: true };
     }
-};
+}

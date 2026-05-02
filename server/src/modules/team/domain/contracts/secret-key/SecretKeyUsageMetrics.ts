@@ -4,12 +4,12 @@ interface EndpointStat {
     count: number;
     avgResponseTime: number;
     successRate: number;
-};
+}
 
 interface StatusCodeStat {
     code: number;
     count: number;
-};
+}
 
 interface PerKeyMetric {
     secretKeyId: string;
@@ -17,7 +17,7 @@ interface PerKeyMetric {
     successRequests: number;
     avgResponseTime: number;
     lastRequestAt: Date | null;
-};
+}
 
 export interface TeamUsageMetrics {
     overview: {
@@ -32,7 +32,7 @@ export interface TeamUsageMetrics {
         byKey: Record<string, number[]>;
     };
     topEndpoints: EndpointStat[];
-};
+}
 
 export interface KeyUsageMetrics {
     stats: {
@@ -61,4 +61,4 @@ export interface KeyUsageMetrics {
         ip: string;
         createdAt: Date;
     }[];
-};
+}

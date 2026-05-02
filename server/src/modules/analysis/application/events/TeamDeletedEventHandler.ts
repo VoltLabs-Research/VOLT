@@ -11,10 +11,7 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
     protected readonly repository: IAnalysisRepository;
 
     constructor(
-        
         analysisRepository: AnalysisRepository,
-
-        
         private readonly deleteAnalysisByIdUseCase: DeleteAnalysisByIdUseCase
     ) {
         super();
@@ -28,4 +25,4 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
             userId: event.payload.userId
         });
     }
-};
+}

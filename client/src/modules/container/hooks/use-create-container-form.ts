@@ -11,9 +11,11 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
 import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
-import type { ContainerTemplate } from '../api/entities/container-template';
-import type { ContainerTemplateCustomField } from '../api/entities/container-template';
-import type { ContainerTemplateCustomFieldValues } from '../api/entities/container-template';
+import type {
+    ContainerTemplate,
+    ContainerTemplateCustomField,
+    ContainerTemplateCustomFieldValues
+} from '../api/entities/container-template';
 import type { EnvVariable } from '../api/entities/env-variable';
 import type { PortMapping } from '../api/entities/port-mapping';
 import type { TeamClusterOption } from '../api/entities/team-cluster-option';
@@ -38,7 +40,7 @@ interface ContainerDeployProgressEvent {
     containerName?: string;
     containerId?: string;
     timestamp: string;
-};
+}
 
 interface CreateContainerDraft {
     selectedTemplate: string | null;
@@ -47,7 +49,7 @@ interface CreateContainerDraft {
     selectedTeamClusterId: string | null;
     config: ContainerConfig;
     savedAt: number;
-};
+}
 
 /** Validates one template custom field against required and pattern rules. */
 export const getCustomFieldValidationError = (
@@ -79,7 +81,7 @@ export interface ContainerConfig {
     customFields: ContainerTemplateCustomField[];
     customFieldValues: ContainerTemplateCustomFieldValues;
     mountDockerSocket: boolean;
-};
+}
 
 interface TemplateConfiguration {
     ports: PortMapping[];
@@ -87,7 +89,7 @@ interface TemplateConfiguration {
     customFields: ContainerTemplateCustomField[];
     customFieldValues: ContainerTemplateCustomFieldValues;
     mountDockerSocket: boolean;
-};
+}
 
 const getContainerTemplateById = (templateId: string) => {
     return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
@@ -252,7 +254,7 @@ export interface UseCreateContainerFormReturn {
     getSelectedTemplate: () => ContainerTemplate | undefined;
     canProceedToConfig: boolean;
     canProceedToReview: boolean;
-};
+}
 
 const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const navigate = useNavigate();

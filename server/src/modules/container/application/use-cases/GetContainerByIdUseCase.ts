@@ -32,4 +32,4 @@ export class GetContainerByIdUseCase implements IUseCase<GetContainerByIdInputDT
 
         return Result.ok({ container });
     }
-};
+}

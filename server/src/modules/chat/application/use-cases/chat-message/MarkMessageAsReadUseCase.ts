@@ -11,11 +11,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class MarkMessageAsReadUseCase implements IUseCase<MarkMessageAsReadInputDTO, null, ApplicationError> {
     constructor(
-        
         private messageRepo: ChatMessageRepository,
-        
         private chatRepo: ChatRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -37,4 +34,4 @@ export class MarkMessageAsReadUseCase implements IUseCase<MarkMessageAsReadInput
 
         return Result.ok(null);
     }
-};
+}

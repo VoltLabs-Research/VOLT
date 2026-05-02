@@ -6,7 +6,7 @@ interface JobStatusCounts {
     queued: number;
     running: number;
     completed: number;
-};
+}
 
 const INITIAL_COUNTS: JobStatusCounts = {
     queued: 0,

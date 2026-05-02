@@ -70,12 +70,10 @@ const ClustersListing = () => {
     const [installCommandClusterId, setInstallCommandClusterId] = useState<string | null>(null);
     const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
     const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
-    const createNew = useMemo(() => {
-        return {
-            buttonTitle: 'Add new Cluster',
-            onCreate: () => navigate('/onboarding/cluster/setup')
-        };
-    }, [navigate]);
+    const createNew = useMemo(() => ({
+        buttonTitle: 'Add new Cluster',
+        onCreate: () => navigate('/onboarding/cluster/setup')
+    }), [navigate]);
 
     const handleRevealCredentials = useCallback((cluster: TeamCluster) => {
         state.setCredentialsCluster(cluster);

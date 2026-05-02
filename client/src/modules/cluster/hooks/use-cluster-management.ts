@@ -17,7 +17,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
-import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
@@ -33,13 +33,12 @@ import type {
     TeamClusterRemoteExplorerEntry,
     TeamClusterRemoteExplorerNode
 } from '@/modules/cluster/api/entities/team-cluster-remote-access';
-import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 
 interface ClusterCreateToastOptions {
     loading: { title: string };
     success: { title: string };
     error: { title: string };
-};
+}
 
 interface DeleteClusterToastOptions {
     loading: { title: string };
@@ -50,7 +49,7 @@ interface DeleteClusterToastOptions {
     error: {
         title: string;
     };
-};
+}
 
 const CREATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
     loading: { title: 'Creating cluster...' },
@@ -159,7 +158,7 @@ export interface ClusterManagementResult {
         target: TeamClusterRemoteAccessTarget,
         path: string
     ) => Promise<Blob>;
-};
+}
 
 const useClusterManagement = (): ClusterManagementResult => {
     const selectedTeamId = useSelectedTeamId();

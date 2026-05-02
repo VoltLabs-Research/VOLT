@@ -1,7 +1,6 @@
 import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
 import { PresenceStatus } from '../../api/entities/shared/chat-events';
-import { CHAT_QUERY_KEYS, invalidateChatsQuery } from './queries';
-import { updateChatInCache } from './queries';
+import { CHAT_QUERY_KEYS, invalidateChatsQuery, updateChatInCache } from './queries';
 import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
 import { useQueryClient } from '@tanstack/react-query';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
@@ -12,32 +11,32 @@ import type { TypingUser } from '../../api/entities/shared/chat-events';
 interface NewMessageEvent {
     chatId: string;
     message: ChatMessage;
-};
+}
 
 interface MessageEditedEvent {
     chatId: string;
     message: ChatMessage;
-};
+}
 
 interface MessageDeletedEvent {
     chatId: string;
     messageId: string;
-};
+}
 
 interface ReactionUpdatedEvent {
     chatId: string;
     message: ChatMessage;
-};
+}
 
 interface GroupChatEvent {
     chatId: string;
-};
+}
 
 interface UseChatSocketOptions {
     currentChatId?: string;
     addMessage: (message: ChatMessage) => void;
     updateMessage: (_id: string, updates: Partial<ChatMessage>) => void;
-};
+}
 
 const useChatSocket = ({ currentChatId, addMessage, updateMessage }: UseChatSocketOptions): void => {
     const queryClient = useQueryClient();

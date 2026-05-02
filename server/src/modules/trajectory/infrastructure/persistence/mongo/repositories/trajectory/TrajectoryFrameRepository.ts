@@ -20,9 +20,9 @@ export interface GetFramesOptions {
     skip?: number;
 }
 
-const toObjectId = (value: string): mongoose.Types.ObjectId => {
-    return new mongoose.Types.ObjectId(value);
-};
+const toObjectId = (value: string): mongoose.Types.ObjectId => (
+    new mongoose.Types.ObjectId(value)
+);
 
 interface SimulationCellPopulated {
     _id: mongoose.Types.ObjectId | string;
@@ -43,9 +43,9 @@ type TrajectoryFrameLeanWithPopulatedCell = Omit<TrajectoryFrameLean, 'simulatio
     simulationCell: SimulationCellPopulated | mongoose.Types.ObjectId;
 };
 
-const isPopulated = (value: unknown): value is SimulationCellPopulated => {
-    return typeof value === 'object' && value !== null && 'boundingBox' in value && 'geometry' in value;
-};
+const isPopulated = (value: unknown): value is SimulationCellPopulated => (
+    typeof value === 'object' && value !== null && 'boundingBox' in value && 'geometry' in value
+);
 
 const toPopulatedSimulationCell = (value: SimulationCellPopulated): TrajectoryFrameSimulationCellEmbed => ({
     _id: value._id.toString(),

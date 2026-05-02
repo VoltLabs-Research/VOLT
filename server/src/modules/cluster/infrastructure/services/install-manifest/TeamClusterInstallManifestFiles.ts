@@ -1,5 +1,4 @@
 import { DaemonDistributionMode } from '@modules/cluster/infrastructure/services/install-manifest/TeamClusterDaemonManifestSource';
-
 import type {
     TeamClusterInstallManifestFileDTO,
     TeamClusterInstallManifestPortsDTO
@@ -24,7 +23,7 @@ interface BuildInstallManifestFilesInput {
     credentials: DecryptedTeamClusterServiceCredentials;
     daemonDistributionMode: DaemonDistributionMode;
     daemonFiles: TeamClusterInstallManifestFileDTO[];
-};
+}
 
 export const sanitizeComposeProjectName = (teamClusterId: string): string => {
     const alphanumericOnly = teamClusterId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();

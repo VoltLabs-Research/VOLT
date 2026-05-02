@@ -6,7 +6,7 @@ import Stack from '@/shared/presentation/primitives/Stack';
 
 interface DashboardOverviewSkeletonProps {
     count?: number;
-};
+}
 
 const DashboardOverviewSkeleton = ({ count = 4 }: DashboardOverviewSkeletonProps) => {
     return (

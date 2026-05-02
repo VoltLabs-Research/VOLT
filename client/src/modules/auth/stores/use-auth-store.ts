@@ -8,13 +8,13 @@ interface AuthState{
     isLoading: boolean;
     isInitialized: boolean;
     hasToken: boolean;
-};
+}
 
 interface AuthActions{
     initializeAuth: () => Promise<void>;
     markAuthenticated: (token: string | null) => void;
     signOut: () => void;
-};
+}
 
 type AuthStore = AuthState & AuthActions;
 

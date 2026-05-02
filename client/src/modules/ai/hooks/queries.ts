@@ -16,28 +16,28 @@ import type { MutationOptions } from '@/shared/infrastructure/query';
 export interface ConversationsQueryParams {
     teamId: string;
     params?: ListAIConversationsParams;
-};
+}
 
 export interface ConversationMessagesQueryParams {
     teamId: string;
     conversationId: string;
     params?: ListAIConversationMessagesParams;
-};
+}
 
 interface AIQueryKeyMap {
     conversations: ConversationsQueryParams;
     messages: ConversationMessagesQueryParams;
-};
+}
 
 interface DeleteConversationVariables {
     conversationId: string;
-};
+}
 
 type UpdateConversationVariables = DeleteConversationVariables & UpdateAIConversationParams;
 
 export interface ConversationMutationOptions {
     conversationsQueryParams?: ConversationsQueryParams;
-};
+}
 
 const KEYS = buildKeys<AIQueryKeyMap>('ai');
 

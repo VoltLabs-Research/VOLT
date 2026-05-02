@@ -20,20 +20,20 @@ export interface ExposureEntry {
     state: ExposureLoadState;
     exposures: RenderableExposure[];
     error?: unknown;
-};
+}
 
 export const DEFAULT_ENTRY: ExposureEntry = { state: 'idle', exposures: [] };
 
 interface UseExposureManagerProps {
     trajectoryId?: string;
-};
+}
 
 interface UseExposureManagerReturn {
     exposureEntries: Map<string, ExposureEntry>;
     getEntry: (analysisId: string) => ExposureEntry;
     loadExposuresForAnalysis: (analysisId: string) => Promise<void>;
     resetEntries: () => void;
-};
+}
 
 const buildParams = (trajectoryId: string, analysisId: string): ListSceneArtifactsInputDTO => ({
     trajectoryId,

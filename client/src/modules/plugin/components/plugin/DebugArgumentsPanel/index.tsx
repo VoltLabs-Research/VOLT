@@ -18,13 +18,13 @@ import './DebugArgumentsPanel.css';
 interface DebugArgumentsPanelProps {
     onStart: () => void;
     canStart: boolean;
-};
+}
 
 interface ArgumentsNodeData {
     arguments?: {
         arguments?: IArgumentDefinition[];
     };
-};
+}
 
 const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) => {
     const nodes = usePluginBuilderStore((s) => s.nodes);

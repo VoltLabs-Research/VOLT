@@ -9,7 +9,7 @@ import { ExportNodeData } from './nodes/ExportNode';
 import { IfStatementNodeData } from './nodes/IfStatementNode';
 import { SwitchCaseNodeData, SwitchStatementNodeData } from './nodes/SwitchStatementNode';
 
-export interface WorkflowNodeData{
+export interface WorkflowNodeData {
     modifier?: ModifierNodeData;
     arguments?: ArgumentsNodeData;
     context?: ContextNodeData;
@@ -21,4 +21,4 @@ export interface WorkflowNodeData{
     ifStatement?: IfStatementNodeData;
     switchStatement?: SwitchStatementNodeData;
     switchCase?: SwitchCaseNodeData;
-};
+}

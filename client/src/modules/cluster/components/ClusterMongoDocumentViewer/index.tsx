@@ -9,7 +9,7 @@ import type { TeamClusterMongoDocument } from '@/modules/cluster/api/entities/te
 
 interface ClusterMongoDocumentViewerProps {
     documents: TeamClusterMongoDocument[];
-};
+}
 
 const ClusterMongoDocumentViewer = ({ documents }: ClusterMongoDocumentViewerProps) => {
     if (documents.length === 0) {

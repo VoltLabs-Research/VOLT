@@ -21,7 +21,7 @@ interface TeamCreatorModalProps {
     isRequired?: boolean;
     onSuccess?: () => void;
     onClose?: () => void;
-};
+}
 
 const TEAM_CREATOR_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Creating team...',

@@ -92,4 +92,4 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
             }
         };
     }
-};
+}
