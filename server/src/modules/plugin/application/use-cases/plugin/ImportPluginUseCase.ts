@@ -15,7 +15,7 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
     constructor(
         private storageService: PluginStorageService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: ImportPluginInputDTO): Promise<Result<ImportPluginOutputDTO>> {
         const data = await this.storageService.importPlugin(
@@ -30,4 +30,4 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
 
         return Result.ok(mapPluginToPersistedDTO(data.plugin));
     }
-};
+}

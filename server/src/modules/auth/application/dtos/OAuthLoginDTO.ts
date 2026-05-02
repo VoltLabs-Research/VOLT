@@ -10,9 +10,9 @@ export interface OAuthLoginInputDTO{
     avatar?: string;
     ip: string;
     userAgent: string;
-};
+}
 
 export interface OAuthLoginOutputDTO{
     token: string;
     user: PersistedUserDTO;
-};
+}

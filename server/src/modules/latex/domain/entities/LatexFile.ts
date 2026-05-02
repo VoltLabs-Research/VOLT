@@ -17,7 +17,7 @@ export interface LatexFileProps {
     createdBy: string;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class LatexFile {
     constructor(
@@ -33,4 +33,4 @@ export default class LatexFile {
     get fullPath(): string {
         return this.props.path ? `${this.props.path}${this.props.name}` : this.props.name;
     }
-};
+}

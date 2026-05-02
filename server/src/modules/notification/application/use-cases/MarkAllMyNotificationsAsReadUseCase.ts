@@ -6,15 +6,14 @@ import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 @injectable()
-export default class MarkAllMyNotificationsAsReadUseCase implements IUseCase<MarkAllMyNotificationsAsReadInputDTO, void, ApplicationError>{
+export default class MarkAllMyNotificationsAsReadUseCase implements IUseCase<MarkAllMyNotificationsAsReadInputDTO, void, ApplicationError> {
     constructor(
-        
         private notificationRepo: NotificationRepository
-    ){}
+    ) {}
 
     async execute(input: MarkAllMyNotificationsAsReadInputDTO): Promise<Result<void, ApplicationError>>{
         const { userId } = input;
         const result = await this.notificationRepo.markAllAsRead(userId);
         return Result.ok(result);
     }
-};
+}

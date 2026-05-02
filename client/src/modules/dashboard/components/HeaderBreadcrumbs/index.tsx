@@ -7,7 +7,7 @@ interface BreadcrumbItem {
     label: string;
     path?: string;
     isCurrent?: boolean;
-};
+}
 
 const HeaderBreadcrumbs = () => {
     const { pathname } = useLocation();

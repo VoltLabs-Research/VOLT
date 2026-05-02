@@ -5,7 +5,7 @@ export enum ChatMessageType {
     Text = 'text',
     File = 'file',
     System = 'system'
-};
+}
 
 export interface ChatMessageMetadata {
     fileName?: string;
@@ -13,12 +13,12 @@ export interface ChatMessageMetadata {
     fileType?: string;
     fileUrl?: string;
     filePath?: string;
-};
+}
 
 export interface ChatReaction {
     emoji: string;
     users: (string | User)[];
-};
+}
 
 export interface ChatMessage extends BaseEntity {
     chat: string;
@@ -33,4 +33,4 @@ export interface ChatMessage extends BaseEntity {
     deletedAt?: string | null;
     deletedBy?: User | string | null;
     reactions?: ChatReaction[];
-};
+}

@@ -13,7 +13,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetSimulationCellByTrajectoryUseCase {
     constructor(
-        
         private readonly repository: SimulationCellRepository
     ) {}
 
@@ -47,12 +46,11 @@ export default class GetSimulationCellByTrajectoryUseCase {
             page: 1
         });
 
-        let simulationCell: GetSimulationCellByTrajectoryOutputDTO = null;
-
-        if (fallbackResult.data[0]) {
-            simulationCell = toPersistedOutput(fallbackResult.data[0]);
-        }
+        const fallbackEntity = fallbackResult.data[0];
+        const simulationCell: GetSimulationCellByTrajectoryOutputDTO = fallbackEntity
+            ? toPersistedOutput(fallbackEntity)
+            : null;
 
         return Result.ok(simulationCell);
     }
-};
+}

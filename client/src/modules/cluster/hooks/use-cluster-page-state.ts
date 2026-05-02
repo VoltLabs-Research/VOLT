@@ -2,13 +2,12 @@ import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management
 import { useState } from 'react';
 import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
-import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
     TeamClusterQueueScopeLimitsInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
-import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type { UpdateTeamClusterRoleOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
 
 export interface ClusterPageState {
@@ -37,7 +36,7 @@ export interface ClusterPageState {
     setRoleTarget: (teamCluster: TeamCluster | null) => void;
     setTransferTarget: (teamCluster: TeamCluster | null) => void;
     isLoading: boolean;
-};
+}
 
 const useClusterPageState = (): ClusterPageState => {
     const management = useClusterManagement();

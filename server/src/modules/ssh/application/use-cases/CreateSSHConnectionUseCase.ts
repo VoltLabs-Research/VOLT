@@ -18,12 +18,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, SafeSSHConnectionDTO, ApplicationError> {
     constructor(
-        
         private sshConnectionRepo: SSHConnectionRepository,
-
-        
         private readonly sshCredentialsCipher: SSHCredentialsCipher,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

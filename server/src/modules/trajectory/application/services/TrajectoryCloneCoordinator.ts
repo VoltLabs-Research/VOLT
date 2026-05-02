@@ -21,9 +21,9 @@ import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
 import { inject } from 'tsyringe';
 
-const isLocalCluster = (clusterId: string | null | undefined): boolean => {
-    return !clusterId || clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
-};
+const isLocalCluster = (clusterId: string | null | undefined): boolean => (
+    !clusterId || clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
+);
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
 const PROGRESS_FLUSH_EVERY_FRAMES = 3;
@@ -73,24 +73,13 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
 @Singleton()
 export default class TrajectoryCloneCoordinator {
     constructor(
-        
         private readonly cloneJobRepository: TrajectoryCloneJobRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
-
-        
         private readonly storagePlacementService: StoragePlacementService,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

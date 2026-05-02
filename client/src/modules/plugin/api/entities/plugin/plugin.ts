@@ -15,4 +15,4 @@ export interface Plugin extends BaseEntity {
     exposures?: IExposureComputed[];
     arguments?: IComputedArgumentDefinition[];
     listingExposures?: IListingsWithExposures | null;
-};
+}

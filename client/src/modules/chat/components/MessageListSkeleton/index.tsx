@@ -3,7 +3,7 @@ import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import './MessageListSkeleton.css';
 interface MessageListSkeletonProps {
     count?: number;
-};
+}
 
 const MessageListSkeleton = ({ count = 5 }: MessageListSkeletonProps) => (
     <Stack gap='1'>

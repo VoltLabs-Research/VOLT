@@ -52,4 +52,4 @@ export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSe
             runtimeNotebookId: runtimeNotebookId || undefined
         });
     }
-};
+}

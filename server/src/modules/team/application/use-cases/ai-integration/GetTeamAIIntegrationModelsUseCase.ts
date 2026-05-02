@@ -13,10 +13,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTeamAIIntegrationModelsInputDTO, GetTeamAIIntegrationModelsOutputDTO> {
     constructor(
-        
         private readonly integrationRepository: TeamAIIntegrationRepository,
-
-        
         private readonly providerCatalog: TeamAIProviderCatalog
     ) {}
 
@@ -59,4 +56,4 @@ export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTe
             models
         });
     }
-};
+}

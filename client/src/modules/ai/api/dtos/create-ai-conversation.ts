@@ -3,9 +3,9 @@ import type { AIConversation, AIConversationMessage } from '@/modules/ai/api/ent
 export interface CreateAIConversationParams {
     title?: string;
     message?: string;
-};
+}
 
 export interface CreateAIConversationResult {
     conversation: AIConversation;
     userMessage?: AIConversationMessage;
-};
+}

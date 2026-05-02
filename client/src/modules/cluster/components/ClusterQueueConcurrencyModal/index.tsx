@@ -20,7 +20,7 @@ interface QueueFieldDefinition {
     key: keyof TeamClusterQueueConcurrencyInputDTO;
     label: string;
     description: string;
-};
+}
 
 interface QueueScopeFieldDefinition {
     key: keyof TeamClusterQueueScopeLimitsInputDTO;
@@ -35,7 +35,7 @@ interface ClusterQueueConcurrencyModalProps {
         queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
     }) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
     onClose: () => void;
-};
+}
 
 const MIN_CONCURRENCY = 1;
 const MIN_SCOPE_LIMIT = 0;

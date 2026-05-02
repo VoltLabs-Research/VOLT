@@ -56,7 +56,7 @@ interface LatexService {
     updateFile: (params: UpdateLatexFileParams) => Promise<LatexFile>;
     deleteFile: (params: DeleteLatexFileParams) => Promise<void>;
     setFileEntrypoint: (params: SetLatexFileEntrypointParams) => Promise<LatexFile>;
-};
+}
 
 const endpoints = {
     listDocuments: paginated<ListLatexDocumentsParams, PaginatedResponse<LatexDocument>>(

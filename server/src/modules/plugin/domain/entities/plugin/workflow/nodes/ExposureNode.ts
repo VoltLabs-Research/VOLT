@@ -1,5 +1,5 @@
-export interface ExposureNodeData{
+export interface ExposureNodeData {
     name: string;
     icon?: string;
     results: string;
-};
+}

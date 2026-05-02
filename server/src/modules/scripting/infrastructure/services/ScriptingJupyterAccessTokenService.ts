@@ -10,19 +10,19 @@ interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
-};
+}
 
 export interface CreateScriptingJupyterAccessTokenInput {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
-};
+}
 
 export interface VerifiedScriptingJupyterAccessToken {
     teamId: string;
     runtimeNotebookId: string;
     userId: string;
-};
+}
 
 const DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL = '7d' as const;
 const DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS = ms(DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_TTL);
@@ -128,4 +128,4 @@ export class ScriptingJupyterAccessTokenService {
             return null;
         }
     }
-};
+}

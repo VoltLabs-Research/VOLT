@@ -7,13 +7,13 @@ type Presence = PresenceStatus.Online | PresenceStatus.Offline;
 interface ChatPresenceState {
     typingUsers: TypingUser[];
     userPresence: Record<string, Presence>;
-};
+}
 
 interface ChatPresenceActions {
     setTypingUser: (typing: TypingUser) => void;
     setUsersPresence: (presenceMap: Record<string, Presence>) => void;
     reset: () => void;
-};
+}
 
 type ChatPresenceStore = ChatPresenceState & ChatPresenceActions;
 

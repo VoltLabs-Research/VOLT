@@ -17,12 +17,12 @@ import type { SlicePlaneConfig, SceneObjectType } from '@/modules/fractal/api/en
 
 export interface PointCloudSceneSettings extends PointCloudSettingsState {
     pointSizeMultiplier: number;
-};
+}
 
 export interface DislocationLineSceneSettings {
     baseLineWidth: number;
     lineWidth: number;
-};
+}
 
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState;
@@ -40,4 +40,4 @@ export interface FractalSceneConfig {
     adaptiveEventsEnabled: boolean;
     interactionDegradeEnabled: boolean;
     activeScene: SceneObjectType;
-};
+}

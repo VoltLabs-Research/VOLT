@@ -10,13 +10,13 @@ import type { CatalogFolderMessages } from './CatalogFolderMessages';
 interface MoveCatalogItemInputDTO {
     teamId: string;
     folderId: string | null;
-};
+}
 
 interface MoveCatalogItemUseCaseOptions<TInput, TItemProps extends object> extends CatalogFolderMessages {
     getItemId: (input: TInput) => string;
     itemTeamField?: keyof TItemProps & string;
     itemFolderField?: keyof TItemProps & string;
-};
+}
 
 export abstract class MoveCatalogItemUseCase<
     TInput extends MoveCatalogItemInputDTO,

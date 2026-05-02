@@ -13,13 +13,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly teamRoleRepository: TeamRoleRepository
     ) {}
 
@@ -65,4 +60,4 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
             teamId: team._id
         });
     }
-};
+}

@@ -1,6 +1,6 @@
 interface StringCellProps {
     value: unknown;
-};
+}
 
 const StringCell = ({ value }: StringCellProps) => {
     if(typeof value !== 'string'){

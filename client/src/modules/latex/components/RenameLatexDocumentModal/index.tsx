@@ -6,7 +6,7 @@ interface RenameLatexDocumentModalProps {
     document: LatexDocument | null;
     onSubmit: (title: string) => Promise<void>;
     onClose: () => void;
-};
+}
 
 const getLatexDocumentTitle = (document: LatexDocument): string => document.title;
 

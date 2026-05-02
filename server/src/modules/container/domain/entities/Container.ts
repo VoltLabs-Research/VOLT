@@ -7,7 +7,7 @@ export interface ContainerAccessiblePort {
     browserAccessible: boolean;
     status: 'available' | 'unavailable';
     label?: string;
-};
+}
 
 export interface IContainerProps {
     name: string;
@@ -29,7 +29,7 @@ export interface IContainerProps {
     accessiblePorts?: ContainerAccessiblePort[];
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 export class Container implements IContainerProps {
     public name!: string;
@@ -58,4 +58,4 @@ export class Container implements IContainerProps {
     ) {
         Object.assign(this, props);
     }
-};
+}

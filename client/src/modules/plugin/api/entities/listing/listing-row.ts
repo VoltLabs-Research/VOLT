@@ -7,4 +7,4 @@ export interface ListingRow extends BaseEntity {
     exposureId?: string;
     timestep?: number;
     [key: string]: unknown;
-};
+}

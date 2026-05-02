@@ -3,7 +3,7 @@ import type { AIMessageRole, AIMessageModelInfo, AIMessageTokenUsage } from '@mo
 
 interface AIMessageArtifactsDTO {
     items: Record<string, unknown>[];
-};
+}
 
 export interface AIMessageDTO {
     _id: string;
@@ -16,7 +16,7 @@ export interface AIMessageDTO {
     tokenUsage: AIMessageTokenUsage | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface ListAIConversationMessagesInputDTO {
     teamId: string;
@@ -24,4 +24,4 @@ export interface ListAIConversationMessagesInputDTO {
     conversationId: string;
     page?: number;
     limit?: number;
-};
+}

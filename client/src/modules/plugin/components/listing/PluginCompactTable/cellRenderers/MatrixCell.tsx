@@ -2,7 +2,7 @@ import { safeJsonStringify } from '@/modules/plugin/components/listing/PluginCom
 
 interface MatrixCellProps {
     value: unknown;
-};
+}
 
 const isMatrix = (input: unknown): input is number[][] => {
     if(!Array.isArray(input)) return false;

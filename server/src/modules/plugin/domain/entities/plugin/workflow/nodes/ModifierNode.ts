@@ -1,4 +1,4 @@
-export interface ModifierNodeData{
+export interface ModifierNodeData {
     key?: string;
     name: string;
     author?: string;
@@ -6,4 +6,4 @@ export interface ModifierNodeData{
     version?: string;
     homepage?: string;
     description?: string;
-};
+}

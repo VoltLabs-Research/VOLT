@@ -15,7 +15,7 @@ import type { FileWithPath } from '@/shared/utils/file';
 interface UseLatexAssetsInput {
     documentId: string;
     onInsertRef?: (ref: string) => void;
-};
+}
 
 const DELETE_TOAST = {
     loading: { title: 'Deleting asset...' },

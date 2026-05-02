@@ -13,13 +13,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export default class CreateAIConversationUseCase implements IUseCase<CreateAIConversationInputDTO, CreateAIConversationOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository,
-
-        
         private readonly messageRepository: AIMessageRepository,
-
-        
         private readonly messageDTOMapper: AIMessageDTOMapper
     ) {}
 
@@ -74,4 +69,4 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
                 : undefined
         });
     }
-};
+}

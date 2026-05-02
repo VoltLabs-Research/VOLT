@@ -45,7 +45,7 @@ interface OnboardingStepContentProps {
     activeStep: OnboardingStep;
     children: ReactNode;
     className: string;
-};
+}
 
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
 

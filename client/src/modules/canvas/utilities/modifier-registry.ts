@@ -10,7 +10,7 @@ export interface BuiltInModifierDefinition {
     title: string;
     component?: ComponentType<any>;
     type?: 'built-in' | 'plugin';
-};
+}
 
 export const BUILT_IN_MODIFIERS: BuiltInModifierDefinition[] = [
     {
@@ -40,7 +40,7 @@ export interface ModifierOption {
     plugin?: ResolvedModifier['plugin'];
     pluginId?: string;
     pluginModifierId?: string;
-};
+}
 
 export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]): ModifierOption[] => {
     const builtInOptions: ModifierOption[] = BUILT_IN_MODIFIERS.map((modifier) => ({

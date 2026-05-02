@@ -11,4 +11,4 @@ export interface GetWhiteboardOutputDTO {
     lastEditedBy?: WhiteboardProps['lastEditedBy'];
     createdAt: Date;
     updatedAt: Date;
-};
+}

@@ -12,7 +12,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
         protected useCase: TUseCase,
         private readonly statusCode: HttpStatus = HttpStatus.OK
-    ){}
+    ) {}
 
     protected abstract getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase>;
 
@@ -69,4 +69,4 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
 
         return await this.handleSuccess(req, res, result.value);
     };
-};
+}

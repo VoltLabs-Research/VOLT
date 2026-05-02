@@ -8,10 +8,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class TrajectoryReadAccessService {
     constructor(
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 
@@ -50,4 +47,4 @@ export class TrajectoryReadAccessService {
 
         return trajectory;
     }
-};
+}

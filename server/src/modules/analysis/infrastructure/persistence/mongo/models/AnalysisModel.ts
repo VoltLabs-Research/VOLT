@@ -1,7 +1,6 @@
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { Schema } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { Document, Model } from 'mongoose';
 
@@ -12,14 +11,14 @@ enum AnalysisRelation {
     Team = 'team',
     ComputeCluster = 'computeClusterId',
     StorageCluster = 'storageClusterId'
-};
+}
 
 type AnalysisRelations = `${AnalysisRelation}`;
 
 export interface AnalysisDocument extends Persistable<
     AnalysisProps,
     AnalysisRelations
->, Document {};
+>, Document {}
 
 const AnalysisSchema = new Schema<AnalysisDocument>({
     plugin: {

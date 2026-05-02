@@ -16,7 +16,7 @@ interface GeneralTabProps {
     onDescriptionChange: (value: string) => void;
     onSave: () => void;
     onLeave: () => void;
-};
+}
 
 const GeneralTab = ({
     groupName,

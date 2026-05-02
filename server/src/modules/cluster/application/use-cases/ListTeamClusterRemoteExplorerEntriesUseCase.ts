@@ -9,7 +9,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
 @Singleton()
@@ -19,13 +18,8 @@ export default class ListTeamClusterRemoteExplorerEntriesUseCase implements IUse
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly sessionService: TeamClusterRemoteAccessSessionService,
-
-        
         private readonly remoteExplorerDaemonGateway: RemoteExplorerDaemonGateway
     ) {}
 

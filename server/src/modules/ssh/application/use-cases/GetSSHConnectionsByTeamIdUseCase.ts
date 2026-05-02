@@ -11,7 +11,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnectionsByTeamIdInputDTO, PaginatedResult<SafeSSHConnectionDTO>, ApplicationError> {
     constructor(
-        
         private sshConnRepository: SSHConnectionRepository
     ){}
 
@@ -23,4 +22,4 @@ export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnecti
             data: results.data.map((connection) => toSafeSSHConnectionDTO(connection))
         });
     }
-};
+}

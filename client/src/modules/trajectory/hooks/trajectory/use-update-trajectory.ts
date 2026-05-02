@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 interface UpdateTrajectoryPayload {
     name?: string;
     isPublic?: boolean;
-};
+}
 
 export default function useUpdateTrajectory() {
     const mutation = trajectoryQuery.useUpdateMutation({

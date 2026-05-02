@@ -11,7 +11,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly trajectoryRepo: TrajectoryRepository
     ){}
 
@@ -30,7 +29,7 @@ export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTraje
                 'Trajectory not found'
             ));
         }
-        
+
         return Result.ok(toPersistedOutput(result));
     }
-};
+}

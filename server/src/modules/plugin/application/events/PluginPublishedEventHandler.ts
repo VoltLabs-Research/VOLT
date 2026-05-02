@@ -24,12 +24,9 @@ interface PluginWarmupCommandResponse {
 @Subscribe('plugin.published')
 export default class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
     constructor(
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository
-    ){}
+    ) {}
 
     async handle(event: PluginPublishedEvent): Promise<void> {
         const { pluginId, teamId, binaryObjectPath, requirementsFile, entrypointScript, binaryHash } = event.payload;
@@ -82,4 +79,4 @@ export default class PluginPublishedEventHandler implements IEventHandler<Plugin
             }
         }));
     }
-};
+}

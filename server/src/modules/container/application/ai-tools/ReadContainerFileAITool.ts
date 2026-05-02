@@ -11,9 +11,8 @@ export class ReadContainerFileAITool extends AITool {
     readonly parameters = z.object({ containerId: z.string(), path: z.string() });
 
     constructor(
-        
         protected readonly useCase: ReadContainerFileUseCase
     ) {
         super();
     }
-};
+}

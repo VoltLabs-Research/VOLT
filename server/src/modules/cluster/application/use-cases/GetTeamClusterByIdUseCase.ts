@@ -13,7 +13,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetTeamClusterByIdUseCase implements IUseCase<GetTeamClusterByIdInputDTO, GetTeamClusterByIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository
     ){}
 
@@ -27,4 +26,4 @@ export default class GetTeamClusterByIdUseCase implements IUseCase<GetTeamCluste
             teamCluster: toTeamClusterDTO(teamCluster)
         });
     }
-};
+}

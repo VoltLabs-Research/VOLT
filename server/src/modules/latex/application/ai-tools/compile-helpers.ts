@@ -17,26 +17,26 @@ import type LatexFile from '@modules/latex/domain/entities/LatexFile';
 interface CompilerConfig {
     binary: string;
     args: string[];
-};
+}
 
 interface CompilerRunResult {
     success: boolean;
     log: string;
-};
+}
 
 interface BuildCompilerOptions {
     haltOnError?: boolean;
-};
+}
 
 interface WorkDirManifest {
     inputs: Record<string, string>;
-};
+}
 
 interface SyncableAsset {
     asset: LatexAsset;
     relPath: string;
     version: string;
-};
+}
 
 interface PrepareWorkDirDeps {
     latexDocumentRepository: ILatexDocumentRepository;
@@ -44,37 +44,37 @@ interface PrepareWorkDirDeps {
     latexFileRepository: ILatexFileRepository;
     storageService: IStorageService;
     tempFileService: ITempFileService;
-};
+}
 
 interface PrepareWorkDirParams {
     teamId: string;
     documentId: string;
     workDir: string;
     haltOnError?: boolean;
-};
+}
 
 interface PrepareWorkDirReady {
     status: 'ready';
     compiler: CompilerConfig;
     latexFiles: LatexFile[];
     entrypointFilename: string;
-};
+}
 
 interface PrepareWorkDirNoDocument {
     status: 'no-document';
-};
+}
 
 interface PrepareWorkDirNoFiles {
     status: 'no-files';
-};
+}
 
 interface PrepareWorkDirNoEntrypoint {
     status: 'no-entrypoint';
-};
+}
 
 interface PrepareWorkDirNoCompiler {
     status: 'no-compiler';
-};
+}
 
 type PrepareWorkDirResult =
     | PrepareWorkDirReady

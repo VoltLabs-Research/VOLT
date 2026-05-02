@@ -7,6 +7,6 @@ export interface TeamAIIntegrationCreatedEventPayload {
     provider: TeamAIProvider;
     isEnabled: boolean;
     defaultModel?: string;
-};
+}
 
-export default class TeamAIIntegrationCreatedEvent extends createTeamDomainEvent<TeamAIIntegrationCreatedEventPayload>('team-ai-integration.created') {};
+export default class TeamAIIntegrationCreatedEvent extends createTeamDomainEvent<TeamAIIntegrationCreatedEventPayload>('team-ai-integration.created') {}

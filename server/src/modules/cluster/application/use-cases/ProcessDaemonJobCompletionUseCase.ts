@@ -22,7 +22,7 @@ interface ProcessDaemonAnalysisJobCompletionInputDTO {
     timestep?: number;
     success: boolean;
     error?: string;
-};
+}
 
 interface ProcessDaemonAnalysisJobStatusInputDTO {
     teamClusterId: string;
@@ -35,7 +35,7 @@ interface ProcessDaemonAnalysisJobStatusInputDTO {
     timestep?: number;
     status: JobStatus;
     error?: string;
-};
+}
 
 interface ProcessDaemonRasterJobStatusInputDTO {
     teamClusterId: string;
@@ -46,11 +46,11 @@ interface ProcessDaemonRasterJobStatusInputDTO {
     timestep?: number;
     status: JobStatus;
     error?: string;
-};
+}
 
 interface ValidProcessDaemonRasterJobStatusInputDTO extends ProcessDaemonRasterJobStatusInputDTO {
     status: RasterJobStatus;
-};
+}
 
 interface ProcessDaemonGlbJobStatusInputDTO {
     teamClusterId: string;
@@ -61,11 +61,11 @@ interface ProcessDaemonGlbJobStatusInputDTO {
     timestep?: number;
     status: JobStatus;
     error?: string;
-};
+}
 
 interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStatusInputDTO {
     status: GlbJobStatus;
-};
+}
 
 interface ProcessDaemonSshImportJobStatusInputDTO {
     teamClusterId: string;
@@ -75,11 +75,11 @@ interface ProcessDaemonSshImportJobStatusInputDTO {
     trajectoryId: string;
     status: JobStatus;
     error?: string;
-};
+}
 
 interface ValidProcessDaemonSshImportJobStatusInputDTO extends ProcessDaemonSshImportJobStatusInputDTO {
     status: SshImportJobStatus;
-};
+}
 
 interface ProcessDaemonArtifactUploadJobStatusInputDTO {
     teamClusterId: string;
@@ -91,11 +91,11 @@ interface ProcessDaemonArtifactUploadJobStatusInputDTO {
     timestep?: number;
     status: JobStatus;
     error?: string;
-};
+}
 
 interface ValidProcessDaemonArtifactUploadJobStatusInputDTO extends ProcessDaemonArtifactUploadJobStatusInputDTO {
     status: ArtifactUploadJobStatus;
-};
+}
 
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
@@ -107,7 +107,7 @@ export type ProcessDaemonJobCompletionInputDTO =
 
 interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
-};
+}
 
 @Singleton()
 export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
@@ -116,10 +116,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
     ) {}
 

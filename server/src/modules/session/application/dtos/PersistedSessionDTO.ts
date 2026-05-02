@@ -4,12 +4,10 @@ import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persiste
 
 export interface PersistedSessionDTO extends Omit<PersistedEntityOutput<SessionProps>, 'token'> {
     token: null;
-};
+}
 
-export const toPersistedSessionDTO = (session: Session): PersistedSessionDTO => {
-    return {
-        _id: session._id,
-        ...session.props,
-        token: null
-    };
-};
+export const toPersistedSessionDTO = (session: Session): PersistedSessionDTO => ({
+    _id: session._id,
+    ...session.props,
+    token: null
+});

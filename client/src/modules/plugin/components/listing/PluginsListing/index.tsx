@@ -25,7 +25,7 @@ import { useNavigate } from 'react-router-dom';
 interface PluginListingRow extends BaseEntity {
     modifier?: Plugin['modifier'];
     exposures?: Plugin['exposures'];
-};
+}
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: SOCKET_PLUGIN_EVENTS.CREATED, queryKeys: [PLUGIN_QUERY_KEYS.catalog(), PLUGIN_QUERY_KEYS.all(), PLUGIN_QUERY_KEYS.byId()] },

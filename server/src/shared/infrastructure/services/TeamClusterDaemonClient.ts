@@ -16,13 +16,13 @@ interface TeamClusterDaemonResponseEnvelope<T> {
     status: 'success';
     data: T;
     message?: string;
-};
+}
 
 interface TeamClusterDaemonSemanticPayload {
     accepted?: boolean;
     reason?: string;
     message?: string;
-};
+}
 
 interface TeamClusterDaemonCommandOptions {
     timeoutMs?: number;
@@ -41,24 +41,24 @@ export interface TeamClusterDaemonSemanticCommandResult<T> {
 export interface TeamClusterDaemonNotebookRuntime {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
-};
+}
 
 interface TeamClusterDaemonNotebookRuntimeLookupResponse {
     runtime: TeamClusterDaemonNotebookRuntime | null;
-};
+}
 
 /** Structured error payload emitted by the daemon's `adaptHandler` catch block. */
 interface DaemonErrorPayload {
     status: 'error';
     code: string;
     message: string;
-};
+}
 
 interface DaemonCommandMetadata {
     traceId?: string;
     requestMethod?: string;
     requestPath?: string;
-};
+}
 
 interface DaemonDispatchLogContext {
     traceId?: string;
@@ -67,7 +67,7 @@ interface DaemonDispatchLogContext {
     responseType: TeamClusterDaemonResponseType;
     payloadBytes?: number;
     timeoutMs?: number;
-};
+}
 
 const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPayload => {
     return isRecord(value);
@@ -450,4 +450,4 @@ export default class TeamClusterDaemonClient {
 
         return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target);
     }
-};
+}

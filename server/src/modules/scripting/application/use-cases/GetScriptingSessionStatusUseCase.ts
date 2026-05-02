@@ -83,4 +83,4 @@ export class GetScriptingSessionStatusUseCase implements IUseCase<GetScriptingSe
             }
         });
     }
-};
+}

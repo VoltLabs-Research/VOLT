@@ -15,9 +15,8 @@ export class UpdateContainerAITool extends AITool {
     });
 
     constructor(
-        
         protected readonly useCase: UpdateContainerUseCase
     ) {
         super();
     }
-};
+}

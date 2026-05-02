@@ -6,11 +6,11 @@ interface ImportPluginFile {
     originalName?: string;
     mimetype?: string;
     size?: number;
-};
+}
 
 export interface ImportPluginInputDTO {
     file: ImportPluginFile;
     teamId: string;
-};
+}
 
 export interface ImportPluginOutputDTO extends PersistedPluginDTO { };

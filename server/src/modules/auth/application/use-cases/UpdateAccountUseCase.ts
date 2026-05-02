@@ -12,9 +12,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly userRepository: UserRepository,
-        
         private readonly avatarService: AvatarService
     ) {}
 
@@ -86,4 +84,4 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
             fullName: `${updatedUser.props.firstName} ${updatedUser.props.lastName}`.trim()
         });
     }
-};
+}

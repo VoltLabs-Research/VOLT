@@ -60,7 +60,7 @@ export default class SystemMetricsRedisRepository {
             if (!redis) return null;
 
             const metrics = await redis.zrevrange(this.getMetricsKey(clusterId), 0, 0);
-            if (metrics && metrics.length > 0) {
+            if (metrics.length > 0) {
                 return deserializeSystemMetrics(metrics[0]);
             }
 

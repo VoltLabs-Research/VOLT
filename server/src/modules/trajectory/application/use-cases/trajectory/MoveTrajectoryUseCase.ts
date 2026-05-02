@@ -14,9 +14,7 @@ export default class MoveTrajectoryUseCase
     extends MoveCatalogItemUseCase<MoveTrajectoryInputDTO, TrajectoryFolder, TrajectoryFolderProps, TrajectoryProps>
     implements IUseCase<MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO, ApplicationError> {
     constructor(
-        
         trajectoryRepository: TrajectoryRepository,
-        
         trajectoryFolderRepository: TrajectoryFolderRepository
     ) {
         super(trajectoryRepository, trajectoryFolderRepository, {

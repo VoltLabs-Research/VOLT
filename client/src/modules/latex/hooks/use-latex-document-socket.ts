@@ -13,7 +13,7 @@ interface LatexContentUpdatedPayload {
     content: string;
     timestamp: number;
     senderId: string;
-};
+}
 
 interface LatexContentUpdatePayload {
     documentId: string;
@@ -21,14 +21,14 @@ interface LatexContentUpdatePayload {
     fileId: string;
     content: string;
     timestamp: number;
-};
+}
 
 interface UseLatexDocumentSocketProps {
     documentId?: string;
     teamId?: string;
     enabled?: boolean;
     onRemoteContentUpdate?: (content: string, timestamp: number, fileId: string) => void;
-};
+}
 
 const isLatexContentUpdatedPayload = (
     value: unknown,

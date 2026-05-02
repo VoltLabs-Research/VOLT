@@ -33,7 +33,7 @@ export interface SlicePlaneDefinition {
     plane: Plane;
     point: Vector3;
     normal: Vector3;
-};
+}
 
 const getSlicePlaneConfiguredNormal = (config: SlicePlaneConfig): Vector3 => {
     return new Vector3(config.normal.x, config.normal.y, config.normal.z);

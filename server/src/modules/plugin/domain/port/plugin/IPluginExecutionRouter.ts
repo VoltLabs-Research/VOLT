@@ -5,7 +5,7 @@ export interface PluginReferenceExecutionRequest {
     referencePath: string;
     pluginId: string;
     config: Record<string, unknown>;
-};
+}
 
 export interface RoutePluginExecutionInput {
     teamClusterId: string;
@@ -23,8 +23,8 @@ export interface RoutePluginExecutionInput {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-};
+}
 
 export interface IPluginExecutionRouter {
     route(input: RoutePluginExecutionInput): Promise<void>;
-};
+}

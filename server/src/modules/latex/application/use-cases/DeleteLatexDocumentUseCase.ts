@@ -13,9 +13,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeleteLatexDocumentUseCase implements IUseCase<DeleteLatexDocumentInputDTO, DeleteLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -56,4 +54,4 @@ export class DeleteLatexDocumentUseCase implements IUseCase<DeleteLatexDocumentI
             ));
         }
     }
-};
+}

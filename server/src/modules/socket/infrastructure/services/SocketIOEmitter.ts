@@ -84,7 +84,7 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
     }
 
     broadcast(
-        event: string, 
+        event: string,
         data: unknown
     ): void{
         if(!this.io){
@@ -94,4 +94,4 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
 
         this.io.emit(event, data);
     }
-};
+}

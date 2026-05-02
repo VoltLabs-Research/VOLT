@@ -4,4 +4,4 @@ export interface ContainerFile {
     size: string;
     permissions: string;
     date: string;
-};
+}

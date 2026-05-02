@@ -10,4 +10,4 @@ export interface ITrajectoryReader {
         analysisId?: string,
         ownerClusterId?: string
     ): Promise<AtomPageResult>;
-};
+}

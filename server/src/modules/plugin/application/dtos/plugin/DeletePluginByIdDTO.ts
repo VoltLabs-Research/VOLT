@@ -1,3 +1,3 @@
-export interface DeletePluginByIdInputDTO{
+export interface DeletePluginByIdInputDTO {
     pluginId: string;
-};
+}

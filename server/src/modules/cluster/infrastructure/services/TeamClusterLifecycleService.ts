@@ -109,7 +109,7 @@ interface TeamClusterLifecycleUpdate {
     lastDisconnectAt?: Date | null;
     clearEnrollmentToken?: boolean;
     roleConfig?: TeamClusterRuntimeRoleConfigProps;
-};
+}
 
 interface PersistLifecycleUpdateOptions {
     preconditions?: TeamClusterLifecycleUpdatePreconditions;
@@ -123,24 +123,16 @@ interface TeamClusterLifecycleEventPayload {
     teamCluster?: TeamClusterDTO;
     status?: TeamClusterStatus;
     timestamp: string;
-};
+}
 
 @Singleton()
 export default class TeamClusterLifecycleService {
     constructor(
-        
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly socketEmitter: SocketIOEmitter,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ){}
 
@@ -530,4 +522,4 @@ export default class TeamClusterLifecycleService {
             [toTeamClusterClientMetrics(teamCluster, metrics)]
         );
     }
-};
+}

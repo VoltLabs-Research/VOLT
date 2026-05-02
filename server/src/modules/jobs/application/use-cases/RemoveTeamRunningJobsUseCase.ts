@@ -9,7 +9,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export default class RemoveTeamRunningJobsUseCase implements IUseCase<RemoveTeamRunningJobsInputDTO, RemoveTeamJobsResult, ApplicationError> {
     constructor(
-        
         private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
@@ -18,4 +17,4 @@ export default class RemoveTeamRunningJobsUseCase implements IUseCase<RemoveTeam
 
         return Result.ok(outcome);
     }
-};
+}

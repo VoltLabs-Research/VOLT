@@ -4,7 +4,7 @@ import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import './ChatListSkeleton.css';
 interface ChatListSkeletonProps {
     count?: number;
-};
+}
 
 const ChatListSkeleton = ({ count = 5 }: ChatListSkeletonProps) => (
     <Stack gap='05'>

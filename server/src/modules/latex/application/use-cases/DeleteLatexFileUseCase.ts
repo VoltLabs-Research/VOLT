@@ -16,10 +16,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class DeleteLatexFileUseCase implements IUseCase<DeleteLatexFileInputDTO, DeleteLatexFileOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository
     ) {}
 
@@ -81,4 +78,4 @@ export class DeleteLatexFileUseCase implements IUseCase<DeleteLatexFileInputDTO,
             ));
         }
     }
-};
+}

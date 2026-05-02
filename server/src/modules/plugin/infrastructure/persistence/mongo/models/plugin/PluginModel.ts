@@ -7,7 +7,6 @@ import mongoose, { Model, Document } from 'mongoose';
 type PluginRelations = 'team';
 export interface PluginDocument extends Persistable<PluginProps, PluginRelations>, Document { };
 
-
 const PluginModel: Model<PluginDocument> = mongoose.model<PluginDocument>('Plugin', PluginSchema);
 
 export default PluginModel;

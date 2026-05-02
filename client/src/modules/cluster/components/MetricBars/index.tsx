@@ -2,7 +2,7 @@ import Box from '@/shared/presentation/primitives/Box';
 
 interface MetricBarsProps {
     percentage: number;
-};
+}
 
 const MetricBars = ({ percentage }: MetricBarsProps) => {
     const activeBars = Math.floor(percentage / 20);

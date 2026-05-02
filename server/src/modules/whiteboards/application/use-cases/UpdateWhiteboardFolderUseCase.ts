@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class UpdateWhiteboardFolderUseCase extends UpdateCatalogFolderUseCase<WhiteboardFolder, WhiteboardFolderProps> {
     constructor(
-        
         whiteboardFolderRepository: WhiteboardFolderRepository
     ) {
         super(whiteboardFolderRepository, { folderLabel: 'Whiteboard folder' });

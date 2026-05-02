@@ -7,7 +7,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class GetLatexFolderUseCase extends GetCatalogFolderUseCase<LatexFolder, LatexFolderProps> {
     constructor(
-        
         latexFolderRepository: LatexFolderRepository
     ) {
         super(latexFolderRepository, { folderLabel: 'LaTeX folder' });

@@ -56,7 +56,7 @@ interface SceneCollectionProps {
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
-};
+}
 
 const TREE_SCENE_ICON_COLOR = 'var(--accent-blue)';
 

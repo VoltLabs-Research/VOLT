@@ -2,7 +2,7 @@ import './AtomTypeBadge.css';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 interface AtomTypeBadgeProps {
     type: number | string;
-};
+}
 
 const TYPE_PALETTE = [
     'var(--accent-blue)',

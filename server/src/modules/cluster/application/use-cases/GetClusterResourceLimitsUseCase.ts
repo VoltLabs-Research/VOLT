@@ -17,9 +17,7 @@ export default class GetClusterResourceLimitsUseCase
     implements IUseCase<GetClusterResourceLimitsInputDTO, GetClusterResourceLimitsOutputDTO, ApplicationError> {
 
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-        
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ){}
 

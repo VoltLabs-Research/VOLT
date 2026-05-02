@@ -5,9 +5,9 @@ export interface SignInInputDTO{
     password: string;
     ip: string;
     userAgent: string;
-};
+}
 
 export interface SignInOutputDTO{
     token: string;
     user: PersistedUserDTO;
-};
+}

@@ -31,7 +31,7 @@ export interface Subsection {
     visible?: boolean;
     disabled?: boolean;
     disabledReason?: string;
-};
+}
 
 export interface RenderGroup {
     id: string;
@@ -39,4 +39,4 @@ export interface RenderGroup {
     icon: ReactNode;
     subsections: Subsection[];
     visible?: boolean;
-};
+}

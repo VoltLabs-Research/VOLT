@@ -1,7 +1,7 @@
 export interface TeamInvitationRef {
     _id?: string;
     toString?: () => string;
-};
+}
 
 export interface TeamInvitationProps{
     team: string;
@@ -13,13 +13,13 @@ export interface TeamInvitationProps{
     expiresAt: Date;
     acceptedAt?: Date;
     status: TeamInvitationStatus;
-};
+}
 
 export enum TeamInvitationStatus{
     Pending = 'pending',
     Accepted = 'accepted',
     Rejected = 'rejected'
-};
+}
 
 export default class TeamInvitation{
     constructor(
@@ -85,4 +85,4 @@ export default class TeamInvitation{
 
         return value.toString?.() ?? '';
     }
-};
+}

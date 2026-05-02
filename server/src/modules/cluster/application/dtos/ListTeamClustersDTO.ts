@@ -6,6 +6,6 @@ export interface ListTeamClustersInputDTO {
     page?: number;
     limit?: number;
     search?: string;
-};
+}
 
 export type ListTeamClustersOutputDTO = PaginatedOutputDTO<TeamClusterDTO>;

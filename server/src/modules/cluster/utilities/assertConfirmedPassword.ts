@@ -8,7 +8,7 @@ interface AssertConfirmedPasswordParams {
     passwordHasher: IPasswordHasher;
     userId: string;
     password: string;
-};
+}
 
 export const assertConfirmedPassword = async ({
     userRepository,

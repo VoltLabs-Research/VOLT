@@ -3,4 +3,4 @@ export interface ListLatexDocumentsParams {
     limit?: number;
     search?: string;
     folderId?: string;
-};
+}

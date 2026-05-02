@@ -9,7 +9,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInputDTO, ListLatexDocumentsOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository
     ) {}
 
@@ -51,4 +50,4 @@ export class ListLatexDocumentsUseCase implements IUseCase<ListLatexDocumentsInp
 
         return Result.ok(value);
     }
-};
+}

@@ -5,7 +5,7 @@ export interface SignInForm {
     fullName: string;
     password: string;
     passwordConfirm: string;
-};
+}
 
 export const signInSchema = z.object({
     email: z

@@ -8,7 +8,7 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 export interface GlobalSearchInputDTO {
     query: string;
     limit?: number;
-};
+}
 
 export interface GlobalSearchOutputDTO {
     analyses: Analysis[];
@@ -17,7 +17,7 @@ export interface GlobalSearchOutputDTO {
     teams: Team[];
     plugins: Plugin[];
     chats: Chat[];
-};
+}
 
 export type GlobalSearchSectionKey = keyof GlobalSearchOutputDTO;
 

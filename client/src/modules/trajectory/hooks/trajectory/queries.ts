@@ -45,15 +45,15 @@ const BASE_KEY = 'trajectory';
 
 interface TrajectoryQueryOptions {
     enabled?: boolean;
-};
+}
 
 interface TrajectoryByIdParams {
     trajectoryId: string;
-};
+}
 
 interface TrajectoryAtomsInfiniteParams extends Omit<GetAtomsInputDTO, 'page'> {
     limit: number;
-};
+}
 
 const KEYS = buildKeys<{
     detail: string;

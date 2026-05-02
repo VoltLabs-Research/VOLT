@@ -4,4 +4,4 @@ export interface UpdateLatexFileParams {
     name?: string;
     path?: string;
     content?: string;
-};
+}

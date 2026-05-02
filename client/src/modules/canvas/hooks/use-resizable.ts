@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 export enum ResizeDirection {
     Horizontal = 'horizontal',
     Vertical = 'vertical'
-};
+}
 
 export type ResizeDirectionValue = ResizeDirection | 'horizontal' | 'vertical';
 
@@ -15,7 +15,7 @@ interface UseResizableOptions {
     growPositive?: boolean;
     storageKey?: string;
     onResize?: (size: number) => void;
-};
+}
 
 interface UseResizableReturn {
     size: number;
@@ -30,7 +30,7 @@ interface UseResizableReturn {
         valueMax: number;
         valueNow: number;
     };
-};
+}
 
 const readPersistedSize = (storageKey: string | undefined, fallback: number, min: number, max: number): number => {
     if (!storageKey || typeof window === 'undefined') return fallback;

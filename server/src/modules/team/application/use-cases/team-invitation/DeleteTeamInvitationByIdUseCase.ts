@@ -7,16 +7,15 @@ import { injectable } from 'tsyringe';
 
 interface DeleteTeamInvitationByIdInput {
     invitationId: string;
-};
+}
 
 interface DeleteTeamInvitationByIdOutput {
     success: boolean;
-};
+}
 
 @injectable()
 export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteTeamInvitationByIdInput, DeleteTeamInvitationByIdOutput, ApplicationError> {
     constructor(
-        
         private readonly repository: TeamInvitationRepository
     ) {}
 
@@ -30,4 +29,4 @@ export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteT
         }
         return Result.ok({ success: true });
     }
-};
+}

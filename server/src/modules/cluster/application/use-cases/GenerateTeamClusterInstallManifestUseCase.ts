@@ -15,7 +15,6 @@ export default class GenerateTeamClusterInstallManifestUseCase implements IUseCa
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterInstallManifestService: TeamClusterInstallManifestService
     ){}
 

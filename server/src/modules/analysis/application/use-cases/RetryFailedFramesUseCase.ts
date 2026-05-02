@@ -11,13 +11,8 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly teamJobsService: TeamJobsService,
-
-        
         private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 

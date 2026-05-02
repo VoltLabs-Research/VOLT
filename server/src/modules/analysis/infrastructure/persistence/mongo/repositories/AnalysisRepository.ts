@@ -1,6 +1,5 @@
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
@@ -13,7 +12,7 @@ import mongoose from 'mongoose';
 interface CompletedFramesAggregationItem {
     _id: string | null;
     count: number;
-};
+}
 
 interface CompletedFramesGroupStage {
     $group: {
@@ -22,7 +21,7 @@ interface CompletedFramesGroupStage {
             $sum: string;
         };
     };
-};
+}
 
 interface CompletedFramesMatchStage {
     $match: {
@@ -30,7 +29,7 @@ interface CompletedFramesMatchStage {
             $gt: number;
         };
     };
-};
+}
 
 @Singleton()
 export default class AnalysisRepository

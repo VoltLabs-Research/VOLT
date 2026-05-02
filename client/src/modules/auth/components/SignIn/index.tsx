@@ -33,7 +33,7 @@ enum SignInStep {
     Email = 'email',
     Password = 'password',
     Register = 'register'
-};
+}
 
 const stepTitles: StepTitles<SignInStep> = {
     [SignInStep.Email]: {

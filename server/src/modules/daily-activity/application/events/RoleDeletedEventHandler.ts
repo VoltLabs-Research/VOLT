@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('team-role.deleted')
 export default class RoleDeletedEventHandler implements IEventHandler<TeamRoleDeletedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class RoleDeletedEventHandler implements IEventHandler<TeamRoleDe
             description
         );
     }
-};
+}

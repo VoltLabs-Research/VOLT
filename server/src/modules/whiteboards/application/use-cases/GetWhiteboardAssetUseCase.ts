@@ -13,9 +13,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class GetWhiteboardAssetUseCase implements IUseCase<GetWhiteboardAssetInputDTO, GetWhiteboardAssetOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -59,4 +57,4 @@ export class GetWhiteboardAssetUseCase implements IUseCase<GetWhiteboardAssetInp
             ));
         }
     }
-};
+}

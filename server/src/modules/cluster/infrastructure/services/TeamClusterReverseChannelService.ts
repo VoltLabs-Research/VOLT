@@ -54,22 +54,22 @@ interface TeamClusterDaemonCommandPayload {
     command: string;
     payload?: TeamClusterDaemonCommandData;
     responseType: TeamClusterDaemonResponseType;
-};
+}
 
 interface TeamClusterExposureTunnelOpenRequest {
     exposureId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
-};
+}
 
 interface TeamClusterCommandOptions {
     timeoutMs?: number;
-};
+}
 
 interface TeamClusterDirectTunnelOpenRequest {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposureAccessMode;
-};
+}
 
 export type TeamClusterTunnelOpenRequest = TeamClusterExposureTunnelOpenRequest | TeamClusterDirectTunnelOpenRequest;
 
@@ -78,7 +78,7 @@ interface TeamClusterDaemonExposureTunnelOpenMessage {
     sessionId: string;
     exposureId: string;
     accessMode: TeamClusterServiceExposureAccessMode;
-};
+}
 
 interface TeamClusterDaemonDirectTunnelOpenMessage {
     type: 'tunnel-open';
@@ -86,20 +86,20 @@ interface TeamClusterDaemonDirectTunnelOpenMessage {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposureAccessMode;
-};
+}
 
 type TeamClusterDaemonTunnelOpenMessage = TeamClusterDaemonExposureTunnelOpenMessage | TeamClusterDaemonDirectTunnelOpenMessage;
 
 interface BasePendingEntry {
     socketId: string;
     timeout: NodeJS.Timeout | null;
-};
+}
 
 interface PendingResponseEntry extends BasePendingEntry {
     type: 'response';
     resolve: (payload: TeamClusterDaemonSocketResponsePayload) => void;
     reject: (error: Error) => void;
-};
+}
 
 interface PendingStreamEntry extends BasePendingEntry {
     type: 'stream';
@@ -107,21 +107,21 @@ interface PendingStreamEntry extends BasePendingEntry {
     resolve: (attachment: TeamClusterReverseChannelStreamAttachment) => void;
     reject: (error: Error) => void;
     streamId?: string;
-};
+}
 
 interface PendingTerminalEntry extends BasePendingEntry {
     type: 'terminal';
     stream: PassThrough;
     resolve: (attachment: ContainerTerminalAttachment) => void;
     reject: (error: Error) => void;
-};
+}
 
 interface PendingWebSocketEntry extends BasePendingEntry {
     type: 'websocket';
     stream: TeamClusterReverseWebSocketStream;
     resolve: (stream: TeamClusterReverseWebSocketStream) => void;
     reject: (error: Error) => void;
-};
+}
 
 interface WebSocketAttachSuccessPayload {
     status?: unknown;
@@ -129,14 +129,14 @@ interface WebSocketAttachSuccessPayload {
         attached?: unknown;
         selectedProtocol?: unknown;
     };
-};
+}
 
 interface PendingTunnelEntry extends BasePendingEntry {
     type: 'tunnel';
     stream: TeamClusterTunnelStream;
     resolve: (stream: TeamClusterTunnelStream) => void;
     reject: (error: Error) => void;
-};
+}
 
 interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
     correlationId: string;
@@ -145,13 +145,13 @@ interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
     timeoutMessage: string;
     createEntry: (resolve: (value: TResult) => void, reject: (error: Error) => void, timeout: NodeJS.Timeout) => TEntry;
     emitMessage: () => void;
-};
+}
 
 export interface TeamClusterReverseChannelStreamAttachment {
     status: number;
     headers: TeamClusterDaemonSocketHeaders;
     stream: PassThrough;
-};
+}
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
 
@@ -201,13 +201,8 @@ export default class TeamClusterReverseChannelService {
     private readonly streamHighWaterMark = 256 * 1024; // 256 KB
 
     constructor(
-        
         private readonly socketEmitter: SocketIOEmitter,
-
-        
         private readonly exposureRegistryService: TeamClusterExposureRegistryService,
-
-        
         private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
     ) {
         this.startIdleSweep();
@@ -1192,4 +1187,4 @@ export default class TeamClusterReverseChannelService {
                 return;
         }
     }
-};
+}

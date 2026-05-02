@@ -25,46 +25,33 @@ interface ConversationUpdatePayload {
     lastProvider: string;
     lastModel: string;
     title: string;
-};
+}
 
 interface TeamMemberLookupFilter extends Partial<TeamMemberProps> {
     team: string;
     user: string;
-};
+}
 
 interface AIConversationLookup {
     _id: string;
     teamId: string;
     userId: string;
-};
+}
 
 interface LastAssistantMessageFilter extends Partial<AIMessageProps> {
     conversationId: string;
     role: AIMessageRole;
-};
+}
 
 @Singleton()
 export default class SendAIConversationMessageUseCase implements IUseCase<SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository,
-
-        
         private readonly messageRepository: AIMessageRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly aiChatTransport: AISDKChatTransport,
-
-        
         private readonly messageDTOMapper: AIMessageDTOMapper,
-
-        
         private readonly uiMessageUtils: AIUIMessageUtils,
-
-        
         private readonly responseMessagePartsMapper: AIResponseMessagePartsMapper
     ) {}
 
@@ -324,4 +311,4 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
     private toDTO(message: AIMessage): AIMessageDTO {
         return this.messageDTOMapper.toDTO(message);
     }
-};
+}

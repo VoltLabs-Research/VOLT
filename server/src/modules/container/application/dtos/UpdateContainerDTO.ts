@@ -8,9 +8,9 @@ export interface UpdateContainerInputDTO {
     action?: 'start' | 'stop' | 'restart';
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
-};
+}
 
 export interface UpdateContainerOutputDTO {
     container: Container | null;
     status?: string;
-};
+}

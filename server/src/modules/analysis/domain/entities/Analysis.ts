@@ -16,12 +16,12 @@ export interface AnalysisProps {
     status: string;
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 export interface Analysis {
     readonly _id: string;
     props: AnalysisProps;
-};
+}
 
 export const createAnalysis = (_id: string, props: AnalysisProps): Analysis => ({
     _id,

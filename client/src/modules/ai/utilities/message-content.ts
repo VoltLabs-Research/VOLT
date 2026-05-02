@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 
 interface ElementWithChildrenProps {
     children?: ReactNode;
-};
+}
 
 export interface ParsedMarkdownTable {
     columns: string[];
     rows: Record<string, unknown>[];
-};
+}
 
 export const stringifyArtifactValue = (value: unknown): string => {
     if (value == null) return '-';

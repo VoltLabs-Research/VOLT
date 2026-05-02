@@ -5,7 +5,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-
 @Singleton()
 export default class PluginRepository
     extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument> {
@@ -40,4 +39,4 @@ export default class PluginRepository
 
         return document ? this.mapper.toDomain(document) : null;
     }
-};
+}

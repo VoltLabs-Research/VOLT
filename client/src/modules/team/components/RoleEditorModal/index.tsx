@@ -7,8 +7,7 @@ import Heading from '@/shared/presentation/primitives/Heading';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { RBACAction, RBACResource } from '@/modules/system/api/entities/rbac';
 import { IoWarningOutline } from 'react-icons/io5';
-import { Fragment } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
 
 export type { RBACResource, RBACAction };
@@ -16,7 +15,7 @@ export type { RBACResource, RBACAction };
 export interface RoleEditorPayload {
     name: string;
     permissions: string[];
-};
+}
 
 export interface RoleEditorModalProps {
     role?: TeamRole | null;
@@ -24,7 +23,7 @@ export interface RoleEditorModalProps {
     actions: RBACAction[];
     onSave: (data: RoleEditorPayload) => Promise<void>;
     isSaving?: boolean;
-};
+}
 
 const MODAL_ID = 'role-editor-modal';
 

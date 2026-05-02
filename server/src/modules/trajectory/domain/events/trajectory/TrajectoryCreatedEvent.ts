@@ -5,10 +5,10 @@ export interface TrajectoryCreatedEventPayload {
     trajectoryName: string;
     teamId: string;
     userId: string;
-};
+}
 
 export default class TrajectoryCreatedEvent extends BaseDomainEvent<TrajectoryCreatedEventPayload> {
     constructor(payload: TrajectoryCreatedEventPayload) {
         super('trajectory.created', payload);
     }
-};
+}

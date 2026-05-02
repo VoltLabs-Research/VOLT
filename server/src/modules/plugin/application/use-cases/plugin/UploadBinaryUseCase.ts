@@ -11,9 +11,8 @@ import PluginStorageService from '@modules/plugin/infrastructure/services/plugin
 @Singleton()
 export class UploadBinaryUseCase implements IUseCase<UploadBinaryInputDTO, BinaryUploadResult, ApplicationError> {
     constructor(
-        
         private readonly storageService: PluginStorageService
-    ){}
+    ) {}
 
     async execute(input: UploadBinaryInputDTO): Promise<Result<BinaryUploadResult, ApplicationError>> {
         const result = await this.storageService.uploadBinary(
@@ -24,4 +23,4 @@ export class UploadBinaryUseCase implements IUseCase<UploadBinaryInputDTO, Binar
 
         return Result.ok(result);
     }
-};
+}

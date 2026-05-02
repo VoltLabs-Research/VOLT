@@ -16,18 +16,10 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRepository: TeamRepository,
-
-        
         private readonly teamRoleRepository: TeamRoleRepository,
-
-        
         private readonly teamMemberRepository: TeamMemberRepository,
-
-        
         private readonly userRepository: UserRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
@@ -84,4 +76,4 @@ export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, C
             ...team.props
         });
     }
-};
+}

@@ -4,14 +4,14 @@ import type { User } from '@/modules/auth/api/entities/user';
 export interface ChatTeamReference {
     _id: string;
     name: string;
-};
+}
 
 export interface ChatLastMessage {
     _id: string;
     content: string;
     sender: User;
     createdAt: string;
-};
+}
 
 export interface Chat extends BaseEntity {
     participants: User[];
@@ -25,4 +25,4 @@ export interface Chat extends BaseEntity {
     groupAvatar?: string;
     admins: User[];
     createdBy?: User;
-};
+}

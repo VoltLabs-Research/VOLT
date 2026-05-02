@@ -11,6 +11,6 @@ export const hydrateSystemMetrics = (metrics: SerializedSystemMetrics): SystemMe
     timestamp: metrics.timestamp instanceof Date ? metrics.timestamp : new Date(metrics.timestamp)
 });
 
-export const deserializeSystemMetrics = (payload: string): SystemMetrics => {
-    return hydrateSystemMetrics(JSON.parse(payload) as SerializedSystemMetrics);
-};
+export const deserializeSystemMetrics = (payload: string): SystemMetrics => (
+    hydrateSystemMetrics(JSON.parse(payload) as SerializedSystemMetrics)
+);

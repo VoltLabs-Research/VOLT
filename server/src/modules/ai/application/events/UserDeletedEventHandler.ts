@@ -7,10 +7,7 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('user.deleted')
 export default class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository,
-
-        
         private readonly messageRepository: AIMessageRepository
     ) {}
 
@@ -33,4 +30,4 @@ export default class UserDeletedEventHandler implements IEventHandler<UserDelete
 
         await this.conversationRepository.deleteMany({ userId });
     }
-};
+}

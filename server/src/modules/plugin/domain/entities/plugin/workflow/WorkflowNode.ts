@@ -12,7 +12,7 @@ export enum WorkflowNodeType {
     IfStatement = 'if-statement',
     SwitchStatement = 'switch-statement',
     SwitchCase = 'switch-case'
-};
+}
 
 export interface WorkflowNode {
     id: string;
@@ -22,4 +22,4 @@ export interface WorkflowNode {
         y: number;
     };
     data: WorkflowNodeData;
-};
+}

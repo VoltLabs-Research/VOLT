@@ -6,11 +6,11 @@ interface PanelAction {
     icon: ReactNode;
     onClick: () => void;
     disabled?: boolean;
-};
+}
 
 interface PanelFooterProps {
     actions?: PanelAction[];
-};
+}
 
 export const PanelFooter = ({ actions }: PanelFooterProps) => {
     if(!actions || actions.length === 0) return null;

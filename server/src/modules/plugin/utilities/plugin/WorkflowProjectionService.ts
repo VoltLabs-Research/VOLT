@@ -11,25 +11,25 @@ interface ComputedExposure {
     icon?: string;
     hasListing: boolean;
     export: ExportNodeData | null;
-};
+}
 
 interface ListingExposureEntry {
     exposureId: string;
     name: string;
-};
+}
 
 interface ListingExposuresData {
     pluginName: string;
     pluginId: string;
     exposures: ListingExposureEntry[];
-};
+}
 
 export interface PluginProjection {
     modifier: ModifierNodeData | null;
     exposures: ComputedExposure[];
     arguments: ArgumentDefinition[];
     listingExposures: ListingExposuresData | null;
-};
+}
 
 export default class WorkflowProjectionService {
     static project(workflow: Workflow, pluginId: string): PluginProjection {
@@ -78,4 +78,4 @@ export default class WorkflowProjectionService {
             listingExposures
         };
     }
-};
+}

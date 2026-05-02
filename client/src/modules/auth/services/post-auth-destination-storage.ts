@@ -5,12 +5,12 @@ const CLUSTER_ONBOARDING_PATH = '/onboarding/cluster/setup';
 
 interface ResolvePostAuthDestinationInput {
     queryNext?: string | null;
-};
+}
 
 interface BuildOnboardingRedirectPathInput {
     destination?: string | null;
     onboardingPath: string;
-};
+}
 
 const getSessionStorage = (): Storage | null => {
     if (typeof window === 'undefined') {

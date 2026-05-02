@@ -20,7 +20,6 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
     ) {
         super(emitter, roomManager, eventRegistry);

@@ -7,7 +7,6 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('user.deleted')
 export default class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
     constructor(
-        
         private readonly repository: ChatRepository
     ) {}
 
@@ -28,4 +27,4 @@ export default class UserDeletedEventHandler implements IEventHandler<UserDelete
             }
         }
     }
-};
+}

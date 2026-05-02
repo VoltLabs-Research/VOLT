@@ -7,7 +7,7 @@ interface FrameComboboxProps {
     options: number[];
     onChange: (value: number | undefined) => void;
     title?: string;
-};
+}
 
 const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) => {
     const selectOptions: SelectOption[] = useMemo(

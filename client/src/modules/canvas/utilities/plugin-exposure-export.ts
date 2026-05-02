@@ -14,13 +14,13 @@ interface ResolveExposureSceneRenderMetadataParams {
     exposureId: string;
     exposureExport: ExposureExportLike | null | undefined;
     plugin?: Plugin;
-};
+}
 
 interface BuildPluginSceneParams {
     analysisId: string;
     exposureId: string;
     sceneRenderMetadata?: SceneRenderMetadata;
-};
+}
 
 const toFinitePositiveNumber = (value: unknown): number | undefined => {
     const parsedValue = Number(value);

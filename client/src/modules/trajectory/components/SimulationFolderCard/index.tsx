@@ -12,7 +12,7 @@ const FOLDER_DRAG_INTENT_DISTANCE = 8;
 interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
     onOpen: (folderId: string) => void;
-};
+}
 
 export default function SimulationFolderCard({ folder, onOpen }: SimulationFolderCardProps) {
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);

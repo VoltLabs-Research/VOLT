@@ -10,7 +10,7 @@ interface PreloadingOverlayProps {
     title?: string;
     description?: string;
     progress?: number;
-};
+}
 
 const PreloadingOverlay = ({
     active,

@@ -21,7 +21,7 @@ import type { Params } from 'react-router-dom';
 import './AIPage.css';
 interface AIPageRouteParams extends Params {
     conversationId?: string;
-};
+}
 
 const AIPage = () => {
     useTip('ai-spreadsheet-panel');

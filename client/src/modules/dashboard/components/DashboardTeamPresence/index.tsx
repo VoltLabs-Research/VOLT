@@ -23,7 +23,7 @@ import { useNavigate } from 'react-router-dom';
 interface TeamPresenceMember {
     user: User;
     memberId: string;
-};
+}
 
 const DashboardTeamPresence = () => {
     const navigate = useNavigate();

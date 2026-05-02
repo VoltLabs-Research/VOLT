@@ -14,7 +14,7 @@ import type { StateCreator } from 'zustand';
 
 export interface CameraSlice {
     camera: CameraSettingsStore;
-};
+}
 
 const getInitialCameraState = (): CameraSettingsState => getDefaultCameraSettings();
 

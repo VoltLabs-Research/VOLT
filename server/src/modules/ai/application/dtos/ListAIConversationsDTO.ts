@@ -9,7 +9,7 @@ export interface AIConversationDTO {
     isArchived: boolean;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface ListAIConversationsInputDTO {
     teamId: string;
@@ -17,4 +17,4 @@ export interface ListAIConversationsInputDTO {
     page?: number;
     limit?: number;
     includeArchived?: boolean;
-};
+}

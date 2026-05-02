@@ -9,7 +9,7 @@ export interface RedisClientConfig {
     username?: string;
     password?: string;
     db?: number;
-};
+}
 
 export const getRedisConfig = (): RedisClientConfig => {
     return {
@@ -48,7 +48,7 @@ export let redis: Redis | null = null;
 
 export const initializeRedis = (): Promise<void> => {
     return new Promise((resolve) => {
-        if(redis){
+        if (redis) {
             resolve();
             return;
         }
@@ -70,7 +70,7 @@ export const initializeRedis = (): Promise<void> => {
 
         // Add a timeout in case Redis never becomes ready
         setTimeout(() => {
-            if(redis?.status !== 'ready'){
+            if (redis?.status !== 'ready') {
                 logger.warn('Redis initialization timeout - continuing anyway');
                 resolve();
             }

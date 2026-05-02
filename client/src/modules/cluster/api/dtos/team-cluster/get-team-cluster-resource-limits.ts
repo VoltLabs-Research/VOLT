@@ -3,8 +3,8 @@ import type { ClusterResourceLimits } from '@/modules/container/api/entities/clu
 export interface GetTeamClusterResourceLimitsInputDTO {
     teamId: string;
     teamClusterId: string;
-};
+}
 
 export interface GetTeamClusterResourceLimitsOutputDTO {
     resourceLimits: ClusterResourceLimits;
-};
+}

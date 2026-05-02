@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export interface JoinTeamForm {
     code: string;
-};
+}
 
 export const joinTeamSchema = z.object({
     code: z.string()

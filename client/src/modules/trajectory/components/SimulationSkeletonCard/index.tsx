@@ -7,7 +7,7 @@ interface SimulationSkeletonCardProps {
     n?: number;
     progress?: number;
     status?: 'uploading' | 'processing' | 'waiting_for_jobs' | 'failed';
-};
+}
 
 export default function SimulationSkeletonCard({ n = 1, progress, status }: SimulationSkeletonCardProps) {
     if (progress !== undefined) {

@@ -13,12 +13,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnectionByIdInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly sshConnectionOwnershipService: SSHConnectionOwnershipService,
-
-        
         private readonly sshConnRepository: SSHConnectionRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
@@ -48,4 +44,4 @@ export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnect
 
         return Result.ok(null);
     }
-};
+}

@@ -9,7 +9,6 @@ import {
 } from '@modules/cluster/domain/entities/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { injectable } from 'tsyringe';
-
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
@@ -116,10 +115,7 @@ const supportsCapability = (
 @injectable()
 export class ClusterRoleAwareSelectionService {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {}
 

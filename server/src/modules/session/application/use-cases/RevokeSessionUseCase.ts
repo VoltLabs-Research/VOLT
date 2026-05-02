@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void, ApplicationError>{
     constructor(
-        
         private sessionRepository: SessionRepository
     ){}
 
@@ -32,4 +31,4 @@ export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInput
         await this.sessionRepository.updateById(input.sessionId, { isActive: false });
         return Result.ok(undefined);
     }
-};
+}

@@ -15,7 +15,6 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
     private sockets: Map<string, Socket> = new Map();
 
     constructor(
-        
         private readonly socketMapper: SocketConnectionMapper
     ){}
 
@@ -125,4 +124,4 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
             return [];
         }
     }
-};
+}

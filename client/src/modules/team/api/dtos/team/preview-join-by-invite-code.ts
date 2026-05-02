@@ -1,6 +1,6 @@
 export interface PreviewJoinByInviteCodeInputDTO {
     code: string;
-};
+}
 
 export interface PreviewJoinByInviteCodeOutputDTO {
     message: string;
@@ -8,4 +8,4 @@ export interface PreviewJoinByInviteCodeOutputDTO {
     teamName: string;
     ownerName: string;
     isAlreadyMember: boolean;
-};
+}

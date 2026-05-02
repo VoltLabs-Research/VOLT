@@ -16,7 +16,7 @@ const DEFAULT_MESSAGES_LIMIT = 50;
 
 interface InfiniteMessagesParams {
     chatId: string;
-};
+}
 
 type MessageQueryKeyMap = {
     messages: GetChatMessagesInputDTO;
@@ -25,16 +25,16 @@ type MessageQueryKeyMap = {
 
 interface MarkAsReadParams {
     chatId: string;
-};
+}
 
 interface UseChatMessagesInfiniteQueryParams {
     chatId: string;
     limit?: number;
-};
+}
 
 interface UseChatMessagesInfiniteQueryOptions {
     enabled?: boolean;
-};
+}
 
 const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 

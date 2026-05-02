@@ -16,8 +16,8 @@ export interface CreateContainerInputDTO {
     cpus?: number;
     mountDockerSocket?: boolean;
     useImageCmd?: boolean;
-};
+}
 
 export interface CreateContainerOutputDTO {
     container: Container;
-};
+}

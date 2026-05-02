@@ -5,8 +5,8 @@ export interface GetUniqueValuesInputDTO {
     property: string;
     exposureId?: string;
     maxValues?: number;
-};
+}
 
 export interface GetUniqueValuesOutputDTO {
     values: number[];
-};
+}

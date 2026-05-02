@@ -5,14 +5,14 @@ export interface BoxTransforms {
     position: { x: number; y: number; z: number };
     center: { x: number; y: number; z: number };
     maxDimension: number;
-};
+}
 
 export interface BoxDimensions {
     width: number;
     height: number;
     depth: number;
     center: { x: number; y: number; z: number };
-};
+}
 
 export const getBoxDimensions = (boxBounds: BoxBounds): BoxDimensions => {
     const width = boxBounds.xhi - boxBounds.xlo;

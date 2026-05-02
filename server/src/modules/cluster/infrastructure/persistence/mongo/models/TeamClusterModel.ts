@@ -6,12 +6,11 @@ import {
 } from '@modules/cluster/domain/entities/TeamCluster';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { Document, Model, Schema } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 
 type TeamClusterRelations = 'team' | 'createdBy';
 
-export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {};
+export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {}
 
 const TEAM_CLUSTER_VALIDATION_ERROR = ErrorCodes.VALIDATION_INVALID_INPUT;
 

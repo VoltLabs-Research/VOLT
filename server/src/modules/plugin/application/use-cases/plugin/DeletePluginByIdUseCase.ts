@@ -16,7 +16,7 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
     constructor(
         private pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.EventBus) private eventBus: IEventBus
-    ){}
+    ) {}
 
     async execute(input: DeletePluginByIdInputDTO): Promise<Result<null, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
@@ -43,4 +43,4 @@ export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDT
 
         return Result.ok(null);
     }
-};
+}

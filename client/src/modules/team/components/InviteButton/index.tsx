@@ -9,7 +9,7 @@ interface InviteButtonProps {
     onClick?: () => void;
     disabled?: boolean;
     type?: 'button' | 'submit';
-};
+}
 
 export const InviteButton = ({
     state,

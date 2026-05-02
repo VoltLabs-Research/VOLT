@@ -14,17 +14,17 @@ import { useNavigate } from 'react-router-dom';
 interface DashboardOverviewCardProps {
     card: DashboardMetricsCard;
     icon: ReactNode;
-};
+}
 
 interface DashboardStatContentProps extends DashboardOverviewCardProps {
     isPositiveTrend: boolean;
     className?: string;
-};
+}
 
 interface DashboardSparklineProps {
     card: DashboardMetricsCard;
     color: string;
-};
+}
 
 const getTrendColor = (isPositiveTrend: boolean): string => {
     const colorVariable = isPositiveTrend ? '--accent-green' : '--accent-red';

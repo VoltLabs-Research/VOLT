@@ -9,7 +9,7 @@ interface CanvasSliderProps {
     step?: number;
     disabled?: boolean;
     ariaValueText?: string;
-};
+}
 
 const CanvasSlider = ({
     min,

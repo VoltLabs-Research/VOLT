@@ -1,14 +1,13 @@
 import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
-import { Document, Model, Schema } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 export enum DailyActivityRelation {
     Team = 'team',
     User = 'user'
-};
+}
 
 export interface DailyActivityDocument extends Persistable<
     DailyActivityProps,

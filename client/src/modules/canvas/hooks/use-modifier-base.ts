@@ -9,7 +9,7 @@ export interface UseModifierBaseOptions {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-};
+}
 
 const useModifierBase = (options: UseModifierBaseOptions = {}) => {
     const { trajectoryId: routeTrajectoryId } = useParams<{ trajectoryId?: string }>();

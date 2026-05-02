@@ -11,7 +11,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPermissionsInputDTO, GetMyTeamPermissionsOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamMemberRepository: TeamMemberRepository
     ) {}
 
@@ -51,4 +50,4 @@ export default class GetMyTeamPermissionsUseCase implements IUseCase<GetMyTeamPe
 
         return Result.ok({ permissions });
     }
-};
+}

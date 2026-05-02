@@ -5,12 +5,12 @@ import type { UIMessage } from 'ai';
 export interface AIConversationMessageArtifacts {
     items?: AIMessageArtifact[];
     [key: string]: unknown;
-};
+}
 
 export enum AIMessageRole {
     User = 'user',
     Assistant = 'assistant'
-};
+}
 
 export enum AIMessageArtifactKind {
     Table = 'table',
@@ -18,7 +18,7 @@ export enum AIMessageArtifactKind {
     Image = 'image',
     Text = 'text',
     Unknown = 'unknown'
-};
+}
 
 export interface AIMessageArtifact {
     id: string;
@@ -28,7 +28,7 @@ export interface AIMessageArtifact {
     summary?: string;
     payload: unknown;
     toolName?: string | null;
-};
+}
 
 export interface AIConversation extends BaseEntity {
     userId: string;
@@ -38,7 +38,7 @@ export interface AIConversation extends BaseEntity {
     lastProvider?: AIProvider | string | null;
     lastModel?: string | null;
     isArchived: boolean;
-};
+}
 
 export interface AIConversationMessage extends BaseEntity {
     conversationId: string;
@@ -49,4 +49,4 @@ export interface AIConversationMessage extends BaseEntity {
     artifacts?: AIConversationMessageArtifacts | null;
     modelInfo?: Record<string, unknown> | null;
     tokenUsage?: Record<string, unknown> | null;
-};
+}

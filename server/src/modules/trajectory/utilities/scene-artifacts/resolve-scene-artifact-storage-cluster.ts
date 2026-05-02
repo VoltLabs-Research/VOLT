@@ -10,7 +10,7 @@ interface ResolveSceneArtifactStorageClusterInput {
     analysisId?: string;
     analysisRepository: IAnalysisRepository;
     trajectoryRepository: ITrajectoryRepository;
-};
+}
 
 export const resolveSceneArtifactStorageCluster = async (
     input: ResolveSceneArtifactStorageClusterInput

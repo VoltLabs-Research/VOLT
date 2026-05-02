@@ -21,4 +21,4 @@ export default class LatexDocumentRepository
         const doc = await this.model.findOne({ _id: documentId, team: teamId }).exec();
         return doc ? this.mapper.toDomain(doc) : null;
     }
-};
+}

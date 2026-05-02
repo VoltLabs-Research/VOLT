@@ -21,11 +21,8 @@ export class GetPluginExposureExportUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly analysisRepository: AnalysisRepository,
-        
         private readonly pluginRepository: PluginRepository,
-        
         private readonly pluginExposureExportService: PluginExposureExportService
     ) {}
 
@@ -70,4 +67,4 @@ export class GetPluginExposureExportUseCase implements IUseCase<
             throw error;
         }
     }
-};
+}

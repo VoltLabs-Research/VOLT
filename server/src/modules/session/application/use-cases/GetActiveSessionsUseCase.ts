@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetActiveSessionsUseCase implements IUseCase<GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO[], ApplicationError>{
     constructor(
-        
         private sessionRepository: SessionRepository
     ){}
 
@@ -17,4 +16,4 @@ export default class GetActiveSessionsUseCase implements IUseCase<GetActiveSessi
         const sessions = await this.sessionRepository.findActiveByUserId(input.userId);
         return Result.ok(sessions.map(toPersistedSessionDTO));
     }
-};
+}

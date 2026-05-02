@@ -7,7 +7,7 @@ import type { StateCreator } from 'zustand';
 
 export interface OrbitControlsSlice {
     orbitControls: OrbitControlsStore;
-};
+}
 
 const getInitialOrbitControlsState = (): OrbitControlsState => getDefaultOrbitControlsSettings();
 

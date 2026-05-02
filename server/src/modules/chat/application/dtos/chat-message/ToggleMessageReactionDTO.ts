@@ -3,4 +3,4 @@ export interface ToggleMessageReactionInputDTO{
     chatId: string;
     messageId: string;
     emoji: string;
-};
+}

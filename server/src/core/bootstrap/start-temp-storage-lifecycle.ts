@@ -8,7 +8,7 @@ export const startTempStorageLifecycle = async (
 ): Promise<void> => {
     try {
         await tempStorageLifecycleService.start();
-    } catch (error: unknown) {
+    } catch {
         logger.warn(`@server: temp storage lifecycle startup cleanup failed`);
     }
 };

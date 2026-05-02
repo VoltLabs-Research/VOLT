@@ -13,7 +13,6 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamRoleRepository: TeamRoleRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -44,4 +43,4 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
 
         return Result.ok(toPersistedOutput(newRole));
     }
-};
+}

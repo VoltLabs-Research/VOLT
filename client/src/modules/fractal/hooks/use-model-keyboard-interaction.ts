@@ -9,7 +9,7 @@ interface UseModelKeyboardInteractionParams {
     onRotateZNegative: () => void;
     onRotateZPositive: () => void;
     onDeselect: () => void;
-};
+}
 
 export default function useModelKeyboardInteraction({
     enabled,

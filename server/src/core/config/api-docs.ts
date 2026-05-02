@@ -62,7 +62,7 @@ const resolveSpecPath = async (): Promise<string> => {
             await access(candidate);
             return candidate;
         } catch {
-            continue;
+            // Try the next candidate path.
         }
     }
 

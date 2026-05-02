@@ -7,7 +7,7 @@ interface UseTeamRoleDataOptions {
     teamId?: string | null;
     page?: number;
     limit?: number;
-};
+}
 
 export default function useTeamRoleData({ teamId, limit = 100 }: UseTeamRoleDataOptions = {}) {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();

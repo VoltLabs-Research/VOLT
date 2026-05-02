@@ -8,28 +8,28 @@ export enum ClusterLiveMetricsLabel {
     Critical = 'Critical',
     WaitingForLiveMetrics = 'Pending',
     MetricsUnavailable = 'Paused'
-};
+}
 
 export interface ClusterLiveMetricsStatus {
     label: ClusterLiveMetricsLabel;
     variant: 'success' | 'warning' | 'danger' | 'inactive';
-};
+}
 
 export interface GetClusterLiveMetricsStatusParams {
     metrics: ClusterMetrics | null;
     isMetricsConnected: boolean;
-};
+}
 
 export interface ClusterMetricsRecoveryState {
     title: string;
     description: string;
     tone: RecoveryStateTone;
-};
+}
 
 export interface GetClusterMetricsRecoveryStateParams {
     clusterName: string;
     isMetricsConnected: boolean;
-};
+}
 
 const METRIC_STATUS_VARIANTS: Record<ClusterStatus, ClusterLiveMetricsStatus['variant']> = {
     [ClusterStatus.Healthy]: 'success',

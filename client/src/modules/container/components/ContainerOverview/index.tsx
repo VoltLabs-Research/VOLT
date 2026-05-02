@@ -29,23 +29,23 @@ const METRIC_COLOR = 'var(--color-text-muted)';
 interface EnvVariableFormItem extends Record<string, unknown> {
     key: string;
     value: string;
-};
+}
 
 interface PortMappingFormItem extends Record<string, unknown> {
     private: number;
     public?: number;
-};
+}
 
 interface MetricPoint {
     v: number;
-};
+}
 
 interface ContainerOverviewProps {
     container: ContainerEntity;
     stats: ContainerStatsViewData;
     onUpdateEnv: (env: EnvVariable[]) => Promise<void>;
     onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
-};
+}
 
 const formatMb = (value: number): string => {
     if (value >= 1024) {

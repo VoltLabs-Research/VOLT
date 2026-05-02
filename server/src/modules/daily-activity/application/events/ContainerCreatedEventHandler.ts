@@ -7,7 +7,6 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('container.created')
 export default class ContainerCreatedEventHandler implements IEventHandler<ContainerCreatedEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
     ) {}
 
@@ -22,4 +21,4 @@ export default class ContainerCreatedEventHandler implements IEventHandler<Conta
             description
         );
     }
-};
+}

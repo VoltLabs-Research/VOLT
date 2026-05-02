@@ -11,9 +11,7 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, ApplicationError> {
     constructor(
-        
         private chatRepo: ChatRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -55,4 +53,4 @@ export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, App
 
         return Result.ok(null);
     }
-};
+}

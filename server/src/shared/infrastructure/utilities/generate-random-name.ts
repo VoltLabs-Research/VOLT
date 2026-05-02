@@ -44,10 +44,10 @@ const ADJECTIVES = [
     'Arctic',
 ];
 
-interface GenerateRandomNameResult{
+interface GenerateRandomNameResult {
     firstName: string;
     lastName: string;
-};
+}
 
 const hash = (str: string): number => {
     let h = 2166136261 >>> 0;

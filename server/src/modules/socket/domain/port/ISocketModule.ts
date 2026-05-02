@@ -8,7 +8,7 @@ export interface ISocketConnectionUser {
     readonly avatar?: string;
     readonly teams?: string[];
     readonly role?: string;
-};
+}
 
 export type SocketAuthenticationState = 'guest' | 'authenticated' | 'rejected';
 
@@ -37,7 +37,7 @@ export interface ISocketConnection {
     data: ISocketConnectionData;
     readonly rooms: Set<string>;
     nativeSocket?: Socket;
-};
+}
 
 /**
  * Base interface that all socket modules must implement.
@@ -63,4 +63,4 @@ export interface ISocketModule {
      * Use for cleanup of resources, intervals, subscriptions, etc.
      */
     onShutdown(): Promise<void>;
-};
+}

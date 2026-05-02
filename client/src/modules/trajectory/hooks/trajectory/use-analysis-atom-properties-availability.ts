@@ -5,12 +5,12 @@ interface UseAnalysisAtomPropertiesAvailabilityParams {
     trajectoryId?: string;
     analysisId?: string;
     timestep?: number;
-};
+}
 
 interface UseAnalysisAtomPropertiesAvailabilityResult {
     hasAtomProperties: boolean;
     error: Error | null;
-};
+}
 
 /** Uses the backend modifier-properties discovery endpoint as the source of truth for per-atom availability. */
 const useAnalysisAtomPropertiesAvailability = ({

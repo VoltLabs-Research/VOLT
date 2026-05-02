@@ -7,7 +7,7 @@ export interface UpdateAccountInputDTO{
     fullName?: string;
     email?: string;
     file?: Express.Multer.File;
-};
+}
 
 export type UpdateAccountOutputDTO = {
     fullName: string;

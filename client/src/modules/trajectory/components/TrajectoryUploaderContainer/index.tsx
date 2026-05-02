@@ -6,7 +6,7 @@ import type { FileWithPath } from '@/shared/utils/file';
 import { useNavigate } from 'react-router-dom';
 interface TrajectoryUploaderContainerProps {
     children?: React.ReactNode;
-};
+}
 
 export default function TrajectoryUploaderContainer({ children }: TrajectoryUploaderContainerProps) {
     const { uploadTrajectory } = useTrajectoryUpload();

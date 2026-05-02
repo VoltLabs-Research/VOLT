@@ -10,12 +10,12 @@ import type { TeamInvitation } from '../../api/entities/invitation/team-invitati
 interface TeamInvitationQueryKeyMap {
     invitations: void;
     pendingInvitations: string;
-};
+}
 
 interface TeamInvitationDetailsQueryKeyMap {
     invitationDetails: void;
     invitationDetailsById: string;
-};
+}
 
 const invitationKeys = buildKeys<TeamInvitationQueryKeyMap>('team-invitations');
 

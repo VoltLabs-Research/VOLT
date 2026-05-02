@@ -10,13 +10,13 @@ import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metr
 
 interface ResourceUsageProps {
     metrics: ClusterMetrics | null;
-};
+}
 
 interface ResourceItem {
     name: string;
     value: number;
     isAvailableSpace: boolean;
-};
+}
 
 const getLoadColor = (value: number): string => {
     if(value >= 80) return 'var(--status-error)';

@@ -11,7 +11,7 @@ import type {
 
 interface LeaveGroupParams {
     chatId: string;
-};
+}
 
 const endpoints = {
     createGroup: post<CreateGroupChatDTO, Chat>('/groups'),

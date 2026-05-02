@@ -11,7 +11,6 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, PersistedNotificationDTO, ApplicationError> {
     constructor(
-        
         private readonly notificationRepository: NotificationRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -46,4 +45,4 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
             ...notification.props
         });
     }
-};
+}

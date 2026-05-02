@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 interface UseTeamDataOptions {
     enabled?: boolean;
-};
+}
 
 export default function useTeamData(options?: UseTeamDataOptions) {
     const enabled = options?.enabled ?? true;

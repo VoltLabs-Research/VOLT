@@ -14,10 +14,10 @@ export interface TrajectoryUpdatedEventPayload {
         failureDetails?: string;
     };
     updatedAt: Date;
-};
+}
 
 export default class TrajectoryUpdatedEvent extends BaseDomainEvent<TrajectoryUpdatedEventPayload> {
     constructor(payload: TrajectoryUpdatedEventPayload) {
         super('trajectory.updated', payload);
     }
-};
+}

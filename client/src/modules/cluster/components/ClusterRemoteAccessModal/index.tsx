@@ -16,7 +16,7 @@ interface ClusterRemoteAccessModalProps {
     error: string | null;
     onSubmit: (password: string) => Promise<void>;
     onDismiss: () => void;
-};
+}
 
 const ClusterRemoteAccessModal = ({
     target,

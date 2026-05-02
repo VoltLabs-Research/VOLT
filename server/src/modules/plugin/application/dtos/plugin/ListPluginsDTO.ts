@@ -7,7 +7,7 @@ export interface ListPluginsInputDTO {
     page?: number;
     limit?: number;
     status?: string;
-};
+}
 
 export interface ListedPluginDTO extends PersistedPluginDTO { };
 

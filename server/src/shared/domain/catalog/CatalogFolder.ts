@@ -13,9 +13,9 @@ export interface CatalogFolderProps {
     kind?: CatalogFolderKind;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export interface CatalogFolderEntity<TProps extends CatalogFolderProps = CatalogFolderProps> {
     readonly _id: string;
     props: TProps;
-};
+}

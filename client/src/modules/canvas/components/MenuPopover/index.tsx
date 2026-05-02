@@ -10,7 +10,7 @@ interface MenuPopoverProps {
     menu: MenuConfig;
     openMenu: string | null;
     onOpenChange: (menu: string | null) => void;
-};
+}
 
 const renderMenuItemIcon = (item: MenuItem) => {
     if (!item.icon) {

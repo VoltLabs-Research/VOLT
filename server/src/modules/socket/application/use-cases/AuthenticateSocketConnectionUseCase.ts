@@ -7,11 +7,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export default class AuthenticateSocketConnectionUseCase {
     constructor(
-        
         private readonly userRepository: UserRepository,
-        
         private readonly tokenService: JwtTokenService,
-        
         private readonly sessionRepository: SessionRepository
     ) {}
 

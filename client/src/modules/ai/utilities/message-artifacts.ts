@@ -5,7 +5,7 @@ import { isRecord } from '@/shared/utils/type-guards';
 export interface AITabularArtifactPayload {
     columns: string[];
     rows: Record<string, unknown>[];
-};
+}
 
 export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArtifactPayload | null => {
     if (artifact.kind !== AIMessageArtifactKind.Table || !isRecord(artifact.payload)) {

@@ -9,7 +9,7 @@ export interface GetTeamClusterRemoteExplorerNodeInputDTO {
     sessionId: string;
     target: TeamClusterRemoteAccessTarget;
     path: string;
-};
+}
 
 /**
  * Returns the content payload associated with a selected remote explorer node.
@@ -18,4 +18,4 @@ export interface GetTeamClusterRemoteExplorerNodeOutputDTO {
     teamClusterId: string;
     target: TeamClusterRemoteAccessTarget;
     node: TeamClusterRemoteExplorerNode;
-};
+}

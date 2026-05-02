@@ -7,10 +7,10 @@ export interface CreateSecretKeyResponse {
     secretKey: string;
     isActive: boolean;
     createdAt: Date | string;
-};
+}
 
 export interface CreateSecretKeyInputDTO {
     teamId: string;
     name: string;
     roleId: string;
-};
+}

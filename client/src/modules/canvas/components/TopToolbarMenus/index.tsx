@@ -17,12 +17,12 @@ interface BuildMenusParams {
     canDownloadAnalyses?: boolean;
     canUndo?: boolean;
     canRedo?: boolean;
-};
+}
 
 export enum MenuItemType {
     Item = 'item',
     Separator = 'separator'
-};
+}
 
 export interface MenuItem {
     type: MenuItemType;
@@ -32,12 +32,12 @@ export interface MenuItem {
     checked?: boolean;
     action?: () => void;
     disabled?: boolean;
-};
+}
 
 export interface MenuConfig {
     label: string;
     items: MenuItem[];
-};
+}
 
 const ICON_SIZE = 16;
 const openExternalUrl = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');

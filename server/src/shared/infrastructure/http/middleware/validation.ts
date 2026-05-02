@@ -7,7 +7,7 @@ export enum ValidationTarget {
     Query = 'query',
     Params = 'params',
     Request = 'request'
-};
+}
 
 export type RequestValidationSchema = Partial<Record<ValidationTarget, z.ZodType<unknown>>>;
 export type ValidationSchemaInput = z.ZodType<unknown> | RequestValidationSchema;
@@ -19,22 +19,22 @@ export interface RequestValidationState {
     query?: unknown;
     params?: unknown;
     request?: unknown;
-};
+}
 
 export interface ValidatedRequest extends Request {
     validated?: RequestValidationState;
-};
+}
 
 interface ValidationSuccess {
     success: true;
     data: RequestValidationState;
-};
+}
 
 interface ValidationFailure {
     success: false;
     message: string;
     code: 'Validation::InvalidInput';
-};
+}
 
 type ValidationResult = ValidationSuccess | ValidationFailure;
 

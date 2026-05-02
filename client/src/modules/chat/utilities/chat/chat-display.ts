@@ -9,13 +9,8 @@ export const getOtherParticipant = (chat: Chat, currentUserId?: string): User | 
 export const getChatDisplayName = (chat: Chat, currentUserId?: string): string => {
     if (chat.isGroup) return chat.groupName || 'Unnamed Group';
     const other = getOtherParticipant(chat, currentUserId);
-    let displayName = 'Unknown';
-
-    if (other) {
-        displayName = `${other.firstName} ${other.lastName}`;
-    }
-
-    return displayName;
+    if (!other) return 'Unknown';
+    return `${other.firstName} ${other.lastName}`;
 };
 
 export const getChatStatusText = (chat: Chat, presence: PresenceStatus): string => {

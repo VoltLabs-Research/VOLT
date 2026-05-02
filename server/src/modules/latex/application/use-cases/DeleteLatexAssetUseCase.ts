@@ -14,12 +14,8 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDTO, DeleteLatexAssetOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -66,4 +62,4 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
             ));
         }
     }
-};
+}

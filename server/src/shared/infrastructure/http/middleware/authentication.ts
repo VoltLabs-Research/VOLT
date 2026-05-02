@@ -20,7 +20,7 @@ import type { NextFunction, Request, Response } from 'express';
 export enum AuthenticationType {
     User = 'user',
     SecretKey = 'secret-key'
-};
+}
 
 export interface AuthenticatedRequest extends Request {
     user?: Request['user'];
@@ -33,7 +33,7 @@ export interface AuthenticatedRequest extends Request {
     /** Cached permissions from checkTeamMembership (populated role) */
     teamPermissions?: string[];
     requestContext?: HttpRequestContext;
-};
+}
 
 const setRequestAuthContext = (
     request: AuthenticatedRequest,

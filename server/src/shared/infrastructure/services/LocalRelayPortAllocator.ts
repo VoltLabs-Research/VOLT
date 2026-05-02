@@ -4,7 +4,7 @@ interface LocalRelayPortAllocatorInput {
     portStart: number;
     portEnd: number;
     exhaustedMessage: string;
-};
+}
 
 /** Tracks and binds ephemeral local relay ports within a fixed range. */
 export class LocalRelayPortAllocator {

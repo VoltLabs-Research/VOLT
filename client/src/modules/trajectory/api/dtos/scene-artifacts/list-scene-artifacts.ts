@@ -15,7 +15,7 @@ export interface RenderableExposurePayload {
         type?: string;
         options?: Record<string, unknown>;
     };
-};
+}
 
 export interface ListSceneArtifactsInputDTO {
     trajectoryId: string;
@@ -26,4 +26,4 @@ export interface ListSceneArtifactsInputDTO {
     timestep?: number;
     page?: number;
     limit?: number;
-};
+}

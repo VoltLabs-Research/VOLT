@@ -16,7 +16,7 @@ import './PluginResultsViewer.css';
 interface PluginResultsViewerProps {
     pluginId: string;
     analysisId: string;
-};
+}
 
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {

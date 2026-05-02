@@ -1,6 +1,5 @@
 import { buildCanvasModifierOptions, BUILT_IN_MODIFIERS } from '../../utilities/modifier-registry';
-import usePluginExecution from '../../hooks/use-plugin-execution';
-import { ExecState } from '../../hooks/use-plugin-execution';
+import usePluginExecution, { ExecState } from '../../hooks/use-plugin-execution';
 import useTrajectoryCloneFlow from '../../hooks/use-trajectory-clone-flow';
 import { useTrajectoryCloneFlowStore } from '../../stores/use-trajectory-clone-flow-store';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
@@ -36,7 +35,7 @@ const BUILT_IN_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
 
 interface PluginExecutionClusterConfig {
     selectedTeamClusterId?: string;
-};
+}
 
 interface RightPanelProps {
     trajectory?: Trajectory | null;
@@ -55,7 +54,7 @@ interface RightPanelProps {
     activeRasterContainerId?: RasterContainerId;
     onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
     onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
-};
+}
 
 const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
     if (!trajectory) {

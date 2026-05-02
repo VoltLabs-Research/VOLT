@@ -15,13 +15,9 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -68,4 +64,4 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
             ));
         }
     }
-};
+}

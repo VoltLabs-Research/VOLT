@@ -6,7 +6,7 @@ import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/en
 interface DashboardYDomain {
     min: number;
     max: number;
-};
+}
 
 const abbreviateNumber = (value: number): string => {
     if (value >= 1e9) return `${(value / 1e9).toFixed(1)}b`;

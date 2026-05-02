@@ -17,10 +17,7 @@ export class MoveLatexDocumentUseCase
     extends MoveCatalogItemUseCase<MoveLatexDocumentInputDTO, LatexFolder, LatexFolderProps, LatexDocumentProps>
     implements IUseCase<MoveLatexDocumentInputDTO, MoveLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        
         latexDocumentRepository: LatexDocumentRepository,
-
-        
         latexFolderRepository: LatexFolderRepository
     ) {
         super(latexDocumentRepository, latexFolderRepository, {
@@ -29,4 +26,4 @@ export class MoveLatexDocumentUseCase
             getItemId: (input) => input.documentId
         });
     }
-};
+}

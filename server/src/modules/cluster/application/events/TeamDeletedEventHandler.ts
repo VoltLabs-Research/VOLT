@@ -13,19 +13,10 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 @Subscribe('team.deleted')
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly storagePlacementRepository: StoragePlacementRepository,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
@@ -72,4 +63,4 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
             this.clusterTransferJobRepository.deleteMany({ team: teamId })
         ]);
     }
-};
+}

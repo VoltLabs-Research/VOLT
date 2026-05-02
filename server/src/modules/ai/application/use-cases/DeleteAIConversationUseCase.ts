@@ -11,15 +11,12 @@ interface DeleteAIConversationLookup {
     _id: string;
     teamId: string;
     userId: string;
-};
+}
 
 @Singleton()
 export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null, ApplicationError> {
     constructor(
-        
         private readonly conversationRepository: AIConversationRepository,
-
-        
         private readonly messageRepository: AIMessageRepository
     ) {}
 
@@ -45,4 +42,4 @@ export default class DeleteAIConversationUseCase implements IUseCase<DeleteAICon
 
         return Result.ok(null);
     }
-};
+}

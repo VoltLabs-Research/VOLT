@@ -6,4 +6,4 @@ export type GetWhiteboardAssetInputDTO = TeamScopedEntityIdInputDTO<'whiteboardI
 export interface GetWhiteboardAssetOutputDTO {
     stream: Readable;
     mimetype?: string;
-};
+}

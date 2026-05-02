@@ -5,6 +5,6 @@ export interface UpdateGroupInfoInputDTO {
     chatId: string;
     groupName?: string;
     groupDescription?: string;
-};
+}
 
-export interface UpdateGroupInfoOutputDTO extends PersistedChatDTO {};
+export interface UpdateGroupInfoOutputDTO extends PersistedChatDTO {}

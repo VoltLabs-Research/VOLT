@@ -21,7 +21,7 @@ interface CommandItem {
     label: string;
     category: string;
     keys: string[];
-};
+}
 
 const buildCommandItems = (shortcuts: Map<string, Shortcut>): CommandItem[] => {
     const items: CommandItem[] = [];

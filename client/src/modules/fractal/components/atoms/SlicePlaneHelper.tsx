@@ -9,7 +9,7 @@ import type { FC } from 'react';
 interface SlicePlaneHelperProps {
     config: SlicePlaneConfig;
     modelWorldBounds?: ModelWorldBounds | null;
-};
+}
 
 const SlicePlaneHelper: FC<SlicePlaneHelperProps> = ({ config, modelWorldBounds }) => {
     const slicePlane = useMemo(() => resolveSlicePlaneDefinition(config), [config]);

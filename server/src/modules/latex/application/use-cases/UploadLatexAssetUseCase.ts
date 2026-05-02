@@ -25,12 +25,8 @@ const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 @Singleton()
 export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexAssetRepository: LatexAssetRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
     ) {}
@@ -131,4 +127,4 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
             ));
         }
     }
-};
+}

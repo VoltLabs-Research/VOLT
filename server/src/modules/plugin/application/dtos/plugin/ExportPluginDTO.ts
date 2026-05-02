@@ -2,8 +2,8 @@ import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/p
 
 export interface ExportPluginOutputDTO extends DownloadStreamOutputDTO {
     fileName: string;
-};
+}
 
-export interface ExportPluginInputDTO{
+export interface ExportPluginInputDTO {
     pluginId: string;
-};
+}

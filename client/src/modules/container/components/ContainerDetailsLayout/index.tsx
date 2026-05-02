@@ -25,7 +25,7 @@ import type { ContainerDetailsContext } from '../../hooks/use-container-details-
 import './ContainerDetailsLayout.css';
 interface ContainerDetailsRouteParams extends Record<string, string | undefined> {
     id: string;
-};
+}
 
 const resolveContainerSectionTitle = (pathname: string): string => {
     if (/^\/dashboard\/containers\/[^/]+\/?$/u.test(pathname)) {

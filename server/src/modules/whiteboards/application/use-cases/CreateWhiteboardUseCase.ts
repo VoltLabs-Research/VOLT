@@ -19,15 +19,10 @@ const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appS
 @Singleton()
 export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository,
-
-        
         private readonly whiteboardFolderRepository: WhiteboardFolderRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -101,4 +96,4 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
             ));
         }
     }
-};
+}

@@ -1,11 +1,11 @@
 export interface RasterFrameMetadata {
     timestep: number;
     availableModels: string[];
-};
+}
 
 export interface RasterTrajectoryMetadata {
     availableTimesteps: number[];
-};
+}
 
 export interface RasterAnalysisMetadata {
     analysisId: string;
@@ -13,7 +13,7 @@ export interface RasterAnalysisMetadata {
     rasterizedFrames: number;
     availableTimesteps: number[];
     frames: RasterFrameMetadata[];
-};
+}
 
 export interface RasterMetadata {
     trajectoryId: string;
@@ -24,11 +24,11 @@ export interface RasterMetadata {
     analyses: RasterAnalysisMetadata[];
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export enum RasterMetadataStatus {
     Pending = 'pending',
     Processing = 'processing',
     Completed = 'completed',
     Failed = 'failed'
-};
+}

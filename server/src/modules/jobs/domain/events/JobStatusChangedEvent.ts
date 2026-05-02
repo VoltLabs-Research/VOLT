@@ -24,4 +24,4 @@ export default class JobStatusChangedEvent extends BaseDomainEvent<JobStatusChan
     constructor(payload: JobStatusChangedEventPayload) {
         super('job.status.changed', payload);
     }
-};
+}

@@ -1,11 +1,11 @@
 export interface ScriptingSessionIdentityDTO {
     teamId: string;
     notebookId: string;
-};
+}
 
 export interface GetScriptingSessionStatusInputDTO extends ScriptingSessionIdentityDTO {
     userId?: string;
-};
+}
 
 export interface GetScriptingSessionStatusOutputDTO {
     notebookId: string;
@@ -16,7 +16,7 @@ export interface GetScriptingSessionStatusOutputDTO {
         url: string;
         containerStage?: 'creating' | 'starting' | 'ready';
     };
-};
+}
 
 export type DeleteScriptingSessionInputDTO = ScriptingSessionIdentityDTO;
 
@@ -24,4 +24,4 @@ export interface DeleteScriptingSessionOutputDTO {
     notebookId: string;
     deleted: boolean;
     runtimeNotebookId?: string;
-};
+}

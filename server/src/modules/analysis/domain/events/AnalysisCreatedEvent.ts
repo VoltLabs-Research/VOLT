@@ -10,10 +10,10 @@ export interface AnalysisCreatedEventPayload {
     config: AnalysisConfig;
     status: string;
     createdAt: Date;
-};
+}
 
 export default class AnalysisCreatedEvent extends BaseDomainEvent<AnalysisCreatedEventPayload> {
     constructor(payload: AnalysisCreatedEventPayload) {
         super('analysis.created', payload);
     }
-};
+}

@@ -6,7 +6,7 @@ import { buildCanvasDataAccess, type CanvasDataAccess } from './build-canvas-dat
 interface CanvasAccessStoreActions {
     setAccess: (state: Partial<CanvasAccessState>) => void;
     reset: () => void;
-};
+}
 
 type CanvasAccessStore = CanvasAccessState & CanvasAccessStoreActions;
 

@@ -7,14 +7,14 @@ interface UseTrajectoryPreviewParams {
     enabled?: boolean;
     isRasterReady?: boolean;
     allowPersistedPreviewFallback?: boolean;
-};
+}
 
 interface UseTrajectoryPreviewResult {
     previewBlobUrl: string | null;
     isLoading: boolean;
     error: boolean;
     retry: () => void;
-};
+}
 
 export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams): UseTrajectoryPreviewResult {
     const {

@@ -9,13 +9,13 @@ import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { TeamClusterRemoteAccessSession } from '@/modules/cluster/api/entities/team-cluster-remote-access';
 interface ClusterRemoteAccessRouteParams extends Record<string, string | undefined> {
     clusterId: string;
-};
+}
 
 interface ClusterRemoteAccessToastOptions {
     loading: { title: string };
     success: { title: string };
     error: { title: string };
-};
+}
 
 const REMOTE_ACCESS_TOAST_OPTIONS: Record<TeamClusterRemoteAccessTarget, ClusterRemoteAccessToastOptions> = {
     [TeamClusterRemoteAccessTarget.MongoDocuments]: {
@@ -42,7 +42,7 @@ export interface ClusterRemoteAccessPageState {
     isLoading: boolean;
     error: string | null;
     handleSubmit: (password: string) => Promise<void>;
-};
+}
 
 /**
  * Shared hook for pages that require a password-confirmed remote access session.

@@ -5,8 +5,8 @@ import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin
 export interface CreatePluginInputDTO {
     workflow: WorkflowProps;
     teamId: string;
-};
+}
 
 export interface CreatePluginOutputDTO {
     plugin: PersistedPluginDTO;
-};
+}

@@ -16,7 +16,7 @@ interface UserMenuPopoverProps {
     isSigningOut?: boolean;
     trigger?: ReactNode;
     collapsed?: boolean;
-};
+}
 
 const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger, collapsed = false }: UserMenuPopoverProps) => {
     const user = useCurrentUser();

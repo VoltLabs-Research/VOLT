@@ -7,7 +7,7 @@ import './ContainerMetricTile.css';
 export interface MetricSecondaryStat {
     label: string;
     value: string;
-};
+}
 
 export interface ContainerMetricTileProps {
     label: string;
@@ -18,7 +18,7 @@ export interface ContainerMetricTileProps {
     color: string;
     isLoading?: boolean;
     idleHint?: string;
-};
+}
 
 const SPARKLINE_HEIGHT = 32;
 

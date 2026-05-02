@@ -11,11 +11,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class DeleteLatexFolderUseCase extends DeleteCatalogFolderUseCase<LatexFolder, LatexFolderProps, LatexDocument, LatexDocumentProps> {
     constructor(
-        
         latexFolderRepository: LatexFolderRepository,
-        
         latexDocumentRepository: LatexDocumentRepository,
-        
         deleteLatexDocumentUseCase: DeleteLatexDocumentUseCase
     ) {
         super(

@@ -5,7 +5,7 @@ export interface TeamSceneArtifactFilters {
     sourceType?: SceneArtifactProps['sourceType'];
     analysisId?: string;
     timestep?: number;
-};
+}
 
 export interface ISceneArtifactRepository extends IBaseRepository<SceneArtifact, SceneArtifactProps> {
     upsertByObjectName(objectName: string, data: Partial<SceneArtifactProps>): Promise<SceneArtifact>;
@@ -15,4 +15,4 @@ export interface ISceneArtifactRepository extends IBaseRepository<SceneArtifact,
         options: PaginationOptions,
         filters?: TeamSceneArtifactFilters
     ): Promise<PaginatedResult<SceneArtifact>>;
-};
+}

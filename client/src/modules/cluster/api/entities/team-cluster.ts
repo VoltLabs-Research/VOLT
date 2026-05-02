@@ -12,36 +12,36 @@ export enum TeamClusterStatus {
     DeleteFailed = 'delete-failed',
     Updating = 'updating',
     UpdateFailed = 'update-failed'
-};
+}
 
 export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export interface TeamClusterService {
     port: number | null;
-};
+}
 
 export interface TeamClusterServices {
     minio: TeamClusterService;
     redis: TeamClusterService;
     mongodb: TeamClusterService;
     daemon: TeamClusterService;
-};
+}
 
 export interface TeamClusterCredentialService extends TeamClusterService {
     username: string;
     password: string;
-};
+}
 
 export interface TeamClusterDaemonCredentialService extends TeamClusterService {
     password: string;
-};
+}
 
 export interface TeamClusterCredentialServices {
     minio: TeamClusterCredentialService;
     redis: TeamClusterCredentialService;
     mongodb: TeamClusterCredentialService;
     daemon: TeamClusterDaemonCredentialService;
-};
+}
 
 export interface TeamClusterQueueConcurrency {
     analysis: number;
@@ -49,12 +49,12 @@ export interface TeamClusterQueueConcurrency {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimit {
     maxRunningPerTrajectory: number;
     maxRunningPerTeam: number;
-};
+}
 
 export interface TeamClusterQueueScopeLimits {
     analysisProcessing: TeamClusterQueueScopeLimit;
@@ -63,12 +63,12 @@ export interface TeamClusterQueueScopeLimits {
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
     cloudUpload: TeamClusterQueueScopeLimit;
     trajectoryCompression: TeamClusterQueueScopeLimit;
-};
+}
 
 export interface TeamClusterRoleDraining {
     compute: boolean;
     storage: boolean;
-};
+}
 
 export interface TeamClusterRuntimeRoleConfig {
     desiredRole: TeamClusterRole;
@@ -76,14 +76,14 @@ export interface TeamClusterRuntimeRoleConfig {
     runtimeVersion: number;
     draining: TeamClusterRoleDraining;
     lastAppliedAt: Date | string | null;
-};
+}
 
 export interface TeamClusterEffectiveCapabilities {
     acceptsComputeJobs: boolean;
     acceptsStorageWrites: boolean;
     servesStorageReads: boolean;
     servesArtifactDownloads: boolean;
-};
+}
 
 export interface TeamCluster {
     _id: string;
@@ -104,7 +104,7 @@ export interface TeamCluster {
     demoExpiresAt: Date | string | null;
     createdAt: Date | string;
     updatedAt: Date | string;
-};
+}
 
 export interface TeamClusterLifecycleEvent {
     teamClusterId: string;
@@ -113,4 +113,4 @@ export interface TeamClusterLifecycleEvent {
     teamCluster?: TeamCluster;
     status?: TeamClusterStatus;
     timestamp: string;
-};
+}

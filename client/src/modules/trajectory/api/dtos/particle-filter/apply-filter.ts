@@ -16,10 +16,10 @@ export interface ApplyFilterInputDTO {
     action: FilterAction;
     combinator?: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionDTO[];
-};
+}
 
 export interface ApplyFilterOutputDTO {
     fileId: string;
     atomsResult: number;
     action: string;
-};
+}

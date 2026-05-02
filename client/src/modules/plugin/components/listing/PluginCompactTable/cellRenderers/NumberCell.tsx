@@ -2,7 +2,7 @@ import { formatScientific } from '@/modules/plugin/components/listing/PluginComp
 
 interface NumberCellProps {
     value: unknown;
-};
+}
 
 const NumberCell = ({ value }: NumberCellProps) => {
     if(typeof value !== 'number'){

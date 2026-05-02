@@ -17,12 +17,12 @@ import type { ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO } 
 
 interface DeleteBinaryInputDTO {
     pluginId: string;
-};
+}
 
 interface UploadProgressEvent {
     loaded: number;
     total?: number;
-};
+}
 
 const createUploadProgressHandler = ({ onProgress }: UploadBinaryInputDTO) => {
     let handleProgress: ((event: UploadProgressEvent) => void) | undefined;

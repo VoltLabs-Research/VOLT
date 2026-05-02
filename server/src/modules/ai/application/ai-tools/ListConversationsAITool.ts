@@ -15,7 +15,6 @@ export class ListConversationsAITool extends AITool {
     });
 
     constructor(
-        
         protected readonly useCase: ListAIConversationsUseCase
     ) {
         super();
@@ -35,4 +34,4 @@ export class ListConversationsAITool extends AITool {
             total: result.value.total
         };
     }
-};
+}

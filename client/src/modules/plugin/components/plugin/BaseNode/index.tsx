@@ -42,7 +42,7 @@ interface BaseNodeProps extends NodeProps {
     nodeTitle?: string;
     description?: string;
     children?: ReactNode;
-};
+}
 
 interface DebugExecutionTraceTreeProps {
     nodes: DebugTraceNode[];

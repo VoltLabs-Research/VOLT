@@ -11,7 +11,7 @@ type HandlerCtor = new (...args: any[]) => IEventHandler<IDomainEvent>;
 interface PendingSubscription {
     eventName: string;
     handler: InjectionToken<IEventHandler<IDomainEvent>>;
-};
+}
 
 const pendingSubscriptions: PendingSubscription[] = [];
 

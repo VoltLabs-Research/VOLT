@@ -16,7 +16,7 @@ export interface DownloadPluginListingParams {
     trajectoryId?: string;
     exposureName?: string;
     format?: ExportType;
-};
+}
 
 export interface DownloadAnalysisListingParams {
     analysisId: string;
@@ -24,7 +24,7 @@ export interface DownloadAnalysisListingParams {
     includeConfig?: boolean;
     selectedListingIds?: string[];
     selectedSubListingIds?: string[];
-};
+}
 
 const useDownloadPluginListing = () => {
     const exportListingMutation = useExportListingMutation();

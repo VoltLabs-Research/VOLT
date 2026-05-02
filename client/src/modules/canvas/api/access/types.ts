@@ -8,7 +8,7 @@ export interface CanvasAccessState {
     canCollaborate: boolean;
     isGuest: boolean;
     hasTeamMembership: boolean;
-};
+}
 
 export const DEFAULT_CANVAS_ACCESS_STATE: CanvasAccessState = {
     mode: 'rbac',

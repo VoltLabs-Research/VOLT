@@ -8,7 +8,7 @@ interface PasswordStatusRowProps {
     passwordInfo: PasswordInfo | null;
     isFormOpen: boolean;
     onToggleForm: () => void;
-};
+}
 
 const PasswordStatusRow = ({
     passwordInfo,

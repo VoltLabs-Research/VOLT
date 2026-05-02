@@ -14,13 +14,9 @@ import { injectable } from 'tsyringe';
 @injectable()
 export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {
     constructor(
-        
         private chatRepo: ChatRepository,
-        
         private teamRepo: TeamRepository,
-        
         private teamMemberRepo: TeamMemberRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -61,4 +57,4 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
 
         return Result.ok(toPersistedEntity(chat));
     }
-};
+}

@@ -9,4 +9,4 @@ export default class CatalogFolderTeamCleanupHandler implements IEventHandler<Te
     async handle(event: TeamDeletedEvent): Promise<void> {
         await CatalogFolderModel.deleteMany({ team: event.payload.teamId });
     }
-};
+}

@@ -7,11 +7,11 @@ import type { PresenceUser } from '@/modules/socket/types/presence-user';
 interface TrajectoryPresencePayload {
     trajectoryId: string;
     users: PresenceUser[];
-};
+}
 
 interface UseTrajectoryPresenceResult {
     users: PresenceUser[];
-};
+}
 
 export default function useTrajectoryPresence(trajectoryId: string | undefined): UseTrajectoryPresenceResult {
     const [users, setUsers] = useState<PresenceUser[]>([]);

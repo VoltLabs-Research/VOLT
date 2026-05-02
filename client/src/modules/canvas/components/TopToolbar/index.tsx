@@ -27,7 +27,7 @@ interface TopToolbarShareInfo {
     trajectoryId: string;
     isPublic: boolean;
     canManageVisibility: boolean;
-};
+}
 
 interface TopToolbarProps {
     trajectory?: Trajectory | null;

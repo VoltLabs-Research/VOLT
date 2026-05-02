@@ -5,4 +5,4 @@ export type GetWhiteboardStateInputDTO = TeamScopedEntityIdInputDTO<'whiteboardI
 
 export interface GetWhiteboardStateOutputDTO {
     stream: Readable;
-};
+}

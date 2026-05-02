@@ -17,7 +17,7 @@ import type { StateCreator } from 'zustand';
 
 export interface EffectsSlice {
     effects: EffectsConfigStore;
-};
+}
 
 const getInitialEffectsState = (): EffectsConfigState => getDefaultEffectsSettings();
 

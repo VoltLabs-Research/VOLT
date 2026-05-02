@@ -25,9 +25,7 @@ const toParticipantId = (participant: ChatParticipant): string => {
 @injectable()
 export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO, ApplicationError> {
     constructor(
-        
         private chatRepo: ChatRepository,
-        
         private socketEmitter: SocketIOEmitter
     ){}
 
@@ -69,4 +67,4 @@ export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGrou
 
         return Result.ok(toPersistedEntity(updatedChat));
     }
-};
+}

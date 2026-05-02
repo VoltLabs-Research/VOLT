@@ -64,7 +64,7 @@ const useCanvasThemeColors = () => {
 interface PluginBuilderCanvasProps {
     saveStatus: 'idle' | 'saving' | 'saved' | 'error';
     onSave: () => void;
-};
+}
 
 const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);

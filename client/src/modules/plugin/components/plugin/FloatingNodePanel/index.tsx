@@ -19,7 +19,7 @@ interface PanelPosition {
     top: number;
     right: number;
     maxHeight: number;
-};
+}
 
 const panelVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 8 },

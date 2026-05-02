@@ -10,12 +10,12 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 interface DeletableRepository {
     deleteMany(filter: Record<string, string>): Promise<number>;
-};
+}
 
 interface HandlerFactoryOptions {
     filterField?: string;
     className?: string;
-};
+}
 
 type AnyCtor = abstract new (...args: any[]) => any;
 
@@ -40,7 +40,7 @@ const buildCascadeHandler = (
                 (this as unknown as { filterField: string }).filterField = options.filterField;
             }
         }
-    };
+    }
 
     assignClassName(Generated, options.className ?? defaultName);
     return Generated as unknown as new () => IEventHandler<IDomainEvent>;

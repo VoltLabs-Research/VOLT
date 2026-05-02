@@ -9,7 +9,7 @@ export interface TrajectoryCloneJobStats {
     totalFrames: number;
     copiedFrames: number;
     copiedBytes: number;
-};
+}
 
 export interface TrajectoryCloneJobProps {
     team: string;
@@ -26,7 +26,7 @@ export interface TrajectoryCloneJobProps {
     finishedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export const createDefaultTrajectoryCloneJobStats = (): TrajectoryCloneJobStats => ({
     totalFrames: 0,
@@ -86,4 +86,4 @@ export default class TrajectoryCloneJob {
     get id(): string {
         return this._id;
     }
-};
+}

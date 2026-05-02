@@ -19,7 +19,7 @@ interface MessageBubbleProps {
     currentUserId?: string;
     onToggleReaction?: (emoji: string) => void;
     children?: ReactNode;
-};
+}
 
 const MessageBubble = ({
     message,

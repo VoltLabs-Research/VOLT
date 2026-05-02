@@ -26,10 +26,7 @@ const toDTO = (file: LatexFile) => ({
 @Singleton()
 export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, ListLatexFilesOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly latexDocumentRepository: LatexDocumentRepository,
-
-        
         private readonly latexFileRepository: LatexFileRepository
     ) {}
 
@@ -62,4 +59,4 @@ export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, L
             ));
         }
     }
-};
+}

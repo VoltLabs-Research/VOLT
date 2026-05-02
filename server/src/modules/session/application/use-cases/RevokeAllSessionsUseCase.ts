@@ -8,7 +8,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class RevokeAllSessionsUseCase implements IUseCase<RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO, ApplicationError>{
     constructor(
-        
         private readonly sessionRepository: SessionRepository
     ){}
 
@@ -20,4 +19,4 @@ export default class RevokeAllSessionsUseCase implements IUseCase<RevokeAllSessi
 
         return Result.ok({ revokedCount });
     }
-};
+}

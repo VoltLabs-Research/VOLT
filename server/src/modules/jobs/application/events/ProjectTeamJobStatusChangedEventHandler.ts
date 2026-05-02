@@ -9,10 +9,7 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('job.status.changed')
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
-        
         private readonly teamJobProjectionService: TeamJobProjectionService,
-
-        
         private readonly socketEmitter: SocketIOEmitter
     ) {}
 

@@ -5,11 +5,10 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
 @Subscribe('PluginExecutionRequest')
-export default class LogPluginExecutionRequestHandler implements IEventHandler<PluginExecutionRequestEvent>{
+export default class LogPluginExecutionRequestHandler implements IEventHandler<PluginExecutionRequestEvent> {
     constructor(
-        
         private activityRepo: DailyActivityRepository
-    ){}
+    ) {}
 
     async handle(event: PluginExecutionRequestEvent): Promise<void>{
         const { pluginName, trajectoryName, teamId, userId } = event.payload;
@@ -21,4 +20,4 @@ export default class LogPluginExecutionRequestHandler implements IEventHandler<P
             description
         );
     }
-};
+}

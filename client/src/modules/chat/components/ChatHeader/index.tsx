@@ -18,7 +18,7 @@ interface ChatHeaderProps {
     onBackClick?: () => void;
     onInfoClick?: () => void;
     isDetailsOpen?: boolean;
-};
+}
 
 const ChatHeader = ({
     chat,

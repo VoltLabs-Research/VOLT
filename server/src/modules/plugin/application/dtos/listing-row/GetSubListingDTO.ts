@@ -6,16 +6,16 @@ export interface GetSubListingInputDTO {
     teamId: string;
     page?: number;
     limit?: number;
-};
+}
 
 export interface SubListingColumn {
     label: string;
     sortable: boolean;
-};
+}
 
 export interface SubListingRowShape extends Record<string, unknown> {
     _id: string;
-};
+}
 
 export type SubListingRowData = SubListingRowShape;
 
@@ -27,4 +27,4 @@ export interface GetSubListingOutputDTO {
     page: number;
     totalPages: number;
     limit: number;
-};
+}

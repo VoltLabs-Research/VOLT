@@ -18,7 +18,7 @@ interface DynamicEffectsProps {
     settings: EffectsConfigState;
     isDefectScene?: boolean;
     darkTheme: boolean;
-};
+}
 
 const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsProps) => {
     const {

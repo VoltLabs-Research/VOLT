@@ -4,4 +4,4 @@ export interface UpdateAIConversationInputDTO {
     conversationId: string;
     title?: string;
     isArchived?: boolean;
-};
+}

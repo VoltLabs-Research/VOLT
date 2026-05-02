@@ -7,7 +7,7 @@ import type { AuthenticatedRequest } from '@shared/infrastructure/http/middlewar
 
 export interface StreamableOutput {
     stream: Readable;
-};
+}
 
 export abstract class BaseStreamController<
     TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
@@ -48,4 +48,4 @@ export abstract class BaseStreamController<
 
         output.stream.pipe(res);
     }
-};
+}

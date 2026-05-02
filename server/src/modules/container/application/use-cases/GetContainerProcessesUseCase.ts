@@ -29,4 +29,4 @@ export class GetContainerProcessesUseCase implements IUseCase<GetContainerProces
 
         return teamClusterId;
     }
-};
+}

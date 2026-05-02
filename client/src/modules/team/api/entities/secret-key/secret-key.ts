@@ -10,4 +10,4 @@ export interface SecretKey extends BaseEntity {
     createdBy?: User | string;
     isActive: boolean;
     lastUsedAt?: string;
-};
+}

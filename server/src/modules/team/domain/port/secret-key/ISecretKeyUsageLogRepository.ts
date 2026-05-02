@@ -11,10 +11,10 @@ export interface LogRequestInput {
     responseTime: number;
     ip: string;
     userAgent: string;
-};
+}
 
 export interface ISecretKeyUsageLogRepository extends IBaseRepository<SecretKeyUsageLog, SecretKeyUsageLogProps> {
     logRequest(data: LogRequestInput): Promise<void>;
     getTeamUsageAnalytics(teamId: string, days: number): Promise<TeamUsageAnalytics>;
     getKeyUsageAnalytics(secretKeyId: string, days: number): Promise<KeyUsageAnalytics>;
-};
+}

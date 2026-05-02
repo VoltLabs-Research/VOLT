@@ -9,7 +9,7 @@ export interface MinioClientConfig {
     accessKey?: string;
     secretKey?: string;
     publicUrl?: string;
-};
+}
 
 let minioClient: Client | null = null;
 

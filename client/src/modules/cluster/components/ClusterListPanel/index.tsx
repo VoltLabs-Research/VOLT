@@ -22,7 +22,7 @@ import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 interface ClusterListPanelProps {
     clusters: TeamCluster[];
     onDelete: (cluster: TeamCluster) => void;
-};
+}
 
 const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
     const selectedTeamId = useSelectedTeamId();

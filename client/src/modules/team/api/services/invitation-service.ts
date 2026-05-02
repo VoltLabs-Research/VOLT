@@ -10,7 +10,7 @@ import type { RejectInvitationInputDTO } from '../dtos/invitation/reject-invitat
 
 interface PendingInvitationsPage extends PaginatedResponse<TeamInvitation> {
     data: TeamInvitation[];
-};
+}
 
 const isPendingInvitationsPage = (value: unknown): value is PendingInvitationsPage => {
     if (typeof value !== 'object' || value === null || !('data' in value)) {

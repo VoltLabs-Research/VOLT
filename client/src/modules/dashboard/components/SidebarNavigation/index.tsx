@@ -43,12 +43,12 @@ interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     collapsed?: boolean;
     onExpandSidebar?: () => void;
-};
+}
 
 interface IconPair {
     inactive: IconType;
     active: IconType;
-};
+}
 
 const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> = {
     [DashboardNavigationIconKey.AI]: { inactive: IoSparklesOutline, active: IoSparkles },

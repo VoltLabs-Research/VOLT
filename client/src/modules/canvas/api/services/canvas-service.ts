@@ -3,8 +3,7 @@ import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-b
 
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { PaginationMeta } from '@/shared/domain/pagination';
+import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination';
 import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
@@ -54,41 +53,41 @@ import type {
 
 interface GetCanvasTrajectoryParams {
     trajectoryId: string;
-};
+}
 
 interface ListCanvasAnalysesParams {
     trajectoryId: string;
     page?: number;
     limit?: number;
-};
+}
 
 interface GetCanvasRasterFrameParams {
     trajectoryId: string;
     timestep: number;
-};
+}
 
 interface GetCanvasAnalysisRasterFrameParams extends GetCanvasRasterFrameParams {
     analysisId: string;
     model: string;
-};
+}
 
 interface GetCanvasDumpParams {
     trajectoryId: string;
     timestep: number | string;
-};
+}
 
 interface PublicCanvasPluginInput {
     trajectoryId: string;
     pluginId: string;
-};
+}
 
 interface PublicCanvasListingInput extends GetPluginListingInputDTO {
     trajectoryId: string;
-};
+}
 
 interface PublicCanvasSubListingInput extends GetSubListingInputDTO {
     trajectoryId: string;
-};
+}
 
 interface RawListingData {
     data: ListingRow[];
@@ -97,17 +96,17 @@ interface RawListingData {
     totalPages: number;
     limit: number;
     _meta?: GetPluginListingOutputDTO['_meta'];
-};
+}
 
 interface RawListingResponse {
     status: string;
     data: RawListingData;
     pagination?: PaginationMeta;
-};
+}
 
 interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
     trajectoryId: string;
-};
+}
 
 const endpoints = {
     getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),

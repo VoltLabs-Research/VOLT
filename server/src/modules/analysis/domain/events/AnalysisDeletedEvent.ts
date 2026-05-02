@@ -8,10 +8,10 @@ export interface AnalysisDeletedEventPayload {
     teamClusterId?: string;
     userId: string;
     pluginDisplayName: string;
-};
+}
 
 export default class AnalysisDeletedEvent extends BaseDomainEvent<AnalysisDeletedEventPayload> {
     constructor(payload: AnalysisDeletedEventPayload) {
         super('analysis.deleted', payload);
     }
-};
+}

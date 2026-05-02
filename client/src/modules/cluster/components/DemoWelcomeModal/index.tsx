@@ -8,14 +8,14 @@ import Text from '@/shared/presentation/primitives/Text';
 import './DemoWelcomeModal.css';
 interface DemoLocationState {
     justProvisionedDemo?: boolean;
-};
+}
 
 const STORAGE_KEY = 'demo-welcome-seen';
 
 interface Step {
     title: string;
     description: string;
-};
+}
 
 const STEPS: Step[] = [
     {

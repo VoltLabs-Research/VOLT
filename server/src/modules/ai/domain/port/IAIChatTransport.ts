@@ -6,13 +6,13 @@ import type { TeamAIProvider } from '@modules/team/domain/entities/ai-integratio
 export interface AIChatReplyStream {
     consumeText(): Promise<string>;
     pipeToResponse(response: Response): void;
-};
+}
 
 export interface AIChatReplyUsage {
     inputTokens?: number;
     outputTokens?: number;
     totalTokens?: number;
-};
+}
 
 export interface AIChatFinishEvent {
     text: string;
@@ -22,7 +22,7 @@ export interface AIChatFinishEvent {
     responseMessages: unknown[];
     provider: string;
     model: string;
-};
+}
 
 export interface GenerateAIChatReplyInput {
     teamId: string;
@@ -31,8 +31,8 @@ export interface GenerateAIChatReplyInput {
     model?: string;
     messages: AIConversationMessage[];
     onFinish?: (event: AIChatFinishEvent) => Promise<void>;
-};
+}
 
 export interface IAIChatTransport {
     generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream>;
-};
+}

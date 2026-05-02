@@ -30,7 +30,7 @@ interface AIConversationSidebarProps {
     onSelectConversation: (conversationId: string) => void;
     onDeleteConversation: (conversationId: string) => Promise<void>;
     onRenameConversation: (conversationId: string, title: string) => Promise<void>;
-};
+}
 
 const AIConversationSidebar = ({
     conversations,

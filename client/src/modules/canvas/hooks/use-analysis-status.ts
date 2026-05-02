@@ -11,7 +11,7 @@ import type { CanvasAnalysisStatusEntry } from '../utilities/analysis-status';
 interface UseAnalysisStatusProps {
     trajectoryId?: string;
     enabled?: boolean;
-};
+}
 
 const ARTIFACT_UPLOAD_QUEUE_TYPE = 'artifact_upload';
 

@@ -37,7 +37,7 @@ interface ViewportProps {
     hideGradient?: boolean;
     renderScene?: boolean;
     showSceneActions?: boolean;
-};
+}
 
 type CanvasTrajectory = Trajectory & {
     teamId?: string;

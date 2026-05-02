@@ -6,7 +6,7 @@ import './SimulationCardUsers.css';
 interface SimulationCardUsersProps {
     trajectoryId: string;
     maxDisplay?: number;
-};
+}
 
 export default function SimulationCardUsers({ trajectoryId, maxDisplay = 3 }: SimulationCardUsersProps) {
     const { users } = useTrajectoryPresence(trajectoryId);

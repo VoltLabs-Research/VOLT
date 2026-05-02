@@ -3,21 +3,21 @@ import type { Container, ContainerAccessiblePort } from '@modules/container/doma
 export interface GetContainerByIdInputDTO {
     teamId: string;
     containerId: string;
-};
+}
 
 export interface GetContainerByIdOutputDTO {
     container: Container;
-};
+}
 
 export interface CreateContainerPortProxySessionInputDTO {
     teamId: string;
     containerId: string;
     privatePort: number;
     userId: string;
-};
+}
 
 export interface CreateContainerPortProxySessionOutputDTO {
     url: string;
     expiresAt: string;
     port: ContainerAccessiblePort;
-};
+}

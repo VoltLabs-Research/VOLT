@@ -12,7 +12,7 @@ import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 interface LocalGlbViewerProps {
     url: string;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
-};
+}
 
 const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
 const AUTO_SIMULATION_CELL_PADDING_RATIO = 0.05;

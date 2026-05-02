@@ -15,7 +15,7 @@ interface MemberListItemProps {
     action?: ReactNode;
     onClick?: () => void;
     className?: string;
-};
+}
 
 const ROLE_TAG_CONFIG: Record<MemberRole, { tone: TagProps['tone']; variant: TagProps['variant'] }> = {
     owner: { tone: 'info', variant: 'solid' },

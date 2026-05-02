@@ -5,12 +5,12 @@ import path from 'node:path';
 interface DaemonManifestFile {
     relativePath: string;
     contents: string;
-};
+}
 
 export enum DaemonDistributionMode {
     Build = 'build',
     Image = 'image'
-};
+}
 
 const DAEMON_SOURCE_ROOT_CANDIDATES = [
     path.resolve(process.cwd(), '..', 'cluster-daemon'),

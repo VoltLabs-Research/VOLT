@@ -1,6 +1,6 @@
 interface PointsCellProps {
     value: unknown;
-};
+}
 
 const isPointArray = (input: unknown): input is number[][] => {
     if(!Array.isArray(input)) return false;

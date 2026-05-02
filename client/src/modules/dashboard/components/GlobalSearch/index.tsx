@@ -62,7 +62,7 @@ const SECTIONS: SectionConfig[] = [
 
 interface GlobalSearchProps {
     contextBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
-};
+}
 
 const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     const {

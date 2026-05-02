@@ -1,7 +1,7 @@
 export interface TeamOwnerRef {
     _id?: string;
     toString?: () => string;
-};
+}
 
 export interface TeamProps {
     name: string;
@@ -17,7 +17,7 @@ export interface TeamProps {
     inviteCode?: string;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class Team {
     constructor(
@@ -40,4 +40,4 @@ export default class Team {
 
         return this.props.owner.toString?.() ?? '';
     }
-};
+}

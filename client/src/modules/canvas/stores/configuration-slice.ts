@@ -7,7 +7,7 @@ import type { StateCreator } from 'zustand';
 
 export interface ConfigurationSlice {
     configuration: ConfigurationStore;
-};
+}
 
 const initialState: ConfigurationState = {
     slicePlaneConfig: DEFAULT_SLICE_PLANE_CONFIG,

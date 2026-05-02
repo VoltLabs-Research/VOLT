@@ -4,4 +4,4 @@ import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory
 export abstract class DeleteManyOnTrajectoryDeletedHandler extends DeleteManyOnEntityDeletedHandler<TrajectoryDeletedEvent> {
     protected readonly payloadKey = 'trajectoryId';
     protected readonly filterField = 'trajectory';
-};
+}

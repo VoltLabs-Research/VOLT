@@ -15,7 +15,7 @@ import { useParams } from 'react-router-dom';
 interface UsePluginResultsOptions {
     pluginId: string;
     analysisId: string;
-};
+}
 
 const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => {
     const { setResultsPluginId } = useCanvasUrlState();

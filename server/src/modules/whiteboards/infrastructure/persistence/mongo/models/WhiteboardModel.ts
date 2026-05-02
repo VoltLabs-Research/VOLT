@@ -8,13 +8,13 @@ export enum WhiteboardRelation {
     Team = 'team',
     CreatedBy = 'createdBy',
     LastEditedBy = 'lastEditedBy'
-};
+}
 
 type WhiteboardDocumentBase = Persistable<WhiteboardProps, `${WhiteboardRelation}`>;
 
 export interface WhiteboardDocument extends Omit<WhiteboardDocumentBase, 'folder'>, Document {
     folder: Types.ObjectId | null;
-};
+}
 
 const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
     team: {

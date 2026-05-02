@@ -16,7 +16,7 @@ interface RecordSceneArtifactInput {
     metadata?: Record<string, unknown>;
     status?: SceneArtifactStatus;
     storageBucket?: string;
-};
+}
 
 export const recordSceneArtifact = async (
     sceneArtifactRepository: ISceneArtifactRepository,

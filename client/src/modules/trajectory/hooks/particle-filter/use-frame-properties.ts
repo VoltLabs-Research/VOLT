@@ -6,13 +6,13 @@ interface UseFramePropertiesParams {
     trajectoryId?: string;
     analysisId?: string;
     timestep?: number;
-};
+}
 
 interface UseFramePropertiesResult {
     properties: FilterPropertiesData;
     isLoading: boolean;
     error: string | null;
-};
+}
 
 const INITIAL_PROPERTIES: FilterPropertiesData = {
     dump: [],

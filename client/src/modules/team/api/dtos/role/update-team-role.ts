@@ -3,4 +3,4 @@ export interface UpdateTeamRoleInputDTO {
     roleId: string;
     name?: string;
     permissions?: string[];
-};
+}

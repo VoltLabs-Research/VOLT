@@ -43,7 +43,7 @@ interface IntegrationModalStatePreset {
     defaultModel?: string | null;
     enabledModels?: TeamAIModelMetadata[];
     enabled?: boolean;
-};
+}
 
 const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';
 const TEAM_AI_INTEGRATION_FORM_ID = 'team-ai-integration-form';

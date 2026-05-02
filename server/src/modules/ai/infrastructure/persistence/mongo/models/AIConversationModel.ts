@@ -6,7 +6,7 @@ import { teamRefField, userRefField } from '@shared/infrastructure/persistence/m
 export enum AIConversationRelation {
     UserId = 'userId',
     TeamId = 'teamId'
-};
+}
 
 export interface AIConversationDocument extends Persistable<AIConversationProps, AIConversationRelation>, Document {}
 

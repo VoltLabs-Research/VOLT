@@ -13,12 +13,12 @@ interface StatusItem {
     value: ReactNode;
     title?: string;
     className?: string;
-};
+}
 
 interface StatusBarProps {
     trajectory: Trajectory | null | undefined;
     currentTimestep: number | undefined;
-};
+}
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     <Row gap='05' className="canvas-status-group">

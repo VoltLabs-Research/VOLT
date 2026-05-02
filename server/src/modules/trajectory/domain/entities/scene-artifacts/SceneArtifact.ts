@@ -2,12 +2,12 @@ export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',
     PluginExposure = 'plugin-exposure'
-};
+}
 
 export enum SceneArtifactStatus {
     Ready = 'ready',
     Failed = 'failed'
-};
+}
 
 export interface SceneArtifactParams {
     property?: string;
@@ -18,7 +18,7 @@ export interface SceneArtifactParams {
     value?: number;
     action?: 'delete' | 'highlight';
     exposureId?: string;
-};
+}
 
 export interface SceneArtifactProps {
     trajectory: string;
@@ -35,7 +35,7 @@ export interface SceneArtifactProps {
     metadata?: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class SceneArtifact {
     constructor(
@@ -46,4 +46,4 @@ export default class SceneArtifact {
     get id(): string {
         return this._id;
     }
-};
+}

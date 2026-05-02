@@ -4,4 +4,4 @@ export interface GetRasterFramePNGInputDTO {
     timestep: number;
     analysisId?: string;
     model?: string;
-};
+}

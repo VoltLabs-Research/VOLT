@@ -10,17 +10,17 @@ export interface SceneArtifactBatchUpsertedArtifact {
     timestep: number;
     displayName: string;
     status: SceneArtifactStatus;
-};
+}
 
 export interface SceneArtifactBatchUpsertedEventPayload {
     teamId: string;
     trajectoryId: string;
     analysisId?: string;
     artifacts: SceneArtifactBatchUpsertedArtifact[];
-};
+}
 
 export default class SceneArtifactBatchUpsertedEvent extends BaseDomainEvent<SceneArtifactBatchUpsertedEventPayload> {
     constructor(payload: SceneArtifactBatchUpsertedEventPayload) {
         super('scene-artifact.upserted', payload);
     }
-};
+}

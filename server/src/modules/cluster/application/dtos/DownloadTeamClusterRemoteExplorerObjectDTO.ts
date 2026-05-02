@@ -13,4 +13,4 @@ export interface DownloadTeamClusterRemoteExplorerObjectOutputDTO {
     stream: Readable;
     headers: Record<string, string>;
     prepare?: () => Promise<void>;
-};
+}

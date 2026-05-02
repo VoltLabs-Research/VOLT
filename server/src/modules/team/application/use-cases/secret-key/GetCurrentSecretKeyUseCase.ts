@@ -9,7 +9,6 @@ import { injectable } from 'tsyringe';
 @injectable()
 export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSecretKeyInputDTO, GetCurrentSecretKeyOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly secretKeyRepository: SecretKeyRepository
     ) {}
 
@@ -44,4 +43,4 @@ export default class GetCurrentSecretKeyUseCase implements IUseCase<GetCurrentSe
             updatedAt: secretKey.props.updatedAt
         });
     }
-};
+}

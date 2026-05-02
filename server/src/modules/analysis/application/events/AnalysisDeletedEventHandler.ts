@@ -16,14 +16,8 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-
-        
         private readonly sceneArtifactRepository: SceneArtifactRepository,
-
-        
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-
-        
         private readonly teamJobMaintenanceService: TeamJobMaintenanceService
     ) {}
 
@@ -92,4 +86,4 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     private projectedAnalysisJobsKey(analysisId: string): string {
         return `analysis:${analysisId}:projected-jobs`;
     }
-};
+}

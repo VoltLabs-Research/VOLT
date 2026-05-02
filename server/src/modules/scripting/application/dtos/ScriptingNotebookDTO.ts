@@ -4,22 +4,22 @@ export interface ScriptingNotebookPopulatedUser {
     lastName?: string;
     email?: string;
     avatar?: string;
-};
+}
 
 export interface ScriptingNotebookPopulatedTrajectory {
     _id: string;
     name?: string;
-};
+}
 
 export interface ScriptingNotebookPopulatedTeamCluster {
     _id: string;
     name?: string;
-};
+}
 
 export interface ScriptingNotebookContainerResourcesDTO {
     cpus: number;
     memoryMB: number;
-};
+}
 
 export interface ScriptingNotebookDTO {
     _id: string;
@@ -32,4 +32,4 @@ export interface ScriptingNotebookDTO {
     lastOpenedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
-};
+}

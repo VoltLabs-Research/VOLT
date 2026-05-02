@@ -15,7 +15,7 @@ import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
 
 interface UseLatexWorkspaceInput {
     documentId: string;
-};
+}
 
 export interface LatexFileEntry {
     _id: string;
@@ -24,22 +24,22 @@ export interface LatexFileEntry {
     content: string;
     isEntrypoint: boolean;
     isSelected: boolean;
-};
+}
 
 interface LatexWorkspaceFileSelection {
     type: 'file';
     id: string;
-};
+}
 
 interface LatexWorkspaceAssetSelection {
     type: 'asset';
     id: string;
-};
+}
 
 interface WorkspaceUploadEntry {
     file: File;
     path: string;
-};
+}
 
 export type LatexWorkspaceSelection =
     | LatexWorkspaceFileSelection
@@ -54,19 +54,19 @@ export interface LatexEditorGroup {
     id: LatexEditorGroupId;
     selection: LatexWorkspaceSelection;
     openTabs: LatexWorkspaceTab[];
-};
+}
 
 interface FileEditorState {
     content: string;
     lastSavedContent: string;
     remoteContent: string;
     isDirty: boolean;
-};
+}
 
 interface PendingRemoteFileUpdate {
     content: string;
     timestamp: number;
-};
+}
 
 const AUTOSAVE_DELAY = 500;
 const TEX_EXTENSION = '.tex';

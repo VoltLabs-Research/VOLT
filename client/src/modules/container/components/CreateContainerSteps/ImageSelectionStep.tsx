@@ -12,7 +12,7 @@ interface ImageSelectionStepProps {
     customImageError?: string | null;
     onTemplateSelect: (templateId: string) => void;
     onCustomImageClick: () => void;
-};
+}
 
 const ImageSelectionStep = ({
     selectedTemplate,

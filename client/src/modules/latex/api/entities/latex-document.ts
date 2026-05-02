@@ -8,4 +8,4 @@ export interface LatexDocument {
     lastEditedBy?: User | string | null;
     createdAt: string | Date;
     updatedAt: string | Date;
-};
+}

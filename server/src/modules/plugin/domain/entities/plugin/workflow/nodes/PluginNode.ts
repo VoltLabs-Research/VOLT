@@ -17,4 +17,4 @@ export interface PluginNodeData {
     selectedTimesteps?: number[];
     config?: Record<string, unknown>;
     configByPluginId?: Record<string, Record<string, unknown>>;
-};
+}

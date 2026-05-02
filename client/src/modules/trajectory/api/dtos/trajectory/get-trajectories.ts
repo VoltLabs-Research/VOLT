@@ -3,4 +3,4 @@ export interface GetTrajectoriesInputDTO {
     limit: number;
     folderId?: string;
     search?: string;
-};
+}

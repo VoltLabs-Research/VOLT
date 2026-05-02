@@ -20,7 +20,6 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
     private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
 
     constructor(
-        
         private readonly socketMapper: SocketConnectionMapper
     ){}
 
@@ -115,4 +114,4 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
 
         return this.socketMapper.toDomain(socket);
     }
-};
+}

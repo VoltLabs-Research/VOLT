@@ -14,13 +14,13 @@ import { inject } from 'tsyringe';
 
 interface FindOrCreateChatParticipantsFilter {
     $all: [string, string];
-};
+}
 
 interface FindOrCreateChatFilter {
     participants: FindOrCreateChatParticipantsFilter;
     team: string;
     isGroup: false;
-};
+}
 
 @Singleton()
 export default class ChatRepository

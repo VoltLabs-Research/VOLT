@@ -4,8 +4,7 @@ import { selectFractalSceneConfig } from '@/modules/canvas/stores/editor/selecto
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
-import type { PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { FractalSceneConfig, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 const useFractalSceneConfig = (): FractalSceneConfig => {
     const selected = useEditorStore(useShallow(selectFractalSceneConfig));

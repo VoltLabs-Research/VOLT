@@ -22,7 +22,7 @@ import ConnectorLayoutEditor from './ConnectorLayoutEditor';
 
 interface NodeEditorProps {
     node: Node;
-};
+}
 
 type NodeEditorSection = 'details' | 'connectors';
 

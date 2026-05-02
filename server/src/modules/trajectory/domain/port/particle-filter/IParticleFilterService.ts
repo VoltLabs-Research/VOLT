@@ -5,7 +5,7 @@ import { Readable } from 'node:stream';
 export enum ParticleFilterCombinator {
     And = 'AND',
     Or = 'OR'
-};
+}
 
 export interface ParticleFilterCondition extends FilterExpression {
     kind?: 'property';
@@ -15,7 +15,7 @@ export interface ParticleFilterCondition extends FilterExpression {
 export interface ParticleFilterRequest {
     combinator: ParticleFilterCombinator;
     conditions: ParticleFilterCondition[];
-};
+}
 
 export interface IParticleFilterService {
     getProperties(
@@ -55,4 +55,4 @@ export interface IParticleFilterService {
         action?: string,
         analysisId?: string
     ): Promise<Readable>;
-};
+}

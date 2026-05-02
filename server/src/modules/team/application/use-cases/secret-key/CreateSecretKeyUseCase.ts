@@ -14,12 +14,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly secretKeyRepository: SecretKeyRepository,
-
-        
         private readonly teamRoleRepository: TeamRoleRepository,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -73,4 +69,4 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
             createdAt: created.props.createdAt
         });
     }
-};
+}

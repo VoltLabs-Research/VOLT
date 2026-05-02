@@ -22,11 +22,11 @@ import './DebugToolbar.css';
 
 interface ArgumentsNodeArguments {
     arguments?: IArgumentDefinition[];
-};
+}
 
 interface ArgumentsNodeData {
     arguments?: ArgumentsNodeArguments;
-};
+}
 
 const DebugToolbar = () => {
     const {

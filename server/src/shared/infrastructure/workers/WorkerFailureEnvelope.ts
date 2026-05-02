@@ -7,29 +7,29 @@ export interface WorkerFailureEnvelope {
     code: ErrorCode;
     message: ErrorCode;
     details?: string;
-};
+}
 
 interface WorkerFailureEnvelopeRecord {
     code?: unknown;
     message?: unknown;
     details?: unknown;
-};
+}
 
 interface ApplicationErrorFailureDetails {
     failure?: unknown;
-};
+}
 
 interface NormalizeWorkerFailureEnvelopeOptions {
     failure?: unknown;
     error?: unknown;
     fallbackCode?: ErrorCode;
     fallbackDetails?: string;
-};
+}
 
 interface WorkerFailureEnvelopeInput {
     code?: ErrorCode;
     details?: string;
-};
+}
 
 const isWorkerFailureEnvelopeRecord = (value: unknown): value is WorkerFailureEnvelopeRecord => {
     return isRecord(value);

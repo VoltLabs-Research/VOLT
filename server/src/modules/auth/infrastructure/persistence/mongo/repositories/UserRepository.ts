@@ -3,7 +3,6 @@ import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/U
 import UserModel from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-
 import type { UserProps } from '@modules/auth/domain/entities/User';
 import type { IUserRepository, UserWithPassword } from '@modules/auth/domain/port/IUserRepository';
 import type { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';

@@ -1,8 +1,7 @@
-import { CORE_TABS, TimelineTab } from '../TimelineHeader';
+import TimelineHeader, { CORE_TABS, TimelineTab } from '../TimelineHeader';
 import AnalysisLogPanel from '../AnalysisLogPanel';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import SimulationCellView from '../SimulationCellView';
-import TimelineHeader from '../TimelineHeader';
 import TimelineRuler from '../TimelineRuler';
 import useTimelineJobActivity from '../../hooks/use-timeline-job-activity';
 import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
@@ -39,7 +38,7 @@ interface TimelineProps {
         trajectoryId?: string;
         exposureName?: string;
     }) => void;
-};
+}
 
 
 const Timeline = ({
@@ -54,7 +53,7 @@ const Timeline = ({
 }: TimelineProps) => {
     useTip('canvas-timeline-scrub');
 
-    const [activeTab, setActiveTab] = useState<string>('timeline');
+    const [activeTab, setActiveTab] = useState('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useSelectedTeamId();
     const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({ trajectory, analysisId });
@@ -200,7 +199,7 @@ const Timeline = ({
     const rulerRef = useRef<HTMLDivElement>(null);
     const tickElementsRef = useRef<HTMLDivElement[]>([]);
     const tickCentersRef = useRef<number[]>([]);
-    const [playheadLeft, setPlayheadLeft] = useState<number>(0);
+    const [playheadLeft, setPlayheadLeft] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const isDraggingRef = useRef(false);
     const pendingScrubRafRef = useRef<number | null>(null);

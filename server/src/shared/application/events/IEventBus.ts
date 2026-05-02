@@ -8,4 +8,4 @@ export interface IEventBus {
         eventName: string,
         handler: IEventHandler<TEvent>
     ): Promise<void>;
-};
+}

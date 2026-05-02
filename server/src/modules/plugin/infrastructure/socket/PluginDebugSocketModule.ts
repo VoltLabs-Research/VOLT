@@ -126,24 +126,14 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
         private readonly daemonClient: TeamClusterDaemonClient,
-        
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        
         private readonly pluginRepository: PluginRepository,
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
-        
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
-        
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
-        
         private readonly workflowValidator: WorkflowValidatorService
     ) {
         super(emitter, roomManager, eventRegistry);

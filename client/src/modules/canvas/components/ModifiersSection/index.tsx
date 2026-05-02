@@ -45,7 +45,7 @@ interface ModifierPopoverItemProps {
     isForeignTrajectory?: boolean;
     onAction: () => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
-};
+}
 
 const ModifierPopoverItem = ({
     option,
@@ -122,7 +122,7 @@ interface ModifiersSectionProps {
     isForeignTrajectory?: boolean;
     onAction: (option: ModifierOption) => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
-};
+}
 
 const ModifiersSection = ({
     pluginLoading,

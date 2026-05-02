@@ -5,7 +5,7 @@ import type { GlobalSearchInputDTO } from '@/modules/dashboard/api/dtos/global-s
 interface DashboardQueryKeys extends Record<string, unknown> {
     globalSearch: GlobalSearchInputDTO;
     metrics: void;
-};
+}
 
 const KEYS = buildKeys<DashboardQueryKeys>('dashboard');
 

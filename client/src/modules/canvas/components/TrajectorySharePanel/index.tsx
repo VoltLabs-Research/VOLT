@@ -15,7 +15,7 @@ interface TrajectorySharePanelProps {
     isPublic: boolean;
     canManageVisibility: boolean;
     onClose?: () => void;
-};
+}
 
 const buildCanvasUrl = (trajectoryId: string): string => {
     if (typeof window === 'undefined') {

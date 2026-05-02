@@ -24,7 +24,6 @@ export default class RegenerateTeamClusterEnrollmentTokenUseCase
     implements IUseCase<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO, ApplicationError> {
 
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository
     ){}
 

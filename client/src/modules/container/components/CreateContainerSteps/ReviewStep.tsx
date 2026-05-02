@@ -27,7 +27,7 @@ interface ReviewStepProps {
     deployProgressMessage: string | null;
     onBack: () => void;
     onCreate: () => void;
-};
+}
 
 const ReviewStep = ({
     config,

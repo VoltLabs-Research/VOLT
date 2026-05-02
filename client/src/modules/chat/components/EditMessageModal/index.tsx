@@ -10,7 +10,7 @@ interface EditMessageModalProps {
     initialContent: string;
     onSave: (messageId: string, newContent: string) => Promise<void>;
     onClose: () => void;
-};
+}
 
 export const EDIT_MESSAGE_MODAL_ID = 'edit-message-modal';
 const EDIT_MESSAGE_TEXTAREA_ID = 'edit-message-modal-textarea';

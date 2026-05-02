@@ -6,10 +6,10 @@ export interface TrajectoryDeletedEventPayload {
     storageClusterId?: string;
     userId: string;
     trajectoryName: string;
-};
+}
 
 export default class TrajectoryDeletedEvent extends BaseDomainEvent<TrajectoryDeletedEventPayload> {
     constructor(payload: TrajectoryDeletedEventPayload) {
         super('trajectory.deleted', payload);
     }
-};
+}

@@ -4,7 +4,6 @@ import { ClusterRoleAwareSelectionService } from './ClusterRoleAwareSelectionSer
 @injectable()
 export class TeamClusterSelectionService {
     constructor(
-        
         private readonly clusterRoleAwareSelectionService: ClusterRoleAwareSelectionService
     ) {}
 

@@ -74,4 +74,4 @@ export default class LammpsDumpParser {
         }
         return { timestep, natoms, headers, simulationCell };
     }
-};
+}

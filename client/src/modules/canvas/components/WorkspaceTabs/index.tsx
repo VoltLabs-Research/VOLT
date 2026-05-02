@@ -4,7 +4,7 @@ import './WorkspaceTabs.css';
 
 interface WorkspaceTabsProps {
     disableAuxWorkspaces?: boolean;
-};
+}
 
 interface TabDef {
     id: CanvasWorkspace;

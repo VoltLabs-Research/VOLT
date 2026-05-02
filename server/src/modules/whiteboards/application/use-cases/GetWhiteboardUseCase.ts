@@ -9,7 +9,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, GetWhiteboardOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly whiteboardRepository: WhiteboardRepository
     ) {}
 
@@ -36,4 +35,4 @@ export class GetWhiteboardUseCase implements IUseCase<GetWhiteboardInputDTO, Get
             updatedAt: whiteboard.props.updatedAt
         });
     }
-};
+}

@@ -30,19 +30,10 @@ const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersio
 @injectable()
 export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeamClusterByIdInputDTO, DeleteTeamClusterByIdOutputDTO, ApplicationError> {
     constructor(
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly userRepository: UserRepository,
-
-        
         private readonly passwordHasher: BcryptPasswordHasher,
-
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ){}
 
@@ -83,7 +74,7 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
                         timeoutClass: 'long-running-control-plane'
                     }
                 );
-            } catch (error: unknown) {
+            } catch {
                 logger.warn(`Failed to request remote team cluster uninstall teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
                 return Result.fail(ApplicationError.conflict(
@@ -142,4 +133,4 @@ export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeam
             manualUninstallCommand
         });
     }
-};
+}

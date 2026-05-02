@@ -36,4 +36,4 @@ export interface ITrajectoryDumpStorageService{
      * @returns `true` if the dump object exists, `false` otherwise.
      */
     existsDump(trajectoryId: string, timestep: string): Promise<boolean>;
-};
+}

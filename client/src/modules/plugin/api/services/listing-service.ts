@@ -15,18 +15,18 @@ interface RawListingData {
     totalPages: number;
     limit: number;
     _meta?: GetPluginListingOutputDTO['_meta'];
-};
+}
 
 interface ExposureSelectorParams {
     exposureId?: string;
     exposureName?: string;
-};
+}
 
 interface RawListingResponse {
     status: string;
     data: RawListingData;
     pagination?: PaginationMeta;
-};
+}
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 

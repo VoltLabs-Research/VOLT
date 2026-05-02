@@ -5,4 +5,4 @@ export interface TeamMetricsSnapshot {
         labels: string[];
         [series: string]: number[] | string[];
     };
-};
+}

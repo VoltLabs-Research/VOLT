@@ -12,4 +12,4 @@ export enum AIProvider {
     TogetherAI = 'togetherai',
     Fireworks = 'fireworks',
     Ollama = 'ollama'
-};
+}

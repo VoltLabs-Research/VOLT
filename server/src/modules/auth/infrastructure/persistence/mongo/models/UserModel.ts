@@ -1,21 +1,20 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { OAuthProvider, UserRole } from '@modules/auth/domain/entities/User';
-import { Document, Model, Schema, Types } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 import validator from 'validator';
 import type { UserProps } from '@modules/auth/domain/entities/User';
 
 export interface UserDocument extends UserProps, Document {
     _id: Types.ObjectId;
-};
+}
 
 interface OAuthProviderPartialFilterExpression {
     $type: 'string';
-};
+}
 
 interface UserOAuthPartialFilterExpression {
     oauthProvider: OAuthProviderPartialFilterExpression;
-};
+}
 
 const userOAuthPartialFilterExpression: UserOAuthPartialFilterExpression = {
     oauthProvider: {

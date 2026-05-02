@@ -5,7 +5,7 @@ import type { Document, Model } from 'mongoose';
 import type { NotificationProps } from '@modules/notification/domain/entities/Notification';
 
 type NotificationRelations = 'recipient';
-export interface NotificationDocument extends Persistable<NotificationProps, NotificationRelations>, Document {};
+export interface NotificationDocument extends Persistable<NotificationProps, NotificationRelations>, Document {}
 
 const NotificationSchema: Schema<NotificationDocument> = new Schema({
     recipient: {

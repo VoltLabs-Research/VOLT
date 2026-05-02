@@ -4,4 +4,4 @@ export type RegenerateTeamClusterEnrollmentTokenInputDTO = TeamUserScopedCluster
 
 export interface RegenerateTeamClusterEnrollmentTokenOutputDTO {
     enrollmentToken: string;
-};
+}

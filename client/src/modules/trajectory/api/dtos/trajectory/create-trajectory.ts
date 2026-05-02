@@ -3,6 +3,6 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/tr
 export interface CreateTrajectoryInputDTO {
     formData: FormData;
     onProgress?: (progress: number) => void;
-};
+}
 
 export type CreateTrajectoryOutputDTO = Trajectory;

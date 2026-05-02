@@ -9,7 +9,7 @@ import './SharedFilesList.css';
 
 interface SharedFilesListProps {
     messages: ChatMessage[];
-};
+}
 
 const SharedFilesList = ({ messages }: SharedFilesListProps) => {
     const fileMessages = messages.filter(

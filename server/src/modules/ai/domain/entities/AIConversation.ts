@@ -8,11 +8,11 @@ export interface AIConversationProps {
     isArchived: boolean;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 export default class AIConversation {
     constructor(
         public _id: string,
         public props: AIConversationProps
     ) {}
-};
+}

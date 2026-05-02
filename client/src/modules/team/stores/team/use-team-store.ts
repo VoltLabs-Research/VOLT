@@ -17,7 +17,7 @@ interface TeamStore {
     confirmSelectedTeamId: (teamId: string) => void;
     setSelectedTeamId: (teamId: string | null) => void;
     reset: () => void;
-};
+}
 
 const initialState = {
     selectedTeamId: null,

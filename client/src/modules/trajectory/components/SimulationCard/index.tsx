@@ -32,7 +32,7 @@ interface SimulationCardProps {
     onMoveToFolder?: (trajectory: Trajectory) => void;
     onDelete?: (_id: string) => void;
     disablePrimaryInteraction?: boolean;
-};
+}
 
 export default function SimulationCard({
     trajectory,

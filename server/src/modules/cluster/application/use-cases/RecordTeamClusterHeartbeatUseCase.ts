@@ -15,7 +15,6 @@ export default class RecordTeamClusterHeartbeatUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 

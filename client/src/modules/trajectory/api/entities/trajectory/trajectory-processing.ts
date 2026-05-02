@@ -4,4 +4,4 @@ export interface TrajectoryProcessingProgress {
     totalSteps: number;
     percentage: number;
     message?: string;
-};
+}

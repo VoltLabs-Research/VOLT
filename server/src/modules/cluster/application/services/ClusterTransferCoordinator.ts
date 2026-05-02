@@ -203,33 +203,16 @@ const compareObjectListingEntries = (
 @Singleton()
 export default class ClusterTransferCoordinator {
     constructor(
-        
         private readonly storagePlacementService: StoragePlacementService,
-
-        
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository,
-
-        
         private readonly teamClusterRepository: TeamClusterRepository,
-
-        
         private readonly analysisRepository: AnalysisRepository,
-
-        
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        
         private readonly systemMetricsRepository: SystemMetricsRedisRepository,
-
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
-
-        
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -1168,7 +1151,7 @@ export default class ClusterTransferCoordinator {
                 deletedObjects: job.props.stats.deletedObjects,
                 ...(job.props.errorMessage ? { error: job.props.errorMessage } : {})
             }));
-        } catch (error) {
+        } catch {
             logger.warn(`Failed to project cluster transfer job into team jobs history transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId}`);
         }
     }

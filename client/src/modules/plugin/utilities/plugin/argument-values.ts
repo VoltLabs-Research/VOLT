@@ -9,7 +9,7 @@ import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentObjectValue {
     [key: string]: unknown;
-};
+}
 
 const isListItemArray = (value: unknown): value is ArgumentObjectValue[] => {
     return Array.isArray(value) && value.every(isRecord);
@@ -122,7 +122,7 @@ export const getListArgumentValue = (
 export interface PluginReferenceSelectionValue {
     pluginId: string;
     config: Record<string, unknown>;
-};
+}
 
 export const isPluginReferenceArgumentType = (type: ArgumentType): boolean => {
     return type === ArgumentType.PLUGIN_REFERENCE;

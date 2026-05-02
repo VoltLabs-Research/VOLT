@@ -3,4 +3,4 @@ export interface GetPluginsInputDTO {
     limit: number;
     search?: string;
     status?: string;
-};
+}

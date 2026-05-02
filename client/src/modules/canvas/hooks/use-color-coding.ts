@@ -1,5 +1,4 @@
-import { UseModifierBaseOptions } from './use-modifier-base';
-import useModifierBase from './use-modifier-base';
+import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import { parseNumericInput } from '../utilities/parse-numeric-input';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';

@@ -10,7 +10,7 @@ export interface DashboardCard {
     series: number[];
     labels: string[];
     yDomain: { min: number; max: number };
-};
+}
 
 export interface DashboardMetrics {
     totals: Record<string, number>;
@@ -19,4 +19,4 @@ export interface DashboardMetrics {
         labels: string[];
         [series: string]: number[] | string[];
     };
-};
+}

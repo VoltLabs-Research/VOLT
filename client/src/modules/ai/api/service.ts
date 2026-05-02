@@ -9,7 +9,7 @@ import type { UpdateAIConversationParams } from './dtos/update-ai-conversation';
 
 interface ConversationPathParams {
     conversationId: string;
-};
+}
 
 type UpdateConversationInput = ConversationPathParams & UpdateAIConversationParams;
 
