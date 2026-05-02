@@ -3,7 +3,7 @@ import { PluginListingRowModel } from '@/modules/plugin/domain/models/plugin-lis
 import { PluginSubListingRowModel } from '@/modules/plugin/domain/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@/support/contracts/pagination';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import { decodeMultiStream } from '@/support/serialization/selective-msgpack';
+import { decodeMultiAsyncIterable } from '@/support/serialization/selective-msgpack';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
 import { createZstdDecompressionStream } from '@/support/serialization/storage-codec';
 import { isRecord } from '@/support/type-guards/is-record';
@@ -468,12 +468,13 @@ export class MongoPluginListingRepository implements PluginListingRepository {
             skipMetadata: true
         });
         const stream = createZstdDecompressionStream(response.stream).stream;
+        const messages = await decodeMultiAsyncIterable(stream as AsyncIterable<Uint8Array>);
         const pageRows: PluginMongoRow[] = [];
         let totalRows = 0;
         let mergedObjectRow: PluginMongoRow | null = null;
         let hasMergedObjectRow = false;
 
-        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+        for (const message of messages) {
             if (!isRecord(message) || !isRecord(message.sub_listings)) {
                 continue;
             }

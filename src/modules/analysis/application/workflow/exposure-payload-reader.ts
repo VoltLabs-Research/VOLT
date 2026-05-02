@@ -1,7 +1,7 @@
-import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
+import { decodeMultiBuffer, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
-import { createReadStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 export interface WorkflowExposurePayloadReadResult {
     listing: MsgpackObject | null;
@@ -33,7 +33,10 @@ export const readWorkflowExposurePayload = async (
     let exportData: MsgpackObject | null = null;
     const subListingNames = new Set<string>();
 
-    for await (const message of decodeMultiStream(createReadStream(filePath))) {
+    const buffer = await readFile(filePath);
+    const messages = decodeMultiBuffer(buffer);
+
+    for (const message of messages) {
         listing = mergeSelectiveChunk(listing, message, (key) => LISTING_KEYS.has(key));
         exportData = mergeSelectiveChunk(exportData, message, (key) => {
             return key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`);

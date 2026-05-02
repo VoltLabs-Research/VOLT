@@ -1,5 +1,5 @@
 import { Service } from '@/core/decorators/service';
-import { decodeMultiStream, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
+import { decodeMultiAsyncIterable, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
 import { isRecord } from '@/support/type-guards/is-record';
 import { ObjectBucketName } from '@/contracts';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
@@ -109,9 +109,10 @@ export class TrajectoryPluginParser {
         try {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, objectName, { skipMetadata: true });
             const stream = createZstdDecompressionStream(response.stream).stream;
+            const messages = await decodeMultiAsyncIterable(stream as AsyncIterable<Uint8Array>);
 
             let decoded: PluginDecodedPayload | null = null;
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            for (const message of messages) {
                 decoded = mergeSelectiveChunk(decoded, message, (key) => key === 'per-atom-properties') as PluginDecodedPayload;
             }
 
@@ -144,9 +145,10 @@ export class TrajectoryPluginParser {
         try {
             const response = await this.objectStore.getStream(ownerClusterId, ObjectBucketName.Plugins, key, { skipMetadata: true });
             const stream = createZstdDecompressionStream(response.stream).stream;
+            const messages = await decodeMultiAsyncIterable(stream as AsyncIterable<Uint8Array>);
 
             let decoded: PluginDecodedPayload | null = null;
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            for (const message of messages) {
                 decoded = mergeSelectiveChunk(decoded, message, (k) => k === 'per-atom-properties') as PluginDecodedPayload;
             }
 
@@ -201,8 +203,9 @@ export class TrajectoryPluginParser {
             const pluginIndex: PluginAtomIndex = {};
             let matchedAtomCount = 0;
             const stream = createZstdDecompressionStream(response.stream).stream;
+            const messages = await decodeMultiAsyncIterable(stream as AsyncIterable<Uint8Array>);
 
-            for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+            for (const message of messages) {
                 if (!isRecord(message)) continue;
 
                 const perAtomRaw = (message as PluginDecodedPayload)['per-atom-properties'];
@@ -227,7 +230,6 @@ export class TrajectoryPluginParser {
                 }
 
                 if (shouldBreak) {
-                    response.stream.destroy();
                     return pluginIndex;
                 }
             }

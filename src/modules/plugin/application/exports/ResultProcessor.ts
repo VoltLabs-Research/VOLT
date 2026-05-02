@@ -143,7 +143,10 @@ async function precomputeListingRows(
 
     const mainListing = decoded.main_listing;
     if (!isPlainObject(mainListing) || Object.keys(mainListing).length === 0) {
-        logger.warn(`Empty or missing main_listing in decoded payload for objectKey=${objectKey}`);
+        // Plugins that don't emit a main_listing (e.g. PTM Analysis exposure
+        // emits per-atom data only) hit this path on every timestep — it is a
+        // normal case, not a problem worth waking anyone up for.
+        logger.debug(`No main_listing in decoded payload for objectKey=${objectKey}`);
         return;
     }
 

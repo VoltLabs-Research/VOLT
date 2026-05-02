@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream';
-import { UnpackrStream } from 'msgpackr';
+import { buffer as collectStreamBuffer } from 'node:stream/consumers';
+import { Unpackr, UnpackrStream } from 'msgpackr';
 import type { Options as MsgpackDecoderOptions } from 'msgpackr';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
@@ -24,6 +25,34 @@ export async function* decodeMultiStream(
     for await (const value of unpacker as AsyncIterable<MsgpackValue>) {
         yield value;
     }
+}
+
+// Why: UnpackrStream re-attempts the parse as each Readable chunk lands and
+// scales catastrophically on large single-message buffers (~78× slower than
+// bulk on a 13 MB plugin output). Use this when the whole payload already
+// fits in memory — Unpackr.unpackMultiple decodes every concatenated value in
+// one pass and returns them as an array.
+export function decodeMultiBuffer(
+    buffer: Buffer | Uint8Array,
+    options?: MsgpackDecoderOptions
+): MsgpackValue[] {
+    const unpacker = new Unpackr({ mapsAsObjects: true, ...(options ?? {}) } as MsgpackDecoderOptions);
+    const view = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    return unpacker.unpackMultiple(view) as MsgpackValue[];
+}
+
+// Drains an async byte source (typically a zstd-decompressed MinIO response)
+// into a Buffer, then decodes via `decodeMultiBuffer`. Trades streaming-friendly
+// memory usage for ~100× lower CPU on plugin output sizes (single-digit MB).
+export async function decodeMultiAsyncIterable(
+    src: AsyncIterable<ChunkLike> | Iterable<ChunkLike> | NodeJS.ReadableStream,
+    options?: MsgpackDecoderOptions
+): Promise<MsgpackValue[]> {
+    const readable = src instanceof Readable
+        ? src
+        : Readable.from(src as AsyncIterable<ChunkLike>);
+    const buf = await collectStreamBuffer(readable);
+    return decodeMultiBuffer(buf, options);
 }
 
 export const mergeSelectiveChunk = (
