@@ -145,6 +145,10 @@ export class DockerRuntime {
     }
 
     async createContainer(input: CreateContainerRequest): Promise<Docker.ContainerInspectInfo> {
+        if (this.config.isDemoMode && input.binds?.some((bind) => bind.includes('docker.sock'))) {
+            throw new Error('Mounting the Docker socket is disabled in demo mode. Connect your own cluster to enable this option.');
+        }
+
         const env = this.getEnvFromRequest(input);
         const { exposedPorts, portBindings } = this.getPortsFromRequest(input);
         const { image, name: containerName } = input;
