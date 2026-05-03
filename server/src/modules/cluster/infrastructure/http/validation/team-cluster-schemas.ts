@@ -279,5 +279,14 @@ export const teamClusterValidation = createResourceValidation({
     generateInstallManifest: {
         params: publicTeamClusterParamsSchema,
         body: teamClusterInstallManifestSchema
+    },
+    provisionDemo: {
+        params: teamParamsSchema
+    },
+    getDemoStatus: {
+        params: teamParamsSchema
+    },
+    deleteDemo: {
+        params: teamParamsSchema
     }
 });

@@ -13,6 +13,10 @@ export default createHttpModule({
         router.route('/')
             .get(teamClusterValidation.listByTeamId, controllers.listByTeamId.handle)
             .post(teamClusterValidation.create, controllers.create.handle);
+        router.route('/demo')
+            .post(teamClusterValidation.provisionDemo, controllers.provisionDemo.handle)
+            .delete(teamClusterValidation.deleteDemo, controllers.deleteDemo.handle);
+        router.get('/demo/status', teamClusterValidation.getDemoStatus, controllers.getDemoStatus.handle);
         router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
         router.patch(
             '/:teamClusterId/queue-concurrency',

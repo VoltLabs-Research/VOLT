@@ -12,6 +12,8 @@ import TeamCluster, {
 } from '@modules/cluster/domain/entities/TeamCluster';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
+import DemoClusterDeploymentService from '@modules/cluster/infrastructure/services/DemoClusterDeploymentService';
+import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -47,7 +49,9 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
     constructor(
         private readonly teamClusterRepository: TeamClusterRepository,
         private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-        private readonly userRepository: UserRepository
+        private readonly userRepository: UserRepository,
+        private readonly demoClusterDeploymentService: DemoClusterDeploymentService,
+        private readonly teamClusterLifecycleService: TeamClusterLifecycleService
     ){}
 
     async execute(input: CreateTeamClusterInputDTO): Promise<Result<CreateTeamClusterOutputDTO, ApplicationError>> {
@@ -58,6 +62,8 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
                 'User not found'
             ));
         }
+
+        const existingDemo = await this.teamClusterRepository.findActiveDemoByTeamId(input.teamId);
 
         const enrollmentToken = createEnrollmentToken();
         const minioCredentials = createServiceCredentials('minio');
@@ -109,6 +115,8 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
             queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
             queueScopeLimits: DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
             roleConfig: createDefaultTeamClusterRoleConfig(),
+            isDemo: false,
+            demoExpiresAt: null,
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -129,6 +137,26 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
         }
 
         logger.info(`Team cluster created teamClusterId=${createdTeamCluster._id} teamId=${input.teamId} userId=${input.userId}`);
+
+        if (existingDemo) {
+            void (async () => {
+                try {
+                    await this.teamClusterLifecycleService.markDeleting(existingDemo.id);
+                } catch (error: unknown) {
+                    logger.warn(`[CreateTeamClusterUseCase] markDeleting on existing demo failed teamClusterId=${existingDemo.id} error=${(error as Error).message}`);
+                }
+                try {
+                    await this.demoClusterDeploymentService.teardownDemoStack(existingDemo);
+                    const refreshed = await this.teamClusterRepository.findById(existingDemo.id);
+                    if (refreshed) {
+                        await this.teamClusterLifecycleService.deleteTeamCluster(refreshed);
+                    }
+                    logger.info(`[CreateTeamClusterUseCase] Auto-removed demo after real cluster creation teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
+                } catch (error: unknown) {
+                    logger.error(error, `[CreateTeamClusterUseCase] Auto-teardown of demo failed teamClusterId=${existingDemo.id} teamId=${input.teamId}`);
+                }
+            })();
+        }
 
         return Result.ok({
             teamCluster: toTeamClusterDTO(createdTeamCluster),

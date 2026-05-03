@@ -202,6 +202,8 @@ export interface TeamClusterProps {
     queueScopeLimits: TeamClusterQueueScopeLimitsProps;
     roleConfig: TeamClusterRuntimeRoleConfigProps;
     effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
+    isDemo: boolean;
+    demoExpiresAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
