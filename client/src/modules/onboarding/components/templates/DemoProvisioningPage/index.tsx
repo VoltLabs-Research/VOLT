@@ -132,10 +132,6 @@ const DemoProvisioningPage = () => {
         <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick}>
             <Stack align='center' justify='center' gap='1-5' className='min-h-screen'>
                 <Loader scale={0.7} isFixed={false} announce label='Provisioning resources' />
-                <Text tone='secondary'>Provisioning resources…</Text>
-                <Text size='sm' tone='muted'>
-                    Setting up a temporary environment. This usually takes less than a minute.
-                </Text>
             </Stack>
         </OnboardingLayout>
     );

@@ -211,6 +211,11 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/onboarding/components/templates/PostAuthOnboarding')
     },
     {
+        path: '/onboarding/cluster/choice',
+        title: 'Choose Cluster',
+        loader: () => import('@/modules/onboarding/components/templates/OnboardingChoicePage')
+    },
+    {
         path: '/onboarding/cluster/setup',
         title: 'Cluster Setup',
         loader: () => import('@/modules/cluster/components/ClusterOnboardingPage')

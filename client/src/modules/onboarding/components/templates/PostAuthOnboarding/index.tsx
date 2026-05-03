@@ -74,7 +74,7 @@ const PostAuthOnboarding = () => {
 
         if (step === OnboardingStep.Cluster) {
             if (isDemoClusterFeatureEnabled()) {
-                return <Navigate to='/onboarding/cluster/provisioning' replace />;
+                return <Navigate to='/onboarding/cluster/choice' replace />;
             }
             return <Navigate to={getClusterOnboardingRedirectPath(next)} replace />;
         }
@@ -105,7 +105,10 @@ const PostAuthOnboarding = () => {
             });
 
             switchSelectedTeam(newTeam._id);
-            navigate(getClusterOnboardingRedirectPath(next), { replace: true });
+            const clusterDestination = isDemoClusterFeatureEnabled()
+                ? '/onboarding/cluster/choice'
+                : getClusterOnboardingRedirectPath(next);
+            navigate(clusterDestination, { replace: true });
         } catch (err: unknown) {
             reportError(err, {
                 surface: ErrorSurface.Toast,

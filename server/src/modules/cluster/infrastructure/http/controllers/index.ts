@@ -1,8 +1,11 @@
 import CompleteTeamClusterDeletionController from '@modules/cluster/infrastructure/http/controllers/CompleteTeamClusterDeletionController';
 import CreateTeamClusterTransferRequestController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterTransferRequestController';
 import CreateTeamClusterController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterController';
+import DeleteDemoTeamClusterController from '@modules/cluster/infrastructure/http/controllers/DeleteDemoTeamClusterController';
 import GenerateTeamClusterInstallManifestUseCase from '@modules/cluster/application/use-cases/GenerateTeamClusterInstallManifestUseCase';
+import GetDemoTeamClusterStatusController from '@modules/cluster/infrastructure/http/controllers/GetDemoTeamClusterStatusController';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
+import ProvisionDemoTeamClusterController from '@modules/cluster/infrastructure/http/controllers/ProvisionDemoTeamClusterController';
 import CreateTeamClusterRemoteAccessSessionController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
 import DeleteTeamClusterByIdController from '@modules/cluster/infrastructure/http/controllers/DeleteTeamClusterByIdController';
 import DownloadTeamClusterRemoteExplorerObjectController from '@modules/cluster/infrastructure/http/controllers/DownloadTeamClusterRemoteExplorerObjectController';
@@ -30,15 +33,18 @@ export default createControllerRegistry({
     createRemoteAccessSession: CreateTeamClusterRemoteAccessSessionController,
     createTransferRequest: CreateTeamClusterTransferRequestController,
     deleteById: DeleteTeamClusterByIdController,
+    deleteDemo: DeleteDemoTeamClusterController,
     downloadRemoteExplorerObject: DownloadTeamClusterRemoteExplorerObjectController,
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
+    getDemoStatus: GetDemoTeamClusterStatusController,
     getResourceLimits: GetClusterResourceLimitsController,
     getRemoteExplorerNode: GetTeamClusterRemoteExplorerNodeController,
     listByTeamId: ListTeamClustersByTeamIdController,
     listRemoteExplorerEntries: ListTeamClusterRemoteExplorerEntriesController,
     listTransferJobs: ListTeamClusterTransferJobsController,
     processHealthcheck: ProcessTeamClusterHealthcheckController,
+    provisionDemo: ProvisionDemoTeamClusterController,
     recordHeartbeat: RecordTeamClusterHeartbeatController,
     regenerateEnrollmentToken: RegenerateTeamClusterEnrollmentTokenController,
     revealCredentials: RevealTeamClusterCredentialsController,
