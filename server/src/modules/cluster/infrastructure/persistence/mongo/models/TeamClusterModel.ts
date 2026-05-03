@@ -236,6 +236,15 @@ const TeamClusterSchema = new Schema({
     roleConfig: {
         type: teamClusterRoleSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    isDemo: {
+        type: Boolean,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: false
+    },
+    demoExpiresAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
@@ -245,6 +254,17 @@ TeamClusterSchema.index({ team: 1, name: 1 }, { unique: true });
 TeamClusterSchema.index({ team: 1, status: 1, createdAt: -1 });
 TeamClusterSchema.index({ status: 1, lastHeartbeatAt: 1 });
 TeamClusterSchema.index({ status: 1, updatedAt: 1 });
+TeamClusterSchema.index(
+    { team: 1, isDemo: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            isDemo: true,
+            status: { $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed] }
+        }
+    }
+);
+TeamClusterSchema.index({ isDemo: 1, demoExpiresAt: 1 });
 
 const TeamClusterModel: Model<TeamClusterDocument> = mongoose.model<TeamClusterDocument>('TeamCluster', TeamClusterSchema);
 

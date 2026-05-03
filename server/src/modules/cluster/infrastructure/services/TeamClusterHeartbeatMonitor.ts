@@ -1,3 +1,5 @@
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import DemoClusterDeploymentService from '@modules/cluster/infrastructure/services/DemoClusterDeploymentService';
 import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
@@ -12,7 +14,9 @@ export default class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
 
     constructor(
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService
+        private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
+        private readonly teamClusterRepository: TeamClusterRepository,
+        private readonly demoClusterDeploymentService: DemoClusterDeploymentService
     ){}
 
     start(): void {
@@ -42,7 +46,34 @@ export default class TeamClusterHeartbeatMonitor {
         await Promise.all([
             this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff),
             this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff),
-            this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff)
+            this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff),
+            this.cleanupExpiredDemos()
         ]);
+    }
+
+    private async cleanupExpiredDemos(): Promise<void> {
+        const expiredDemos = await this.teamClusterRepository.findExpiredDemos(new Date());
+        if (expiredDemos.length === 0) {
+            return;
+        }
+
+        await Promise.all(expiredDemos.map(async (demo) => {
+            try {
+                await this.teamClusterLifecycleService.markDeleting(demo.id);
+            } catch (error: unknown) {
+                logger.warn(`[TeamClusterHeartbeatMonitor] markDeleting failed for expired demo teamClusterId=${demo.id} error=${(error as Error).message}`);
+            }
+
+            const refreshed = await this.teamClusterRepository.findById(demo.id);
+            const target = refreshed ?? demo;
+
+            try {
+                await this.demoClusterDeploymentService.teardownDemoStack(target);
+                await this.teamClusterLifecycleService.deleteTeamCluster(target);
+                logger.info(`[TeamClusterHeartbeatMonitor] Expired demo cleaned up teamClusterId=${target.id} teamId=${target.props.team}`);
+            } catch (error: unknown) {
+                logger.error(error, `[TeamClusterHeartbeatMonitor] Failed to clean up expired demo teamClusterId=${target.id} teamId=${target.props.team}`);
+            }
+        }));
     }
 }

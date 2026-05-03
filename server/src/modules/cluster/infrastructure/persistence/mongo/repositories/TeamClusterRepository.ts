@@ -87,6 +87,47 @@ export default class TeamClusterRepository
         }));
     }
 
+    async findActiveDemoByTeamId(teamId: string): Promise<TeamCluster | null> {
+        const document = await this.model.findOne({
+            team: teamId,
+            isDemo: true,
+            status: {
+                $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed]
+            }
+        }).exec();
+
+        return document ? this.mapper.toDomain(document) : null;
+    }
+
+    async findActiveDemoByTeamIdWithSensitiveData(teamId: string): Promise<TeamCluster | null> {
+        const document = await this.model.findOne({
+            team: teamId,
+            isDemo: true,
+            status: {
+                $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed]
+            }
+        })
+            .select(SENSITIVE_FIELDS_SELECTION)
+            .exec();
+
+        return document ? this.mapper.toDomain(document) : null;
+    }
+
+    async findExpiredDemos(now: Date): Promise<TeamCluster[]> {
+        const documents = await this.model.find({
+            isDemo: true,
+            demoExpiresAt: {
+                $ne: null,
+                $lte: now
+            },
+            status: {
+                $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed]
+            }
+        }).exec();
+
+        return documents.map((document) => this.mapper.toDomain(document));
+    }
+
     async updateLifecycleById(
         teamClusterId: string,
         data: Partial<TeamClusterProps>,

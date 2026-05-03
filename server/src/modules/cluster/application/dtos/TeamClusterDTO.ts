@@ -89,6 +89,8 @@ export interface TeamClusterDTO {
     roleConfig: TeamClusterRuntimeRoleConfigDTO;
     effectiveCapabilities: TeamClusterEffectiveCapabilitiesDTO;
     activeTransfers?: ClusterTransferJobDTO[];
+    isDemo: boolean;
+    demoExpiresAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -178,6 +180,8 @@ export const toTeamClusterDTO = (
             ...effectiveCapabilities
         },
         ...(activeTransfers ? { activeTransfers } : {}),
+        isDemo: teamCluster.props.isDemo,
+        demoExpiresAt: teamCluster.props.demoExpiresAt,
         createdAt: teamCluster.props.createdAt,
         updatedAt: teamCluster.props.updatedAt
     };
