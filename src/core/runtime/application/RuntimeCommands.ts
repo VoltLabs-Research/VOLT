@@ -3,6 +3,7 @@ import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import type { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
 import type { DaemonConfig } from '@/core/config';
 import { Command, CommandGroup } from '@/core/commands/decorators';
+import type { QueueService } from '@/core/queues/application/QueueService';
 import type {
     TeamClusterDaemonQueueConcurrencyApplyPayload,
     TeamClusterDaemonRoleApplyPayload
@@ -18,7 +19,8 @@ export class RuntimeCommands {
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
         private readonly config: DaemonConfig,
         private readonly dockerRuntime: DockerRuntime,
-        private readonly voltCloudConnection: VoltCloudConnection
+        private readonly voltCloudConnection: VoltCloudConnection,
+        private readonly queueService: QueueService
     ) {}
 
     @Command('restart')
@@ -28,6 +30,20 @@ export class RuntimeCommands {
         }, DEFERRED_RUNTIME_COMMAND_DELAY_MS);
 
         return { accepted: true };
+    }
+
+    @Command('queues.snapshot')
+    async queuesSnapshot() {
+        const queueNames = this.queueService.listKnownQueueNames();
+        const entries = await Promise.all(queueNames.map(async (name) => ({
+            name,
+            counts: await this.queueService.getJobCounts(name)
+        })));
+        return {
+            accepted: true,
+            queues: entries,
+            capturedAt: new Date().toISOString()
+        };
     }
 
     @Command('queue-concurrency.apply')

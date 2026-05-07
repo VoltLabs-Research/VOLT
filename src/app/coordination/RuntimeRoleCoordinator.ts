@@ -26,7 +26,8 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
     rasterizer: 5,
     glbPreprocessing: 8,
     artifactUpload: 8,
-    sshImport: 2
+    sshImport: 2,
+    pluginWarmup: 2
 };
 
 const normalizeQueueConcurrency = (
@@ -171,11 +172,11 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        const { analysis, rasterizer, glbPreprocessing, artifactUpload, sshImport } = this.snapshot.queueConcurrency;
+        const { analysis, rasterizer, glbPreprocessing, artifactUpload, sshImport, pluginWarmup } = this.snapshot.queueConcurrency;
 
         this.analysisWorker.start(analysis);
         this.artifactUploadWorker.start(artifactUpload);
-        this.pluginWarmupWorker.start();
+        this.pluginWarmupWorker.start(pluginWarmup);
         this.trajectoryRasterWorker.start(rasterizer);
         this.trajectoryGlbWorker.start(glbPreprocessing);
         this.sshImportWorker.start(sshImport);

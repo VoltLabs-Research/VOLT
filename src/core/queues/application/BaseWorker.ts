@@ -54,18 +54,35 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
         if (!this.worker) return;
 
         const next = Math.max(1, Math.floor(concurrency));
-        if (this.worker.concurrency === next) return;
+        const current = this.worker.concurrency;
+        if (current === next) return;
 
-        // BullMQ's concurrency setter only mutates the internal value; it does not
-        // activate idle slots until a running job completes. When the user raises
-        // the limit we need the new slots available immediately, so drain the old
-        // worker in the background and spin up a fresh one bound to the same queue.
+        // BullMQ's concurrency setter only mutates the internal value; it does
+        // not activate idle slots until a running job completes. We hot-swap the
+        // worker for both directions but with different sequencing:
+        //   - RAISING: spin up the new worker first so the new slots become
+        //     available immediately, then drain the old one in the background.
+        //   - LOWERING: stop accepting new jobs on the old worker, wait for it
+        //     to drain, THEN start the new one. This guarantees the cluster is
+        //     never running more than max(current,next) jobs simultaneously
+        //     while the change is in flight.
         const draining = this.worker;
         this.worker = null;
-        void draining.close().catch(
-            logAndSwallow('warn', { queueName: this.queueName }, 'Queue worker drain after concurrency change failed')
-        );
-        this.start(next);
+
+        if (next > current) {
+            void draining.close().catch(
+                logAndSwallow('warn', { queueName: this.queueName }, 'Queue worker drain after concurrency raise failed')
+            );
+            this.start(next);
+        } else {
+            draining.close()
+                .catch(logAndSwallow('warn', { queueName: this.queueName }, 'Queue worker drain after concurrency lower failed'))
+                .finally(() => {
+                    if (!this.worker) {
+                        this.start(next);
+                    }
+                });
+        }
     }
 
     private async runWithScope(payload: TPayload, bullJob: Job<TPayload>): Promise<void> {

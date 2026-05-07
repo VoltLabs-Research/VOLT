@@ -43,6 +43,7 @@ export interface TeamClusterDaemonQueueConcurrency {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
+    pluginWarmup: number;
 }
 
 export interface TeamClusterDaemonQueueConcurrencyApplyPayload {

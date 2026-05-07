@@ -174,6 +174,22 @@ export class QueueService {
         return lookups.find((job): job is Job<QueuePayload> => Boolean(job)) ?? null;
     }
 
+    async getJobCounts(queueName: string): Promise<{ waiting: number; active: number; delayed: number; completed: number; failed: number; }> {
+        const queue = this.getQueue(queueName);
+        const counts = await queue.getJobCounts('waiting', 'active', 'delayed', 'completed', 'failed');
+        return {
+            waiting: counts.waiting ?? 0,
+            active: counts.active ?? 0,
+            delayed: counts.delayed ?? 0,
+            completed: counts.completed ?? 0,
+            failed: counts.failed ?? 0
+        };
+    }
+
+    listKnownQueueNames(): readonly string[] {
+        return KNOWN_QUEUE_NAMES;
+    }
+
     private getQueue(queueName: string): Queue<QueuePayload> {
         if (!KNOWN_QUEUE_NAME_SET.has(queueName)) {
             throw new Error(`Unsupported queue: ${queueName}`);
