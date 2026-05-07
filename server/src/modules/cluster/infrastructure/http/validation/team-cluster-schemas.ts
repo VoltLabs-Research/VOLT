@@ -163,7 +163,14 @@ const updateQueueConcurrencySchema = z.object({
         rasterizer: queueConcurrencyValueSchema,
         glbPreprocessing: queueConcurrencyValueSchema,
         artifactUpload: queueConcurrencyValueSchema,
-        sshImport: queueConcurrencyValueSchema
+        sshImport: queueConcurrencyValueSchema,
+        // The new tunables are optional for backward compatibility with clients
+        // built before they existed. Server fills the documented defaults when
+        // the field is missing (see DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY).
+        pluginWarmup: queueConcurrencyValueSchema.optional(),
+        trajectoryBackgroundProcessor: queueConcurrencyValueSchema.optional(),
+        trajectoryCompression: queueConcurrencyValueSchema.optional(),
+        cloudUpload: queueConcurrencyValueSchema.optional()
     }).strict(),
     queueScopeLimits: z.object({
         analysisProcessing: queueScopeLimitSchema,

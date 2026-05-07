@@ -60,6 +60,7 @@ export const ChannelCommands = Object.freeze({
     RuntimeConfigGet: 'runtime.config.get',
     RuntimeRoleApply: 'runtime.role.apply',
     RuntimeQueueConcurrencyApply: 'runtime.queue-concurrency.apply',
+    RuntimeQueuesSnapshot: 'runtime.queues.snapshot',
     RuntimeUninstall: 'runtime.uninstall',
 
     QueueDispatch: 'queue.dispatch',

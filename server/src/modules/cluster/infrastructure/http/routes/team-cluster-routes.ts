@@ -18,6 +18,7 @@ export default createHttpModule({
             .delete(teamClusterValidation.deleteDemo, controllers.deleteDemo.handle);
         router.get('/demo/status', teamClusterValidation.getDemoStatus, controllers.getDemoStatus.handle);
         router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
+        router.get('/:teamClusterId/runtime-snapshot', teamClusterValidation.getById, controllers.getRuntimeSnapshot.handle);
         router.patch(
             '/:teamClusterId/queue-concurrency',
             teamClusterValidation.updateQueueConcurrency,

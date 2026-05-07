@@ -36,6 +36,10 @@ export interface TeamClusterQueueConcurrencyProps {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
+    pluginWarmup: number;
+    trajectoryBackgroundProcessor: number;
+    trajectoryCompression: number;
+    cloudUpload: number;
 }
 
 export interface TeamClusterQueueScopeLimitProps {
@@ -84,7 +88,11 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrency
     rasterizer: 5,
     glbPreprocessing: 8,
     artifactUpload: 8,
-    sshImport: 2
+    sshImport: 2,
+    pluginWarmup: 2,
+    trajectoryBackgroundProcessor: 5,
+    trajectoryCompression: 1,
+    cloudUpload: 5
 };
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {
