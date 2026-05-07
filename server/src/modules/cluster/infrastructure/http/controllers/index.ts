@@ -12,6 +12,7 @@ import DownloadTeamClusterRemoteExplorerObjectController from '@modules/cluster/
 import GetTeamClusterRemoteExplorerNodeController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterRemoteExplorerNodeController';
 import GetClusterResourceLimitsController from '@modules/cluster/infrastructure/http/controllers/GetClusterResourceLimitsController';
 import GetTeamClusterByIdController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterByIdController';
+import GetTeamClusterRuntimeSnapshotController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterRuntimeSnapshotController';
 import ListTeamClusterRemoteExplorerEntriesController from '@modules/cluster/infrastructure/http/controllers/ListTeamClusterRemoteExplorerEntriesController';
 import ListTeamClustersByTeamIdController from '@modules/cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
 import ListTeamClusterTransferJobsController from '@modules/cluster/infrastructure/http/controllers/ListTeamClusterTransferJobsController';
@@ -38,6 +39,7 @@ export default createControllerRegistry({
     generateInstallManifest: GenerateTeamClusterInstallManifestController,
     getById: GetTeamClusterByIdController,
     getDemoStatus: GetDemoTeamClusterStatusController,
+    getRuntimeSnapshot: GetTeamClusterRuntimeSnapshotController,
     getResourceLimits: GetClusterResourceLimitsController,
     getRemoteExplorerNode: GetTeamClusterRemoteExplorerNodeController,
     listByTeamId: ListTeamClustersByTeamIdController,

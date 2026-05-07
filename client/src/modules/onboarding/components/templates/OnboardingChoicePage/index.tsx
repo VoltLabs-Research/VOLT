@@ -2,12 +2,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import Box from '@/shared/presentation/primitives/Box';
 import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
 import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { Plug, Zap } from 'lucide-react';
+import './OnboardingChoicePage.css';
 
 const OnboardingChoicePage = () => {
     const navigate = useNavigate();
@@ -36,11 +37,11 @@ const OnboardingChoicePage = () => {
                     </Text>
                 </Stack>
 
-                <Row gap='1-5' align='center' justify='center'>
+                <Box className='onboarding-choice-options'>
                     <SelectableCard
                         title='Try Demo'
                         description='Spin up a ready-made environment in under a minute. 30-minute session. Some advanced options are limited.'
-                        icon={<Zap size={24} />}
+                        icon={<Zap size={20} />}
                         iconTone='brand'
                         onSelect={() => navigate('/onboarding/cluster/provisioning')}
                     />
@@ -48,11 +49,11 @@ const OnboardingChoicePage = () => {
                     <SelectableCard
                         title='Connect a Cluster'
                         description='Pair your laptop or server with a one-line install script. Persistent storage, full feature set.'
-                        icon={<Plug size={24} />}
+                        icon={<Plug size={20} />}
                         iconTone='neutral'
                         onSelect={() => navigate('/onboarding/cluster/setup')}
                     />
-                </Row>
+                </Box>
             </Stack>
         </OnboardingLayout>
     );

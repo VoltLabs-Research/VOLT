@@ -1,0 +1,12 @@
+.onboarding-choice-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: min(100%, 560px);
+}
+
+@media (max-width: 640px) {
+    .onboarding-choice-options {
+        grid-template-columns: 1fr;
+    }
+}

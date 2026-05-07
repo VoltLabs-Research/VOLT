@@ -89,9 +89,17 @@ const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
 
 @Singleton()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
-    private readonly concurrency = getTrajectoryBackgroundProcessorConcurrency();
+    private concurrency = Math.max(1, Math.floor(getTrajectoryBackgroundProcessorConcurrency()));
     private drainCallbackRegistered = false;
     private compressionDrainCallbackRegistered = false;
+
+    public setConcurrency(concurrency: number): void {
+        this.concurrency = Math.max(1, Math.floor(concurrency));
+    }
+
+    public getConcurrency(): number {
+        return this.concurrency;
+    }
 
     constructor(
         

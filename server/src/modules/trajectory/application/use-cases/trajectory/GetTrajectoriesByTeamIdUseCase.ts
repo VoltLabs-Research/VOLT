@@ -1,5 +1,4 @@
 import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
-import { resolveTrajectoryPreviewAvailability } from '@modules/trajectory/utilities/trajectory/resolve-trajectory-preview-availability';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
@@ -8,7 +7,6 @@ import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
-import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 
@@ -17,8 +15,6 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
     constructor(
 
         private readonly trajectoryRepo: TrajectoryRepository,
-
-        private readonly rasterStorage: RasterStorageService,
 
         private readonly trajectoryFrameRepo: TrajectoryFrameRepository
     ) {}
@@ -51,19 +47,17 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
             results.data.map((trajectory) => trajectory.id)
         );
 
-        const data = await Promise.all(results.data.map(async (trajectory) => {
+        // hasPreview is sourced from the persisted column. The DaemonAnalysisCompletionService
+        // flips it on when the rasterizer reports the first completed job for a trajectory;
+        // see `handleRasterJobStatus`. Listings no longer hit MinIO per row.
+        const data = results.data.map((trajectory) => {
             const summary = summaries.get(trajectory.id);
             trajectory.props.framesCount = summary?.framesCount ?? 0;
             trajectory.props.atoms = summary?.atoms ?? 0;
             trajectory.props.firstTimestep = summary?.firstTimestep;
 
-            const persistedTrajectory = toPersistedOutput(trajectory);
-
-            return resolveTrajectoryPreviewAvailability(
-                persistedTrajectory,
-                this.rasterStorage.hasTrajectoryPreview.bind(this.rasterStorage)
-            );
-        }));
+            return toPersistedOutput(trajectory);
+        });
 
         return Result.ok({
             ...results,

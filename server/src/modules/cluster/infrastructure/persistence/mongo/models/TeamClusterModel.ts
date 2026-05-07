@@ -76,6 +76,30 @@ const queueConcurrencySchema = new Schema({
         type: Number,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
+    },
+    pluginWarmup: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 2
+    },
+    trajectoryBackgroundProcessor: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 5
+    },
+    trajectoryCompression: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 1
+    },
+    cloudUpload: {
+        type: Number,
+        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
+        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
+        default: 5
     }
 }, {
     _id: false

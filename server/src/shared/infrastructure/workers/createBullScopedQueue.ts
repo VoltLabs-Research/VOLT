@@ -83,6 +83,8 @@ export interface BullScopedQueueController<TJobData, TResult> {
     start(): void;
     getHandle(): BullScopedQueueHandle<TJobData, TResult> | null;
     requireHandle(): BullScopedQueueHandle<TJobData, TResult>;
+    setConcurrency(concurrency: number): void;
+    getConcurrency(): number;
     close(): Promise<void>;
 }
 
@@ -102,6 +104,7 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
     options: BullScopedQueueOptions<TJobData, TResult>
 ): BullScopedQueueController<TJobData, TResult> => {
     let handle: BullScopedQueueHandle<TJobData, TResult> | null = null;
+    let activeConcurrency = Math.max(1, Math.floor(options.concurrency));
 
     const runListenerStep = async (
         action: string,
@@ -155,23 +158,13 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
         }
     };
 
-    const start = (): void => {
-        if (handle) return;
-
-        const connection = options.redisConnectionFactory();
-
-        const queue = new Queue<TJobData, TResult>(options.name, {
-            connection,
-            defaultJobOptions: { ...DEFAULT_BULL_SCOPED_QUEUE_JOB_OPTIONS },
-            ...options.queueOptions
-        });
-
+    const buildWorker = (queue: Queue<TJobData, TResult>, connection: QueueOptions['connection'], concurrency: number): Worker<TJobData, TResult> => {
         const worker = new Worker<TJobData, TResult>(
             options.name,
             async (job) => runJobWithScopeLease(job),
             {
                 connection,
-                concurrency: options.concurrency,
+                concurrency,
                 removeOnComplete: { count: 500 },
                 removeOnFail: { count: 200 },
                 ...options.workerOptions
@@ -201,6 +194,55 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
             logger.error(error, `${options.logTag}: worker error`);
         });
 
+        // Suppress unused-import warning for queue (parameter is here to make
+        // intent explicit; the worker uses the same connection).
+        void queue;
+
+        return worker;
+    };
+
+    const start = (): void => {
+        if (handle) return;
+
+        const connection = options.redisConnectionFactory();
+
+        const queue = new Queue<TJobData, TResult>(options.name, {
+            connection,
+            defaultJobOptions: { ...DEFAULT_BULL_SCOPED_QUEUE_JOB_OPTIONS },
+            ...options.queueOptions
+        });
+
+        const worker = buildWorker(queue, connection, activeConcurrency);
+
+        let mutableWorker: Worker<TJobData, TResult> = worker;
+
+        const swapWorker = (next: number): void => {
+            if (!handle) return;
+            const safeNext = Math.max(1, Math.floor(next));
+            const current = mutableWorker;
+            if (current.concurrency === safeNext) {
+                activeConcurrency = safeNext;
+                return;
+            }
+            const draining = current;
+            const newWorker = buildWorker(queue, connection, safeNext);
+            mutableWorker = newWorker;
+            (handle as { worker: Worker<TJobData, TResult> }).worker = newWorker;
+            activeConcurrency = safeNext;
+
+            if (safeNext > current.concurrency) {
+                void draining.close().catch((error: unknown) => {
+                    logger.warn(error, `${options.logTag}: drain after concurrency raise failed`);
+                });
+            } else {
+                draining.close().catch((error: unknown) => {
+                    logger.warn(error, `${options.logTag}: drain after concurrency lower failed`);
+                });
+            }
+
+            logger.info({ queueName: options.name, concurrency: safeNext }, `${options.logTag}: concurrency updated`);
+        };
+
         handle = {
             queue,
             worker,
@@ -208,10 +250,13 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
                 await queue.addBulk(entries as Parameters<typeof queue.addBulk>[0]);
             },
             async close(): Promise<void> {
-                await worker.close();
+                await mutableWorker.close();
                 await queue.close();
             }
         };
+
+        // Stash swap helper on the handle so the controller can call it.
+        (handle as unknown as { swapWorker: (next: number) => void }).swapWorker = swapWorker;
     };
 
     const close = async (): Promise<void> => {
@@ -231,6 +276,14 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
             }
             return handle;
         },
+        setConcurrency: (next: number) => {
+            const safeNext = Math.max(1, Math.floor(next));
+            activeConcurrency = safeNext;
+            if (!handle) return;
+            const swap = (handle as { swapWorker?: (n: number) => void }).swapWorker;
+            swap?.(safeNext);
+        },
+        getConcurrency: () => activeConcurrency,
         close
     };
 };
