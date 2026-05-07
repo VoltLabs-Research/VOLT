@@ -4,8 +4,9 @@ import {
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@modules/cluster/application/dtos/UpdateTeamClusterQueueConcurrencyDTO';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
-import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
+import { DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import ServerSideQueueConcurrencyCoordinator from '@modules/cluster/infrastructure/services/ServerSideQueueConcurrencyCoordinator';
 import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -25,7 +26,8 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
     constructor(
         private readonly teamClusterRepository: TeamClusterRepository,
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+        private readonly serverSideQueueConcurrencyCoordinator: ServerSideQueueConcurrencyCoordinator
     ) {}
 
     async execute(
@@ -36,8 +38,17 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
             return Result.fail(teamCluster);
         }
 
+        // Merge with the cluster's current value (so missing optional fields
+        // keep their stored value) and fall back to documented defaults for any
+        // field that was never set.
+        const persistedQueueConcurrency = {
+            ...DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+            ...teamCluster.props.queueConcurrency,
+            ...input.queueConcurrency
+        };
+
         const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
-            queueConcurrency: input.queueConcurrency,
+            queueConcurrency: persistedQueueConcurrency,
             queueScopeLimits: input.queueScopeLimits
         });
 
@@ -46,6 +57,11 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
         }
 
         this.teamClusterLifecycleService.publishTeamClusterUpdate(updatedTeamCluster);
+
+        // Apply server-side queue concurrency immediately. These queues live in
+        // the volt-server process (compression, cloud upload, trajectory parsing)
+        // and aren't reachable through the daemon channel command.
+        this.serverSideQueueConcurrencyCoordinator.apply(updatedTeamCluster.props.queueConcurrency);
 
         if (updatedTeamCluster.props.status === TeamClusterStatus.Connected) {
             try {

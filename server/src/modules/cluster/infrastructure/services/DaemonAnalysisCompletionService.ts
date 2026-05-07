@@ -405,6 +405,25 @@ export default class DaemonAnalysisCompletionService {
             trajectoryContext,
             error: input.error
         });
+
+        // Why: persist `hasPreview` so the dashboard listing can render
+        // thumbnail availability without paying a MinIO `listObjects` round-trip
+        // per row. The first successful rasterize per trajectory flips this on;
+        // it stays on until the trajectory is deleted (the document goes with
+        // it). Subsequent runs are no-ops on the value but the write is cheap.
+        if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
+            try {
+                await this.trajectoryRepo.updateById(resolved.trajectory.id, { hasPreview: true });
+                await this.eventBus.publish(new TrajectoryUpdatedEvent({
+                    trajectoryId: resolved.trajectory.id,
+                    teamId: resolved.teamId,
+                    updates: { hasPreview: true },
+                    updatedAt: new Date()
+                }));
+            } catch (error: unknown) {
+                logger.warn({ err: error, trajectoryId: resolved.trajectory.id }, '[DaemonAnalysisCompletion] failed to persist hasPreview after raster completion');
+            }
+        }
     }
 
     /**

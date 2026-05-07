@@ -12,6 +12,7 @@ export interface TrajectoryUpdatedEventPayload {
         frames?: TrajectoryFrame[];
         failureCode?: ErrorCode;
         failureDetails?: string;
+        hasPreview?: boolean;
     };
     updatedAt: Date;
 }

@@ -74,6 +74,14 @@ export default class CloudUploadQueueService {
         this.drainCallback = callback;
     }
 
+    public setConcurrency(concurrency: number): void {
+        this.controller?.setConcurrency(concurrency);
+    }
+
+    public getConcurrency(): number {
+        return this.controller?.getConcurrency() ?? getTrajectoryBackgroundProcessorConcurrency();
+    }
+
     /**
      * Lazily initializes the BullMQ queue and worker.
      * Called on first enqueue or can be called explicitly at startup.

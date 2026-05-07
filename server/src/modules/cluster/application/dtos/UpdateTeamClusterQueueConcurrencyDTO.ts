@@ -7,6 +7,10 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
+    pluginWarmup?: number;
+    trajectoryBackgroundProcessor?: number;
+    trajectoryCompression?: number;
+    cloudUpload?: number;
 }
 
 export interface TeamClusterQueueScopeLimitInputDTO {

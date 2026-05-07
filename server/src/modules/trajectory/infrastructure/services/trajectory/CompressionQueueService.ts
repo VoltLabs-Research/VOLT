@@ -68,6 +68,14 @@ export default class CompressionQueueService {
         this.drainCallback = callback;
     }
 
+    public setConcurrency(concurrency: number): void {
+        this.controller?.setConcurrency(concurrency);
+    }
+
+    public getConcurrency(): number {
+        return this.controller?.getConcurrency() ?? getTrajectoryCompressionQueueConcurrency();
+    }
+
     public start(): void {
         if (this.controller) {
             this.controller.start();
