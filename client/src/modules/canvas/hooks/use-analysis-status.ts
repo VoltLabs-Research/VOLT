@@ -1,6 +1,6 @@
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities/analysis-job-status';
 import { useCallback, useMemo } from 'react';
 import { AnalysisStatus, isCanvasAnalysisInProgress } from '../utilities/analysis-status';
 
@@ -17,43 +17,6 @@ const ARTIFACT_UPLOAD_QUEUE_TYPE = 'artifact_upload';
 
 const isTerminalAnalysisStatus = (status?: string): boolean => {
     return status === AnalysisStatus.Completed || status === AnalysisStatus.Failed;
-};
-
-const resolveAnalysisId = (job: Job): string | undefined => {
-    if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
-        return job.analysisId;
-    }
-
-    if (typeof job.metadata?.analysisId === 'string' && job.metadata.analysisId.trim().length > 0) {
-        return job.metadata.analysisId;
-    }
-
-    return undefined;
-};
-
-const deriveAnalysisStatusFromJobs = (jobs: Job[]): AnalysisStatus | undefined => {
-    if (jobs.length === 0) return undefined;
-
-    if (jobs.some((job) => job.status === JobStatus.Running || job.status === JobStatus.Retrying)) {
-        return AnalysisStatus.Running;
-    }
-
-    if (jobs.some((job) => job.status === JobStatus.Queued || job.status === JobStatus.QueuedAfterFailure)) {
-        return AnalysisStatus.Pending;
-    }
-
-    const allCompleted = jobs.every((job) => job.status === JobStatus.Completed);
-    if (allCompleted) {
-        return AnalysisStatus.Completed;
-    }
-
-    const anyFailed = jobs.some((job) => job.status === JobStatus.Failed);
-    const anyCompleted = jobs.some((job) => job.status === JobStatus.Completed);
-    if (anyFailed && !anyCompleted) {
-        return AnalysisStatus.Failed;
-    }
-
-    return undefined;
 };
 
 const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusProps) => {
@@ -78,7 +41,7 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
 
             for (const frameGroup of group.frameGroups) {
                 for (const job of frameGroup.jobs) {
-                    const analysisId = resolveAnalysisId(job);
+                    const analysisId = resolveJobAnalysisId(job);
                     if (!analysisId) continue;
 
                     const bucket = next.get(analysisId);

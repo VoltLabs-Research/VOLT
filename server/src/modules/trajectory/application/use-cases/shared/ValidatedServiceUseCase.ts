@@ -6,10 +6,6 @@ import type { IUseCase } from '@shared/application/IUseCase';
 type Validator<TInput> = (input: TInput) => ApplicationError | null;
 type Executor<TService, TInput, TOutput> = (service: TService, input: TInput) => Promise<TOutput>;
 
-export const isBlank = (value?: string): boolean => {
-    return !value?.trim();
-};
-
 export abstract class ValidatedServiceUseCase<TInput, TOutput, TService>
     implements IUseCase<TInput, TOutput, ApplicationError> {
     constructor(

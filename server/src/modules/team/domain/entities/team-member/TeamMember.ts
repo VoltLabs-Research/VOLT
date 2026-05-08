@@ -41,14 +41,6 @@ export const getTeamMemberUserId = (value: TeamMemberProps['user']): string => {
     return value._id;
 };
 
-export const getTeamMemberRoleId = (value: TeamMemberProps['role']): string => {
-    if (typeof value === 'string') {
-        return value;
-    }
-
-    return value._id;
-};
-
 export const getTeamMemberRolePermissions = (value: TeamMemberProps['role']): string[] => {
     if (!isPopulatedTeamMemberRole(value)) {
         return [];

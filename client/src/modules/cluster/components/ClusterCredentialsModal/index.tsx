@@ -1,5 +1,5 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import Button from '@/shared/presentation/primitives/Button';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
@@ -106,23 +106,17 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
         >
             <Stack gap='1' p='1-5'>
                 {!credentials && (
-                    <>
-                        <Text as='p' size='md' tone='secondary'>
-                            Only reveal credentials when you need to inspect or repair the cluster services directly.
-                        </Text>
-                        <FormFieldRHF
-                            label='Password'
-                            type='password'
-                            value={password}
-                            error={error}
-                            onChange={(event) => {
-                                setPassword(event.target.value);
-                                if (error) {
-                                    setError(undefined);
-                                }
-                            }}
-                        />
-                    </>
+                    <PasswordConfirmationPrompt
+                        description='Only reveal credentials when you need to inspect or repair the cluster services directly.'
+                        password={password}
+                        error={error}
+                        onPasswordChange={(nextPassword) => {
+                            setPassword(nextPassword);
+                            if (error) {
+                                setError(undefined);
+                            }
+                        }}
+                    />
                 )}
 
                 {credentials && (

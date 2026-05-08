@@ -14,19 +14,21 @@ import {
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
+import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
+import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FolderInput, FolderOpen, Pencil, SquarePen, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createEmptyWhiteboardsResponse, getDeleteConfirmationMessage, getSafeFolderTitle, getSafeWhiteboardTitle } from '../utilities/whiteboards';
 import {
     createWhiteboardFolderRow,
@@ -40,13 +42,18 @@ import type { WhiteboardFolder } from '@/modules/whiteboards/api/entities/whiteb
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
 import { useNavigate } from 'react-router-dom';
-type WhiteboardsListingDragAndDropConfig = DocumentListingDragAndDropConfig<WhiteboardListingRow>;
 
 interface WhiteboardMoveTarget {
     _id: string;
     title: string;
     folder: string | null;
 };
+
+const getWhiteboardMoveTarget = (whiteboard: Whiteboard): WhiteboardMoveTarget => ({
+    _id: whiteboard._id,
+    title: getSafeWhiteboardTitle(whiteboard.title),
+    folder: whiteboard.folder
+});
 
 export const NEW_WHITEBOARD_FOLDER_MODAL_ID = 'new-whiteboard-folder-modal';
 export const RENAME_WHITEBOARD_MODAL_ID = 'rename-whiteboard-modal';
@@ -103,7 +110,6 @@ const useWhiteboardsListing = () => {
     const { mutateAsync: moveWhiteboard } = useMoveWhiteboardMutation();
 
     const [renamingWhiteboard, setRenamingWhiteboard] = useState<Whiteboard | null>(null);
-    const [movingWhiteboard, setMovingWhiteboard] = useState<WhiteboardMoveTarget | null>(null);
     const {
         breadcrumbs,
         context,
@@ -186,73 +192,32 @@ const useWhiteboardsListing = () => {
         handleRenameWhiteboardClose();
     }, [handleRenameWhiteboardClose, renamingWhiteboard, updateWhiteboard]);
 
-    const handleRenameFolderOpen = useCallback((folder: WhiteboardFolder) => {
-        handleRenameFolderStateOpen(folder);
-        openModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateOpen]);
+    const {
+        handleRenameFolderOpen,
+        handleRenameFolderClose,
+        handleRenameFolderSubmit
+    } = useRenameFolderModal({
+        modalId: RENAME_WHITEBOARD_FOLDER_MODAL_ID,
+        openRenameState: handleRenameFolderStateOpen,
+        closeRenameState: handleRenameFolderStateClose,
+        submitRenameState: handleRenameFolderStateSubmit
+    });
 
-    const handleRenameFolderClose = useCallback(() => {
-        closeModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
-        handleRenameFolderStateClose();
-    }, [handleRenameFolderStateClose]);
-
-    const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        await handleRenameFolderStateSubmit(title);
-        closeModal(RENAME_WHITEBOARD_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateSubmit]);
-
-    const handleMoveWhiteboardOpen = useCallback((whiteboard: Whiteboard) => {
-        setMovingWhiteboard({
-            _id: whiteboard._id,
-            title: getSafeWhiteboardTitle(whiteboard.title),
-            folder: whiteboard.folder
-        });
-        openModal(MOVE_WHITEBOARD_MODAL_ID);
-    }, []);
-
-    const handleMoveWhiteboardClose = useCallback(() => {
-        closeModal(MOVE_WHITEBOARD_MODAL_ID);
-        setMovingWhiteboard(null);
-    }, []);
-
-    const handleMoveWhiteboardSubmit = useCallback(async (folderId: string | null) => {
-        if (!movingWhiteboard) {
-            return;
-        }
-
-        await showPromise(
-            moveWhiteboard({
-                whiteboardId: movingWhiteboard._id,
-                folderId
-            }),
-            MOVE_WHITEBOARD_TOAST
-        );
-    }, [moveWhiteboard, movingWhiteboard]);
-
-    const handleWhiteboardRowDragEnd = useCallback(async (
-        payload: Parameters<WhiteboardsListingDragAndDropConfig['onDragEnd']>[0]
-    ) => {
-        const { activeItem, overItem } = payload;
-        if (!activeItem || !overItem) {
-            return;
-        }
-
-        if (!isWhiteboardItemRow(activeItem) || !isWhiteboardFolderRow(overItem)) {
-            return;
-        }
-
-        if (activeItem.folder === overItem._id) {
-            return;
-        }
-
-        await showPromise(
-            moveWhiteboard({
-                whiteboardId: activeItem._id,
-                folderId: overItem._id
-            }),
-            MOVE_WHITEBOARD_TOAST
-        );
+    const moveWhiteboardToFolder = useCallback((whiteboardId: string, folderId: string | null) => {
+        return moveWhiteboard({ whiteboardId, folderId });
     }, [moveWhiteboard]);
+
+    const {
+        movingItem: movingWhiteboard,
+        handleMoveOpen: handleMoveWhiteboardOpen,
+        handleMoveClose: handleMoveWhiteboardClose,
+        handleMoveSubmit: handleMoveWhiteboardSubmit
+    } = useFolderedListingMoveModal<Whiteboard, WhiteboardMoveTarget>({
+        modalId: MOVE_WHITEBOARD_MODAL_ID,
+        getMoveTarget: getWhiteboardMoveTarget,
+        moveItem: moveWhiteboardToFolder,
+        moveToast: MOVE_WHITEBOARD_TOAST
+    });
 
     const { getMenuOptions: getWhiteboardMenuOptions } = useListingActions<Whiteboard>({
         actions: {
@@ -342,18 +307,16 @@ const useWhiteboardsListing = () => {
         return true;
     }, [navigate, openFolder]);
 
-    const dragAndDrop = useMemo<WhiteboardsListingDragAndDropConfig | undefined>(() => {
-        if (!canMoveWhiteboards) {
-            return undefined;
-        }
-
-        return {
-            activationDistance: 6,
-            getDraggableId: getWhiteboardListingDraggableId,
-            getDroppableId: getWhiteboardListingDroppableId,
-            onDragEnd: handleWhiteboardRowDragEnd
-        };
-    }, [canMoveWhiteboards, handleWhiteboardRowDragEnd]);
+    const dragAndDrop = useFolderedListingDragAndDropMove({
+        canMove: canMoveWhiteboards,
+        activationDistance: 6,
+        getDraggableId: getWhiteboardListingDraggableId,
+        getDroppableId: getWhiteboardListingDroppableId,
+        isItemRow: isWhiteboardItemRow,
+        isFolderRow: isWhiteboardFolderRow,
+        moveItem: moveWhiteboardToFolder,
+        moveToast: MOVE_WHITEBOARD_TOAST
+    });
 
     return {
         breadcrumbs,

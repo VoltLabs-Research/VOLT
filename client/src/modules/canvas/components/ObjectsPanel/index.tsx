@@ -29,24 +29,13 @@ import { useShallow } from 'zustand/react/shallow';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/entities/scene-artifacts';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { RasterContainerId, RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
+import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
+import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import './ObjectsPanel.css';
 
-interface ObjectsPanelProps {
+interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
-    onDownloadAnalysis?: (analysisId: string) => void | Promise<void>;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
-    rasterContainerSelections?: RasterContainerSelection[];
-    activeRasterContainerId?: RasterContainerId;
-    onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
-    onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
     pluginsContent?: ReactNode;
 }
 
@@ -128,6 +117,22 @@ const formatArtifactLabel = (artifact: SceneArtifact): string => {
     if (artifact.sourceType === 'particle-filter') return formatParticleFilterArtifactLabel(artifact);
     if (artifact.sourceType === 'color-coding') return formatColorCodingArtifactLabel(artifact);
     return artifact.displayName;
+};
+
+const pruneExpandedTimesteps = (current: Set<number>, availableTimesteps: number[]): Set<number> => {
+    if (current.size === 0) return current;
+    if (availableTimesteps.length === 0) return new Set();
+
+    const available = new Set(availableTimesteps);
+    let changed = false;
+    const next = new Set<number>();
+
+    for (const timestep of current) {
+        if (available.has(timestep)) next.add(timestep);
+        else changed = true;
+    }
+
+    return changed ? next : current;
 };
 
 interface RightCollapsibleProps {
@@ -234,33 +239,11 @@ const ObjectsPanel = ({
     }, [setCurrentTimestep]);
 
     useEffect(() => {
-        setExpandedParticleFilterTimesteps((current) => {
-            if (current.size === 0) return current;
-            if (particleFilterTimesteps.length === 0) return new Set();
-            const available = new Set(particleFilterTimesteps);
-            let changed = false;
-            const next = new Set<number>();
-            for (const timestep of current) {
-                if (available.has(timestep)) next.add(timestep);
-                else changed = true;
-            }
-            return changed ? next : current;
-        });
+        setExpandedParticleFilterTimesteps((current) => pruneExpandedTimesteps(current, particleFilterTimesteps));
     }, [particleFilterTimesteps]);
 
     useEffect(() => {
-        setExpandedColorCodingTimesteps((current) => {
-            if (current.size === 0) return current;
-            if (colorCodingTimesteps.length === 0) return new Set();
-            const available = new Set(colorCodingTimesteps);
-            let changed = false;
-            const next = new Set<number>();
-            for (const timestep of current) {
-                if (available.has(timestep)) next.add(timestep);
-                else changed = true;
-            }
-            return changed ? next : current;
-        });
+        setExpandedColorCodingTimesteps((current) => pruneExpandedTimesteps(current, colorCodingTimesteps));
     }, [colorCodingTimesteps]);
 
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {

@@ -11,20 +11,20 @@ import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
+import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
+import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type {
     IArgumentDefinition,
     IPluginNodeData
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
 import type { EditorProps } from '../types';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
@@ -68,16 +68,10 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     const availableTimesteps = useMemo(() => {
         return frames.map((frame) => frame.timestep);
     }, [frames]);
-    const executionTeamClusters = useMemo<PluginTeamClusterOption[]>(() => {
-        return (teamClustersResponse?.data ?? []).filter(supportsPluginExecutionCluster);
-    }, [teamClustersResponse?.data]);
-
-    const teamClusterOptions = useMemo<SelectOption[]>(() => {
-        return executionTeamClusters.map((teamCluster) => ({
-            value: teamCluster._id,
-            title: teamCluster.name
-        }));
-    }, [executionTeamClusters]);
+    const {
+        executionTeamClusters,
+        teamClusterOptions
+    } = usePluginExecutionClusterOptions(teamClustersResponse?.data);
 
     const pluginOptions = useMemo<SelectOption[]>(() => {
         return publishedPlugins
@@ -284,6 +278,22 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }));
     }, [buildPluginNodeData, updatePluginNodeData]);
 
+    const renderInlineExecutionFields = () => (
+        <PluginExecutionConfigFields
+            argumentsDefinitions={[]}
+            configValues={{}}
+            onConfigChange={() => {}}
+            availableTimesteps={availableTimesteps}
+            selectedTimesteps={normalizedSelectedTimesteps}
+            onSelectedTimestepsChange={handleSelectedTimestepsChange}
+            selectedTeamClusterId={selectedTeamClusterId}
+            teamClusterOptions={teamClusterOptions}
+            onSelectedTeamClusterIdChange={handleSelectedClusterIdChange}
+            frameOptions={frameOptions}
+            noClustersMessage='No team clusters available for inline execution'
+        />
+    );
+
     const renderArgumentReferenceConfiguration = () => {
         if (!selectedArgumentDefinition) {
             return (
@@ -301,19 +311,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                     <p className='font-size-1 color-muted'>
                         Runtime execution will use the plugin configuration provided by the user through the selected argument.
                     </p>
-                    <PluginExecutionConfigFields
-                        argumentsDefinitions={[]}
-                        configValues={{}}
-                        onConfigChange={() => {}}
-                        availableTimesteps={availableTimesteps}
-                        selectedTimesteps={normalizedSelectedTimesteps}
-                        onSelectedTimestepsChange={handleSelectedTimestepsChange}
-                        selectedTeamClusterId={selectedTeamClusterId}
-                        teamClusterOptions={teamClusterOptions}
-                        onSelectedTeamClusterIdChange={handleSelectedClusterIdChange}
-                        frameOptions={frameOptions}
-                        noClustersMessage='No team clusters available for inline execution'
-                    />
+                    {renderInlineExecutionFields()}
                 </div>
             );
         }
@@ -354,19 +352,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                         </FormSection>
                     );
                 })}
-                <PluginExecutionConfigFields
-                    argumentsDefinitions={[]}
-                    configValues={{}}
-                    onConfigChange={() => {}}
-                    availableTimesteps={availableTimesteps}
-                    selectedTimesteps={normalizedSelectedTimesteps}
-                    onSelectedTimestepsChange={handleSelectedTimestepsChange}
-                    selectedTeamClusterId={selectedTeamClusterId}
-                    teamClusterOptions={teamClusterOptions}
-                    onSelectedTeamClusterIdChange={handleSelectedClusterIdChange}
-                    frameOptions={frameOptions}
-                    noClustersMessage='No team clusters available for inline execution'
-                />
+                {renderInlineExecutionFields()}
             </div>
         );
     };

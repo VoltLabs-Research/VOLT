@@ -1,5 +1,4 @@
 import {
-    useInfiniteQuery,
     useQuery,
     type QueryKey,
     type UseQueryOptions
@@ -156,26 +155,6 @@ const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
 );
 
 export const fetchPlugins = (params: GetPluginsInputDTO) => pluginsQuery.fetch(params);
-
-// usePluginCatalogInfiniteQuery: consumer supplies its own getNextPageParam and
-// enabled flag. createInfiniteQuery hardcodes getNextPageParam based on the
-// server's `hasMore` field, so we keep this raw to preserve the bespoke
-// pagination contract used by the listing UI.
-export const usePluginCatalogInfiniteQuery = (
-    params: { limit: number },
-    options: { getNextPageParam: (lastPage: PaginatedResponse<Plugin>) => number | undefined; enabled?: boolean }
-) => {
-    return useInfiniteQuery({
-        queryKey: PLUGIN_QUERY_KEYS.catalogInfiniteList(params),
-        queryFn: ({ pageParam }) => pluginService.getAll({
-            page: pageParam as number,
-            limit: params.limit
-        }),
-        initialPageParam: 1,
-        getNextPageParam: options.getNextPageParam,
-        enabled: options.enabled
-    });
-};
 
 const teamClustersQuery = createQuery<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>(
     (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),

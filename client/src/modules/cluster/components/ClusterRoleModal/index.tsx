@@ -1,5 +1,5 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import Row from '@/shared/presentation/primitives/Row';
@@ -80,27 +80,17 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
         }
     };
 
+    const footer = (
+        <ClusterModalActionFooter
+            confirmLabel='Save role'
+            onCancel={handleClose}
+            onConfirm={handleSave}
+            isSubmitting={isSubmitting}
+        />
+    );
+
     return (
-        <Modal
-            id={CLUSTER_ROLE_MODAL_ID}
-            title={`Runtime role for ${clusterName}`}
-            description='Control whether this cluster behaves as a combined node, storage authority, or compute-only worker.'
-            footer={(
-                <ModalFooterActions
-                    secondary={{
-                        label: 'Cancel',
-                        onClick: handleClose,
-                        disabled: isSubmitting
-                    }}
-                    primary={{
-                        label: 'Save role',
-                        onClick: handleSave,
-                        isLoading: isSubmitting
-                    }}
-                />
-            )}
-            onClose={handleClose}
-        >
+        <Modal id={CLUSTER_ROLE_MODAL_ID} title={`Runtime role for ${clusterName}`} description='Control whether this cluster behaves as a combined node, storage authority, or compute-only worker.' footer={footer} onClose={handleClose}>
             <Stack gap='1' p='1-5'>
                 <Stack gap='05'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Cluster scheduling role</Heading>

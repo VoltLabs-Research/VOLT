@@ -1,9 +1,10 @@
 import { createService, custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
-import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
+import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
+import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
@@ -33,7 +34,6 @@ import type {
     PreviewFilterOutputDTO
 } from '@/modules/trajectory/api/dtos/particle-filter';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import type {
     GetPluginListingInputDTO,
     GetPluginListingOutputDTO
@@ -42,6 +42,7 @@ import type {
     GetSubListingInputDTO,
     GetSubListingOutputDTO
 } from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+import type { RawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import type {
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
@@ -89,21 +90,6 @@ interface PublicCanvasSubListingInput extends GetSubListingInputDTO {
     trajectoryId: string;
 }
 
-interface RawListingData {
-    data: ListingRow[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-    _meta?: GetPluginListingOutputDTO['_meta'];
-}
-
-interface RawListingResponse {
-    status: string;
-    data: RawListingData;
-    pagination?: PaginationMeta;
-}
-
 interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
     trajectoryId: string;
 }
@@ -121,27 +107,7 @@ const endpoints = {
     getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
     getAnalysisRasterFrame: download<GetCanvasAnalysisRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model'),
     getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
-    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(async ({ getClient }, params) => {
-        // Why: F2.S4 — binary transferables path. The endpoint emits a columnar
-        // binary body; the SDK transport exposes `blob`, which we then convert
-        // to an `ArrayBuffer` interpreted zero-copy by `decodeAtomsBinary`.
-        const blob = await getClient().request<Blob>(
-            'GET',
-            `/${params.trajectoryId}/frame/${params.timestep}/atoms`,
-            {
-                query: {
-                    fmt: 'bin',
-                    ...(params.page !== undefined ? { page: params.page } : {}),
-                    ...(params.limit !== undefined ? { limit: params.limit } : {}),
-                    ...(params.analysisId ? { analysisId: params.analysisId } : {})
-                },
-                responseType: 'blob'
-            }
-        );
-
-        const buffer = await blob.arrayBuffer();
-        return decodeAtomsBinary(buffer);
-    }),
+    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(getAtomsBinary),
     getSimulationCell: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
         '/:trajectoryId/simulation-cell',
         {
@@ -213,23 +179,7 @@ const endpoints = {
                 ...(params.page !== undefined ? { page: params.page } : {}),
                 ...(params.limit !== undefined ? { limit: params.limit } : {})
             }),
-            map: (result) => {
-                const inner = result.data;
-                const pagination: PaginationMeta = {
-                    page: inner.page,
-                    limit: inner.limit,
-                    total: inner.total,
-                    totalPages: inner.totalPages,
-                    hasMore: inner.page < inner.totalPages
-                };
-
-                return {
-                    status: 'success',
-                    data: inner.data,
-                    pagination,
-                    ...(inner._meta ? { _meta: inner._meta } : {})
-                };
-            }
+            map: mapRawListingResponse
         }
     ),
     getSubListing: get<PublicCanvasSubListingInput, GetSubListingOutputDTO>(

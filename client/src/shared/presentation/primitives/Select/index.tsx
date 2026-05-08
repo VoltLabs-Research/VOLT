@@ -1,11 +1,7 @@
-import {
-    getFloatingOwnerIdsAttribute,
-    useFloatingOwnerIds,
-    useTopLayerRoot
-} from '@/shared/presentation/contexts/FloatingRootContext';
 import SearchInput from '@/shared/presentation/primitives/SearchInput';
+import { matchReferenceWidth, useFloatingLayerRoot } from './floating-layer';
 import './Select.css';
-import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
+import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, autoUpdate } from '@floating-ui/react';
 import { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import React from 'react';
 
@@ -88,9 +84,7 @@ const Select = ({
     'aria-errormessage': ariaErrorMessage
 }: SelectProps) => {
     const uid = useId();
-    const floatingRoot = useTopLayerRoot();
-    const floatingOwnerIds = useFloatingOwnerIds();
-    const floatingOwnerIdsAttribute = getFloatingOwnerIdsAttribute(floatingOwnerIds);
+    const { floatingRoot, floatingOwnerIdsAttribute } = useFloatingLayerRoot();
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -153,14 +147,7 @@ const Select = ({
             offset(6),
             flip({ padding: 8 }),
             shift({ padding: 8 }),
-            size({
-                apply({ rects, elements }) {
-                    Object.assign(elements.floating.style, {
-                        minWidth: `${rects.reference.width}px`
-                    });
-                },
-                padding: 8
-            })
+            matchReferenceWidth()
         ],
         whileElementsMounted: autoUpdate
     });
@@ -280,17 +267,12 @@ const Select = ({
         }
 
         const handleOptionKeyDown = (event: React.KeyboardEvent) => {
-            if (isMulti) {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleSelect(option.value);
-                }
+            if (event.key !== 'Enter' && event.key !== ' ') {
                 return;
             }
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                handleSelect(option.value);
-            }
+
+            event.preventDefault();
+            handleSelect(option.value);
         };
 
         return (
@@ -341,6 +323,16 @@ const Select = ({
     };
 
     const renderTrigger = () => {
+        const triggerAriaProps = {
+            'aria-haspopup': 'listbox' as const,
+            'aria-expanded': isOpen,
+            'aria-label': ariaLabel,
+            'aria-labelledby': ariaLabelledBy,
+            'aria-describedby': ariaDescribedBy,
+            'aria-invalid': ariaInvalid,
+            'aria-errormessage': ariaErrorMessage
+        };
+
         if (isEditable) {
             return (
                 <input
@@ -356,13 +348,7 @@ const Select = ({
                     style={style}
                     disabled={disabled}
                     title={title}
-                    aria-haspopup='listbox'
-                    aria-expanded={isOpen}
-                    aria-label={ariaLabel}
-                    aria-labelledby={ariaLabelledBy}
-                    aria-describedby={ariaDescribedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={ariaErrorMessage}
+                    {...triggerAriaProps}
                     onFocusCapture={onFocusCapture}
                     {...getReferenceProps()}
                 />
@@ -384,13 +370,7 @@ const Select = ({
                 style={style}
                 disabled={disabled}
                 title={title}
-                aria-haspopup='listbox'
-                aria-expanded={isOpen}
-                aria-label={ariaLabel}
-                aria-labelledby={ariaLabelledBy}
-                aria-describedby={ariaDescribedBy}
-                aria-invalid={ariaInvalid}
-                aria-errormessage={ariaErrorMessage}
+                {...triggerAriaProps}
                 onFocusCapture={onFocusCapture}
                 {...getReferenceProps()}
             >

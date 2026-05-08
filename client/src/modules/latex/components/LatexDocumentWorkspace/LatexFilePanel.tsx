@@ -18,7 +18,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import FileTreeNode from './FileTreeNode';
-import WorkspaceEntryInput from './WorkspaceEntryInput';
+import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import { DndContext, PointerSensor, pointerWithin, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { cn } from '@/shared/utils';
 import { processFileSystemEntry } from '@/shared/utils/file';
@@ -650,24 +650,18 @@ const LatexFilePanel = ({
 
                                 <div role='tree' aria-label='Project files and assets' className='latex-workspace__tree-root'>
                                     {treeNodes.map(renderTreeNode)}
-                                    {newFolderTargetFolder === '' && (
-                                        <WorkspaceEntryInput
-                                            icon={<FolderPlus size={13} />}
-                                            label='Create a folder at the project root'
-                                            placeholder='Folder name'
-                                            onConfirm={handleConfirmNewFolder}
-                                            onCancel={closeNewFolder}
-                                        />
-                                    )}
-                                    {newFileTargetFolder === '' && (
-                                        <WorkspaceEntryInput
-                                            icon={<FilePlus size={13} />}
-                                            label='Create a file at the project root'
-                                            placeholder='File name'
-                                            onConfirm={handleConfirmNewFile}
-                                            onCancel={closeNewFile}
-                                        />
-                                    )}
+                                    <WorkspaceCreationInputs
+                                        folderPath=''
+                                        newFileTargetFolder={newFileTargetFolder}
+                                        newFolderTargetFolder={newFolderTargetFolder}
+                                        folderLabel='Create a folder at the project root'
+                                        fileLabel='Create a file at the project root'
+                                        fileIcon={<FilePlus size={13} />}
+                                        onConfirmNewFolder={handleConfirmNewFolder}
+                                        onCancelNewFolder={closeNewFolder}
+                                        onConfirmNewFile={handleConfirmNewFile}
+                                        onCancelNewFile={closeNewFile}
+                                    />
                                 </div>
 
                                 <RootDropLane

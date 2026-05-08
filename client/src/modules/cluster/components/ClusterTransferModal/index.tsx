@@ -6,7 +6,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import Select from '@/shared/presentation/primitives/Select';
 import { formatClusterTimestamp } from '@/modules/cluster/utilities/format-cluster-timestamp';
 import {
@@ -113,28 +113,19 @@ const ClusterTransferModal = ({
         }
     };
 
+    const footer = (
+        <ClusterModalActionFooter
+            cancelLabel='Close'
+            confirmLabel='Queue transfer'
+            onCancel={handleClose}
+            onConfirm={handleSave}
+            isSubmitting={isSubmitting}
+            confirmDisabled={!destinationClusterId}
+        />
+    );
+
     return (
-        <Modal
-            id={CLUSTER_TRANSFER_MODAL_ID}
-            title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`}
-            description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative MinIO data and purges the source daemon Mongo cache after verify and switch complete.'
-            footer={(
-                <ModalFooterActions
-                    secondary={{
-                        label: 'Close',
-                        onClick: handleClose,
-                        disabled: isSubmitting
-                    }}
-                    primary={{
-                        label: 'Queue transfer',
-                        onClick: handleSave,
-                        isLoading: isSubmitting,
-                        disabled: !destinationClusterId
-                    }}
-                />
-            )}
-            onClose={handleClose}
-        >
+        <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative MinIO data and purges the source daemon Mongo cache after verify and switch complete.' footer={footer} onClose={handleClose}>
             <Stack gap='1' p='1-5'>
                 <Stack gap='05'>
                     <Heading level={3} size='md' weight='medium' tone='secondary'>Destination cluster</Heading>

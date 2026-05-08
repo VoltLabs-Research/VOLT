@@ -1,11 +1,12 @@
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
+import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, Job } from '@/modules/jobs/api/entities/job';
@@ -61,23 +62,9 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                     </Row>
                 </Row>
             </button>
-            {prefersReducedMotion ? (
-                isExpanded ? <div id={contentId}>{jobs}</div> : null
-            ) : (
-                <AnimatePresence>
-                    {isExpanded && (
-                        <motion.div
-                            id={contentId}
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {jobs}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            )}
+            <CollapsibleJobContent id={contentId} isExpanded={isExpanded}>
+                {jobs}
+            </CollapsibleJobContent>
         </Box>
     );
 };

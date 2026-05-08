@@ -3,8 +3,6 @@ import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import StatCard from '@/shared/presentation/primitives/StatCard';
 import { useMemo } from 'react';
 import {
-    AreaChart,
-    Area,
     BarChart,
     Bar,
     XAxis,
@@ -15,14 +13,20 @@ import {
 } from 'recharts';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
+import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
+import { SecretKeyEmptyView, SecretKeyRecoveryView } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
 import '../secret-key/shared/SecretKeyShared.css';
 
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
+const metricsTitle = (
+    <div className='d-flex column gap-05'>
+        <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
+    </div>
+);
 
 export default function SecretKeyMetrics() {
     const { metrics, isLoading, error, refetch } = useSecretKeyTeamMetrics();
@@ -75,33 +79,19 @@ export default function SecretKeyMetrics() {
     );
 
     const errorView = (err: unknown) => (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex column gap-05'>
-                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                </div>
-                <RecoveryState
-                    title='Unable to load metrics'
-                    description={err instanceof Error ? err.message : 'Something went wrong while loading secret key metrics.'}
-                    tone={RecoveryStateTone.Error}
-                    retryLabel='Try again'
-                    onRetry={() => refetch()}
-                />
-            </div>
-        </div>
+        <SecretKeyRecoveryView
+            header={metricsTitle}
+            title='Unable to load metrics'
+            description={err instanceof Error ? err.message : 'Something went wrong while loading secret key metrics.'}
+            onRetry={() => refetch()}
+        />
     );
 
     const emptyView = (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex column gap-05'>
-                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                </div>
-                <div className='d-flex flex-center p-3'>
-                    <p className='color-muted font-size-3'>No metrics data available yet.</p>
-                </div>
-            </div>
-        </div>
+        <SecretKeyEmptyView
+            header={metricsTitle}
+            message='No metrics data available yet.'
+        />
     );
 
     if (isLoading || (error && !metrics) || !metrics) {
@@ -175,40 +165,13 @@ export default function SecretKeyMetrics() {
                             { label: 'Success Rate', value: `${metrics.overview.successRate.toFixed(1)}%` }
                         ]}
                     >
-                        <ResponsiveContainer width='100%' height={280}>
-                            <AreaChart
-                                data={requestsOverTime}
-                                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                            >
-                                <defs>
-                                    <linearGradient id='colorRequests' x1='0' y1='0' x2='0' y2='1'>
-                                        <stop offset='5%' stopColor={CHART_COLORS.requests} stopOpacity={0.3} />
-                                        <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
-                                <XAxis
-                                    dataKey='date'
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '12px' }}
-                                />
-                                <YAxis
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '12px' }}
-                                />
-                                <Tooltip content={renderAreaTooltip} />
-                                <Area
-                                    type='monotone'
-                                    dataKey='count'
-                                    stroke={CHART_COLORS.requests}
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill='url(#colorRequests)'
-                                    name='Requests'
-                                    isAnimationActive={false}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        <RequestsAreaChart
+                            data={requestsOverTime}
+                            gradientId='colorRequests'
+                            height={280}
+                            tooltipContent={renderAreaTooltip}
+                            areaName='Requests'
+                        />
                     </ChartContainer>
 
                     <ChartContainer

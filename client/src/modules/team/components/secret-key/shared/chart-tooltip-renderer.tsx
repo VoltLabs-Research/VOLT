@@ -7,6 +7,8 @@ interface TooltipPayloadRecord {
     [key: string]: string | number;
 }
 
+type TooltipTitle = string | ((payload: TooltipPayloadRecord) => string);
+
 const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord => {
     if (typeof value !== 'object' || value === null) {
         return false;
@@ -16,7 +18,7 @@ const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord =
 };
 
 export const createTooltipRenderer = (
-    titleKey: string,
+    title: TooltipTitle,
     label: string,
     color?: string
 ): ContentType<ValueType, NameType> => {
@@ -31,7 +33,7 @@ export const createTooltipRenderer = (
 
         return (
             <ChartTooltip
-                title={String(firstPayload[titleKey])}
+                title={typeof title === 'function' ? title(firstPayload) : String(firstPayload[title])}
                 items={[{ label, value: firstValue, ...(color ? { color } : {}) }]}
             />
         );

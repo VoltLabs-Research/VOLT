@@ -49,21 +49,6 @@ export interface PluginListingDocumentsMeta extends Record<string, unknown> {
     subListingNames: string[];
 }
 
-export interface PluginListingExportMeta {
-    pluginId: string;
-    exposureId: string;
-    analysisId?: string;
-    trajectoryId?: string;
-    total: number;
-    columns: ColumnDef[];
-    format: ExportType;
-}
-
 export interface GetPluginListingDocumentsOutputDTO extends PaginatedResult<ListingRowData> {
     _meta: PluginListingDocumentsMeta;
-}
-
-export interface ExportPluginListingDocumentsOutputDTO {
-    meta: PluginListingExportMeta;
-    data: ListingRowData[];
 }

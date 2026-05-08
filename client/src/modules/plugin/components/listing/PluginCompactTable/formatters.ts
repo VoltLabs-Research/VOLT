@@ -36,6 +36,10 @@ export const vectorMagnitude = (components: number[]): number => {
     return Math.sqrt(sum);
 };
 
+export const isNumberArray = (input: unknown): input is number[] => {
+    return Array.isArray(input) && input.every((entry) => typeof entry === 'number');
+};
+
 export const summarizeScalar = (value: unknown): string => {
     if(value === null || value === undefined) return '-';
     if(typeof value === 'boolean') return value ? 'true' : 'false';
@@ -48,10 +52,9 @@ export const summarizeScalar = (value: unknown): string => {
 
     if(Array.isArray(value)){
         if(value.length === 0) return '[]';
-        if(value.every((entry) => typeof entry === 'number')){
-            const nums = value as number[];
-            const sample = nums.slice(0, 3).map((n) => formatScientific(n, 3).short).join(', ');
-            return nums.length > 3 ? `[${sample}, …]` : `[${sample}]`;
+        if(isNumberArray(value)){
+            const sample = value.slice(0, 3).map((n) => formatScientific(n, 3).short).join(', ');
+            return value.length > 3 ? `[${sample}, …]` : `[${sample}]`;
         }
         return `[${value.length}]`;
     }

@@ -51,6 +51,12 @@ interface DebugExecutionTraceTreeProps {
     depth?: number;
 }
 
+interface NestedExecutionTracePanelProps {
+    nodes: DebugTraceNode[];
+    expandedTraceIds: Set<string>;
+    onToggleTraceNode: (traceId: string) => void;
+}
+
 const formatTraceDuration = (durationMs: number): string => {
     if (durationMs < 1000) {
         return `${durationMs}ms`;
@@ -169,6 +175,27 @@ const DebugExecutionTraceTree = ({
     );
 };
 
+const NestedExecutionTracePanel = ({
+    nodes,
+    expandedTraceIds,
+    onToggleTraceNode
+}: NestedExecutionTracePanelProps) => {
+    if (nodes.length === 0) {
+        return null;
+    }
+
+    return (
+        <Stack gap='035' className='workflow-node-trace-panel'>
+            <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
+            <DebugExecutionTraceTree
+                nodes={nodes}
+                expandedTraceIds={expandedTraceIds}
+                onToggleTraceNode={onToggleTraceNode}
+            />
+        </Stack>
+    );
+};
+
 const BaseNode = ({
     id,
     data,
@@ -198,7 +225,6 @@ const BaseNode = ({
             || debugState.status === DebugNodeStatus.Failed
             || debugState.status === DebugNodeStatus.Skipped);
     const nestedTrace = Array.isArray(debugState?.nestedTrace) ? debugState.nestedTrace : [];
-    const hasNestedTrace = nestedTrace.length > 0;
     const logSegments = Array.isArray(debugState?.logSegments) ? debugState.logSegments : [];
 
     const isEntrypoint = nodeType === NodeType.ENTRYPOINT;
@@ -389,16 +415,11 @@ const BaseNode = ({
                                 <pre className='m-0 workflow-node-debug-stack'>{debugState.stack}</pre>
                             )}
 
-                            {hasNestedTrace && (
-                                <Stack gap='035' className='workflow-node-trace-panel'>
-                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
-                                    <DebugExecutionTraceTree
-                                        nodes={nestedTrace}
-                                        expandedTraceIds={expandedTraceIds}
-                                        onToggleTraceNode={toggleTraceNode}
-                                    />
-                                </Stack>
-                            )}
+                            <NestedExecutionTracePanel
+                                nodes={nestedTrace}
+                                expandedTraceIds={expandedTraceIds}
+                                onToggleTraceNode={toggleTraceNode}
+                            />
                         </Stack>
                     )}
 
@@ -409,31 +430,21 @@ const BaseNode = ({
                                 <Text as='p' size='sm'>{debugState.reason || 'Skipped'}</Text>
                             </Row>
 
-                            {hasNestedTrace && (
-                                <Stack gap='035' className='workflow-node-trace-panel'>
-                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
-                                    <DebugExecutionTraceTree
-                                        nodes={nestedTrace}
-                                        expandedTraceIds={expandedTraceIds}
-                                        onToggleTraceNode={toggleTraceNode}
-                                    />
-                                </Stack>
-                            )}
+                            <NestedExecutionTracePanel
+                                nodes={nestedTrace}
+                                expandedTraceIds={expandedTraceIds}
+                                onToggleTraceNode={toggleTraceNode}
+                            />
                         </Stack>
                     )}
 
                     {debugState.status === 'completed' && (
                         <Stack gap='05' className='workflow-node-debug-tree font-size-05 line-height-5'>
-                            {hasNestedTrace && (
-                                <Stack gap='035' className='workflow-node-trace-panel'>
-                                    <Text as='p' size='sm' weight='bold'>Nested Execution</Text>
-                                    <DebugExecutionTraceTree
-                                        nodes={nestedTrace}
-                                        expandedTraceIds={expandedTraceIds}
-                                        onToggleTraceNode={toggleTraceNode}
-                                    />
-                                </Stack>
-                            )}
+                            <NestedExecutionTracePanel
+                                nodes={nestedTrace}
+                                expandedTraceIds={expandedTraceIds}
+                                onToggleTraceNode={toggleTraceNode}
+                            />
 
                             {debugState.output && (
                                 <JsonTree data={debugState.output} defaultExpanded={true} />

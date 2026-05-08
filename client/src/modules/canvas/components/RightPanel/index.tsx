@@ -11,21 +11,21 @@ import ObjectsPanel from '../ObjectsPanel';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import { useExecutePluginMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
+import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
 import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
-import { resolvePluginExecutionClusterId, supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
+import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
+import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
-import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
 
 import './RightPanel.css';
 
@@ -37,23 +37,11 @@ interface PluginExecutionClusterConfig {
     selectedTeamClusterId?: string;
 }
 
-interface RightPanelProps {
+interface RightPanelProps extends CanvasPanelActionProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-    onDownloadAnalysis?: (analysisId: string) => void | Promise<void>;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
-    rasterContainerSelections?: RasterContainerSelection[];
-    activeRasterContainerId?: RasterContainerId;
-    onSetActiveRasterContainer?: (containerId: RasterContainerId) => void;
-    onUpdateRasterContainerSelection?: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 }
 
 const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
@@ -127,18 +115,11 @@ const RightPanel = ({
     const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
 
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
-    const executionTeamClusters = useMemo<PluginTeamClusterOption[]>(() => {
-        return (teamClustersResponse?.data ?? []).filter(supportsPluginExecutionCluster);
-    }, [teamClustersResponse?.data]);
-
-    const teamClusterOptions = useMemo<SelectOption[]>(() => {
-        return executionTeamClusters.map((teamCluster) => ({
-            value: teamCluster._id,
-            title: teamCluster.name
-        }));
-    }, [executionTeamClusters]);
-
-    const hasTeamClusterOptions = teamClusterOptions.length > 0;
+    const {
+        executionTeamClusters,
+        teamClusterOptions,
+        hasTeamClusterOptions
+    } = usePluginExecutionClusterOptions(teamClustersResponse?.data);
     const trajectoryTeamId = resolveTrajectoryTeamId(trajectory);
     const isForeignTrajectory = Boolean(
         selectedTeamId

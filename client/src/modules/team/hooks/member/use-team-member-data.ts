@@ -1,7 +1,6 @@
 import { useAllTeamMembersQuery } from '@/modules/team/hooks/member/queries';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { useEffect, useMemo } from 'react';
+import useTeamQueryState from '@/modules/team/hooks/use-team-query-state';
+import { useMemo } from 'react';
 
 interface UseTeamMemberDataOptions {
     teamId?: string | null;
@@ -10,7 +9,6 @@ interface UseTeamMemberDataOptions {
 }
 
 export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMemberDataOptions = {}) {
-    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const queryParams = useMemo(() => {
         if (!teamId) {
             return null;
@@ -25,27 +23,14 @@ export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMember
     const membersQuery = useAllTeamMembersQuery(queryParams ?? { teamId: '', limit }, {
         enabled: !!queryParams
     });
-
-    useEffect(() => {
-        if (membersQuery.error) {
-            checkAccessDeniedError(membersQuery.error);
-        }
-    }, [membersQuery.error, checkAccessDeniedError]);
-
-    let error: string | null = null;
-    if (membersQuery.error && !isAccessDeniedError(membersQuery.error)) {
-        error = reportError(membersQuery.error, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to load team members'
-        }).title;
-    }
+    const queryState = useTeamQueryState(membersQuery, 'Failed to load team members');
 
     return {
-        members: membersQuery.data ?? [],
-        isLoading: membersQuery.isLoading || membersQuery.isFetching,
-        error,
-        accessDenied,
-        accessDeniedMessage,
-        refresh: membersQuery.refetch
+        members: queryState.data ?? [],
+        isLoading: queryState.isLoading,
+        error: queryState.error,
+        accessDenied: queryState.accessDenied,
+        accessDeniedMessage: queryState.accessDeniedMessage,
+        refresh: queryState.refresh
     };
 }

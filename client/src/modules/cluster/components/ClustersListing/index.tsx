@@ -37,17 +37,27 @@ import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/share
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/ServerTable/ServerTable.css';
 import { useNavigate } from 'react-router-dom';
-const renderMetricValue = (value: number | null): ReactNode => {
-    if (value === null) {
-        return <Text as='p' size='sm' tone='muted'>--</Text>;
-    }
+import type { NavigateFunction } from 'react-router-dom';
 
+const CLUSTER_EXPLORER_MENU_ITEMS: Array<Pick<MenuOption, 'label' | 'icon'> & { segment: string }> = [
+    { label: 'Explore Mongo Documents', segment: 'mongo', icon: Database },
+    { label: 'Explore Redis Data', segment: 'redis', icon: Database },
+    { label: 'Explore MinIO', segment: 'minio', icon: FolderOpen }
+];
+
+const renderMetricBars = (percentage: number, label: string): ReactNode => {
     return (
         <Row gap='05'>
-            <MetricBars percentage={value} />
-            <Text as='p' size='sm' tone='muted'>{value}%</Text>
+            <MetricBars percentage={percentage} />
+            <Text as='p' size='sm' tone='muted'>{label}</Text>
         </Row>
     );
+};
+
+const renderMetricValue = (value: number | null): ReactNode => {
+    return value === null
+        ? <Text as='p' size='sm' tone='muted'>--</Text>
+        : renderMetricBars(value, `${value}%`);
 };
 
 const renderDiskValue = (row: ServerRow): ReactNode => {
@@ -55,12 +65,23 @@ const renderDiskValue = (row: ServerRow): ReactNode => {
         return <Text as='p' size='sm' tone='muted'>--</Text>;
     }
 
-    return (
-        <Row gap='05'>
-            <MetricBars percentage={row.diskUsagePercent} />
-            <Text as='p' size='sm' tone='muted'>{row.diskFree.toFixed(1)}GB Available</Text>
-        </Row>
-    );
+    return renderMetricBars(row.diskUsagePercent, `${row.diskFree.toFixed(1)}GB Available`);
+};
+
+const createMetricColumn = (key: 'cpu' | 'memory', title: string): ColumnConfig<ServerRow> => ({
+    key,
+    title,
+    sortable: true,
+    width: 180,
+    render: (_, row) => renderMetricValue(row[key])
+});
+
+const createExplorerMenuOptions = (row: ServerRow, navigate: NavigateFunction): MenuOption[] => {
+    return CLUSTER_EXPLORER_MENU_ITEMS.map(({ label, segment, icon }) => ({
+        label,
+        icon,
+        onClick: () => navigate(`/dashboard/clusters/${row.id}/${segment}`)
+    }));
 };
 
 const ClustersListing = () => {
@@ -185,20 +206,8 @@ const ClustersListing = () => {
                 </StatusBadge>
             )
         },
-        {
-            key: 'cpu',
-            title: 'CPU',
-            sortable: true,
-            width: 180,
-            render: (_, row) => renderMetricValue(row.cpu)
-        },
-        {
-            key: 'memory',
-            title: 'Memory',
-            sortable: true,
-            width: 180,
-            render: (_, row) => renderMetricValue(row.memory)
-        },
+        createMetricColumn('cpu', 'CPU'),
+        createMetricColumn('memory', 'Memory'),
         {
             key: 'diskUsagePercent',
             title: 'Disk',
@@ -248,21 +257,7 @@ const ClustersListing = () => {
             disabled: row.teamCluster.status !== TeamClusterStatus.Connected || !row.teamCluster.effectiveCapabilities.servesStorageReads,
             onClick: () => handleTransferData(row.teamCluster)
         },
-        {
-            label: 'Explore Mongo Documents',
-            icon: Database,
-            onClick: () => navigate(`/dashboard/clusters/${row.id}/mongo`)
-        },
-        {
-            label: 'Explore Redis Data',
-            icon: Database,
-            onClick: () => navigate(`/dashboard/clusters/${row.id}/redis`)
-        },
-        {
-            label: 'Explore MinIO',
-            icon: FolderOpen,
-            onClick: () => navigate(`/dashboard/clusters/${row.id}/minio`)
-        },
+        ...createExplorerMenuOptions(row, navigate),
         {
             label: 'Delete cluster',
             icon: Trash2,

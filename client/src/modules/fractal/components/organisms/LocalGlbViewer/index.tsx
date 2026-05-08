@@ -3,6 +3,7 @@ import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
+import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fit';
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
@@ -14,7 +15,6 @@ interface LocalGlbViewerProps {
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 }
 
-const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
 const AUTO_SIMULATION_CELL_PADDING_RATIO = 0.05;
 const AUTO_SIMULATION_CELL_MIN_PADDING = 0.01;
 type OrbitControlsLike = {
@@ -50,31 +50,10 @@ const fitCameraToObject = (
         return;
     }
 
-    const sphere = worldBounds.getBoundingSphere(new THREE.Sphere());
-    const referenceTarget = controls?.target ?? new THREE.Vector3(0, 0, 0);
-    const currentDirection = camera.position.clone().sub(referenceTarget);
-    const direction = currentDirection.lengthSq() > 0.0001
-        ? currentDirection.normalize()
-        : DEFAULT_CAMERA_DIRECTION;
-    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
-    const fitFov = Math.min(verticalFov, horizontalFov);
-    const desiredDistance = (sphere.radius / Math.sin(fitFov / 2)) * 1.2;
-    const distance = controls
-        ? Math.min(controls.maxDistance, Math.max(controls.minDistance, desiredDistance))
-        : desiredDistance;
-    const nextTarget = sphere.center.clone();
-
-    camera.position.copy(nextTarget.clone().addScaledVector(direction, distance));
-    camera.near = 0.01;
-    camera.far = Math.max(1000, distance + (sphere.radius * 8));
-    camera.lookAt(nextTarget);
-    camera.updateProjectionMatrix();
-
-    if (controls) {
-        controls.target.copy(nextTarget);
-        controls.update?.();
-    }
+    fitPerspectiveCameraToBox(camera, worldBounds, controls, {
+        updateClipping: true,
+        fallbackTarget: new THREE.Vector3(0, 0, 0)
+    });
 };
 
 const toModelWorldBounds = (box: THREE.Box3): ModelWorldBounds => ({

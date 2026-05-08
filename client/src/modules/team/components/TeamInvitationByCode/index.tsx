@@ -1,10 +1,15 @@
 import Button from '@/shared/presentation/primitives/Button';
 import Tag from '@/shared/presentation/primitives/Tag';
 import Loader from '@/shared/presentation/primitives/Loader';
-import Stack from '@/shared/presentation/primitives/Stack';
 import Row from '@/shared/presentation/primitives/Row';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Text from '@/shared/presentation/primitives/Text';
+import {
+    TeamInvitationCard,
+    TeamInvitationDetailItem,
+    TeamInvitationDetails,
+    TeamInvitationStateCard
+} from '@/modules/team/components/TeamInvitationShared';
 import './TeamInvitationByCode.css';
 import '../TeamInvitation/TeamInvitation.css';
 import {
@@ -115,86 +120,71 @@ const TeamInvitationByCodeTemplate = () => {
 
     if (previewQuery.isLoading) {
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+            <TeamInvitationStateCard
+                icon={(
                     <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
                         <Loader scale={1} isFixed={false} />
                     </div>
-                    <Heading level={3} size='xl' weight='bold'>Reviewing invite...</Heading>
-                    <Text as='p' tone='secondary'>
-                        We are checking the invite details before you join the team.
-                    </Text>
-                </Stack>
-            </Stack>
+                )}
+                title='Reviewing invite...'
+                description='We are checking the invite details before you join the team.'
+            />
         );
     }
 
     if (status === TeamInvitationByCodeStatus.Joining) {
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+            <TeamInvitationStateCard
+                icon={(
                     <div className='team-invitation-by-code-icon team-invitation-by-code-icon-loading'>
                         <Loader scale={1} isFixed={false} />
                     </div>
-                    <Heading level={3} size='xl' weight='bold'>Joining team...</Heading>
-                    <Text as='p' tone='secondary'>
-                        We are confirming your membership and preparing your workspace.
-                    </Text>
-                </Stack>
-            </Stack>
+                )}
+                title='Joining team...'
+                description='We are confirming your membership and preparing your workspace.'
+            />
         );
     }
 
     if (status === TeamInvitationByCodeStatus.AlreadyMember) {
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
-                    <Tag tone='success' variant='soft' size='md' leftIcon={<Users size={20} />}>
-                        Already joined
-                    </Tag>
-                    <Heading level={3} size='xl' weight='bold'>You are already in this team</Heading>
-                    {preview && (
-                        <Row align='start' gap='1' wrap radius='md' className='team-invitation-details'>
-                            <Stack className='team-invitation-detail'>
-                                <Text as='span' className='team-invitation-detail-label'>Team</Text>
-                                <Text as='span' className='team-invitation-detail-value'>{preview.teamName}</Text>
-                            </Stack>
-                            <Stack className='team-invitation-detail'>
-                                <Text as='span' className='team-invitation-detail-label'>Owner</Text>
-                                <Text as='span' className='team-invitation-detail-value'>{preview.ownerName}</Text>
-                            </Stack>
-                        </Row>
-                    )}
-                    <Text as='p' tone='secondary'>
-                        {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
-                    </Text>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        leftIcon={<CheckCircle size={18} />}
-                        onClick={handleNavigateToNextDestination}
-                    >
-                        Go to Dashboard
-                    </Button>
-                </Stack>
-            </Stack>
+            <TeamInvitationCard>
+                <Tag tone='success' variant='soft' size='md' leftIcon={<Users size={20} />}>
+                    Already joined
+                </Tag>
+                <Heading level={3} size='xl' weight='bold'>You are already in this team</Heading>
+                {preview && (
+                    <TeamInvitationDetails>
+                        <TeamInvitationDetailItem label='Team' value={preview.teamName} />
+                        <TeamInvitationDetailItem label='Owner' value={preview.ownerName} />
+                    </TeamInvitationDetails>
+                )}
+                <Text as='p' tone='secondary'>
+                    {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
+                </Text>
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    leftIcon={<CheckCircle size={18} />}
+                    onClick={handleNavigateToNextDestination}
+                >
+                    Go to Dashboard
+                </Button>
+            </TeamInvitationCard>
         );
     }
 
     if (status === TeamInvitationByCodeStatus.Error) {
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+            <TeamInvitationStateCard
+                icon={(
                     <div className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </div>
-                    <Heading level={3} size='xl' weight='bold'>Could not join this team</Heading>
-                    <Text as='p' tone='secondary'>
-                        {joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'}
-                    </Text>
-                    <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
-                        Please ask for a new invite link or try again later.
-                    </Tag>
+                )}
+                title='Could not join this team'
+                description={joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'}
+                action={(
                     <Button
                         variant='solid'
                         intent='brand'
@@ -202,52 +192,45 @@ const TeamInvitationByCodeTemplate = () => {
                     >
                         Back to Dashboard
                     </Button>
-                </Stack>
-            </Stack>
+                )}
+            >
+                <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
+                    Please ask for a new invite link or try again later.
+                </Tag>
+            </TeamInvitationStateCard>
         );
     }
 
     return (
-        <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-            <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
-                <div className='team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
-                    <ShieldCheck size={40} />
-                </div>
-                <Heading level={3} size='xl' weight='bold'>Join this team?</Heading>
-                <Text as='p' tone='secondary'>
-                    Review the invite details below, then confirm to join this workspace.
-                </Text>
-                {preview && (
-                    <Row align='start' gap='1' wrap radius='md' className='team-invitation-details'>
-                        <Stack className='team-invitation-detail'>
-                            <Text as='span' className='team-invitation-detail-label'>Team</Text>
-                            <Text as='span' className='team-invitation-detail-value'>{preview.teamName}</Text>
-                        </Stack>
-                        <Stack className='team-invitation-detail'>
-                            <Text as='span' className='team-invitation-detail-label'>Owner</Text>
-                            <Text as='span' className='team-invitation-detail-value'>{preview.ownerName}</Text>
-                        </Stack>
-                        <Stack className='team-invitation-detail'>
-                            <Text as='span' className='team-invitation-detail-label'>Invite code</Text>
-                            <Text as='span' className='team-invitation-detail-value'>{normalizedCode}</Text>
-                        </Stack>
-                    </Row>
-                )}
-                <Row gap='075' className='team-invitation-actions'>
-                    <Button variant='ghost' intent='neutral' onClick={handleNavigateToNextDestination}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        leftIcon={<CheckCircle size={18} />}
-                        onClick={handleJoinTeam}
-                    >
-                        Join Team
-                    </Button>
-                </Row>
-            </Stack>
-        </Stack>
+        <TeamInvitationCard>
+            <div className='team-invitation-by-code-icon team-invitation-by-code-icon-ready'>
+                <ShieldCheck size={40} />
+            </div>
+            <Heading level={3} size='xl' weight='bold'>Join this team?</Heading>
+            <Text as='p' tone='secondary'>
+                Review the invite details below, then confirm to join this workspace.
+            </Text>
+            {preview && (
+                <TeamInvitationDetails>
+                    <TeamInvitationDetailItem label='Team' value={preview.teamName} />
+                    <TeamInvitationDetailItem label='Owner' value={preview.ownerName} />
+                    <TeamInvitationDetailItem label='Invite code' value={normalizedCode} />
+                </TeamInvitationDetails>
+            )}
+            <Row gap='075' className='team-invitation-actions'>
+                <Button variant='ghost' intent='neutral' onClick={handleNavigateToNextDestination}>
+                    Cancel
+                </Button>
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    leftIcon={<CheckCircle size={18} />}
+                    onClick={handleJoinTeam}
+                >
+                    Join Team
+                </Button>
+            </Row>
+        </TeamInvitationCard>
     );
 };
 

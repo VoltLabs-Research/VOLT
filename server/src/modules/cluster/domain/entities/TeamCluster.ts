@@ -180,12 +180,6 @@ export const createDefaultTeamClusterRoleConfig = (
     };
 };
 
-export const createDefaultTeamClusterEffectiveCapabilities = (
-    role: TeamClusterRole = DEFAULT_TEAM_CLUSTER_ROLE
-): TeamClusterEffectiveCapabilitiesProps => {
-    return buildTeamClusterEffectiveCapabilities(role);
-};
-
 export const resolveEffectiveCapabilitiesFromRoleConfig = (
     roleConfig: Pick<TeamClusterRuntimeRoleConfigProps, 'effectiveRole' | 'draining'>
 ): TeamClusterEffectiveCapabilitiesProps => {

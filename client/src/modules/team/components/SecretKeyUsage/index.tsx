@@ -4,19 +4,17 @@ import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import StatCard from '@/shared/presentation/primitives/StatCard';
 import Tag from '@/shared/presentation/primitives/Tag';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
+import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { SecretKeyEmptyView, SecretKeyRecoveryView } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    AreaChart,
-    Area,
     BarChart,
     Bar,
     PieChart,
@@ -29,17 +27,10 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import type { Params } from 'react-router-dom';
-import type { ContentType } from 'recharts/types/component/Tooltip';
-import type { TooltipContentProps } from 'recharts';
-import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
 import '../secret-key/shared/SecretKeyShared.css';
 import './SecretKeyUsage.css';
 interface SecretKeyUsageRouteParams extends Params {
     secretKeyId: string;
-}
-
-interface TooltipPayloadRecord {
-    [key: string]: string | number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -87,31 +78,7 @@ const getStatusColorGroup = (code: number): string => {
 
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
-
-const isTooltipPayloadRecord = (value: unknown): value is TooltipPayloadRecord => {
-    if (typeof value !== 'object' || value === null) {
-        return false;
-    }
-
-    return Object.values(value).every((entry) => typeof entry === 'string' || typeof entry === 'number');
-};
-
-const renderPieTooltip: ContentType<ValueType, NameType> = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
-    if (!active || !payload?.length) return null;
-
-    const firstPayload = payload[0]?.payload;
-    const firstValue = payload[0]?.value;
-    if (!isTooltipPayloadRecord(firstPayload) || (typeof firstValue !== 'string' && typeof firstValue !== 'number')) {
-        return null;
-    }
-
-    return (
-        <ChartTooltip
-            title={`Status ${firstPayload.statusCode}`}
-            items={[{ label: 'Count', value: firstValue }]}
-        />
-    );
-};
+const renderPieTooltip = createTooltipRenderer((payload) => `Status ${payload.statusCode}`, 'Count');
 
 export default function SecretKeyUsage() {
     const { secretKeyId } = useParams<SecretKeyUsageRouteParams>();
@@ -152,6 +119,12 @@ export default function SecretKeyUsage() {
     const handleBack = () => {
         navigate(-1);
     };
+    const usageTitle = (
+        <div className='d-flex items-center gap-1'>
+            {backButton(handleBack)}
+            <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
+        </div>
+    );
 
     const loadingView = (
         <div className='secret-key-page vh-max color-primary'>
@@ -178,35 +151,19 @@ export default function SecretKeyUsage() {
     );
 
     const errorView = (err: unknown) => (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex items-center gap-1'>
-                    {backButton(handleBack)}
-                    <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
-                </div>
-                <RecoveryState
-                    title='Unable to load usage data'
-                    description={err instanceof Error ? err.message : 'Something went wrong while loading usage data for this key.'}
-                    tone={RecoveryStateTone.Error}
-                    retryLabel='Try again'
-                    onRetry={() => refetch()}
-                />
-            </div>
-        </div>
+        <SecretKeyRecoveryView
+            header={usageTitle}
+            title='Unable to load usage data'
+            description={err instanceof Error ? err.message : 'Something went wrong while loading usage data for this key.'}
+            onRetry={() => refetch()}
+        />
     );
 
     const emptyView = (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex items-center gap-1'>
-                    {backButton(handleBack)}
-                    <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
-                </div>
-                <div className='d-flex flex-center p-3'>
-                    <p className='color-muted font-size-3'>No usage data available for this key.</p>
-                </div>
-            </div>
-        </div>
+        <SecretKeyEmptyView
+            header={usageTitle}
+            message='No usage data available for this key.'
+        />
     );
 
     if (isLoading || (error && !usage) || !usage) {
@@ -283,38 +240,14 @@ export default function SecretKeyUsage() {
                             { label: 'Peak Hour', value: usage.stats.peakHour }
                         ]}
                     >
-                        <ResponsiveContainer width='100%' height={250}>
-                            <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id='colorHourlyReqs' x1='0' y1='0' x2='0' y2='1'>
-                                        <stop offset='5%' stopColor={CHART_COLORS.requests} stopOpacity={0.3} />
-                                        <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border-soft)' />
-                                <XAxis
-                                    dataKey='date'
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '12px' }}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    stroke='var(--color-text-muted)'
-                                    style={{ fontSize: '12px' }}
-                                    allowDecimals={false}
-                                />
-                                <Tooltip content={renderAreaTooltip} />
-                                <Area
-                                    type='monotone'
-                                    dataKey='count'
-                                    stroke={CHART_COLORS.requests}
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill='url(#colorHourlyReqs)'
-                                    isAnimationActive={false}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        <RequestsAreaChart
+                            data={hourlyData}
+                            gradientId='colorHourlyReqs'
+                            height={250}
+                            tooltipContent={renderAreaTooltip}
+                            xAxisTickLine={false}
+                            yAxisAllowDecimals={false}
+                        />
                     </ChartContainer>
 
                     <ChartContainer

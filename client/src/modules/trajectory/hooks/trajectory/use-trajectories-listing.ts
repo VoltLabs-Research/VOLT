@@ -15,18 +15,18 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
+import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
+import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
 import {
@@ -39,6 +39,7 @@ import {
     useUpdateTrajectoryFolderMutation
 } from './queries';
 import { useNavigate } from 'react-router-dom';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 export const NEW_TRAJECTORY_FOLDER_MODAL_ID = 'new-trajectory-folder-modal';
 export const RENAME_TRAJECTORY_FOLDER_MODAL_ID = 'rename-trajectory-folder-modal';
 export const MOVE_TRAJECTORY_MODAL_ID = 'move-trajectory-modal';
@@ -55,16 +56,10 @@ interface TrajectoryMoveTarget {
     folder: string | null;
 }
 
-const createEmptyResponse = <T extends { _id: string }>(params: PaginationParams): PaginatedResponse<T> => ({
-    status: 'success',
-    data: [],
-    pagination: {
-        page: Math.max(1, Number(params.page) || 1),
-        limit: Math.max(1, Number(params.limit) || 20),
-        total: 0,
-        totalPages: 1,
-        hasMore: false
-    }
+const getTrajectoryMoveTarget = (trajectory: Trajectory): TrajectoryMoveTarget => ({
+    _id: trajectory._id,
+    name: trajectory.name,
+    folder: trajectory.folder
 });
 
 const fetchTrajectories = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<Trajectory>> => {
@@ -115,8 +110,6 @@ const useTrajectoriesListing = () => {
     const { mutateAsync: deleteFolder } = useDeleteTrajectoryFolderMutation();
     const { mutateAsync: moveTrajectory } = useMoveTrajectoryMutation();
 
-    const [movingTrajectory, setMovingTrajectory] = useState<TrajectoryMoveTarget | null>(null);
-
     const {
         breadcrumbs,
         context,
@@ -139,7 +132,7 @@ const useTrajectoriesListing = () => {
         fetchItems: fetchTrajectories,
         fetchFolders,
         getFolder: fetchFolderById,
-        createEmptyResponse,
+        createEmptyResponse: createEmptyPaginatedResponse,
         mapFolderRow: createTrajectoryFolderRow,
         mapItemRow: createTrajectoryItemRow,
         onFetchErrorTitle: 'Failed to fetch trajectories',
@@ -158,61 +151,36 @@ const useTrajectoriesListing = () => {
 
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, currentFolderId);
 
-    const handleRenameFolderOpen = useCallback((folder: TrajectoryFolder) => {
-        handleRenameFolderStateOpen(folder);
-        openModal(RENAME_TRAJECTORY_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateOpen]);
-
-    const handleRenameFolderClose = useCallback(() => {
-        closeModal(RENAME_TRAJECTORY_FOLDER_MODAL_ID);
-        handleRenameFolderStateClose();
-    }, [handleRenameFolderStateClose]);
-
-    const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        await handleRenameFolderStateSubmit(title);
-        closeModal(RENAME_TRAJECTORY_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateSubmit]);
+    const {
+        handleRenameFolderOpen,
+        handleRenameFolderClose,
+        handleRenameFolderSubmit
+    } = useRenameFolderModal({
+        modalId: RENAME_TRAJECTORY_FOLDER_MODAL_ID,
+        openRenameState: handleRenameFolderStateOpen,
+        closeRenameState: handleRenameFolderStateClose,
+        submitRenameState: handleRenameFolderStateSubmit
+    });
 
     const handleCreate = useCallback(() => {
         openFilePicker();
     }, [openFilePicker]);
 
-    const handleMoveTrajectoryOpen = useCallback((trajectory: Trajectory) => {
-        setMovingTrajectory({
-            _id: trajectory._id,
-            name: trajectory.name,
-            folder: trajectory.folder
-        });
-        openModal(MOVE_TRAJECTORY_MODAL_ID);
-    }, []);
-
-    const handleMoveTrajectoryClose = useCallback(() => {
-        closeModal(MOVE_TRAJECTORY_MODAL_ID);
-        setMovingTrajectory(null);
-    }, []);
-
-    const handleMoveTrajectorySubmit = useCallback(async (folderId: string | null) => {
-        if (!movingTrajectory) {
-            return;
-        }
-
-        await showPromise(moveTrajectory({ trajectoryId: movingTrajectory._id, folderId }), MOVE_TRAJECTORY_TOAST);
-    }, [moveTrajectory, movingTrajectory]);
-
-    const handleTrajectoryRowDragEnd = useCallback(async (
-        payload: Parameters<DocumentListingDragAndDropConfig<TrajectoryListingRow>['onDragEnd']>[0]
-    ) => {
-        const { activeItem, overItem } = payload;
-        if (!activeItem || !overItem || !isTrajectoryItemRow(activeItem) || !isTrajectoryFolderRow(overItem)) {
-            return;
-        }
-
-        if (activeItem.folder === overItem._id) {
-            return;
-        }
-
-        await showPromise(moveTrajectory({ trajectoryId: activeItem._id, folderId: overItem._id }), MOVE_TRAJECTORY_TOAST);
+    const moveTrajectoryToFolder = useCallback((trajectoryId: string, folderId: string | null) => {
+        return moveTrajectory({ trajectoryId, folderId });
     }, [moveTrajectory]);
+
+    const {
+        movingItem: movingTrajectory,
+        handleMoveOpen: handleMoveTrajectoryOpen,
+        handleMoveClose: handleMoveTrajectoryClose,
+        handleMoveSubmit: handleMoveTrajectorySubmit
+    } = useFolderedListingMoveModal<Trajectory, TrajectoryMoveTarget>({
+        modalId: MOVE_TRAJECTORY_MODAL_ID,
+        getMoveTarget: getTrajectoryMoveTarget,
+        moveItem: moveTrajectoryToFolder,
+        moveToast: MOVE_TRAJECTORY_TOAST
+    });
 
     const handleDeleteTrajectories = useCallback(async (targets: Trajectory[]) => {
         const deleteLabel = targets.length === 1 ? 'Delete trajectory' : 'Delete trajectories';
@@ -322,18 +290,16 @@ const useTrajectoriesListing = () => {
         return true;
     }, [navigate, openFolder]);
 
-    const dragAndDrop = useMemo<DocumentListingDragAndDropConfig<TrajectoryListingRow> | undefined>(() => {
-        if (!canMoveTrajectories) {
-            return undefined;
-        }
-
-        return {
-            activationDistance: 8,
-            getDraggableId: getTrajectoryListingDraggableId,
-            getDroppableId: getTrajectoryListingDroppableId,
-            onDragEnd: handleTrajectoryRowDragEnd
-        };
-    }, [canMoveTrajectories, handleTrajectoryRowDragEnd]);
+    const dragAndDrop = useFolderedListingDragAndDropMove({
+        canMove: canMoveTrajectories,
+        activationDistance: 8,
+        getDraggableId: getTrajectoryListingDraggableId,
+        getDroppableId: getTrajectoryListingDroppableId,
+        isItemRow: isTrajectoryItemRow,
+        isFolderRow: isTrajectoryFolderRow,
+        moveItem: moveTrajectoryToFolder,
+        moveToast: MOVE_TRAJECTORY_TOAST
+    });
 
     return {
         breadcrumbs,

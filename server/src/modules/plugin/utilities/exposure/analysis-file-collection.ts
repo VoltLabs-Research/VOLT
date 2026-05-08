@@ -11,11 +11,6 @@ export interface AnalysisFileRef {
     timestep: number;
 }
 
-export interface ExposurePayloadObject {
-    objectName: string;
-    timestep: number;
-}
-
 interface PrefixCollectionConfig {
     bucket: string;
     prefix: string;
@@ -76,40 +71,6 @@ const collectFilesByPrefix = async (
     }
 
     return files;
-};
-
-export const buildExposurePayloadObjectName = (
-    trajectoryId: string,
-    analysisId: string,
-    exposureId: string,
-    timestep: number
-): string => {
-    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack.zst`;
-};
-
-export const listExposurePayloadObjects = async (
-    storageService: IStorageService,
-    trajectoryId: string,
-    analysisId: string,
-    exposureId: string
-): Promise<ExposurePayloadObject[]> => {
-    const files = await collectFilesByPrefix(
-        storageService,
-        {
-            bucket: SYS_BUCKETS.PLUGINS,
-            prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`,
-            type: 'data',
-            timestepRegex: /timestep-(\d+)\.msgpack\.zst$/,
-            extensionFilter: '.msgpack.zst'
-        }
-    );
-
-    return files
-        .sort(sortByTimestepAndName)
-        .map(({ objectName, timestep }) => ({
-            objectName,
-            timestep
-        }));
 };
 
 export const listAnalysisFiles = async (

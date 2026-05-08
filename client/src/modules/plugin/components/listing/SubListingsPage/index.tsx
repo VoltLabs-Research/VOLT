@@ -1,24 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import DocumentListing, { type ColumnConfig, type DocumentListingTab } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type DocumentListingTab } from '@/shared/presentation/components/DocumentListing';
 import SubListingDetailPanel from '@/modules/plugin/components/listing/SubListingDetailPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import listingService from '@/modules/plugin/api/services/listing';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
-import { inferColumnType, type InferredColumnType, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
-import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
+import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { GetSubListingOutputDTO, SubListingColumn } from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+import type { GetSubListingOutputDTO } from '@/modules/plugin/api/dtos/listing/get-sub-listing';
 import './SubListingsPage.css';
 
 interface SubListingRow extends Record<string, unknown> {
     _id: string;
-}
-
-interface TabColumnSnapshot {
-    columns: ColumnConfig<SubListingRow>[];
-    inferredTypes: Record<string, InferredColumnType>;
 }
 
 interface SubListingFetchContext extends Record<string, unknown> {
@@ -27,21 +21,6 @@ interface SubListingFetchContext extends Record<string, unknown> {
     exposureId: string;
     timestep: number;
 }
-
-const MIN_WIDTH_BY_KIND: Record<InferredCellKind, number> = {
-    empty: 80,
-    boolean: 72,
-    integer: 96,
-    number: 120,
-    string: 180,
-    date: 180,
-    vector: 240,
-    numberArray: 180,
-    points: 120,
-    matrix: 140,
-    object: 280,
-    mixed: 200
-};
 
 const parseNames = (raw: string | null): string[] => {
     if(!raw) return [];
@@ -73,26 +52,6 @@ const buildTabs = (names: string[]): DocumentListingTab[] => {
         id: name,
         label: formatSnakeCaseToTitle(name)
     }));
-};
-
-const buildColumnSnapshot = (columns: SubListingColumn[], rows: Record<string, unknown>[]): TabColumnSnapshot => {
-    const inferredTypes: Record<string, InferredColumnType> = {};
-    const mapped: ColumnConfig<SubListingRow>[] = columns.map((column) => {
-        const key = column.label;
-        const samples = rows.slice(0, 30).map((row) => row[key]);
-        const inferred = inferColumnType(samples);
-        inferredTypes[key] = inferred;
-
-        return {
-            key,
-            title: formatSnakeCaseToTitle(key),
-            sortable: column.sortable,
-            minWidth: MIN_WIDTH_BY_KIND[inferred.kind] ?? MIN_WIDTH_BY_KIND.mixed,
-            render: (value: unknown) => renderInferredCell(value, inferred)
-        };
-    });
-
-    return { columns: mapped, inferredTypes };
 };
 
 const resolveRowIdentifier = (row: SubListingRow, index: number): string => {
@@ -130,7 +89,7 @@ const SubListingsPage = () => {
     }, [names, persistedTabKey]);
 
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [snapshotsByTab, setSnapshotsByTab] = useState<Record<string, TabColumnSnapshot>>({});
+    const [snapshotsByTab, setSnapshotsByTab] = useState<Record<string, SubListingColumnSnapshot<SubListingRow>>>({});
     const [selectedRow, setSelectedRow] = useState<SubListingRow | null>(null);
 
     useEffect(() => {
@@ -183,7 +142,7 @@ const SubListingsPage = () => {
         const rows = (response.rows ?? []) as SubListingRow[];
 
         if(response.page === 1){
-            const snapshot = buildColumnSnapshot(response.columns ?? [], rows);
+            const snapshot = buildDocumentSubListingColumnSnapshot(response.columns ?? [], rows);
             setSnapshotsByTab((previous) => ({
                 ...previous,
                 [requestParams.subListingName]: snapshot
