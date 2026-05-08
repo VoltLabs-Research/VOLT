@@ -70,7 +70,7 @@ export const ChannelCommands = Object.freeze({
 
     TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
-    TrajectoryVtrIngest: 'trajectory.vtr.ingest',
+    TrajectoryParquetIngest: 'trajectory.parquet.ingest',
     TrajectoryNativePreprocess: 'trajectory.native.preprocess',
     TrajectoryNativeMetadata: 'trajectory.native.metadata',
     TrajectoryNativePropertyStats: 'trajectory.native.property-stats',

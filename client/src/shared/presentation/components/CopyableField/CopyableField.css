@@ -5,7 +5,7 @@
 }
 
 .copyable-field-value {
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     word-break: break-all;
 }
 

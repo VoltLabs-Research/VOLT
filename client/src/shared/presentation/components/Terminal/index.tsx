@@ -54,7 +54,7 @@ const getTerminalTheme = (): TerminalTheme => {
 const Terminal = forwardRef<TerminalHandle, TerminalProps>(({ 
     onData,
     fontSize = 14,
-    fontFamily = 'Menlo, Monaco, "Courier New", monospace',
+    fontFamily = '"JetBrains Mono Variable", "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Consolas, monospace',
     className = '',
     ariaLabel = 'Terminal',
     value

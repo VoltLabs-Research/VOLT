@@ -97,7 +97,7 @@ const renderNotebookStartupTab = (notebookTab: Window, state: NotebookStartupWin
     document.body.style.justifyContent = 'center';
     document.body.style.background = 'Canvas';
     document.body.style.color = 'CanvasText';
-    document.body.style.fontFamily = 'Inter, system-ui, sans-serif';
+    document.body.style.fontFamily = '"Inter Variable", Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif';
 
     const container = document.createElement('main');
     container.style.maxWidth = '480px';

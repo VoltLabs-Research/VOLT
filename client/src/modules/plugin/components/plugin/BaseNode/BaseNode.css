@@ -110,7 +110,7 @@
 }
 
 .workflow-node-debug-tree {
-    font-family: monospace;
+    font-family: var(--font-mono);
 }
 
 .workflow-node-trace-panel {
@@ -188,7 +188,7 @@
 .workflow-node-trace-duration {
     font-size: 0.58rem;
     color: var(--color-text-secondary);
-    font-family: monospace;
+    font-family: var(--font-mono);
     white-space: nowrap;
 }
 
@@ -228,7 +228,7 @@
 
 .workflow-node-debug-stack {
     font-size: 0.625rem;
-    font-family: monospace;
+    font-family: var(--font-mono);
     white-space: pre-wrap;
     word-break: break-all;
     opacity: 0.8;
@@ -264,7 +264,7 @@
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
-    font-family: monospace;
+    font-family: var(--font-mono);
 }
 
 .workflow-node-exec-log-stdout {
