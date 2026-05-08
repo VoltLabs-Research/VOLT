@@ -84,8 +84,8 @@ export const listAnalysisFiles = async (
             bucket: SYS_BUCKETS.PLUGINS,
             prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
             type: 'data',
-            timestepRegex: /\/timestep-(\d+)\.msgpack\.zst$/,
-            extensionFilter: '.msgpack.zst'
+            timestepRegex: /\/timestep-(\d+)\.parquet$/,
+            extensionFilter: '.parquet'
         },
         {
             bucket: SYS_BUCKETS.PLUGINS,

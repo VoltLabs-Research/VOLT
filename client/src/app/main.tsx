@@ -1,3 +1,7 @@
+import '@fontsource-variable/inter';
+import '@fontsource-variable/inter/wght-italic.css';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/jetbrains-mono/wght-italic.css';
 import '@/shared/presentation/assets/stylesheets/theme.css';
 import '@/shared/presentation/assets/stylesheets/base.css';
 import '@/shared/presentation/assets/stylesheets/general.css';

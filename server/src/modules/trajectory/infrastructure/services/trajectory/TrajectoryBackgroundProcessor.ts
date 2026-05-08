@@ -50,7 +50,7 @@ interface GlbPreprocessingEnqueueResult {
     skippedJobs: number;
 };
 
-interface VtrIngestResult {
+interface TrajectoryParquetIngestResult {
     objectKey: string;
     frameCount: number;
     size: number;
@@ -59,8 +59,6 @@ interface VtrIngestResult {
 
 const GLB_SESSION_TTL_SECONDS = 86400;
 const GLB_ENQUEUE_BATCH_SIZE = 500;
-const VTR_INGEST_BATCH_SIZE = 200;
-
 interface GlbFrameDescriptor {
     timestep: number;
     objectKey: string;
@@ -237,27 +235,27 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
                     return;
                 }
 
-                await this.runVtrIngest(frames, trajectory, teamId);
+                await this.runTrajectoryParquetIngest(frames, trajectory, teamId);
                 await this.enqueueGlbPreprocessing(frames, trajectory, teamId);
             }
         );
     }
 
     /**
-     * Triggers the daemon's .vtr ingest command with the full frame manifest.
+     * Triggers the daemon's Parquet ingest command with the full frame manifest.
      * The daemon downloads each .dump.zst (which only exists as a short-lived
-     * raw archive), decompresses it, and writes the canonical .vtr back to
-     * its MinIO instance. We block GLB preprocessing until the .vtr lands to
+     * raw archive), decompresses it, and writes the canonical Parquet file back
+     * to its MinIO instance. We block GLB preprocessing until the Parquet lands to
      * ensure downstream reads resolve against it.
      */
-    private async runVtrIngest(
+    private async runTrajectoryParquetIngest(
         frames: Array<{ timestep: number; [key: string]: unknown }>,
         trajectory: Trajectory,
         _teamId: string
     ): Promise<void> {
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
-            logger.warn(`@trajectory-background-processor: skipping vtr ingest — no storageClusterId trajectoryId=${trajectory._id}`);
+            logger.warn(`@trajectory-background-processor: skipping parquet ingest — no storageClusterId trajectoryId=${trajectory._id}`);
             return;
         }
 
@@ -268,24 +266,20 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         if (frameDescriptors.length === 0) return;
 
-        for (let offset = 0; offset < frameDescriptors.length; offset += VTR_INGEST_BATCH_SIZE) {
-            const batch = frameDescriptors.slice(offset, offset + VTR_INGEST_BATCH_SIZE);
-            await this.teamClusterDaemonClient.command<VtrIngestResult>(
-                storageClusterId,
-                ChannelCommands.TrajectoryVtrIngest,
-                {
-                    trajectoryId: trajectory._id,
-                    ownerClusterId: storageClusterId,
-                    frames: batch,
-                    lossless: true
-                },
-                {
-                    timeoutClass: 'long-running-control-plane'
-                }
-            );
-        }
+        await this.teamClusterDaemonClient.command<TrajectoryParquetIngestResult>(
+            storageClusterId,
+            ChannelCommands.TrajectoryParquetIngest,
+            {
+                trajectoryId: trajectory._id,
+                ownerClusterId: storageClusterId,
+                frames: frameDescriptors
+            },
+            {
+                timeoutClass: 'long-running-control-plane'
+            }
+        );
 
-        logger.info(`@trajectory-background-processor: vtr ingest complete trajectoryId=${trajectory._id} frameCount=${frameDescriptors.length}`);
+        logger.info(`@trajectory-background-processor: parquet ingest complete trajectoryId=${trajectory._id} frameCount=${frameDescriptors.length}`);
     }
 
     private registerCompressionDrainCallback(): void {
