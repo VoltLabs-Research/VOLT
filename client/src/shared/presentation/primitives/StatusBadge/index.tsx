@@ -2,6 +2,8 @@ import { cn } from '@/shared/utils';
 import './StatusBadge.css';
 import type { ReactNode } from 'react';
 
+type StatusBadgeVariant = 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning' | 'brand' | 'primary';
+
 export interface StatusBadgeProps{
     /**
      * Status string - will be mapped to variant automatically
@@ -11,7 +13,7 @@ export interface StatusBadgeProps{
     /**
      * Visual variant override
      */
-    variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning' | 'brand' | 'primary';
+    variant?: StatusBadgeVariant;
 
     /**
      * Size variant
@@ -30,48 +32,40 @@ export interface StatusBadgeProps{
     className?: string;
 };
 
-const statusToVariant = (status: string): string => {
-    const statusLower = status?.toLowerCase();
-    switch(statusLower){
-        case 'ready':
-        case 'completed':
-        case 'success':
-        case 'active':
-        case 'published':
-        case 'healthy':
-        case 'online':
-        case 'accepted':
-        case 'connected':
-            return 'success';
-        case 'processing':
-        case 'queued':
-        case 'rendering':
-        case 'warning':
-        case 'pending':
-        case 'waiting-for-process':
-        case 'analyzing':
-            return 'warning';
-        case 'running':
-            return 'active';
-        case 'failed':
-        case 'error':
-        case 'danger':
-        case 'critical':
-        case 'rejected':
-            return 'danger';
-        case 'inactive':
-        case 'draft':
-        case 'disabled':
-        case 'offline':
-        case 'disconnected':
-            return 'inactive';
-        case 'brand':
-            return 'brand';
-        case 'primary':
-            return 'primary';
-        default:
-            return 'neutral';
-    }
+const STATUS_VARIANTS: Record<string, StatusBadgeVariant> = {
+    ready: 'success',
+    completed: 'success',
+    success: 'success',
+    active: 'success',
+    published: 'success',
+    healthy: 'success',
+    online: 'success',
+    accepted: 'success',
+    connected: 'success',
+    processing: 'warning',
+    queued: 'warning',
+    rendering: 'warning',
+    warning: 'warning',
+    pending: 'warning',
+    'waiting-for-process': 'warning',
+    analyzing: 'warning',
+    running: 'active',
+    failed: 'danger',
+    error: 'danger',
+    danger: 'danger',
+    critical: 'danger',
+    rejected: 'danger',
+    inactive: 'inactive',
+    draft: 'inactive',
+    disabled: 'inactive',
+    offline: 'inactive',
+    disconnected: 'inactive',
+    brand: 'brand',
+    primary: 'primary'
+};
+
+const statusToVariant = (status: string): StatusBadgeVariant => {
+    return STATUS_VARIANTS[status.toLowerCase()] ?? 'neutral';
 };
 
 const StatusBadge = ({ status, variant, size = 'default', children, className = '' }: StatusBadgeProps) => {

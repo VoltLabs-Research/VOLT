@@ -9,12 +9,6 @@ export interface TeamAIProviderMetadata {
     description: string;
 };
 
-export interface TeamAIModelMetadata {
-    id: string;
-    name: string;
-    description?: string;
-};
-
 const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadata> => {
     const entries = AI_PROVIDERS.map((provider) => {
         const metadata: TeamAIProviderMetadata = {

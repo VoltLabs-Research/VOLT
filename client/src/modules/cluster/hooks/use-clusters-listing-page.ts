@@ -10,25 +10,11 @@ import type { ListTeamClustersInputDTO } from '@/modules/cluster/api/dtos/team-c
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import { createEmptyPaginatedResponse, type PaginatedResponse } from '@/shared/domain/pagination';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { InfiniteData } from '@tanstack/react-query';
 
 type ClusterListingCache = InfiniteData<PaginatedResponse<ServerRow>, number>;
-
-const createEmptyClustersResponse = (page: number, limit: number): PaginatedResponse<ServerRow> => {
-    return {
-        status: 'success',
-        data: [],
-        pagination: {
-            page,
-            limit,
-            total: 0,
-            totalPages: 1,
-            hasMore: false
-        }
-    };
-};
 
 const isClusterListingCache = (cachedData: unknown): cachedData is ClusterListingCache => {
     if (!cachedData || typeof cachedData !== 'object') {
@@ -100,7 +86,7 @@ const useClustersListingPage = () => {
         const limit = params.limit ?? 20;
 
         if (!selectedTeamId) {
-            return createEmptyClustersResponse(page, limit);
+            return createEmptyPaginatedResponse<ServerRow>({ page, limit });
         }
 
         const query: ListTeamClustersInputDTO = {

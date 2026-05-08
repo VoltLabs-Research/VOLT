@@ -3,7 +3,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import IconButton from '@/shared/presentation/primitives/IconButton';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
-import WorkspaceEntryInput from './WorkspaceEntryInput';
+import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
 import {
     buildLatexWorkspaceDropId,
@@ -38,7 +38,7 @@ import type {
 } from '@/modules/latex/utilities/workspace-dnd';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { DragEvent, KeyboardEvent } from 'react';
+import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
 
 interface RenameTarget {
     id: string;
@@ -111,41 +111,151 @@ const handleSelectableRowKeyDown = (event: KeyboardEvent<HTMLDivElement>, onSele
     }
 };
 
-const FolderTreeNode = ({
-    node,
-    depth,
-    expandedFolders,
-    selectedAssetId,
-    newFileTargetFolder,
-    newFolderTargetFolder,
-    renamingTarget,
-    activeDragData,
-    externalDropTargetPath,
-    onToggleFolder,
-    onOpenNewFileIn,
-    onOpenNewFolderIn,
-    onConfirmNewFile,
-    onCancelNewFile,
-    onConfirmNewFolder,
-    onCancelNewFolder,
-    onFileSelect,
-    onAssetSelect,
-    onFileDelete,
-    onFolderDelete,
-    onAssetDelete,
-    onAssetInsertRef,
-    onStartRenameFile,
-    onStartRenameFolder,
-    onStartRenameAsset,
-    onSaveFileName,
-    onSaveFolderName,
-    onSaveAssetName,
+const createRenameMenuOption = (onClick: () => void | Promise<void>): MenuOption => ({
+    label: 'Rename',
+    icon: Pencil,
+    onClick
+});
+
+const createDeleteMenuOption = (onClick: () => void | Promise<void>): MenuOption => ({
+    label: 'Delete',
+    icon: Trash2,
+    onClick,
+    destructive: true
+});
+
+interface EditableWorkspaceNameProps {
+    children: string;
+    isRenaming: boolean;
+    onCancelRename: () => void;
+    onSave: (nextName: string) => void;
+}
+
+const EditableWorkspaceName = ({
+    children,
+    isRenaming,
     onCancelRename,
-    onFileSetEntrypoint,
-    onExternalFilesDragOver,
-    onExternalFilesDragLeave,
-    onExternalFilesDrop
-}: FileTreeNodeProps) => {
+    onSave
+}: EditableWorkspaceNameProps) => (
+    <EditableTag
+        as='span'
+        className='latex-workspace__file-name text-truncate'
+        title='Double-click to rename'
+        allowSingleClickPropagation
+        editing={isRenaming ? true : undefined}
+        onEditingChange={(nextEditing) => {
+            if (!nextEditing && isRenaming) {
+                onCancelRename();
+            }
+        }}
+        onSave={onSave}
+    >
+        {children}
+    </EditableTag>
+);
+
+interface DraggableLeafTreeRowProps {
+    contextMenuId: string;
+    nodeId: string;
+    depth: number;
+    icon: ReactNode;
+    label: ReactNode;
+    selected?: boolean;
+    treeItemLabel: string;
+    title: string;
+    dragData: LatexWorkspaceDragData;
+    isRenaming: boolean;
+    activeDragData: LatexWorkspaceDragData | null;
+    menuOptions: MenuOption[];
+    onSelect: () => void;
+}
+
+const DraggableLeafTreeRow = ({
+    contextMenuId,
+    nodeId,
+    depth,
+    icon,
+    label,
+    selected = false,
+    treeItemLabel,
+    title,
+    dragData,
+    isRenaming,
+    activeDragData,
+    menuOptions,
+    onSelect
+}: DraggableLeafTreeRowProps) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        isDragging
+    } = useDraggable({
+        id: nodeId,
+        data: dragData,
+        disabled: isRenaming
+    });
+    const isCurrentDragSource = activeDragData?.kind === dragData.kind && activeDragData.id === dragData.id;
+
+    return (
+        <ContextMenuPopover
+            id={contextMenuId}
+            trigger={(
+                <WorkspaceTreeRow
+                    ref={setNodeRef}
+                    depth={depth}
+                    icon={icon}
+                    label={label}
+                    selected={selected}
+                    treeItemLevel={depth + 1}
+                    ariaLabel={treeItemLabel}
+                    onClick={onSelect}
+                    onKeyDown={(event) => handleSelectableRowKeyDown(event, onSelect)}
+                    title={title}
+                    className={cn((isDragging || isCurrentDragSource) && 'is-dragging')}
+                    style={{
+                        transform: CSS.Translate.toString(transform),
+                        zIndex: isDragging ? 3 : undefined
+                    }}
+                    {...attributes}
+                    {...listeners}
+                />
+            )}
+            options={menuOptions}
+            size='sm'
+        />
+    );
+};
+
+const FolderTreeNode = (props: FileTreeNodeProps) => {
+    const {
+        node,
+        depth,
+        ...treeProps
+    } = props;
+    const {
+        expandedFolders,
+        newFileTargetFolder,
+        newFolderTargetFolder,
+        renamingTarget,
+        activeDragData,
+        externalDropTargetPath,
+        onToggleFolder,
+        onOpenNewFileIn,
+        onOpenNewFolderIn,
+        onConfirmNewFile,
+        onCancelNewFile,
+        onConfirmNewFolder,
+        onCancelNewFolder,
+        onFolderDelete,
+        onStartRenameFolder,
+        onSaveFolderName,
+        onCancelRename,
+        onExternalFilesDragOver,
+        onExternalFilesDragLeave,
+        onExternalFilesDrop
+    } = treeProps;
     const isExpanded = expandedFolders.has(node.folderPath);
     const isRenaming = renamingTarget?.id === `folder:${node.folderPath}`;
     const dragData = useMemo<LatexWorkspaceDragData>(() => ({
@@ -185,78 +295,6 @@ const FolderTreeNode = ({
     const isDropTarget = (isOver && canDropHere) || externalDropTargetPath === node.folderPath;
     const isInvalidDropTarget = isOver && !canDropHere;
 
-    const renderChild = useCallback((child: FileTreeNodeType) => (
-        <FileTreeNode
-            key={child.id}
-            node={child}
-            depth={depth + 1}
-            expandedFolders={expandedFolders}
-            selectedAssetId={selectedAssetId}
-            newFileTargetFolder={newFileTargetFolder}
-            newFolderTargetFolder={newFolderTargetFolder}
-            renamingTarget={renamingTarget}
-            activeDragData={activeDragData}
-            externalDropTargetPath={externalDropTargetPath}
-            onToggleFolder={onToggleFolder}
-            onOpenNewFileIn={onOpenNewFileIn}
-            onOpenNewFolderIn={onOpenNewFolderIn}
-            onConfirmNewFile={onConfirmNewFile}
-            onCancelNewFile={onCancelNewFile}
-            onConfirmNewFolder={onConfirmNewFolder}
-            onCancelNewFolder={onCancelNewFolder}
-            onFileSelect={onFileSelect}
-            onAssetSelect={onAssetSelect}
-            onFileDelete={onFileDelete}
-            onFolderDelete={onFolderDelete}
-            onAssetDelete={onAssetDelete}
-            onAssetInsertRef={onAssetInsertRef}
-            onStartRenameFile={onStartRenameFile}
-            onStartRenameFolder={onStartRenameFolder}
-            onStartRenameAsset={onStartRenameAsset}
-            onSaveFileName={onSaveFileName}
-            onSaveFolderName={onSaveFolderName}
-            onSaveAssetName={onSaveAssetName}
-            onCancelRename={onCancelRename}
-            onFileSetEntrypoint={onFileSetEntrypoint}
-            onExternalFilesDragOver={onExternalFilesDragOver}
-            onExternalFilesDragLeave={onExternalFilesDragLeave}
-            onExternalFilesDrop={onExternalFilesDrop}
-        />
-    ), [
-        activeDragData,
-        depth,
-        expandedFolders,
-        externalDropTargetPath,
-        newFileTargetFolder,
-        newFolderTargetFolder,
-        onAssetDelete,
-        onAssetInsertRef,
-        onAssetSelect,
-        onCancelNewFile,
-        onCancelNewFolder,
-        onCancelRename,
-        onConfirmNewFile,
-        onConfirmNewFolder,
-        onExternalFilesDragLeave,
-        onExternalFilesDragOver,
-        onExternalFilesDrop,
-        onFileDelete,
-        onFileSelect,
-        onFileSetEntrypoint,
-        onFolderDelete,
-        onOpenNewFileIn,
-        onOpenNewFolderIn,
-        onSaveAssetName,
-        onSaveFileName,
-        onSaveFolderName,
-        onStartRenameAsset,
-        onStartRenameFile,
-        onStartRenameFolder,
-        onToggleFolder,
-        renamingTarget,
-        selectedAssetId
-    ]);
-
     const handleFolderKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>): void => {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
@@ -287,37 +325,20 @@ const FolderTreeNode = ({
             icon: FolderPlus,
             onClick: () => onOpenNewFolderIn(node.folderPath)
         },
-        {
-            label: 'Rename',
-            icon: Pencil,
-            onClick: () => onStartRenameFolder(node.folderPath)
-        },
-        {
-            label: 'Delete',
-            icon: Trash2,
-            onClick: () => onFolderDelete(node.folderPath),
-            destructive: true
-        }
+        createRenameMenuOption(() => onStartRenameFolder(node.folderPath)),
+        createDeleteMenuOption(() => onFolderDelete(node.folderPath))
     ];
 
     const folderLabel = (
-        <EditableTag
-            as='span'
-            className='latex-workspace__file-name text-truncate'
-            title='Double-click to rename'
-            allowSingleClickPropagation
-            editing={isRenaming ? true : undefined}
-            onEditingChange={(nextEditing) => {
-                if (!nextEditing && isRenaming) {
-                    onCancelRename();
-                }
-            }}
+        <EditableWorkspaceName
+            isRenaming={isRenaming}
+            onCancelRename={onCancelRename}
             onSave={(nextName) => {
                 void onSaveFolderName(node.folderPath, nextName);
             }}
         >
             {node.name}
-        </EditableTag>
+        </EditableWorkspaceName>
     );
 
     return (
@@ -393,25 +414,26 @@ const FolderTreeNode = ({
             />
             {isExpanded && (
                 <Stack role='group'>
-                    {node.children.map(renderChild)}
-                    {newFolderTargetFolder === node.folderPath && (
-                        <WorkspaceEntryInput
-                            icon={<FolderPlus size={13} />}
-                            label={`Create a folder inside ${node.name}`}
-                            placeholder='Folder name'
-                            onConfirm={onConfirmNewFolder}
-                            onCancel={onCancelNewFolder}
+                    {node.children.map((child) => (
+                        <FileTreeNode
+                            key={child.id}
+                            node={child}
+                            depth={depth + 1}
+                            {...treeProps}
                         />
-                    )}
-                    {newFileTargetFolder === node.folderPath && (
-                        <WorkspaceEntryInput
-                            icon={<FileCode size={13} />}
-                            label={`Create a file inside ${node.name}`}
-                            placeholder='File name'
-                            onConfirm={onConfirmNewFile}
-                            onCancel={onCancelNewFile}
-                        />
-                    )}
+                    ))}
+                    <WorkspaceCreationInputs
+                        folderPath={node.folderPath}
+                        newFileTargetFolder={newFileTargetFolder}
+                        newFolderTargetFolder={newFolderTargetFolder}
+                        folderLabel={`Create a folder inside ${node.name}`}
+                        fileLabel={`Create a file inside ${node.name}`}
+                        fileIcon={<FileCode size={13} />}
+                        onConfirmNewFolder={onConfirmNewFolder}
+                        onCancelNewFolder={onCancelNewFolder}
+                        onConfirmNewFile={onConfirmNewFile}
+                        onCancelNewFile={onCancelNewFile}
+                    />
                 </Stack>
             )}
         </>
@@ -438,19 +460,8 @@ const FileLeafNode = ({
         label: file.name,
         folderPath: file.path
     }), [file._id, file.name, file.path]);
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        isDragging
-    } = useDraggable({
-        id: node.id,
-        data: dragData,
-        disabled: isRenaming
-    });
     const isTexFile = file.name.toLowerCase().endsWith('.tex');
-    const isCurrentDragSource = activeDragData?.kind === dragData.kind && activeDragData.id === dragData.id;
+    const handleSelect = useCallback(() => onFileSelect(file._id), [file._id, onFileSelect]);
     const menuOptions: MenuOption[] = [
         ...(isTexFile ? [{
             label: 'Set as entrypoint',
@@ -458,65 +469,37 @@ const FileLeafNode = ({
             onClick: () => onFileSetEntrypoint(file._id),
             disabled: file.isEntrypoint
         }] : []),
-        {
-            label: 'Rename',
-            icon: Pencil,
-            onClick: () => onStartRenameFile(file)
-        },
-        {
-            label: 'Delete',
-            icon: Trash2,
-            onClick: () => onFileDelete(file._id),
-            destructive: true
-        }
+        createRenameMenuOption(() => onStartRenameFile(file)),
+        createDeleteMenuOption(() => onFileDelete(file._id))
     ];
 
     const fileLabel = (
-        <EditableTag
-            as='span'
-            className='latex-workspace__file-name text-truncate'
-            title='Double-click to rename'
-            allowSingleClickPropagation
-            editing={isRenaming ? true : undefined}
-            onEditingChange={(nextEditing) => {
-                if (!nextEditing && isRenaming) {
-                    onCancelRename();
-                }
-            }}
+        <EditableWorkspaceName
+            isRenaming={isRenaming}
+            onCancelRename={onCancelRename}
             onSave={(nextName) => {
                 void onSaveFileName(file._id, nextName);
             }}
         >
             {file.name}
-        </EditableTag>
+        </EditableWorkspaceName>
     );
 
     return (
-        <ContextMenuPopover
-            id={`file-ctx-${file._id}`}
-            trigger={(
-                <WorkspaceTreeRow
-                    ref={setNodeRef}
-                    depth={depth}
-                    icon={<FileCode size={13} />}
-                    label={fileLabel}
-                    selected={file.isSelected}
-                    treeItemLevel={depth + 1}
-                    ariaLabel={`File ${file.name}`}
-                    onClick={() => onFileSelect(file._id)}
-                    onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onFileSelect(file._id))}
-                    title={file.path}
-                    className={cn((isDragging || isCurrentDragSource) && 'is-dragging')}
-                    style={{
-                        transform: CSS.Translate.toString(transform),
-                        zIndex: isDragging ? 3 : undefined
-                    }}
-                    {...attributes}
-                    {...listeners}
-                />
-            )}
-            options={menuOptions}
-            size='sm'
+        <DraggableLeafTreeRow
+            contextMenuId={`file-ctx-${file._id}`}
+            nodeId={node.id}
+            depth={depth}
+            icon={<FileCode size={13} />}
+            label={fileLabel}
+            selected={file.isSelected}
+            treeItemLabel={`File ${file.name}`}
+            title={file.path}
+            dragData={dragData}
+            isRenaming={isRenaming}
+            activeDragData={activeDragData}
+            menuOptions={menuOptions}
+            onSelect={handleSelect}
         />
     );
 };
@@ -544,83 +527,44 @@ const AssetLeafNode = ({
         label: node.name,
         folderPath: node.folderPath
     }), [asset._id, node.folderPath, node.name]);
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        isDragging
-    } = useDraggable({
-        id: node.id,
-        data: dragData,
-        disabled: isRenaming
-    });
-    const isCurrentDragSource = activeDragData?.kind === dragData.kind && activeDragData.id === dragData.id;
+    const handleSelect = useCallback(() => onAssetSelect(asset._id), [asset._id, onAssetSelect]);
     const assetMenuOptions: MenuOption[] = [
         {
             label: 'Insert reference',
             icon: Link,
             onClick: () => onAssetInsertRef(asset)
         },
-        {
-            label: 'Rename',
-            icon: Pencil,
-            onClick: () => onStartRenameAsset(asset)
-        },
-        {
-            label: 'Delete',
-            icon: Trash2,
-            onClick: () => onAssetDelete(asset),
-            destructive: true
-        }
+        createRenameMenuOption(() => onStartRenameAsset(asset)),
+        createDeleteMenuOption(() => onAssetDelete(asset))
     ];
 
     const assetLabel = (
-        <EditableTag
-            as='span'
-            className='latex-workspace__file-name text-truncate'
-            title='Double-click to rename'
-            allowSingleClickPropagation
-            editing={isRenaming ? true : undefined}
-            onEditingChange={(nextEditing) => {
-                if (!nextEditing && isRenaming) {
-                    onCancelRename();
-                }
-            }}
+        <EditableWorkspaceName
+            isRenaming={isRenaming}
+            onCancelRename={onCancelRename}
             onSave={(nextName) => {
                 void onSaveAssetName(asset, nextName);
             }}
         >
             {node.name}
-        </EditableTag>
+        </EditableWorkspaceName>
     );
 
     return (
-        <ContextMenuPopover
-            id={`asset-ctx-${asset._id}`}
-            trigger={(
-                <WorkspaceTreeRow
-                    ref={setNodeRef}
-                    depth={depth}
-                    icon={getAssetIcon(asset)}
-                    label={assetLabel}
-                    selected={isSelected}
-                    treeItemLevel={depth + 1}
-                    ariaLabel={`Asset ${node.name}`}
-                    onClick={() => onAssetSelect(asset._id)}
-                    onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onAssetSelect(asset._id))}
-                    title={assetPath}
-                    className={cn((isDragging || isCurrentDragSource) && 'is-dragging')}
-                    style={{
-                        transform: CSS.Translate.toString(transform),
-                        zIndex: isDragging ? 3 : undefined
-                    }}
-                    {...attributes}
-                    {...listeners}
-                />
-            )}
-            options={assetMenuOptions}
-            size='sm'
+        <DraggableLeafTreeRow
+            contextMenuId={`asset-ctx-${asset._id}`}
+            nodeId={node.id}
+            depth={depth}
+            icon={getAssetIcon(asset)}
+            label={assetLabel}
+            selected={isSelected}
+            treeItemLabel={`Asset ${node.name}`}
+            title={assetPath}
+            dragData={dragData}
+            isRenaming={isRenaming}
+            activeDragData={activeDragData}
+            menuOptions={assetMenuOptions}
+            onSelect={handleSelect}
         />
     );
 };

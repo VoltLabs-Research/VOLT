@@ -191,6 +191,22 @@ const renderThinkingBubble = () => (
     </Box>
 );
 
+interface InlineArtifactCardProps {
+    artifact: AIMessageArtifact;
+    summary: string | null;
+    children: ReactNode;
+}
+
+const InlineArtifactCard = ({ artifact, summary, children }: InlineArtifactCardProps) => (
+    <Stack gap='05' className='ai-inline-artifact-card'>
+        <SectionLabel>{artifact.title}</SectionLabel>
+        {summary && (
+            <Text as='p' size='sm' tone='muted'>{summary}</Text>
+        )}
+        {children}
+    </Stack>
+);
+
 const renderInlineArtifact = (artifact: AIMessageArtifact) => {
     const key = `${artifact.id}:inline`;
     const summary = artifact.summary || null;
@@ -232,25 +248,17 @@ const renderInlineArtifact = (artifact: AIMessageArtifact) => {
         }
 
         return (
-            <Stack key={key} gap='05' className='ai-inline-artifact-card'>
-                <SectionLabel>{artifact.title}</SectionLabel>
-                {summary && (
-                    <Text as='p' size='sm' tone='muted'>{summary}</Text>
-                )}
+            <InlineArtifactCard key={key} artifact={artifact} summary={summary}>
                 {imageContent}
-            </Stack>
+            </InlineArtifactCard>
         );
     }
 
     const payloadText = stringifyArtifactValue(artifact.payload);
     return (
-        <Stack key={key} gap='05' className='ai-inline-artifact-card'>
-            <SectionLabel>{artifact.title}</SectionLabel>
-            {summary && (
-                <Text as='p' size='sm' tone='muted'>{summary}</Text>
-            )}
+        <InlineArtifactCard key={key} artifact={artifact} summary={summary}>
             <Text as='p' size='sm' className='ai-inline-artifact-payload'>{payloadText}</Text>
-        </Stack>
+        </InlineArtifactCard>
     );
 };
 

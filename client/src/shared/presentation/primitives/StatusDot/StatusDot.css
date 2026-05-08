@@ -19,8 +19,7 @@
 }
 
 /* Tones */
-.status-dot--tone-success,
-.status-dot.online{
+.status-dot--tone-success{
     background-color: var(--status-success);
     box-shadow: 0 0 0 2px var(--color-surface-1);
 }
@@ -41,8 +40,7 @@
     box-shadow: 0 0 0 2px var(--color-surface-1);
 }
 
-.status-dot--tone-neutral,
-.status-dot.offline{
+.status-dot--tone-neutral{
     background-color: var(--color-text-muted);
     box-shadow: 0 0 0 2px var(--color-surface-1);
 }

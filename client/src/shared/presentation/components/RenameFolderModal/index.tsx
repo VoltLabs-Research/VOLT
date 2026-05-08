@@ -1,12 +1,8 @@
-import { ErrorSurface, reportError } from '@/shared/errors/core';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Box from '@/shared/presentation/primitives/Box';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { closeModal } from '@/shared/presentation/primitives/Modal';
+import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
+import useTextInputModalState from '@/shared/presentation/components/RenameEntityModal/use-text-input-modal-state';
 import useMedia from '@/shared/presentation/hooks/use-media';
-import { useCallback, useEffect, useState } from 'react';
-import type { InputHTMLAttributes } from 'react';
-import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
+import { useCallback, useEffect } from 'react';
 
 interface RenameFolderModalProps {
     id: string;
@@ -25,99 +21,54 @@ const RenameFolderModal = ({
     onSubmit,
     onClose
 }: RenameFolderModalProps) => {
-    const [nextFolderName, setNextFolderName] = useState('');
-    const [error, setError] = useState<string | undefined>();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const shouldAutoFocus = !useMedia('(pointer: coarse)');
-
-    useEffect(() => {
-        setNextFolderName(folderName ?? '');
-        setError(undefined);
-        setIsSubmitting(false);
-    }, [folderName]);
 
     const handleRequestClose = useCallback(() => {
         closeModal(id);
     }, [id]);
 
+    const {
+        value: nextFolderName,
+        error,
+        isSubmitting,
+        handleValueChange: handleFolderNameChange,
+        handleSubmit,
+        reset
+    } = useTextInputModalState({
+        requiredMessage: 'Folder name is required',
+        submitErrorTitle: 'Failed to rename folder',
+        onSubmit,
+        onSubmitted: handleRequestClose
+    });
+
+    useEffect(() => {
+        reset(folderName ?? '');
+    }, [folderName, reset]);
+
     const handleModalClose = useCallback(() => {
-        setError(undefined);
-        setIsSubmitting(false);
+        reset(folderName ?? '');
         onClose();
-    }, [onClose]);
-
-    const handleSubmit = useCallback(async () => {
-        const trimmedFolderName = nextFolderName.trim();
-
-        if (!trimmedFolderName) {
-            setError('Folder name is required');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError(undefined);
-
-        try {
-            await onSubmit(trimmedFolderName);
-            handleRequestClose();
-        } catch (nextError) {
-            const userError = reportError(nextError, {
-                surface: ErrorSurface.Silent,
-                fallbackTitle: 'Failed to rename folder'
-            });
-
-            setError(userError.description ?? userError.title);
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [handleRequestClose, nextFolderName, onSubmit]);
-
-    const handleFolderNameChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setNextFolderName(event.target.value);
-        setError(undefined);
-    }, []);
-
-    const inputProps: InputHTMLAttributes<HTMLInputElement> = {
-        onKeyDown: (event) => {
-            if (event.key === 'Enter') {
-                handleSubmit();
-            }
-        }
-    };
-
-    const secondaryAction: ModalFooterAction = {
-        label: 'Cancel',
-        onClick: handleRequestClose,
-        disabled: isSubmitting
-    };
-
-    const primaryAction: ModalFooterAction = {
-        label: 'Rename Folder',
-        onClick: handleSubmit,
-        disabled: isSubmitting || !nextFolderName.trim(),
-        isLoading: isSubmitting
-    };
+    }, [folderName, onClose, reset]);
 
     return (
-        <Modal
-            id={id}
-            title={title}
+        <TextInputModal
+            modalId={id}
+            modalTitle={title}
             description={description}
+            fieldLabel='Folder name'
+            placeholder='Enter folder name'
+            autoFocus={shouldAutoFocus}
+            value={nextFolderName}
+            error={error}
+            primaryLabel='Rename Folder'
+            submitDisabled={isSubmitting || !nextFolderName.trim()}
+            isSubmitting={isSubmitting}
+            primaryIsLoading={isSubmitting}
+            onValueChange={handleFolderNameChange}
+            onSubmit={handleSubmit}
+            onCancel={handleRequestClose}
             onClose={handleModalClose}
-            footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
-        >
-            <Box p='1-5'>
-                <FormFieldRHF
-                    label='Folder name'
-                    placeholder='Enter folder name'
-                    autoFocus={shouldAutoFocus}
-                    value={nextFolderName}
-                    onChange={handleFolderNameChange}
-                    inputProps={inputProps}
-                    error={error}
-                />
-            </Box>
-        </Modal>
+        />
     );
 };
 

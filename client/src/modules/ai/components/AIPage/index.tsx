@@ -5,6 +5,7 @@ import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import ResizeHandle from '@/modules/canvas/components/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
+import { toAIModelSelectOptions } from '@/modules/ai/utilities/model-options';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
@@ -15,7 +16,6 @@ import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ReactNode } from 'react';
 import type { Params } from 'react-router-dom';
 import './AIPage.css';
@@ -72,13 +72,7 @@ const AIPage = () => {
     const canUpdate = canAccess(['ai-conversation:update']);
     const canDelete = canAccess(['ai-conversation:delete']);
 
-    const modelOptions: SelectOption[] = useMemo(() => {
-        return availableModelsForProvider.map((model) => ({
-            value: `${model.provider}::${model.id}`,
-            title: model.name,
-            description: model.providerName
-        }));
-    }, [availableModelsForProvider]);
+    const modelOptions = useMemo(() => toAIModelSelectOptions(availableModelsForProvider), [availableModelsForProvider]);
 
     const handleOpenTableArtifact = useCallback((artifact: AIMessageArtifact) => {
         setOpenArtifact(artifact);

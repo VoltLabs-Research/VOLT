@@ -48,7 +48,7 @@ const Avatar = ({
                 </p>
             )}
             {showStatus && (
-                <StatusDot isOnline={isOnline} className='avatar-status p-absolute bottom-0 right-0' />
+                <StatusDot tone={isOnline ? 'success' : 'neutral'} className='avatar-status p-absolute bottom-0 right-0' />
             )}
         </div>
     );

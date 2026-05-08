@@ -91,9 +91,9 @@ export default class DemoClusterDeploymentService {
             this.ensureVolume(names.volumes.minio, labels)
         ]);
 
-        await this.ensureMongoContainer(teamCluster, names, labels, credentials);
-        await this.ensureRedisContainer(teamCluster, names, labels, credentials);
-        await this.ensureMinioContainer(teamCluster, names, labels, credentials);
+        await this.ensureMongoContainer(names, labels, credentials);
+        await this.ensureRedisContainer(names, labels, credentials);
+        await this.ensureMinioContainer(names, labels, credentials);
         await this.ensureDaemonContainer(teamCluster, names, labels, credentials);
 
         logger.info(`[DemoClusterDeploymentService] Demo stack deployed teamClusterId=${teamCluster.id}`);
@@ -176,7 +176,6 @@ export default class DemoClusterDeploymentService {
     }
 
     private async ensureMongoContainer(
-        teamCluster: TeamCluster,
         names: DemoStackResourceNames,
         labels: Record<string, string>,
         credentials: DemoClusterPlaintextCredentials
@@ -202,7 +201,6 @@ export default class DemoClusterDeploymentService {
     }
 
     private async ensureRedisContainer(
-        teamCluster: TeamCluster,
         names: DemoStackResourceNames,
         labels: Record<string, string>,
         credentials: DemoClusterPlaintextCredentials
@@ -232,7 +230,6 @@ export default class DemoClusterDeploymentService {
     }
 
     private async ensureMinioContainer(
-        teamCluster: TeamCluster,
         names: DemoStackResourceNames,
         labels: Record<string, string>,
         credentials: DemoClusterPlaintextCredentials

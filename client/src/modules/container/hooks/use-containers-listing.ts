@@ -20,21 +20,22 @@ import {
 } from '@/modules/container/utilities/listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
-import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
+import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
+import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import { createEmptyPaginatedResponse, type PaginatedResponse } from '@/shared/domain/pagination';
 import { sileo } from 'sileo';
 import { Box, FolderInput, FolderOpen, Pencil, Play, RotateCcw, Square, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { RiTerminalLine } from 'react-icons/ri';
 import { ContainerAction } from '../api/dtos/update-container';
 import { useNavigate } from 'react-router-dom';
@@ -54,6 +55,12 @@ interface ContainerMoveTarget {
     folder: string | null;
 }
 
+const getContainerMoveTarget = (container: ContainerEntity): ContainerMoveTarget => ({
+    _id: container._id,
+    name: container.name,
+    folder: container.folder
+});
+
 const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder' });
 const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder' });
 const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder' });
@@ -62,18 +69,6 @@ const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subje
 const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container' });
 const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container' });
 const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container' });
-
-const createEmptyResponse = <T extends { _id: string }>(params: PaginationParams): PaginatedResponse<T> => ({
-    status: 'success',
-    data: [],
-    pagination: {
-        page: Math.max(1, Number(params.page) || 1),
-        limit: Math.max(1, Number(params.limit) || 20),
-        total: 0,
-        totalPages: 1,
-        hasMore: false
-    }
-});
 
 const fetchContainers = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<ContainerEntity>> => {
     return containerQuery.useListQuery.fetch({
@@ -118,7 +113,6 @@ const useContainersListing = () => {
     const { mutateAsync: moveContainer } = useMoveContainerMutation();
 
     const [terminalContainer, setTerminalContainer] = useState<ContainerEntity | null>(null);
-    const [movingContainer, setMovingContainer] = useState<ContainerMoveTarget | null>(null);
 
     const {
         breadcrumbs,
@@ -142,7 +136,7 @@ const useContainersListing = () => {
         fetchItems: fetchContainers,
         fetchFolders,
         getFolder: fetchFolderById,
-        createEmptyResponse,
+        createEmptyResponse: createEmptyPaginatedResponse,
         mapFolderRow: createContainerFolderRow,
         mapItemRow: createContainerItemRow,
         onFetchErrorTitle: 'Failed to fetch containers',
@@ -159,20 +153,16 @@ const useContainersListing = () => {
         })
     });
 
-    const handleRenameFolderOpen = useCallback((folder: ContainerFolder) => {
-        handleRenameFolderStateOpen(folder);
-        openModal(RENAME_CONTAINER_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateOpen]);
-
-    const handleRenameFolderClose = useCallback(() => {
-        closeModal(RENAME_CONTAINER_FOLDER_MODAL_ID);
-        handleRenameFolderStateClose();
-    }, [handleRenameFolderStateClose]);
-
-    const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        await handleRenameFolderStateSubmit(title);
-        closeModal(RENAME_CONTAINER_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateSubmit]);
+    const {
+        handleRenameFolderOpen,
+        handleRenameFolderClose,
+        handleRenameFolderSubmit
+    } = useRenameFolderModal({
+        modalId: RENAME_CONTAINER_FOLDER_MODAL_ID,
+        openRenameState: handleRenameFolderStateOpen,
+        closeRenameState: handleRenameFolderStateClose,
+        submitRenameState: handleRenameFolderStateSubmit
+    });
 
     const controlContainer = useCallback(async (containerId: string, action: ContainerAction) => {
         await updateContainerMutation.mutateAsync({ id: containerId, params: { action } });
@@ -185,54 +175,21 @@ const useContainersListing = () => {
         navigate(nextPath);
     }, [currentFolderId, navigate]);
 
-    const handleMoveContainerOpen = useCallback((container: ContainerEntity) => {
-        setMovingContainer({
-            _id: container._id,
-            name: container.name,
-            folder: container.folder
-        });
-        openModal(MOVE_CONTAINER_MODAL_ID);
-    }, []);
-
-    const handleMoveContainerClose = useCallback(() => {
-        closeModal(MOVE_CONTAINER_MODAL_ID);
-        setMovingContainer(null);
-    }, []);
-
-    const handleMoveContainerSubmit = useCallback(async (folderId: string | null) => {
-        if (!movingContainer) {
-            return;
-        }
-
-        await showPromise(
-            moveContainer({
-                containerId: movingContainer._id,
-                folderId
-            }),
-            MOVE_CONTAINER_TOAST
-        );
-    }, [moveContainer, movingContainer]);
-
-    const handleContainerRowDragEnd = useCallback(async (
-        payload: Parameters<DocumentListingDragAndDropConfig<ContainerListingRow>['onDragEnd']>[0]
-    ) => {
-        const { activeItem, overItem } = payload;
-        if (!activeItem || !overItem || !isContainerItemRow(activeItem) || !isContainerFolderRow(overItem)) {
-            return;
-        }
-
-        if (activeItem.folder === overItem._id) {
-            return;
-        }
-
-        await showPromise(
-            moveContainer({
-                containerId: activeItem._id,
-                folderId: overItem._id
-            }),
-            MOVE_CONTAINER_TOAST
-        );
+    const moveContainerToFolder = useCallback((containerId: string, folderId: string | null) => {
+        return moveContainer({ containerId, folderId });
     }, [moveContainer]);
+
+    const {
+        movingItem: movingContainer,
+        handleMoveOpen: handleMoveContainerOpen,
+        handleMoveClose: handleMoveContainerClose,
+        handleMoveSubmit: handleMoveContainerSubmit
+    } = useFolderedListingMoveModal<ContainerEntity, ContainerMoveTarget>({
+        modalId: MOVE_CONTAINER_MODAL_ID,
+        getMoveTarget: getContainerMoveTarget,
+        moveItem: moveContainerToFolder,
+        moveToast: MOVE_CONTAINER_TOAST
+    });
 
     const { getMenuOptions: getContainerMenuOptions } = useListingActions<ContainerEntity>({
         actions: {
@@ -345,18 +302,16 @@ const useContainersListing = () => {
         return true;
     }, [navigate, openFolder]);
 
-    const dragAndDrop = useMemo<DocumentListingDragAndDropConfig<ContainerListingRow> | undefined>(() => {
-        if (!canMoveContainers) {
-            return undefined;
-        }
-
-        return {
-            activationDistance: 6,
-            getDraggableId: getContainerListingDraggableId,
-            getDroppableId: getContainerListingDroppableId,
-            onDragEnd: handleContainerRowDragEnd
-        };
-    }, [canMoveContainers, handleContainerRowDragEnd]);
+    const dragAndDrop = useFolderedListingDragAndDropMove({
+        canMove: canMoveContainers,
+        activationDistance: 6,
+        getDraggableId: getContainerListingDraggableId,
+        getDroppableId: getContainerListingDroppableId,
+        isItemRow: isContainerItemRow,
+        isFolderRow: isContainerFolderRow,
+        moveItem: moveContainerToFolder,
+        moveToast: MOVE_CONTAINER_TOAST
+    });
 
     return {
         breadcrumbs,

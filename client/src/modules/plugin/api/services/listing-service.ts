@@ -1,31 +1,16 @@
 import { createService, download, get } from '@/app/core/http/utilities/create-service';
+import { mapRawListingResponse } from './listing-response';
 
-import type { PaginationMeta } from '@/shared/domain/pagination';
-import type { ListingRow } from '../entities/listing/listing-row';
 import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../dtos/listing/get-plugin-listing';
 import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../dtos/listing/get-sub-listing';
 import type { ExportPluginListingInputDTO } from '../dtos/listing/export-plugin-listing';
 import type { ExportListingByAnalysisInputDTO } from '../dtos/listing/export-listing-by-analysis';
 import type { GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO } from '../dtos/listing/get-analysis-listing-export-options';
-
-interface RawListingData {
-    data: ListingRow[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-    _meta?: GetPluginListingOutputDTO['_meta'];
-}
+import type { RawListingResponse } from './listing-response';
 
 interface ExposureSelectorParams {
     exposureId?: string;
     exposureName?: string;
-}
-
-interface RawListingResponse {
-    status: string;
-    data: RawListingData;
-    pagination?: PaginationMeta;
 }
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
@@ -51,23 +36,7 @@ const endpoints = {
         unwrap: 'raw',
         omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
-        map: (result) => {
-            const inner = result.data;
-            const pagination: PaginationMeta = {
-                page: inner.page,
-                limit: inner.limit,
-                total: inner.total,
-                totalPages: inner.totalPages,
-                hasMore: inner.page < inner.totalPages
-            };
-
-            return {
-                status: 'success',
-                data: inner.data,
-                pagination,
-                ...(inner._meta ? { _meta: inner._meta } : {})
-            };
-        }
+        map: mapRawListingResponse
     }),
     getSubListing: get<GetSubListingInputDTO, GetSubListingOutputDTO>(
         '/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'

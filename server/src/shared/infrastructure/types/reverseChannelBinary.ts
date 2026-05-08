@@ -77,21 +77,6 @@ export const decodeEnvelope = (buf: Uint8Array): DecodedEnvelope => {
     return { opId, kind, payload };
 };
 
-export const encodeJsonEnvelope = (opId: number, value: unknown): Uint8Array => {
-    const json = JSON.stringify(value);
-    const payload = Buffer.from(json, 'utf8');
-    return encodeEnvelope(opId, EnvelopeKind.CommandJson, payload);
-};
-
-export const decodeJsonEnvelope = <T>(buf: Uint8Array): { opId: number; value: T } => {
-    const { opId, kind, payload } = decodeEnvelope(buf);
-    if (kind !== EnvelopeKind.CommandJson) {
-        throw new Error(`binary-envelope: expected CommandJson kind, got ${kind}`);
-    }
-    const json = Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength).toString('utf8');
-    return { opId, value: JSON.parse(json) as T };
-};
-
 /**
  * Coerces arbitrary Node/browser buffer-shaped inputs into a `Uint8Array`
  * view (no copy when the source already is a typed array). Used at the

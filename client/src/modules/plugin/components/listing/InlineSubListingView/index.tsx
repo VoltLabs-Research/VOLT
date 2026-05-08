@@ -1,11 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
+import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
 import IconButton from '@/shared/presentation/primitives/IconButton';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
-import { inferColumnType, type InferredColumnType, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
-import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
+import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import './InlineSubListingView.css';
 
@@ -18,21 +17,6 @@ interface InlineSubListingViewProps {
     onActiveNameChange: (name: string) => void;
     onClose: () => void;
 }
-
-const MIN_WIDTH_BY_KIND: Record<InferredCellKind, number> = {
-    empty: 80,
-    boolean: 72,
-    integer: 96,
-    number: 120,
-    string: 180,
-    date: 180,
-    vector: 240,
-    numberArray: 180,
-    points: 120,
-    matrix: 140,
-    object: 280,
-    mixed: 200
-};
 
 const SUB_LISTING_PAGE_SIZE = 50;
 
@@ -78,22 +62,11 @@ const InlineSubListingView = ({
         return infiniteData.pages.flatMap((page) => page.rows ?? []);
     }, [infiniteData]);
 
-    const columns = useMemo<ColumnConfig[]>(() => {
+    const columns = useMemo(() => {
         const firstPage = infiniteData?.pages?.[0];
         if(!firstPage?.columns?.length) return [];
 
-        return firstPage.columns.map((column) => {
-            const key = column.label;
-            const samples = rows.slice(0, 30).map((row) => (row as Record<string, unknown>)[key]);
-            const inferred: InferredColumnType = inferColumnType(samples);
-
-            return {
-                key,
-                title: formatSnakeCaseToTitle(key),
-                width: MIN_WIDTH_BY_KIND[inferred.kind] ?? MIN_WIDTH_BY_KIND.mixed,
-                render: (value: unknown) => renderInferredCell(value, inferred)
-            };
-        });
+        return buildCompactSubListingColumns(firstPage.columns, rows as Record<string, unknown>[]);
     }, [infiniteData, rows]);
 
     const handleLoadMore = useCallback(() => {

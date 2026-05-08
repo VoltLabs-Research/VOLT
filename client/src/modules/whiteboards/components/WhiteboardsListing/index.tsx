@@ -1,21 +1,20 @@
 import RenameWhiteboardModal from '@/modules/whiteboards/components/RenameWhiteboardModal';
 import Heading from '@/shared/presentation/primitives/Heading';
-import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useWhiteboardsListing, {
     MOVE_WHITEBOARD_MODAL_ID,
     NEW_WHITEBOARD_FOLDER_MODAL_ID,
     RENAME_WHITEBOARD_FOLDER_MODAL_ID
 } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
-import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
-import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
-import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
-import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import {
+    FolderedDocumentListing,
+    FolderedListingModals,
+    createFolderedListingColumns,
+    useFolderedListingDashboardBreadcrumb
+} from '@/shared/presentation/components/DocumentListing/foldered-listing';
 import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
-import { Folder, SquarePen } from 'lucide-react';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import { SquarePen } from 'lucide-react';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
 import { WhiteboardListingRowType } from '@/modules/whiteboards/utilities/listing';
@@ -28,61 +27,28 @@ const isWhiteboardFolder = (row: WhiteboardListingRow): boolean => {
     return row.rowType === WhiteboardListingRowType.Folder;
 };
 
-const renderWhiteboardTitle: NonNullable<ColumnConfig<WhiteboardListingRow>['render']> = (value, row) => {
-    let title = isWhiteboardFolder(row)
+const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
+    isFolder: isWhiteboardFolder,
+    resolveTitle: (row) => isWhiteboardFolder(row)
         ? getSafeFolderTitle(row.title)
-        : getSafeWhiteboardTitle(row.title);
-
-    if (typeof value === 'string' && value.trim().length > 0) {
-        title = value;
-    }
-
-    const hierarchyLabel = row.hierarchyTitle;
-
-    return (
-        <div className='whiteboards-listing-title-cell d-flex items-center gap-075' aria-label={hierarchyLabel}>
-            {isWhiteboardFolder(row) && (
-                <div className='d-flex flex-center color-secondary'>
-                    <Folder size={16} />
-                </div>
-            )}
-            <div className='overflow-hidden'>
-                <span className='whiteboards-listing-title font-weight-6 color-secondary' title={title}>{title}</span>
-            </div>
-        </div>
-    );
-};
-
-const COLUMNS: ColumnConfig<WhiteboardListingRow>[] = [
-    {
-        key: 'title',
-        title: 'Title',
-        sortable: true,
-        render: renderWhiteboardTitle,
-        skeleton: { variant: 'text', width: 180 }
-    },
-    userColumn<WhiteboardListingRow>('lastEditedBy', 'Last Edited By', { isFolder: isWhiteboardFolder }),
-    dateColumn<WhiteboardListingRow>('updatedAt', 'Updated At', {
-        width: 110,
-        withTitle: true
-    })
-];
+        : getSafeWhiteboardTitle(row.title),
+    skeletonWidth: 180,
+    wrapperClassName: 'whiteboards-listing-title-cell',
+    titleClassName: 'whiteboards-listing-title font-weight-6 color-secondary',
+    getAriaLabel: (row) => row.hierarchyTitle,
+    showTitleAttribute: true
+});
 
 const WhiteboardsListing = () => {
     useTip('whiteboards-organization');
 
+    const listing = useWhiteboardsListing();
     const {
         breadcrumbs,
-        context,
         currentFolder,
-        dragAndDrop,
-        fetchData,
-        getMenuOptions,
         getMoveFolder,
-        handleCreate,
         handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleItemClick,
         handleMoveWhiteboardClose,
         handleMoveWhiteboardSubmit,
         handleRenameWhiteboardClose,
@@ -93,27 +59,13 @@ const WhiteboardsListing = () => {
         listMoveFolders,
         movingWhiteboard,
         navigateToFolder,
-        queryKey,
         renamingWhiteboard,
-        renamingFolder,
-        socketInvalidation
-    } = useWhiteboardsListing();
+        renamingFolder
+    } = listing;
 
-    const globalSearchBreadcrumb = useMemo(() => ({
-        items: breadcrumbs,
-        onNavigate: navigateToFolder
-    }), [breadcrumbs, navigateToFolder]);
-
-    useDashboardHeaderContent({
-        globalSearchBreadcrumb
-    });
+    useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
 
     const title = <Heading level={3} size='3xl' className='sm:font-size-4'>Whiteboards</Heading>;
-
-    const createNew = {
-        buttonTitle: 'New Whiteboard',
-        onCreate: handleCreate
-    };
 
     const headerActions = <NewFolderHeaderAction modalId={NEW_WHITEBOARD_FOLDER_MODAL_ID} />;
 
@@ -127,16 +79,11 @@ const WhiteboardsListing = () => {
 
     return (
         <>
-            <DocumentListing<WhiteboardListingRow, { folderId: string | null }>
+            <FolderedDocumentListing<WhiteboardListingRow, { folderId: string | null }>
                 title={title}
-                queryKey={queryKey}
                 columns={COLUMNS}
-                context={context}
-                fetchData={fetchData}
-                getMenuOptions={getMenuOptions}
-                onItemClick={handleItemClick}
-                dragAndDrop={dragAndDrop}
-                createNew={createNew}
+                listing={listing}
+                createButtonTitle='New Whiteboard'
                 headerActions={headerActions}
                 headerMenuOptions={headerMenuOptions}
                 emptyTitle={currentFolder ? `No items in ${getSafeFolderTitle(currentFolder.title)}` : 'No whiteboards yet'}
@@ -145,38 +92,31 @@ const WhiteboardsListing = () => {
                     : 'Create your first whiteboard to start sketching ideas, collecting notes, and collaborating live with your team.'}
                 emptyIcon={EMPTY_WHITEBOARDS_ICON}
                 emptyButtonText='New Whiteboard'
-                onEmptyButtonClick={handleCreate}
-                socketInvalidation={socketInvalidation}
-            />
-            <NewFolderModal
-                id={NEW_WHITEBOARD_FOLDER_MODAL_ID}
-                title='New Whiteboard Folder'
-                description='Create a folder in the current whiteboards location.'
-                onSubmit={handleCreateFolder}
+                onEmptyButtonClick={listing.handleCreate}
             />
             <RenameWhiteboardModal
                 whiteboard={renamingWhiteboard}
                 onSubmit={handleRenameWhiteboardSubmit}
                 onClose={handleRenameWhiteboardClose}
             />
-            <RenameFolderModal
-                id={RENAME_WHITEBOARD_FOLDER_MODAL_ID}
-                title='Rename Whiteboard Folder'
-                description='Update the current whiteboard folder name.'
-                folderName={renamingFolder?.title ?? null}
-                onSubmit={handleRenameFolderSubmit}
-                onClose={handleRenameFolderClose}
-            />
-            <MoveToFolderModal
-                id={MOVE_WHITEBOARD_MODAL_ID}
-                itemId={movingWhiteboard?._id ?? null}
-                itemName={movingWhiteboard?.title ?? null}
+            <FolderedListingModals
+                newFolderModalId={NEW_WHITEBOARD_FOLDER_MODAL_ID}
+                newFolderTitle='New Whiteboard Folder'
+                newFolderDescription='Create a folder in the current whiteboards location.'
+                onCreateFolder={handleCreateFolder}
+                renameFolderModalId={RENAME_WHITEBOARD_FOLDER_MODAL_ID}
+                renameFolderTitle='Rename Whiteboard Folder'
+                renameFolderDescription='Update the current whiteboard folder name.'
+                renamingFolder={renamingFolder}
+                onRenameFolderSubmit={handleRenameFolderSubmit}
+                onRenameFolderClose={handleRenameFolderClose}
+                moveModalId={MOVE_WHITEBOARD_MODAL_ID}
+                movingItem={movingWhiteboard}
                 itemLabel='Whiteboard'
-                sourceFolderId={movingWhiteboard?.folder ?? null}
                 listFolders={listMoveFolders}
                 getFolder={getMoveFolder}
-                onSubmit={handleMoveWhiteboardSubmit}
-                onClose={handleMoveWhiteboardClose}
+                onMoveSubmit={handleMoveWhiteboardSubmit}
+                onMoveClose={handleMoveWhiteboardClose}
             />
         </>
     );

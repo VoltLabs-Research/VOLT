@@ -37,24 +37,6 @@ export const Transient = (token?: InjectionToken<unknown>): ClassDecorator => {
 };
 
 /**
- * Binds a class to `token` using an explicit lifecycle. Useful for collection
- * members that need to be singletons registered under a shared token.
- */
-export const Bound = (
-    token: InjectionToken<unknown>,
-    lifecycle: Lifecycle
-): ClassDecorator => {
-    return (target) => {
-        injectable()(target as unknown as Ctor);
-        container.register(
-            token,
-            { useClass: target as unknown as Ctor },
-            { lifecycle }
-        );
-    };
-};
-
-/**
  * Registers the decorated class under an additional token that resolves to the
  * same singleton registered via `@Singleton`. Mirrors the `aliases` slot of
  * the old ModuleManifest (e.g., a concrete socket module also answering to

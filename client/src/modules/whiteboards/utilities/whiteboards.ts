@@ -1,6 +1,5 @@
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 
 /**
  * Excalidraw `appState` keys that are safe to persist across sessions.
@@ -263,19 +262,7 @@ export const extractWhiteboardFileIds = (elements: WhiteboardElement[]): string[
     return Array.from(fileIds);
 };
 
-export const createEmptyWhiteboardsResponse = <T extends { _id: string }>(
-    params: PaginationParams
-): PaginatedResponse<T> => ({
-    status: 'success',
-    data: [],
-    pagination: {
-        page: Math.max(1, Number(params.page) || 1),
-        limit: Math.max(1, Number(params.limit) || 20),
-        total: 0,
-        totalPages: 1,
-        hasMore: false
-    }
-});
+export const createEmptyWhiteboardsResponse = createEmptyPaginatedResponse;
 
 export const getDeleteConfirmationMessage = (selectedItems: Whiteboard[]): string => {
     if (selectedItems.length === 1) {

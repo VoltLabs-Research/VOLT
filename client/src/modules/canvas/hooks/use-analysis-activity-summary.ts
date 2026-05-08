@@ -1,7 +1,7 @@
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { normalizeCanvasAnalysisStatus } from '../utilities/analysis-status';
+import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities/analysis-job-status';
 import { AnalysisStatus } from '@/modules/fractal/types';
 import { useMemo } from 'react';
 
@@ -48,40 +48,6 @@ const buildAnalysisTitle = (analyses: Analysis[]): string => {
     return analyses.map(getAnalysisName).join(', ');
 };
 
-const resolveJobAnalysisId = (job: Job): string | undefined => {
-    if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
-        return job.analysisId;
-    }
-
-    if (typeof job.metadata?.analysisId === 'string' && job.metadata.analysisId.trim().length > 0) {
-        return job.metadata.analysisId;
-    }
-
-    return undefined;
-};
-
-const deriveLiveStatus = (jobs: Job[]): AnalysisStatus | undefined => {
-    if (jobs.length === 0) return undefined;
-
-    if (jobs.some((job) => job.status === JobStatus.Running || job.status === JobStatus.Retrying)) {
-        return AnalysisStatus.Running;
-    }
-
-    if (jobs.some((job) => job.status === JobStatus.Queued || job.status === JobStatus.QueuedAfterFailure)) {
-        return AnalysisStatus.Pending;
-    }
-
-    if (jobs.every((job) => job.status === JobStatus.Completed)) {
-        return AnalysisStatus.Completed;
-    }
-
-    const anyFailed = jobs.some((job) => job.status === JobStatus.Failed);
-    const anyCompleted = jobs.some((job) => job.status === JobStatus.Completed);
-    if (anyFailed && !anyCompleted) return AnalysisStatus.Failed;
-
-    return undefined;
-};
-
 const useAnalysisActivitySummary = (trajectory?: Trajectory | null): AnalysisActivitySummary => {
     const trajectoryId = trajectory?._id;
     const analysesQuery = useAnalysesByTrajectoryQuery(
@@ -122,7 +88,7 @@ const useAnalysisActivitySummary = (trajectory?: Trajectory | null): AnalysisAct
         const queuedAnalyses: Analysis[] = [];
 
         for (const analysis of analyses) {
-            const live = deriveLiveStatus(jobsByAnalysisId.get(analysis._id) ?? []);
+            const live = deriveAnalysisStatusFromJobs(jobsByAnalysisId.get(analysis._id) ?? []);
             const status = live ?? normalizeCanvasAnalysisStatus(analysis.status);
 
             if (status === AnalysisStatus.Running) {

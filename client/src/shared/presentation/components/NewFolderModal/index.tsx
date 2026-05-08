@@ -1,12 +1,8 @@
-import { ErrorSurface, reportError } from '@/shared/errors/core';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Box from '@/shared/presentation/primitives/Box';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { closeModal } from '@/shared/presentation/primitives/Modal';
+import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
+import useTextInputModalState from '@/shared/presentation/components/RenameEntityModal/use-text-input-modal-state';
 import useMedia from '@/shared/presentation/hooks/use-media';
-import { useCallback, useState } from 'react';
-import type { InputHTMLAttributes } from 'react';
-import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
+import { useCallback } from 'react';
 
 interface NewFolderModalProps {
     id: string;
@@ -29,98 +25,50 @@ const NewFolderModal = ({
     onSubmit,
     onClose
 }: NewFolderModalProps) => {
-    const [folderName, setFolderName] = useState('');
-    const [error, setError] = useState<string | undefined>();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const shouldAutoFocus = !useMedia('(pointer: coarse)');
-
-    const resetState = useCallback(() => {
-        setFolderName('');
-        setError(undefined);
-        setIsSubmitting(false);
-    }, []);
 
     const handleRequestClose = useCallback(() => {
         closeModal(id);
     }, [id]);
 
+    const {
+        value: folderName,
+        error,
+        isSubmitting,
+        handleValueChange: handleFolderNameChange,
+        handleSubmit,
+        reset
+    } = useTextInputModalState({
+        requiredMessage: 'Folder name is required',
+        submitErrorTitle: 'Failed to create folder',
+        onSubmit,
+        onSubmitted: handleRequestClose
+    });
+
     const handleModalClose = useCallback(() => {
-        resetState();
+        reset();
         onClose?.();
-    }, [onClose, resetState]);
-
-    const handleSubmit = useCallback(async () => {
-        const trimmedFolderName = folderName.trim();
-
-        if (!trimmedFolderName) {
-            setError('Folder name is required');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError(undefined);
-
-        try {
-            await onSubmit(trimmedFolderName);
-            handleRequestClose();
-        } catch (nextError) {
-            const userError = reportError(nextError, {
-                surface: ErrorSurface.Silent,
-                fallbackTitle: 'Failed to create folder'
-            });
-
-            setError(userError.description ?? userError.title);
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [folderName, handleRequestClose, onSubmit]);
-
-    const handleFolderNameChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFolderName(event.target.value);
-        setError(undefined);
-    }, []);
-
-    const inputProps: InputHTMLAttributes<HTMLInputElement> = {
-        onKeyDown: (event) => {
-            if (event.key === 'Enter') {
-                handleSubmit();
-            }
-        }
-    };
-
-    const secondaryAction: ModalFooterAction = {
-        label: 'Cancel',
-        onClick: handleRequestClose,
-        disabled: isSubmitting
-    };
-
-    const primaryAction: ModalFooterAction = {
-        label: submitLabel,
-        onClick: handleSubmit,
-        disabled: isSubmitting || !folderName.trim(),
-        isLoading: isSubmitting
-    };
+    }, [onClose, reset]);
 
     return (
-        <Modal
-            id={id}
-            title={title}
+        <TextInputModal
+            modalId={id}
+            modalTitle={title}
             description={description}
+            fieldLabel={fieldLabel}
+            placeholder={placeholder}
+            autoFocus={shouldAutoFocus}
+            value={folderName}
+            error={error}
+            primaryLabel={submitLabel}
+            submitDisabled={isSubmitting || !folderName.trim()}
+            isSubmitting={isSubmitting}
+            primaryIsLoading={isSubmitting}
+            onValueChange={handleFolderNameChange}
+            onSubmit={handleSubmit}
+            onCancel={handleRequestClose}
             onClose={handleModalClose}
-            footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
-        >
-            <Box p='1-5'>
-                <FormFieldRHF
-                    label={fieldLabel}
-                    placeholder={placeholder}
-                    autoFocus={shouldAutoFocus}
-                    value={folderName}
-                    onChange={handleFolderNameChange}
-                    inputProps={inputProps}
-                    error={error}
-                />
-            </Box>
-        </Modal>
+        />
     );
 };
 

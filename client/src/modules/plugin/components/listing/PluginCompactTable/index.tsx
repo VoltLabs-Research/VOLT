@@ -10,6 +10,7 @@ import { inferColumnType, type InferredColumnType } from '@/modules/plugin/compo
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
+import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';
 
 export interface ColumnConfig {
     key?: string;
@@ -17,7 +18,7 @@ export interface ColumnConfig {
     path?: string;
     label?: string;
     width?: number;
-    render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
+    render?: (value: unknown, row: Record<string, unknown>) => ReactNode;
 }
 
 const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
@@ -26,7 +27,7 @@ const getColumnMinWidth = (col: ColumnConfig): number => Number(col.width ?? 120
 
 interface TableRowProps {
     index: number;
-    style: React.CSSProperties;
+    style: CSSProperties;
     data: Record<string, unknown>[];
     columns: ColumnConfig[];
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
@@ -53,14 +54,14 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
     const isClickable = Boolean(onRowClick);
 
     const handleClick = isClickable
-        ? (event: React.MouseEvent<HTMLDivElement>) => {
+        ? (event: MouseEvent<HTMLDivElement>) => {
             if(event.defaultPrevented) return;
             onRowClick?.(row);
         }
         : undefined;
 
     const handleKeyDown = isClickable
-        ? (event: React.KeyboardEvent<HTMLDivElement>) => {
+        ? (event: KeyboardEvent<HTMLDivElement>) => {
             if(event.key === 'Enter' || event.key === ' '){
                 event.preventDefault();
                 onRowClick?.(row);
@@ -89,7 +90,7 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
                 const rawValue = row[columnKey];
                 const inferred = inferredColumnTypes?.[columnKey];
 
-                let cellContent: React.ReactNode;
+                let cellContent: ReactNode;
                 let titleAttribute: string | undefined;
 
                 if(col.render){
@@ -139,7 +140,7 @@ interface VirtualizedRowExtraProps {
     selectedRowId?: string | null;
 }
 
-const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredColumnTypes, onRowClick, selectedRowId }: VirtualizedRowExtraProps & { index: number; style: React.CSSProperties }) => {
+const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredColumnTypes, onRowClick, selectedRowId }: VirtualizedRowExtraProps & { index: number; style: CSSProperties }) => {
     const row = data[index];
     const rowId = row ? resolveRowIdentifier(row, index) : undefined;
     const isSelected = Boolean(selectedRowId && rowId === selectedRowId);
@@ -183,6 +184,74 @@ const getDisplayErrorMessage = (error: unknown): string => {
         fallbackTitle: 'Failed to load data.'
     }).title;
 };
+
+const compactTableFrameStyle: CSSProperties = {
+    height: '100%',
+    minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    overflowX: 'auto',
+    overflowY: 'hidden'
+};
+
+const compactTableInnerStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
+    height: '100%'
+};
+
+const loadingMoreStyle: CSSProperties = {
+    padding: '0.25rem',
+    borderTop: '1px solid var(--color-border-soft)'
+};
+
+const CompactTableHeader = ({ columns }: { columns: ColumnConfig[] }) => (
+    <div className='plugin-compact-table-header p-sticky'>
+        {columns.map((col) => (
+            <div
+                key={getColumnKey(col)}
+                className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
+                style={{
+                    minWidth: `${getColumnMinWidth(col)}px`,
+                    flex: `1 1 ${getColumnMinWidth(col)}px`
+                }}
+            >
+                {getColumnTitle(col)}
+            </div>
+        ))}
+    </div>
+);
+
+interface CompactTableFrameProps {
+    containerRef: Ref<HTMLDivElement>;
+    effectiveWidth: number;
+    isFetchingMore?: boolean;
+    children: ReactNode;
+}
+
+const CompactTableFrame = ({
+    containerRef,
+    effectiveWidth,
+    isFetchingMore,
+    children
+}: CompactTableFrameProps) => (
+    <div
+        className='plugin-exposure-table-compact w-full h-full overflow-hidden'
+        ref={containerRef}
+        style={compactTableFrameStyle}
+    >
+        <div style={{ ...compactTableInnerStyle, minWidth: `${effectiveWidth}px` }}>
+            {children}
+        </div>
+        {isFetchingMore && (
+            <div className='plugin-exposure-loading' style={loadingMoreStyle}>
+                Loading more...
+            </div>
+        )}
+    </div>
+);
 
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
     return (
@@ -368,133 +437,79 @@ const PluginCompactTable = ({
 
     if (!isMeasured && data.length > 0) {
         return (
-            <div
-                className='plugin-exposure-table-compact w-full h-full overflow-hidden'
-                ref={containerRef}
-                style={{
-                    height: '100%',
-                    minHeight: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflowX: 'auto',
-                    overflowY: 'hidden'
-                }}
+            <CompactTableFrame
+                containerRef={containerRef}
+                effectiveWidth={effectiveWidth}
+                isFetchingMore={isFetchingMore}
             >
-                <div style={{ minWidth: `${effectiveWidth}px`, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
-                    <div className='plugin-compact-table-header p-sticky'>
-                        {columns.map((col) => (
-                            <div
-                                key={getColumnKey(col)}
-                                className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
+                <CompactTableHeader columns={columns} />
+                <div
+                    ref={listContainerRef}
+                    className='plugin-compact-table-list-container y-auto'
+                    onScroll={handleScroll}
+                    style={{
+                        flex: 1,
+                        height: '100%',
+                        minHeight: `${fallbackHeight}px`,
+                        overflowY: 'auto',
+                        overflowX: 'hidden'
+                    }}
+                >
+                    {data.map((row, index) => {
+                        const rowId = resolveRowIdentifier(row, index);
+                        return (
+                            <TableRow
+                                key={String(row.id ?? row._id ?? `${index}`)}
+                                index={index}
+                                data={data}
+                                columns={columns}
+                                getMenuOptions={getMenuOptions}
+                                rowId={rowId}
+                                inferredColumnTypes={inferredColumnTypes}
+                                onRowClick={onRowClick}
+                                isSelected={Boolean(selectedRowId && rowId === selectedRowId)}
                                 style={{
-                                    minWidth: `${getColumnMinWidth(col)}px`,
-                                    flex: `1 1 ${getColumnMinWidth(col)}px`
+                                    position: 'relative',
+                                    height: rowHeight,
+                                    width: '100%'
                                 }}
-                            >
-                                {getColumnTitle(col)}
-                            </div>
-                        ))}
-                    </div>
-                    <div
-                        ref={listContainerRef}
-                        className='plugin-compact-table-list-container y-auto'
-                        onScroll={handleScroll}
-                        style={{
-                            flex: 1,
-                            height: '100%',
-                            minHeight: `${fallbackHeight}px`,
-                            overflowY: 'auto',
-                            overflowX: 'hidden'
-                        }}
-                    >
-                        {data.map((row, index) => {
-                            const rowId = resolveRowIdentifier(row, index);
-                            return (
-                                <TableRow
-                                    key={String(row.id ?? row._id ?? `${index}`)}
-                                    index={index}
-                                    data={data}
-                                    columns={columns}
-                                    getMenuOptions={getMenuOptions}
-                                    rowId={rowId}
-                                    inferredColumnTypes={inferredColumnTypes}
-                                    onRowClick={onRowClick}
-                                    isSelected={Boolean(selectedRowId && rowId === selectedRowId)}
-                                    style={{
-                                        position: 'relative',
-                                        height: rowHeight,
-                                        width: '100%'
-                                    }}
-                                />
-                            );
-                        })}
-                    </div>
+                            />
+                        );
+                    })}
                 </div>
-                {isFetchingMore && (
-                    <div className='plugin-exposure-loading' style={{ padding: '0.25rem', borderTop: '1px solid var(--color-border-soft)' }}>
-                        Loading more...
-                    </div>
-                )}
-            </div>
+            </CompactTableFrame>
         );
     }
 
     return (
-        <div
-            className='plugin-exposure-table-compact w-full h-full overflow-hidden'
-            ref={containerRef}
-            style={{
-                height: '100%',
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                overflowX: 'auto',
-                overflowY: 'hidden'
-            }}
+        <CompactTableFrame
+            containerRef={containerRef}
+            effectiveWidth={effectiveWidth}
+            isFetchingMore={isFetchingMore}
         >
-            <div style={{ minWidth: `${effectiveWidth}px`, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
-                <div className='plugin-compact-table-header p-sticky'>
-                    {columns.map((col) => (
-                        <div
-                            key={getColumnKey(col)}
-                            className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
-                            style={{
-                                minWidth: `${getColumnMinWidth(col)}px`,
-                                flex: `1 1 ${getColumnMinWidth(col)}px`
-                            }}
-                        >
-                            {getColumnTitle(col)}
-                        </div>
-                    ))}
-                </div>
-                <div
-                    ref={listContainerRef}
-                    className='plugin-compact-table-list-container'
-                    style={{ flex: 1, minHeight: 0, height: '100%' }}
-                >
-                    <List<VirtualizedRowExtraProps>
-                        onScroll={handleScroll}
-                        rowCount={data.length}
-                        rowHeight={rowHeight}
-                        rowComponent={VirtualizedRow}
-                        rowProps={{
-                            data,
-                            columns,
-                            getMenuOptions,
-                            inferredColumnTypes,
-                            onRowClick,
-                            selectedRowId: selectedRowId ?? null
-                        }}
-                        style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
-                    />
-                </div>
+            <CompactTableHeader columns={columns} />
+            <div
+                ref={listContainerRef}
+                className='plugin-compact-table-list-container'
+                style={{ flex: 1, minHeight: 0, height: '100%' }}
+            >
+                <List<VirtualizedRowExtraProps>
+                    onScroll={handleScroll}
+                    rowCount={data.length}
+                    rowHeight={rowHeight}
+                    rowComponent={VirtualizedRow}
+                    rowProps={{
+                        data,
+                        columns,
+                        getMenuOptions,
+                        inferredColumnTypes,
+                        onRowClick,
+                        selectedRowId: selectedRowId ?? null
+                    }}
+                    style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
+                />
             </div>
-            {isFetchingMore && (
-                <div className='plugin-exposure-loading' style={{ padding: '0.25rem', borderTop: '1px solid var(--color-border-soft)' }}>
-                    Loading more...
-                </div>
-            )}
-        </div>
+        </CompactTableFrame>
     );
 };
 

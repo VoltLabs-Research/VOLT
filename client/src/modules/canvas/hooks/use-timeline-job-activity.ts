@@ -2,6 +2,7 @@ import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
+import { isQueuedJobStatus, isRunningJobStatus, resolveJobAnalysisId } from '../utilities/analysis-job-status';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Job } from '@/modules/jobs/api/entities/job';
@@ -10,26 +11,6 @@ export type TimelineTickTone = 'queued' | 'running' | 'completed';
 export type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
-
-const isQueuedStatus = (status: JobStatus | string | undefined): boolean => {
-    return status === JobStatus.Queued || status === JobStatus.QueuedAfterFailure;
-};
-
-const isRunningStatus = (status: JobStatus | string | undefined): boolean => {
-    return status === JobStatus.Running || status === JobStatus.Retrying;
-};
-
-const resolveAnalysisId = (job: Job): string | undefined => {
-    if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {
-        return job.analysisId;
-    }
-
-    if (typeof job.metadata?.analysisId === 'string' && job.metadata.analysisId.trim().length > 0) {
-        return job.metadata.analysisId;
-    }
-
-    return undefined;
-};
 
 const resolveTimestep = (job: Job): number | undefined => {
     return job.timestep ?? job.metadata?.timestep;
@@ -104,7 +85,7 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
 
             for (const frameGroup of group.frameGroups) {
                 for (const job of frameGroup.jobs) {
-                    if (isRunningStatus(job.status)) {
+                    if (isRunningJobStatus(job.status)) {
                         runningJobIdsRef.current.add(job.jobId);
                     }
                 }
@@ -122,7 +103,7 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
             return;
         }
 
-        if (isRunningStatus(job.status)) {
+        if (isRunningJobStatus(job.status)) {
             runningJobIdsRef.current.add(job.jobId);
             return;
         }
@@ -161,13 +142,13 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
                     continue;
                 }
 
-                const hasRunning = frameGroup.jobs.some((job) => isRunningStatus(job.status));
+                const hasRunning = frameGroup.jobs.some((job) => isRunningJobStatus(job.status));
                 if (hasRunning) {
                     next.set(timestep, 'running');
                     continue;
                 }
 
-                const hasQueued = frameGroup.jobs.some((job) => isQueuedStatus(job.status));
+                const hasQueued = frameGroup.jobs.some((job) => isQueuedJobStatus(job.status));
                 if (hasQueued) {
                     next.set(timestep, 'queued');
                 }
@@ -195,16 +176,16 @@ const useTimelineJobActivity = (trajectoryId?: string) => {
                 continue;
             }
 
-            const matchingJobs = frameGroup.jobs.filter((job) => resolveAnalysisId(job) === analysisId);
+            const matchingJobs = frameGroup.jobs.filter((job) => resolveJobAnalysisId(job) === analysisId);
             if (matchingJobs.length === 0) {
                 continue;
             }
 
-            if (matchingJobs.some((job) => isRunningStatus(job.status))) {
+            if (matchingJobs.some((job) => isRunningJobStatus(job.status))) {
                 return 'running';
             }
 
-            if (matchingJobs.some((job) => isQueuedStatus(job.status))) {
+            if (matchingJobs.some((job) => isQueuedJobStatus(job.status))) {
                 return 'queued';
             }
 

@@ -5,12 +5,6 @@ export interface TypingUser {
     isTyping: boolean;
 }
 
-export interface MessagesReadEvent {
-    chatId: string;
-    readBy: string;
-    readAt: string;
-}
-
 export enum PresenceStatus {
     Online = 'online',
     Offline = 'offline',

@@ -1,10 +1,6 @@
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Box from '@/shared/presentation/primitives/Box';
+import { closeModal } from '@/shared/presentation/primitives/Modal';
+import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
 import { useCallback, useEffect, useState } from 'react';
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
-import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 
 interface RenameEntityModalProps<TEntity> {
     entity: TEntity | null;
@@ -70,51 +66,29 @@ const RenameEntityModal = <TEntity,>({
         }
     }, [onSubmit, title, validateTitle]);
 
-    const handleTitleChange = useCallback((event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setTitle(event.target.value);
+    const handleTitleChange = useCallback((nextTitle: string) => {
+        setTitle(nextTitle);
         setError(undefined);
     }, []);
 
-    const inputProps: InputHTMLAttributes<HTMLInputElement> = {
-        onKeyDown: (event) => {
-            if (event.key === 'Enter') {
-                handleSubmit();
-            }
-        }
-    };
-
-    const primaryAction: ModalFooterAction = {
-        label: 'Rename',
-        onClick: handleSubmit,
-        disabled: isSubmitting || !title.trim()
-    };
-
-    const secondaryAction: ModalFooterAction = {
-        label: 'Cancel',
-        onClick: handleClose,
-        disabled: isSubmitting
-    };
-
     return (
-        <Modal
-            id={modalId}
-            title={modalTitle}
+        <TextInputModal
+            modalId={modalId}
+            modalTitle={modalTitle}
             description={description}
+            fieldLabel={fieldLabel}
+            placeholder={placeholder}
+            autoFocus
+            value={title}
+            error={error}
+            primaryLabel='Rename'
+            submitDisabled={isSubmitting || !title.trim()}
+            isSubmitting={isSubmitting}
+            onValueChange={handleTitleChange}
+            onSubmit={handleSubmit}
+            onCancel={handleClose}
             onClose={handleClose}
-            footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
-        >
-            <Box p='1-5'>
-                <FormFieldRHF
-                    label={fieldLabel}
-                    placeholder={placeholder}
-                    autoFocus
-                    value={title}
-                    onChange={handleTitleChange}
-                    inputProps={inputProps}
-                    error={error}
-                />
-            </Box>
-        </Modal>
+        />
     );
 };
 
