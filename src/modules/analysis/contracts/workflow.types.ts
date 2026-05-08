@@ -5,7 +5,7 @@ import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/Pl
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExposureInspectionResult } from '@/modules/analysis/application/workflow/exposure-payload-reader';
-import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
+import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 
 import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from './http-analysis';
 import type {
@@ -67,11 +67,11 @@ export interface WorkflowEntrypointExecutionOptions {
     pluginBinaryCache: PluginBinaryCache;
     binaryExecutorService: BinaryExecutorService;
     // Why: optional dependencies enabling the persistent Python pool path.
-    // When both registry + cluster id are present and the entrypoint is a
+    // When both frame store + cluster id are present and the entrypoint is a
     // Python/packaged plugin, the handler routes through the pool + result
     // cache + shared-memory bridge; otherwise it falls back to the legacy
     // one-shot spawn.
-    vtrReaderRegistry?: VtrReaderRegistry;
+    trajectoryFrameStore?: TrajectoryFrameStore;
     ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
     prepareArgs?: (args: string[]) => WorkflowPreparedEntrypointArgs;

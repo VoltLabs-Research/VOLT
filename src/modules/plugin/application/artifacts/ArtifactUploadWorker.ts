@@ -154,15 +154,12 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 
     private shouldCompress(contentType: string | undefined): boolean {
-        return contentType === 'application/msgpack' || contentType === 'model/gltf-binary';
+        return contentType === 'model/gltf-binary';
     }
 
     private resolveObjectKey(objectKey: string, contentType: string | undefined, compressed: boolean): string {
         if (!compressed) {
             return objectKey;
-        }
-        if (contentType === 'application/msgpack' && !objectKey.endsWith('.msgpack.zst')) {
-            return `${objectKey}.zst`;
         }
         if (contentType === 'model/gltf-binary' && !objectKey.endsWith('.glb.zst')) {
             return `${objectKey}.zst`;

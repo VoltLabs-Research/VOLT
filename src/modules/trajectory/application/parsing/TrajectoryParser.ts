@@ -1,8 +1,9 @@
 import { Service } from '@/core/decorators/service';
 import { normalizePagination, calculatePaginationOffset } from '@/contracts/pagination';
-import type { VtrFrameCache } from '@/modules/trajectory/application/vtr/VtrFrameCache';
-import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
-import type { VtrFrameData } from '@/modules/trajectory/infrastructure/codecs/vtr-reader';
+import type {
+    TrajectoryFrameData,
+    TrajectoryFrameStore
+} from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import type { ParsedSimulationCell } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
 import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 
@@ -56,7 +57,7 @@ export interface AtomsPageResult {
     nativeProperties: string[];
 }
 
-const buildSimulationCell = (frame: VtrFrameData): ParsedSimulationCell => {
+const buildSimulationCell = (frame: TrajectoryFrameData): ParsedSimulationCell => {
     const width = frame.frameBbox[3] - frame.frameBbox[0];
     const length = frame.frameBbox[4] - frame.frameBbox[1];
     const height = frame.frameBbox[5] - frame.frameBbox[2];
@@ -70,7 +71,7 @@ const buildSimulationCell = (frame: VtrFrameData): ParsedSimulationCell => {
     };
 };
 
-const frameToParsedTrajectory = (frame: VtrFrameData): ParsedTrajectory => {
+const frameToParsedTrajectory = (frame: TrajectoryFrameData): ParsedTrajectory => {
     const min: [number, number, number] = [frame.frameBbox[0], frame.frameBbox[1], frame.frameBbox[2]];
     const max: [number, number, number] = [frame.frameBbox[3], frame.frameBbox[4], frame.frameBbox[5]];
     const propertyHeaders = Object.keys(frame.properties);
@@ -113,22 +114,15 @@ const collectUnique = (values: Float32Array, maxValues: number): number[] => {
 
 @Service('trajectoryParser')
 export class TrajectoryParser {
-    constructor(
-        private readonly vtrReaderRegistry: VtrReaderRegistry,
-        private readonly vtrFrameCache: VtrFrameCache
-    ) {}
+    constructor(private readonly trajectoryFrameStore: TrajectoryFrameStore) {}
 
     public async readFrame(input: DumpFileInput): Promise<ParsedTrajectory> {
-        const cached = this.vtrFrameCache.get(input.trajectoryId, input.timestep);
-        if (cached) return frameToParsedTrajectory(cached);
-
         try {
-            const reader = await this.vtrReaderRegistry.openReader({
+            const frame = await this.trajectoryFrameStore.readFrame({
                 trajectoryId: input.trajectoryId,
+                timestep: input.timestep,
                 ownerClusterId: input.ownerClusterId
             });
-            const frame = await reader.readFrame(input.timestep);
-            this.vtrFrameCache.put(input.trajectoryId, input.timestep, frame);
             return frameToParsedTrajectory(frame);
         } catch (error) {
             throw this.rethrowNotFound(error, input);
@@ -233,10 +227,10 @@ export class TrajectoryParser {
     private rethrowNotFound(error: unknown, input: DumpFileInput): Error {
         if (isObjectNotFoundError(error)) {
             const notFound = new Error(
-                `VTR object not found: trajectoryId=${input.trajectoryId}, timestep=${input.timestep}, ` +
+                `Parquet trajectory object not found: trajectoryId=${input.trajectoryId}, timestep=${input.timestep}, ` +
                 `ownerClusterId=${input.ownerClusterId}. The trajectory may not have been ingested yet.`
             );
-            notFound.name = 'VtrNotFoundError';
+            notFound.name = 'ParquetTrajectoryNotFoundError';
             return notFound;
         }
         if (error instanceof Error) return error;

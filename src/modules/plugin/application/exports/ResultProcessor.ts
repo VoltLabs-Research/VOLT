@@ -2,7 +2,6 @@ import Bottleneck from 'bottleneck';
 
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import {
     createWorkflowExposureOutputFilePath,
     readWorkflowExposurePayload
@@ -16,6 +15,7 @@ import { getRecommendedResultProcessingConcurrency } from '@/support/policies/an
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/modules/analysis/contracts/http-analysis';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { PluginMongoRow, PluginMongoValue } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
+import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
 
 const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
@@ -25,7 +25,8 @@ export class DefaultResultProcessor implements ResultProcessorService {
     private readonly exposureProcessingLimiter: Bottleneck;
 
     constructor(
-        private readonly pluginListingRepository: PluginListingRepository
+        private readonly pluginListingRepository: PluginListingRepository,
+        private readonly pluginPropertyStore: PluginPropertyStore
     ) {
         this.exposureProcessingLimiter = new Bottleneck({
             maxConcurrent: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
@@ -57,21 +58,9 @@ export class DefaultResultProcessor implements ResultProcessorService {
         }
 
         const { analysisId, trajectoryId, pluginId, storageClusterId: storageOwnerClusterId } = executionData.identity;
-        const storageKey = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposure.nodeId}/timestep-${timestep}.msgpack.zst`;
         if (!storageOwnerClusterId) {
             throw new Error(`Missing storage owner cluster for analysis ${analysisId}`);
         }
-
-        await artifactUploadBatch.stageFileUpload({
-            sourcePath: outputFilePath,
-            ownerClusterId: storageOwnerClusterId,
-            bucket: ObjectBucketName.Plugins,
-            objectKey: storageKey,
-            contentType: 'application/msgpack',
-            fileName: `${exposure.nodeId}-timestep-${timestep}.msgpack.zst`
-        });
-
-        logger.info(`Queued exposure .msgpack upload for storageKey=${storageKey}`);
 
         const queuedAt = Date.now();
         await this.exposureProcessingLimiter.schedule(async () => {
@@ -84,8 +73,23 @@ export class DefaultResultProcessor implements ResultProcessorService {
             let {
                 listing: listingPayload,
                 subListingNames,
+                subListings,
+                perAtomProperties,
                 exportData: exportPayload
             } = await readWorkflowExposurePayload(outputFilePath);
+
+            const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
+                trajectoryId,
+                analysisId,
+                exposureId: exposure.nodeId,
+                timestep,
+                ownerClusterId: storageOwnerClusterId,
+                rows: perAtomProperties
+            });
+            const propertyObjectKey = propertyStorage?.objectKey;
+            if (propertyStorage) {
+                logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
+            }
 
             await precomputeListingRows(
                 this.pluginListingRepository,
@@ -93,14 +97,24 @@ export class DefaultResultProcessor implements ResultProcessorService {
                 exposure,
                 listingPayload,
                 subListingNames,
-                storageKey,
+                propertyObjectKey,
                 storageOwnerClusterId,
                 timestep,
                 teamId
             );
 
+            await precomputeSubListingRows(
+                this.pluginListingRepository,
+                executionData,
+                exposure,
+                subListings,
+                timestep
+            );
+
             listingPayload = null;
             subListingNames = [];
+            subListings = {};
+            perAtomProperties = [];
 
             if (exposure.export && exportPayload) {
                 await processExportNode({
@@ -121,7 +135,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
             exportPayload = null;
         });
 
-        logger.info(`Finished exposure result processing: analysisId=${analysisId}, exposure=${exposure.name}, durationMs=${Date.now() - startedAt}, storageKey=${storageKey}, timestep=${timestep}`);
+        logger.info(`Finished exposure result processing: analysisId=${analysisId}, exposure=${exposure.name}, durationMs=${Date.now() - startedAt}, timestep=${timestep}`);
     }
 }
 
@@ -131,8 +145,8 @@ async function precomputeListingRows(
     exposure: AnalysisExposureDefinition,
     decoded: MsgpackObject | null,
     subListingNames: string[],
-    objectKey: string,
-    payloadOwnerClusterId: string,
+    objectKey: string | undefined,
+    propertyOwnerClusterId: string,
     timestep: number,
     teamId: string
 ): Promise<void> {
@@ -179,9 +193,32 @@ async function precomputeListingRows(
             exposureId: exposure.nodeId,
             timestep,
             row: cleanedMainListing,
-            payloadObjectKey: objectKey,
-            payloadOwnerClusterId,
+            ...(objectKey ? {
+                propertyObjectKey: objectKey,
+                propertyOwnerClusterId
+            } : {}),
             subListingNames
         }
     }]);
+}
+
+async function precomputeSubListingRows(
+    pluginListingRepository: PluginListingRepository,
+    executionData: AnalysisJobExecutionData,
+    exposure: AnalysisExposureDefinition,
+    subListings: Record<string, MsgpackObject[]>,
+    timestep: number
+): Promise<void> {
+    const { analysisId } = executionData.identity;
+    const inputs = Object.entries(subListings)
+        .filter(([, rows]) => rows.length > 0)
+        .map(([subListingName, rows]) => ({
+            analysis: analysisId,
+            exposureId: exposure.nodeId,
+            timestep,
+            subListingName,
+            rows: rows as PluginMongoRow[]
+        }));
+
+    await pluginListingRepository.replaceSubListingRows(inputs);
 }

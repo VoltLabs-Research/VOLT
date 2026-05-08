@@ -40,10 +40,18 @@ export interface BulkUpsertOperation {
         exposureId: string;
         timestep: number;
         row: PluginMongoRow;
-        payloadObjectKey: string;
-        payloadOwnerClusterId: string;
+        propertyObjectKey?: string;
+        propertyOwnerClusterId?: string;
         subListingNames: string[];
     };
+}
+
+export interface ReplaceSubListingRowsInput {
+    analysis: string;
+    exposureId: string;
+    timestep: number;
+    subListingName: string;
+    rows: PluginMongoRow[];
 }
 
 export interface ListingPaginatedResult extends PaginatedResult<PluginListingRowDocument> {
@@ -83,6 +91,7 @@ export interface PluginListingRepository {
     listPluginListings(filter: PluginListingFilter): Promise<ListingPaginatedResult>;
     listPluginSubListings(filter: PluginSubListingFilter): Promise<PaginatedResult<PluginSubListingRowDocument>>;
     bulkUpsertListingRows(operations: BulkUpsertOperation[]): Promise<void>;
+    replaceSubListingRows(inputs: ReplaceSubListingRowsInput[]): Promise<void>;
     exportMongoRows(input: PluginMongoRowsExportInput): Promise<PluginMongoRowsExportResult>;
     importMongoRows(input: PluginMongoRowsImportInput): Promise<number>;
     purgeMongoRows(input: PluginMongoRowsPurgeInput): Promise<number>;

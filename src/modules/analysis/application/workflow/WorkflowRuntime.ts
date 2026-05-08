@@ -28,7 +28,7 @@ import type { AnalysisJobExecutionData } from '@/modules/analysis/contracts/http
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
-import type { VtrReaderRegistry } from '@/modules/trajectory/application/vtr/VtrReaderRegistry';
+import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
@@ -235,7 +235,7 @@ export class WorkflowRuntime {
         private readonly pluginBinaryCache: PluginBinaryCache,
         private readonly binaryExecutorService: BinaryExecutorService,
         private readonly resultProcessor: ResultProcessorService,
-        private readonly vtrReaderRegistry: VtrReaderRegistry
+        private readonly trajectoryFrameStore: TrajectoryFrameStore
     ) {
         this.nodeExecutor = new WorkflowNodeExecutor(workflowNodeRegistry);
     }
@@ -456,7 +456,7 @@ export class WorkflowRuntime {
                 outputDir: input.outputDir,
                 pluginBinaryCache: this.pluginBinaryCache,
                 binaryExecutorService: this.binaryExecutorService,
-                vtrReaderRegistry: this.vtrReaderRegistry,
+                trajectoryFrameStore: this.trajectoryFrameStore,
                 ownerClusterId: storageClusterId,
                 includeOutputFiles: true,
                 nonZeroExitMessage: (result) => `Binary exited with code ${result.code}: ${result.stderr || result.stdout}`
@@ -647,7 +647,7 @@ export class WorkflowRuntime {
                     outputDir: nestedOutputDir,
                     pluginBinaryCache: this.pluginBinaryCache,
                     binaryExecutorService: this.binaryExecutorService,
-                    vtrReaderRegistry: this.vtrReaderRegistry,
+                    trajectoryFrameStore: this.trajectoryFrameStore,
                     ownerClusterId: input.ownerClusterId,
                     nonZeroExitMessage: (result) => `Nested plugin ${pluginId} failed with code ${result.code}: ${result.stderr || result.stdout}`,
                     requireNonEmptyArguments: true,

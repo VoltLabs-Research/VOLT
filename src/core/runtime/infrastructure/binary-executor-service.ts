@@ -16,7 +16,6 @@ import type {
     PluginProcessRequest,
     PluginProcessResponse
 } from '@/modules/plugin/contracts/plugin-batch';
-import { ResultCache, hashObjectStable } from '@/modules/plugin/application/cache/ResultCache';
 import { spawn } from 'node:child_process';
 
 export interface ProcessExecutionResult {
@@ -48,17 +47,10 @@ export interface PersistentPluginInvocationInput {
     config?: Record<string, unknown>;
     mode?: 'single' | 'batch';
     timeoutMs?: number;
-    cache?: {
-        binaryHash: string;
-        inputFrameHash: string;
-        configHash?: string;
-    };
 }
 
 export interface PersistentPluginInvocationResult {
     response: PluginProcessResponse;
-    cacheHit?: boolean;
-    cacheKey?: string;
 }
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
@@ -69,8 +61,7 @@ const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 export class BinaryExecutorService {
     constructor(
         private readonly pluginProcessPool: PluginProcessPool,
-        private readonly sharedMemoryBridge: SharedMemoryBridge,
-        private readonly resultCache: ResultCache
+        private readonly sharedMemoryBridge: SharedMemoryBridge
     ) {}
 
     async executeProcess({
@@ -159,22 +150,6 @@ export class BinaryExecutorService {
     }
 
     async invokePersistentPlugin(input: PersistentPluginInvocationInput): Promise<PersistentPluginInvocationResult> {
-        const cacheDescriptor = input.cache
-            ? {
-                binaryHash: input.cache.binaryHash,
-                inputFrameHash: input.cache.inputFrameHash,
-                configHash: input.cache.configHash ?? hashObjectStable(input.config ?? {}),
-                pluginId: input.pluginId
-            }
-            : null;
-
-        if (cacheDescriptor) {
-            const cached = await this.resultCache.lookup<PluginProcessResponse>(cacheDescriptor);
-            if (cached) {
-                return { response: cached.value, cacheHit: true, cacheKey: cached.cacheKey };
-            }
-        }
-
         const stubPath = resolvePythonStubPath();
         const spawnInput: PooledProcessSpawnInput = {
             pluginId: input.pluginId,
@@ -191,19 +166,7 @@ export class BinaryExecutorService {
         try {
             const request = await this.buildProcessRequest(input, releaseables);
             const response = await pooled.send(request, { timeoutMs: input.timeoutMs });
-
-            if (cacheDescriptor && response.ok) {
-                const cacheKey = await this.resultCache.store({
-                    ...cacheDescriptor,
-                    value: response
-                }).catch((error: unknown) => {
-                    logger.warn({ err: error, pluginId: input.pluginId }, '@binary-executor-service: cache store failed');
-                    return undefined;
-                });
-                return { response, cacheHit: false, cacheKey };
-            }
-
-            return { response, cacheHit: false };
+            return { response };
         } finally {
             pooled.release();
             for (const release of releaseables) {

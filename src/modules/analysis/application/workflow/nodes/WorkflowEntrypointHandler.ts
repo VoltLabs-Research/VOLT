@@ -190,11 +190,11 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         }
         if (!executionRuntime.projectPath) return false;
 
-        // Why: without the VtrReaderRegistry we cannot load a FrameChunk to
-        // hand to the plugin; without an ownerClusterId the reader cannot
+        // Why: without the trajectory frame store we cannot load a frame to
+        // hand to the plugin; without an ownerClusterId the store cannot
         // locate the trajectory in MinIO. Fall back to spawn which feeds the
         // plugin via CLI arguments + local dump files instead.
-        if (!execution.vtrReaderRegistry || !execution.ownerClusterId) return false;
+        if (!execution.trajectoryFrameStore || !execution.ownerClusterId) return false;
 
         // Why: python-script with no entrypointScript means a CLI script the
         // user invokes directly; the stub would have no user module to import.
@@ -207,9 +207,9 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         preparedArgs: ResolvedWorkflowEntrypointArgs
     ): Promise<WorkflowNodeOutput> {
         const { context, entrypoint, execution } = request;
-        const vtrReaderRegistry = execution.vtrReaderRegistry;
+        const trajectoryFrameStore = execution.trajectoryFrameStore;
         const ownerClusterId = execution.ownerClusterId;
-        if (!vtrReaderRegistry || !ownerClusterId) {
+        if (!trajectoryFrameStore || !ownerClusterId) {
             // Defensive: canUsePersistentPool already guarded this. Fall back.
             return this.executePreparedEntrypoint(request, executionRuntime, preparedArgs);
         }
@@ -221,12 +221,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             return this.executePreparedEntrypoint(request, executionRuntime, preparedArgs);
         }
 
-        const reader = await vtrReaderRegistry.openReader({
-            trajectoryId: context.trajectoryId,
-            ownerClusterId
-        });
-        const frame = await reader.readFrame(timestep);
-        const frameHash = await vtrReaderRegistry.getFrameHash({
+        const frame = await trajectoryFrameStore.readFrame({
             trajectoryId: context.trajectoryId,
             ownerClusterId,
             timestep
@@ -239,8 +234,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             simulationCell: WorkflowEntrypointHandler.formatBbox(frame.frameBbox)
         };
         const shmFramePublish = WorkflowEntrypointHandler.buildSharedFramePublish(frame);
-        const binaryHash = executionRuntime.binaryHash
-            ?? entrypoint.binaryObjectPath;
 
         const invocationInput: PersistentPluginInvocationInput = {
             pluginId: context.pluginId,
@@ -252,11 +245,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             shmFramePublish,
             config,
             mode: 'single',
-            timeoutMs: PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS,
-            cache: {
-                binaryHash,
-                inputFrameHash: frameHash
-            }
+            timeoutMs: PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS
         };
 
         try {
@@ -266,9 +255,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
                 executionRuntime,
                 preparedArgs,
                 execution,
-                response: invocation.response,
-                cacheHit: invocation.cacheHit === true,
-                cacheKey: invocation.cacheKey
+                response: invocation.response
             });
         } catch (error) {
             const cause = error instanceof Error ? error : new Error(String(error));
@@ -367,10 +354,8 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         preparedArgs: ResolvedWorkflowEntrypointArgs;
         execution: WorkflowEntrypointExecutionOptions;
         response: PluginProcessResponse;
-        cacheHit: boolean;
-        cacheKey?: string;
     }): WorkflowNodeOutput {
-        const { entrypoint, executionRuntime, preparedArgs, execution, response, cacheHit, cacheKey } = params;
+        const { entrypoint, executionRuntime, preparedArgs, execution, response } = params;
         const { binaryObjectPath } = entrypoint;
         const { artifactPath, commandPath, projectPath } = executionRuntime;
 
@@ -400,8 +385,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             stdout: WorkflowEntrypointHandler.serializePluginResult(response.result),
             stderr: '',
             pluginResult: WorkflowEntrypointHandler.coerceJsonCompatible(response.result),
-            pluginCacheHit: cacheHit,
-            pluginCacheKey: cacheKey,
             ...execution.extraOutput
         };
     }

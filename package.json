@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@dagrejs/graphlib": "^4.0.1",
+    "@duckdb/node-api": "^1.5.2-r.1",
     "@isaacs/ttlcache": "^2.1.4",
     "@voltstack/daemon-cluster-client": "^1.0.0",
     "@voltstack/headless-rasterizer": "^1.0.0",

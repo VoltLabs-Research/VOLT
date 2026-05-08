@@ -9,7 +9,7 @@ export interface PluginListingRowDocument {
     exposureId?: string;
     exposureName?: string;
     timestep?: number;
-    payloadObjectKey?: string;
+    propertyObjectKey?: string;
     [key: string]: unknown;
 };
 

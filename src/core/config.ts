@@ -153,9 +153,7 @@ export const loadConfig = (): DaemonConfig => {
         ObjectBucketName.Models,
         ObjectBucketName.Plugins,
         ObjectBucketName.Rasterizer,
-        ObjectBucketName.Vtr,
-        ObjectBucketName.VtrDict,
-        ObjectBucketName.VtrBlobs
+        ObjectBucketName.Trajectories
     ];
 
     const config: DaemonConfig = {

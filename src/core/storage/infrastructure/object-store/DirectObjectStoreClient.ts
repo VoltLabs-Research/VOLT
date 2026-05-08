@@ -145,10 +145,8 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
         if (options?.skipMetadata) {
             headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER] = '1';
         }
-        // Why: VTR reader fetches frame chunks via byte ranges. Without a Range
-        // header the proxy returns the full object and the caller decompresses
-        // the VTR magic header as if it were a zstd chunk, yielding
-        // ZSTD_error_prefix_unknown. Forward the range so MinIO honors it.
+        // Some callers read object slices via byte ranges. Forward the range
+        // so MinIO returns exactly the requested span instead of the full object.
         if (options?.range) {
             const { offset, length } = options.range;
             headers['Range'] = `bytes=${offset}-${offset + length - 1}`;

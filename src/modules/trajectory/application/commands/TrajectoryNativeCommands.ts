@@ -1,7 +1,7 @@
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { GlbExporter } from '@/modules/trajectory/application/glb/GlbExporter';
 import type { TrajectoryParser } from '@/modules/trajectory/application/parsing/TrajectoryParser';
-import type { TrajectoryPluginParser } from '@/modules/trajectory/application/parsing/TrajectoryPluginParser';
+import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import type { FilterEvaluator } from '@/modules/trajectory/domain/services/FilterEvaluator';
 
 @CommandGroup('trajectory.native')
@@ -9,7 +9,7 @@ export class TrajectoryNativeCommands {
     constructor(
         private readonly glbExporter: GlbExporter,
         private readonly trajectoryParser: TrajectoryParser,
-        private readonly trajectoryPluginParser: TrajectoryPluginParser,
+        private readonly pluginPropertyStore: PluginPropertyStore,
         private readonly filterEvaluator: FilterEvaluator
     ) {}
 
@@ -55,7 +55,7 @@ export class TrajectoryNativeCommands {
         const atomIds = new Set<number>(
             nativeResult.atoms.map((atom: Record<string, unknown>) => Number(atom.id))
         );
-        const analysisResult = await this.trajectoryPluginParser.getAnalysisAllPerAtomData({
+        const analysisResult = await this.pluginPropertyStore.getAnalysisAllPerAtomData({
             trajectoryId: payload.trajectoryId,
             analysisId: payload.analysisId,
             timestep: payload.timestep,

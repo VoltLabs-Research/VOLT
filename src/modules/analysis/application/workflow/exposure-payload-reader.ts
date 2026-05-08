@@ -1,4 +1,10 @@
-import { decodeMultiBuffer, mergeSelectiveChunk } from '@/support/serialization/selective-msgpack';
+import { Unpackr } from 'msgpackr';
+import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
+import {
+    type FlatAtomProperties,
+    type PerAtomProperties,
+    normalizePerAtomProperties
+} from '@/modules/plugin/application/properties/PluginAtomProperties';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
 import { readFile } from 'node:fs/promises';
@@ -6,6 +12,8 @@ import { readFile } from 'node:fs/promises';
 export interface WorkflowExposurePayloadReadResult {
     listing: MsgpackObject | null;
     subListingNames: string[];
+    subListings: Record<string, MsgpackObject[]>;
+    perAtomProperties: FlatAtomProperties[];
     exportData: MsgpackObject | null;
 }
 
@@ -18,6 +26,8 @@ export interface WorkflowExposureInspectionResult {
 
 const LISTING_KEYS = new Set(['main_listing']);
 const EXPORT_KEY_PREFIX = 'export';
+const PER_ATOM_KEY = 'per-atom-properties';
+const unpacker = new Unpackr({ mapsAsObjects: true });
 
 export const createWorkflowExposureOutputFilePath = (
     outputDir: string,
@@ -26,19 +36,53 @@ export const createWorkflowExposureOutputFilePath = (
     return `${outputDir}_${resultsFileName}`;
 };
 
+const decodeExposureMessages = (buffer: Buffer): unknown[] =>
+    unpacker.unpackMultiple(buffer);
+
+const mergeSelectedKeys = (
+    target: MsgpackObject | null,
+    incoming: unknown,
+    keyFilter: (key: string) => boolean
+): MsgpackObject | null => {
+    if (!isPlainObject(incoming)) {
+        return target;
+    }
+
+    const filtered: MsgpackObject = {};
+    for (const [key, incomingValue] of Object.entries(incoming)) {
+        if (keyFilter(key)) {
+            filtered[key] = incomingValue as MsgpackObject[string];
+        }
+    }
+
+    if (Object.keys(filtered).length === 0) {
+        return target;
+    }
+
+    const merged = mergeChunkedValue(
+        target as unknown as Parameters<typeof mergeChunkedValue>[0],
+        filtered as unknown as Parameters<typeof mergeChunkedValue>[1]
+    );
+    return isPlainObject(merged) ? (merged as MsgpackObject) : target;
+};
+
 export const readWorkflowExposurePayload = async (
     filePath: string
 ): Promise<WorkflowExposurePayloadReadResult> => {
     let listing: MsgpackObject | null = null;
     let exportData: MsgpackObject | null = null;
+    let perAtomPayload: MsgpackObject | null = null;
     const subListingNames = new Set<string>();
+    const subListingRows = new Map<string, MsgpackObject[]>();
+    const subListingObjectRows = new Map<string, MsgpackObject | null>();
 
     const buffer = await readFile(filePath);
-    const messages = decodeMultiBuffer(buffer);
+    const messages = decodeExposureMessages(buffer);
 
     for (const message of messages) {
-        listing = mergeSelectiveChunk(listing, message, (key) => LISTING_KEYS.has(key));
-        exportData = mergeSelectiveChunk(exportData, message, (key) => {
+        listing = mergeSelectedKeys(listing, message, (key) => LISTING_KEYS.has(key));
+        perAtomPayload = mergeSelectedKeys(perAtomPayload, message, (key) => key === PER_ATOM_KEY);
+        exportData = mergeSelectedKeys(exportData, message, (key) => {
             return key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`);
         });
 
@@ -53,21 +97,43 @@ export const readWorkflowExposurePayload = async (
 
         for (const [name, value] of Object.entries(subListings)) {
             if (Array.isArray(value) && value.length > 0) {
-                if (value.some(isPlainObject)) {
+                const rows = value.filter(isPlainObject) as MsgpackObject[];
+                if (rows.length > 0) {
                     subListingNames.add(name);
+                    subListingRows.set(name, [
+                        ...(subListingRows.get(name) ?? []),
+                        ...rows
+                    ]);
                 }
                 continue;
             }
 
             if (value && isPlainObject(value) && Object.keys(value).length > 0) {
                 subListingNames.add(name);
+                const merged = mergeChunkedValue(
+                    subListingObjectRows.get(name) as unknown as Parameters<typeof mergeChunkedValue>[0],
+                    value as unknown as Parameters<typeof mergeChunkedValue>[1]
+                );
+                subListingObjectRows.set(name, isPlainObject(merged) ? (merged as MsgpackObject) : null);
             }
         }
+    }
+
+    for (const [name, row] of subListingObjectRows.entries()) {
+        if (!row) continue;
+        subListingRows.set(name, [
+            ...(subListingRows.get(name) ?? []),
+            row
+        ]);
     }
 
     return {
         listing,
         subListingNames: Array.from(subListingNames),
+        subListings: Object.fromEntries(subListingRows),
+        perAtomProperties: normalizePerAtomProperties(
+            perAtomPayload?.[PER_ATOM_KEY] as PerAtomProperties | null | undefined
+        ) ?? [],
         exportData
     };
 };

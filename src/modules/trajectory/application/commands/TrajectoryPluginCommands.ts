@@ -1,39 +1,39 @@
 import { Command, CommandGroup } from '@/core/commands/decorators';
-import type { TrajectoryPluginParser } from '@/modules/trajectory/application/parsing/TrajectoryPluginParser';
+import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 
 @CommandGroup('trajectory.plugin')
 export class TrajectoryPluginCommands {
     constructor(
-        private readonly trajectoryPluginParser: TrajectoryPluginParser
+        private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 
     @Command('property-names')
-    propertyNames(payload: Parameters<TrajectoryPluginParser['discoverPerAtomPropertyNames']>[0]) {
-        return this.trajectoryPluginParser.discoverPerAtomPropertyNames(payload);
+    propertyNames(payload: Parameters<PluginPropertyStore['discoverPerAtomPropertyNames']>[0]) {
+        return this.pluginPropertyStore.discoverPerAtomPropertyNames(payload);
     }
 
     @Command('atom-index')
-    atomIndex(payload: Parameters<TrajectoryPluginParser['buildPluginIndexForAtomIds']>[0]) {
-        return this.trajectoryPluginParser.buildPluginIndexForAtomIds(payload);
+    atomIndex(payload: Parameters<PluginPropertyStore['buildPluginIndexForAtomIds']>[0]) {
+        return this.pluginPropertyStore.buildPluginIndexForAtomIds(payload);
     }
 
     @Command('modifier-values')
-    modifierValues(payload: Parameters<TrajectoryPluginParser['getModifierValues']>[0]) {
-        return this.trajectoryPluginParser.getModifierValues(payload);
+    modifierValues(payload: Parameters<PluginPropertyStore['getModifierValues']>[0]) {
+        return this.pluginPropertyStore.getModifierValues(payload);
     }
 
     @Command('modifier-stats')
-    modifierStats(payload: Parameters<TrajectoryPluginParser['getModifierStats']>[0]) {
-        return this.trajectoryPluginParser.getModifierStats(payload);
+    modifierStats(payload: Parameters<PluginPropertyStore['getModifierStats']>[0]) {
+        return this.pluginPropertyStore.getModifierStats(payload);
     }
 
     @Command('modifier-unique-values')
-    modifierUniqueValues(payload: Parameters<TrajectoryPluginParser['getModifierUniqueValues']>[0]) {
-        return this.trajectoryPluginParser.getModifierUniqueValues(payload);
+    modifierUniqueValues(payload: Parameters<PluginPropertyStore['getModifierUniqueValues']>[0]) {
+        return this.pluginPropertyStore.getModifierUniqueValues(payload);
     }
 
     @Command('analysis-all-atoms')
-    analysisAllAtoms(payload: Parameters<TrajectoryPluginParser['getAnalysisAllPerAtomData']>[0]) {
-        return this.trajectoryPluginParser.getAnalysisAllPerAtomData(payload);
+    analysisAllAtoms(payload: Parameters<PluginPropertyStore['getAnalysisAllPerAtomData']>[0]) {
+        return this.pluginPropertyStore.getAnalysisAllPerAtomData(payload);
     }
 }

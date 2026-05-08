@@ -15,7 +15,7 @@ import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { SSH_IMPORT_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { DaemonConfig } from '@/core/config';
 import type { GlbExporter } from '@/modules/trajectory/application/glb/GlbExporter';
-import type { VtrIngestService } from '@/modules/trajectory/application/vtr/VtrIngestService';
+import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import { FileExtractor } from '@/modules/trajectory/infrastructure/extraction/FileExtractor';
 import { SSHConnection, type SSHConnectionConfig } from '@/modules/trajectory/infrastructure/ssh/SSHConnection';
 import { parseTrajectoryMetadata } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
@@ -48,7 +48,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
         private readonly voltCloudConnection: VoltCloudConnection,
         private readonly sshConnection: SSHConnection,
         private readonly fileExtractor: FileExtractor,
-        private readonly vtrIngestService: VtrIngestService
+        private readonly trajectoryFrameStore: TrajectoryFrameStore
     ) {
         super({ queueService });
         this.buildStatusReporter = createLifecycleStatusReporter<JobIdentity>(
@@ -148,7 +148,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
                         }
                     );
 
-                    await this.vtrIngestService.ingest({
+                    await this.trajectoryFrameStore.ingest({
                         trajectoryId: payload.trajectoryId,
                         ownerClusterId: this.config.teamClusterId,
                         frames: parsedFrames.map((frame) => ({

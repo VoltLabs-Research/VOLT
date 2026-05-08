@@ -3,9 +3,7 @@ export enum ObjectBucketName {
     Models = 'volt-models',
     Plugins = 'volt-plugins',
     Rasterizer = 'volt-rasterizer',
-    Vtr = 'volt-vtr',
-    VtrDict = 'volt-vtr-dict',
-    VtrBlobs = 'volt-vtr-blobs'
+    Trajectories = 'volt-trajectories'
 }
 
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';

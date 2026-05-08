@@ -92,5 +92,13 @@ export const compressFileWithZstd = (sourcePath: string, outputPath: string): Pr
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 
-export const toVtrObjectKey = (trajectoryId: string): string =>
-    `trajectory-${trajectoryId}/trajectory.vtr`;
+export const toTrajectoryParquetObjectKey = (trajectoryId: string): string =>
+    `trajectory-${trajectoryId}/trajectory.parquet`;
+
+export const toPluginExposureParquetObjectKey = (
+    trajectoryId: string,
+    analysisId: string,
+    exposureId: string,
+    timestep: number
+): string =>
+    `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.parquet`;

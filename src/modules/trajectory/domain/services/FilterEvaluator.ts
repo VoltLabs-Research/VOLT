@@ -14,7 +14,7 @@ import type {
     ParsedTrajectory,
     TrajectoryParser
 } from '@/modules/trajectory/application/parsing/TrajectoryParser';
-import type { TrajectoryPluginParser } from '@/modules/trajectory/application/parsing/TrajectoryPluginParser';
+import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 
 export type ComparisonOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 
@@ -225,7 +225,7 @@ export class FilterEvaluator {
     constructor(
         private readonly objectStore: ClusterObjectStore,
         private readonly trajectoryParser: TrajectoryParser,
-        private readonly trajectoryPluginParser: TrajectoryPluginParser
+        private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 
     async previewFilter(input: PreviewFilterInput): Promise<PreviewFilterResult> {
@@ -373,7 +373,7 @@ export class FilterEvaluator {
             return undefined;
         }
 
-        const modifierValues = await this.trajectoryPluginParser.getModifierValues({
+        const modifierValues = await this.pluginPropertyStore.getModifierValues({
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
