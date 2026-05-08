@@ -16,6 +16,8 @@ interface PluginReferencePlanningItem {
     config: WorkflowNodeOutput;
 }
 
+type WorkflowArgumentValue = WorkflowNodeOutput[string];
+
 const isPluginReferenceSelectionRecord = (value: unknown): value is {
     pluginId: string;
     config?: unknown;
@@ -207,14 +209,43 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
+        const definitions = this.buildArgumentDefinitions(node, context);
+        const values = await this.resolveArgumentValues(definitions, node.id, context);
+        this.applyPluginReferenceMappingsToValues(definitions, values, context);
+        this.assertRequiredVisibleArguments(definitions, values);
+
+        const cliArgs = this.buildCliArgs(definitions, values);
+        const pluginReferences = this.collectVisiblePluginReferences(definitions, values);
+        const visibleValues = this.getVisibleValues(definitions, values);
+
+        return {
+            as_str: encodeCliArgumentsToken(cliArgs),
+            as_array: cliArgs,
+            pluginReferences: {
+                items: pluginReferences,
+                str_json: JSON.stringify(pluginReferences)
+            },
+            ...visibleValues
+        };
+    }
+
+    private buildArgumentDefinitions(
+        node: WorkflowNode,
+        context: WorkflowExecutionContext
+    ): WorkflowArgumentDefinition[] {
         const persistedDefinitions = node.data.arguments?.arguments ?? [];
-        const definitions = [
+        return [
             ...persistedDefinitions,
             ...this.createRuntimeArgumentDefinitions(context, persistedDefinitions)
         ];
+    }
 
+    private async resolveArgumentValues(
+        definitions: WorkflowArgumentDefinition[],
+        nodeId: string,
+        context: WorkflowExecutionContext
+    ): Promise<WorkflowNodeOutput> {
         const values: WorkflowNodeOutput = {};
-        const cliArgs: string[] = [];
 
         for (const definition of definitions) {
             const argumentKey = definition.argument;
@@ -222,32 +253,56 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 continue;
             }
 
-            let value = definition.value as WorkflowNodeOutput[string] | undefined;
-            if (value === undefined && context.userConfig[argumentKey] !== undefined) {
-                value = context.userConfig[argumentKey] as WorkflowNodeOutput[string];
-            }
-            if (value === undefined && context.runtimeArguments[argumentKey] !== undefined) {
-                value = context.runtimeArguments[argumentKey] as WorkflowNodeOutput[string];
-            }
-            if (value === undefined) {
-                value = definition.default as WorkflowNodeOutput[string] | undefined;
-            }
-
-            if (this.registry.shouldResolveExpression(value)) {
-                value = await this.registry.resolveExpressionValue(
-                    value,
-                    context,
-                    node.id
-                );
-            }
-
-            if (definition.type === 'pluginReference') {
-                value = normalizePluginReferenceValue(value) as unknown as WorkflowNodeOutput[string];
-            }
-
-            values[argumentKey] = value as WorkflowNodeOutput[string];
+            values[argumentKey] = await this.resolveArgumentValue(definition, argumentKey, nodeId, context);
         }
 
+        return values;
+    }
+
+    private async resolveArgumentValue(
+        definition: WorkflowArgumentDefinition,
+        argumentKey: string,
+        nodeId: string,
+        context: WorkflowExecutionContext
+    ): Promise<WorkflowArgumentValue> {
+        let value = this.readConfiguredArgumentValue(definition, argumentKey, context);
+
+        if (this.registry.shouldResolveExpression(value)) {
+            value = await this.registry.resolveExpressionValue(value, context, nodeId);
+        }
+
+        if (definition.type === 'pluginReference') {
+            return normalizePluginReferenceValue(value) as unknown as WorkflowArgumentValue;
+        }
+
+        return value as WorkflowArgumentValue;
+    }
+
+    private readConfiguredArgumentValue(
+        definition: WorkflowArgumentDefinition,
+        argumentKey: string,
+        context: WorkflowExecutionContext
+    ): WorkflowArgumentValue | undefined {
+        if (definition.value !== undefined) {
+            return definition.value as WorkflowArgumentValue;
+        }
+
+        if (context.userConfig[argumentKey] !== undefined) {
+            return context.userConfig[argumentKey] as WorkflowArgumentValue;
+        }
+
+        if (context.runtimeArguments[argumentKey] !== undefined) {
+            return context.runtimeArguments[argumentKey] as WorkflowArgumentValue;
+        }
+
+        return definition.default as WorkflowArgumentValue | undefined;
+    }
+
+    private applyPluginReferenceMappingsToValues(
+        definitions: WorkflowArgumentDefinition[],
+        values: WorkflowNodeOutput,
+        context: WorkflowExecutionContext
+    ): void {
         for (const definition of definitions) {
             const argumentKey = definition.argument;
             if (!argumentKey || definition.type !== 'pluginReference') {
@@ -260,9 +315,14 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 definitions,
                 values,
                 context.nestedWorkflows
-            ) as unknown as WorkflowNodeOutput[string];
+            ) as unknown as WorkflowArgumentValue;
         }
+    }
 
+    private assertRequiredVisibleArguments(
+        definitions: WorkflowArgumentDefinition[],
+        values: WorkflowNodeOutput
+    ): void {
         for (const definition of definitions) {
             const argumentKey = definition.argument;
             if (!argumentKey || !this.isArgumentVisible(definition, definitions, values)) {
@@ -273,6 +333,13 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 throw new Error(`Required argument "${argumentKey}" is missing`);
             }
         }
+    }
+
+    private buildCliArgs(
+        definitions: WorkflowArgumentDefinition[],
+        values: WorkflowNodeOutput
+    ): string[] {
+        const cliArgs: string[] = [];
 
         for (const definition of definitions) {
             const argumentKey = definition.argument;
@@ -280,58 +347,67 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
                 continue;
             }
 
-            const value = values[argumentKey];
-            if (value !== null && value !== undefined) {
-                if (definition.type === 'boolean') {
-                    if (value === true || value === 'true') {
-                        cliArgs.push(`--${argumentKey}`);
-                    }
-                } else if (definition.type === 'select' && definition.multipleSelection) {
-                    let selectedValues: WorkflowNodeOutput[string][];
-                    if (value instanceof Array) {
-                        selectedValues = value;
-                    } else if (value === null || value === undefined) {
-                        selectedValues = [];
-                    } else {
-                        selectedValues = [value];
-                    }
-
-                    if (selectedValues.length > 0) {
-                        cliArgs.push(`--${argumentKey}`, selectedValues.join(','));
-                    }
-                } else if (definition.type === 'pluginReference') {
-                    continue;
-                } else {
-                    const serializedValue = stringifyUnknown(value as Parameters<typeof stringifyUnknown>[0]);
-                    cliArgs.push(`--${argumentKey}`, serializedValue);
-                }
-            }
+            this.appendCliArgument(cliArgs, definition, argumentKey, values[argumentKey]);
         }
 
+        return cliArgs;
+    }
+
+    private appendCliArgument(
+        cliArgs: string[],
+        definition: WorkflowArgumentDefinition,
+        argumentKey: string,
+        value: WorkflowArgumentValue
+    ): void {
+        if (value === null || value === undefined || definition.type === 'pluginReference') {
+            return;
+        }
+
+        if (definition.type === 'boolean') {
+            if (value === true || value === 'true') {
+                cliArgs.push(`--${argumentKey}`);
+            }
+            return;
+        }
+
+        if (definition.type === 'select' && definition.multipleSelection) {
+            const selectedValues = value instanceof Array ? value : [value];
+            if (selectedValues.length > 0) {
+                cliArgs.push(`--${argumentKey}`, selectedValues.join(','));
+            }
+            return;
+        }
+
+        const serializedValue = stringifyUnknown(value as Parameters<typeof stringifyUnknown>[0]);
+        cliArgs.push(`--${argumentKey}`, serializedValue);
+    }
+
+    private collectVisiblePluginReferences(
+        definitions: WorkflowArgumentDefinition[],
+        values: WorkflowNodeOutput
+    ): PluginReferencePlanningItem[] {
         const pluginReferences: PluginReferencePlanningItem[] = [];
+
         for (const definition of definitions) {
             const argumentKey = definition.argument;
-            if (!argumentKey || !this.isArgumentVisible(definition, definitions, values)) {
+            if (!argumentKey) {
                 continue;
             }
 
             this.collectPluginReferences(definitions, definition, values[argumentKey], values, argumentKey, pluginReferences);
         }
 
-        const visibleValues = Object.fromEntries(definitions
+        return pluginReferences;
+    }
+
+    private getVisibleValues(
+        definitions: WorkflowArgumentDefinition[],
+        values: WorkflowNodeOutput
+    ): WorkflowNodeOutput {
+        return Object.fromEntries(definitions
             .filter((definition) => definition.argument && this.isArgumentVisible(definition, definitions, values))
             .map((definition) => [definition.argument as string, values[definition.argument as string]])
         );
-
-        return {
-            as_str: encodeCliArgumentsToken(cliArgs),
-            as_array: cliArgs,
-            pluginReferences: {
-                items: pluginReferences,
-                str_json: JSON.stringify(pluginReferences)
-            },
-            ...visibleValues
-        };
     }
 
     private getVisibilityConditionValues(

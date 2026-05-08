@@ -94,6 +94,3 @@ export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWit
 
 export const toVtrObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/trajectory.vtr`;
-
-export const toVtrDictObjectKey = (clusterId: string, version: number): string =>
-    `${clusterId}/v${version}.dict`;

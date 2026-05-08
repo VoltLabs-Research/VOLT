@@ -115,7 +115,6 @@ export const VTR_CHUNK_FLAG_DEDUP = 1 << 0;
 export const VTR_DEDUP_PAYLOAD_SIZE = VTR_SHA256_SIZE + 4;
 
 export const VTR_BLOB_BUCKET = 'volt-vtr-blobs';
-export const VTR_BUCKET = 'volt-vtr';
 export const VTR_DICT_BUCKET = 'volt-vtr-dict';
 export const VTR_BLOB_PREFIX = 'blobs/';
 

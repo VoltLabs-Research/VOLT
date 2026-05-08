@@ -30,7 +30,6 @@ interface SplitObjectMetadataResult {
 
 export type {
     ClusterObjectHeadResponse,
-    ClusterObjectListEntry,
     ClusterObjectListRequest,
     ClusterObjectListResponse,
     ClusterObjectPutInput,
@@ -38,8 +37,6 @@ export type {
     ClusterObjectReadOptions,
     ClusterObjectStore,
     ClusterObjectStreamResponse,
-    ScopedClusterObjectPutInput,
-    ScopedClusterObjectPutStreamInput,
     ScopedClusterObjectStore
 } from '@/core/storage/contracts/cluster-object-store';
 

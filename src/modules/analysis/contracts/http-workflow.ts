@@ -101,10 +101,6 @@ export interface WorkflowPluginReferenceSelection {
     config?: JsonObject;
 }
 
-export interface WorkflowPluginReferenceValue {
-    selections?: WorkflowPluginReferenceSelection[];
-}
-
 interface WorkflowPluginConfigById {
     [pluginId: string]: JsonObject;
 }

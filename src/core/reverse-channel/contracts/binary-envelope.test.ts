@@ -4,9 +4,7 @@ import {
     BINARY_ENVELOPE_HEADER_BYTES,
     EnvelopeKind,
     decodeEnvelope,
-    decodeJsonEnvelope,
-    encodeEnvelope,
-    encodeJsonEnvelope
+    encodeEnvelope
 } from './binary-envelope';
 
 test('encodeEnvelope/decodeEnvelope roundtrip with empty payload', () => {
@@ -64,19 +62,6 @@ test('decodeEnvelope payload is a view (zero-copy) over the source buffer', () =
     const decoded = decodeEnvelope(encoded);
     assert.equal(decoded.payload.buffer, encoded.buffer);
     assert.equal(decoded.payload.byteOffset, encoded.byteOffset + BINARY_ENVELOPE_HEADER_BYTES);
-});
-
-test('encodeJsonEnvelope/decodeJsonEnvelope roundtrip', () => {
-    const value = { command: 'ping', args: [1, 2, 3], meta: { traceId: 'abc' } };
-    const encoded = encodeJsonEnvelope(99, value);
-    const decoded = decodeJsonEnvelope<typeof value>(encoded);
-    assert.equal(decoded.opId, 99);
-    assert.deepEqual(decoded.value, value);
-});
-
-test('decodeJsonEnvelope throws when kind is not CommandJson', () => {
-    const encoded = encodeEnvelope(1, EnvelopeKind.CommandBinary, new Uint8Array([1]));
-    assert.throws(() => decodeJsonEnvelope(encoded));
 });
 
 test('bench: encode+decode 10M float payload in under 50 ms combined', () => {

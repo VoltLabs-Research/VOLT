@@ -1,4 +1,4 @@
-import { constants, zstdCompress, zstdCompressSync, zstdDecompress, zstdDecompressSync } from 'node:zlib';
+import { constants, zstdCompress, zstdDecompress } from 'node:zlib';
 
 const DEFAULT_LEVEL = 10;
 
@@ -60,23 +60,9 @@ const runZstdDecompress = (data: Uint8Array, options?: ZstdEncodeOptions): Promi
 const toUint8Array = (buffer: Buffer): Uint8Array =>
     new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
-export const zstdEncode = (data: Uint8Array, params: ZstdParams = {}): Uint8Array => {
-    const options = toOptions({ level: params.level ?? DEFAULT_LEVEL, dict: params.dict });
-    const buffer = zstdCompressSync(data, options as Parameters<typeof zstdCompressSync>[1]);
-    return toUint8Array(buffer);
-};
-
 export const zstdEncodeAsync = async (data: Uint8Array, params: ZstdParams = {}): Promise<Uint8Array> => {
     const options = toOptions({ level: params.level ?? DEFAULT_LEVEL, dict: params.dict });
     const buffer = await runZstdCompress(data, options);
-    return toUint8Array(buffer);
-};
-
-export const zstdDecode = (data: Uint8Array, params: { dict?: Uint8Array } = {}): Uint8Array => {
-    const options = params.dict ? toOptions({ dict: params.dict }) : undefined;
-    const buffer = options
-        ? zstdDecompressSync(data, options as Parameters<typeof zstdDecompressSync>[1])
-        : zstdDecompressSync(data);
     return toUint8Array(buffer);
 };
 

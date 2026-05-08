@@ -177,39 +177,13 @@ export class VtrWriter {
         const columns: VtrColumnData[] = [];
 
         if (isKeyframe) {
-            const positionColumn = this.encodePositionsKeyframe(positions, frame.atomCount, frameBbox);
-            columns.push(positionColumn.column);
-            this.keyframe = {
-                atomCount: frame.atomCount,
-                bbox: [...frameBbox] as [number, number, number, number, number, number],
-                quantizedPositions: positionColumn.quantized,
-                positions: positions.slice(),
-                types: types.slice(),
-                ids: ids ? ids.slice() : undefined,
-                properties: properties
-                    ? Object.fromEntries(Object.entries(properties).map(([k, v]) => [k, v.slice()]))
-                    : undefined
-            };
-            this.keyframeIndex = frameIndex;
+            this.pushKeyframeColumn(columns, positions, frame.atomCount, frameBbox, types, ids, properties, frameIndex);
         } else {
             if (!this.keyframe) throw new Error('delta frame requested with no keyframe available');
             if (this.keyframe.atomCount !== frame.atomCount) {
                 // Why: delta streams require a stable atom count. Fall back to a
                 // fresh keyframe if topology changed.
-                const positionColumn = this.encodePositionsKeyframe(positions, frame.atomCount, frameBbox);
-                columns.push(positionColumn.column);
-                this.keyframe = {
-                    atomCount: frame.atomCount,
-                    bbox: [...frameBbox] as [number, number, number, number, number, number],
-                    quantizedPositions: positionColumn.quantized,
-                    positions: positions.slice(),
-                    types: types.slice(),
-                    ids: ids ? ids.slice() : undefined,
-                    properties: properties
-                        ? Object.fromEntries(Object.entries(properties).map(([k, v]) => [k, v.slice()]))
-                        : undefined
-                };
-                this.keyframeIndex = frameIndex;
+                this.pushKeyframeColumn(columns, positions, frame.atomCount, frameBbox, types, ids, properties, frameIndex);
             } else {
                 const quantized = quantizePositionsInt16(positions, frame.atomCount, this.keyframe.bbox);
                 const delta = encodeDelta(quantized, this.keyframe.quantizedPositions);
@@ -272,7 +246,6 @@ export class VtrWriter {
         const codecId = dictPayload ? VtrChunkCodec.ZstdDict : VtrChunkCodec.ZstdPlain;
 
         let payloadToWrite = compressed;
-        let chunkFlags = 0;
         if (this.useDedup && this.init.blobStore && this.init.ownerClusterId) {
             const result = await this.init.blobStore.put(this.init.ownerClusterId, compressed);
             const dedupBody: VtrFrameChunkBody = {
@@ -283,7 +256,6 @@ export class VtrWriter {
                 dedupRef: { hash: result.hash, size: compressed.byteLength }
             };
             payloadToWrite = encodeFrameChunkBody(dedupBody);
-            chunkFlags = VTR_CHUNK_FLAG_DEDUP;
         }
 
         const offset = this.frameChunkCursor;
@@ -304,8 +276,32 @@ export class VtrWriter {
             keyframeIndex: isKeyframe ? VTR_KEYFRAME_NONE : this.keyframeIndex,
             crc32: chunkCrc
         });
+    }
 
-        void chunkFlags;
+    private pushKeyframeColumn(
+        columns: VtrColumnData[],
+        positions: Float32Array,
+        atomCount: number,
+        frameBbox: KeyframeState['bbox'],
+        types: Uint16Array,
+        ids: Uint32Array | undefined,
+        properties: Record<string, Float32Array> | undefined,
+        frameIndex: number
+    ): void {
+        const positionColumn = this.encodePositionsKeyframe(positions, atomCount, frameBbox);
+        columns.push(positionColumn.column);
+        this.keyframe = {
+            atomCount,
+            bbox: [...frameBbox],
+            quantizedPositions: positionColumn.quantized,
+            positions: positions.slice(),
+            types: types.slice(),
+            ids: ids ? ids.slice() : undefined,
+            properties: properties
+                ? Object.fromEntries(Object.entries(properties).map(([key, values]) => [key, values.slice()]))
+                : undefined
+        };
+        this.keyframeIndex = frameIndex;
     }
 
     public async finalize(): Promise<{ path: string; size: number; frameCount: number }> {

@@ -10,11 +10,6 @@
  * consumes the payloads.
  */
 
-import type {
-    TeamClusterDaemonSocketHeaders,
-    TeamClusterTunnelSessionStatus
-} from '@voltstack/daemon-cluster-client';
-
 export interface BinaryTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
@@ -34,29 +29,4 @@ export interface BinarySessionInputPayload {
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
-}
-
-export interface BinaryCommandMessage {
-    type: 'command-binary';
-    requestId: string;
-    command: string;
-    envelope: Uint8Array;
-}
-
-export interface BinaryResponsePayload {
-    type: 'response-binary';
-    requestId: string;
-    ok: boolean;
-    status: number;
-    envelope: Uint8Array;
-    headers?: TeamClusterDaemonSocketHeaders;
-    message?: string;
-}
-
-export interface BinaryTunnelStatePayload {
-    type: 'tunnel-state';
-    sessionId: string;
-    status: TeamClusterTunnelSessionStatus;
-    message?: string;
-    error?: string;
 }

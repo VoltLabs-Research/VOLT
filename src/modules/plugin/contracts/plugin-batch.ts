@@ -45,8 +45,3 @@ export interface PluginProcessResponse {
         traceback?: string;
     };
 }
-
-export interface PluginBatchInvocationOptions {
-    batchSize?: number;
-    concurrency?: number;
-}

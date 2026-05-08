@@ -1,31 +1,12 @@
 import { Readable } from 'node:stream';
 import { buffer as collectStreamBuffer } from 'node:stream/consumers';
-import { Unpackr, UnpackrStream } from 'msgpackr';
+import { Unpackr } from 'msgpackr';
 import type { Options as MsgpackDecoderOptions } from 'msgpackr';
 import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
 
 type ChunkLike = Uint8Array | Buffer;
-
-/**
- * Streams msgpack values off an async iterable of byte chunks. Delegates the
- * frame/incomplete bookkeeping to `msgpackr.UnpackrStream` (a Node Transform
- * wrapping `Unpackr.unpackMultiple`).
- */
-export async function* decodeMultiStream(
-    src: AsyncIterable<ChunkLike> | Iterable<ChunkLike>,
-    options?: MsgpackDecoderOptions
-): AsyncIterable<MsgpackValue> {
-    const unpacker = new UnpackrStream({ mapsAsObjects: true, ...(options ?? {}) } as MsgpackDecoderOptions);
-    const source = Readable.from(src as AsyncIterable<ChunkLike>);
-    source.on('error', (err) => unpacker.destroy(err));
-    source.pipe(unpacker);
-
-    for await (const value of unpacker as AsyncIterable<MsgpackValue>) {
-        yield value;
-    }
-}
 
 // Why: UnpackrStream re-attempts the parse as each Readable chunk lands and
 // scales catastrophically on large single-message buffers (~78× slower than
