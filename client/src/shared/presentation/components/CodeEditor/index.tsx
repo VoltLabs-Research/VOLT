@@ -72,7 +72,7 @@ const CodeEditor = ({
         height: '100%',
         width: '100%',
         resize: 'none',
-        fontFamily: '\'JetBrains Mono\', \'Fira Code\', \'Monaco\', \'Menlo\', \'Ubuntu Mono\', monospace',
+        fontFamily: '\'JetBrains Mono Variable\', \'JetBrains Mono\', \'Cascadia Code\', \'Cascadia Mono\', Consolas, monospace',
         fontSize: `${fontSize}px`,
         padding: '12px',
         backgroundColor: 'var(--color-content-bg)',
