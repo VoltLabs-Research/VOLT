@@ -163,11 +163,9 @@ const CompactPluginExposureTable = ({
                     label: `View ${formatSnakeCaseToTitle(name)}`,
                     icon: RiTableLine,
                     onClick: () => {
-                        console.log('[SubListing] click', { name, inlineSubListings, hasTraj: !!item.trajectoryId });
                         if (!item.trajectoryId || !item.analysisId || !item.exposureId || item.timestep === undefined) return;
 
                         if (inlineSubListings) {
-                            console.log('[SubListing] inline mode → setInlineState');
                             setInlineState({
                                 analysisId: item.analysisId,
                                 exposureId: item.exposureId,
@@ -178,7 +176,6 @@ const CompactPluginExposureTable = ({
                             return;
                         }
 
-                        console.log('[SubListing] navigate mode');
                         navigate(buildSubListingsPath({
                             trajectoryId: item.trajectoryId,
                             analysisId: item.analysisId,

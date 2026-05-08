@@ -1,20 +1,15 @@
-import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
-import useAIPage from '@/modules/ai/hooks/use-ai-page';
+import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-ai-conversation-panel';
+import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
 import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import Box from '@/shared/presentation/primitives/Box';
 import IconButton from '@/shared/presentation/primitives/IconButton';
 import Row from '@/shared/presentation/primitives/Row';
 import Surface from '@/shared/presentation/primitives/Surface';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import './AIFloatingAssistantPanel.css';
-import { useNavigate } from 'react-router-dom';
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
     triggerRef: RefObject<HTMLButtonElement | null>;
@@ -39,54 +34,21 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
 };
 
 const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssistantPanelContentProps) => {
-    const navigate = useNavigate();
-    const [conversationId, setConversationId] = useState<string | undefined>();
-    const [messageDraft, setMessageDraft] = useState('');
     const panelRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const descriptionId = useId();
 
     const {
-        selectedTeam,
-        messages,
-        availableModelsForProvider,
-        selectedModel,
-        isMessagesLoading,
-        isProviderCatalogLoading,
-        isSendingMessage,
         conversationsError,
-        messagesError,
         providerCatalogError,
-        sendMessageError,
         noProviderConfigured,
-        canSendMessage,
-        accessDenied,
-        accessDeniedMessage,
         loadConversations,
         loadProviderCatalog,
-        setSelectedModel,
         handleCreateConversation,
-        addToolApprovalResponse,
-        handleSendMessage,
-        loadConversationMessages
-    } = useAIPage(conversationId, {
-        navigateOnConversationChange: false,
-        onConversationChange: setConversationId
-    });
-
-    useEffect(() => {
-        if (!conversationId) return;
-
-        const pendingMessage = sessionStorage.getItem('volt:ai:pending-message');
-        if (!pendingMessage) return;
-
-        sessionStorage.removeItem('volt:ai:pending-message');
-
-        handleSendMessage(pendingMessage).catch(() => {
-            sessionStorage.setItem('volt:ai:pending-message', pendingMessage);
-            setMessageDraft(pendingMessage);
-        });
-    }, [conversationId, handleSendMessage]);
+        isProviderCatalogLoading,
+        openAIPage,
+        conversationPanelContent
+    } = useAIConversationPanel({ onNavigateAway: onClose });
 
     useEffect(() => {
         const focusableElements = getFocusableElements(panelRef.current);
@@ -98,60 +60,6 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
             triggerRef.current?.focus();
         };
     }, [triggerRef]);
-
-    const modelOptions: SelectOption[] = useMemo(() => {
-        return availableModelsForProvider.map((model) => ({
-            value: `${model.provider}::${model.id}`,
-            title: model.name,
-            description: model.providerName
-        }));
-    }, [availableModelsForProvider]);
-
-    const handleSend = async () => {
-        const draftToSend = messageDraft;
-
-        if (!draftToSend.trim()) {
-            return;
-        }
-
-        setMessageDraft('');
-        try {
-            if (!conversationId) {
-                sessionStorage.setItem('volt:ai:pending-message', draftToSend);
-                await handleCreateConversation(draftToSend);
-                return;
-            }
-
-            await handleSendMessage(draftToSend);
-        } catch {
-            setMessageDraft(draftToSend);
-        }
-    };
-
-    const handleOpenTabularArtifact = (artifact: AIMessageArtifact) => {
-        if (!conversationId) {
-            return;
-        }
-
-        navigate(`/dashboard/ai/${conversationId}?artifactId=${encodeURIComponent(artifact.id)}`);
-        onClose();
-    };
-
-    const openAIPage = () => {
-        let targetPath = '/dashboard/ai';
-        if (conversationId) {
-            targetPath = `/dashboard/ai/${conversationId}`;
-        }
-
-        navigate(targetPath);
-        onClose();
-    };
-
-    const handleRetry = () => {
-        if (conversationId) {
-            loadConversationMessages(conversationId).catch(console.warn);
-        }
-    };
 
     const handlePanelKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Escape') {
@@ -186,33 +94,6 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
         }
     }, [onClose]);
 
-    const content = (
-        <AIConversationPanelContent
-            conversationId={conversationId}
-            messages={messages}
-            isMessagesLoading={isMessagesLoading}
-            isSendingMessage={isSendingMessage}
-            messagesError={messagesError}
-            messageDraft={messageDraft}
-            modelOptions={modelOptions}
-            selectedModel={selectedModel}
-            canSendMessage={canSendMessage}
-            isProviderCatalogLoading={isProviderCatalogLoading}
-            noProviderConfigured={noProviderConfigured}
-            sendMessageError={sendMessageError}
-            selectedTeamId={selectedTeam?._id}
-            accessDenied={accessDenied}
-            accessDeniedMessage={accessDeniedMessage}
-            addToolApprovalResponse={addToolApprovalResponse}
-            onMessageDraftChange={setMessageDraft}
-            onModelChange={setSelectedModel}
-            onSend={handleSend}
-            onOpenTableArtifact={handleOpenTabularArtifact}
-            onRetry={handleRetry}
-            onOpenIntegrations={() => navigate('/dashboard/settings/integrations')}
-        />
-    );
-
     const headerActions = (
         <Row gap='025'>
             <Tooltip content='New conversation' placement='top'>
@@ -245,33 +126,15 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                 className='ai-floating-assistant-header'
             />
 
-            {providerCatalogError && (
-                <Box className='ai-floating-assistant-alert'>
-                    <RecoveryState
-                        title='Unable to load AI providers'
-                        description={providerCatalogError}
-                        tone={RecoveryStateTone.Error}
-                        onRetry={() => {
-                            loadProviderCatalog().catch(() => undefined);
-                        }}
-                    />
-                </Box>
-            )}
+            <AIConversationAlerts
+                className='ai-floating-assistant-alert'
+                providerCatalogError={providerCatalogError}
+                conversationsError={conversationsError}
+                loadProviderCatalog={loadProviderCatalog}
+                loadConversations={loadConversations}
+            />
 
-            {conversationsError && (
-                <Box className='ai-floating-assistant-alert'>
-                    <RecoveryState
-                        title='Unable to load conversations'
-                        description={conversationsError}
-                        tone={RecoveryStateTone.Error}
-                        onRetry={() => {
-                            loadConversations().catch(() => undefined);
-                        }}
-                    />
-                </Box>
-            )}
-
-            {content}
+            {conversationPanelContent}
         </Surface>
     );
 };

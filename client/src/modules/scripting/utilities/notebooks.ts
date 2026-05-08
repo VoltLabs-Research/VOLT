@@ -3,8 +3,7 @@ import type {
     ScriptingNotebookContainerResources,
     ScriptingNotebookTrajectory
 } from '@/modules/scripting/api/entities/scripting-notebook';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 
 const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): string => {
     if (typeof trajectory === 'string') {
@@ -14,19 +13,7 @@ const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): stri
     return trajectory._id;
 };
 
-export const createEmptyNotebooksResponse = (
-    params: PaginationParams
-): PaginatedResponse<ScriptingNotebook> => ({
-    status: 'success',
-    data: [],
-    pagination: {
-        page: Math.max(1, Number(params.page) || 1),
-        limit: Math.max(1, Number(params.limit) || 20),
-        total: 0,
-        totalPages: 1,
-        hasMore: false
-    }
-});
+export const createEmptyNotebooksResponse = createEmptyPaginatedResponse<ScriptingNotebook>;
 
 export const getPrimaryTrajectory = (notebook: ScriptingNotebook): ScriptingNotebookTrajectory | string | null => {
     return notebook.trajectory ?? null;

@@ -1,13 +1,9 @@
-import {
-    getFloatingOwnerIdsAttribute,
-    useFloatingOwnerIds,
-    useTopLayerRoot
-} from '@/shared/presentation/contexts/FloatingRootContext';
 import { cn } from '@/shared/utils';
 import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
 import Select from '@/shared/presentation/primitives/Select';
+import { matchReferenceWidth, useFloatingLayerRoot } from '@/shared/presentation/primitives/Select/floating-layer';
 import './FormField.css';
-import { useFloating, useDismiss, useInteractions, FloatingPortal, offset, flip, shift, size, autoUpdate } from '@floating-ui/react';
+import { useFloating, useDismiss, useInteractions, FloatingPortal, offset, flip, shift, autoUpdate } from '@floating-ui/react';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useCallback, useId } from 'react';
 import { Controller } from 'react-hook-form';
@@ -180,6 +176,57 @@ const isSyntheticFieldChangeEvent = (value: unknown): value is ChangeEvent<HTMLI
     return 'value' in target;
 };
 
+const buildSyntheticChangeEvent = (name: string, value: unknown): SyntheticChangeEvent => {
+    const stringValue = String(value ?? '');
+
+    return {
+        target: {
+            name,
+            value: stringValue
+        },
+        currentTarget: {
+            name,
+            value: stringValue
+        }
+    };
+};
+
+const createCanvasControllerField = (props: CanvasStyleProps): ControllerField => {
+    return {
+        value: props.fieldValue,
+        onChange: (nextValue: unknown) => {
+            if (typeof nextValue !== 'string' && typeof nextValue !== 'number' && typeof nextValue !== 'boolean') {
+                return;
+            }
+
+            props.onFieldChange(props.fieldKey, nextValue);
+        },
+        onBlur: () => {},
+        name: props.fieldKey,
+        ref: () => {}
+    };
+};
+
+const createUncontrolledControllerField = (props: UncontrolledProps): ControllerField => {
+    const fieldName = props.name ?? '';
+
+    return {
+        value: props.value ?? '',
+        onChange: (eventOrValue: unknown) => {
+            if (!props.onChange) return;
+            if (isSyntheticFieldChangeEvent(eventOrValue)) {
+                props.onChange(eventOrValue);
+                return;
+            }
+
+            props.onChange(buildSyntheticChangeEvent(fieldName, eventOrValue));
+        },
+        onBlur: props.onBlur ?? (() => {}),
+        name: fieldName,
+        ref: () => {}
+    };
+};
+
 const FormFieldRHF = <TForm extends FieldValues = FieldValues>(props: FormFieldRHFProps<TForm>) => {
     const {
         label,
@@ -200,129 +247,51 @@ const FormFieldRHF = <TForm extends FieldValues = FieldValues>(props: FormFieldR
         isLoading = false
     } = props;
 
+    const rendererProps = {
+        label,
+        fieldType,
+        placeholder,
+        icon,
+        options,
+        rows,
+        className,
+        disabled,
+        type,
+        autoFocus,
+        variant,
+        suggestions,
+        onFetchSuggestions,
+        autocomplete,
+        inputProps,
+        isLoading
+    };
+
+    const renderFieldRenderer = (field: ControllerField, error?: string) => {
+        return (
+            <FieldRenderer
+                field={field}
+                error={error}
+                {...rendererProps}
+            />
+        );
+    };
+
     if (isControlled(props)) {
         return (
             <Controller
                 name={props.name}
                 control={props.control}
-                render={({ field, fieldState }) => {
-                    const fieldError = fieldState.error?.message;
-                    return (
-                        <FieldRenderer
-                            field={field}
-                            error={fieldError}
-                            label={label}
-                            fieldType={fieldType}
-                            placeholder={placeholder}
-                            icon={icon}
-                            options={options}
-                            rows={rows}
-                            className={className}
-                            disabled={disabled}
-                            type={type}
-                            autoFocus={autoFocus}
-                            variant={variant}
-                            suggestions={suggestions}
-                            onFetchSuggestions={onFetchSuggestions}
-                            autocomplete={autocomplete}
-                            inputProps={inputProps}
-                            isLoading={isLoading}
-                        />
-                    );
-                }}
+                render={({ field, fieldState }) => renderFieldRenderer(field, fieldState.error?.message)}
             />
         );
     }
 
     if (isCanvasStyle(props)) {
-        const syntheticField: ControllerField = {
-            value: props.fieldValue,
-            onChange: (nextValue: unknown) => {
-                if (typeof nextValue !== 'string' && typeof nextValue !== 'number' && typeof nextValue !== 'boolean') {
-                    return;
-                }
-
-                props.onFieldChange(props.fieldKey, nextValue);
-            },
-            onBlur: () => {},
-            name: props.fieldKey,
-            ref: () => {}
-        };
-
-        return (
-            <FieldRenderer
-                field={syntheticField}
-                error={props.error}
-                label={label}
-                fieldType={fieldType}
-                placeholder={placeholder}
-                icon={icon}
-                options={options}
-                rows={rows}
-                className={className}
-                disabled={disabled}
-                type={type}
-                autoFocus={autoFocus}
-                variant={variant}
-                suggestions={suggestions}
-                onFetchSuggestions={onFetchSuggestions}
-                autocomplete={autocomplete}
-                inputProps={inputProps}
-                isLoading={isLoading}
-            />
-        );
+        return renderFieldRenderer(createCanvasControllerField(props), props.error);
     }
 
     const uncontrolledProps = props;
-    const syntheticField: ControllerField = {
-        value: uncontrolledProps.value ?? '',
-        onChange: (eventOrValue: unknown) => {
-            if (!uncontrolledProps.onChange) return;
-            if (isSyntheticFieldChangeEvent(eventOrValue)) {
-                uncontrolledProps.onChange(eventOrValue);
-                return;
-            }
-
-            const syntheticEvent = {
-                target: {
-                    name: uncontrolledProps.name ?? '',
-                    value: String(eventOrValue ?? '')
-                },
-                currentTarget: {
-                    name: uncontrolledProps.name ?? '',
-                    value: String(eventOrValue ?? '')
-                }
-            };
-
-            uncontrolledProps.onChange(syntheticEvent);
-        },
-        onBlur: uncontrolledProps.onBlur ?? (() => {}),
-        name: uncontrolledProps.name ?? '',
-        ref: () => {}
-    };
-
-    return (
-        <FieldRenderer
-            field={syntheticField}
-            error={uncontrolledProps.error}
-            label={label}
-            fieldType={fieldType}
-            placeholder={placeholder}
-            icon={icon}
-            options={options}
-            rows={rows}
-            className={className}
-            disabled={disabled}
-            type={type}
-            autoFocus={autoFocus}
-            variant={variant}
-            suggestions={suggestions}
-            onFetchSuggestions={onFetchSuggestions}
-            autocomplete={autocomplete}
-            inputProps={inputProps}
-            isLoading={isLoading}
-        />
-    );
+    return renderFieldRenderer(createUncontrolledControllerField(uncontrolledProps), uncontrolledProps.error);
 };
 
 interface ControllerField {
@@ -354,6 +323,169 @@ interface FieldRendererProps {
     isLoading: boolean;
 };
 
+interface FieldAccessibilityState {
+    ids: FieldAccessibilityIds;
+    fieldId: string;
+    fieldName: string;
+    describedBy?: string;
+    ariaInvalid?: boolean;
+    errorMessageId?: string;
+    ariaLabelledBy?: string;
+    autoComplete: NativeInputProps['autoComplete'];
+    inputMode: NativeInputProps['inputMode'];
+    spellCheck: NativeInputProps['spellCheck'];
+};
+
+interface FieldAccessibilityArgs {
+    name: string;
+    inputProps?: NativeInputProps;
+    error?: string;
+    hasLabel: boolean;
+};
+
+const useFieldAccessibility = ({
+    name,
+    inputProps,
+    error,
+    hasLabel
+}: FieldAccessibilityArgs): FieldAccessibilityState => {
+    const reactId = useId();
+    const ids = buildFieldAccessibilityIds(name, reactId);
+
+    return {
+        ids,
+        fieldId: inputProps?.id ?? ids.fieldId,
+        fieldName: inputProps?.name ?? name,
+        describedBy: mergeDescribedBy(inputProps?.['aria-describedby'], error ? ids.errorId : undefined),
+        ariaInvalid: error ? true : undefined,
+        errorMessageId: error ? ids.errorId : undefined,
+        ariaLabelledBy: hasLabel ? ids.labelId : undefined,
+        autoComplete: resolveAutocomplete(inputProps),
+        inputMode: resolveInputMode(inputProps),
+        spellCheck: resolveSpellCheck(inputProps)
+    };
+};
+
+const getFieldStatusAriaProps = ({
+    describedBy,
+    ariaInvalid,
+    errorMessageId
+}: FieldAccessibilityState) => {
+    return {
+        'aria-describedby': describedBy,
+        'aria-invalid': ariaInvalid,
+        'aria-errormessage': errorMessageId
+    };
+};
+
+const isLabelLinkedFieldType = (fieldType: FieldRendererProps['fieldType']) => {
+    return fieldType === 'input' || fieldType === 'textarea' || fieldType === 'color';
+};
+
+interface FieldLabelProps {
+    id: string;
+    fieldId: string;
+    fieldType: FieldRendererProps['fieldType'];
+    className: string;
+    children: ReactNode;
+};
+
+const FieldLabel = ({
+    id,
+    fieldId,
+    fieldType,
+    className,
+    children
+}: FieldLabelProps) => {
+    return (
+        <label
+            id={id}
+            htmlFor={isLabelLinkedFieldType(fieldType) ? fieldId : undefined}
+            className={className}
+        >
+            {children}
+        </label>
+    );
+};
+
+interface FieldErrorProps {
+    id: string;
+    message: string;
+};
+
+const FieldError = ({ id, message }: FieldErrorProps) => {
+    return (
+        <div id={id} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
+            <AlertCircle size={12} />
+            <span>{message}</span>
+        </div>
+    );
+};
+
+interface SelectFieldRenderArgs {
+    fieldId: string;
+    options: SelectOption[];
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+    disabled: boolean;
+    ariaLabelledBy?: string;
+    statusAriaProps: ReturnType<typeof getFieldStatusAriaProps>;
+};
+
+const renderSelectField = ({
+    fieldId,
+    options,
+    value,
+    onChange,
+    placeholder,
+    className,
+    disabled,
+    ariaLabelledBy,
+    statusAriaProps
+}: SelectFieldRenderArgs) => {
+    return (
+        <Select
+            id={fieldId}
+            options={options}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={className}
+            disabled={disabled}
+            aria-labelledby={ariaLabelledBy}
+            {...statusAriaProps}
+        />
+    );
+};
+
+interface ToggleFieldRenderArgs {
+    fieldId: string;
+    pressed: boolean;
+    onChange: (next: boolean) => void;
+    ariaLabelledBy?: string;
+    statusAriaProps: ReturnType<typeof getFieldStatusAriaProps>;
+};
+
+const renderToggleField = ({
+    fieldId,
+    pressed,
+    onChange,
+    ariaLabelledBy,
+    statusAriaProps
+}: ToggleFieldRenderArgs) => {
+    return (
+        <LiquidToggle
+            id={fieldId}
+            pressed={pressed}
+            onChange={onChange}
+            aria-labelledby={ariaLabelledBy}
+            {...statusAriaProps}
+        />
+    );
+};
+
 const FieldRenderer = (props: FieldRendererProps) => {
     const { variant } = props;
 
@@ -379,47 +511,46 @@ const DefaultRenderer = ({
     autoFocus,
     inputProps
 }: FieldRendererProps) => {
-    const reactId = useId();
-    const ids = buildFieldAccessibilityIds(field.name, reactId);
-    const fieldId = inputProps?.id ?? ids.fieldId;
-    const describedBy = mergeDescribedBy(inputProps?.['aria-describedby'], error ? ids.errorId : undefined);
-    const ariaInvalid = error ? true : undefined;
-    const errorMessageId = error ? ids.errorId : undefined;
-    const fieldName = inputProps?.name ?? field.name;
-    const autoComplete = resolveAutocomplete(inputProps);
-    const inputMode = resolveInputMode(inputProps);
-    const spellCheck = resolveSpellCheck(inputProps);
+    const hasLabel = Boolean(label);
+    const accessibility = useFieldAccessibility({
+        name: field.name,
+        inputProps,
+        error,
+        hasLabel
+    });
+    const {
+        ids,
+        fieldId,
+        fieldName,
+        autoComplete,
+        inputMode,
+        spellCheck,
+        ariaLabelledBy
+    } = accessibility;
+    const fieldStatusAriaProps = getFieldStatusAriaProps(accessibility);
 
     const renderField = () => {
         if (fieldType === 'select') {
-            return (
-                <Select
-                    id={fieldId}
-                    options={options}
-                    value={String(field.value ?? '')}
-                    onChange={(value) => field.onChange(value)}
-                    placeholder={placeholder}
-                    disabled={disabled}
-                    aria-labelledby={label ? ids.labelId : undefined}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
-                />
-            );
+            return renderSelectField({
+                fieldId,
+                options,
+                value: String(field.value ?? ''),
+                onChange: (value) => field.onChange(value),
+                placeholder,
+                disabled,
+                ariaLabelledBy,
+                statusAriaProps: fieldStatusAriaProps
+            });
         }
 
         if (fieldType === 'checkbox') {
-            return (
-                <LiquidToggle
-                    id={fieldId}
-                    pressed={Boolean(field.value)}
-                    onChange={(next) => field.onChange(next)}
-                    aria-labelledby={label ? ids.labelId : undefined}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
-                />
-            );
+            return renderToggleField({
+                fieldId,
+                pressed: Boolean(field.value),
+                onChange: (next) => field.onChange(next),
+                ariaLabelledBy,
+                statusAriaProps: fieldStatusAriaProps
+            });
         }
 
         if (fieldType === 'color') {
@@ -433,9 +564,7 @@ const DefaultRenderer = ({
                     onBlur={field.onBlur}
                     className='labeled-input-color'
                     disabled={disabled}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
+                    {...fieldStatusAriaProps}
                 />
             );
         }
@@ -464,9 +593,7 @@ const DefaultRenderer = ({
                         resize: 'vertical',
                         minHeight: 80
                     }}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
+                    {...fieldStatusAriaProps}
                 />
             );
         }
@@ -493,9 +620,7 @@ const DefaultRenderer = ({
                     !!icon && 'has-icon',
                     className
                 )}
-                aria-describedby={describedBy}
-                aria-invalid={ariaInvalid}
-                aria-errormessage={errorMessageId}
+                {...fieldStatusAriaProps}
             />
         );
     };
@@ -503,13 +628,14 @@ const DefaultRenderer = ({
     return (
         <div className='form-field-container d-flex column gap-05 w-max'>
             {label && (
-                <label
+                <FieldLabel
                     id={ids.labelId}
-                    htmlFor={fieldType === 'input' || fieldType === 'textarea' || fieldType === 'color' ? fieldId : undefined}
+                    fieldId={fieldId}
+                    fieldType={fieldType}
                     className='font-size-2 font-weight-5 color-secondary'
                 >
                     {label}
-                </label>
+                </FieldLabel>
             )}
 
             <div className='p-relative'>
@@ -522,10 +648,7 @@ const DefaultRenderer = ({
             </div>
 
             {error && (
-                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
-                    <AlertCircle size={12} />
-                    <span>{error}</span>
-                </div>
+                <FieldError id={ids.errorId} message={error} />
             )}
         </div>
     );
@@ -554,11 +677,14 @@ const InlineCanvasRenderer = ({
     const inputElementRef = useRef<HTMLInputElement | null>(null);
     const textareaElementRef = useRef<HTMLTextAreaElement | null>(null);
     const pendingCaretRef = useRef<number | null>(null);
-    const floatingRoot = useTopLayerRoot();
-    const floatingOwnerIds = useFloatingOwnerIds();
-    const floatingOwnerIdsAttribute = getFloatingOwnerIdsAttribute(floatingOwnerIds);
-    const reactId = useId();
-    const ids = buildFieldAccessibilityIds(field.name, reactId);
+    const { floatingRoot, floatingOwnerIdsAttribute } = useFloatingLayerRoot();
+    const hasLabel = Boolean(label);
+    const accessibility = useFieldAccessibility({
+        name: field.name,
+        inputProps,
+        error,
+        hasLabel
+    });
 
     const [autocompleteContext, setAutocompleteContext] = useState<{
         start: number;
@@ -644,14 +770,7 @@ const InlineCanvasRenderer = ({
             offset(4),
             flip({ padding: 8 }),
             shift({ padding: 8 }),
-            size({
-                apply({ rects, elements }) {
-                    Object.assign(elements.floating.style, {
-                        minWidth: `${rects.reference.width}px`
-                    });
-                },
-                padding: 8
-            })
+            matchReferenceWidth()
         ],
         whileElementsMounted: autoUpdate
     });
@@ -696,19 +815,33 @@ const InlineCanvasRenderer = ({
     const textareaClass = isCanvasVariant ? 'form-field-canvas-textarea' : 'form-field-inline-textarea';
     const containerBaseClass = isCanvasVariant ? 'form-field-canvas' : 'form-field-inline';
 
-    const hasLabel = Boolean(label);
     const datalistId = (suggestions?.length && !autocompleteEnabled) ? `${field.name}-suggestions` : undefined;
-    const fieldId = inputProps?.id ?? ids.fieldId;
-    const describedBy = mergeDescribedBy(inputProps?.['aria-describedby'], error ? ids.errorId : undefined);
-    const ariaInvalid = error ? true : undefined;
-    const errorMessageId = error ? ids.errorId : undefined;
-    const fieldName = inputProps?.name ?? field.name;
-    const autoComplete = resolveAutocomplete(inputProps);
-    const inputMode = resolveInputMode(inputProps);
-    const spellCheck = resolveSpellCheck(inputProps);
+    const {
+        ids,
+        fieldId,
+        fieldName,
+        autoComplete,
+        inputMode,
+        spellCheck,
+        ariaLabelledBy
+    } = accessibility;
+    const fieldStatusAriaProps = getFieldStatusAriaProps(accessibility);
 
     const handleInlineFocus = (target: HTMLInputElement | HTMLTextAreaElement) => {
         onFetchSuggestions?.();
+        if (autocompleteEnabled) {
+            syncAutocompleteContext(target);
+        }
+    };
+
+    const handleAutocompleteValueChange = (event: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>) => {
+        field.onChange(event.target.value);
+        if (autocompleteEnabled) {
+            syncAutocompleteContext(event.currentTarget);
+        }
+    };
+
+    const handleInlineClick = (target: HTMLInputElement | HTMLTextAreaElement) => {
         if (autocompleteEnabled) {
             syncAutocompleteContext(target);
         }
@@ -756,35 +889,27 @@ const InlineCanvasRenderer = ({
 
     const renderInlineField = () => {
         if (fieldType === 'select') {
-            return (
-                <Select
-                    id={fieldId}
-                    options={options}
-                    value={String(effectiveValue ?? '')}
-                    onChange={(selectedValue) => field.onChange(selectedValue)}
-                    placeholder={placeholder}
-                    className={`${selectClass} labeled-input`}
-                    disabled={disabled}
-                    aria-labelledby={hasLabel ? ids.labelId : undefined}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
-                />
-            );
+            return renderSelectField({
+                fieldId,
+                options,
+                value: String(effectiveValue ?? ''),
+                onChange: (selectedValue) => field.onChange(selectedValue),
+                placeholder,
+                className: `${selectClass} labeled-input`,
+                disabled,
+                ariaLabelledBy,
+                statusAriaProps: fieldStatusAriaProps
+            });
         }
 
         if (fieldType === 'checkbox') {
-            return (
-                <LiquidToggle
-                    id={fieldId}
-                    pressed={Boolean(effectiveValue)}
-                    onChange={(next) => field.onChange(next)}
-                    aria-labelledby={hasLabel ? ids.labelId : undefined}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
-                />
-            );
+            return renderToggleField({
+                fieldId,
+                pressed: Boolean(effectiveValue),
+                onChange: (next) => field.onChange(next),
+                ariaLabelledBy,
+                statusAriaProps: fieldStatusAriaProps
+            });
         }
 
         if (fieldType === 'color') {
@@ -797,9 +922,7 @@ const InlineCanvasRenderer = ({
                     onChange={(event) => field.onChange(event.target.value)}
                     className='labeled-input-color'
                     disabled={disabled}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
+                    {...fieldStatusAriaProps}
                     {...inputProps}
                 />
             );
@@ -813,15 +936,10 @@ const InlineCanvasRenderer = ({
                     name={fieldName}
                     className={`${fieldClass} ${textareaClass}`}
                     value={String(effectiveValue ?? '')}
-                    onChange={(event) => {
-                        field.onChange(event.target.value);
-                        if (autocompleteEnabled) {
-                            syncAutocompleteContext(event.currentTarget);
-                        }
-                    }}
+                    onChange={handleAutocompleteValueChange}
                     onBlur={field.onBlur}
                     onFocus={(event) => handleInlineFocus(event.currentTarget)}
-                    onClick={(event) => autocompleteEnabled && syncAutocompleteContext(event.currentTarget)}
+                    onClick={(event) => handleInlineClick(event.currentTarget)}
                     onKeyUp={handleAutocompleteKeyUp}
                     onKeyDown={handleAutocompleteKeyDown}
                     placeholder={placeholder}
@@ -830,9 +948,7 @@ const InlineCanvasRenderer = ({
                     inputMode={inputMode}
                     spellCheck={spellCheck}
                     disabled={disabled}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
+                    {...fieldStatusAriaProps}
                 />
             );
         }
@@ -846,12 +962,7 @@ const InlineCanvasRenderer = ({
                     {...inputProps}
                     className={`${fieldClass} labeled-input`}
                     value={String(effectiveValue ?? '')}
-                    onChange={(event) => {
-                        field.onChange(event.target.value);
-                        if (autocompleteEnabled) {
-                            syncAutocompleteContext(event.currentTarget);
-                        }
-                    }}
+                    onChange={handleAutocompleteValueChange}
                     onBlur={field.onBlur}
                     placeholder={placeholder}
                     autoComplete={autoComplete}
@@ -859,13 +970,11 @@ const InlineCanvasRenderer = ({
                     spellCheck={spellCheck}
                     list={datalistId}
                     onFocus={(event) => handleInlineFocus(event.currentTarget)}
-                    onClick={(event) => autocompleteEnabled && syncAutocompleteContext(event.currentTarget)}
+                    onClick={(event) => handleInlineClick(event.currentTarget)}
                     onKeyUp={handleAutocompleteKeyUp}
                     onKeyDown={handleAutocompleteKeyDown}
                     disabled={disabled}
-                    aria-describedby={describedBy}
-                    aria-invalid={ariaInvalid}
-                    aria-errormessage={errorMessageId}
+                    {...fieldStatusAriaProps}
                 />
                 {datalistId && suggestions && (
                     <datalist id={datalistId}>
@@ -902,13 +1011,14 @@ const InlineCanvasRenderer = ({
     return (
         <div className={`${containerClass} ${loadingClass}`}>
             {hasLabel && (
-                <label
+                <FieldLabel
                     id={ids.labelId}
-                    htmlFor={fieldType === 'input' || fieldType === 'textarea' || fieldType === 'color' ? fieldId : undefined}
+                    fieldId={fieldId}
+                    fieldType={fieldType}
                     className={labelClass}
                 >
                     {label}
-                </label>
+                </FieldLabel>
             )}
             <div ref={autocompleteRefs.setReference} className='d-flex items-center render-input-container w-max content-end p-relative'>
                 {renderInlineField()}
@@ -938,10 +1048,7 @@ const InlineCanvasRenderer = ({
             )}
 
             {error && (
-                <div id={ids.errorId} role='status' aria-live='polite' aria-atomic='true' className='d-flex items-center gap-025 form-field-error font-size-1'>
-                    <AlertCircle size={12} />
-                    <span>{error}</span>
-                </div>
+                <FieldError id={ids.errorId} message={error} />
             )}
         </div>
     );

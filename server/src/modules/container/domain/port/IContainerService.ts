@@ -25,11 +25,6 @@ export interface CreateRuntimeContainerOptions {
     cmd?: string[];
 }
 
-export interface ContainerResourceReference {
-    id: string;
-    name: string;
-}
-
 export type ContainerProcessInfo = Record<string, unknown>;
 
 export type ContainerStats = Docker.ContainerStats;
@@ -67,31 +62,4 @@ export interface ContainerTerminalExec {
 export interface ContainerTerminalAttachment {
     stream: ContainerTerminalStream;
     exec: ContainerTerminalExec;
-}
-
-export interface IContainerService {
-    createContainer(config: CreateRuntimeContainerOptions): Promise<RuntimeContainerInfo>;
-    startContainer(containerId: string): Promise<void>;
-    stopContainer(containerId: string): Promise<void>;
-    removeContainer(containerId: string): Promise<void>;
-    getStats(containerId: string): Promise<ContainerStats>;
-    getFiles(containerId: string, path: string): Promise<ContainerFileEntry[]>;
-    readFile(containerId: string, path: string): Promise<string>;
-    writeFile(containerId: string, path: string, content: string): Promise<void>;
-    getProcesses(containerId: string): Promise<ContainerProcessInfo[]>;
-    getPublishedPort(containerId: string, privatePort: number): Promise<number | null>;
-    resolveDockerSocketGroupAdd(): Promise<string[]>;
-    exec(containerId: string, command: string[], stdin?: string): Promise<string>;
-    pullImage(imageName: string): Promise<void>;
-    ensureImage(imageName: string): Promise<void>;
-
-    createNetwork(name: string): Promise<ContainerResourceReference>;
-    removeNetwork(networkId: string): Promise<void>;
-    connectNetwork(networkId: string, containerId: string): Promise<void>;
-
-    createVolume(name: string): Promise<ContainerResourceReference>;
-    removeVolume(name: string): Promise<void>;
-
-    commitContainer(containerId: string, repo: string, tag: string): Promise<void>;
-    attachTerminal(containerId: string): Promise<ContainerTerminalAttachment>;
 }

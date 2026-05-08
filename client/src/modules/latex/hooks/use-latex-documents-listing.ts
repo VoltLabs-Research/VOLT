@@ -13,19 +13,21 @@ import {
 } from '@/modules/latex/hooks/queries';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_LATEX_DOCUMENT_EVENTS } from '@/modules/socket/events/latex';
+import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
 import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
+import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
 import { FileText, FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createEmptyDocumentsResponse, getDeleteConfirmationMessage } from '../utilities/documents';
 import {
     createLatexDocumentRow,
@@ -40,13 +42,18 @@ import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { useNavigate } from 'react-router-dom';
-type LatexDocumentsListingDragAndDropConfig = DocumentListingDragAndDropConfig<LatexListingRow>;
 
 interface LatexMoveTarget {
     _id: string;
     title: string;
     folder: string | null;
 }
+
+const getLatexMoveTarget = (document: LatexDocument): LatexMoveTarget => ({
+    _id: document._id,
+    title: document.title,
+    folder: document.folder
+});
 
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
 export const NEW_LATEX_FOLDER_MODAL_ID = 'new-latex-folder-modal';
@@ -114,7 +121,6 @@ const useLatexDocumentsListing = () => {
     const { mutateAsync: moveDocument } = useMoveLatexDocumentMutation();
 
     const [renamingDocument, setRenamingDocument] = useState<LatexDocument | null>(null);
-    const [movingDocument, setMovingDocument] = useState<LatexMoveTarget | null>(null);
     const {
         breadcrumbs,
         context,
@@ -157,20 +163,16 @@ const useLatexDocumentsListing = () => {
         })
     });
 
-    const handleRenameFolderOpen = useCallback((folder: LatexFolder) => {
-        handleRenameFolderStateOpen(folder);
-        openModal(RENAME_LATEX_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateOpen]);
-
-    const handleRenameFolderClose = useCallback(() => {
-        closeModal(RENAME_LATEX_FOLDER_MODAL_ID);
-        handleRenameFolderStateClose();
-    }, [handleRenameFolderStateClose]);
-
-    const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        await handleRenameFolderStateSubmit(title);
-        closeModal(RENAME_LATEX_FOLDER_MODAL_ID);
-    }, [handleRenameFolderStateSubmit]);
+    const {
+        handleRenameFolderOpen,
+        handleRenameFolderClose,
+        handleRenameFolderSubmit
+    } = useRenameFolderModal({
+        modalId: RENAME_LATEX_FOLDER_MODAL_ID,
+        openRenameState: handleRenameFolderStateOpen,
+        closeRenameState: handleRenameFolderStateClose,
+        submitRenameState: handleRenameFolderStateSubmit
+    });
 
     const handleCreate = useCallback(async () => {
         if (!teamId) {
@@ -209,58 +211,21 @@ const useLatexDocumentsListing = () => {
         handleRenameClose();
     }, [handleRenameClose, renamingDocument, updateDocument]);
 
-    const handleMoveDocumentOpen = useCallback((document: LatexDocument) => {
-        setMovingDocument({
-            _id: document._id,
-            title: document.title,
-            folder: document.folder
-        });
-        openModal(MOVE_LATEX_DOCUMENT_MODAL_ID);
-    }, []);
-
-    const handleMoveDocumentClose = useCallback(() => {
-        closeModal(MOVE_LATEX_DOCUMENT_MODAL_ID);
-        setMovingDocument(null);
-    }, []);
-
-    const handleMoveDocumentSubmit = useCallback(async (folderId: string | null) => {
-        if (!movingDocument) {
-            return;
-        }
-
-        await showPromise(
-            moveDocument({
-                documentId: movingDocument._id,
-                folderId
-            }),
-            MOVE_DOCUMENT_TOAST
-        );
-    }, [moveDocument, movingDocument]);
-
-    const handleDocumentRowDragEnd = useCallback(async (
-        payload: Parameters<LatexDocumentsListingDragAndDropConfig['onDragEnd']>[0]
-    ) => {
-        const { activeItem, overItem } = payload;
-        if (!activeItem || !overItem) {
-            return;
-        }
-
-        if (!isLatexDocumentRow(activeItem) || !isLatexFolderRow(overItem)) {
-            return;
-        }
-
-        if (activeItem.folder === overItem._id) {
-            return;
-        }
-
-        await showPromise(
-            moveDocument({
-                documentId: activeItem._id,
-                folderId: overItem._id
-            }),
-            MOVE_DOCUMENT_TOAST
-        );
+    const moveDocumentToFolder = useCallback((documentId: string, folderId: string | null) => {
+        return moveDocument({ documentId, folderId });
     }, [moveDocument]);
+
+    const {
+        movingItem: movingDocument,
+        handleMoveOpen: handleMoveDocumentOpen,
+        handleMoveClose: handleMoveDocumentClose,
+        handleMoveSubmit: handleMoveDocumentSubmit
+    } = useFolderedListingMoveModal<LatexDocument, LatexMoveTarget>({
+        modalId: MOVE_LATEX_DOCUMENT_MODAL_ID,
+        getMoveTarget: getLatexMoveTarget,
+        moveItem: moveDocumentToFolder,
+        moveToast: MOVE_DOCUMENT_TOAST
+    });
 
     const { getMenuOptions: getDocumentMenuOptions } = useListingActions<LatexDocument>({
         actions: {
@@ -350,18 +315,16 @@ const useLatexDocumentsListing = () => {
         return true;
     }, [navigate, openFolder]);
 
-    const dragAndDrop = useMemo<LatexDocumentsListingDragAndDropConfig | undefined>(() => {
-        if (!canMoveDocuments) {
-            return undefined;
-        }
-
-        return {
-            activationDistance: 6,
-            getDraggableId: getLatexListingDraggableId,
-            getDroppableId: getLatexListingDroppableId,
-            onDragEnd: handleDocumentRowDragEnd
-        };
-    }, [canMoveDocuments, handleDocumentRowDragEnd]);
+    const dragAndDrop = useFolderedListingDragAndDropMove({
+        canMove: canMoveDocuments,
+        activationDistance: 6,
+        getDraggableId: getLatexListingDraggableId,
+        getDroppableId: getLatexListingDroppableId,
+        isItemRow: isLatexDocumentRow,
+        isFolderRow: isLatexFolderRow,
+        moveItem: moveDocumentToFolder,
+        moveToast: MOVE_DOCUMENT_TOAST
+    });
 
     return {
         breadcrumbs,

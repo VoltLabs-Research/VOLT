@@ -1,7 +1,6 @@
-import { createService, download, get, paginated, patch, post, del } from '@/app/core/http/utilities/create-service';
+import { createService, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
-import type { ClusterHistoryMetric } from './entities/cluster-metrics';
 import type {
     CreateTeamClusterInputDTO,
     CreateTeamClusterOutputDTO
@@ -51,17 +50,8 @@ import type {
 } from './dtos/team-cluster/update-team-cluster-role';
 import type {
     ProvisionDemoTeamClusterInputDTO,
-    ProvisionDemoTeamClusterOutputDTO,
-    GetDemoTeamClusterStatusInputDTO,
-    GetDemoTeamClusterStatusOutputDTO,
-    DeleteDemoTeamClusterInputDTO,
-    DeleteDemoTeamClusterOutputDTO
+    ProvisionDemoTeamClusterOutputDTO
 } from './dtos/team-cluster/demo-team-cluster';
-
-export interface ClusterMetricsHistoryResponse {
-    clusterId: string;
-    history: ClusterHistoryMetric[];
-}
 
 export const requestClusterHistory = async (minutes: number | undefined, clusterId: string): Promise<void> => {
     await emitWithReport(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, {
@@ -108,12 +98,6 @@ const teamClusterEndpoints = {
         '/:teamId/clusters/:teamClusterId/role'
     ),
     provisionDemo: post<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO>(
-        '/:teamId/clusters/demo'
-    ),
-    getDemoStatus: get<GetDemoTeamClusterStatusInputDTO, GetDemoTeamClusterStatusOutputDTO>(
-        '/:teamId/clusters/demo/status'
-    ),
-    deleteDemo: del<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO>(
         '/:teamId/clusters/demo'
     )
 };

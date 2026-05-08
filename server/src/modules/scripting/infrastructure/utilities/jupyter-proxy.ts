@@ -1,12 +1,6 @@
 import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
 
-export interface JupyterProxyAccessTokenContext {
-    teamId: string;
-    runtimeNotebookId: string;
-    userId: string;
-}
-
 interface BuildJupyterProxyUrlInput {
     teamId: string;
     runtimeNotebookId: string;
@@ -90,11 +84,6 @@ export const matchJupyterProxyPath = (requestUrl: string): JupyterProxyPathMatch
         teamId: decodeURIComponent(match[1]),
         runtimeNotebookId: decodeURIComponent(match[2])
     };
-};
-
-export const readJupyterProxyAccessTokenFromUrl = (requestUrl: string): string | null => {
-    const url = new URL(requestUrl, PROXY_URL_ORIGIN);
-    return url.searchParams.get(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM);
 };
 
 const isSecureRequest = (req: Request): boolean => {

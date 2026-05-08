@@ -8,11 +8,6 @@ import mongoose from 'mongoose';
 
 import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 
-export interface TrajectoryFramePage {
-    frames: TrajectoryFrame[];
-    total: number;
-}
-
 export interface GetFramesOptions {
     from?: number;
     to?: number;

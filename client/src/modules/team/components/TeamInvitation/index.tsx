@@ -1,9 +1,9 @@
 import Button from '@/shared/presentation/primitives/Button';
 import Tag from '@/shared/presentation/primitives/Tag';
-import Stack from '@/shared/presentation/primitives/Stack';
 import Row from '@/shared/presentation/primitives/Row';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Text from '@/shared/presentation/primitives/Text';
+import { TeamInvitationCard, TeamInvitationStateCard } from '@/modules/team/components/TeamInvitationShared';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {
     getOnboardingRedirectPath,
@@ -117,25 +117,23 @@ export default function TeamInvitationTemplate() {
 
     if(loading){
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
-                    <Text as='p' tone='secondary'>Loading invitation...</Text>
-                </Stack>
-            </Stack>
+            <TeamInvitationCard>
+                <Text as='p' tone='secondary'>Loading invitation...</Text>
+            </TeamInvitationCard>
         );
     }
 
     if(displayError || !invitation || !invitation.team || !invitation.invitedBy){
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+            <TeamInvitationStateCard
+                icon={(
                     <div className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </div>
-                    <Heading level={3} size='xl' weight='bold'>Invalid Invitation</Heading>
-                    <Text as='p' tone='secondary'>
-                        {displayError || 'This invitation is not valid or has expired'}
-                    </Text>
+                )}
+                title='Invalid Invitation'
+                description={displayError || 'This invitation is not valid or has expired'}
+                action={(
                     <Button
                         variant='solid'
                         intent='brand'
@@ -143,8 +141,8 @@ export default function TeamInvitationTemplate() {
                     >
                         Back to Dashboard
                     </Button>
-                </Stack>
-            </Stack>
+                )}
+            />
         );
     }
 
@@ -153,15 +151,15 @@ export default function TeamInvitationTemplate() {
 
     if(isExpired){
         return (
-            <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-                <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
+            <TeamInvitationStateCard
+                icon={(
                     <div className='team-invitation-icon-warning'>
                         <Clock size={48} />
                     </div>
-                    <Heading level={3} size='xl' weight='bold'>Invitation Expired</Heading>
-                    <Text as='p' tone='secondary'>
-                        This invitation expired on {expiresAt.toLocaleString()}
-                    </Text>
+                )}
+                title='Invitation Expired'
+                description={`This invitation expired on ${expiresAt.toLocaleString()}`}
+                action={(
                     <Button
                         variant='solid'
                         intent='brand'
@@ -169,85 +167,83 @@ export default function TeamInvitationTemplate() {
                     >
                         Back to Dashboard
                     </Button>
-                </Stack>
-            </Stack>
+                )}
+            />
         );
     }
 
     return (
-        <Stack align='center' justify='center' width='max' height='vh-max' className='team-invitation-page'>
-            <Stack gap='1-5' align='center' textAlign='center' radius='lg' className='team-invitation-card'>
-                <Tag tone='success' variant='soft' size='md' leftIcon={<CheckCircle size={20} />}>
-                    You've been invited!
+        <TeamInvitationCard>
+            <Tag tone='success' variant='soft' size='md' leftIcon={<CheckCircle size={20} />}>
+                You've been invited!
+            </Tag>
+
+            <Heading level={3} size='2xl' weight='bold'>{invitation.team.name}</Heading>
+
+            <Text as='p' tone='secondary'>
+                You've been invited to join this team
+            </Text>
+
+            <Text as='p' size='md' className='color-tertiary'>
+                Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
+            </Text>
+
+            <Row gap='1' wrap justify='center' radius='md' className='team-invitation-details'>
+                <div className='team-invitation-detail text-center'>
+                    <Text as='span' className='team-invitation-detail-label'>Email</Text>
+                    <Row as='p' gap='025' className='team-invitation-detail-value'>
+                        <Mail size={14} />
+                        {invitation.email}
+                    </Row>
+                </div>
+                <div className='team-invitation-detail text-center'>
+                    <Text as='span' className='team-invitation-detail-label'>Invited</Text>
+                    <Row as='p' gap='025' className='team-invitation-detail-value'>
+                        <Clock size={14} />
+                        {new Date(invitation.createdAt).toLocaleDateString()}
+                    </Row>
+                </div>
+                <div className='team-invitation-detail text-center'>
+                    <Text as='span' className='team-invitation-detail-label'>Expires</Text>
+                    <Text as='p' className='team-invitation-detail-value'>
+                        {expiresAt.toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </Text>
+                </div>
+            </Row>
+
+            <Row gap='1' width='max' className='team-invitation-actions'>
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    block
+                    leftIcon={<CheckCircle size={20} />}
+                    onClick={handleAccept}
+                    disabled={actionLoading}
+                    isLoading={actionLoading}
+                >
+                    Accept Invitation
+                </Button>
+                <Button
+                    variant='outline'
+                    intent='neutral'
+                    block
+                    leftIcon={<XCircle size={20} />}
+                    onClick={handleReject}
+                    disabled={actionLoading}
+                >
+                    Reject Invitation
+                </Button>
+            </Row>
+
+            {error && (
+                <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
+                    {error}
                 </Tag>
-
-                <Heading level={3} size='2xl' weight='bold'>{invitation.team.name}</Heading>
-
-                <Text as='p' tone='secondary'>
-                    You've been invited to join this team
-                </Text>
-
-                <Text as='p' size='md' className='color-tertiary'>
-                    Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
-                </Text>
-
-                <Row gap='1' wrap justify='center' radius='md' className='team-invitation-details'>
-                    <div className='team-invitation-detail text-center'>
-                        <Text as='span' className='team-invitation-detail-label'>Email</Text>
-                        <Row as='p' gap='025' className='team-invitation-detail-value'>
-                            <Mail size={14} />
-                            {invitation.email}
-                        </Row>
-                    </div>
-                    <div className='team-invitation-detail text-center'>
-                        <Text as='span' className='team-invitation-detail-label'>Invited</Text>
-                        <Row as='p' gap='025' className='team-invitation-detail-value'>
-                            <Clock size={14} />
-                            {new Date(invitation.createdAt).toLocaleDateString()}
-                        </Row>
-                    </div>
-                    <div className='team-invitation-detail text-center'>
-                        <Text as='span' className='team-invitation-detail-label'>Expires</Text>
-                        <Text as='p' className='team-invitation-detail-value'>
-                            {expiresAt.toLocaleString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                            })}
-                        </Text>
-                    </div>
-                </Row>
-
-                <Row gap='1' width='max' className='team-invitation-actions'>
-                    <Button
-                        variant='solid'
-                        intent='brand'
-                        block
-                        leftIcon={<CheckCircle size={20} />}
-                        onClick={handleAccept}
-                        disabled={actionLoading}
-                        isLoading={actionLoading}
-                    >
-                        Accept Invitation
-                    </Button>
-                    <Button
-                        variant='outline'
-                        intent='neutral'
-                        block
-                        leftIcon={<XCircle size={20} />}
-                        onClick={handleReject}
-                        disabled={actionLoading}
-                    >
-                        Reject Invitation
-                    </Button>
-                </Row>
-
-                {error && (
-                    <Tag tone='danger' variant='soft' size='md' leftIcon={<AlertCircle size={16} />}>
-                        {error}
-                    </Tag>
-                )}
-            </Stack>
-        </Stack>
+            )}
+        </TeamInvitationCard>
     );
 }

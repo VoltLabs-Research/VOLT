@@ -21,6 +21,61 @@ const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
     WorkflowNodeType.ForEach
 ]);
 
+const PLUGIN_BRANCH_TARGETS = new Set<WorkflowNodeType>([
+    WorkflowNodeType.Plugin,
+    WorkflowNodeType.Entrypoint,
+    WorkflowNodeType.Exposure,
+    WorkflowNodeType.Export,
+    WorkflowNodeType.IfStatement,
+    WorkflowNodeType.SwitchStatement
+]);
+
+const ALLOWED_EDGE_TARGETS = new Map<WorkflowNodeType, ReadonlySet<WorkflowNodeType>>([
+    [WorkflowNodeType.Modifier, new Set([WorkflowNodeType.Arguments])],
+    [WorkflowNodeType.Arguments, new Set([WorkflowNodeType.Context])],
+    [WorkflowNodeType.Context, new Set([
+        WorkflowNodeType.ForEach,
+        WorkflowNodeType.Entrypoint,
+        WorkflowNodeType.Plugin,
+        WorkflowNodeType.IfStatement,
+        WorkflowNodeType.SwitchStatement
+    ])],
+    [WorkflowNodeType.ForEach, new Set([
+        WorkflowNodeType.Entrypoint,
+        WorkflowNodeType.Plugin,
+        WorkflowNodeType.IfStatement,
+        WorkflowNodeType.SwitchStatement
+    ])],
+    [WorkflowNodeType.Entrypoint, new Set([
+        WorkflowNodeType.Exposure,
+        WorkflowNodeType.IfStatement,
+        WorkflowNodeType.SwitchStatement
+    ])],
+    [WorkflowNodeType.Plugin, new Set([
+        WorkflowNodeType.Plugin,
+        WorkflowNodeType.Entrypoint,
+        WorkflowNodeType.IfStatement,
+        WorkflowNodeType.SwitchStatement
+    ])],
+    [WorkflowNodeType.Exposure, new Set([WorkflowNodeType.Export])],
+    [WorkflowNodeType.Export, new Set()],
+    [WorkflowNodeType.IfStatement, PLUGIN_BRANCH_TARGETS],
+    [WorkflowNodeType.SwitchCase, PLUGIN_BRANCH_TARGETS]
+]);
+
+const SWITCH_CASE_TARGETS = new Set<WorkflowNodeType>([
+    WorkflowNodeType.SwitchCase
+]);
+
+const SWITCH_CONTINUE_TARGETS = new Set<WorkflowNodeType>([
+    WorkflowNodeType.Plugin,
+    WorkflowNodeType.Entrypoint,
+    WorkflowNodeType.Exposure,
+    WorkflowNodeType.Export,
+    WorkflowNodeType.IfStatement,
+    WorkflowNodeType.SwitchStatement
+]);
+
 const isAllowedSwitchHandle = (handle: string | undefined): boolean => {
     return handle === 'cases' || handle === 'continue';
 };
@@ -522,80 +577,13 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         targetType: WorkflowNodeType,
         sourceHandle?: string
     ): boolean {
-        if (sourceType === WorkflowNodeType.Modifier) {
-            return targetType === WorkflowNodeType.Arguments;
-        }
-
-        if (sourceType === WorkflowNodeType.Arguments) {
-            return targetType === WorkflowNodeType.Context;
-        }
-
-        if (sourceType === WorkflowNodeType.Context) {
-            return targetType === WorkflowNodeType.ForEach
-                || targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
-        if (sourceType === WorkflowNodeType.ForEach) {
-            return targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
-        if (sourceType === WorkflowNodeType.Entrypoint) {
-            return targetType === WorkflowNodeType.Exposure
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
-        if (sourceType === WorkflowNodeType.Plugin) {
-            return targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
-        if (sourceType === WorkflowNodeType.Exposure) {
-            return targetType === WorkflowNodeType.Export;
-        }
-
-        if (sourceType === WorkflowNodeType.Export) {
-            return false;
-        }
-
-        if (sourceType === WorkflowNodeType.IfStatement) {
-            return targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.Exposure
-                || targetType === WorkflowNodeType.Export
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
         if (sourceType === WorkflowNodeType.SwitchStatement) {
-            if (sourceHandle === 'cases') {
-                return targetType === WorkflowNodeType.SwitchCase;
-            }
-
-            return targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.Exposure
-                || targetType === WorkflowNodeType.Export
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
+            const targets = sourceHandle === 'cases'
+                ? SWITCH_CASE_TARGETS
+                : SWITCH_CONTINUE_TARGETS;
+            return targets.has(targetType);
         }
 
-        if (sourceType === WorkflowNodeType.SwitchCase) {
-            return targetType === WorkflowNodeType.Plugin
-                || targetType === WorkflowNodeType.Entrypoint
-                || targetType === WorkflowNodeType.Exposure
-                || targetType === WorkflowNodeType.Export
-                || targetType === WorkflowNodeType.IfStatement
-                || targetType === WorkflowNodeType.SwitchStatement;
-        }
-
-        return false;
+        return ALLOWED_EDGE_TARGETS.get(sourceType)?.has(targetType) ?? false;
     }
 }

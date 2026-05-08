@@ -1,6 +1,5 @@
 import { ErrorCodes, isErrorCode } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
 
 export interface SocketErrorEnvelope {
     code: ErrorCode;
@@ -31,17 +30,4 @@ export const createSocketErrorEnvelope = (
     }
 
     return errorEnvelope;
-};
-
-export const createSocketErrorEnvelopeFromApplicationError = (
-    error: ApplicationError
-): SocketErrorEnvelope => {
-    const code = resolveSocketErrorCode(error.code);
-    let details: string | undefined;
-
-    if (error.message && error.message !== code) {
-        details = error.message;
-    }
-
-    return createSocketErrorEnvelope(code, details);
 };

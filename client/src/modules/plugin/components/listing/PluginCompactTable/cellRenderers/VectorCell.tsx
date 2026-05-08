@@ -1,26 +1,21 @@
 import { Fragment } from 'react';
 import { formatScientific, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { resolveNumberArrayCellValue } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers/number-array-value';
 
 interface VectorCellProps {
     value: unknown;
 }
 
-const isNumberArray = (input: unknown): input is number[] => {
-    return Array.isArray(input) && input.every((entry) => typeof entry === 'number');
-};
-
 const VectorCell = ({ value }: VectorCellProps) => {
-    if(!isNumberArray(value)){
-        return <span className='plugin-cell-empty'>-</span>;
+    const resolved = resolveNumberArrayCellValue(value);
+    if ('fallback' in resolved) {
+        return resolved.fallback;
     }
+    const numbers = resolved.numbers;
 
-    if(value.length === 0){
-        return <span className='plugin-cell-empty'>[]</span>;
-    }
-
-    const formatted = value.map((component) => formatScientific(component, 3).short);
-    const magnitude = vectorMagnitude(value);
-    const title = `${safeJsonStringify(value)}  |v|=${magnitude.toPrecision(6)}`;
+    const formatted = numbers.map((component) => formatScientific(component, 3).short);
+    const magnitude = vectorMagnitude(numbers);
+    const title = `${safeJsonStringify(numbers)}  |v|=${magnitude.toPrecision(6)}`;
 
     return (
         <span className='plugin-cell-vector tabular-nums' title={title}>

@@ -59,7 +59,7 @@ const ChatHeader = ({
                     {statusText && (
                         <Row gap='05' className='chat-header-status'>
                             {!chat.isGroup && (
-                                <StatusDot isOnline={presence === PresenceStatus.Online} />
+                                <StatusDot tone={presence === PresenceStatus.Online ? 'success' : 'neutral'} />
                             )}
                             <Text as='p' size='md' tone='muted'>{statusText}</Text>
                         </Row>

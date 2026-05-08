@@ -1,6 +1,6 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Box from '@/shared/presentation/primitives/Box';
+import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
@@ -83,23 +83,17 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
         >
             <Stack gap='1' p='1-5'>
                 {!result && (
-                    <>
-                        <Text as='p' size='md' tone='secondary'>
-                            Confirm your password to continue with the uninstall and delete flow.
-                        </Text>
-                        <FormFieldRHF
-                            label='Password'
-                            type='password'
-                            value={password}
-                            error={error}
-                            onChange={(event) => {
-                                setPassword(event.target.value);
-                                if (error) {
-                                    setError(undefined);
-                                }
-                            }}
-                        />
-                    </>
+                    <PasswordConfirmationPrompt
+                        description='Confirm your password to continue with the uninstall and delete flow.'
+                        password={password}
+                        error={error}
+                        onPasswordChange={(nextPassword) => {
+                            setPassword(nextPassword);
+                            if (error) {
+                                setError(undefined);
+                            }
+                        }}
+                    />
                 )}
                 {result?.manualUninstallRequired && (
                     <>

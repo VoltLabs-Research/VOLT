@@ -4,22 +4,10 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Text from '@/shared/presentation/primitives/Text';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import { createEmptyPaginatedResponse, type PaginatedResponse } from '@/shared/domain/pagination';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useCallback, useMemo } from 'react';
-
-const createEmptyResponse = (params: PaginationParams): PaginatedResponse<SceneArtifact> => ({
-    status: 'success',
-    data: [],
-    pagination: {
-        page: Math.max(1, Number(params.page) || 1),
-        limit: Math.max(1, Number(params.limit) || 20),
-        total: 0,
-        totalPages: 1,
-        hasMore: false
-    }
-});
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     {
@@ -52,7 +40,7 @@ const TrajectoryArtifactsListing = () => {
 
     const fetchArtifacts = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<SceneArtifact>> => {
         if (!teamId) {
-            return createEmptyResponse(params);
+            return createEmptyPaginatedResponse(params);
         }
 
         return sceneArtifactService.listByTeam({

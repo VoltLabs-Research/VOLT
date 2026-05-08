@@ -7,6 +7,7 @@ import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access';
+import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fit';
 import './SingleModelViewer.css';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -34,8 +35,6 @@ interface AutoFitBoxTransforms {
     groundOffset?: number;
 }
 
-const DEFAULT_CAMERA_DIRECTION = new THREE.Vector3(1, 1, 0.75).normalize();
-
 const buildWorldBoundsFromModel = (
     bounds: BoundsInfo,
     transforms: AutoFitBoxTransforms
@@ -50,32 +49,6 @@ const buildWorldBoundsFromModel = (
     const max = bounds.box.max.clone().multiplyScalar(transforms.scale).add(worldOffset);
 
     return new THREE.Box3(min, max);
-};
-
-const fitPerspectiveCameraToBox = (
-    camera: THREE.PerspectiveCamera,
-    controls: OrbitControlsHandle,
-    worldBox: THREE.Box3
-) => {
-    const sphere = worldBox.getBoundingSphere(new THREE.Sphere());
-    const nextTarget = sphere.center.clone();
-    const currentDirection = camera.position.clone().sub(controls.target);
-    const direction = currentDirection.lengthSq() > 0.0001
-        ? currentDirection.normalize()
-        : DEFAULT_CAMERA_DIRECTION;
-    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
-    const fitFov = Math.min(verticalFov, horizontalFov);
-    const desiredDistance = (sphere.radius / Math.sin(fitFov / 2)) * 1.2;
-    const clampedDistance = Math.min(
-        controls.maxDistance,
-        Math.max(controls.minDistance, desiredDistance)
-    );
-
-    controls.target.copy(nextTarget);
-    camera.position.copy(nextTarget.clone().addScaledVector(direction, clampedDistance));
-    camera.updateProjectionMatrix();
-    controls.update();
 };
 
 interface SingleModelViewerProps {
@@ -341,7 +314,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         const worldSize = worldBox.getSize(new THREE.Vector3());
         const previousCameraPosition = camera.position.toArray();
         const previousTarget = controls.target.toArray();
-        fitPerspectiveCameraToBox(camera, controls, worldBox);
+        fitPerspectiveCameraToBox(camera, worldBox, controls);
         autoFitAppliedRef.current = true;
         debugFractal('single-model.autofit-applied', {
             trajectoryId,
