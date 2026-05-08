@@ -117,7 +117,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
 
             {isFetchingMore && renderSkeleton?.()}
 
-            <div ref={sentinelRef} style={{ height: 1 }} />
+            <div ref={sentinelRef} className='document-listing-grid-sentinel' aria-hidden='true' />
         </div>
     );
 };

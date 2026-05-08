@@ -1,6 +1,6 @@
 .document-listing-grid {
     display: grid;
-    grid-auto-rows: 1fr;
+    grid-auto-rows: auto;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
     overflow-y: auto;
@@ -31,6 +31,11 @@
 .document-listing-grid-empty {
     grid-column: 1 / -1;
     min-height: 300px;
+}
+
+.document-listing-grid-sentinel {
+    grid-column: 1 / -1;
+    height: 1px;
 }
 
 @media screen and (max-width: 768px) {
