@@ -33,8 +33,7 @@ export default defineConfig(({ mode }) => {
             }
         },
         optimizeDeps: {
-            include: ['react-icons/tb', 'zod', 'react', 'react-dom']
-        },
-        build: {}
+            include: ['zod']
+        }
     };
 });

@@ -1,5 +1,6 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import type { SceneKeyConfig } from '@/modules/fractal/utilities/scene-utils';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import useSceneInteraction from '../../hooks/use-scene-interaction';
 
@@ -19,7 +20,7 @@ const ExposureSettingsWidget = () => {
         setSceneOpacity: s.setSceneOpacity
     })));
 
-    const exposureSettingsScene = useMemo(() => {
+    const exposureSettingsScene = useMemo<SceneKeyConfig | null>(() => {
         if (!settingsKey) return null;
         if (settingsKey.startsWith('plugin:')) {
             const [, analysisId, exposureId] = settingsKey.split(':');
@@ -29,11 +30,11 @@ const ExposureSettingsWidget = () => {
                 sceneType: exposureId,
                 analysisId,
                 exposureId
-            } as any;
+            };
         }
         const [source, sceneType] = settingsKey.split(':');
         if (!source || !sceneType) return null;
-        return { source, sceneType } as any;
+        return { source, sceneType };
     }, [settingsKey]);
 
     const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';

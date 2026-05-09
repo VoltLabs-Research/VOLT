@@ -26,7 +26,7 @@ export default class TrajectoryCloneRunner {
         };
 
         this.interval = setInterval(tick, CLONE_RUNNER_INTERVAL_MS);
-        this.interval.unref?.();
+        this.interval.unref();
         tick();
     }
 

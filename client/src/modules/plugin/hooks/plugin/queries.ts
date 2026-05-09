@@ -77,41 +77,12 @@ export const PLUGIN_QUERY_KEYS = {
     teamClustersList: teamClusterKeys.list
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const fetchAllPlugins = async (): Promise<Plugin[]> => {
-    const PAGE_SIZE = 100;
-    let page = 1;
-    const all: Plugin[] = [];
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const res = await pluginService.getAll({ page, limit: PAGE_SIZE });
-        all.push(...res.data);
-        if (!res.pagination.hasMore) break;
-        page++;
-    }
-
-    return all;
-};
-
 const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
     if (input._id) {
         return pluginService.update({ _id: input._id, workflow: input.workflow });
     }
     return pluginService.create({ workflow: input.workflow });
 };
-
-// ─── Plugin queries ──────────────────────────────────────────────────────────
-
-const allPluginsQuery = createQuery<void, Plugin[]>(
-    () => PLUGIN_QUERY_KEYS.allList(),
-    fetchAllPlugins
-);
-
-export const useAllPluginsQuery = (
-    options?: QueryOptions<Plugin[], Plugin[]>
-) => allPluginsQuery(undefined, options as QueryOptions<Plugin[], Plugin[]> | undefined);
 
 // usePluginByIdQuery resolves its queryKey/queryFn per-call against the
 // current canvas access mode (wraps the key via withAccessMode + uses the

@@ -13,7 +13,6 @@ import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-cli
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
-import * as XLSX from 'xlsx';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import './AIArtifactSpreadsheetPanel.css';
@@ -28,6 +27,20 @@ interface CellAddress {
     row: number;
     col: number;
 }
+
+type XlsxModule = typeof import('xlsx');
+let xlsxPromise: Promise<XlsxModule> | null = null;
+
+const loadXlsx = (): Promise<XlsxModule> => {
+    if (!xlsxPromise) {
+        xlsxPromise = import('xlsx').catch((error) => {
+            xlsxPromise = null;
+            throw error;
+        });
+    }
+
+    return xlsxPromise;
+};
 
 const stringifyValue = (value: unknown): string => {
     if (value == null) return '';
@@ -213,30 +226,49 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         };
     }, []);
 
-    const handleDownloadCSV = () => {
-        const data = getExportData();
-        const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
-        const csvContent = XLSX.utils.sheet_to_csv(worksheet);
-        const blob = base64ToBlob(csvContent, 'text/csv');
-        triggerBrowserDownload(blob, `${artifact.title || 'table'}.csv`);
-        updateStatusMessage('Downloaded CSV file.');
+    const handleDownloadCSV = async () => {
+        try {
+            const XLSX = await loadXlsx();
+            const data = getExportData();
+            const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
+            const csvContent = XLSX.utils.sheet_to_csv(worksheet);
+            const blob = base64ToBlob(csvContent, 'text/csv');
+            triggerBrowserDownload(blob, `${artifact.title || 'table'}.csv`);
+            updateStatusMessage('Downloaded CSV file.');
+        } catch {
+            updateStatusMessage('Failed to load export engine for CSV.');
+        }
     };
 
-    const handleDownloadXLSX = () => {
-        const data = getExportData();
-        const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-        const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = base64ToBlob(buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        triggerBrowserDownload(blob, `${artifact.title || 'table'}.xlsx`);
-        updateStatusMessage('Downloaded Excel file.');
+    const handleDownloadXLSX = async () => {
+        try {
+            const XLSX = await loadXlsx();
+            const data = getExportData();
+            const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+            const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const blob = base64ToBlob(buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            triggerBrowserDownload(blob, `${artifact.title || 'table'}.xlsx`);
+            updateStatusMessage('Downloaded Excel file.');
+        } catch {
+            updateStatusMessage('Failed to load export engine for Excel.');
+        }
     };
 
     const handleCopyToClipboard = async () => {
-        const data = getExportData();
-        const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
-        const tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+        let tsvContent = '';
+
+        try {
+            const XLSX = await loadXlsx();
+            const data = getExportData();
+            const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
+            tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+        } catch {
+            updateStatusMessage('Failed to load export engine for clipboard copy.');
+            return;
+        }
+
         const copied = await copyTextToClipboard(tsvContent, {
             successMessage: 'Copied to clipboard',
             errorMessage: 'Failed to copy to clipboard'

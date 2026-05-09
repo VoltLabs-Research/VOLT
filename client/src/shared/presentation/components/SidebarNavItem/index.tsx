@@ -42,7 +42,7 @@ const SidebarNavItem = forwardRef<HTMLButtonElement, SidebarNavItemProps>(({
             {...(command ? { command } : {})}
         >
             <div className='sidebar-nav-icon font-size-4'>
-                <Icon />
+                <Icon size='1em' />
             </div>
             <span className='sidebar-nav-label'>{label}</span>
         </Button>

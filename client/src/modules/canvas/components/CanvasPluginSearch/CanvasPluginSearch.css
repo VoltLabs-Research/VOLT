@@ -30,13 +30,6 @@
     height: auto;
 }
 
-.canvas-plugin-search-wrapper .search-input-icon--small {
-    font-size: 0.875rem;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-}
-
 .canvas-plugin-search-results {
     max-height: 60vh;
     min-height: 9rem;

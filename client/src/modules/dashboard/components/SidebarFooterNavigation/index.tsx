@@ -1,9 +1,8 @@
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationSection } from '@/app/routes/types';
 import { useMemo } from 'react';
-import { IoSettings, IoSettingsOutline } from 'react-icons/io5';
+import { BookOpen, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
-import { TbBook } from 'react-icons/tb';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import Box from '@/shared/presentation/primitives/Box';
@@ -39,7 +38,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 <Tooltip content='Settings' placement='right'>
                     <SidebarNavItem
                         label='Settings'
-                        icon={settingsActive ? IoSettings : IoSettingsOutline}
+                        icon={Settings}
                         isSelected={settingsActive}
                         onClick={() => navigate(defaultSettingsPath)}
                     />
@@ -48,7 +47,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
                 <Tooltip content='Read the docs' placement='right'>
                     <SidebarNavItem
                         label='Read the docs'
-                        icon={TbBook}
+                        icon={BookOpen}
                         onClick={handleOpenDocs}
                     />
                 </Tooltip>
@@ -60,7 +59,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
         <Box className='sidebar-footer-nav'>
             <SidebarExpandableSection
                 label='Settings'
-                icon={settingsActive ? IoSettings : IoSettingsOutline}
+                icon={Settings}
                 isActive={settingsActive}
                 subItems={settingsSubItems}
                 expanded={settingsExpanded}
@@ -69,7 +68,7 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
 
             <SidebarNavItem
                 label='Read the docs'
-                icon={TbBook}
+                icon={BookOpen}
                 onClick={handleOpenDocs}
             />
         </Box>

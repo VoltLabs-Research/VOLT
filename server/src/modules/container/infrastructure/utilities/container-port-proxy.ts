@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 interface ContainerPortProxyAccessTokenSignOptions extends SignOptions {
     expiresIn: number;
@@ -56,20 +57,6 @@ const isClaimsPayload = (value: unknown): value is ContainerPortProxyAccessToken
         && typeof payload.sessionId === 'string'
         && typeof payload.relayPort === 'number'
         && typeof payload.userId === 'string';
-};
-
-const readPositiveIntegerEnv = (name: string, fallback: number): number => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    const value = Number(rawValue);
-    if (!Number.isInteger(value) || value <= 0) {
-        throw new Error(`${name} must be a positive integer`);
-    }
-
-    return value;
 };
 
 export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {

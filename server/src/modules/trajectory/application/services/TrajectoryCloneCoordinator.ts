@@ -102,7 +102,7 @@ export default class TrajectoryCloneCoordinator {
                     logger.warn({ error, jobId: claimed.id }, '[TrajectoryCloneCoordinator] Failed to renew claim');
                 });
             }, CLAIM_RENEW_INTERVAL_MS);
-            renewTimer.unref?.();
+            renewTimer.unref();
 
             try {
                 await this.executeJob(claimed.id);

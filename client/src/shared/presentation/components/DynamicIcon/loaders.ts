@@ -1,30 +1,59 @@
-export const ICON_LIB_LOADERS = {
-    ai: () => import('react-icons/ai'),
-    bi: () => import('react-icons/bi'),
-    bs: () => import('react-icons/bs'),
-    ci: () => import('react-icons/ci'),
-    cg: () => import('react-icons/cg'),
-    di: () => import('react-icons/di'),
-    fa: () => import('react-icons/fa'),
-    fc: () => import('react-icons/fc'),
-    fi: () => import('react-icons/fi'),
-    gi: () => import('react-icons/gi'),
-    go: () => import('react-icons/go'),
-    gr: () => import('react-icons/gr'),
-    hi: () => import('react-icons/hi'),
-    im: () => import('react-icons/im'),
-    io: () => import('react-icons/io'),
-    io5: () => import('react-icons/io5'),
-    lia: () => import('react-icons/lia'),
-    lu: () => import('react-icons/lu'),
-    md: () => import('react-icons/md'),
-    pi: () => import('react-icons/pi'),
-    ri: () => import('react-icons/ri'),
-    rx: () => import('react-icons/rx'),
-    si: () => import('react-icons/si'),
-    sl: () => import('react-icons/sl'),
-    tb: () => import('react-icons/tb'),
-    ti: () => import('react-icons/ti'),
-    vsc: () => import('react-icons/vsc'),
-    wi: () => import('react-icons/wi')
+import {
+    BookOpen,
+    Box,
+    Braces,
+    Check,
+    CircleDot,
+    Database,
+    Eye,
+    File,
+    FileOutput,
+    FileText,
+    GitBranch,
+    Play,
+    Plug,
+    Repeat,
+    Route,
+    ScanSearch,
+    Trash2,
+    Unplug,
+    Upload,
+    X
+} from 'lucide-react';
+import type { ComponentType, CSSProperties } from 'react';
+
+export interface DynamicIconRenderProps {
+    size?: string | number;
+    color?: string;
+    className?: string;
+    style?: CSSProperties;
+    title?: string;
+}
+
+export type DynamicIconComponent = ComponentType<DynamicIconRenderProps>;
+
+export const ICON_COMPONENTS: Record<string, DynamicIconComponent> = {
+    TbBook: BookOpen,
+    TbBrackets: Braces,
+    TbCheck: Check,
+    TbCube3dSphere: Box,
+    TbDatabase: Database,
+    TbEye: Eye,
+    TbFile: File,
+    TbFileExport: FileOutput,
+    TbFileTypePdf: FileText,
+    TbGitBranch: GitBranch,
+    TbObjectScan: ScanSearch,
+    TbPlayerPlay: Play,
+    TbPlugConnected: Plug,
+    TbPlugConnectedX: Unplug,
+    TbPoint: CircleDot,
+    TbRepeat: Repeat,
+    TbRouteSquare: Route,
+    TbTrash: Trash2,
+    TbUpload: Upload,
+    TbX: X
 };
+
+export const ICON_COMPONENT_ENTRIES = Object.entries(ICON_COMPONENTS)
+    .sort(([nameA], [nameB]) => nameA.localeCompare(nameB));

@@ -12,6 +12,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
@@ -71,23 +72,9 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-const readNumberEnv = (name: string, fallback: number): number => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    const value = Number(rawValue);
-    if (!Number.isInteger(value) || value <= 0) {
-        throw new Error(`${name} must be a positive integer`);
-    }
-
-    return value;
-};
-
 @injectable()
 export class ContainerPortProxyRelayService {
-    private readonly sessionTtlMs = readNumberEnv('CONTAINER_PORT_PROXY_SESSION_TTL_MS', DEFAULT_SESSION_TTL_MS);
+    private readonly sessionTtlMs = readPositiveIntegerEnv('CONTAINER_PORT_PROXY_SESSION_TTL_MS', DEFAULT_SESSION_TTL_MS);
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
     private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_APP_PROXY_ADVERTISED_HOST');
     private readonly publicProtocol = resolveContainerPortProxyRelayProtocol();

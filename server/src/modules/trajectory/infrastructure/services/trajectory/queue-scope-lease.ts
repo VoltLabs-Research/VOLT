@@ -218,7 +218,7 @@ export const tryAcquireQueueScopeLease = async (
         }
     }, heartbeatMs);
 
-    heartbeat.unref?.();
+    heartbeat.unref();
 
     return {
         lease: {

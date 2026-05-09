@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useAllPluginsQuery } from './queries';
+import { usePluginCatalogQuery } from './catalog-query';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -32,7 +32,7 @@ const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
 };
 
 const usePluginSelectors = () => {
-    const { data: plugins = [], isLoading } = useAllPluginsQuery({ enabled: true });
+    const { data: plugins = [], isLoading } = usePluginCatalogQuery({ enabled: true });
 
     const pluginsById = useMemo(() => buildPluginsById(plugins), [plugins]);
 
