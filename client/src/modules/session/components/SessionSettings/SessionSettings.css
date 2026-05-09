@@ -3,30 +3,11 @@
     overflow-y: auto;
     margin: 0 -0.5rem;
     padding: 0 0.25rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border-strong) transparent;
 }
 
 .session-list-viewport--empty {
     max-height: none;
     overflow: visible;
-}
-
-.session-list-viewport::-webkit-scrollbar {
-    width: 6px;
-}
-
-.session-list-viewport::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.session-list-viewport::-webkit-scrollbar-thumb {
-    background: var(--color-border-strong);
-    border-radius: 3px;
-}
-
-.session-list-viewport::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
 }
 
 .session-list {

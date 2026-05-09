@@ -13,6 +13,7 @@ export interface DocumentListingDragEndPayload<T extends Identifiable> {
 /** Optional drag-and-drop hooks for listings that support row-to-folder moves. */
 export interface DocumentListingDragAndDropConfig<T extends Identifiable> {
     activationDistance?: number;
+    showDragAffordance?: boolean;
     getDraggableId: (item: T) => string | null;
     getDroppableId: (item: T) => string | null;
     onDragEnd: (payload: DocumentListingDragEndPayload<T>) => void | Promise<void>;

@@ -3,11 +3,16 @@
     padding: 0;
     border: none;
     box-sizing: border-box;
+    scrollbar-color: transparent transparent;
+    scrollbar-width: none;
 }
 
 :root {
     --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+    --scrollbar-size: 6px;
+    --scrollbar-thumb-length: 28px;
+    --scrollbar-edge-offset: 2px;
 }
 
 html {
@@ -74,23 +79,49 @@ body {
     scroll-padding-left: env(safe-area-inset-left, 0px);
 }
 
-::-webkit-scrollbar-track {
+::-webkit-scrollbar {
+    width: 0;
+    height: 0;
     background-color: transparent;
 }
 
-::-webkit-scrollbar {
-    width: 1px;
-    height: 1px;
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
     background-color: transparent;
+}
+
+::-webkit-scrollbar-button {
+    -webkit-appearance: none;
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-sm);
-    background-color: var(--color-scrollbar);
+    background: transparent;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.volt-custom-scrollbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--z-floating);
+    border-radius: var(--radius-full);
     background-color: var(--color-scrollbar);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    will-change: transform;
+}
+
+.volt-custom-scrollbar.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.volt-custom-scrollbar.is-active {
+    background-color: var(--color-scrollbar-hover);
 }
 
 i {
