@@ -294,6 +294,7 @@ export default class DemoClusterDeploymentService {
                 NetworkMode: names.network,
                 RestartPolicy: { Name: 'unless-stopped' },
                 Memory: DEMO_DAEMON_MEMORY_LIMIT_MB * MEGABYTE,
+                Binds: ['/var/run/docker.sock:/var/run/docker.sock'],
                 ExtraHosts: ['host.docker.internal:host-gateway']
             }
         });

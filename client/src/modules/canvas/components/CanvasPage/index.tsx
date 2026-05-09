@@ -506,8 +506,6 @@ const CanvasPage = () => {
         );
     }
 
-    const isGuest = !isLocalGlbViewer && canvasAccess ? !canvasAccess.hasTeamMembership : false;
-
     return (
         <Box
             display='flex'
@@ -550,8 +548,6 @@ const CanvasPage = () => {
 
                 {!isLocalGlbViewer && (
                     <CanvasBanners
-                        isGuest={isGuest}
-                        isNarrowViewport={isNarrowViewport}
                         collaborationOwner={collaborationOwner}
                         isWorkspaceOwner={isWorkspaceOwner}
                         onLeaveCollaboration={leaveCollaboration}

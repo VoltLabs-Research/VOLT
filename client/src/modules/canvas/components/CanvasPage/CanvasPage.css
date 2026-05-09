@@ -30,18 +30,8 @@
     border-bottom: none;
 }
 
-.canvas-banner--guest {
-    background: color-mix(in srgb, var(--status-warning) 14%, var(--color-bg));
-    color: var(--color-text-primary);
-}
-
 .canvas-banner--collab {
     background: color-mix(in srgb, var(--accent-blue) 14%, var(--color-bg));
-    color: var(--color-text-primary);
-}
-
-.canvas-banner--mobile {
-    background: color-mix(in srgb, var(--color-accent, var(--accent-blue)) 10%, var(--color-bg));
     color: var(--color-text-primary);
 }
 
