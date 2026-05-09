@@ -8,7 +8,7 @@ import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/util
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
 import { useEffect, useMemo, useState } from 'react';
-import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
+import { Upload, File, Trash2, Check } from 'lucide-react';
 import { ENTRYPOINT_EDITOR_DEFAULT_VALUES, entrypointEditorSchema } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
@@ -114,11 +114,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     {watchedBinaryObjectPath ? (
                         <div className='d-flex items-center content-between binary-uploaded'>
                             <div className='d-flex items-center gap-05 binary-file-info'>
-                                <TbFile size={20} />
+                                <File size={20} />
                                 <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>
                                     {watchedBinaryFileName || watchedBinary}
                                 </span>
-                                <TbCheck size={16} className='binary-check-icon' />
+                                <Check size={16} className='binary-check-icon' />
                             </div>
                             <Button
                                 variant='ghost'
@@ -126,7 +126,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                                 size='sm'
                                 onClick={handleRemoveBinary}
                             >
-                                <TbTrash size={16} />
+                                <Trash2 size={16} />
                             </Button>
                         </div>
                     ) : (
@@ -134,7 +134,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             variant='outline'
                             intent='neutral'
                             size='sm'
-                            leftIcon={<TbUpload size={18} />}
+                            leftIcon={<Upload size={18} />}
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPluginId}
                         >

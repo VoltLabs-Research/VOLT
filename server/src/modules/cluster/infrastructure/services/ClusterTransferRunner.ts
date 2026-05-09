@@ -25,7 +25,7 @@ export default class ClusterTransferRunner {
         };
 
         this.interval = setInterval(tick, TRANSFER_RUNNER_INTERVAL_MS);
-        this.interval.unref?.();
+        this.interval.unref();
         tick();
     }
 

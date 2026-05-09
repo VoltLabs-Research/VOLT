@@ -9,7 +9,7 @@ export const sendTrajectoryPreview = (
 ): void => {
     const request = res.req;
 
-    if (request?.headers['if-none-match'] === value.etag) {
+    if (request.headers['if-none-match'] === value.etag) {
         res.status(304).send();
         return;
     }

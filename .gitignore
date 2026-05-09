@@ -1,11 +1,5 @@
 .opencode/
 server/storage/
-client/release
-client/src-tauri/target
-client/src-tauri/gen
-client/src-tauri/Cargo.lock
-client/src-tauri/.cargo/
-client/src-tauri/**/*.rs.bk
 
 .ai-workflow/
 

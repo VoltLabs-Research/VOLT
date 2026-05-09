@@ -22,8 +22,9 @@
     border-radius: var(--radius-sm);
 }
 
-.search-input-icon--small {
-    font-size: 0.625rem;
+.search-input-icon {
+    width: 0.875rem;
+    height: 0.875rem;
 }
 
 .search-input {

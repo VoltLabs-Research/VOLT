@@ -7,11 +7,7 @@ const router = Router();
 
 const OPENAPI_SPEC_CANDIDATES = [
     join(__dirname, '../docs/openapi.yaml'),
-    join(__dirname, '../../../core/docs/openapi.yaml'),
-    join(process.cwd(), 'dist/core/docs/openapi.yaml'),
-    join(process.cwd(), 'server/dist/core/docs/openapi.yaml'),
-    join(process.cwd(), 'src/core/docs/openapi.yaml'),
-    join(process.cwd(), 'server/src/core/docs/openapi.yaml')
+    join(__dirname, '../../../core/docs/openapi.yaml')
 ];
 
 const REDOC_CDN = 'https://cdn.redoc.ly';

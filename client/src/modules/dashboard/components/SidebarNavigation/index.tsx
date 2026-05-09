@@ -3,7 +3,6 @@ import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import ClusterCredentialsModal from '@/modules/cluster/components/ClusterCredentialsModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
-import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
@@ -12,32 +11,24 @@ import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useMemo } from 'react';
-import { GoWorkflow } from 'react-icons/go';
-import { HiOutlineServer, HiServer } from 'react-icons/hi';
 import {
-    IoAnalytics,
-    IoAnalyticsOutline,
-    IoBook,
-    IoBookOutline,
-    IoChatbubble,
-    IoChatbubbleOutline,
-    IoCube,
-    IoCubeOutline,
-    IoGridOutline,
-    IoKey,
-    IoKeyOutline,
-    IoLockClosed,
-    IoLockClosedOutline,
-    IoPeople,
-    IoPeopleOutline,
-    IoSparkles,
-    IoSparklesOutline
-} from 'react-icons/io5';
-import { MdImportExport } from 'react-icons/md';
-import { TbCube3dSphere, TbFileTypePdf } from 'react-icons/tb';
-import { PiPaintBrush, PiPaintBrushFill } from 'react-icons/pi';
+    ArrowUpDown,
+    BarChart3,
+    BookOpen,
+    Box as CubeIcon,
+    FileText,
+    KeyRound,
+    LayoutGrid,
+    Lock,
+    MessageCircle,
+    Paintbrush,
+    Server,
+    Sparkles,
+    Users,
+    Workflow
+} from 'lucide-react';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import type { IconType } from 'react-icons';
+import type { LucideIcon } from 'lucide-react';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
@@ -46,23 +37,23 @@ interface SidebarNavigationProps {
 }
 
 interface IconPair {
-    inactive: IconType;
-    active: IconType;
+    inactive: LucideIcon;
+    active: LucideIcon;
 }
 
 const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> = {
-    [DashboardNavigationIconKey.AI]: { inactive: IoSparklesOutline, active: IoSparkles },
-    [DashboardNavigationIconKey.Containers]: { inactive: IoCubeOutline, active: IoCube },
-    [DashboardNavigationIconKey.Dashboard]: { inactive: IoGridOutline, active: IoGridOutline },
-    [DashboardNavigationIconKey.Import]: { inactive: MdImportExport, active: MdImportExport },
-    [DashboardNavigationIconKey.Latex]: { inactive: TbFileTypePdf, active: TbFileTypePdf },
-    [DashboardNavigationIconKey.ManageRoles]: { inactive: IoKeyOutline, active: IoKey },
-    [DashboardNavigationIconKey.Messages]: { inactive: IoChatbubbleOutline, active: IoChatbubble },
-    [DashboardNavigationIconKey.MyTeam]: { inactive: IoPeopleOutline, active: IoPeople },
-    [DashboardNavigationIconKey.Notebooks]: { inactive: IoBookOutline, active: IoBook },
-    [DashboardNavigationIconKey.Plugins]: { inactive: GoWorkflow, active: GoWorkflow },
-    [DashboardNavigationIconKey.SecretKeys]: { inactive: IoLockClosedOutline, active: IoLockClosed },
-    [DashboardNavigationIconKey.Whiteboards]: { inactive: PiPaintBrush, active: PiPaintBrushFill }
+    [DashboardNavigationIconKey.AI]: { inactive: Sparkles, active: Sparkles },
+    [DashboardNavigationIconKey.Containers]: { inactive: CubeIcon, active: CubeIcon },
+    [DashboardNavigationIconKey.Dashboard]: { inactive: LayoutGrid, active: LayoutGrid },
+    [DashboardNavigationIconKey.Import]: { inactive: ArrowUpDown, active: ArrowUpDown },
+    [DashboardNavigationIconKey.Latex]: { inactive: FileText, active: FileText },
+    [DashboardNavigationIconKey.ManageRoles]: { inactive: KeyRound, active: KeyRound },
+    [DashboardNavigationIconKey.Messages]: { inactive: MessageCircle, active: MessageCircle },
+    [DashboardNavigationIconKey.MyTeam]: { inactive: Users, active: Users },
+    [DashboardNavigationIconKey.Notebooks]: { inactive: BookOpen, active: BookOpen },
+    [DashboardNavigationIconKey.Plugins]: { inactive: Workflow, active: Workflow },
+    [DashboardNavigationIconKey.SecretKeys]: { inactive: Lock, active: Lock },
+    [DashboardNavigationIconKey.Whiteboards]: { inactive: Paintbrush, active: Paintbrush }
 };
 
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
@@ -74,7 +65,6 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const { pathname } = useLocation();
     const { canAccess: canAccessPermissions } = useTeamPermissions();
     const { plugins } = usePluginSelectors();
-    useEnsurePluginCatalogLoaded();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
@@ -273,7 +263,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             >
                 <SidebarExpandableSection
                     label='Trajectories'
-                    icon={TbCube3dSphere}
+                    icon={CubeIcon}
                     isActive={trajectoriesActive}
                     subItems={trajectoriesSubItems}
                     disabled={!canAccessTrajectories}
@@ -288,7 +278,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             >
                 <SidebarExpandableSection
                     label='Analysis'
-                    icon={analysisActive ? IoAnalytics : IoAnalyticsOutline}
+                    icon={BarChart3}
                     isActive={analysisActive}
                     subItems={analysisSubItems}
                     disabled={!canAccessAnalysis}
@@ -303,7 +293,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
             >
                 <SidebarExpandableSection
                     label='Clusters'
-                    icon={clustersActive ? HiServer : HiOutlineServer}
+                    icon={Server}
                     isActive={clustersActive}
                     subItems={clustersSubItems}
                     onRequestSidebarExpand={onExpandSidebar}

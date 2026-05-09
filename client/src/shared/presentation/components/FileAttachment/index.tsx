@@ -7,8 +7,7 @@ import Text from '@/shared/presentation/primitives/Text';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import './FileAttachment.css';
-import { IoDocumentOutline, IoDownloadOutline, IoImageOutline } from 'react-icons/io5';
-import { Copy } from 'lucide-react';
+import { Copy, Download, FileText, Image } from 'lucide-react';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
 
@@ -85,9 +84,9 @@ const FileAttachment = ({
                         className='w-max h-max radius-sm file-attachment-image'
                     />
                 ) : isImage ? (
-                    <IoImageOutline size={iconSize} className='color-muted' />
+                    <Image size={iconSize} className='color-muted' />
                 ) : (
-                    <IoDocumentOutline size={iconSize} className='color-muted' />
+                    <FileText size={iconSize} className='color-muted' />
                 )}
             </div>
 
@@ -132,7 +131,7 @@ const FileAttachment = ({
                         aria-label={`Download ${fileName}`}
                         title={`Download ${fileName}`}
                     >
-                        <IoDownloadOutline size={18} aria-hidden='true' />
+                        <Download size={18} aria-hidden='true' />
                     </a>
                 </Tooltip>
             )}

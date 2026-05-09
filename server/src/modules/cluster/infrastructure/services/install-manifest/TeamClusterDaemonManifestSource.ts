@@ -13,10 +13,7 @@ export enum DaemonDistributionMode {
 }
 
 const DAEMON_SOURCE_ROOT_CANDIDATES = [
-    path.resolve(process.cwd(), '..', 'cluster-daemon'),
-    path.resolve(process.cwd(), '..', 'ClusterDaemon'),
-    path.resolve(process.cwd(), '..', '..', 'ClusterDaemon'),
-    path.resolve(process.cwd(), 'app', 'ClusterDaemon')
+    path.resolve(process.cwd(), '..', '..', 'ClusterDaemon')
 ];
 
 const resolveDaemonPackageRoot = async (): Promise<string | null> => {

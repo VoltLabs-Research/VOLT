@@ -11,7 +11,7 @@ import {
     PCFSoftShadowMap,
     ReinhardToneMapping,
     VSMShadowMap
-} from 'three';
+} from 'three/src/constants.js';
 
 import type { ShadowMapType, ToneMapping } from 'three';
 

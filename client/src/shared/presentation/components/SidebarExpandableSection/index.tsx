@@ -2,14 +2,15 @@ import Button from '@/shared/presentation/primitives/Button';
 import './SidebarExpandableSection.css';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState, forwardRef } from 'react';
-import { IoChevronDown } from 'react-icons/io5';
+import type { LucideIcon } from 'lucide-react';
 import type { IconType } from 'react-icons';
 import type { SubItem } from './SidebarExpandableSection.types';
 
 interface SidebarExpandableSectionProps {
     label: string;
-    icon: IconType;
+    icon: IconType | LucideIcon;
     isActive?: boolean;
     subItems: SubItem[];
     defaultExpanded?: boolean;
@@ -95,10 +96,10 @@ const SidebarExpandableSection = forwardRef<HTMLDivElement, SidebarExpandableSec
                 aria-controls={subItemsId}
             >
                 <div className='sidebar-nav-icon font-size-4'>
-                    <Icon />
+                    <Icon size='1em' />
                 </div>
                 <span className='sidebar-nav-label text-truncate'>{label}</span>
-                <IoChevronDown
+                <ChevronDown
                     className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
                     aria-hidden='true'

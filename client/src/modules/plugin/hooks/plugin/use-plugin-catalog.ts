@@ -2,27 +2,22 @@ import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { useCanvasAccessStore } from '@/modules/canvas/api/access';
-import { fetchPluginById, PLUGIN_QUERY_KEYS, syncPluginEntityCaches, useAllPluginsQuery } from './queries';
+import { PLUGIN_CATALOG_ALL_QUERY_KEY, usePluginCatalogQuery } from './catalog-query';
 
 const usePluginCatalog = () => {
     const queryClient = useQueryClient();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
-    const allPluginsQuery = useAllPluginsQuery({ enabled: false });
+    const allPluginsQuery = usePluginCatalogQuery({ enabled: false });
 
-    const loadAllPlugins = useCallback(async ({ force = true }: { limit?: number; force?: boolean } = {}): Promise<void> => {
-        if (useCanvasAccessStore.getState().mode === 'public') {
-            return;
-        }
-
-        const currentPlugins = queryClient.getQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList());
+    const loadAllPlugins = useCallback(async ({ force = true }: { force?: boolean } = {}): Promise<void> => {
+        const currentPlugins = queryClient.getQueryData<Plugin[]>(PLUGIN_CATALOG_ALL_QUERY_KEY);
         if (!force && currentPlugins && currentPlugins.length > 0) return;
 
         try {
             await allPluginsQuery.refetch();
         } catch (error) {
-            if (checkAccessDeniedError(error)) throw error;
+            checkAccessDeniedError(error);
             throw error;
         }
     }, [allPluginsQuery, queryClient, checkAccessDeniedError]);
@@ -30,19 +25,18 @@ const usePluginCatalog = () => {
     const ensurePluginById = useCallback(async (id: string): Promise<Plugin | null> => {
         if (!id) return null;
 
-        const cached = queryClient.getQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.allList());
+        const cached = queryClient.getQueryData<Plugin[]>(PLUGIN_CATALOG_ALL_QUERY_KEY);
         const existing = cached?.find((p) => p._id === id);
         if (existing) return existing;
 
+        const { fetchPluginById, syncPluginEntityCaches } = await import('./queries');
         return fetchPluginById({ _id: id }, {
             staleTime: 5 * 60 * 1000
         }).then((plugin) => {
-            if (plugin) {
-                syncPluginEntityCaches(plugin);
-            }
+            syncPluginEntityCaches(plugin);
             return plugin;
         }).catch((error) => {
-            if (checkAccessDeniedError(error)) throw error;
+            checkAccessDeniedError(error);
             throw error;
         });
     }, [queryClient, checkAccessDeniedError]);

@@ -1,19 +1,8 @@
 import logger from '@shared/infrastructure/logger';
 import { networkInterfaces } from 'node:os';
+import { readPositiveIntegerEnv } from './env';
 
-export const readRelayPortRangeValue = (name: string, fallback: number): number => {
-    const rawValue = process.env[name]?.trim();
-    if (!rawValue) {
-        return fallback;
-    }
-
-    const value = Number(rawValue);
-    if (!Number.isInteger(value) || value <= 0) {
-        throw new Error(`${name} must be a positive integer`);
-    }
-
-    return value;
-};
+export const readRelayPortRangeValue = readPositiveIntegerEnv;
 
 export const readRelayHostValue = (name: string, fallback: string): string => {
     const rawValue = process.env[name]?.trim();

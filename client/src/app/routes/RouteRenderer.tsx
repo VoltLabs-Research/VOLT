@@ -5,7 +5,6 @@ import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import Loader from '@/shared/presentation/primitives/Loader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import DashboardLayout from '@/modules/dashboard/components/DashboardLayout';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
 import { RoutePermissionMode } from '@/app/routes/types';
@@ -23,6 +22,7 @@ const lazyRouteCache = new Map<RouteLoader, LazyExoticComponent<ComponentType>>(
 const DASHBOARD_ROUTE_PREFIX = '/dashboard';
 const dashboardProtectedRoutes = protectedRoutes.filter((route) => route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
 const nonDashboardProtectedRoutes = protectedRoutes.filter((route) => !route.path.startsWith(DASHBOARD_ROUTE_PREFIX));
+const LazyDashboardLayout = lazy(() => import('@/modules/dashboard/components/DashboardLayout'));
 
 const resolveRouteComponent = (route: RouteConfig): ElementType => {
     if (route.component) {
@@ -99,7 +99,16 @@ const renderRouteElement = (route: RouteConfig) => {
 
     return (
         <RoutePermissionGuard route={route}>
-            <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce fillParent={isDashboardRoute} />}>
+            <Suspense
+                fallback={(
+                    <Loader
+                        scale={0.6}
+                        label={isDashboardRoute ? 'Loading workspace…' : undefined}
+                        announce
+                        fillParent={isDashboardRoute}
+                    />
+                )}
+            >
                 <Component />
             </Suspense>
         </RoutePermissionGuard>
@@ -153,7 +162,14 @@ export const renderProtectedRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
             {nonDashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
-            <Route path={DASHBOARD_ROUTE_PREFIX} element={<DashboardLayout />}>
+            <Route
+                path={DASHBOARD_ROUTE_PREFIX}
+                element={(
+                    <Suspense fallback={<Loader scale={0.6} label='Loading workspace…' announce fillParent />}>
+                        <LazyDashboardLayout />
+                    </Suspense>
+                )}
+            >
                 {dashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
             </Route>
         </Route>
