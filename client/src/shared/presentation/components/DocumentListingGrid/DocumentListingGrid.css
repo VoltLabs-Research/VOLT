@@ -82,16 +82,6 @@
     padding: 0.85rem 1rem;
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
-    background:
-        linear-gradient(
-            135deg,
-            color-mix(in srgb, var(--color-surface-1) 92%, var(--accent-blue)) 0%,
-            color-mix(in srgb, var(--color-surface-1) 84%, var(--color-text-primary)) 100%
-        );
-    border: 1px solid color-mix(in srgb, var(--accent-blue) 34%, var(--color-border));
-    box-shadow:
-        var(--shadow-elevated),
-        0 1rem 3rem color-mix(in srgb, var(--accent-blue) 18%, transparent);
 }
 
 .document-listing-grid-drag-overlay__icon {
@@ -102,7 +92,6 @@
     height: 2rem;
     border-radius: 999px;
     color: var(--accent-blue);
-    background: color-mix(in srgb, var(--accent-blue) 13%, transparent);
 }
 
 .document-listing-grid-drag-overlay__content {
@@ -118,11 +107,6 @@
     white-space: nowrap;
     font-size: 0.9rem;
     font-weight: 600;
-}
-
-.document-listing-grid-drag-overlay__meta {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
 }
 
 .document-listing-grid-item:focus-visible {

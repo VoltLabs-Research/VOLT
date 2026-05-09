@@ -115,7 +115,7 @@
 :root[data-theme='light'] {
     color-scheme: light;
 
-    --color-bg: #F5F5F7;
+    --color-bg: #FFF;
     --color-content-bg: #FFFFFF;
     --color-surface-1: #FFFFFF;
     --color-surface-2: #F6F6FA;

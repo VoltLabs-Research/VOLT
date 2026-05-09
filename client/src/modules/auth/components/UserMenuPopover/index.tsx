@@ -49,7 +49,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
     return (
         <Popover
             id='user-menu-popover'
-            className='gap-1'
+            className='gap-1 p-05'
             trigger={activeTrigger}
         >
             <PopoverMenuItem icon={<IoSettingsOutline />} onClick={onSettingsClick}>

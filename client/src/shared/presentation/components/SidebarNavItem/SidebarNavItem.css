@@ -2,12 +2,9 @@
     display: flex;
     position: relative;
     align-items: center;
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0.625rem 0.875rem;
     border-radius: var(--radius-sm);
-    margin-bottom: 0;
-    background: transparent;
-    border: 1px solid transparent;
     text-align: left;
     color: var(--color-text-secondary);
     font-size: 0.875rem;
