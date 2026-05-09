@@ -200,7 +200,7 @@ export class WasmPluginInstance {
                 abortFlag.aborted = true;
                 abortFlag.reason = `wasm process timeout after ${timeoutMs}ms`;
             }, timeoutMs);
-            timer.unref?.();
+            timer.unref();
             setWatchdog(timer);
 
             setImmediate(() => {

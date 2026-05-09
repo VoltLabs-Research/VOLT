@@ -127,7 +127,7 @@ const createBufferedExecutionLogSink = (
                 enqueueFlush();
             }, flushIntervalMs);
 
-            flushTimer.unref?.();
+            flushTimer.unref();
         },
         flush: enqueueFlush
     };

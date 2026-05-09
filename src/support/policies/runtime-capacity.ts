@@ -10,9 +10,5 @@ export const readPositiveIntegerEnv = (name: string): number | undefined => {
 };
 
 export const getAvailableCpuCount = (): number => {
-    if (typeof os.availableParallelism === 'function') {
-        return os.availableParallelism();
-    }
-
-    return os.cpus().length;
+    return os.availableParallelism();
 };

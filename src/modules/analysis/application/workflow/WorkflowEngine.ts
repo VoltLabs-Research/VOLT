@@ -44,7 +44,7 @@ interface WorkflowPlanResult {
 };
 
 const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
-    if (!request?.selectedTimesteps?.length) {
+    if (!request.selectedTimesteps?.length) {
         return {};
     }
 

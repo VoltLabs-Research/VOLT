@@ -43,7 +43,7 @@ export default class ApplicationError extends Error {
         this.details = details;
         this.cause = cause;
         Object.setPrototypeOf(this, ApplicationError.prototype);
-        Error.captureStackTrace?.(this, this.constructor);
+        Error.captureStackTrace(this, this.constructor);
     }
 
     static badRequest(

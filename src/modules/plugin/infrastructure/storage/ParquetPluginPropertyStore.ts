@@ -9,7 +9,6 @@ import { DAEMON_PATHS } from '@/core/paths';
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
-import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import {
     type FlatAtomProperties,

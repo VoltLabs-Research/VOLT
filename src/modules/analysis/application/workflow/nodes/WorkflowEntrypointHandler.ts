@@ -207,12 +207,9 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         preparedArgs: ResolvedWorkflowEntrypointArgs
     ): Promise<WorkflowNodeOutput> {
         const { context, entrypoint, execution } = request;
-        const trajectoryFrameStore = execution.trajectoryFrameStore;
-        const ownerClusterId = execution.ownerClusterId;
-        if (!trajectoryFrameStore || !ownerClusterId) {
-            // Defensive: canUsePersistentPool already guarded this. Fall back.
-            return this.executePreparedEntrypoint(request, executionRuntime, preparedArgs);
-        }
+        const trajectoryFrameStore = execution.trajectoryFrameStore!;
+        const ownerClusterId = execution.ownerClusterId!;
+        const pluginRoot = executionRuntime.projectPath!;
 
         const timestep = context.selectedTimestep
             ?? context.selectedTimesteps?.[0]
@@ -238,7 +235,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         const invocationInput: PersistentPluginInvocationInput = {
             pluginId: context.pluginId,
             pythonCommandPath: executionRuntime.commandPath,
-            pluginRoot: executionRuntime.projectPath!,
+            pluginRoot,
             entrypointScript: WorkflowEntrypointHandler.resolvePersistentEntrypointScript(entrypoint, executionRuntime),
             env: executionRuntime.env,
             frame: frameDescriptor,

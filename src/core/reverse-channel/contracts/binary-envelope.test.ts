@@ -91,9 +91,6 @@ test('bench: encode+decode 10M float payload in under 50 ms combined', () => {
     // Header overhead must be exactly 10 bytes (<128 B per plan).
     assert.equal(encoded.byteLength - payload.byteLength, BINARY_ENVELOPE_HEADER_BYTES);
 
-    // eslint-disable-next-line no-console
-    console.log(`[bench] 10M floats (~${(floats.byteLength / (1024 * 1024)).toFixed(1)} MB) encode=${encodeMs.toFixed(2)} ms decode=${decodeMs.toFixed(2)} ms header=${BINARY_ENVELOPE_HEADER_BYTES} B`);
-
     // 50 ms is a generous ceiling for the combined path on cold CI hardware.
     // The encode step copies the full payload; decode is O(1).
     assert.ok(encodeMs + decodeMs < 200, `encode+decode too slow: ${(encodeMs + decodeMs).toFixed(2)} ms`);

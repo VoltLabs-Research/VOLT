@@ -34,12 +34,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src
 COPY scripts ./scripts
-COPY image-contexts ./image-contexts
 COPY --from=tailscale-bin /usr/local/bin/tailscale /usr/local/bin/tailscale
 
 RUN npm run build && npm prune --omit=dev

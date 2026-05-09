@@ -200,7 +200,7 @@ export class PluginProcessPool {
                 reject(new Error(`Plugin request ${opId} timed out after ${timeoutMs}ms`));
                 this.restartInternals(internals, `request-timeout:${opId}`);
             }, timeoutMs);
-            timeout.unref?.();
+            timeout.unref();
 
             const pending: PendingRequest = { opId, resolve, reject, timeout };
             internals.pendingByOpId.set(opId, pending);
@@ -345,7 +345,7 @@ export class PluginProcessPool {
                 cleanup();
                 reject(new Error('Plugin process failed to become ready within grace period'));
             }, PROCESS_READY_GRACE_PERIOD_MS);
-            timer.unref?.();
+            timer.unref();
 
             const cleanup = (): void => {
                 clearTimeout(timer);
@@ -395,7 +395,7 @@ export class PluginProcessPool {
                 internals.pendingByOpId.delete(opId);
             }, PROCESS_READY_GRACE_PERIOD_MS)
         };
-        pending.timeout.unref?.();
+        pending.timeout.unref();
         internals.pendingByOpId.set(opId, pending);
 
         internals.child.stdin.write(header);
@@ -512,7 +512,7 @@ export class PluginProcessPool {
             const timer = setTimeout(() => {
                 internals.child.kill('SIGKILL');
             }, 5_000);
-            timer.unref?.();
+            timer.unref();
         });
     }
 

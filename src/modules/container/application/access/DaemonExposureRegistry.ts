@@ -131,9 +131,7 @@ export class DaemonExposureRegistry {
             this.sync().catch(() => {});
         }, EXPOSURE_SYNC_INTERVAL_MS);
 
-        if (this.syncTimer.unref) {
-            this.syncTimer.unref();
-        }
+        this.syncTimer.unref();
     }
 
     stop(): void {

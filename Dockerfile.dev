@@ -26,8 +26,8 @@ RUN apt-get update \
         libtbbmalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package.json ./
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 COPY . .
 
 CMD ["npm", "run", "dev"]

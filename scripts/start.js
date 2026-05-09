@@ -25,10 +25,8 @@ const HEAP_FRACTION = 0.80;
 const MIN_HEAP_MB = 512;
 const MAX_HEAP_MB = 16_384; // 16 GB ceiling
 
-// Prefer the cgroup-aware API (Node 19.6+ / 20+); fall back to host total RAM.
-const constrainedBytes = typeof process.constrainedMemory === 'function'
-    ? process.constrainedMemory()
-    : 0;
+// Node 22 exposes cgroup-aware memory; outside cgroups it returns 0.
+const constrainedBytes = process.constrainedMemory();
 const effectiveBytes = constrainedBytes > 0 ? constrainedBytes : os.totalmem();
 const totalMemoryMB = Math.floor(effectiveBytes / (1024 * 1024));
 const heapMB = Math.max(MIN_HEAP_MB, Math.min(MAX_HEAP_MB, Math.floor(totalMemoryMB * HEAP_FRACTION)));

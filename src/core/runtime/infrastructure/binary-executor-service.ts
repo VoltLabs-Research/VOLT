@@ -98,11 +98,11 @@ export class BinaryExecutorService {
                     forceKillTimeout = setTimeout(() => {
                         child.kill('SIGKILL');
                     }, PROCESS_KILL_GRACE_PERIOD_MS);
-                    forceKillTimeout.unref?.();
+                    forceKillTimeout.unref();
                     this.forwardChunk(logSink, 'system', `Process timed out after ${timeoutMs}ms\n`);
                 }, timeoutMs)
                 : undefined;
-            executionTimeout?.unref?.();
+            executionTimeout?.unref();
 
             const cleanupProcess = (): void => {
                 clearTimeout(executionTimeout);

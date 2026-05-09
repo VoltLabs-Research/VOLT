@@ -15,7 +15,6 @@ lerna-debug.log*
 *.env
 
 node_modules/
-package-lock.json
 
 dist
 dist-ssr
@@ -51,9 +50,6 @@ builds/
 Build/
 cmake-build-*/
 out/build/
-builds/
-Build/
-cmake-build-*/
 out/
 .runtime/
 
