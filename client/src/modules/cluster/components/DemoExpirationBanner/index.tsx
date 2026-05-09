@@ -18,7 +18,7 @@ const DemoExpirationBanner = () => {
     const expiredHandled = useRef(false);
 
     useEffect(() => {
-        if (!isDemo || !expired || expiredHandled.current) return;
+        if (!isDemo || !expiresAt || !expired || expiredHandled.current) return;
         expiredHandled.current = true;
         sileo.info({
             title: 'Demo session expired',
@@ -26,7 +26,7 @@ const DemoExpirationBanner = () => {
         });
         clear();
         navigate('/onboarding/cluster/setup?reason=demo-expired', { replace: true });
-    }, [isDemo, expired, clear, navigate]);
+    }, [isDemo, expiresAt, expired, clear, navigate]);
 
     if (!isDemo || !expiresAt) return null;
 
