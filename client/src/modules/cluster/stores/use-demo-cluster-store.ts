@@ -10,7 +10,8 @@ interface DemoClusterState {
 
 const toDate = (value: Date | string | null | undefined): Date | null => {
     if (!value) return null;
-    return value instanceof Date ? value : new Date(value);
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isFinite(date.getTime()) ? date : null;
 };
 
 export const useDemoClusterStore = create<DemoClusterState>((set) => ({

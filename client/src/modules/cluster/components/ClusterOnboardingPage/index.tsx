@@ -14,7 +14,6 @@ import Button from '@/shared/presentation/primitives/Button';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import Row from '@/shared/presentation/primitives/Row';
-import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
 import Stack from '@/shared/presentation/primitives/Stack';
 import StatusDot from '@/shared/presentation/primitives/StatusDot';
 import Text from '@/shared/presentation/primitives/Text';
@@ -22,51 +21,18 @@ import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
-import { HiOutlineComputerDesktop, HiOutlineServerStack } from 'react-icons/hi2';
+import { ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { FormEvent, ReactNode } from 'react';
-enum ClusterType {
-    Computer = 'computer',
-    Server = 'server'
-}
 
 enum OnboardingStep {
-    Type = 'type',
     Name = 'name',
     Success = 'success'
 }
 
-interface OnboardingStepContentProps {
-    step: OnboardingStep;
-    activeStep: OnboardingStep;
-    children: ReactNode;
-    className: string;
-}
-
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
-
-const OnboardingStepContent = ({
-    step,
-    activeStep,
-    children,
-    className
-}: OnboardingStepContentProps) => {
-    const isActive = step === activeStep;
-    const stateClassName = isActive
-        ? 'is-active'
-        : step === OnboardingStep.Type
-            ? 'exit-left'
-            : 'enter-right';
-
-    return (
-        <Stack align='center' className={`cluster-onboarding-step ${stateClassName} ${className}`} aria-hidden={!isActive} inert={!isActive}>
-            {children}
-        </Stack>
-    );
-};
 
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
@@ -77,8 +43,7 @@ const ClusterOnboardingPage = () => {
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = hasUsableTeamCluster(clusters);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
-    const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Type);
-    const [clusterType, setClusterType] = useState<ClusterType | null>(null);
+    const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Name);
     const [name, setName] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,11 +109,6 @@ const ClusterOnboardingPage = () => {
         }
     }, [clusters, createdCluster]);
 
-    const handleSelectType = (type: ClusterType) => {
-        setClusterType(type);
-        setStep(OnboardingStep.Name);
-    };
-
     const handleSubmitName = async () => {
         if (!name.trim()) {
             setError('Cluster name is required');
@@ -192,9 +152,7 @@ const ClusterOnboardingPage = () => {
         : '';
     const statusVariant = liveCluster ? getTeamClusterStatusVariant(liveCluster.status) : 'inactive';
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
-    const targetLabel = clusterType === ClusterType.Computer ? 'Computer' : 'Server';
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
-    const goBackIcon = <ArrowLeft size={16} />;
 
     let leftSlot: ReactNode | undefined;
     if (hasConnectedCluster) {
@@ -212,21 +170,6 @@ const ClusterOnboardingPage = () => {
                 <ChevronRight size={14} className='cluster-onboarding-breadcrumb-separator' />
                 <Text as='p' size='md' tone='secondary' aria-current='page'>Add new cluster</Text>
             </nav>
-        );
-    }
-
-    if (!hasConnectedCluster && step === OnboardingStep.Name) {
-        leftSlot = (
-            <Button
-                className='cluster-onboarding-go-back'
-                variant='ghost'
-                intent='neutral'
-                size='sm'
-                leftIcon={goBackIcon}
-                onClick={() => setStep(OnboardingStep.Type)}
-            >
-                Go back
-            </Button>
         );
     }
 
@@ -266,39 +209,7 @@ const ClusterOnboardingPage = () => {
         >
             <>
                 <Box className='cluster-onboarding-center'>
-                    <OnboardingStepContent step={OnboardingStep.Type} activeStep={step} className='gap-3'>
-                        <Stack align='center' gap='1'>
-                            <Stack align='center' gap='075'>
-                                <Heading level={2} size='3xl' weight='bold' className='cluster-onboarding-title'>
-                                    Connect a cluster
-                                </Heading>
-                            </Stack>
-                            <Text as='p' tone='secondary' className='cluster-onboarding-description font-size-2-5'>
-                                Clusters provide the compute capacity used to run simulations and analyses in Volt. You can connect more later.
-                            </Text>
-                        </Stack>
-
-                        <Box className='cluster-onboarding-cards'>
-                            <SelectableCard
-                                title={<>Use my computer<br />(Useful to start)</>}
-                                description='Use your own computer as a cluster.'
-                                icon={<HiOutlineComputerDesktop size={20} />}
-                                selected={clusterType === ClusterType.Computer}
-                                onSelect={() => handleSelectType(ClusterType.Computer)}
-                                selectionRole='radio'
-                            />
-                            <SelectableCard
-                                title='I have a server'
-                                description='Using a server as a cluster enables smoother collaboration across your team.'
-                                icon={<HiOutlineServerStack size={20} />}
-                                selected={clusterType === ClusterType.Server}
-                                onSelect={() => handleSelectType(ClusterType.Server)}
-                                selectionRole='radio'
-                            />
-                        </Box>
-                    </OnboardingStepContent>
-
-                    <OnboardingStepContent step={OnboardingStep.Name} activeStep={step} className='gap-1-5'>
+                    <Stack align='center' className='cluster-onboarding-form-shell gap-1-5'>
                         <form className='cluster-onboarding-form d-flex column gap-1-5 items-center' onSubmit={handleSubmit}>
                             <Stack align='center' gap='075'>
                                 <Heading level={3} size='2xl' weight='bold' className='cluster-onboarding-title'>
@@ -333,12 +244,12 @@ const ClusterOnboardingPage = () => {
                                 Continue
                             </Button>
                         </form>
-                    </OnboardingStepContent>
+                    </Stack>
                 </Box>
 
                 <Modal
                     id={INSTALL_MODAL_ID}
-                    title={`Copy & Paste in your ${targetLabel}`}
+                    title='Copy & Paste on your cluster host'
                     description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
                 >
                     <Stack gap='1' p='1'>

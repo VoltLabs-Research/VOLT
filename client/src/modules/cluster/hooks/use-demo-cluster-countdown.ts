@@ -8,11 +8,12 @@ export interface DemoCountdownSnapshot {
 }
 
 export const useDemoClusterCountdown = (expiresAt: Date | null | undefined): DemoCountdownSnapshot => {
-    const expiresAtMs = expiresAt?.getTime();
+    const rawExpiresAtMs = expiresAt?.getTime();
+    const expiresAtMs = Number.isFinite(rawExpiresAtMs) ? rawExpiresAtMs : undefined;
 
     const compute = useCallback((): DemoCountdownSnapshot => {
         if (expiresAtMs === undefined) {
-            return { minutes: 0, seconds: 0, totalMs: 0, expired: true };
+            return { minutes: 0, seconds: 0, totalMs: 0, expired: false };
         }
         const totalMs = Math.max(0, expiresAtMs - Date.now());
         const totalSeconds = Math.floor(totalMs / 1000);
