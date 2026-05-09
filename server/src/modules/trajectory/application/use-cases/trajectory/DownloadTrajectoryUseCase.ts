@@ -38,7 +38,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         const { trajectoryId, archive } = input;
 
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        if (!trajectory) {
+        if (!trajectory || trajectory.props.team !== input.teamId) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
@@ -102,7 +102,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
                         : await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
 
                     archive.append(stream, {
-                        name: objectName
+                        name: objectName.split('/').pop() || objectName
                     });
                 }
             }

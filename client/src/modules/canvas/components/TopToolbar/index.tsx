@@ -31,9 +31,7 @@ interface TopToolbarShareInfo {
 
 interface TopToolbarProps {
     trajectory?: Trajectory | null;
-    canExport?: boolean;
     canDownloadAnalyses?: boolean;
-    onExport?: () => void;
     onDownloadAnalyses?: () => void;
     localGlbMode?: boolean;
     workspacePeers?: WorkspacePresenceUser[];
@@ -50,9 +48,7 @@ const getTemporalSnapshot = () => temporalStore.getState();
 
 const TopToolbar = ({
     trajectory,
-    canExport = false,
     canDownloadAnalyses = false,
-    onExport,
     onDownloadAnalyses,
     localGlbMode = false,
     workspacePeers,
@@ -115,11 +111,9 @@ const TopToolbar = ({
         onToggleStatusBar: () => setShowStatusBar(!showStatusBar),
         onScreenshot: handleScreenshot,
         onImport: openFilePicker,
-        onExport,
         onDownloadAnalyses,
         onUndo: handleUndo,
         onRedo: handleRedo,
-        canExport,
         canDownloadAnalyses,
         canUndo,
         canRedo
