@@ -43,6 +43,7 @@ interface DocumentListingGridItemProps<T extends { _id: string }> {
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     draggableId?: string | null;
     droppableId?: string | null;
+    showDragAffordance: boolean;
     suppressNextClickRef: MutableRefObject<boolean>;
 }
 
@@ -63,6 +64,7 @@ const DocumentListingGridItem = <T extends { _id: string },>({
     getMenuOptions,
     draggableId = null,
     droppableId = null,
+    showDragAffordance,
     suppressNextClickRef
 }: DocumentListingGridItemProps<T>) => {
     const {
@@ -119,7 +121,7 @@ const DocumentListingGridItem = <T extends { _id: string },>({
             {...(draggableId ? attributes : {})}
             {...(draggableId ? listeners : {})}
         >
-            {draggableId ? (
+            {draggableId && showDragAffordance ? (
                 <div className='document-listing-grid-drag-affordance' aria-hidden='true'>
                     <GripVertical size={14} strokeWidth={1.8} />
                 </div>
@@ -245,6 +247,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
     }, [data, dragAndDrop]);
 
     const activeDragItem = activeDragId ? draggableItemsById.get(activeDragId) ?? null : null;
+    const showDragAffordance = dragAndDrop?.showDragAffordance ?? true;
 
     const handleDragStart = useCallback((event: DragStartEvent) => {
         suppressNextClickRef.current = true;
@@ -303,6 +306,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
                 getMenuOptions={getMenuOptions}
                 draggableId={dragAndDrop.getDraggableId(item)}
                 droppableId={dragAndDrop.getDroppableId(item)}
+                showDragAffordance={showDragAffordance}
                 suppressNextClickRef={suppressNextClickRef}
             />
         );
@@ -378,9 +382,11 @@ const DocumentListingGrid = <T extends { _id: string },>({
             <DragOverlay>
                 {activeDragItem ? (
                     <div className='document-listing-grid-drag-overlay glass-bg'>
-                        <span className='document-listing-grid-drag-overlay__icon'>
-                            <GripVertical size={16} strokeWidth={1.8} />
-                        </span>
+                        {showDragAffordance ? (
+                            <span className='document-listing-grid-drag-overlay__icon'>
+                                <GripVertical size={16} strokeWidth={1.8} />
+                            </span>
+                        ) : null}
                         <span className='document-listing-grid-drag-overlay__content'>
                             <span className='document-listing-grid-drag-overlay__title'>
                                 {getGridItemTitle(activeDragItem)}

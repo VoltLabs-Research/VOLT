@@ -159,7 +159,6 @@
 }
 
 .latex-editor-tabs {
-    scrollbar-width: thin;
     position: relative;
 }
 
@@ -566,13 +565,7 @@
     line-height: 1.5;
     color: var(--color-text-secondary);
     max-height: 100%;
-    scrollbar-width: thin;
 }
-.latex-workspace__files,
-.latex-workspace__preview {
-    scrollbar-width: thin;
-}
-
 .latex-workspace__new-file-input {
     border-radius: var(--radius-xs);
 }

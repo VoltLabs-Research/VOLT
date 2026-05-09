@@ -3,7 +3,6 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    box-shadow: var(--shadow-card);
     transition:
         background-color 0.25s ease,
         border-color 0.25s ease,
@@ -12,21 +11,16 @@
 
 .simulation-card:hover {
     border-color: var(--color-border-strong);
-    box-shadow: var(--shadow-elevated);
 }
 
 .simulation-card:focus-visible {
     outline: none;
     border-color: var(--focus-ring);
-    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent), var(--shadow-elevated);
 }
 
 .simulation-card.is-selected {
     background: color-mix(in srgb, var(--color-surface-1) 90%, var(--status-info-bg));
     border-color: var(--selected-indicator);
-    box-shadow:
-        var(--shadow-elevated),
-        0 0 0 1px color-mix(in srgb, var(--selected-indicator) 35%, transparent);
 }
 
 .cover-container {

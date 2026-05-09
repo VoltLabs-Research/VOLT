@@ -181,6 +181,10 @@ export default function SimulationGrid() {
         dragAndDrop,
         socketInvalidation
     } = useTrajectoriesListing();
+    const simulationDragAndDrop = useMemo(() => dragAndDrop ? ({
+        ...dragAndDrop,
+        showDragAffordance: false
+    }) : undefined, [dragAndDrop]);
 
     const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
         if (selectedIds.length === 0) {
@@ -281,7 +285,7 @@ export default function SimulationGrid() {
 
     const shouldShowBreadcrumbs = breadcrumbs.length > 1;
     const breadcrumbsContent = shouldShowBreadcrumbs
-        ? dragAndDrop ? (
+        ? simulationDragAndDrop ? (
             <DroppableSimulationBreadcrumbs
                 items={breadcrumbItems}
                 onOpen={navigateToFolder}
@@ -312,7 +316,7 @@ export default function SimulationGrid() {
                 renderGridItem={renderGridItem}
                 gridBeforeContent={breadcrumbsContent}
                 getMenuOptions={getMenuOptions}
-                dragAndDrop={dragAndDrop}
+                dragAndDrop={simulationDragAndDrop}
                 hideHeader={true}
                 hideTabs={true}
                 renderGridSkeleton={renderGridSkeleton}
