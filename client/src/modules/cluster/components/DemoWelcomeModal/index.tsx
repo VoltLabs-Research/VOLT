@@ -21,7 +21,7 @@ interface Step {
 const formatRemaining = (expiresAt: Date | null): string => {
     if (!expiresAt) return 'a limited time';
     const remainingMs = expiresAt.getTime() - Date.now();
-    if (remainingMs <= 0) return 'a limited time';
+    if (!Number.isFinite(remainingMs) || remainingMs <= 0) return 'a limited time';
     const remainingMinutes = Math.max(1, Math.round(remainingMs / 60_000));
     return `${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}`;
 };
