@@ -7,6 +7,7 @@ import {
     getTrajectoryListingDroppableId,
     isTrajectoryFolderRow,
     isTrajectoryItemRow,
+    resolveTrajectoryListingDroppableFolderId,
     type TrajectoryItemRow
 } from '@/modules/trajectory/utilities/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
@@ -222,6 +223,7 @@ const useTrajectoriesListing = () => {
         isFolderRow: isTrajectoryFolderRow,
         getMoveTarget: getTrajectoryMoveTarget,
         moveItem: moveTrajectoryToFolder,
+        getMoveFolderIdFromDroppableId: resolveTrajectoryListingDroppableFolderId,
         moveToast: MOVE_TRAJECTORY_TOAST,
         folderPermissions: {
             rename: 'trajectory:update',

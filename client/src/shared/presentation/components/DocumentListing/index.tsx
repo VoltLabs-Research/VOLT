@@ -71,6 +71,7 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     view?: ViewMode;
     renderGridItem?: (item: T, index: number) => React.ReactNode;
     renderGridSkeleton?: () => React.ReactNode;
+    gridBeforeContent?: React.ReactNode;
     gridClassName?: string;
     emptyIcon?: React.ReactNode;
     emptyTitle?: string;
@@ -144,6 +145,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     view = 'table',
     renderGridItem,
     renderGridSkeleton,
+    gridBeforeContent,
     gridClassName = '',
     emptyIcon,
     emptyTitle,
@@ -447,6 +449,9 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                     emptyButtonText={emptyButtonText}
                     emptyButtonIsLoading={emptyButtonIsLoading}
                     onEmptyButtonClick={onEmptyButtonClick}
+                    beforeContent={gridBeforeContent}
+                    getMenuOptions={wrappedGetMenuOptions}
+                    dragAndDrop={dragAndDrop}
                     className={gridClassName}
                     errorMessage={error}
                     isAccessDenied={isAccessDenied}

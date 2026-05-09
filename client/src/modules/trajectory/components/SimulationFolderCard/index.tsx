@@ -1,5 +1,10 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
-import { ChevronRight, Folder } from 'lucide-react';
+import IconButton from '@/shared/presentation/primitives/IconButton';
+import Popover from '@/shared/presentation/primitives/Popover';
+import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
 import Heading from '@/shared/presentation/primitives/Heading';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
@@ -12,9 +17,10 @@ const FOLDER_DRAG_INTENT_DISTANCE = 8;
 interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
     onOpen: (folderId: string) => void;
+    menuOptions?: MenuOption[];
 }
 
-export default function SimulationFolderCard({ folder, onOpen }: SimulationFolderCardProps) {
+export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] }: SimulationFolderCardProps) {
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const didDragRef = useRef(false);
 
@@ -56,6 +62,10 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
         const shouldSuppressClick = didDragRef.current;
         resetPointerIntent();
 
+        if (event.target instanceof Element && event.target.closest('[data-row-click-ignore="true"]')) {
+            return;
+        }
+
         if (shouldSuppressClick || event.metaKey || event.ctrlKey) {
             return;
         }
@@ -74,7 +84,7 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
 
     return (
         <article
-            className='simulation-folder-card radius-md b-soft p-1-5 cursor-pointer'
+            className='simulation-folder-card radius-md b-soft p-relative cursor-pointer'
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -84,9 +94,48 @@ export default function SimulationFolderCard({ folder, onOpen }: SimulationFolde
             role='button'
             aria-label={`Open folder ${folder.title}`}
         >
+            {menuOptions.length > 0 ? (
+                <div
+                    className='simulation-folder-card__actions'
+                    data-row-click-ignore='true'
+                >
+                    <Popover
+                        id={`simulation-folder-popover-${folder._id}`}
+                        trigger={(
+                            <IconButton
+                                size='sm'
+                                className='simulation-folder-card__actions-btn'
+                                title={`Open actions for ${folder.title}`}
+                                aria-label={`Open actions for ${folder.title}`}
+                            >
+                                <MoreHorizontal size={16} />
+                            </IconButton>
+                        )}
+                    >
+                        <PopoverMenu>
+                            {menuOptions.map((option) => {
+                                const Icon = option.icon;
+
+                                return (
+                                    <PopoverMenuItem
+                                        key={option.label}
+                                        icon={Icon ? <Icon /> : undefined}
+                                        label={option.label}
+                                        onClick={() => {
+                                            void option.onClick?.();
+                                        }}
+                                        disabled={option.disabled}
+                                        variant={option.destructive ? 'danger' : undefined}
+                                    />
+                                );
+                            })}
+                        </PopoverMenu>
+                    </Popover>
+                </div>
+            ) : null}
             <Stack gap='1-5' height='max' className='simulation-folder-card__content'>
                 <Row className='simulation-folder-card__icon flex-center'>
-                    <Folder size={28} strokeWidth={1.75} />
+                    <Folder size={30} strokeWidth={1.75} />
                 </Row>
 
                 <Stack gap='05' flex='1'>
