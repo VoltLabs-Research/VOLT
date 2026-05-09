@@ -1,13 +1,28 @@
 import { del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 
-interface FolderCrudCreateParams {
+export interface FolderCreateParams {
     title: string;
     parentId?: string | null;
 }
 
-interface FolderCrudUpdateParams {
+export interface FolderUpdateParams {
+    folderId: string;
     title: string;
+}
+
+export interface FolderDeleteParams {
+    folderId: string;
+}
+
+export interface FolderGetParams {
+    folderId: string;
+}
+
+export interface FolderListParams {
+    page?: number;
+    limit?: number;
+    parentId?: string;
 }
 
 /**
@@ -16,8 +31,8 @@ interface FolderCrudUpdateParams {
 export const createFolderCrudEndpoints = <
     TListParams,
     TGetParams,
-    TCreateParams extends FolderCrudCreateParams,
-    TUpdateParams extends FolderCrudUpdateParams,
+    TCreateParams extends FolderCreateParams,
+    TUpdateParams extends FolderUpdateParams,
     TDeleteParams,
     TFolder
 >() => ({

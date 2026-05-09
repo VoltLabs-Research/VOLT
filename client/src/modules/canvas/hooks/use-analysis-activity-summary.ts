@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { Job } from '@/modules/jobs/api/entities/job';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 interface AnalysisActivitySummary {
     runningCount: number;

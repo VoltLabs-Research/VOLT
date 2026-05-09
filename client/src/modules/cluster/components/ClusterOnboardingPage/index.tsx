@@ -7,7 +7,7 @@ import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management
 import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
@@ -21,12 +21,11 @@ import Text from '@/shared/presentation/primitives/Text';
 import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import { sileo } from 'sileo';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { HiOutlineComputerDesktop, HiOutlineServerStack } from 'react-icons/hi2';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { FormEvent, ReactNode } from 'react';
 enum ClusterType {
@@ -77,7 +76,7 @@ const ClusterOnboardingPage = () => {
     });
     const { clusters, createCluster, deleteCluster } = useClusterManagement();
     const hasConnectedCluster = hasUsableTeamCluster(clusters);
-    const [isSigningOut, setIsSigningOut] = useState(false);
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
     const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Type);
     const [clusterType, setClusterType] = useState<ClusterType | null>(null);
     const [name, setName] = useState('');
@@ -144,21 +143,6 @@ const ClusterOnboardingPage = () => {
             setEnrollmentToken(null);
         }
     }, [clusters, createdCluster]);
-
-    const handleSignOut = () => {
-        try {
-            setIsSigningOut(true);
-            useAuthStore.getState().signOut();
-        } catch {
-            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
-        } finally {
-            setIsSigningOut(false);
-        }
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
-    };
 
     const handleSelectType = (type: ClusterType) => {
         setClusterType(type);

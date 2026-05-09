@@ -1,19 +1,61 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { EmptyParams, UnwrapMode } from '@/app/core/http/utilities/create-service';
+import type { EmptyParams, UnwrapMode } from '@voltstack/voltclient';
 import type { Team } from '../entities/team/team';
-import type { CreateTeamInputDTO } from '../dtos/team/create-team';
-import type { UpdateTeamInputDTO } from '../dtos/team/update-team';
-import type { DeleteTeamInputDTO } from '../dtos/team/delete-team';
-import type { GenerateInviteCodeInputDTO } from '../dtos/team/generate-invite-code';
-import type { DeleteInviteCodeInputDTO } from '../dtos/team/delete-invite-code';
-import type { JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO } from '../dtos/team/join-by-invite-code';
-import type {
-    PreviewJoinByInviteCodeInputDTO,
-    PreviewJoinByInviteCodeOutputDTO
-} from '../dtos/team/preview-join-by-invite-code';
-import type { GetTeamPermissionsInputDTO, GetTeamPermissionsOutputDTO } from '../dtos/team/get-team-permissions';
-import type { LeaveTeamInputDTO } from '../dtos/team/leave-team';
+
+export interface CreateTeamInputDTO {
+    name: string;
+    description: string;
+}
+
+export interface DeleteInviteCodeInputDTO {
+    teamId: string;
+}
+
+export interface DeleteTeamInputDTO {
+    teamId: string;
+}
+
+export interface GenerateInviteCodeInputDTO {
+    teamId: string;
+}
+
+export interface GetTeamPermissionsInputDTO {
+    teamId: string;
+}
+
+export type GetTeamPermissionsOutputDTO = string[];
+
+export interface JoinByInviteCodeInputDTO {
+    code: string;
+}
+
+export interface JoinByInviteCodeOutputDTO {
+    message: string;
+    teamId: string;
+}
+
+export interface LeaveTeamInputDTO {
+    teamId: string;
+}
+
+export interface PreviewJoinByInviteCodeInputDTO {
+    code: string;
+}
+
+export interface PreviewJoinByInviteCodeOutputDTO {
+    message: string;
+    teamId: string;
+    teamName: string;
+    ownerName: string;
+    isAlreadyMember: boolean;
+}
+
+export interface UpdateTeamInputDTO {
+    teamId: string;
+    name?: string;
+    description?: string;
+}
 
 const TEAM_PERMISSIONS_UNWRAP: UnwrapMode = { field: 'permissions' };
 

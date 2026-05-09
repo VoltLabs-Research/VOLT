@@ -7,9 +7,8 @@ import type { RequestValidationState, ValidationSchemaInput } from '@shared/infr
 import type { Response } from 'express';
 
 /**
- * Internal helpers shared by the controller factories (`createController` and
- * `createReadController`). Co-locating them here keeps the two factories honest
- * about producing controllers with identical validation/param semantics.
+ * Internal helpers shared by generated controllers so request data merging and
+ * validation semantics stay in one place.
  */
 
 export const readUserAgent = (req: AuthenticatedRequest): string => {

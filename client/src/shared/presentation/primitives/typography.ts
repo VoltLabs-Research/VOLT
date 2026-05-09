@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { TextAlign, TextSize, TextTone, TextWeight } from './types';
 
 const sizeMap: Record<TextSize, string> = {

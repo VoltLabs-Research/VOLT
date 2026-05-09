@@ -1,7 +1,8 @@
 import { useMemo, useRef } from 'react';
 import { Plane } from 'three';
 import { resolveSlicePlaneDefinition } from '@/modules/fractal/utilities/slice-plane';
-import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 
 const useSlicingPlanes = (
     enableSlice: boolean,

@@ -1,6 +1,6 @@
-import type { PaginationMeta } from '@/shared/domain/pagination';
+import type { PaginationMeta } from '@/shared/domain/pagination/PaginationResponse';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
-import type { GetPluginListingOutputDTO } from '@/modules/plugin/api/dtos/listing/get-plugin-listing';
+import type { GetPluginListingOutputDTO } from '@/modules/plugin/api/services/listing-service';
 
 export interface RawListingData {
     data: ListingRow[];

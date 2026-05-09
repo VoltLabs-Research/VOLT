@@ -19,7 +19,7 @@ import Box from '@/shared/presentation/primitives/Box';
 import Stack from '@/shared/presentation/primitives/Stack';
 import type { TimelineTabOption } from '../TimelineHeader';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 import './Timeline.css';
 

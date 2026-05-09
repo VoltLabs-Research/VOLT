@@ -1,10 +1,25 @@
 import { createService, paginated, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { TeamMember, TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
-import type { GetTeamMembersInputDTO } from '../dtos/member/get-team-members';
-import type { UpdateTeamMemberInputDTO } from '../dtos/member/update-team-member';
-import type { RemoveTeamMemberInputDTO } from '../dtos/member/remove-team-member';
+
+export interface GetTeamMembersParams {
+    page: number;
+    limit: number;
+}
+
+export type GetTeamMembersInputDTO = { teamId: string } & GetTeamMembersParams;
+
+export interface RemoveTeamMemberInputDTO {
+    teamId: string;
+    memberId: string;
+}
+
+export interface UpdateTeamMemberInputDTO {
+    teamId: string;
+    memberId: string;
+    role?: string;
+}
 
 const endpoints = {
     getAll: paginated<GetTeamMembersInputDTO, PaginatedResponse<TeamMemberStats>>('/:teamId/members'),

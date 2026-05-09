@@ -1,7 +1,7 @@
 import { trajectoryQuery, TRAJECTORY_QUERY_KEYS } from './queries';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useCallback } from 'react';
-import type { Trajectory } from '../../api/entities/trajectory';
+import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 
 export default function useCreateTrajectory() {
     const mutation = trajectoryQuery.useCreateMutation({

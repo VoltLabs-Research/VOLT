@@ -1,21 +1,53 @@
 import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { CreateScriptingNotebookParams } from './dtos/create-scripting-notebook';
-import type { CreateScriptingNotebookSessionParams, CreateScriptingSessionParams } from './dtos/create-scripting-session';
-import type { DeleteScriptingNotebookParams } from './dtos/delete-scripting-notebook';
-import type { ListScriptingNotebooksParams } from './dtos/list-scripting-notebooks';
-import type { UpdateScriptingNotebookParams } from './dtos/update-scripting-notebook';
-import type { ScriptingNotebook } from './entities/scripting-notebook';
+import type { ScriptingNotebook, ScriptingNotebookContainerResources } from './entities/scripting-notebook';
+import type { ScriptingNotebookScope } from './entities/scripting-notebook-scope';
 import type { ScriptingSession } from './entities/scripting-session';
+
+export interface CreateScriptingNotebookParams {
+    teamId: string;
+    title?: string;
+    teamClusterId: string;
+    containerResources: ScriptingNotebookContainerResources;
+}
+
+export interface CreateScriptingSessionParams {
+    trajectoryId: string;
+    notebookId?: string;
+    teamClusterId?: string;
+    containerResources?: ScriptingNotebookContainerResources;
+}
+
+export interface CreateScriptingNotebookSessionParams {
+    notebookId: string;
+}
+
+export interface DeleteScriptingNotebookParams {
+    notebookId: string;
+}
+
+export interface ListScriptingNotebooksParams {
+    trajectoryId?: string;
+    scope?: ScriptingNotebookScope;
+    page?: number;
+    limit?: number;
+}
+
+export interface UpdateScriptingNotebookParams {
+    notebookId: string;
+    title?: string;
+    teamClusterId?: string;
+    containerResources?: ScriptingNotebookContainerResources;
+}
 
 export interface ReadNotebookSessionStatusParams {
     notebookId: string;
-};
+}
 
 export interface DeleteNotebookSessionParams {
     notebookId: string;
-};
+}
 
 const endpoints = {
     listNotebooks: paginated<ListScriptingNotebooksParams, PaginatedResponse<ScriptingNotebook>>(

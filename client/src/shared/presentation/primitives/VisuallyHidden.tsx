@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { forwardRef } from 'react';
 import type { ElementType, HTMLAttributes, ReactNode, Ref } from 'react';
 

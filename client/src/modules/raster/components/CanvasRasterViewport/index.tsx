@@ -12,7 +12,7 @@ import { sileo } from 'sileo';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 import './CanvasRasterViewport.css';
 

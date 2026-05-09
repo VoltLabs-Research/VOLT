@@ -114,44 +114,6 @@
     color: var(--color-text-muted);
 }
 
-.file-explorer-nav-btn {
-    padding: 0.375rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text-secondary);
-    transition: background 0.15s, opacity 0.15s;
-}
-
-.file-explorer-nav-btn:hover:not(:disabled) {
-    background: var(--hover-bg);
-}
-
-.file-explorer-nav-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.file-explorer-breadcrumb-item {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    transition: color 0.15s;
-}
-
-.file-explorer-breadcrumb-item:hover {
-    color: var(--color-text-secondary);
-}
-
-.file-explorer-breadcrumb-item.is-current {
-    color: var(--color-text-primary);
-    cursor: default;
-}
-
-.file-explorer-breadcrumb-separator {
-    margin: 0 0.375rem;
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-}
-
 .file-explorer-state {
     min-height: 240px;
 }
@@ -220,17 +182,10 @@
         content: 'Date';
     }
 
-    .file-explorer-nav-btn {
-        min-width: 2.75rem;
-        min-height: 2.75rem;
-        padding: 0.625rem;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .file-explorer-row,
-    .file-explorer-nav-btn,
-    .file-explorer-breadcrumb-item,
     .file-explorer-row-copy {
         transition: none;
     }

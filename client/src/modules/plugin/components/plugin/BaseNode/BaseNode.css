@@ -1,4 +1,3 @@
-/* Wrapper positions overhead badges above the node */
 .workflow-node-wrapper {
     display: inline-flex;
     flex-direction: column;
@@ -33,8 +32,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
-
-/* Debug States */
 .workflow-node--debug-pending {
     opacity: 0.5;
 }
@@ -64,8 +61,6 @@
     0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-blue) 30%, transparent); }
     50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-blue) 15%, transparent), 0 0 20px color-mix(in srgb, var(--accent-blue) 10%, transparent); }
 }
-
-/* Button group (absolutely positioned below node) */
 .workflow-node-btn-group {
     top: 100%;
     margin-top: 0.35rem;
@@ -73,8 +68,6 @@
     gap: 0.3rem;
     z-index: 2;
 }
-
-/* Data / Execution Log buttons inside the group */
 .workflow-node-data-btn {
     display: inline-flex;
     align-items: center;
@@ -98,8 +91,6 @@
     border-color: var(--accent-blue);
     background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
 }
-
-/* Debug output panel (absolutely positioned below button group) */
 .workflow-node-debug-output {
     top: calc(100% + 2rem);
     width: 300px;
@@ -238,8 +229,6 @@
     background: color-mix(in srgb, var(--color-border-strong) 8%, transparent);
     color: var(--color-border-strong);
 }
-
-/* Execution Log panel (absolutely positioned below button group) */
 .workflow-node-exec-log {
     top: calc(100% + 2rem);
     width: 300px;

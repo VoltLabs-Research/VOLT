@@ -1,17 +1,7 @@
-import type {
-    CameraSettingsState,
-    CanvasGridSettingsState,
-    EffectsConfigState,
-    EnvironmentConfigState,
-    LightsState,
-    OrbitControlsState
-} from '@/modules/fractal/stores/contracts/editor/visual-types';
-import type {
-    CanvasPerformanceProp,
-    DprSettings,
-    RendererCreateState,
-    RendererRuntimeState
-} from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { CameraSettingsState, CanvasGridSettingsState, EffectsConfigState, EnvironmentConfigState, OrbitControlsState } from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { LightsState } from '@/shared/domain/rendering/lights';
+import type { CanvasPerformanceProp, DprSettings } from '@/shared/domain/rendering/performance';
+import type { RendererCreateState, RendererRuntimeState } from '@/shared/domain/rendering/renderer';
 import type { PointCloudSettingsState } from '@/modules/fractal/stores/contracts/editor/scene-types';
 import type { SlicePlaneConfig, SceneObjectType } from '@/modules/fractal/api/entities/scene';
 

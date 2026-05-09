@@ -3,10 +3,8 @@ import {
     AIMessageRole
 } from '@/modules/ai/api/entities/ai-conversation';
 import {
-    parseTableFromChildren,
-    stringifyArtifactValue
+    parseTableFromChildren
 } from '@/modules/ai/utilities/message-content';
-import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
@@ -44,7 +42,6 @@ interface AIConversationThreadProps {
     error?: string | null;
     messages: UIMessage[];
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
-    activeTableArtifactId?: string | null;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
     starterInput?: ReactNode;
     onRetry?: () => void;
@@ -79,12 +76,6 @@ interface MarkdownTableProps extends ComponentPropsWithoutRef<'table'> {
     children?: ReactNode;
 }
 
-interface AIArtifactImagePayload {
-    url?: string;
-    width?: number;
-    height?: number;
-}
-
 interface TextSegment {
     type: 'text';
     content: string;
@@ -100,18 +91,12 @@ interface ToolSegment {
     invocation: NormalizedToolInvocation;
 }
 
-interface ArtifactSegment {
-    type: 'artifact';
-    artifact: AIMessageArtifact;
-}
-
-type MessageSegment = TextSegment | ReasoningSegment | ToolSegment | ArtifactSegment;
+type MessageSegment = TextSegment | ReasoningSegment | ToolSegment;
 
 interface NormalizedConversationMessage extends UIMessage {
     segments: MessageSegment[];
     preview: string;
     reasoning: string;
-    artifacts: AIMessageArtifact[];
     toolInvocations: NormalizedToolInvocation[];
 }
 
@@ -191,77 +176,6 @@ const renderThinkingBubble = () => (
     </Box>
 );
 
-interface InlineArtifactCardProps {
-    artifact: AIMessageArtifact;
-    summary: string | null;
-    children: ReactNode;
-}
-
-const InlineArtifactCard = ({ artifact, summary, children }: InlineArtifactCardProps) => (
-    <Stack gap='05' className='ai-inline-artifact-card'>
-        <SectionLabel>{artifact.title}</SectionLabel>
-        {summary && (
-            <Text as='p' size='sm' tone='muted'>{summary}</Text>
-        )}
-        {children}
-    </Stack>
-);
-
-const renderInlineArtifact = (artifact: AIMessageArtifact) => {
-    const key = `${artifact.id}:inline`;
-    const summary = artifact.summary || null;
-
-    if (artifact.kind === AIMessageArtifactKind.Image) {
-        let imageUrl: string | null = null;
-        let imageWidth: number | undefined;
-        let imageHeight: number | undefined;
-
-        if (typeof artifact.payload === 'string') {
-            imageUrl = artifact.payload;
-        } else {
-            const imagePayload = resolveImagePayload(artifact);
-
-            if (imagePayload?.url) {
-                imageUrl = imagePayload.url;
-            }
-
-            imageWidth = imagePayload?.width;
-            imageHeight = imagePayload?.height;
-        }
-
-        let imageContent: ReactNode = (
-            <Text as='p' size='sm' tone='muted'>Image artifact is unavailable.</Text>
-        );
-
-        if (imageUrl) {
-            imageContent = (
-                <img
-                    src={imageUrl}
-                    alt={artifact.title}
-                    className='ai-inline-artifact-image'
-                    loading='lazy'
-                    decoding='async'
-                    width={imageWidth}
-                    height={imageHeight}
-                />
-            );
-        }
-
-        return (
-            <InlineArtifactCard key={key} artifact={artifact} summary={summary}>
-                {imageContent}
-            </InlineArtifactCard>
-        );
-    }
-
-    const payloadText = stringifyArtifactValue(artifact.payload);
-    return (
-        <InlineArtifactCard key={key} artifact={artifact} summary={summary}>
-            <Text as='p' size='sm' className='ai-inline-artifact-payload'>{payloadText}</Text>
-        </InlineArtifactCard>
-    );
-};
-
 const OpenSpreadsheetButton = ({
     onClick,
     isActive = false,
@@ -315,38 +229,14 @@ interface AIMessageItemProps {
     messageIndex: number;
     totalMessages: number;
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
-    activeTableArtifactId?: string | null;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
 }
-
-const resolveImagePayload = (artifact: AIMessageArtifact): AIArtifactImagePayload | null => {
-    if (!isRecord(artifact.payload)) {
-        return null;
-    }
-
-    const imagePayload: AIArtifactImagePayload = {};
-
-    if (typeof artifact.payload.url === 'string') {
-        imagePayload.url = artifact.payload.url;
-    }
-
-    if (typeof artifact.payload.width === 'number' && artifact.payload.width > 0) {
-        imagePayload.width = artifact.payload.width;
-    }
-
-    if (typeof artifact.payload.height === 'number' && artifact.payload.height > 0) {
-        imagePayload.height = artifact.payload.height;
-    }
-
-    return imagePayload;
-};
 
 const AIMessageItem = memo(({
     message,
     messageIndex,
     totalMessages,
     onOpenTableArtifact,
-    activeTableArtifactId,
     addToolApprovalResponse
 }: AIMessageItemProps) => {
     const isUser = message.role === AIMessageRole.User;
@@ -401,10 +291,6 @@ const AIMessageItem = memo(({
         };
     };
 
-    const createOpenArtifactHandler = (artifact: AIMessageArtifact) => () => {
-        onOpenTableArtifact?.(artifact);
-    };
-
     const createApproveHandler = (approvalResponseId: string, toolCallId: string) => () => {
         if (!addToolApprovalResponse) return;
 
@@ -431,81 +317,6 @@ const AIMessageItem = memo(({
                 reason: 'User rejected the action.'
             });
         }
-    };
-
-    const renderTableArtifact = (artifact: AIMessageArtifact) => {
-        if (artifact.kind !== AIMessageArtifactKind.Table) {
-            return renderInlineArtifact(artifact);
-        }
-
-        const tablePayload = resolveTabularPayload(artifact);
-        if (!tablePayload) {
-            return renderInlineArtifact(artifact);
-        }
-
-        const previewColumns = tablePayload.columns.slice(0, 4);
-        const previewRows = tablePayload.rows.slice(0, 3);
-        const hasMoreRows = tablePayload.rows.length > previewRows.length;
-        const isActive = activeTableArtifactId === artifact.id;
-        let artifactCardClassName = 'd-flex column gap-05 ai-table-artifact-card';
-        if (isActive) {
-            artifactCardClassName = 'd-flex column gap-05 ai-table-artifact-card is-active';
-        }
-
-        return (
-            <Box key={artifact.id} className={artifactCardClassName}>
-                <Row justify='between' gap='05'>
-                    <SectionLabel>{artifact.title}</SectionLabel>
-                    <Text as='p' size='sm' tone='muted'>
-                        {tablePayload.rows.length} rows · {tablePayload.columns.length} columns
-                    </Text>
-                </Row>
-
-                {artifact.summary && (
-                    <Text as='p' size='sm' tone='muted'>
-                        {artifact.summary}
-                    </Text>
-                )}
-
-                <Box overflow='x-auto' className='ai-table-artifact-preview-scroll'>
-                    <table className='ai-table-artifact-preview'>
-                        <thead>
-                            <tr>
-                                {previewColumns.map((column) => (
-                                    <th key={`${artifact.id}:${column}`}>{column}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {previewRows.map((row, rowIndex) => (
-                                <tr key={`${artifact.id}:row-${rowIndex}`}>
-                                    {previewColumns.map((column) => (
-                                        <td key={`${artifact.id}:${column}:${rowIndex}`}>
-                                            {stringifyArtifactValue(row[column])}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </Box>
-
-                {hasMoreRows && (
-                    <Text as='p' size='sm' tone='muted'>
-                        +{tablePayload.rows.length - previewRows.length} more rows
-                    </Text>
-                )}
-
-                {onOpenTableArtifact && (
-                    <Box display='flex' justify='end'>
-                        <OpenSpreadsheetButton
-                            isActive={isActive}
-                            onClick={createOpenArtifactHandler(artifact)}
-                        />
-                    </Box>
-                )}
-            </Box>
-        );
     };
 
     const renderToolInvocation = (toolInvocation: NormalizedToolInvocation, index: number) => {
@@ -643,24 +454,6 @@ const AIMessageItem = memo(({
             continue;
         }
 
-        if (segment.type === 'artifact') {
-            const groupStart = segIdx;
-            const artifacts: AIMessageArtifact[] = [segment.artifact];
-            segIdx++;
-            while (segIdx < message.segments.length) {
-                const next = message.segments[segIdx];
-                if (next.type !== 'artifact') break;
-                artifacts.push(next.artifact);
-                segIdx++;
-            }
-            segmentElements.push(
-                <Stack key={`seg-${groupStart}`} gap='05' className='ai-message-artifact-list'>
-                    {artifacts.map(renderTableArtifact)}
-                </Stack>
-            );
-            continue;
-        }
-
         segIdx++;
     }
 
@@ -687,7 +480,6 @@ const AIConversationThread = ({
     error,
     messages,
     onOpenTableArtifact,
-    activeTableArtifactId = null,
     addToolApprovalResponse,
     starterInput,
     onRetry
@@ -706,7 +498,6 @@ const AIConversationThread = ({
         const normalizeMessage = (message: UIMessage) => {
             const segments: MessageSegment[] = [];
             const toolInvocations: NormalizedToolInvocation[] = [];
-            const artifacts: AIMessageArtifact[] = [];
 
             for (let i = 0; i < message.parts.length; i++) {
                 const part = message.parts[i];
@@ -758,7 +549,6 @@ const AIConversationThread = ({
                 segments,
                 preview,
                 reasoning,
-                artifacts,
                 toolInvocations
             };
         };
@@ -774,7 +564,6 @@ const AIConversationThread = ({
 
             prev.segments = [...prev.segments, ...msg.segments];
             prev.toolInvocations = [...prev.toolInvocations, ...msg.toolInvocations];
-            prev.artifacts = [...prev.artifacts, ...msg.artifacts];
 
             if (prev.preview && msg.preview) {
                 prev.preview += '\n' + msg.preview;
@@ -832,7 +621,6 @@ const AIConversationThread = ({
             messageIndex={index}
             totalMessages={normalizedMessages.length}
             onOpenTableArtifact={onOpenTableArtifact}
-            activeTableArtifactId={activeTableArtifactId}
             addToolApprovalResponse={addToolApprovalResponse}
         />
     );

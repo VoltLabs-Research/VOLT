@@ -15,9 +15,7 @@ import type {
     VignetteSettings
 } from '@/shared/domain/rendering/effects';
 import type { EnvironmentSettings, FogSettings } from '@/shared/domain/rendering/environment';
-import type { LightsState } from '@/shared/domain/rendering/lights';
 
-export type { LightsState };
 
 export interface CameraUpdateState {
     type?: CameraSettingsState['type'];

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import pluginService from '@/modules/plugin/api/services/plugin';
+import pluginService from '@/modules/plugin/api/services/plugin-service';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { UseQueryOptions } from '@tanstack/react-query';
 

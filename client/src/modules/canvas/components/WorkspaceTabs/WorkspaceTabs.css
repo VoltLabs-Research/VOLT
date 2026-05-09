@@ -45,11 +45,6 @@
     opacity: 0.4;
     cursor: not-allowed;
 }
-
-/*
- * Mobile: workspace tabs share the top row with other toolbar chunks and
- * overflow on phones. Let them scroll horizontally instead of wrapping.
- */
 @media (max-width: 768px) {
     .canvas-workspace-tabs {
         flex: 1 1 0;

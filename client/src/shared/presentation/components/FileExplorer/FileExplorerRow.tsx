@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { Copy } from 'lucide-react';

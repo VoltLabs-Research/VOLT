@@ -5,11 +5,7 @@ import {
 } from '@/shared/domain/rendering/camera';
 
 import type { EditorStore } from './types';
-import type {
-    CameraSettingsState,
-    CameraSettingsStore,
-    CameraUpdateState
-} from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { CameraSettingsState, CameraSettingsStore, CameraUpdateState } from '@/modules/fractal/stores/contracts/editor/visual-types';
 import type { StateCreator } from 'zustand';
 
 export interface CameraSlice {

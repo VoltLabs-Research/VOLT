@@ -23,7 +23,6 @@ export interface OrbitControlsHandle {
     removeEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
 }
 
-export type { BoxBounds, Pos3D, ModelLoadingState };
 
 export type UseGlbSceneParams = {
     url?: string | null;

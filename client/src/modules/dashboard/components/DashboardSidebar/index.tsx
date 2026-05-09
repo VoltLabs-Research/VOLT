@@ -1,8 +1,8 @@
 import Brand from '@/modules/dashboard/components/Brand';
 import SidebarFooterNavigation from '@/modules/dashboard/components/SidebarFooterNavigation';
 import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import TeamSelector from '@/modules/team/components/TeamSelector';
 import Box from '@/shared/presentation/primitives/Box';
 import IconButton from '@/shared/presentation/primitives/IconButton';
@@ -14,8 +14,6 @@ import './DashboardSidebar.css';
 import { useState } from 'react';
 import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';
 import { PiUserPlus } from 'react-icons/pi';
-import { sileo } from 'sileo';
-import { useNavigate } from 'react-router-dom';
 interface DashboardSidebarProps {
     sidebarOpen: boolean;
     setSidebarOpen: (status: boolean) => void;
@@ -26,23 +24,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse, onExpandSidebar }: DashboardSidebarProps) => {
     const [settingsExpanded, setSettingsExpanded] = useState(false);
-    const navigate = useNavigate();
-    const [isSigningOut, setIsSigningOut] = useState(false);
-
-    const handleSignOut = () => {
-        try {
-            setIsSigningOut(true);
-            useAuthStore.getState().signOut();
-        } catch {
-            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
-        } finally {
-            setIsSigningOut(false);
-        }
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
-    };
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
     return (
         <Box as='aside' position='fixed' height='vh-max' className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`}>

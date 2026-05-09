@@ -16,21 +16,6 @@ const CONTEXTUAL_TIP_STYLES = {
 
 type ContextualTipVariant = 'default' | 'shortcut';
 
-const resolveAutopilot = (tip: ContextualTipDefinition): SileoOptions['autopilot'] => {
-    if (!tip.description) {
-        return false;
-    }
-
-    if (tip.dismissMode === 'manual') {
-        return {
-            expand: 180,
-            collapse: 0
-        };
-    }
-
-    return true;
-};
-
 export const buildContextualTipOptions = (
     tip: ContextualTipDefinition,
     onManualDismiss?: () => void,
@@ -44,7 +29,11 @@ export const buildContextualTipOptions = (
         duration: tip.dismissMode === 'manual'
             ? MANUAL_CONTEXTUAL_TIP_DURATION_MS
             : tip.duration ?? AUTO_CONTEXTUAL_TIP_DURATION_MS,
-        autopilot: resolveAutopilot(tip),
+        autopilot: !tip.description
+            ? false
+            : tip.dismissMode === 'manual'
+                ? { expand: 180, collapse: 0 }
+                : true,
         icon: variant === 'shortcut'
             ? <Keyboard size={14} strokeWidth={1.8} />
             : <Lightbulb size={14} strokeWidth={1.8} />,

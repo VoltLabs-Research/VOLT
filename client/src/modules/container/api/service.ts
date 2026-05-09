@@ -1,22 +1,92 @@
 import { createService, paginated, get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { ContainerRouteParams } from './dtos/container-route-params';
-import type { CreateContainerFolderParams } from './dtos/create-container-folder';
-import type { CreateContainerParams } from './dtos/create-container';
-import type { CreateContainerPortProxySessionParams } from './dtos/create-container-port-proxy-session';
-import type { DeleteContainerFolderParams } from './dtos/delete-container-folder';
-import type { GetContainerFilesInputDTO, GetContainerFilesOutputDTO } from './dtos/get-container-files';
-import type { GetContainerFolderParams } from './dtos/get-container-folder';
-import type { GetContainersParams } from './dtos/get-containers';
-import type { ListContainerFoldersParams } from './dtos/list-container-folders';
-import type { ReadContainerFileInputDTO, ReadContainerFileOutputDTO } from './dtos/read-container-file';
-import type { UpdateContainerFolderParams } from './dtos/update-container-folder';
-import type { UpdateContainerParams } from './dtos/update-container';
+import {
+    createFolderCrudEndpoints,
+    type FolderCreateParams,
+    type FolderDeleteParams,
+    type FolderGetParams,
+    type FolderListParams,
+    type FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Container } from './entities/container';
+import type { ContainerFile } from './entities/container-file';
 import type { ContainerFolder } from './entities/container-folder';
 import type { ContainerPortProxySession } from './entities/container-port-proxy-session';
 import type { ContainerStatsResponse } from './entities/container-stats';
+import type { EnvVariable } from './entities/env-variable';
+import type { PortMapping } from './entities/port-mapping';
+
+export enum ContainerAction {
+    Start = 'start',
+    Stop = 'stop',
+    Restart = 'restart'
+}
+
+export interface ContainerRouteParams {
+    containerId: string;
+}
+
+export interface CreateContainerParams {
+    teamId: string;
+    teamClusterId?: string;
+    folderId?: string | null;
+    operationId?: string;
+    name: string;
+    image: string;
+    memory?: number;
+    cpus?: number;
+    env?: EnvVariable[];
+    ports?: PortMapping[];
+    cmd?: string[];
+    mountDockerSocket?: boolean;
+    useImageCmd?: boolean;
+}
+
+export interface UpdateContainerFields {
+    action?: ContainerAction;
+    env?: EnvVariable[];
+    ports?: PortMapping[];
+}
+
+export interface UpdateContainerParams extends UpdateContainerFields {
+    containerId: string;
+}
+
+export interface GetContainersParams {
+    page: number;
+    limit: number;
+    folderId?: string;
+    search?: string;
+}
+
+export interface MoveContainerParams {
+    containerId: string;
+    folderId: string | null;
+}
+
+export interface GetContainerFilesInputDTO {
+    containerId: string;
+    path?: string;
+}
+
+export interface GetContainerFilesOutputDTO {
+    files: ContainerFile[];
+}
+
+export interface ReadContainerFileInputDTO {
+    containerId: string;
+    path: string;
+}
+
+export interface ReadContainerFileOutputDTO {
+    content: string;
+}
+
+export interface CreateContainerPortProxySessionParams {
+    teamId: string;
+    containerId: string;
+    privatePort: number;
+}
 
 const normalizePorts = (ports: CreateContainerParams['ports']) => ports?.map(({ public: publicPort, ...port }) => (
     publicPort === 0
@@ -60,27 +130,21 @@ const endpoints = {
         unwrap: { field: 'container' }
     }),
     delete: del<ContainerRouteParams>('/:containerId'),
-    move: patch<{ containerId: string; folderId: string | null }, void>('/:containerId/folder', {
+    move: patch<MoveContainerParams, void>('/:containerId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
     getFiles: get<GetContainerFilesInputDTO, GetContainerFilesOutputDTO>('/:containerId/files', {
-        query: ({ path }) => {
-            let query: { path: string } | undefined;
-            if (path) {
-                query = { path };
-            }
-            return query;
-        }
+        query: ({ path }) => path ? { path } : undefined
     }),
     readFile: get<ReadContainerFileInputDTO, ReadContainerFileOutputDTO>('/:containerId/files/content', {
         query: ({ path }) => ({ path })
     }),
     ...createFolderCrudEndpoints<
-        ListContainerFoldersParams,
-        GetContainerFolderParams,
-        CreateContainerFolderParams,
-        UpdateContainerFolderParams,
-        DeleteContainerFolderParams,
+        FolderListParams,
+        FolderGetParams,
+        FolderCreateParams,
+        FolderUpdateParams,
+        FolderDeleteParams,
         ContainerFolder
     >(),
     createPortProxySession: post<CreateContainerPortProxySessionParams, ContainerPortProxySession>('/:containerId/ports/:privatePort/session', {

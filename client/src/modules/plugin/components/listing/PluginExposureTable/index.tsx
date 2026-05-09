@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
-import DocumentListing, { type ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
 import InlineSubListingView from '@/modules/plugin/components/listing/InlineSubListingView';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';

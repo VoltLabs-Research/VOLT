@@ -1,4 +1,4 @@
-import type { FilterPropertiesData } from '../../api/dtos/particle-filter';
+import type { FilterPropertiesData } from '../../api/services/particle-filter-service';
 
 export interface PropertyOption {
     value: string;

@@ -12,7 +12,3 @@
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-
-.user-info-compact .user-info-email {
-    display: none;
-}

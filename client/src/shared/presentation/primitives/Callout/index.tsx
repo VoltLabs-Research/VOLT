@@ -4,7 +4,7 @@ import Heading from '@/shared/presentation/primitives/Heading';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { ReactNode } from 'react';
 
 export type CalloutTone = 'danger' | 'warning' | 'info' | 'success';

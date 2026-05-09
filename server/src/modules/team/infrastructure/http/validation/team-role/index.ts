@@ -1,5 +1,10 @@
 import { teamRoleNameSchema, teamRolePermissionsSchema } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
 import { createResourceValidation } from '@shared/infrastructure/http/validation/create-resource-validation';
+import {
+    createPaginationQuerySchema,
+    createTeamScopedParamsSchema,
+    teamParamsSchema
+} from '@shared/infrastructure/http/validation/shared-schemas';
 import { z } from 'zod/v4';
 
 const createTeamRoleSchema = z.object({
@@ -8,8 +13,22 @@ const createTeamRoleSchema = z.object({
 }).strict();
 
 const updateTeamRoleSchema = createTeamRoleSchema.partial();
+const teamRoleParamsSchema = createTeamScopedParamsSchema('roleId');
 
 export const teamRoleValidation = createResourceValidation({
+    list: {
+        params: teamParamsSchema,
+        query: createPaginationQuerySchema({ maxLimit: 200 })
+    },
+    getById: {
+        params: teamRoleParamsSchema
+    },
     create: createTeamRoleSchema,
-    update: updateTeamRoleSchema
+    update: {
+        params: teamRoleParamsSchema,
+        body: updateTeamRoleSchema
+    },
+    deleteById: {
+        params: teamRoleParamsSchema
+    }
 });

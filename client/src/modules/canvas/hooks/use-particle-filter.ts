@@ -5,7 +5,7 @@ import useFrameProperties from '@/modules/trajectory/hooks/particle-filter/use-f
 import { buildPropertyOptions, resolvePropertySelection } from '@/modules/trajectory/hooks/particle-filter/use-property-selector.utilities';
 import { uniqueValuesQuery } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import particleFilterService from '@/modules/trajectory/api/services/particle-filter';
+import particleFilterService from '@/modules/trajectory/api/services/particle-filter-service';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import { useCanvasDataAccess } from '@/modules/canvas/api/access';
@@ -14,9 +14,9 @@ import type {
     ParticleFilterScene,
     ParticleFilterSceneCondition
 } from '@/modules/fractal/api/entities/scene';
-import { ParticleFilterCombinator } from '@/modules/trajectory/api/dtos/particle-filter';
+import { ParticleFilterCombinator } from '@/modules/trajectory/api/services/particle-filter-service';
 import type { PropertyOption } from '@/modules/trajectory/hooks/particle-filter/use-property-selector.utilities';
-import type { ParticleFilterConditionDTO } from '@/modules/trajectory/api/dtos/particle-filter';
+import type { ParticleFilterConditionDTO } from '@/modules/trajectory/api/services/particle-filter-service';
 import type { UseModifierBaseOptions } from './use-modifier-base';
 
 export enum FilterOperator {

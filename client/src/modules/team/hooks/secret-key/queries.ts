@@ -1,8 +1,6 @@
 import secretKeyService from '../../api/services/secret-key-service';
 import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
-import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../../api/dtos/secret-key/create-secret-key';
-import type { DeleteSecretKeyInputDTO } from '../../api/dtos/secret-key/delete-secret-key';
-import type { RevokeSecretKeyInputDTO } from '../../api/dtos/secret-key/revoke-secret-key';
+import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse, DeleteSecretKeyInputDTO, RevokeSecretKeyInputDTO } from '../../api/services/secret-key-service';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
 
 interface SecretKeyUsageQueryParams {

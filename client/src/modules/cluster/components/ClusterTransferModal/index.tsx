@@ -17,7 +17,7 @@ import {
 } from '@/modules/cluster/utilities/team-cluster-transfer';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { useEffect, useMemo, useState } from 'react';
-import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
+import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/service';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
 interface ClusterTransferModalProps {

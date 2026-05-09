@@ -1,6 +1,6 @@
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { ChatReaction } from '@/modules/chat/api/entities/message';
 import './ReactionsDisplay.css';
 

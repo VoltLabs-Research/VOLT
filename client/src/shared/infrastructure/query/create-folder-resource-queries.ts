@@ -29,7 +29,7 @@ interface CreateFolderResourceQueriesConfig<
 > {
     baseKey: string;
     service: FolderResourceService<TFolder, TFoldersResult, TListParams, TGetParams, TCreateParams, TUpdateParams, TDeleteParams>;
-    buildFolderParams: (folderId: string) => TGetParams;
+    buildFolderParams?: (folderId: string) => TGetParams;
     listingQueryKeys?: QueryKey[];
 }
 
@@ -48,6 +48,7 @@ export const createFolderResourceQueries = <
     const folderRootKey = [config.baseKey, 'folder'] as const;
     const foldersQueryKey = (params: TListParams) => [...foldersRootKey, params] as const;
     const folderQueryKey = (params: TGetParams) => [...folderRootKey, params] as const;
+    const buildFolderParams = config.buildFolderParams ?? ((folderId: string) => ({ folderId }) as TGetParams);
 
     const foldersQuery = createQuery<TListParams, TFoldersResult>(
         foldersQueryKey,
@@ -77,7 +78,7 @@ export const createFolderResourceQueries = <
             config.service.updateFolder,
             (_data, variables) => [
                 foldersRootKey,
-                folderQueryKey(config.buildFolderParams(variables.folderId)),
+                folderQueryKey(buildFolderParams(variables.folderId)),
                 ...listingQueryKeys
             ]
         ),
@@ -85,7 +86,7 @@ export const createFolderResourceQueries = <
             config.service.deleteFolder,
             (_data, variables) => [
                 foldersRootKey,
-                folderQueryKey(config.buildFolderParams(variables.folderId)),
+                folderQueryKey(buildFolderParams(variables.folderId)),
                 ...listingQueryKeys
             ]
         )

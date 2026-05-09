@@ -10,14 +10,3 @@
     min-height: 0;
     overflow: auto;
 }
-
-.container-details-placeholder-state {
-    background: var(--color-surface-2);
-    border-radius: 16px;
-    border: 2px dashed var(--color-border-soft);
-    min-height: 400px;
-}
-
-.container-details-placeholder-state svg {
-    opacity: 0.5;
-}

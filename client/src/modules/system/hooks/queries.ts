@@ -1,8 +1,8 @@
 import { buildKeys, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
-import { getRBACConfig } from '../services/rbac-config';
+import service from '../api/service';
 
 const KEYS = buildKeys<{
     rbacConfig: void;
 }>('system');
 
-export const rbacConfigQuery = createQuery(KEYS.rbacConfig, getRBACConfig);
+export const rbacConfigQuery = createQuery(KEYS.rbacConfig, () => service.getRBACConfig({}));

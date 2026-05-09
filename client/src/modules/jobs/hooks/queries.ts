@@ -6,8 +6,12 @@ import { createSocketQuery, withSuccess } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
 import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
-import type { RemoveRunningJobsOutputDTO, RemoveRunningJobsParams } from '../api/dtos/remove-running-jobs';
-import type { RetryFailedJobsOutputDTO, RetryFailedJobsParams } from '../api/dtos/retry-failed-jobs';
+import type {
+    RemoveRunningJobsOutputDTO,
+    RemoveRunningJobsParams,
+    RetryFailedJobsOutputDTO,
+    RetryFailedJobsParams
+} from '../api/service';
 import type { MutationOptions } from '@/shared/infrastructure/query';
 import type { QueryClient } from '@tanstack/react-query';
 

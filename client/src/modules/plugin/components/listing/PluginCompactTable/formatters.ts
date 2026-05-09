@@ -62,12 +62,3 @@ export const summarizeScalar = (value: unknown): string => {
     if(typeof value === 'object') return '{…}';
     return String(value);
 };
-
-export const safeJsonStringify = (value: unknown): string => {
-    try{
-        const serialized = JSON.stringify(value);
-        return typeof serialized === 'string' ? serialized : String(value);
-    }catch{
-        return String(value);
-    }
-};

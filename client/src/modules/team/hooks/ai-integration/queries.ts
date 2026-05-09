@@ -1,10 +1,14 @@
 import aiIntegrationService from '../../api/services/ai-integration-service';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
-import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/create-team-ai-integration';
-import type { DeleteTeamAIIntegrationInputDTO } from '../../api/dtos/ai-integration/delete-team-ai-integration';
-import type { ListTeamAIIntegrationModelsResponse } from '../../api/dtos/ai-integration/get-team-ai-integration-models';
-import type { ListTeamAIIntegrationsResponse } from '../../api/dtos/ai-integration/get-team-ai-integrations';
-import type { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse } from '../../api/dtos/ai-integration/update-team-ai-integration';
+import type {
+    CreateTeamAIIntegrationInputDTO,
+    CreateTeamAIIntegrationResponse,
+    DeleteTeamAIIntegrationInputDTO,
+    ListTeamAIIntegrationModelsResponse,
+    ListTeamAIIntegrationsResponse,
+    UpdateTeamAIIntegrationInputDTO,
+    UpdateTeamAIIntegrationResponse
+} from '../../api/services/ai-integration-service';
 
 interface AIIntegrationQueryKeyMap {
     aiIntegrations: void;

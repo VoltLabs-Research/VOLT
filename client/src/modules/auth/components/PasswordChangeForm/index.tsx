@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ChangePasswordInputDTO } from '@/modules/auth/api/dtos/change-password';
+import type { ChangePasswordInputDTO } from '@/modules/auth/api/service';
 import type { PasswordChangeForm as PasswordChangeFormType, PasswordInfo } from './validation-schema';
 
 interface PasswordChangeFormProps {

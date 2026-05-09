@@ -1,8 +1,6 @@
 import { ICON_COMPONENTS } from '@/shared/presentation/components/DynamicIcon/loaders';
-import { memo, useEffect, useState } from 'react';
+import { memo } from 'react';
 import type { DynamicIconComponent, DynamicIconRenderProps } from '@/shared/presentation/components/DynamicIcon/loaders';
-
-const iconCache = new Map<string, DynamicIconComponent>();
 
 const DefaultFallbackIcon: DynamicIconComponent = ({
     size = '1em',
@@ -31,21 +29,6 @@ const DefaultFallbackIcon: DynamicIconComponent = ({
     </svg>
 );
 
-const resolveIcon = (iconName: string, fallback: DynamicIconComponent): DynamicIconComponent => {
-    if (!iconName) return fallback;
-
-    const cached = iconCache.get(iconName);
-    if (cached) return cached;
-
-    const candidate = ICON_COMPONENTS[iconName];
-    if (!candidate) {
-        return fallback;
-    }
-
-    iconCache.set(iconName, candidate);
-    return candidate;
-};
-
 export type DynamicIconProps = DynamicIconRenderProps & {
     iconName: string;
     fallback?: DynamicIconComponent;
@@ -56,11 +39,7 @@ const DynamicIcon = memo(function DynamicIcon({
     fallback = DefaultFallbackIcon,
     ...iconProps
 }: DynamicIconProps) {
-    const [Icon, setIcon] = useState<DynamicIconComponent>(() => fallback);
-
-    useEffect(() => {
-        setIcon(() => resolveIcon(iconName, fallback));
-    }, [iconName, fallback]);
+    const Icon = ICON_COMPONENTS[iconName] ?? fallback;
 
     return <Icon aria-hidden {...iconProps} />;
 });

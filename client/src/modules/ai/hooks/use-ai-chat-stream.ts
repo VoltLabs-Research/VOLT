@@ -2,10 +2,10 @@ import { invalidateConversationsQueries, invalidateConversationMessagesQuery, re
 import { useChat } from '@ai-sdk/react';
 import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AIModelSelection } from '@/modules/ai/api/dtos/create-conversation-stream-transport';
+import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIConversationMessage } from '@/modules/ai/api/entities/ai-conversation';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import type { RefObject } from 'react';

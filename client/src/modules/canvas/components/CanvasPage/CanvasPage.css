@@ -11,10 +11,6 @@
     border-bottom: 1px solid var(--color-border-soft);
 }
 
-.canvas-object-panel{
-    height: 100%;
-}
-
 .canvas-banner {
     width: 100%;
     padding: 8px 14px;
@@ -201,11 +197,6 @@
         display: none;
     }
 }
-
-/*
- * Timeline drag-handle on touch viewports: make the grip visually obvious so
- * the user knows it can be dragged vertically to expand/collapse the timeline.
- */
 @media (pointer: coarse) and (max-width: 1199px) {
     .canvas-resize-handle[aria-controls="canvas-center-timeline"] {
         height: 20px;
@@ -263,11 +254,6 @@
         animation: none;
     }
 }
-
-/*
- * Drawer toggle (the little slim button on the edges that opens the panel)
- * — make it wider and more visible on phones with a clearer hit target.
- */
 @media (pointer: coarse) and (max-width: 1199px) {
     .canvas-panel-drawer-toggle {
         width: 32px;

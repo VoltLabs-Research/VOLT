@@ -13,34 +13,32 @@ import {
 } from '@/modules/latex/hooks/queries';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_LATEX_DOCUMENT_EVENTS } from '@/modules/socket/events/latex';
-import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
-import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
-import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
-import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
+import {
+    createFolderedResourceFetchers,
+    createFolderResourceDeleteConfirm,
+    FOLDER_RESOURCE_TOASTS
+} from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
-import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
-import { FileText, FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { createEmptyDocumentsResponse, getDeleteConfirmationMessage } from '../utilities/documents';
+import { FileText, FolderInput, Pencil } from 'lucide-react';
+import { useCallback } from 'react';
+import { getDeleteConfirmationMessage } from '../utilities/documents';
 import {
     createLatexDocumentRow,
     createLatexFolderRow,
     getLatexListingDraggableId,
     getLatexListingDroppableId,
     isLatexDocumentRow,
-    isLatexFolderRow
+    isLatexFolderRow,
+    type LatexDocumentRow
 } from '../utilities/listing';
 import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
 import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { useNavigate } from 'react-router-dom';
 
 interface LatexMoveTarget {
@@ -66,32 +64,19 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
 
 const DELETE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Document' });
 const CREATE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Document' });
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder' });
 const RENAME_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Document' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder' });
 const MOVE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Document' });
 
-const fetchDocuments = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<LatexDocument>> => {
-    return latexDocumentsQuery.fetch({
-        page: params.page,
-        limit: params.limit,
-        folderId: params.folderId ?? ROOT_FOLDER_ID,
-        ...(params.search ? { search: params.search } : {})
-    });
-};
+const documentFetchers = createFolderedResourceFetchers({
+    listItems: latexDocumentsQuery.fetch,
+    listFolders: latexFoldersQuery.fetch,
+    getFolder: latexFolderQuery.fetch
+});
 
-const fetchFolders = (folderId: string | null): Promise<PaginatedResponse<LatexFolder>> => {
-    return latexFoldersQuery.fetch({
-        page: 1,
-        limit: FOLDER_LIST_LIMIT,
-        ...(folderId ? { parentId: folderId } : {})
-    });
-};
-
-const fetchFolderById = (folderId: string): Promise<LatexFolder> => {
-    return latexFolderQuery.fetch({ folderId });
-};
+const getDeleteFolderConfirm = createFolderResourceDeleteConfirm({
+    pluralName: 'documents',
+    singularName: 'document'
+});
 
 const filterFoldersBySearch = (folders: LatexFolder[], search: string): LatexFolder[] => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -101,10 +86,6 @@ const filterFoldersBySearch = (folders: LatexFolder[], search: string): LatexFol
     }
 
     return folders.filter((folder) => folder.title.toLowerCase().includes(normalizedSearch));
-};
-
-const getDeleteFolderConfirmDescription = (folderTitle: string): string => {
-    return `Delete "${folderTitle}"? Nested folders and all documents inside them will be deleted recursively.`;
 };
 
 const useLatexDocumentsListing = () => {
@@ -120,58 +101,99 @@ const useLatexDocumentsListing = () => {
     const { mutateAsync: deleteFolder } = useDeleteLatexFolderMutation();
     const { mutateAsync: moveDocument } = useMoveLatexDocumentMutation();
 
-    const [renamingDocument, setRenamingDocument] = useState<LatexDocument | null>(null);
     const {
-        breadcrumbs,
-        context,
-        currentFolder,
-        currentFolderId,
-        fetchData,
-        getMoveFolder,
-        goToRoot,
-        handleCreateFolder,
-        handleDeleteFolder,
-        handleDeleteCurrentFolder,
-        handleRenameFolderClose: handleRenameFolderStateClose,
-        handleRenameFolderOpen: handleRenameFolderStateOpen,
-        handleRenameFolderSubmit: handleRenameFolderStateSubmit,
-        isInsideFolder,
-        listMoveFolders,
-        navigateToFolder,
-        openFolder,
-        renamingFolder
-    } = useFolderedListing<LatexDocument, LatexFolder, LatexListingRow>({
+        renamingEntity: renamingDocument,
+        handleRenameOpen,
+        handleRenameClose,
+        handleRenameSubmit
+    } = useRenameEntityModal({
+        modalId: RENAME_LATEX_DOCUMENT_MODAL_ID,
+        updateEntity: updateDocument,
+        getUpdateParams: (document: LatexDocument, title) => ({ documentId: document._id, title }),
+        renameToast: RENAME_DOCUMENT_TOAST
+    });
+
+    const moveDocumentToFolder = useCallback((documentId: string, folderId: string | null) => {
+        return moveDocument({ documentId, folderId });
+    }, [moveDocument]);
+
+    const openDocument = useCallback((document: LatexDocument) => {
+        navigate(`/dashboard/latex/${document._id}`);
+    }, [navigate]);
+
+    const getDocumentActions = useCallback(({ openMove }: { openMove: (document: LatexDocumentRow) => void }): Record<string, ActionConfig<LatexDocumentRow>> => ({
+        open: {
+            label: 'Open Document',
+            icon: FileText,
+            handler: ({ item: document }) => openDocument(document),
+            requiredPermission: 'latex:read'
+        },
+        rename: {
+            label: 'Rename',
+            icon: Pencil,
+            handler: ({ item: document }) => {
+                handleRenameOpen(document);
+            },
+            requiredPermission: 'latex:update'
+        },
+        move: {
+            label: 'Move to Folder',
+            icon: FolderInput,
+            handler: ({ item: document }) => {
+                openMove(document);
+            },
+            requiredPermission: 'latex:update'
+        },
+        delete: {
+            variant: 'danger',
+            handler: async ({ item: document }) => {
+                await showPromise(
+                    deleteDocument({ documentId: document._id }),
+                    DELETE_DOCUMENT_TOAST
+                );
+            },
+            confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
+            requiredPermission: 'latex:delete'
+        }
+    }), [deleteDocument, handleRenameOpen, openDocument]);
+
+    const {
+        handleMoveClose,
+        handleMoveSubmit,
+        movingItem,
+        ...folderedListing
+    } = useFolderedResourceListing({
         teamId,
-        fetchItems: fetchDocuments,
-        fetchFolders,
-        getFolder: fetchFolderById,
-        createEmptyResponse: createEmptyDocumentsResponse,
+        ...documentFetchers,
         mapFolderRow: createLatexFolderRow,
         mapItemRow: createLatexDocumentRow,
         filterFolders: filterFoldersBySearch,
         onFetchErrorTitle: 'Failed to fetch LaTeX documents',
         invalidFolderMessage: 'This LaTeX folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: CREATE_FOLDER_TOAST,
+        createFolderToast: FOLDER_RESOURCE_TOASTS.create,
         updateFolder,
-        renameFolderToast: RENAME_FOLDER_TOAST,
+        renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
         deleteFolder,
-        deleteFolderToast: DELETE_FOLDER_TOAST,
-        getDeleteFolderConfirm: (folder) => ({
-            title: getDeleteFolderConfirmDescription(folder.title),
-            description: 'This permanently deletes the folder tree and every document contained in it.'
-        })
-    });
-
-    const {
-        handleRenameFolderOpen,
-        handleRenameFolderClose,
-        handleRenameFolderSubmit
-    } = useRenameFolderModal({
-        modalId: RENAME_LATEX_FOLDER_MODAL_ID,
-        openRenameState: handleRenameFolderStateOpen,
-        closeRenameState: handleRenameFolderStateClose,
-        submitRenameState: handleRenameFolderStateSubmit
+        deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
+        getDeleteFolderConfirm,
+        renameFolderModalId: RENAME_LATEX_FOLDER_MODAL_ID,
+        moveModalId: MOVE_LATEX_DOCUMENT_MODAL_ID,
+        canMoveItems: canMoveDocuments,
+        activationDistance: 6,
+        getDraggableId: getLatexListingDraggableId,
+        getDroppableId: getLatexListingDroppableId,
+        isItemRow: isLatexDocumentRow,
+        isFolderRow: isLatexFolderRow,
+        getMoveTarget: getLatexMoveTarget,
+        moveItem: moveDocumentToFolder,
+        moveToast: MOVE_DOCUMENT_TOAST,
+        folderPermissions: {
+            rename: 'latex:update',
+            delete: 'latex:delete'
+        },
+        getItemActions: getDocumentActions,
+        onOpenItem: openDocument
     });
 
     const handleCreate = useCallback(async () => {
@@ -182,177 +204,22 @@ const useLatexDocumentsListing = () => {
         await showPromise(
             createDocument({
                 title: 'Untitled Document',
-                folderId: currentFolderId
+                folderId: folderedListing.currentFolderId
             }),
             CREATE_DOCUMENT_TOAST
         );
-    }, [createDocument, currentFolderId, teamId]);
-
-    const handleRenameOpen = useCallback((document: LatexDocument) => {
-        setRenamingDocument(document);
-        openModal(RENAME_LATEX_DOCUMENT_MODAL_ID);
-    }, []);
-
-    const handleRenameClose = useCallback(() => {
-        closeModal(RENAME_LATEX_DOCUMENT_MODAL_ID);
-        setRenamingDocument(null);
-    }, []);
-
-    const handleRenameSubmit = useCallback(async (title: string) => {
-        if (!renamingDocument) {
-            return;
-        }
-
-        await showPromise(
-            updateDocument({ documentId: renamingDocument._id, title }),
-            RENAME_DOCUMENT_TOAST
-        );
-
-        handleRenameClose();
-    }, [handleRenameClose, renamingDocument, updateDocument]);
-
-    const moveDocumentToFolder = useCallback((documentId: string, folderId: string | null) => {
-        return moveDocument({ documentId, folderId });
-    }, [moveDocument]);
-
-    const {
-        movingItem: movingDocument,
-        handleMoveOpen: handleMoveDocumentOpen,
-        handleMoveClose: handleMoveDocumentClose,
-        handleMoveSubmit: handleMoveDocumentSubmit
-    } = useFolderedListingMoveModal<LatexDocument, LatexMoveTarget>({
-        modalId: MOVE_LATEX_DOCUMENT_MODAL_ID,
-        getMoveTarget: getLatexMoveTarget,
-        moveItem: moveDocumentToFolder,
-        moveToast: MOVE_DOCUMENT_TOAST
-    });
-
-    const { getMenuOptions: getDocumentMenuOptions } = useListingActions<LatexDocument>({
-        actions: {
-            open: {
-                label: 'Open Document',
-                icon: FileText,
-                handler: ({ item: document }) => {
-                    navigate(`/dashboard/latex/${document._id}`);
-                },
-                requiredPermission: 'latex:read'
-            },
-            rename: {
-                label: 'Rename',
-                icon: Pencil,
-                handler: ({ item: document }) => {
-                    handleRenameOpen(document);
-                },
-                requiredPermission: 'latex:update'
-            },
-            move: {
-                label: 'Move to Folder',
-                icon: FolderInput,
-                handler: ({ item: document }) => {
-                    handleMoveDocumentOpen(document);
-                },
-                requiredPermission: 'latex:update'
-            },
-            delete: {
-                variant: 'danger',
-                handler: async ({ item: document }) => {
-                    await showPromise(
-                        deleteDocument({ documentId: document._id }),
-                        DELETE_DOCUMENT_TOAST
-                    );
-                },
-                confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
-                requiredPermission: 'latex:delete'
-            }
-        }
-    });
-
-    const { getMenuOptions: getFolderMenuOptions } = useListingActions<LatexFolder>({
-        actions: {
-            open: {
-                label: 'Open Folder',
-                icon: FolderOpen,
-                handler: ({ item: folder }) => {
-                    openFolder(folder._id);
-                }
-            },
-            rename: {
-                label: 'Rename Folder',
-                icon: Pencil,
-                handler: ({ item: folder }) => {
-                    handleRenameFolderOpen(folder);
-                },
-                requiredPermission: 'latex:update'
-            },
-            delete: {
-                label: 'Delete Folder',
-                icon: Trash2,
-                variant: 'danger',
-                handler: async ({ item: folder }) => {
-                    await handleDeleteFolder(folder);
-                },
-                requiredPermission: 'latex:delete'
-            }
-        }
-    });
-
-    const getMenuOptions = useCallback((item: LatexListingRow, selectedItems: LatexListingRow[]): MenuOption[] => {
-        if (isLatexFolderRow(item)) {
-            return getFolderMenuOptions(item, [item]);
-        }
-
-        const selectedDocuments = selectedItems.filter(isLatexDocumentRow);
-        return getDocumentMenuOptions(item, selectedDocuments);
-    }, [getDocumentMenuOptions, getFolderMenuOptions]);
-
-    const handleItemClick = useCallback((item: LatexListingRow): boolean => {
-        if (isLatexFolderRow(item)) {
-            openFolder(item._id);
-            return true;
-        }
-
-        navigate(`/dashboard/latex/${item._id}`);
-        return true;
-    }, [navigate, openFolder]);
-
-    const dragAndDrop = useFolderedListingDragAndDropMove({
-        canMove: canMoveDocuments,
-        activationDistance: 6,
-        getDraggableId: getLatexListingDraggableId,
-        getDroppableId: getLatexListingDroppableId,
-        isItemRow: isLatexDocumentRow,
-        isFolderRow: isLatexFolderRow,
-        moveItem: moveDocumentToFolder,
-        moveToast: MOVE_DOCUMENT_TOAST
-    });
+    }, [createDocument, folderedListing.currentFolderId, teamId]);
 
     return {
-        breadcrumbs,
-        context,
-        currentFolder,
-        dragAndDrop,
-        fetchData,
-        getMenuOptions,
-        getMoveFolder,
-        goToRoot,
+        ...folderedListing,
         handleCreate,
-        handleCreateFolder,
-        handleDeleteCurrentFolder,
-        handleItemClick,
-        handleMoveDocumentClose,
-        handleMoveDocumentSubmit,
+        handleMoveDocumentClose: handleMoveClose,
+        handleMoveDocumentSubmit: handleMoveSubmit,
         handleRenameClose,
-        handleRenameFolderClose,
-        handleRenameFolderOpen,
-        handleRenameFolderSubmit,
         handleRenameSubmit,
-        isInsideFolder,
-        listMoveFolders,
-        movingDocument,
-        navigateToFolder,
+        movingDocument: movingItem,
         queryKey: latexDocumentsQueryKey(),
         renamingDocument,
-        renamingFolder,
         socketInvalidation: SOCKET_INVALIDATION
     };
 };

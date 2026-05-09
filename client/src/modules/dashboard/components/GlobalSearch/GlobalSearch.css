@@ -6,8 +6,6 @@
 .global-search-wrapper .search-input-container {
     width: 100%;
 }
-
-/* Search Results */
 .global-search-results {
     width: min(32rem, calc(100vw - 1rem));
     max-width: calc(100vw - 1rem);
@@ -19,8 +17,7 @@
     height: 200px;
 }
 
-.global-search-loading,
-.global-search-empty {
+.global-search-loading {
     text-align: center;
 }
 
@@ -67,8 +64,6 @@
 .global-search-breadcrumb {
     pointer-events: none;
 }
-
-/* Mobile Responsive */
 @media screen and (max-width: 768px) {
     .global-search-wrapper {
         width: 100%;

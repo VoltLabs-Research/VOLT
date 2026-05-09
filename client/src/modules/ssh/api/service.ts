@@ -1,14 +1,59 @@
 
 import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
-import type { CreateSSHConnectionParams } from './dtos/create-ssh-connection';
-import type { DeleteSSHConnectionInputDTO } from './dtos/delete-ssh-connection';
-import type { GetSSHConnectionByIdInputDTO } from './dtos/get-ssh-connection-by-id';
-import type { GetSSHConnectionsInputDTO } from './dtos/get-ssh-connections';
-import type { ListSSHFilesParams, ListSSHFilesResponse } from './dtos/list-ssh-files';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SSHConnection } from './entities/ssh-connection';
-import type { TestSSHConnectionInputDTO, TestSSHConnectionResponse } from './dtos/test-ssh-connection';
-import type { UpdateSSHConnectionInputDTO } from './dtos/update-ssh-connection';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { SSHConnection, SSHFileEntry } from './entities/ssh-connection';
+
+export interface CreateSSHConnectionParams {
+    name: string;
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+}
+
+export interface DeleteSSHConnectionInputDTO {
+    sshConnectionId: string;
+}
+
+export interface GetSSHConnectionByIdInputDTO {
+    sshConnectionId: string;
+}
+
+export interface GetSSHConnectionsInputDTO {
+    page?: number;
+    limit?: number;
+}
+
+export interface ListSSHFilesParams {
+    sshConnectionId: string;
+    path?: string;
+}
+
+export interface ListSSHFilesResponse {
+    cwd: string;
+    entries: SSHFileEntry[];
+}
+
+export interface TestSSHConnectionResponse {
+    valid: boolean;
+    error?: string;
+}
+
+export interface TestSSHConnectionInputDTO {
+    sshConnectionId: string;
+}
+
+export interface UpdateSSHConnectionParams {
+    name?: string;
+    host?: string;
+    port?: number;
+    username?: string;
+    password?: string;
+}
+
+export interface UpdateSSHConnectionInputDTO extends UpdateSSHConnectionParams {
+    sshConnectionId: string;
+}
 
 const endpoints = {
     getConnections: paginated<GetSSHConnectionsInputDTO | undefined, PaginatedResponse<SSHConnection>>('/'),

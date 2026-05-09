@@ -2,29 +2,25 @@ import { createService, custom, download, get, paginated } from '@/app/core/http
 import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type {
-    GetPublicCanvasBootstrapInput,
-    GetPublicCanvasBootstrapOutput
-} from '@/modules/canvas/api/dtos/bootstrap';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/dtos/trajectory';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
-import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/dtos/get-simulation-cell-by-trajectory';
+import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
 import { buildSceneArtifactQuery } from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { buildPreviewQuery } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 import type {
     ListSceneArtifactsInputDTO,
     RenderableExposurePayload
-} from '@/modules/trajectory/api/dtos/scene-artifacts';
+} from '@/modules/trajectory/api/services/scene-artifacts-service';
 import type {
     ColorCodingProperties,
     ColorCodingStats,
     GetColorCodingPropertiesInputDTO,
     GetColorCodingStatsInputDTO
-} from '@/modules/trajectory/api/dtos/color-coding';
+} from '@/modules/trajectory/api/services/color-coding-service';
 import type {
     FilterPropertiesData,
     GetFilterPropertiesInputDTO,
@@ -32,25 +28,61 @@ import type {
     GetUniqueValuesOutputDTO,
     PreviewFilterInputDTO,
     PreviewFilterOutputDTO
-} from '@/modules/trajectory/api/dtos/particle-filter';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin';
+} from '@/modules/trajectory/api/services/particle-filter-service';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type {
     GetPluginListingInputDTO,
     GetPluginListingOutputDTO
-} from '@/modules/plugin/api/dtos/listing/get-plugin-listing';
+} from '@/modules/plugin/api/services/listing-service';
 import type {
     GetSubListingInputDTO,
     GetSubListingOutputDTO
-} from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+} from '@/modules/plugin/api/services/listing-service';
 import type { RawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import type {
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
-} from '@/modules/analysis/api/dtos/get-analysis-frame-log';
+} from '@/modules/analysis/api/service';
 import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
-} from '@/modules/raster/api/dtos/get-raster-metadata';
+} from '@/modules/raster/api/service';
+
+export enum PublicCanvasAccessMode {
+    ReadOnly = 'read-only'
+}
+
+export interface PublicCanvasFrame {
+    timestep: number;
+    natoms: number;
+    simulationCell: string;
+}
+
+export interface PublicCanvasTrajectory {
+    _id: string;
+    name: string;
+    status: string;
+    isPublic: boolean;
+    teamId: string;
+    analysisIds: string[];
+    frames: PublicCanvasFrame[];
+}
+
+export interface PublicCanvasAccess {
+    mode: PublicCanvasAccessMode;
+    isGuest: boolean;
+    isPublic: boolean;
+    hasTeamMembership: boolean;
+}
+
+export interface GetPublicCanvasBootstrapInput {
+    trajectoryId: string;
+}
+
+export interface GetPublicCanvasBootstrapOutput {
+    access: PublicCanvasAccess;
+    trajectory: PublicCanvasTrajectory;
+}
 
 interface GetCanvasTrajectoryParams {
     trajectoryId: string;

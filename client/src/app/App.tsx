@@ -1,5 +1,5 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes, renderOptionalAuthRoutes } from './routes/RouteRenderer';
-import { resolveRouteTitle } from './routes/title-resolver';
+import { resolveConfiguredRouteTitle } from './routes/metadata';
 import { reportHotspotDuration } from './core/http/utilities/client-instrumentation';
 import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
 import { useFallbackPageTitle } from '@/shared/presentation/hooks/use-page-title';
@@ -8,7 +8,7 @@ import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { ErrorSurface, getErrorMessage, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { ensureApplicationStoreCleanupsRegistered } from '@/shared/utils/application-store-cleanups';
-import { buildErrorPath } from '@/shared/utils';
+import { buildErrorPath } from '@/shared/utils/error-routing';
 import AppToaster from '@/shared/presentation/components/AppToaster';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalContextMenu from '@/shared/presentation/components/GlobalContextMenu';
@@ -101,7 +101,7 @@ const AppChrome = () => {
 const AppRoutes = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const routeTitle = resolveRouteTitle(location.pathname) ?? '';
+    const routeTitle = resolveConfiguredRouteTitle(location.pathname) ?? '';
 
     useFallbackPageTitle(routeTitle);
     useRouteCleanup({

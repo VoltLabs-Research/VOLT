@@ -41,29 +41,6 @@
     line-height: 24px;
 }
 
-.canvas-toolbar-divider-v {
-    width: 1px;
-    height: 14px;
-    background: var(--color-border-soft);
-}
-
-.canvas-btn-compact.shape-circle {
-    width: 36px !important;
-    padding: 0 !important;
-}
-
-.canvas-toolbar-user-trigger {
-    background: none !important;
-    border: none !important;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 0 !important;
-}
-
-.canvas-toolbar-theme-toggle {
-    margin-right: 0.25rem;
-}
-
 @media (max-width: 768px) {
     .canvas-top-toolbar {
         min-height: 48px;
@@ -89,20 +66,6 @@
     .canvas-toolbar-info {
         margin-left: auto;
     }
-
-    .canvas-btn-compact {
-        min-height: 36px !important;
-        padding: 0 12px !important;
-    }
-
-    .canvas-btn-compact.shape-circle {
-        width: 36px !important;
-    }
-
-    /*
-     * The workspace tabs (Dashboard / Scene / Raster / Scripting / peers) share the top
-     * row with the logo + user menu and overflow on phones. Let them scroll horizontally.
-     */
     .canvas-toolbar-left .segmented-tabs {
         flex: 1 1 0;
         min-width: 0;

@@ -9,7 +9,9 @@ import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/com
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { Folder } from 'lucide-react';
 import { useMemo } from 'react';
-import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type {
     FolderBreadcrumbEntity,
@@ -21,11 +23,14 @@ import type { QueryKey } from '@tanstack/react-query';
 
 interface FolderedListingRow {
     _id: string;
+    name?: string | null;
     title?: string | null;
     folder?: string | null;
 };
 
 interface FolderedListingTitleOptions<TRow> {
+    key?: string;
+    title?: string;
     isFolder: (row: TRow) => boolean;
     resolveTitle: (row: TRow) => string;
     skeletonWidth: number;
@@ -50,13 +55,15 @@ interface FolderedDocumentListingProps<TRow extends { _id: string }, TContext> {
     title: ReactNode;
     columns: ColumnConfig<TRow>[];
     listing: FolderedListingState<TRow, TContext>;
-    createButtonTitle: string;
+    createButtonTitle?: string;
+    defaultLimit?: number;
     headerActions: ReactNode;
     headerMenuOptions: MenuOption[];
     emptyMessage?: string;
     emptyTitle?: string;
     emptyIcon?: ReactNode;
     emptyButtonText?: string;
+    emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
 };
 
@@ -78,9 +85,11 @@ interface FolderedListingModalsProps<TFolder extends FolderBreadcrumbEntity> {
     getFolder: (folderId: string) => Promise<TFolder>;
     onMoveSubmit: (folderId: string | null) => Promise<void>;
     onMoveClose: () => void;
-};
+}
 
-export const createFolderedListingColumns = <TRow,>({
+export const createFolderedTitleColumn = <TRow,>({
+    key = 'title',
+    title = 'Title',
     isFolder,
     resolveTitle,
     skeletonWidth,
@@ -88,8 +97,8 @@ export const createFolderedListingColumns = <TRow,>({
     titleClassName = 'font-weight-6 color-secondary',
     getAriaLabel,
     showTitleAttribute = false
-}: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow>[] => {
-    const renderTitle: NonNullable<ColumnConfig<TRow>['render']> = (value, row) => {
+}: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {
+    const render: NonNullable<ColumnConfig<TRow>['render']> = (value, row) => {
         let title = resolveTitle(row);
 
         if (typeof value === 'string' && value.trim().length > 0) {
@@ -103,7 +112,7 @@ export const createFolderedListingColumns = <TRow,>({
                         <Folder size={16} />
                     </Box>
                 )}
-                <Box overflow='hidden'>
+                <Box overflow='hidden' minW='0'>
                     <span className={titleClassName} title={showTitleAttribute ? title : undefined}>
                         {title}
                     </span>
@@ -112,15 +121,19 @@ export const createFolderedListingColumns = <TRow,>({
         );
     };
 
+    return {
+        key,
+        title,
+        sortable: true,
+        render,
+        skeleton: { variant: 'text', width: skeletonWidth }
+    };
+};
+
+export const createFolderedListingColumns = <TRow,>(options: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow>[] => {
     return [
-        {
-            key: 'title',
-            title: 'Title',
-            sortable: true,
-            render: renderTitle,
-            skeleton: { variant: 'text', width: skeletonWidth }
-        },
-        userColumn<TRow>('lastEditedBy', 'Last Edited By', { isFolder }),
+        createFolderedTitleColumn(options),
+        userColumn<TRow>('lastEditedBy', 'Last Edited By', { isFolder: options.isFolder }),
         dateColumn<TRow>('updatedAt', 'Updated At', {
             width: 110,
             withTitle: true
@@ -147,12 +160,14 @@ export const FolderedDocumentListing = <TRow extends { _id: string }, TContext>(
     columns,
     listing,
     createButtonTitle,
+    defaultLimit,
     headerActions,
     headerMenuOptions,
     emptyMessage,
     emptyTitle,
     emptyIcon,
     emptyButtonText,
+    emptyButtonIsLoading,
     onEmptyButtonClick
 }: FolderedDocumentListingProps<TRow, TContext>) => (
     <DocumentListing<TRow, TContext>
@@ -161,19 +176,21 @@ export const FolderedDocumentListing = <TRow extends { _id: string }, TContext>(
         columns={columns}
         context={listing.context}
         fetchData={listing.fetchData}
+        defaultLimit={defaultLimit}
         getMenuOptions={listing.getMenuOptions}
         onItemClick={listing.handleItemClick}
         dragAndDrop={listing.dragAndDrop}
-        createNew={{
+        createNew={createButtonTitle ? {
             buttonTitle: createButtonTitle,
             onCreate: listing.handleCreate
-        }}
+        } : undefined}
         headerActions={headerActions}
         headerMenuOptions={headerMenuOptions}
         emptyMessage={emptyMessage}
         emptyTitle={emptyTitle}
         emptyIcon={emptyIcon}
         emptyButtonText={emptyButtonText}
+        emptyButtonIsLoading={emptyButtonIsLoading}
         onEmptyButtonClick={onEmptyButtonClick}
         socketInvalidation={listing.socketInvalidation}
     />
@@ -216,7 +233,7 @@ export const FolderedListingModals = <TFolder extends FolderBreadcrumbEntity>({
         <MoveToFolderModal
             id={moveModalId}
             itemId={movingItem?._id ?? null}
-            itemName={movingItem?.title ?? null}
+            itemName={movingItem?.title ?? movingItem?.name ?? null}
             itemLabel={itemLabel}
             sourceFolderId={movingItem?.folder ?? null}
             listFolders={listFolders}

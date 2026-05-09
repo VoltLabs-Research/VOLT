@@ -1,12 +1,35 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { TeamInvitation } from '../entities/invitation/team-invitation';
-import type { GetInvitationDetailsInputDTO } from '../dtos/invitation/get-invitation-details';
-import type { GetPendingInvitationsInputDTO } from '../dtos/invitation/get-pending-invitations';
-import type { SendInvitationInputDTO } from '../dtos/invitation/send-invitation';
-import type { CancelInvitationInputDTO } from '../dtos/invitation/cancel-invitation';
-import type { AcceptInvitationInputDTO } from '../dtos/invitation/accept-invitation';
-import type { RejectInvitationInputDTO } from '../dtos/invitation/reject-invitation';
+
+export interface AcceptInvitationInputDTO {
+    invitationId: string;
+    teamId?: string;
+}
+
+export interface CancelInvitationInputDTO {
+    teamId: string;
+    invitationId: string;
+}
+
+export interface GetInvitationDetailsInputDTO {
+    invitationId: string;
+}
+
+export interface GetPendingInvitationsInputDTO {
+    teamId: string;
+}
+
+export interface RejectInvitationInputDTO {
+    invitationId: string;
+    teamId?: string;
+}
+
+export interface SendInvitationInputDTO {
+    teamId: string;
+    email: string;
+    roleId?: string;
+}
 
 interface PendingInvitationsPage extends PaginatedResponse<TeamInvitation> {
     data: TeamInvitation[];

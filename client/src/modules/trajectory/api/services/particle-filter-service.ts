@@ -1,15 +1,80 @@
 import { createService, get, post } from '@/app/core/http/utilities/create-service';
 
-import type {
-    ApplyFilterInputDTO,
-    ApplyFilterOutputDTO,
-    FilterPropertiesData,
-    GetFilterPropertiesInputDTO,
-    GetUniqueValuesInputDTO,
-    GetUniqueValuesOutputDTO,
-    PreviewFilterInputDTO,
-    PreviewFilterOutputDTO
-} from '../dtos/particle-filter';
+export enum ParticleFilterCombinator {
+    And = 'AND',
+    Or = 'OR'
+}
+
+export interface ParticleFilterConditionDTO {
+    kind?: 'property';
+    property: string;
+    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value: number;
+    exposureId?: string;
+}
+
+export type FilterAction = 'delete' | 'highlight';
+
+export interface ApplyFilterInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    property?: string;
+    operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value?: number;
+    exposureId?: string;
+    action: FilterAction;
+    combinator?: ParticleFilterCombinator;
+    conditions?: ParticleFilterConditionDTO[];
+}
+
+export interface ApplyFilterOutputDTO {
+    fileId: string;
+    atomsResult: number;
+    action: string;
+}
+
+export interface GetFilterPropertiesInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+}
+
+export interface FilterPropertiesData {
+    dump: string[];
+    perAtom: Record<string, string[]>;
+    exposureNames: Record<string, string>;
+}
+
+export interface GetUniqueValuesInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    property: string;
+    exposureId?: string;
+    maxValues?: number;
+}
+
+export interface GetUniqueValuesOutputDTO {
+    values: number[];
+}
+
+export interface PreviewFilterInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    property?: string;
+    operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value?: number;
+    exposureId?: string;
+    combinator?: ParticleFilterCombinator;
+    conditions?: ParticleFilterConditionDTO[];
+}
+
+export interface PreviewFilterOutputDTO {
+    matchCount: number;
+    totalAtoms: number;
+}
 
 export const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
     if (input.conditions && input.conditions.length > 0) {

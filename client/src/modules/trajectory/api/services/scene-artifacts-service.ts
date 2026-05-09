@@ -1,12 +1,45 @@
 import { createService, get, paginated } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SceneArtifact } from '../entities/scene-artifacts';
-import type {
-    ListSceneArtifactsInputDTO,
-    ListTeamSceneArtifactsInputDTO,
-    RenderableExposurePayload
-} from '../dtos/scene-artifacts';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { SceneArtifact } from '../entities/scene-artifacts/scene-artifact';
+import type { SceneArtifactSourceType } from '../entities/scene-artifacts/scene-artifact';
+
+export interface RenderableExposurePayload {
+    pluginId?: string;
+    analysisId?: string;
+    exposureId: string;
+    modifierId?: string;
+    name: string;
+    icon?: string;
+    results: string;
+    canvas: boolean;
+    raster: boolean;
+    export?: {
+        exporter?: string;
+        type?: string;
+        options?: Record<string, unknown>;
+    };
+}
+
+export interface ListSceneArtifactsInputDTO {
+    trajectoryId: string;
+    sourceType?: SceneArtifactSourceType;
+    type?: SceneArtifactSourceType;
+    analysisId?: string;
+    projection?: 'raw' | 'renderable-exposures';
+    timestep?: number;
+    page?: number;
+    limit?: number;
+}
+
+export interface ListTeamSceneArtifactsInputDTO {
+    page?: number;
+    limit?: number;
+    sourceType?: SceneArtifactSourceType;
+    type?: SceneArtifactSourceType;
+    analysisId?: string;
+    timestep?: number;
+}
 
 export const buildSceneArtifactQuery = (
     params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType' | 'type'>

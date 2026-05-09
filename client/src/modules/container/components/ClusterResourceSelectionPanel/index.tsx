@@ -11,7 +11,7 @@ import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';
 import { useMemo } from 'react';
 import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
-import type { SelectOption } from '@/shared/presentation/components/FormFieldRHF';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
 
 interface ClusterResourceSelectionPanelProps {

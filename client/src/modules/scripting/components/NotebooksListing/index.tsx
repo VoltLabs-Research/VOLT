@@ -1,15 +1,15 @@
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
-import RenameScriptingNotebookModal from '@/modules/scripting/components/RenameScriptingNotebookModal';
-import useNotebooksListing from '@/modules/scripting/hooks/use-notebooks-listing';
+import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import DocumentListing, {
-    type ColumnConfig,
-    type DocumentListingTab
-} from '@/shared/presentation/components/DocumentListing';
+import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
+import DocumentListing, { type DocumentListingTab } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import Text from '@/shared/presentation/primitives/Text';
 import { useCallback, useMemo, useState } from 'react';
+import type { InputHTMLAttributes } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
 import type {
     ScriptingNotebook,
@@ -142,6 +142,23 @@ const getEmptyButtonText = (scope: ScriptingNotebookScope): string => {
     return 'Create notebook';
 };
 
+const getNotebookTitle = (notebook: ScriptingNotebook): string => notebook.title || '';
+
+const isNotebookRenameUnchanged = (title: string, notebook: ScriptingNotebook | null): boolean => {
+    return title.length > 0 && title === (notebook?.title.trim() || '');
+};
+
+const validateNotebookRenameTitle = (title: string): string | undefined => {
+    return title.length > 120 ? 'Title must be 120 characters or less' : undefined;
+};
+
+const NOTEBOOK_RENAME_INPUT_PROPS: InputHTMLAttributes<HTMLInputElement> = {
+    autoComplete: 'off',
+    enterKeyHint: 'done',
+    maxLength: 120,
+    spellCheck: false
+};
+
 const NotebooksListing = () => {
     const [activeTab, setActiveTab] = useState<NotebooksListingTabId>(NotebooksListingTabId.List);
     const {
@@ -198,8 +215,23 @@ const NotebooksListing = () => {
                 onTabChange={handleTabChange}
                 socketInvalidation={socketInvalidation}
             />
-            <RenameScriptingNotebookModal
-                notebook={renamingNotebook}
+            <RenameEntityModal
+                entity={renamingNotebook}
+                modalId={RENAME_SCRIPTING_NOTEBOOK_MODAL_ID}
+                title='Rename Notebook'
+                description='Choose a clear notebook name so it is easier to find later.'
+                fieldLabel='Notebook title'
+                placeholder='Enter notebook title'
+                getInitialTitle={getNotebookTitle}
+                validateTitle={validateNotebookRenameTitle}
+                isSubmitDisabled={isNotebookRenameUnchanged}
+                inputProps={NOTEBOOK_RENAME_INPUT_PROPS}
+                leadingContent={renamingNotebook && (
+                    <Text as='p' size='sm' tone='secondary' truncate>
+                        Current name: {renamingNotebook.title || 'Untitled notebook'}
+                    </Text>
+                )}
+                helperText={<Text as='p' size='sm' tone='muted'>Use up to 120 characters.</Text>}
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
             />

@@ -29,7 +29,7 @@ import {
 import { useCallback, useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type {

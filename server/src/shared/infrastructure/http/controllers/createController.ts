@@ -57,8 +57,6 @@ type PreparedDownloadStreamControllerOptions<
 
 // ---------------------------------------------------------------------------
 // Shared helpers — identical across every variant, defined once.
-// See also `controller-internals.ts` for the bits shared with
-// `createReadController.ts`.
 // ---------------------------------------------------------------------------
 
 const getControllerOptions = <TUseCase extends UseCaseInstance>(

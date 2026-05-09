@@ -1,7 +1,22 @@
 
 import { createService, del, post } from '@/app/core/http/utilities/create-service';
-import type { RemoveRunningJobsOutputDTO, RemoveRunningJobsParams } from './dtos/remove-running-jobs';
-import type { RetryFailedJobsOutputDTO, RetryFailedJobsParams } from './dtos/retry-failed-jobs';
+
+export interface RemoveRunningJobsParams {
+    trajectoryId: string;
+}
+
+export interface RemoveRunningJobsOutputDTO {
+    deletedJobs: number;
+    deletedAnalyses: number;
+}
+
+export interface RetryFailedJobsParams {
+    trajectoryId: string;
+}
+
+export interface RetryFailedJobsOutputDTO {
+    retriedFrames: number;
+}
 
 const endpoints = {
     removeRunningJobs: del<RemoveRunningJobsParams, RemoveRunningJobsOutputDTO>('/:trajectoryId/running', {

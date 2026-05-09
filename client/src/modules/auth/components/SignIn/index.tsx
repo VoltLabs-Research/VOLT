@@ -25,7 +25,7 @@ import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
-import type { OAuthProviderKey } from '@/modules/auth/api/dtos/oauth-providers';
+import type { OAuthProviderKey } from '@/modules/auth/api/service';
 import type { StepTitles } from '@/shared/presentation/primitives/Stepper';
 import type { SignInForm } from './validation-schema';
 import { useNavigate } from 'react-router-dom';

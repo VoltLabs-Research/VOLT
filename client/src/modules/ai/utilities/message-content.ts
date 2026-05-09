@@ -10,18 +10,6 @@ export interface ParsedMarkdownTable {
     rows: Record<string, unknown>[];
 }
 
-export const stringifyArtifactValue = (value: unknown): string => {
-    if (value == null) return '-';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-
-    try {
-        return JSON.stringify(value);
-    } catch {
-        return String(value);
-    }
-};
-
 const getElementChildren = (node: ReactNode): ReactNode | undefined => {
     if (!isValidElement<ElementWithChildrenProps>(node)) {
         return undefined;

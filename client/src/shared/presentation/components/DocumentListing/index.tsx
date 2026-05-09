@@ -37,7 +37,6 @@ import type { PaginationParams } from '@/shared/presentation/hooks/use-paginatio
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
 
-export type { ColumnConfig, MenuOption };
 export { getValueByPath };
 
 export interface SocketInvalidationConfig {
@@ -113,14 +112,6 @@ const resolveInitialTabId = (tabs: DocumentListingTab[], preferredTabId?: string
     return tabs[0]?.id || 'list';
 };
 
-const sanitizePersistenceKey = (value: string): string => {
-    return value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 48) || 'listing';
-};
-
 const hashString = (value: string): string => {
     let hash = 0;
     for (let i = 0; i < value.length; i++) {
@@ -130,7 +121,7 @@ const hashString = (value: string): string => {
 };
 
 const resolvePersistenceKey = (queryKey: QueryKey): string => {
-    return sanitizePersistenceKey(`list-${hashString(JSON.stringify(queryKey))}`);
+    return `list-${hashString(JSON.stringify(queryKey))}`;
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({

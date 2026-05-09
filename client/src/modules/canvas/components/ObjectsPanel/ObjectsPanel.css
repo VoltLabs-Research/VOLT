@@ -107,12 +107,6 @@
 .canvas-tree-analysis-name--failed {
     color: var(--status-error, var(--accent-red, #ff5c5c));
 }
-
-/*
- * Light mode overrides. The dark-mode yellow/green/blue tokens are bright on
- * black but fall below WCAG AA on the white sidebar, so we swap them for
- * darker, higher-contrast hues while the accent hues stay consistent.
- */
 :root[data-theme='light'] .canvas-tree-analysis-name--queued {
     color: #8a5300;
 }

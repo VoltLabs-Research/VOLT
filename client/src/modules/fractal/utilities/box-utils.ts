@@ -1,4 +1,4 @@
-import type { BoxBounds } from '@/modules/fractal/types';
+import type { BoxBounds } from '@/modules/fractal/api/entities/model';
 
 export interface BoxTransforms {
     scale: number;

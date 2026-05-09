@@ -1,7 +1,7 @@
 import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/infrastructure/query';
 import messageService from '../../api/services/message-service';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ChatMessage } from '../../api/entities/message';
 import type {
     DeleteMessageInputDTO,
@@ -10,7 +10,7 @@ import type {
     SendFileMessageInputDTO,
     SendMessageInputDTO,
     ToggleReactionInputDTO
-} from '../../api/dtos/message';
+} from '../../api/services/message-service';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
 

@@ -31,7 +31,7 @@ import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-ex
 import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 export interface AnalysisSectionData {
     analysis: Analysis;

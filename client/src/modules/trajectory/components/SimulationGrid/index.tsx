@@ -7,7 +7,6 @@ import useTrajectoriesListing, {
     MOVE_TRAJECTORY_MODAL_ID,
     NEW_TRAJECTORY_FOLDER_MODAL_ID
 } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
-import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
@@ -45,7 +44,8 @@ export default function SimulationGrid() {
         movingTrajectory,
         navigateToFolder,
         openFolder,
-        queryKey
+        queryKey,
+        socketInvalidation
     } = useTrajectoriesListing();
 
     const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
@@ -132,12 +132,6 @@ export default function SimulationGrid() {
             buttonIsLoading: isDownloading
         };
     }, [currentFolderId, handleCreate, handleDownloadSamples, hasDownloadedSamples, isDownloading, isUploading]);
-
-    const socketInvalidation = useMemo(() => ([
-        { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [queryKey] },
-        { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [queryKey] },
-        { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [queryKey] }
-    ]), [queryKey]);
 
     const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
         return breadcrumbs.map((crumb) => ({

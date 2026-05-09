@@ -20,20 +20,25 @@ import {
 } from '@/shared/infrastructure/query/cache-utils';
 import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import pluginService from '../../api/services/plugin';
+import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import type { ClonePluginInputDTO } from '../../api/dtos/plugin/clone-plugin';
-import type { DeletePluginInputDTO } from '../../api/dtos/plugin/delete-plugin';
-import type { ExecutePluginInputDTO, ExecutePluginOutputDTO } from '../../api/dtos/plugin/execute-plugin';
-import type { ExportAnalysisResultsInputDTO } from '../../api/dtos/plugin/export-analysis-results';
-import type { ExportPluginInputDTO } from '../../api/dtos/plugin/export-plugin';
-import type { GetPluginInputDTO } from '../../api/dtos/plugin/get-plugin';
-import type { GetPluginsInputDTO } from '../../api/dtos/plugin/get-plugins';
-import type { ImportPluginInputDTO } from '../../api/dtos/plugin/import-plugin';
-import type { ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO } from '../../api/dtos/plugin/list-team-clusters';
-import type { SavePluginInputDTO } from '../../api/dtos/plugin/save-plugin';
-import type { UpdatePluginInputDTO } from '../../api/dtos/plugin/update-plugin';
-import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../../api/dtos/plugin/upload-binary';
+import type {
+    ClonePluginInputDTO,
+    DeletePluginInputDTO,
+    ExecutePluginInputDTO,
+    ExecutePluginOutputDTO,
+    ExportAnalysisResultsInputDTO,
+    ExportPluginInputDTO,
+    GetPluginInputDTO,
+    GetPluginsInputDTO,
+    ImportPluginInputDTO,
+    ListPluginTeamClustersInputDTO,
+    ListPluginTeamClustersOutputDTO,
+    SavePluginInputDTO,
+    UpdatePluginInputDTO,
+    UploadBinaryInputDTO,
+    UploadBinaryOutputDTO
+} from '../../api/services/plugin-service';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 

@@ -1,9 +1,13 @@
 import { createService, paginated, patch } from '@/app/core/http/utilities/create-service';
 
-import type { EmptyParams } from '@/app/core/http/utilities/create-service';
-import type { ListNotificationsInputDTO } from './dtos/list-notifications';
+import type { EmptyParams } from '@voltstack/voltclient';
 import type { Notification } from './entities/notification';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+
+export interface ListNotificationsInputDTO {
+    page?: number;
+    limit?: number;
+}
 
 const endpoints = {
     getAll: paginated<ListNotificationsInputDTO | undefined, PaginatedResponse<Notification>>('/'),

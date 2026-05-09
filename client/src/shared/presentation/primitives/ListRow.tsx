@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Text from './Text';
 import './ListRow.css';
 import { forwardRef } from 'react';

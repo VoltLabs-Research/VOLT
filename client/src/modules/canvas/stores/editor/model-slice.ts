@@ -3,21 +3,15 @@ import { DEFAULT_SCENE, getSceneKey } from '@/modules/fractal/utilities/scene-ut
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 
 import type { EditorStore } from './types';
-import type { ModelLoadingState } from '@/modules/fractal/types';
-import type { ModelWorldBounds } from '@/modules/fractal/types/configuration';
+import type { ModelLoadingState } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import {
     PointCloudDetailLevel,
     PointCloudStyleMode
 } from '@/modules/fractal/stores/contracts/editor/scene-types';
 
-import type {
-    ModelStore,
-    ModelState,
-    PointCloudSettingsState,
-    SceneObjectType,
-    ModelData,
-    ModelDragOffset
-} from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { ModelStore, ModelState, PointCloudSettingsState, ModelData, ModelDragOffset } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { StateCreator } from 'zustand';
 
 const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {

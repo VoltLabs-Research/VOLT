@@ -51,8 +51,6 @@
 .code-editor-textarea[readonly] {
     color: var(--color-text-secondary);
 }
-
-/* Monaco background only - don't override syntax colors */
 .code-editor-container .monaco-editor,
 .code-editor-container .monaco-editor .margin {
     background-color: var(--color-content-bg) !important;

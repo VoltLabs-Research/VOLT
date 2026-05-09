@@ -17,8 +17,6 @@
     width: 12px;
     height: 12px;
 }
-
-/* Tones */
 .status-dot--tone-success{
     background-color: var(--status-success);
     box-shadow: 0 0 0 2px var(--color-surface-1);
@@ -44,8 +42,6 @@
     background-color: var(--color-text-muted);
     box-shadow: 0 0 0 2px var(--color-surface-1);
 }
-
-/* Animations */
 .status-dot--pulse{
     animation: animate-pulse 1.5s ease-in-out infinite;
 }

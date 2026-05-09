@@ -1,10 +1,66 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { GetTeamAIIntegrationsInputDTO, ListTeamAIIntegrationsResponse } from '../dtos/ai-integration/get-team-ai-integrations';
-import type { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse } from '../dtos/ai-integration/create-team-ai-integration';
-import type { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse } from '../dtos/ai-integration/update-team-ai-integration';
-import type { DeleteTeamAIIntegrationInputDTO } from '../dtos/ai-integration/delete-team-ai-integration';
-import type { GetTeamAIIntegrationModelsInputDTO, ListTeamAIIntegrationModelsResponse } from '../dtos/ai-integration/get-team-ai-integration-models';
+import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type {
+    AIProviderCatalogItem,
+    TeamAIIntegration,
+    TeamAIModelListItem,
+    TeamAIModelMetadata,
+    TeamAIProviderModelsCatalog
+} from '../entities/ai-integration/team-ai-integration';
+
+export interface CreateTeamAIIntegrationParams {
+    apiKey?: string;
+    isEnabled?: boolean;
+    defaultModel?: string;
+    enabledModels?: TeamAIModelMetadata[];
+    metadata?: Record<string, unknown>;
+}
+
+export interface CreateTeamAIIntegrationResponse {
+    integration: TeamAIIntegration;
+}
+
+export type CreateTeamAIIntegrationInputDTO = {
+    teamId: string;
+    provider: AIProvider;
+} & CreateTeamAIIntegrationParams;
+
+export interface DeleteTeamAIIntegrationInputDTO {
+    teamId: string;
+    provider: AIProvider;
+}
+
+export interface ListTeamAIIntegrationModelsResponse {
+    teamId: string;
+    providers: TeamAIProviderModelsCatalog[];
+    models: TeamAIModelListItem[];
+}
+
+export interface GetTeamAIIntegrationModelsInputDTO {
+    teamId: string;
+}
+
+export interface ListTeamAIIntegrationsResponse {
+    teamId: string;
+    integrations: TeamAIIntegration[];
+    providers: AIProviderCatalogItem[];
+}
+
+export interface GetTeamAIIntegrationsInputDTO {
+    teamId: string;
+}
+
+export type UpdateTeamAIIntegrationParams = CreateTeamAIIntegrationParams;
+
+export interface UpdateTeamAIIntegrationResponse {
+    integration: TeamAIIntegration;
+}
+
+export type UpdateTeamAIIntegrationInputDTO = {
+    teamId: string;
+    provider: AIProvider;
+} & UpdateTeamAIIntegrationParams;
 
 const endpoints = {
     listByTeamId: get<GetTeamAIIntegrationsInputDTO, ListTeamAIIntegrationsResponse>(

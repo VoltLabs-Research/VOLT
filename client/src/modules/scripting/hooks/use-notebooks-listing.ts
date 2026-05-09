@@ -14,13 +14,13 @@ import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
     startAndWaitForReadyScriptingSession
 } from '../utilities/jupyter-session';
 import {
-    createEmptyNotebooksResponse,
     getDeleteConfirmationMessage,
     hasNotebookDeploymentConfiguration,
     getTrajectoryIds
@@ -34,6 +34,7 @@ import type { SocketInvalidationConfig } from '@/shared/presentation/components/
 import type {
     ScriptingNotebook
 } from '@/modules/scripting/api/entities/scripting-notebook';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type {
@@ -127,14 +128,13 @@ const useNotebooksListing = () => {
     const { mutateAsync: createNotebookSession } = useCreateScriptingNotebookSessionMutation();
     const { mutateAsync: deleteNotebook } = useDeleteScriptingNotebookMutation();
     const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
-    const [renamingNotebook, setRenamingNotebook] = useState<ScriptingNotebook | null>(null);
     const [deploymentModalRequest, setDeploymentModalRequest] = useState<ScriptingNotebookDeploymentModalRequest | null>(null);
 
     const fetchData = useCallback(async (
         params: PaginationParams & NotebooksListingContext
     ): Promise<PaginatedResponse<ScriptingNotebook>> => {
         if (!teamId) {
-            return createEmptyNotebooksResponse(params);
+            return createEmptyPaginatedResponse(params);
         }
 
         try {
@@ -154,7 +154,7 @@ const useNotebooksListing = () => {
             }
 
             sileo.error({ title: 'Failed to fetch notebooks' });
-            return createEmptyNotebooksResponse(params);
+            return createEmptyPaginatedResponse(params);
         }
     }, [teamId]);
 
@@ -252,31 +252,17 @@ const useNotebooksListing = () => {
         });
     }, [teamId, createNotebook, openDeploymentModal]);
 
-    const handleRenameOpen = useCallback((notebook: ScriptingNotebook) => {
-        setRenamingNotebook(notebook);
-        openModal(RENAME_SCRIPTING_NOTEBOOK_MODAL_ID);
-    }, []);
-
-    const handleRenameClose = useCallback(() => {
-        closeModal(RENAME_SCRIPTING_NOTEBOOK_MODAL_ID);
-        setRenamingNotebook(null);
-    }, []);
-
-    const handleRenameSubmit = useCallback(async (title: string) => {
-        if (!renamingNotebook) {
-            return;
-        }
-
-        await showPromise(
-            updateNotebook({
-                notebookId: renamingNotebook._id,
-                title
-            }),
-            RENAME_NOTEBOOK_TOAST
-        );
-
-        handleRenameClose();
-    }, [renamingNotebook, updateNotebook, handleRenameClose]);
+    const {
+        renamingEntity: renamingNotebook,
+        handleRenameOpen,
+        handleRenameClose,
+        handleRenameSubmit
+    } = useRenameEntityModal({
+        modalId: RENAME_SCRIPTING_NOTEBOOK_MODAL_ID,
+        updateEntity: updateNotebook,
+        getUpdateParams: (notebook: ScriptingNotebook, title) => ({ notebookId: notebook._id, title }),
+        renameToast: RENAME_NOTEBOOK_TOAST
+    });
 
     const handleOpenInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
         const trajectoryId = getTrajectoryIds(notebook)[0];

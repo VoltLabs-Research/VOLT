@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Stack from './Stack';
 import './Timeline.css';
 import { forwardRef } from 'react';

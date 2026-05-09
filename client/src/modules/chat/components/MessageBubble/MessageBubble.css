@@ -70,17 +70,6 @@
     background: color-mix(in srgb, var(--color-contrast-high) 10%, transparent);
 }
 
-.message-bubble-file-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    background: var(--color-surface-3);
-}
-
-.message-bubble.sent .message-bubble-file-icon {
-    background: color-mix(in srgb, var(--color-contrast-high) 15%, transparent);
-}
-
 .message-bubble.sent .message-bubble-time {
     color: color-mix(in srgb, var(--color-contrast-high) 70%, transparent);
 }

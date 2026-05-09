@@ -1,7 +1,5 @@
-import type { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type {
-    IArgumentVisibilityCondition,
-    IPluginReferenceArgumentMapping
+    IArgumentDefinition
 } from '@/modules/plugin/api/entities/plugin/workflow';
 
 export interface IComputedArgumentOption {
@@ -24,24 +22,9 @@ export interface IExposureExport {
     options?: Record<string, unknown>;
 }
 
-export interface IComputedArgumentDefinition {
-    argument: string;
-    type: ArgumentType;
-    label: string;
-    default?: unknown;
-    value?: unknown;
+export interface IComputedArgumentDefinition extends Omit<IArgumentDefinition, 'options' | 'listArguments'> {
     options?: IComputedArgumentOption[];
     listArguments?: IComputedArgumentDefinition[];
-    required?: boolean;
-    multipleSelection?: boolean;
-    pluginReferenceFilter?: string[];
-    pluginReferenceFilterKeys?: string[];
-    showPluginConfiguration?: boolean;
-    pluginReferenceMappings?: IPluginReferenceArgumentMapping[];
-    min?: number;
-    max?: number;
-    step?: number;
-    visibleWhen?: IArgumentVisibilityCondition;
 }
 
 export interface IListingExposure {

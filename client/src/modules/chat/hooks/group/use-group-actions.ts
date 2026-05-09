@@ -16,7 +16,7 @@ import {
     updateGroupAdminsAction,
     updateGroupInfoAction
 } from '../../services/group/actions';
-import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
+import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/services/group-service';
 import { useNavigate } from 'react-router-dom';
 const useGroupActions = () => {
     const navigate = useNavigate();

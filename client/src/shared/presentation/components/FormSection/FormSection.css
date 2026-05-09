@@ -29,8 +29,6 @@
     border-radius: var(--radius-md);
     overflow: hidden;
 }
-
-/* Each inline field inside a section renders as a list row. */
 .form-section-group .form-field-inline {
     display: grid;
     grid-template-columns: minmax(88px, 40%) 1fr;
@@ -91,8 +89,6 @@
 .form-section-group .form-field-inline-textarea::placeholder {
     text-align: left;
 }
-
-/* When the row holds a Select trigger or checkbox, keep right-alignment */
 .form-section-group .form-field-inline .render-input-container {
     display: flex;
     justify-content: flex-end;

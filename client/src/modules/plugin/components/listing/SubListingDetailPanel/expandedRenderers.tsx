@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { inferCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
-import { formatScientific, vectorMagnitude, safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import { formatScientific, vectorMagnitude } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 
 const NUMERIC_PRECISION = 8;
 const MAX_ARRAY_ROWS = 500;
@@ -52,7 +52,7 @@ const renderPrimitive = (value: unknown): ReactNode => {
     if(value instanceof Date){
         return <span className='plugin-detail-date tabular-nums'>{value.toISOString()}</span>;
     }
-    return <span className='plugin-detail-fallback'>{safeJsonStringify(value)}</span>;
+    return <span className='plugin-detail-fallback'>{JSON.stringify(value)}</span>;
 };
 
 const renderVector = (vector: number[]): ReactNode => {
@@ -249,6 +249,6 @@ export const renderExpandedValue = (value: unknown, depth = 0): ReactNode => {
                 }
                 return renderHeterogeneousArray(value);
             }
-            return <span className='plugin-detail-fallback'>{safeJsonStringify(value)}</span>;
+            return <span className='plugin-detail-fallback'>{JSON.stringify(value)}</span>;
     }
 };

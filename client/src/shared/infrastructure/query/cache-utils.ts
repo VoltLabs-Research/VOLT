@@ -1,5 +1,5 @@
 import queryClient from './query-client';
-import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination';
+import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination/PaginationResponse';
 import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 
 interface WithId {

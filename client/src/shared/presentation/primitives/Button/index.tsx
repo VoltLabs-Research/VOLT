@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Loader from '../Loader';
 import './Button.css';
 import { Children, forwardRef, useRef } from 'react';
@@ -14,93 +14,21 @@ type NativeButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'
 const MISSING_ICON_ONLY_LABEL_ERROR = 'Button with iconOnly requires an accessible name via aria-label, title, or text children.';
 const FALLBACK_ICON_ONLY_LABEL = 'Icon button';
 
-const resolveAccessibleText = (value?: string): string | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const trimmedValue = value.trim();
-    return trimmedValue || undefined;
-};
-
 export interface ButtonProps extends NativeButtonProps {
-    /**
-     * Visual style of the button
-     * @default 'solid'
-     */
     variant?: 'solid' | 'soft' | 'outline' | 'ghost' | 'toggle';
-
     children?: ReactNode;
-
-    /**
-     * Color theme/intent of the button
-     * @default 'neutral'
-     */
     intent?: 'neutral' | 'brand' | 'danger' | 'success' | 'white' | 'canvas';
-
-    /**
-     * Size of the button
-     * @default 'md'
-     */
     size?: 'sm' | 'md' | 'lg' | 'xl';
-
-    /**
-     * Border radius shape
-     * @default 'rounded'
-     */
     shape?: 'rounded' | 'pill' | 'square' | 'circle';
-
-    /**
-     * Width 100%
-     * @default false
-     */
     block?: boolean;
-
-    /**
-     * Content alignment
-     * @default 'center'
-     */
     align?: 'start' | 'center' | 'end';
-
-    /**
-     * Loading state
-     * @default false
-     */
     isLoading?: boolean;
-
-    /**
-     * Navigation target rendered as a link
-     */
     to?: string;
-
-    /**
-     * Left icon
-     */
     leftIcon?: ReactNode;
-
-    /**
-     * Right icon
-     */
     rightIcon?: ReactNode;
-
-    /**
-     * Icon-only mode - renders just the icon without text
-     * Uses the `children` as the icon content
-     * @default false
-     */
     iconOnly?: boolean;
-
-    /**
-     * Custom icon size when iconOnly is true
-     */
     iconSize?: number;
-
-    /**
-     * Premium gradient style(for CTA buttons like empty-state)
-     * @default false
-     */
     premium?: boolean;
-
     onClick?: MouseEventHandler<HTMLElement>;
 };
 
@@ -145,8 +73,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         .trim();
 
     const resolvedTextContent = textContent || undefined;
-    const normalizedAriaLabel = resolveAccessibleText(ariaLabel);
-    const normalizedTitle = resolveAccessibleText(title);
+    const normalizedAriaLabel = ariaLabel?.trim() || undefined;
+    const normalizedTitle = title?.trim() || undefined;
 
     let resolvedAriaLabel = normalizedAriaLabel;
     if (iconOnly && !resolvedAriaLabel) {

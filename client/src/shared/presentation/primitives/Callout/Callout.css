@@ -22,13 +22,9 @@
     background: var(--status-success-bg);
     border-color: var(--status-success-border);
 }
-
-/* Inline layout: icon + message in a single row. */
 .volt-callout--layout-inline {
     padding: 0.75rem 1rem;
 }
-
-/* Stacked layout: title + description + trailing action. */
 .volt-callout--layout-stacked {
     padding: 1rem;
 }

@@ -3,7 +3,7 @@ import { parseNumericInput } from '../utilities/parse-numeric-input';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
-import colorCodingService from '@/modules/trajectory/api/services/color-coding';
+import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';

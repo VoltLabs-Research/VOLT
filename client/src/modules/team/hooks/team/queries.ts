@@ -10,16 +10,17 @@ import type { QueryOptions } from '@/shared/infrastructure/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
 import type { Team } from '../../api/entities/team/team';
-import type { CreateTeamInputDTO } from '../../api/dtos/team/create-team';
-import type { UpdateTeamInputDTO } from '../../api/dtos/team/update-team';
-import type { LeaveTeamInputDTO } from '../../api/dtos/team/leave-team';
-import type { GenerateInviteCodeInputDTO } from '../../api/dtos/team/generate-invite-code';
-import type { DeleteInviteCodeInputDTO } from '../../api/dtos/team/delete-invite-code';
-import type { JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO } from '../../api/dtos/team/join-by-invite-code';
 import type {
+    CreateTeamInputDTO,
+    DeleteInviteCodeInputDTO,
+    GenerateInviteCodeInputDTO,
+    JoinByInviteCodeInputDTO,
+    JoinByInviteCodeOutputDTO,
+    LeaveTeamInputDTO,
     PreviewJoinByInviteCodeInputDTO,
-    PreviewJoinByInviteCodeOutputDTO
-} from '../../api/dtos/team/preview-join-by-invite-code';
+    PreviewJoinByInviteCodeOutputDTO,
+    UpdateTeamInputDTO
+} from '../../api/services/team-service';
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
 

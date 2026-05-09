@@ -25,7 +25,7 @@ import type { CanvasPanelActionProps } from '../canvas-panel-props';
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 import './RightPanel.css';
 

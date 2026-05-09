@@ -4,7 +4,7 @@ import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Chat } from '../../api/entities/chat';
-import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/dtos/group';
+import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/services/group-service';
 
 interface GroupActionDependencies {
     queryClient: QueryClient;

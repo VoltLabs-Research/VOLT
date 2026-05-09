@@ -1,6 +1,6 @@
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { filterPropertiesQuery } from './queries';
-import type { FilterPropertiesData } from '../../api/dtos/particle-filter';
+import type { FilterPropertiesData } from '../../api/services/particle-filter-service';
 
 interface UseFramePropertiesParams {
     trajectoryId?: string;

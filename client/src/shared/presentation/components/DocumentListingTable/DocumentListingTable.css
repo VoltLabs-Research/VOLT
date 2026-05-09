@@ -140,12 +140,6 @@
         transition: none;
     }
 }
-
-.document-listing-empty-content {
-    z-index: 101;
-}
-
-/** Compact variant — dense rows for embedded/panel contexts */
 .document-listing-table-container.is-compact .document-listing-table-header-container {
     padding: 0.25rem 0.5rem;
     background: var(--color-surface-1);
@@ -193,13 +187,6 @@
     height: 28px;
     max-height: 28px;
 }
-
-/*
- * Responsive table layout for small screens — we intentionally KEEP the
- * desktop row/column grid on phones so the data stays scannable. The whole
- * table scrolls horizontally as a unit; only the paddings and row height
- * are tightened to better fit touch viewports.
- */
 @media screen and (max-width: 768px) {
     .document-listing-table-container {
         overflow-x: auto;

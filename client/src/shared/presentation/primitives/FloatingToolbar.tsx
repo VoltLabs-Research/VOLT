@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import './FloatingToolbar.css';
 import { forwardRef } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';

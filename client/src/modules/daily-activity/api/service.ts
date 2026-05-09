@@ -1,19 +1,14 @@
 
 import { createService, get } from '@/app/core/http/utilities/create-service';
 import type { DailyActivity } from './entities/daily-activity';
-import type { GetDailyActivityParams } from './dtos/get-daily-activity';
+
+export interface GetDailyActivityParams {
+    range?: number;
+}
 
 const endpoints = {
     getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/', {
-        query: (params) => {
-            let query: Pick<GetDailyActivityParams, 'range'> | undefined;
-
-            if (params?.range) {
-                query = { range: params.range };
-            }
-
-            return query;
-        }
+        query: (params) => params?.range ? { range: params.range } : undefined
     })
 };
 

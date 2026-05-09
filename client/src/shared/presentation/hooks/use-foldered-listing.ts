@@ -14,19 +14,19 @@ export interface FolderedListingContext {
     folderId: string | null;
 };
 
-interface DeleteFolderConfirmConfig {
+export interface DeleteFolderConfirmConfig {
     title: string;
     description: string;
     confirmText?: string;
     cancelText?: string;
 };
 
-interface FolderedListingBreadcrumb {
+export interface FolderedListingBreadcrumb {
     id: string | null;
     title: string;
 };
 
-interface UseFolderedListingOptions<TItem, TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
+export interface UseFolderedListingOptions<TItem, TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
     teamId: string | null;
     fetchItems: (params: PaginationParams & FolderedListingContext) => Promise<PaginatedResponse<TItem>>;
     fetchFolders: (folderId: string | null) => Promise<PaginatedResponse<TFolder>>;
@@ -46,7 +46,7 @@ interface UseFolderedListingOptions<TItem, TFolder extends FolderBreadcrumbEntit
     getDeleteFolderConfirm: (folder: TFolder) => DeleteFolderConfirmConfig;
 };
 
-interface UseFolderedListingReturn<TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
+export interface UseFolderedListingReturn<TFolder extends FolderBreadcrumbEntity, TRow extends { _id: string }> {
     breadcrumbs: FolderedListingBreadcrumb[];
     context: FolderedListingContext;
     currentFolder: TFolder | null;

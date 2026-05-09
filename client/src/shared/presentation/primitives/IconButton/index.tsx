@@ -5,15 +5,6 @@ import type { ButtonHTMLAttributes, MouseEventHandler, ReactNode } from 'react';
 const MISSING_ICON_BUTTON_LABEL_ERROR = 'IconButton requires an accessible name via aria-label, aria-labelledby, or title.';
 const FALLBACK_ICON_BUTTON_LABEL = 'Icon button';
 
-const resolveAccessibleText = (value?: string): string | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const trimmedValue = value.trim();
-    return trimmedValue || undefined;
-};
-
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     children: ReactNode;
     variant?: 'default' | 'ghost';
@@ -37,10 +28,10 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
         .filter((child): child is string | number => typeof child === 'string' || typeof child === 'number')
         .join(' ')
         .trim();
-    const resolvedTitle = resolveAccessibleText(title);
-    const labelledBy = resolveAccessibleText(ariaLabelledBy);
+    const resolvedTitle = title?.trim() || undefined;
+    const labelledBy = ariaLabelledBy?.trim() || undefined;
 
-    let resolvedAriaLabel = resolveAccessibleText(ariaLabel) ?? resolvedTitle ?? (textContent || undefined);
+    let resolvedAriaLabel = ariaLabel?.trim() || resolvedTitle || textContent || undefined;
     if (!labelledBy && !resolvedAriaLabel) {
         if (!hasWarnedForMissingLabelRef.current) {
             console.warn(MISSING_ICON_BUTTON_LABEL_ERROR);

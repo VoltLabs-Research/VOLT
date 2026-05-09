@@ -4,7 +4,7 @@ import { DefaultChatTransport } from 'ai';
 import type {
     CreateConversationStreamTransportParams,
     CreateConversationStreamTransportResult
-} from '../api/dtos/create-conversation-stream-transport';
+} from '../api/service';
 
 export const createConversationStreamTransport = ({
     teamId,

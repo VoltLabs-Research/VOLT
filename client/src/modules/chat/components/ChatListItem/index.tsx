@@ -4,7 +4,7 @@ import ListRow from '@/shared/presentation/primitives/ListRow';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatListItem.css';
