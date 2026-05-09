@@ -64,7 +64,7 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
             options={menuOptions}
             shouldOpenOnContextMenu={shouldOpenOnContextMenu}
             trigger={(
-                <div className='d-flex column flex-1 min-h-0'>
+                <div className='d-flex column flex-1 min-h-0 vh-max'>
                     {children}
                 </div>
             )}

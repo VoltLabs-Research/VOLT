@@ -16,7 +16,6 @@ import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
 import useViewportNarrow from '../../hooks/use-viewport-narrow';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
-import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import CanvasBanners from '../CanvasBanners';
 import PreloadingOverlay from '../PreloadingOverlay';
 import ResizeHandle from '../ResizeHandle';
@@ -192,7 +191,6 @@ const CanvasPage = () => {
         downloadTrajectoryAnalyses,
         isDownloading: isDownloadingTrajectoryAnalyses
     } = useDownloadTrajectoryAnalyses();
-    const { downloadTrajectory, isDownloading: isExportingTrajectory } = useDownloadTrajectory();
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
@@ -351,7 +349,6 @@ const CanvasPage = () => {
         trajectory?._id
         && !isDownloadingTrajectoryAnalyses
     );
-    const canExportTrajectory = Boolean(trajectory?._id && hasFrames && !isExportingTrajectory);
 
     const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
         const resolvedAnalysisId = targetAnalysisId ?? analysisId;
@@ -370,18 +367,6 @@ const CanvasPage = () => {
             format: params.format ?? 'csv'
         });
     }, [downloadAnalysisListings]);
-
-    const handleExportTrajectory = useCallback(() => {
-        if (!trajectory?._id) {
-            return;
-        }
-
-        void downloadTrajectory({
-            trajectoryId: trajectory._id,
-            filename: trajectory.name || trajectory._id,
-            archive: true
-        });
-    }, [downloadTrajectory, trajectory?._id, trajectory?.name]);
 
     const handleDownloadTrajectoryAnalyses = useCallback(() => {
         if (!trajectory?._id) {
@@ -534,9 +519,7 @@ const CanvasPage = () => {
             <Stack flex='1' overflow='hidden' position='relative' minH='0' className="canvas-editor-main">
                 <TopToolbar
                     trajectory={trajectory}
-                    canExport={canExportTrajectory}
                     canDownloadAnalyses={canDownloadTrajectoryAnalyses}
-                    onExport={handleExportTrajectory}
                     onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
                     localGlbMode={isLocalGlbViewer}
                     workspacePeers={peersInLobby}

@@ -25,10 +25,11 @@ import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actio
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
-import { FolderInput, Trash2 } from 'lucide-react';
+import { Download, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
+import useDownloadTrajectory from './use-download-trajectory';
 import {
     trajectoryFolderQuery,
     trajectoryFoldersQuery,
@@ -101,6 +102,7 @@ const useTrajectoriesListing = () => {
     const { mutateAsync: updateFolder } = useUpdateTrajectoryFolderMutation();
     const { mutateAsync: deleteFolder } = useDeleteTrajectoryFolderMutation();
     const { mutateAsync: moveTrajectory } = useMoveTrajectoryMutation();
+    const { downloadTrajectory } = useDownloadTrajectory();
 
     const moveTrajectoryToFolder = useCallback((trajectoryId: string, folderId: string | null) => {
         return moveTrajectory({ trajectoryId, folderId });
@@ -155,13 +157,23 @@ const useTrajectoriesListing = () => {
             },
             requiredPermission: 'trajectory:read'
         },
+        export: {
+            label: 'Export',
+            icon: Download,
+            handler: ({ item: trajectory }) => downloadTrajectory({
+                trajectoryId: trajectory._id,
+                filename: trajectory.name || trajectory._id,
+                archive: true
+            }),
+            requiredPermission: 'trajectory:read'
+        },
         move: {
             label: 'Move to Folder',
             icon: FolderInput,
             handler: ({ item: trajectory }) => openMove(trajectory),
             requiredPermission: 'trajectory:update'
         }
-    }), [navigate, openTrajectory]);
+    }), [downloadTrajectory, navigate, openTrajectory]);
 
     const appendTrajectoryDeleteOption = useCallback((options: MenuOption[], {
         item,
