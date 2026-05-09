@@ -1,8 +1,8 @@
 import { cn } from '@/shared/utils/cn';
 import './SearchInput.css';
+import { Search } from 'lucide-react';
 import { forwardRef, useRef } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { IoSearchOutline } from 'react-icons/io5';
 
 const MISSING_SEARCH_INPUT_NAME_ERROR = 'SearchInput requires an accessible name via aria-label, aria-labelledby, or an external label bound to its id.';
 const FALLBACK_SEARCH_LABEL = 'Search';
@@ -55,7 +55,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
 
     return (
         <div className={`${cn('search-input-container d-flex items-center gap-05', variant === 'small' && 'search-input-container--small', containerClassName)}`}>
-            <IoSearchOutline aria-hidden='true' className={cn('search-input-icon color-muted f-shrink-0', variant === 'small' && 'search-input-icon--small')} />
+            <Search aria-hidden='true' className={cn('search-input-icon color-muted f-shrink-0', variant === 'small' && 'search-input-icon--small')} />
             <div className='search-input-content p-relative flex-1'>
                 {overlayVisible && overlayContent && (
                     <div className='search-input-overlay d-flex items-center'>

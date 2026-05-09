@@ -311,7 +311,7 @@ export default class ClusterTransferCoordinator {
                     logger.warn({ error, jobId: claimedJob.id }, '[ClusterTransferCoordinator] Failed to renew claim');
                 });
             }, CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS);
-            renewTimer.unref?.();
+            renewTimer.unref();
 
             try {
                 await this.executeJob(claimedJob.id);

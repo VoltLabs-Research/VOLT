@@ -78,15 +78,14 @@ const SubListingsPage = () => {
     ), [analysisId, exposureId, timestep]);
 
     const persistedTabKey = useMemo(() => `${resolvePersistenceKey(queryKey)}-tab`, [queryKey]);
+    const persistedTab = searchParams.get(persistedTabKey);
+    const tabFromUrl = searchParams.get('tab');
 
     const initialTab = useMemo(() => {
-        const persisted = searchParams.get(persistedTabKey);
-        if(persisted && names.includes(persisted)) return persisted;
-        const fromUrl = searchParams.get('tab');
-        if(fromUrl && names.includes(fromUrl)) return fromUrl;
+        if(persistedTab && names.includes(persistedTab)) return persistedTab;
+        if(tabFromUrl && names.includes(tabFromUrl)) return tabFromUrl;
         return names[0] ?? '';
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [names, persistedTabKey]);
+    }, [names, persistedTab, tabFromUrl]);
 
     const [activeTab, setActiveTab] = useState(initialTab);
     const [snapshotsByTab, setSnapshotsByTab] = useState<Record<string, SubListingColumnSnapshot<SubListingRow>>>({});

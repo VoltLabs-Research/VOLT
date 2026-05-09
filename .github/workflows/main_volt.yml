@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'Volt/server/**'
-      - '.github/workflows/deploy-volt-server.yml'
+      - 'server/**'
+      - '.github/workflows/main_volt.yml'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ permissions:
 
 env:
   NODE_VERSION: '24.x'
-  SERVER_WORKDIR: 'Volt/server'
+  SERVER_WORKDIR: 'server'
   SERVER_RELEASE_DIR: '.azure/volt-server-release'
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: Volt/server/package-lock.json
+          cache-dependency-path: server/package-lock.json
 
       - name: Install and build Volt/server
         working-directory: ${{ env.SERVER_WORKDIR }}

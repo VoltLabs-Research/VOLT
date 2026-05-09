@@ -1,6 +1,6 @@
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
-interface SceneKeyConfig {
+export interface SceneKeyConfig {
     source: string;
     sceneType: string;
     analysisId?: string;

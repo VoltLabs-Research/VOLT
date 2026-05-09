@@ -15,10 +15,10 @@ import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
 import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { ReactNode } from 'react';
+import { Box as CubeIcon, ScanSearch } from 'lucide-react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
 import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
-import { TbCube3dSphere, TbObjectScan } from 'react-icons/tb';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
 
 type SectionConfig = {
@@ -35,7 +35,7 @@ const SECTIONS: SectionConfig[] = [
     },
     {
         key: 'trajectories',
-        icon: <TbObjectScan />,
+        icon: <ScanSearch size={16} />,
         title: 'Trajectories'
     },
     {
@@ -45,7 +45,7 @@ const SECTIONS: SectionConfig[] = [
     },
     {
         key: 'plugins',
-        icon: <TbCube3dSphere />,
+        icon: <CubeIcon size={16} />,
         title: 'Plugins'
     },
     {

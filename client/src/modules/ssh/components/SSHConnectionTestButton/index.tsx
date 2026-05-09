@@ -2,8 +2,8 @@ import Button from '@/shared/presentation/primitives/Button';
 import { useTestSSHConnectionMutation } from '@/modules/ssh/hooks/queries';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { Check, X } from 'lucide-react';
 import { useId, useState } from 'react';
-import { TbCheck, TbX } from 'react-icons/tb';
 import type { ReactNode } from 'react';
 
 interface TestResult {
@@ -40,7 +40,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
     if (testState.status !== ConnectionTestStateStatus.Idle) {
         let testResultClassName = 'color-red';
         let testResultMessage = testState.message;
-        let testResultIcon: ReactNode = <TbX size={16} />;
+        let testResultIcon: ReactNode = <X size={16} />;
 
         if (testState.status === ConnectionTestStateStatus.Loading) {
             testResultClassName = 'color-muted';
@@ -49,7 +49,7 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
 
         if (testState.status === ConnectionTestStateStatus.Success) {
             testResultClassName = 'color-green';
-            testResultIcon = <TbCheck size={16} />;
+            testResultIcon = <Check size={16} />;
         }
 
         testResultContent = (

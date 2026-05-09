@@ -1,7 +1,7 @@
 import Button from '@/shared/presentation/primitives/Button';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
-import { IoChevronDown } from 'react-icons/io5';
 import type { SubItem } from './SidebarExpandableSection.types';
 
 interface NestedSubItemsProps {
@@ -33,7 +33,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                 aria-current={item.isSelected ? 'page' : undefined}
             >
                 <span className='text-truncate'>{item.label}</span>
-                <IoChevronDown
+                <ChevronDown
                     className={`sidebar-nested-chevron ${expanded ? 'is-expanded' : ''}`}
                     size={12}
                     aria-hidden='true'

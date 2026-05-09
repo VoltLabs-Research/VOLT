@@ -21,8 +21,13 @@
     min-width: 0;
 }
 
-.sidebar-workspace .sidebar-workspace-selector .select-trigger {
+.sidebar-workspace .sidebar-workspace-selector.select-trigger {
     width: 100%;
+    font-size: 0.875rem;
+}
+
+.sidebar-workspace .sidebar-workspace-selector .select-value {
+    font-size: inherit;
 }
 
 .sidebar-workspace-actions-trigger {

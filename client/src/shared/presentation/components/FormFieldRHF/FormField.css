@@ -301,6 +301,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .form-field-canvas-dropdown {

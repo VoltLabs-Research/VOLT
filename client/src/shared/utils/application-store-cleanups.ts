@@ -1,17 +1,8 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useKeyboardShortcutsStore } from '@/modules/canvas/stores/use-keyboard-shortcuts-store';
-import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
-import { useChatPresenceStore } from '@/modules/chat/stores/chat/use-chat-presence-store';
-import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
-import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import {
     registerErrorRecoveryCleanup,
     registerManualAppCleanup,
     registerSharedAppCleanup
 } from '@/shared/utils/app-cleanup-registry';
-import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 
 import queryClient from '@/shared/infrastructure/query/query-client';
 
@@ -25,8 +16,20 @@ import queryClient from '@/shared/infrastructure/query/query-client';
  * logout) via {@link resetAllApplicationStores}.
  */
 const socketManagedStoreResetters = [
-    () => useTeamJobsStore.getState().reset(),
-    () => useClusterStore.getState().reset()
+    () => {
+        void import('@/modules/jobs/stores/use-team-jobs-store')
+            .then(({ default: useTeamJobsStore }) => {
+                useTeamJobsStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/cluster/stores/use-cluster-store')
+            .then(({ useClusterStore }) => {
+                useClusterStore.getState().reset();
+            })
+            .catch(() => undefined);
+    }
 ];
 
 /**
@@ -34,13 +37,55 @@ const socketManagedStoreResetters = [
  * every team switch without side-effects.
  */
 const teamScopedStoreResetters = [
-    () => useEditorStore.getState().resetAll(),
-    () => useScreenshotStore.getState().reset(),
-    () => useKeyboardShortcutsStore.getState().reset(),
-    () => useChatPresenceStore.getState().reset(),
-    () => usePluginBuilderStore.getState().reset(),
-    () => usePluginDebugStore.getState().reset(),
-    () => useTeamPresenceStore.getState().reset()
+    () => {
+        void import('@/modules/canvas/stores/editor')
+            .then(({ useEditorStore }) => {
+                useEditorStore.getState().resetAll();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/canvas/stores/use-screenshot-store')
+            .then(({ useScreenshotStore }) => {
+                useScreenshotStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/canvas/stores/use-keyboard-shortcuts-store')
+            .then(({ useKeyboardShortcutsStore }) => {
+                useKeyboardShortcutsStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/chat/stores/chat/use-chat-presence-store')
+            .then(({ useChatPresenceStore }) => {
+                useChatPresenceStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/plugin/stores/plugin/use-plugin-builder-store')
+            .then(({ usePluginBuilderStore }) => {
+                usePluginBuilderStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/plugin/stores/plugin/use-plugin-debug-store')
+            .then(({ usePluginDebugStore }) => {
+                usePluginDebugStore.getState().reset();
+            })
+            .catch(() => undefined);
+    },
+    () => {
+        void import('@/modules/team/stores/team/use-team-presence-store')
+            .then(({ useTeamPresenceStore }) => {
+                useTeamPresenceStore.getState().reset();
+            })
+            .catch(() => undefined);
+    }
 ];
 
 /** Every store resetter - used for full cleanup (route nav, logout). */
