@@ -377,16 +377,13 @@ const DocumentListingGrid = <T extends { _id: string },>({
             {gridContent}
             <DragOverlay>
                 {activeDragItem ? (
-                    <div className='document-listing-grid-drag-overlay'>
+                    <div className='document-listing-grid-drag-overlay glass-bg'>
                         <span className='document-listing-grid-drag-overlay__icon'>
                             <GripVertical size={16} strokeWidth={1.8} />
                         </span>
                         <span className='document-listing-grid-drag-overlay__content'>
                             <span className='document-listing-grid-drag-overlay__title'>
                                 {getGridItemTitle(activeDragItem)}
-                            </span>
-                            <span className='document-listing-grid-drag-overlay__meta'>
-                                Drop onto a folder to move
                             </span>
                         </span>
                     </div>

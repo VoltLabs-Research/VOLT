@@ -59,7 +59,7 @@ interface ProxyTarget {
 }
 
 const DEFAULT_SESSION_TTL_MS = 600_000;
-const DEFAULT_RELAY_BIND_HOST = '127.0.0.1';
+const DEFAULT_RELAY_BIND_HOST = '0.0.0.0';
 const DEFAULT_RELAY_PORT_START = 24000;
 const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
