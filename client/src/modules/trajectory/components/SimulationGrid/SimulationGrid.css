@@ -1,0 +1,23 @@
+.trajectory-breadcrumbs .volt-breadcrumbs__list {
+    gap: 0.15rem;
+}
+
+.trajectory-breadcrumb-wrapper {
+    gap: 0.25rem;
+}
+
+.trajectory-breadcrumb-drop-target {
+    position: relative;
+    transition:
+        box-shadow 0.16s ease;
+}
+
+.trajectory-breadcrumb-drop-target.is-drag-over {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-blue) 62%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .trajectory-breadcrumb-drop-target {
+        transition: none;
+    }
+}

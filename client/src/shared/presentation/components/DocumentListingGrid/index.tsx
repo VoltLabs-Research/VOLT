@@ -1,9 +1,16 @@
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
+import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingGrid.css';
-import { FileText } from 'lucide-react';
-import { useRef } from 'react';
+import { CSS } from '@dnd-kit/utilities';
+import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { FileText, GripVertical } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface DocumentListingGridProps<T extends { _id: string }> {
     data: T[];
@@ -11,19 +18,145 @@ interface DocumentListingGridProps<T extends { _id: string }> {
     isFetchingMore?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
-    renderItem: (item: T, index: number) => React.ReactNode;
-    renderSkeleton?: () => React.ReactNode;
-    emptyIcon?: React.ReactNode;
+    renderItem: (item: T, index: number) => ReactNode;
+    renderSkeleton?: () => ReactNode;
+    emptyIcon?: ReactNode;
     emptyTitle?: string;
     emptyMessage?: string;
     emptyButtonText?: string;
     emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
+    beforeContent?: ReactNode;
+    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
+    dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     className?: string;
     errorMessage?: string | null;
     isAccessDenied?: boolean;
     onRetry?: () => void;
     retryButtonText?: string;
+};
+
+interface DocumentListingGridItemProps<T extends { _id: string }> {
+    item: T;
+    index: number;
+    renderItem: (item: T, index: number) => ReactNode;
+    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
+    draggableId?: string | null;
+    droppableId?: string | null;
+    suppressNextClickRef: MutableRefObject<boolean>;
+}
+
+const getGridItemTitle = (item: unknown): string => {
+    if (typeof item !== 'object' || item === null) {
+        return 'Item';
+    }
+
+    const record = item as Record<string, unknown>;
+    const value = record.name ?? record.title;
+    return typeof value === 'string' && value.trim().length > 0 ? value : 'Item';
+};
+
+const DocumentListingGridItem = <T extends { _id: string },>({
+    item,
+    index,
+    renderItem,
+    getMenuOptions,
+    draggableId = null,
+    droppableId = null,
+    suppressNextClickRef
+}: DocumentListingGridItemProps<T>) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDraggableNodeRef,
+        transform,
+        isDragging
+    } = useDraggable({
+        id: draggableId ?? `document-listing-grid-disabled-draggable:${item._id}`,
+        disabled: !draggableId
+    });
+    const {
+        setNodeRef: setDroppableNodeRef,
+        isOver
+    } = useDroppable({
+        id: droppableId ?? `document-listing-grid-disabled-droppable:${item._id}`,
+        disabled: !droppableId
+    });
+    const menuOptions = getMenuOptions ? getMenuOptions(item, []) : [];
+
+    const setItemNodeRef = useCallback((node: HTMLDivElement | null) => {
+        setDraggableNodeRef(node);
+        setDroppableNodeRef(node);
+    }, [setDraggableNodeRef, setDroppableNodeRef]);
+
+    const itemStyle: CSSProperties = {
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 20 : undefined
+    };
+
+    const itemClassName = [
+        'document-listing-grid-item',
+        draggableId ? 'is-draggable' : '',
+        droppableId ? 'is-droppable' : '',
+        isDragging ? 'is-dragging' : '',
+        isOver ? 'is-drag-over' : ''
+    ].filter(Boolean).join(' ');
+
+    const content = (
+        <div
+            ref={setItemNodeRef}
+            className={itemClassName}
+            style={itemStyle}
+            onClickCapture={(event) => {
+                if (!suppressNextClickRef.current) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                suppressNextClickRef.current = false;
+            }}
+            {...(draggableId ? attributes : {})}
+            {...(draggableId ? listeners : {})}
+        >
+            {draggableId ? (
+                <div className='document-listing-grid-drag-affordance' aria-hidden='true'>
+                    <GripVertical size={14} strokeWidth={1.8} />
+                </div>
+            ) : null}
+            {renderItem(item, index)}
+        </div>
+    );
+
+    if (menuOptions.length === 0) {
+        return content;
+    }
+
+    return (
+        <ContextMenuPopover id={`grid-item-menu-${item._id}`} trigger={content} options={menuOptions} />
+    );
+};
+
+const PlainDocumentListingGridItem = <T extends { _id: string },>({
+    item,
+    index,
+    renderItem,
+    getMenuOptions
+}: Pick<DocumentListingGridItemProps<T>, 'item' | 'index' | 'renderItem' | 'getMenuOptions'>) => {
+    const menuOptions = getMenuOptions ? getMenuOptions(item, []) : [];
+    const content = (
+        <div className='document-listing-grid-item'>
+            {renderItem(item, index)}
+        </div>
+    );
+
+    if (menuOptions.length === 0) {
+        return content;
+    }
+
+    return (
+        <ContextMenuPopover id={`grid-item-menu-${item._id}`} trigger={content} options={menuOptions} />
+    );
 };
 
 const DocumentListingGrid = <T extends { _id: string },>({
@@ -40,6 +173,9 @@ const DocumentListingGrid = <T extends { _id: string },>({
     emptyButtonText,
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
+    beforeContent,
+    getMenuOptions,
+    dragAndDrop,
     className = '',
     errorMessage,
     isAccessDenied = false,
@@ -47,6 +183,15 @@ const DocumentListingGrid = <T extends { _id: string },>({
     retryButtonText
 }: DocumentListingGridProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const suppressNextClickRef = useRef(false);
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: dragAndDrop?.activationDistance ?? 8
+            }
+        })
+    );
     const { sentinelRef } = useInfiniteScroll({
         rootRef: containerRef,
         hasMore,
@@ -67,13 +212,103 @@ const DocumentListingGrid = <T extends { _id: string },>({
         isAccessDenied
     });
 
-    const content = shouldShowContent && data.map((item, index) => (
-        <div key={item._id} className='document-listing-grid-item'>
-            {renderItem(item, index)}
-        </div>
-    ));
+    const draggableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
 
-    return (
+        data.forEach((item) => {
+            const draggableId = dragAndDrop.getDraggableId(item);
+            if (draggableId) {
+                nextMap.set(draggableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const droppableItemsById = useMemo(() => {
+        const nextMap = new Map<string, T>();
+        if (!dragAndDrop) {
+            return nextMap;
+        }
+
+        data.forEach((item) => {
+            const droppableId = dragAndDrop.getDroppableId(item);
+            if (droppableId) {
+                nextMap.set(droppableId, item);
+            }
+        });
+
+        return nextMap;
+    }, [data, dragAndDrop]);
+
+    const activeDragItem = activeDragId ? draggableItemsById.get(activeDragId) ?? null : null;
+
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        suppressNextClickRef.current = true;
+        setActiveDragId(String(event.active.id));
+    }, []);
+
+    const handleDragCancel = useCallback(() => {
+        suppressNextClickRef.current = true;
+        setActiveDragId(null);
+    }, []);
+
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        if (!dragAndDrop) {
+            setActiveDragId(null);
+            return;
+        }
+
+        suppressNextClickRef.current = true;
+        const activeId = String(event.active.id);
+        const overId = event.over ? String(event.over.id) : null;
+
+        setActiveDragId(null);
+
+        await dragAndDrop.onDragEnd({
+            event,
+            activeId,
+            overId,
+            activeItem: draggableItemsById.get(activeId) ?? null,
+            overItem: overId ? droppableItemsById.get(overId) ?? null : null
+        });
+
+        window.setTimeout(() => {
+            suppressNextClickRef.current = false;
+        }, 0);
+    }, [dragAndDrop, draggableItemsById, droppableItemsById]);
+
+    const content = shouldShowContent && data.map((item, index) => {
+        if (!dragAndDrop) {
+            return (
+                <PlainDocumentListingGridItem
+                    key={item._id}
+                    item={item}
+                    index={index}
+                    renderItem={renderItem}
+                    getMenuOptions={getMenuOptions}
+                />
+            );
+        }
+
+        return (
+            <DocumentListingGridItem
+                key={item._id}
+                item={item}
+                index={index}
+                renderItem={renderItem}
+                getMenuOptions={getMenuOptions}
+                draggableId={dragAndDrop.getDraggableId(item)}
+                droppableId={dragAndDrop.getDroppableId(item)}
+                suppressNextClickRef={suppressNextClickRef}
+            />
+        );
+    });
+
+    const grid = (
         <div ref={containerRef} className={`document-listing-grid ${className}`}>
             {isInitialLoading && renderSkeleton?.()}
 
@@ -119,6 +354,45 @@ const DocumentListingGrid = <T extends { _id: string },>({
 
             <div ref={sentinelRef} className='document-listing-grid-sentinel' aria-hidden='true' />
         </div>
+    );
+
+    const gridContent = (
+        <>
+            {beforeContent}
+            {grid}
+        </>
+    );
+
+    if (!dragAndDrop) {
+        return gridContent;
+    }
+
+    return (
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragCancel={handleDragCancel}
+            onDragEnd={handleDragEnd}
+        >
+            {gridContent}
+            <DragOverlay>
+                {activeDragItem ? (
+                    <div className='document-listing-grid-drag-overlay'>
+                        <span className='document-listing-grid-drag-overlay__icon'>
+                            <GripVertical size={16} strokeWidth={1.8} />
+                        </span>
+                        <span className='document-listing-grid-drag-overlay__content'>
+                            <span className='document-listing-grid-drag-overlay__title'>
+                                {getGridItemTitle(activeDragItem)}
+                            </span>
+                            <span className='document-listing-grid-drag-overlay__meta'>
+                                Drop onto a folder to move
+                            </span>
+                        </span>
+                    </div>
+                ) : null}
+            </DragOverlay>
+        </DndContext>
     );
 };
 
