@@ -10,11 +10,11 @@ import {
     useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import type { GetRasterMetadataParams } from '@/modules/raster/api/dtos/get-raster-metadata';
 import type {
+    GetRasterMetadataParams,
     TriggerRasterizationParams,
     TriggerRasterizationResponse
-} from '@/modules/raster/api/dtos/trigger-rasterization';
+} from '@/modules/raster/api/service';
 
 const BASE_KEY = 'raster';
 
@@ -82,4 +82,3 @@ export const useTriggerRasterizationMutation = () => {
         }
     });
 };
-

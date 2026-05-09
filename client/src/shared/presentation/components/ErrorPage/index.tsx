@@ -1,4 +1,4 @@
-import { SOURCE_LABELS } from '@/shared/utils';
+import { SOURCE_LABELS } from '@/shared/utils/error-routing';
 import Button from '@/shared/presentation/primitives/Button';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';

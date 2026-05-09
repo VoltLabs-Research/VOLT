@@ -7,19 +7,3 @@
 .sidebar-nav-item-wrapper {
     width: 100%;
 }
-
-/* Divider */
-.sidebar-divider {
-    margin: 0.75rem 0;
-    border-color: var(--color-border-soft);
-}
-
-/* Team Section */
-.sidebar-team-section {
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-team-section .select-trigger {
-    width: 100%;
-}

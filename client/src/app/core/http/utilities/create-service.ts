@@ -10,16 +10,6 @@ import {
     download,
     custom
 } from '@voltstack/voltclient';
-import type {
-    EmptyParams,
-    UnwrapMode,
-    ClientDescriptor,
-    ServiceExecutionContext,
-    MethodOpts,
-    BuiltService
-} from '@voltstack/voltclient';
-
-export type { EmptyParams, UnwrapMode, ClientDescriptor, ServiceExecutionContext, MethodOpts, BuiltService };
 export { get, post, patch, del, paginated, request, download, custom };
 
 type ServiceConfig = Parameters<typeof sdkCreateService>[0];

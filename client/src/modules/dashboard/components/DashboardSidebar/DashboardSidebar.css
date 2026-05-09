@@ -53,7 +53,6 @@
     justify-content: center;
 }
 
-/* Footer */
 .sidebar-footer {
     padding: 0.75rem;
     border-top: 1px solid var(--color-border-soft);
@@ -71,7 +70,6 @@
     margin-bottom: 0;
 }
 
-/* --- Collapsed State --- */
 .dashboard-sidebar.is-collapsed {
     width: 64px;
 }
@@ -96,11 +94,6 @@
 }
 
 .dashboard-sidebar.is-collapsed .sidebar-sub-items {
-    display: none;
-}
-
-.dashboard-sidebar.is-collapsed .sidebar-divider.is-hidden,
-.dashboard-sidebar.is-collapsed .sidebar-team-section.is-hidden {
     display: none;
 }
 
@@ -136,7 +129,6 @@
     background: var(--color-surface-2);
 }
 
-/* Mobile Responsive */
 @media screen and (max-width: 1024px) {
     .dashboard-sidebar {
         transform: translateX(-100%);
@@ -161,7 +153,6 @@
         width: 280px !important;
     }
 
-    /* Undo collapsed styles on mobile - always show full sidebar */
     .dashboard-sidebar.is-collapsed .sidebar-nav-label,
     .dashboard-sidebar.is-collapsed .sidebar-section-chevron {
         display: unset;
@@ -183,11 +174,6 @@
     .dashboard-sidebar.is-collapsed .sidebar-footer {
         padding: 0.75rem;
         align-items: stretch;
-    }
-
-    .dashboard-sidebar.is-collapsed .sidebar-divider.is-hidden,
-    .dashboard-sidebar.is-collapsed .sidebar-team-section.is-hidden {
-        display: block;
     }
 
     .sidebar-overlay.is-open {

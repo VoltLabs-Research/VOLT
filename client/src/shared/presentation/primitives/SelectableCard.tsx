@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Stack from './Stack';
 import Text from './Text';
 import Heading from './Heading';

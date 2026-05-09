@@ -33,7 +33,9 @@ import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, Ter
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
-import type { ColumnConfig, MenuOption, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/ServerTable/ServerTable.css';
 import { useNavigate } from 'react-router-dom';

@@ -42,7 +42,6 @@ body {
     font-family: var(--font-sans);
     color: var(--color-text-primary);
     min-height: 100dvh;
-    min-height: 100dvh;
     min-height: -webkit-fill-available;
     text-rendering: optimizeLegibility;
     font-synthesis-weight: none;
@@ -53,11 +52,6 @@ body {
 
 :where(button, input, select, textarea) {
     font: inherit;
-}
-
-#root {
-    min-height: 100dvh;
-    min-height: 100dvh;
 }
 
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])) {
@@ -124,10 +118,6 @@ input:-webkit-autofill:hover {
     -webkit-text-fill-color: var(--color-autofill-text) !important;
 }
 
-.MuiSkeleton-root {
-    background-color: color-mix(in srgb, var(--color-text-muted) 11%, transparent) !important;
-}
-
 .primary-surface {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -153,7 +143,6 @@ input:-webkit-autofill:hover {
     white-space: nowrap;
 }
 
-/** Status Zones **/
 .zone-danger {
     background: var(--status-error-bg);
     border: 1px solid var(--status-error-border);
@@ -167,7 +156,6 @@ input:-webkit-autofill:hover {
     border-radius: var(--radius-md);
 }
 
-/** Card Elevated **/
 .card-elevated {
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);

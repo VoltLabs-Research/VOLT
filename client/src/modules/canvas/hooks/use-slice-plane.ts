@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DEFAULT_SLICE_PLANE_CONFIG, getSlicePlaneCenterDistance, isSlicePlaneConfigPristine } from '@/modules/fractal/utilities/slice-plane';
 
-import type { SlicePlaneNormalAxis } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneNormalAxis } from '@/modules/fractal/api/entities/scene';
 
 const NON_COMMITTABLE_NUMERIC_INPUTS = new Set(['', '-', '+', '.', '-.', '+.']);
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChatMessageType } from '@/modules/chat/api/entities/message';
 import ReactionsDisplay from '../ReactionsDisplay';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
 import Avatar from '@/shared/presentation/primitives/Avatar';
 import Box from '@/shared/presentation/primitives/Box';
@@ -49,7 +49,6 @@ const MessageBubble = ({
                 fileUrl={message.metadata?.fileUrl}
                 fileType={message.metadata?.fileType}
                 showDownload={!!message.metadata?.fileUrl}
-                variant='compact'
                 className='message-bubble-file'
             />
         );

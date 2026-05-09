@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 
 import type { PropertyOption } from './use-property-selector.utilities';
 
-export type { PropertyOption } from './use-property-selector.utilities';
 
 interface UsePropertySelectorParams {
     trajectoryId?: string;

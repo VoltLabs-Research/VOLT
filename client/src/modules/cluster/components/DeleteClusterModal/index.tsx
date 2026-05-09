@@ -6,7 +6,7 @@ import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
-import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
+import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 
 export const DELETE_CLUSTER_MODAL_ID = 'delete-cluster-modal';

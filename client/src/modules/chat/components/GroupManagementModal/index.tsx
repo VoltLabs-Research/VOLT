@@ -4,7 +4,7 @@ import { IoSettingsOutline, IoPeopleOutline, IoShieldOutline } from 'react-icons
 import AdminsTab from './tabs/AdminsTab';
 import GeneralTab from './tabs/GeneralTab';
 import MembersTab from './tabs/MembersTab';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { toggleSelection } from '@/shared/utils/selection';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';

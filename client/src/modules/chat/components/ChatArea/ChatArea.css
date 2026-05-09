@@ -2,10 +2,3 @@
     flex: 1;
     min-width: 0;
 }
-
-.chat-area-empty-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--color-surface-2);
-}

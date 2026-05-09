@@ -1,38 +1,29 @@
-import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
+import { teamClusterService } from '@/modules/cluster/api/service';
 import { buildKeys, createMutation, createQuery, queryClient, withSuccess } from '@/shared/infrastructure/query';
 import type { MutationOptions, QueryOptions } from '@/shared/infrastructure/query';
-import type { CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster';
-import type { DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type {
+    CreateTeamClusterInputDTO,
+    CreateTeamClusterOutputDTO,
     CreateTeamClusterTransferRequestInputDTO,
-    CreateTeamClusterTransferRequestOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
-import type { ListTeamClustersInputDTO, ListTeamClustersOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/list-team-clusters';
-import type {
+    CreateTeamClusterTransferRequestOutputDTO,
+    DeleteTeamClusterInputDTO,
+    DeleteTeamClusterOutputDTO,
+    ListTeamClustersInputDTO,
+    ListTeamClustersOutputDTO,
     ListTeamClusterTransferJobsInputDTO,
-    ListTeamClusterTransferJobsOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/list-team-cluster-transfer-jobs';
-import type {
+    ListTeamClusterTransferJobsOutputDTO,
+    ProvisionDemoTeamClusterInputDTO,
+    ProvisionDemoTeamClusterOutputDTO,
     RegenerateTeamClusterEnrollmentTokenInputDTO,
-    RegenerateTeamClusterEnrollmentTokenOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/regenerate-team-cluster-enrollment-token';
-import type {
+    RegenerateTeamClusterEnrollmentTokenOutputDTO,
     RevealTeamClusterCredentialsInputDTO,
-    RevealTeamClusterCredentialsOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/reveal-team-cluster-credentials';
-import type {
+    RevealTeamClusterCredentialsOutputDTO,
     UpdateTeamClusterQueueConcurrencyInputDTO,
-    UpdateTeamClusterQueueConcurrencyOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
-import type {
+    UpdateTeamClusterQueueConcurrencyOutputDTO,
     UpdateTeamClusterRoleInputDTO,
     UpdateTeamClusterRoleOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
+} from '@/modules/cluster/api/service';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/entities/team-cluster';
-import type {
-    ProvisionDemoTeamClusterInputDTO,
-    ProvisionDemoTeamClusterOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/demo-team-cluster';
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;

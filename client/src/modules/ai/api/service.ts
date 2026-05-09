@@ -1,11 +1,48 @@
 import { createService, del, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 
+import type { AIProvider } from './entities/ai-provider';
 import type { AIConversation, AIConversationMessage } from './entities/ai-conversation';
-import type { CreateAIConversationParams, CreateAIConversationResult } from './dtos/create-ai-conversation';
-import type { ListAIConversationMessagesParams } from './dtos/list-ai-conversation-messages';
-import type { ListAIConversationsParams } from './dtos/list-ai-conversations';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { UpdateAIConversationParams } from './dtos/update-ai-conversation';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ChatTransport, UIMessage } from 'ai';
+
+export interface CreateAIConversationParams {
+    title?: string;
+    message?: string;
+}
+
+export interface CreateAIConversationResult {
+    conversation: AIConversation;
+    userMessage?: AIConversationMessage;
+}
+
+export interface AIModelSelection {
+    provider?: AIProvider;
+    model?: string;
+}
+
+export interface CreateConversationStreamTransportParams {
+    teamId?: string;
+    conversationId?: string;
+    getModelSelection: () => AIModelSelection;
+}
+
+export type CreateConversationStreamTransportResult = ChatTransport<UIMessage>;
+
+export interface ListAIConversationMessagesParams {
+    page?: number;
+    limit?: number;
+}
+
+export interface ListAIConversationsParams {
+    page?: number;
+    limit?: number;
+    includeArchived?: boolean;
+}
+
+export interface UpdateAIConversationParams {
+    title?: string;
+    isArchived?: boolean;
+}
 
 interface ConversationPathParams {
     conversationId: string;

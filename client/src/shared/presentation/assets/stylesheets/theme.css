@@ -6,8 +6,6 @@
     --radius-xl: 20px;
     --radius-2xl: 24px;
     --radius-full: 9999px;
-
-    /* Motion — Apple HIG easings and durations */
     --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
@@ -20,16 +18,12 @@
     --duration-slower: 600ms;
 
     --z-floating: 99999;
-
-    /* Breakpoints (reference only — CSS custom props can't be used inside @media) */
     --bp-xs: 480px;
     --bp-sm: 640px;
     --bp-md: 768px;
     --bp-lg: 1024px;
     --bp-xl: 1280px;
     --bp-2xl: 1440px;
-
-    /* Minimum touch target size (WCAG 2.5.5 AAA) */
     --touch-target-min: 44px;
 }
 

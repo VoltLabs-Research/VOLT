@@ -2,8 +2,7 @@ import memberService from '../../api/services/member-service';
 import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { TeamMember, TeamMemberStats } from '../../api/entities/member/team-member';
-import type { UpdateTeamMemberInputDTO } from '../../api/dtos/member/update-team-member';
-import type { RemoveTeamMemberInputDTO } from '../../api/dtos/member/remove-team-member';
+import type { RemoveTeamMemberInputDTO, UpdateTeamMemberInputDTO } from '../../api/services/member-service';
 
 interface TeamMembersAggregateQueryParams {
     teamId: string;

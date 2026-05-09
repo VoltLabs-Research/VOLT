@@ -35,8 +35,6 @@
 .latex-workspace__empty-shell .empty-state-content {
     gap: 1rem;
 }
-
-/** Left panel — file tree */
 .latex-workspace__files {
     flex-shrink: 0;
     min-width: 160px;
@@ -120,8 +118,6 @@
 #latex-file-panel {
     max-width: min(400px, 42vw);
 }
-
-/** Center panel — Monaco editor */
 .latex-workspace__editor {
     flex: 1;
     display: flex;
@@ -145,13 +141,6 @@
     background: color-mix(in srgb, var(--color-surface-1) 88%, transparent);
     transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
-
-/*
-.latex-workspace__editor-group.is-active {
-    border-color: color-mix(in srgb, var(--focus-ring) 26%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--focus-ring) 14%, transparent);
-}*/
-
 .latex-workspace__editor-inner {
     display: flex;
     align-items: stretch;
@@ -293,8 +282,6 @@
 .latex-workspace__editor-split-handle {
     flex-shrink: 0;
 }
-
-/** Right panel — PDF preview */
 .latex-workspace__preview {
     flex-shrink: 0;
     min-width: 260px;
@@ -305,8 +292,6 @@
 #latex-preview-panel {
     max-width: min(600px, 48vw);
 }
-
-/** Drag handles between panels */
 .latex-drag-handle {
     width: 5px;
     flex-shrink: 0;
@@ -350,8 +335,6 @@
     user-select: none;
     touch-action: none;
 }
-
-/** Toolbar */
 .latex-workspace__toolbar {
     border-bottom: 1px solid var(--color-border-soft);
     padding: 0 0.75rem;
@@ -390,8 +373,6 @@
 .latex-workspace__theme-toggle {
     flex-shrink: 0;
 }
-
-/** File rows in the left panel */
 .latex-workspace__file-row {
     padding: 0.4rem 0.75rem;
     cursor: pointer;
@@ -461,8 +442,6 @@
 .latex-workspace__file-row.is-selected .latex-workspace__file-name {
     color: var(--color-text-primary);
 }
-
-/** Collaborator avatar stack in the toolbar */
 .latex-workspace__collaborators {
     gap: 0;
 }
@@ -475,35 +454,6 @@
 .latex-workspace__collaborator-avatar:first-child {
     margin-left: 0;
 }
-
-/** Assets section in the file panel */
-.latex-workspace__assets-section {
-    border-top: 1px solid var(--color-border-soft);
-    min-height: 0;
-    flex: 1;
-}
-
-.latex-workspace__assets-header {
-    padding: 0.35rem 0.75rem;
-    border-bottom: 1px solid var(--color-border-soft);
-    flex-shrink: 0;
-}
-
-.latex-workspace__asset-row {
-    padding: 0.3rem 0.5rem 0.3rem 0.75rem;
-    transition: background 0.1s;
-}
-
-.latex-workspace__asset-row:hover {
-    background: var(--hover-bg);
-}
-
-.latex-workspace__asset-meta {
-    font-size: 0.75rem;
-    white-space: nowrap;
-}
-
-/** PDF preview panel */
 .latex-preview__content {
     flex: 1;
     min-height: 0;
@@ -525,14 +475,6 @@
     border-radius: var(--radius-xs);
     padding: 0.1em 0.35em;
     color: var(--color-text-secondary);
-}
-
-.latex-pdf-viewer {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: var(--color-surface-2);
 }
 
 .latex-pdf-shell {
@@ -603,8 +545,6 @@
     border-radius: var(--radius-xs);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
 }
-
-/** Compilation error log */
 .latex-compile-error {
     flex: 1;
 }
@@ -628,33 +568,9 @@
     max-height: 100%;
     scrollbar-width: thin;
 }
-
-/** Thin scrollbars for panel content */
 .latex-workspace__files,
 .latex-workspace__preview {
     scrollbar-width: thin;
-}
-
-/** ---- File tree ---- */
-
-.latex-tree__folder-row {
-    padding: 0.35rem 0.5rem 0.35rem 0.5rem;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.1s;
-    border-radius: var(--radius-xs);
-}
-
-.latex-tree__folder-row:hover {
-    background: var(--hover-bg);
-}
-
-.latex-tree__name {
-    font-size: 0.8125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--color-text-secondary);
 }
 
 .latex-workspace__new-file-input {
@@ -676,9 +592,6 @@
     border-color: var(--focus-ring);
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
-
-/** ---- Embedded AI panel (bottom) ---- */
-
 .latex-ai-panel {
     flex-shrink: 0;
     min-height: 100px;
@@ -895,13 +808,6 @@
         max-width: 100%;
     }
 }
-
-/**
- * Stack the 3-panel workspace vertically on phones. The inline widths coming from
- * React (files/preview/editor) must be overridden with !important since they live
- * in the element's style attribute. Drag handles are hidden because pointer-based
- * resize is not usable on touch.
- */
 @media (max-width: 900px) {
     .latex-workspace__layout {
         flex-direction: column !important;
@@ -943,8 +849,6 @@
     .latex-ai-panel {
         max-height: 60dvh;
     }
-
-    /* Ids receive higher specificity than the class above — re-assert widths. */
     #latex-file-panel,
     #latex-preview-panel {
         width: 100% !important;

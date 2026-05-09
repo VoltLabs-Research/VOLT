@@ -2,7 +2,6 @@ import { X, Copy, Check } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import IconButton from '@/shared/presentation/primitives/IconButton';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import { safeJsonStringify } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
 import { renderExpandedValue } from '@/modules/plugin/components/listing/SubListingDetailPanel/expandedRenderers';
 import { inferCellKind, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import './SubListingDetailPanel.css';
@@ -54,7 +53,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
 
     const handleCopyRecord = useCallback(async () => {
         if(!row) return;
-        const ok = await copyTextToClipboard(safeJsonStringify(row));
+        const ok = await copyTextToClipboard(JSON.stringify(row) ?? '');
         if(ok){
             setCopied(true);
             setTimeout(() => setCopied(false), 1400);
@@ -62,7 +61,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
     }, [row]);
 
     const handleCopyField = useCallback(async (key: string, value: unknown) => {
-        const ok = await copyTextToClipboard(safeJsonStringify(value));
+        const ok = await copyTextToClipboard(JSON.stringify(value) ?? String(value));
         if(ok){
             setCopiedField(key);
             setTimeout(() => setCopiedField((current) => (current === key ? null : current)), 1200);

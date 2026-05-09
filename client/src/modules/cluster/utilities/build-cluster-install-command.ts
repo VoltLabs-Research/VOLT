@@ -32,10 +32,6 @@ const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
     return ClusterInstallPlatform.Unknown;
 };
 
-export const detectClusterInstallPlatform = (): ClusterInstallPlatform => {
-    return detectBrowserInstallPlatform();
-};
-
 const buildPosixInstallCommand = (teamClusterId: string, enrollmentToken: string, cloudUrl: string): string => {
     const scriptUrl = `${CLUSTER_DAEMON_SCRIPTS_BASE_URL}/install.sh`;
     return `curl -sSL ${scriptUrl} | VOLT_CLOUD_URL="${cloudUrl}" bash -s -- "${teamClusterId}" "${enrollmentToken}"`;
@@ -58,7 +54,7 @@ const buildWindowsInstallCommand = (teamClusterId: string, enrollmentToken: stri
 export const buildClusterInstallCommand = (
     teamClusterId: string,
     enrollmentToken: string,
-    platform: ClusterInstallPlatform = detectClusterInstallPlatform()
+    platform: ClusterInstallPlatform = detectBrowserInstallPlatform()
 ): string => {
     const cloudUrl = import.meta.env.VITE_API_URL;
     if (platform === ClusterInstallPlatform.Windows) {

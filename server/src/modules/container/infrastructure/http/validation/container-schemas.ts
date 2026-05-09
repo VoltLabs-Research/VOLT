@@ -69,12 +69,12 @@ const updateContainerSchema = z.object({
 }).strict();
 
 const createFolderSchema = z.object({
-    title: z.string().min(1).max(255),
+    title: z.string().trim().min(1).max(255),
     parentId: identifierSchema.nullable().optional()
 }).strict();
 
 const updateFolderSchema = z.object({
-    title: z.string().min(1).max(255)
+    title: z.string().trim().min(1).max(255)
 }).strict();
 
 const moveContainerSchema = z.object({

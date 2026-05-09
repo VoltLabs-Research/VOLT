@@ -20,7 +20,7 @@ import Text from '@/shared/presentation/primitives/Text';
 import FileTreeNode from './FileTreeNode';
 import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import { DndContext, PointerSensor, pointerWithin, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { processFileSystemEntry } from '@/shared/utils/file';
 import { FilePlus, FolderOpen, FolderPlus, Upload } from 'lucide-react';
 import { sileo } from 'sileo';

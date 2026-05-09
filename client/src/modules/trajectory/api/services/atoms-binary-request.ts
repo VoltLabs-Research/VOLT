@@ -1,7 +1,7 @@
 import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
-import type { ServiceExecutionContext } from '@/app/core/http/utilities/create-service';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/dtos/trajectory';
+import type { ServiceExecutionContext } from '@voltstack/voltclient';
+import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
 
 export const getAtomsBinary = async (
     { getClient }: ServiceExecutionContext,

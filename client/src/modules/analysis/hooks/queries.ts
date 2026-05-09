@@ -14,11 +14,14 @@ import {
     type CanvasAccessMode,
     type CanvasDataAccess
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Analysis } from '../api/entities/analysis';
-import type { GetAnalysesParams } from '../api/dtos/get-analyses';
-import type { GetAnalysesByTrajectoryParams } from '../api/dtos/get-analyses-by-trajectory';
-import type { RetryFailedFramesParams, RetryFailedFramesResponse } from '../api/dtos/retry-failed-frames';
+import type {
+    GetAnalysesByTrajectoryParams,
+    GetAnalysesParams,
+    RetryFailedFramesParams,
+    RetryFailedFramesResponse
+} from '../api/service';
 
 type AnalysisQueryKeys = Record<string, unknown> & {
     detail: string;

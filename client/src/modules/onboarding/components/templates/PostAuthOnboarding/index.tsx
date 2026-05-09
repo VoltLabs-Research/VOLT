@@ -7,7 +7,7 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { OnboardingStep, resolveOnboardingStep } from '@/modules/onboarding/utilities/resolve-onboarding-step';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
@@ -46,7 +46,7 @@ const PostAuthOnboarding = () => {
     const [teamName, setTeamName] = useState(defaultTeamName);
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSigningOut, setIsSigningOut] = useState(false);
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
     const createTeam = useCreateTeamMutation();
     const { teams, isTeamsLoading, selectedTeamId } = useTeamData();
@@ -123,21 +123,6 @@ const PostAuthOnboarding = () => {
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         await handleCreateTeam();
-    };
-
-    const handleSignOut = () => {
-        try {
-            setIsSigningOut(true);
-            useAuthStore.getState().signOut();
-        } catch {
-            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
-        } finally {
-            setIsSigningOut(false);
-        }
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
     };
 
     let content: ReactNode = (

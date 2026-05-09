@@ -1,5 +1,5 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
-import { EMPTY_GLOBAL_SEARCH_RESULTS } from '@/modules/dashboard/api/dtos/global-search';
+import { EMPTY_GLOBAL_SEARCH_RESULTS } from '@/modules/dashboard/api/service';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import {
@@ -14,7 +14,7 @@ import {
 } from '@floating-ui/react';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
+import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
@@ -34,14 +34,6 @@ export interface DashboardGlobalSearchSection {
     items: DashboardGlobalSearchItem[];
 }
 
-const ensureArray = <T>(value: T[] | undefined | null): T[] => {
-    if (Array.isArray(value)) {
-        return value;
-    }
-
-    return [];
-};
-
 const formatSearchDate = (value: string): string => {
     const date = new Date(value);
 
@@ -53,17 +45,10 @@ const formatSearchDate = (value: string): string => {
 };
 
 const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSection[] => {
-    const analyses = ensureArray(results.analyses);
-    const trajectories = ensureArray(results.trajectories);
-    const containers = ensureArray(results.containers);
-    const plugins = ensureArray(results.plugins);
-    const teams = ensureArray(results.teams);
-    const chats = ensureArray(results.chats);
-
     return [
         {
             key: 'analyses',
-            items: analyses.map((analysis) => ({
+            items: (results.analyses ?? []).map((analysis) => ({
                 id: analysis._id,
                 title: analysis.pluginDisplayName,
                 subtitle: formatSearchDate(analysis.createdAt),
@@ -72,7 +57,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'trajectories',
-            items: trajectories.map((trajectory) => ({
+            items: (results.trajectories ?? []).map((trajectory) => ({
                 id: trajectory._id,
                 title: trajectory.name,
                 subtitle: trajectory.status || '',
@@ -81,7 +66,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'containers',
-            items: containers.map((container) => ({
+            items: (results.containers ?? []).map((container) => ({
                 id: container._id,
                 title: container.name,
                 subtitle: container.image,
@@ -90,7 +75,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'plugins',
-            items: plugins.map((plugin) => {
+            items: (results.plugins ?? []).map((plugin) => {
                 const listingExposure = plugin.listingExposures?.exposures[0] ?? getListingRelevantExposures(plugin.exposures)[0];
 
                 return {
@@ -105,7 +90,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'teams',
-            items: teams.map((team) => ({
+            items: (results.teams ?? []).map((team) => ({
                 id: team._id,
                 title: team.name,
                 subtitle: team.description || '',
@@ -115,7 +100,7 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
         },
         {
             key: 'chats',
-            items: chats.map((chat) => ({
+            items: (results.chats ?? []).map((chat) => ({
                 id: chat._id,
                 title: chat.participants
                     .map((participant) => participant.firstName || participant.email)

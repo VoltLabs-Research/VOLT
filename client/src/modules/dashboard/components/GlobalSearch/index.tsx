@@ -19,7 +19,7 @@ import { Box as CubeIcon, ScanSearch } from 'lucide-react';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
 import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
-import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/dtos/global-search';
+import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;

@@ -5,17 +5,6 @@ dialog.volt-modal{
     width: 100%;
     max-width: 500px;
     max-height: calc(100dvh - 2rem);
-    /*
-     * background and backdrop-filter are intentionally absent from this rule
-     * and delegated to ::before instead.
-     * Both `transform` (non-none) and `backdrop-filter` create a CSS containing
-     * block, which would cause position:fixed descendants (including the Sileo
-     * toaster portaled into the active dialog) to be positioned relative to the
-     * dialog box instead of the real viewport.
-     * Painting the glass surface on a non-containing ::before pseudo-element
-     * keeps the visual effect while leaving the fixed-positioning context intact.
-     * The opening scale animation is preserved via @starting-style below.
-     */
     background: transparent;
     box-shadow: var(--shadow-elevated);
     color: var(--color-text-primary);

@@ -19,7 +19,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { ReactNode, RefObject } from 'react';
 
 import './Viewport.css';

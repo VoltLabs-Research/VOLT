@@ -8,7 +8,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
@@ -27,6 +27,7 @@ const DemoProvisioningPage = () => {
     const user = useCurrentUser();
     const selectedTeamId = useSelectedTeamId();
     const setFromCluster = useDemoClusterStore((state) => state.setFromCluster);
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
     const [hasTriggered, setHasTriggered] = useState(false);
     const [isWaiting, setIsWaiting] = useState(false);
@@ -40,14 +41,6 @@ const DemoProvisioningPage = () => {
         refetchInterval: isWaiting ? POLL_INTERVAL_MS : false,
         staleTime: 0
     });
-
-    const handleSignOut = () => {
-        useAuthStore.getState().signOut();
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
-    };
 
     useEffect(() => {
         if (!user || !selectedTeamId || hasTriggered) {
@@ -108,7 +101,7 @@ const DemoProvisioningPage = () => {
 
     if (hasFailed) {
         return (
-            <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick}>
+            <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
                 <Stack gap='2' align='center' justify='center' textAlign='center'>
                     <Heading level={1} size='2xl' weight='bold'>Demo provisioning failed</Heading>
                     <Text tone='secondary'>
@@ -129,7 +122,7 @@ const DemoProvisioningPage = () => {
     }
 
     return (
-        <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick}>
+        <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
             <Stack align='center' justify='center' gap='1-5' className='min-h-screen'>
                 <Loader scale={0.7} isFixed={false} announce label='Provisioning resources' />
             </Stack>

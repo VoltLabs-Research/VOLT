@@ -4,7 +4,7 @@ import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { ReactNode } from 'react';
 
 interface SimulationCellViewProps {

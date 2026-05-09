@@ -3,7 +3,7 @@ import Avatar from '@/shared/presentation/primitives/Avatar';
 import ListRow from '@/shared/presentation/primitives/ListRow';
 import Tag from '@/shared/presentation/primitives/Tag';
 import type { TagProps } from '@/shared/presentation/primitives/Tag';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { User } from '@/modules/auth/api/entities/user';
 import './MemberListItem.css';
 

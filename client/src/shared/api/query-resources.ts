@@ -14,8 +14,6 @@ interface EntityCacheUpsertOptions {
     replaceExisting?: boolean;
 };
 
-const resolveQueryClient = (client?: QueryClient): QueryClient => client ?? queryClient;
-
 const upsertEntityInArray = <TEntity extends { _id: string }>(
     current: TEntity[] | undefined,
     entity: TEntity,
@@ -41,7 +39,7 @@ const upsertEntityInArray = <TEntity extends { _id: string }>(
 export const createEntityCacheResource = <TEntity extends { _id: string }>(config: EntityCacheResourceConfig<TEntity>) => {
     return {
         upsert: (entity: TEntity, options?: EntityCacheUpsertOptions): void => {
-            const activeQueryClient = resolveQueryClient(options?.client);
+            const activeQueryClient = options?.client ?? queryClient;
 
             activeQueryClient.setQueryData<TEntity[]>(config.listKey(), (current) => upsertEntityInArray(
                 current,
@@ -53,7 +51,7 @@ export const createEntityCacheResource = <TEntity extends { _id: string }>(confi
             config.onUpsert?.(entity);
         },
         merge: (id: string, updates: Partial<TEntity>, client?: QueryClient): void => {
-            const activeQueryClient = resolveQueryClient(client);
+            const activeQueryClient = client ?? queryClient;
 
             activeQueryClient.setQueryData<TEntity[]>(config.listKey(), (current) => {
                 if (!current) {
@@ -74,17 +72,17 @@ export const createEntityCacheResource = <TEntity extends { _id: string }>(confi
             });
         },
         remove: (id: string, client?: QueryClient): void => {
-            const activeQueryClient = resolveQueryClient(client);
+            const activeQueryClient = client ?? queryClient;
 
             activeQueryClient.setQueryData<TEntity[]>(config.listKey(), (current) => current?.filter((entity) => entity._id !== id) ?? current);
             activeQueryClient.removeQueries({ queryKey: config.detailKey(id) });
 
             config.onRemove?.(id);
         },
-        invalidateList: (client?: QueryClient) => resolveQueryClient(client).invalidateQueries({ queryKey: config.listKey() }),
-        invalidateDetail: (id: string, client?: QueryClient) => resolveQueryClient(client).invalidateQueries({ queryKey: config.detailKey(id) }),
+        invalidateList: (client?: QueryClient) => (client ?? queryClient).invalidateQueries({ queryKey: config.listKey() }),
+        invalidateDetail: (id: string, client?: QueryClient) => (client ?? queryClient).invalidateQueries({ queryKey: config.detailKey(id) }),
         clearRoot: (client?: QueryClient): void => {
-            const activeQueryClient = resolveQueryClient(client);
+            const activeQueryClient = client ?? queryClient;
             const queryKey = config.rootKey?.() ?? config.listKey();
 
             activeQueryClient.removeQueries({ queryKey });

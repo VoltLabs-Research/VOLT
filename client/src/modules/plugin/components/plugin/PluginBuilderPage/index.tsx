@@ -1,8 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import Box from '@/shared/presentation/primitives/Box';
 import Loader from '@/shared/presentation/primitives/Loader';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
@@ -26,21 +26,7 @@ const PluginBuilderPage = () => {
 
     const clearWorkflow = usePluginBuilderStore((state) => state.clearWorkflow);
     const { isLoading, accessDenied, accessDeniedMessage } = useLoadPlugin(pluginId);
-    const signOut = useAuthStore((state) => state.signOut);
-    const [isSigningOut, setIsSigningOut] = useState(false);
-
-    const handleSignOut = useCallback(async () => {
-        try {
-            setIsSigningOut(true);
-            await signOut();
-        } finally {
-            setIsSigningOut(false);
-        }
-    }, [signOut]);
-
-    const handleSettingsClick = useCallback(() => {
-        navigate('/dashboard/settings/general');
-    }, [navigate]);
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
     const handleBack = useCallback(() => navigate(-1), [navigate]);
 

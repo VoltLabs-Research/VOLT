@@ -1,12 +1,101 @@
 import { createService, download, get } from '@/app/core/http/utilities/create-service';
 import { mapRawListingResponse } from './listing-response';
 
-import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../dtos/listing/get-plugin-listing';
-import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../dtos/listing/get-sub-listing';
-import type { ExportPluginListingInputDTO } from '../dtos/listing/export-plugin-listing';
-import type { ExportListingByAnalysisInputDTO } from '../dtos/listing/export-listing-by-analysis';
-import type { GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO } from '../dtos/listing/get-analysis-listing-export-options';
+import type { ExportType } from '@/shared/domain/export/types';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import type { RawListingResponse } from './listing-response';
+
+export interface ExportListingByAnalysisInputDTO {
+    analysisId: string;
+    format: ExportType;
+    includeConfig?: boolean;
+    selectedListingIds?: string[];
+    selectedSubListingIds?: string[];
+}
+
+export interface ExportPluginListingInputDTO {
+    pluginId: string;
+    exposureId?: string;
+    trajectoryId?: string;
+    analysisId?: string;
+    exposureName?: string;
+    format: ExportType;
+}
+
+export interface AnalysisListingExportOptionDTO {
+    id: string;
+    listingId: string;
+    listingName: string;
+    label: string;
+}
+
+export interface AnalysisSubListingExportOptionDTO {
+    id: string;
+    exposureId: string;
+    exposureName: string;
+    timestep: number;
+    subListingName: string;
+    label: string;
+}
+
+export interface GetAnalysisListingExportOptionsInputDTO {
+    analysisId: string;
+}
+
+export interface GetAnalysisListingExportOptionsOutputDTO {
+    analysisId: string;
+    hasConfig: boolean;
+    listings: AnalysisListingExportOptionDTO[];
+    subListings: AnalysisSubListingExportOptionDTO[];
+}
+
+export interface PluginListingMeta extends Record<string, unknown> {
+    pluginId: string;
+    exposureName: string;
+    exposureId: string;
+    columns: ColumnConfig[];
+    subListingNames: string[];
+}
+
+export interface GetPluginListingInputDTO {
+    pluginId: string;
+    exposureName?: string;
+    exposureId?: string;
+    trajectoryId?: string;
+    analysisId?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
+    _meta?: PluginListingMeta;
+}
+
+export interface GetSubListingInputDTO {
+    analysisId: string;
+    exposureId: string;
+    timestep: number;
+    subListingName: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface SubListingColumn {
+    label: string;
+    sortable: boolean;
+}
+
+export interface GetSubListingOutputDTO {
+    subListingName: string;
+    columns: SubListingColumn[];
+    rows: Record<string, unknown>[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+}
 
 interface ExposureSelectorParams {
     exposureId?: string;

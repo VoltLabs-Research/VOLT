@@ -6,7 +6,7 @@ import {
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from './queries';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied, { createAccessDeniedRetry } from '@/shared/presentation/hooks/use-access-denied';
 import useCanvasUrlState from './use-canvas-url-state';
 import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,12 +20,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         { trajectoryId: trajectoryId ?? '' },
         {
             enabled: shouldFetch,
-            retry: (failureCount, error) => {
-                if (checkAccessDeniedError(error)) {
-                    return false;
-                }
-                return failureCount < 2;
-            }
+            retry: createAccessDeniedRetry(checkAccessDeniedError)
         }
     );
 
@@ -34,12 +29,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         {
             enabled: shouldFetch,
             refetchOnMount: 'always',
-            retry: (failureCount, error) => {
-                if (checkAccessDeniedError(error)) {
-                    return false;
-                }
-                return failureCount < 2;
-            }
+            retry: createAccessDeniedRetry(checkAccessDeniedError)
         }
     );
 

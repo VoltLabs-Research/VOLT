@@ -3,7 +3,7 @@ import { buildFileFormData } from '@/shared/utils/file';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useState } from 'react';
 import type { FileWithPath } from '@/shared/utils/file';
-import type { Trajectory } from '../../api/entities/trajectory';
+import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 
 const UPLOAD_TRAJECTORY_TOAST = {
     loading: { title: 'Uploading...' },

@@ -6,13 +6,16 @@ import {
 } from '@/shared/infrastructure/query';
 import service from '../api/service';
 import type { SSHConnection } from '../api/entities/ssh-connection';
-import type { CreateSSHConnectionParams } from '../api/dtos/create-ssh-connection';
-import type { DeleteSSHConnectionInputDTO } from '../api/dtos/delete-ssh-connection';
-import type { GetSSHConnectionByIdInputDTO } from '../api/dtos/get-ssh-connection-by-id';
-import type { GetSSHConnectionsInputDTO } from '../api/dtos/get-ssh-connections';
-import type { ListSSHFilesParams } from '../api/dtos/list-ssh-files';
-import type { TestSSHConnectionInputDTO, TestSSHConnectionResponse } from '../api/dtos/test-ssh-connection';
-import type { UpdateSSHConnectionInputDTO } from '../api/dtos/update-ssh-connection';
+import type {
+    CreateSSHConnectionParams,
+    DeleteSSHConnectionInputDTO,
+    GetSSHConnectionByIdInputDTO,
+    GetSSHConnectionsInputDTO,
+    ListSSHFilesParams,
+    TestSSHConnectionInputDTO,
+    TestSSHConnectionResponse,
+    UpdateSSHConnectionInputDTO
+} from '../api/service';
 
 interface SSHQueryKeys extends Record<string, unknown> {
     connections: GetSSHConnectionsInputDTO;

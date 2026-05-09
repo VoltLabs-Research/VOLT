@@ -1,4 +1,4 @@
-import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import usePaginationParams from './use-pagination-params';
 import { isApiError, resolveErrorTitle } from '@/shared/errors/core';
 import queryClient from '@/shared/infrastructure/query/query-client';

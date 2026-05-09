@@ -12,9 +12,9 @@ import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-
 import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import AtomTypeBadge from '../AtomTypeBadge';
-import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PerAtomViewerContext {

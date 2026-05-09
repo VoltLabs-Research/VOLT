@@ -1,6 +1,11 @@
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useCallback, useState } from 'react';
 
+export const createAccessDeniedRetry = (
+    checkAccessDeniedError: (error: unknown) => boolean,
+    maxRetries = 2
+) => (failureCount: number, error: unknown): boolean => !checkAccessDeniedError(error) && failureCount < maxRetries;
+
 const useAccessDenied = () => {
     const [accessDenied, setAccessDenied] = useState(false);
     const [accessDeniedMessage, setAccessDeniedMessage] = useState<string>();
@@ -12,7 +17,7 @@ const useAccessDenied = () => {
     }, []);
 
     const checkAccessDeniedError = useCallback((error: unknown): boolean => {
-        if(isAccessDeniedError(error)){
+        if (isAccessDeniedError(error)) {
             setDeniedState(error);
             return true;
         }

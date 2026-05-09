@@ -1,7 +1,6 @@
 import service from '../api/service';
 import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
-import type { RevokeAllOtherSessionsOutputDTO } from '../api/dtos/revoke-all-other-sessions';
-import type { RevokeSessionInputDTO } from '../api/dtos/revoke-session';
+import type { RevokeAllOtherSessionsOutputDTO, RevokeSessionInputDTO } from '../api/service';
 
 type SessionQueryKeyMap = Record<string, unknown> & {
     activeSessions: void;

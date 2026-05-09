@@ -1,7 +1,8 @@
 import { mergeNestedSectionState, resetSectionState, setSectionFieldState } from './editor/store-section';
 
 import type { EditorStore } from './editor/types';
-import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState } from '@/modules/fractal/types/configuration';
+import type { ConfigurationStore, ConfigurationState } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import { DEFAULT_SLICE_PLANE_CONFIG } from '@/modules/fractal/utilities/slice-plane';
 import type { StateCreator } from 'zustand';
 

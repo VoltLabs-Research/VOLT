@@ -1,13 +1,9 @@
-@layer normalize, base, demo, toggle, debug, transitions;
+@layer normalize, demo, toggle, transitions;
 
 @property --complete {
   syntax: '<number>';
   inherits: true;
   initial-value: 0;
-}
-
-@layer debug {
-
 }
 
 @layer transitions {
@@ -267,16 +263,6 @@
     min-height: 2.5rem;
     display: inline-flex;
     align-items: center;
-  }
-}
-
-@layer base {
-  :where(.bear-link):is(:hover, :focus-visible) {
-    opacity: 1;
-  }
-
-  .bear-link svg {
-    width: 75%;
   }
 }
 

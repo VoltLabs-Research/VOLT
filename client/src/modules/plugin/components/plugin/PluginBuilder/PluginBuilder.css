@@ -1,8 +1,6 @@
 .plugin-builder-palette-list-container {
     overflow-y: auto;
     }
-
-/** Canvas Empty State **/
 .canvas-empty-state {
     pointer-events: none;
 }
@@ -28,8 +26,6 @@
     padding-top: 0.75rem;
     border-top: 1px solid var(--color-border-soft);
 }
-
-/** Canvas Toolbar **/
 .canvas-toolbar-zoom-label {
     min-width: 42px;
 }
@@ -48,18 +44,12 @@
 .canvas-toolbar-status--error {
     color: var(--status-error);
 }
-
-
-
-/** MiniMap overrides **/
 .react-flow__minimap {
     border-radius: var(--radius-sm) !important;
     border: 1px solid var(--color-border-soft) !important;
     box-shadow: var(--shadow-card) !important;
     overflow: hidden;
 }
-
-/** Floating Node Panel **/
 .floating-node-panel {
     z-index: 100;
     width: 400px;
@@ -99,7 +89,6 @@
 }
 
 @media screen and (max-width: 768px) {
-    /* Canvas toolbar should wrap instead of overflowing horizontally on phones. */
     .canvas-toolbar {
         left: 0.5rem;
         right: 0.5rem;
@@ -117,8 +106,6 @@
         padding: 1.5rem 1.25rem;
         max-width: calc(100vw - 2rem);
     }
-
-    /* Floating inspector/edit panel docks to the bottom of the screen on phones. */
     .floating-node-panel {
         position: fixed !important;
         inset: auto 0.5rem 0.5rem 0.5rem !important;

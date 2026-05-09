@@ -13,7 +13,7 @@ import type {
     ColorCodingStats,
     GetColorCodingPropertiesInputDTO,
     GetColorCodingStatsInputDTO
-} from '../../api/dtos/color-coding';
+} from '../../api/services/color-coding-service';
 
 const BASE_KEY = 'trajectory';
 

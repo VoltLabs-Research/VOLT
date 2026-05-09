@@ -4,7 +4,8 @@ import {
     fetchPluginListing,
     usePluginListingQuery
 } from './queries';
-import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';

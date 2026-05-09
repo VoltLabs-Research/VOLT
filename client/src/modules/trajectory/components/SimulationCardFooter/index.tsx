@@ -269,7 +269,7 @@ export default function SimulationCardFooter({
     );
 
     return (
-        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer'>
+        <Row gap='05' zIndex='10' p='1-5' position='absolute' bottom='0' left='0' right='0' className='simulation-card-footer w-max'>
             <Stack gap='05' flex='1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}

@@ -1,10 +1,7 @@
 import invitationService from '../../api/services/invitation-service';
 import { invalidateTeamsQuery } from '../team/queries';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
-import type { AcceptInvitationInputDTO } from '../../api/dtos/invitation/accept-invitation';
-import type { CancelInvitationInputDTO } from '../../api/dtos/invitation/cancel-invitation';
-import type { RejectInvitationInputDTO } from '../../api/dtos/invitation/reject-invitation';
-import type { SendInvitationInputDTO } from '../../api/dtos/invitation/send-invitation';
+import type { AcceptInvitationInputDTO, CancelInvitationInputDTO, RejectInvitationInputDTO, SendInvitationInputDTO } from '../../api/services/invitation-service';
 import type { TeamInvitation } from '../../api/entities/invitation/team-invitation';
 
 interface TeamInvitationQueryKeyMap {

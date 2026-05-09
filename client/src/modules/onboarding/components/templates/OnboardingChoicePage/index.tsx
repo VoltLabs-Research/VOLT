@@ -1,7 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
-import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import Box from '@/shared/presentation/primitives/Box';
 import Heading from '@/shared/presentation/primitives/Heading';
 import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
@@ -12,21 +12,14 @@ import './OnboardingChoicePage.css';
 
 const OnboardingChoicePage = () => {
     const navigate = useNavigate();
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
 
     if (!isDemoClusterFeatureEnabled()) {
         return <Navigate to='/onboarding/cluster/setup' replace />;
     }
 
-    const handleSignOut = () => {
-        useAuthStore.getState().signOut();
-    };
-
-    const handleSettingsClick = () => {
-        navigate('/dashboard/settings/general');
-    };
-
     return (
-        <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick}>
+        <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
             <Stack gap='2' align='center' justify='center' textAlign='center' className='min-h-screen'>
                 <Stack gap='1' align='center' textAlign='center'>
                     <Heading level={1} size='3xl' weight='bold'>

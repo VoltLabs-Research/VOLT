@@ -155,8 +155,6 @@
 .canvas-ruler-tick-mark--completed {
     box-shadow: 0 0 8px color-mix(in srgb, var(--status-success) 35%, transparent);
 }
-
-/* Darker tones for light mode so the labels stay legible on white. */
 :root[data-theme='light'] .canvas-ruler-tick-label--queued {
     color: #8a5300;
 }

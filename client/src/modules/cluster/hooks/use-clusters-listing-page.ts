@@ -1,4 +1,4 @@
-import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
+import { teamClusterService } from '@/modules/cluster/api/service';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { TEAM_CLUSTER_QUERY_KEYS } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -6,11 +6,12 @@ import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-clus
 import { transformClustersToRows } from '@/modules/cluster/utilities/transform-cluster-row';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { ListTeamClustersInputDTO } from '@/modules/cluster/api/dtos/team-cluster/list-team-clusters';
+import type { ListTeamClustersInputDTO } from '@/modules/cluster/api/service';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
-import { createEmptyPaginatedResponse, type PaginatedResponse } from '@/shared/domain/pagination';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { InfiniteData } from '@tanstack/react-query';
 

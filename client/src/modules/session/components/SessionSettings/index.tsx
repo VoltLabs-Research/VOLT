@@ -8,7 +8,7 @@ import {
     isMobileUserAgent,
     parseSessionUserAgent,
     SESSION_ACTION_LABELS
-} from '@/modules/session/utilities';
+} from '@/modules/session/utilities/session-display';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';

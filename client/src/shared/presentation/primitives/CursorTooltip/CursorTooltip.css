@@ -27,15 +27,6 @@
     scale: 1;
 }
 
-.cursor-tooltip.no-activity {
-    align-items: center;
-    justify-content: center;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    min-width: 120px;
-    padding: 8px 12px;
-}
-
 @media (prefers-reduced-motion: reduce) {
     .cursor-tooltip {
         transition: none;

@@ -16,7 +16,7 @@ import type {
     SignUpOutputDTO,
     UpdateAvatarInputDTO,
     UpdateProfileInputDTO
-} from '../api/dtos';
+} from '../api/service';
 import type { User } from '../api/entities/user';
 import type { QueryOptions } from '@/shared/infrastructure/query';
 

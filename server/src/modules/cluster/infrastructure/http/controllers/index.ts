@@ -1,32 +1,63 @@
-import CompleteTeamClusterDeletionController from '@modules/cluster/infrastructure/http/controllers/CompleteTeamClusterDeletionController';
-import CreateTeamClusterTransferRequestController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterTransferRequestController';
-import CreateTeamClusterController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterController';
-import DeleteDemoTeamClusterController from '@modules/cluster/infrastructure/http/controllers/DeleteDemoTeamClusterController';
+import CompleteTeamClusterDeletionUseCase from '@modules/cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
+import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
+import CreateTeamClusterTransferRequestUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterTransferRequestUseCase';
+import CreateTeamClusterUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterUseCase';
+import DeleteDemoTeamClusterUseCase from '@modules/cluster/application/use-cases/DeleteDemoTeamClusterUseCase';
+import DeleteTeamClusterByIdUseCase from '@modules/cluster/application/use-cases/DeleteTeamClusterByIdUseCase';
+import DownloadTeamClusterRemoteExplorerObjectUseCase from '@modules/cluster/application/use-cases/DownloadTeamClusterRemoteExplorerObjectUseCase';
 import GenerateTeamClusterInstallManifestUseCase from '@modules/cluster/application/use-cases/GenerateTeamClusterInstallManifestUseCase';
-import GetDemoTeamClusterStatusController from '@modules/cluster/infrastructure/http/controllers/GetDemoTeamClusterStatusController';
+import GetClusterResourceLimitsUseCase from '@modules/cluster/application/use-cases/GetClusterResourceLimitsUseCase';
+import GetDemoTeamClusterStatusUseCase from '@modules/cluster/application/use-cases/GetDemoTeamClusterStatusUseCase';
+import GetTeamClusterByIdUseCase from '@modules/cluster/application/use-cases/GetTeamClusterByIdUseCase';
+import GetTeamClusterRemoteExplorerNodeUseCase from '@modules/cluster/application/use-cases/GetTeamClusterRemoteExplorerNodeUseCase';
+import GetTeamClusterRuntimeSnapshotUseCase from '@modules/cluster/application/use-cases/GetTeamClusterRuntimeSnapshotUseCase';
+import ListTeamClusterRemoteExplorerEntriesUseCase from '@modules/cluster/application/use-cases/ListTeamClusterRemoteExplorerEntriesUseCase';
+import ListTeamClusterTransferJobsUseCase from '@modules/cluster/application/use-cases/ListTeamClusterTransferJobsUseCase';
+import ListTeamClustersByTeamIdUseCase from '@modules/cluster/application/use-cases/ListTeamClustersByTeamIdUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
-import ProvisionDemoTeamClusterController from '@modules/cluster/infrastructure/http/controllers/ProvisionDemoTeamClusterController';
-import CreateTeamClusterRemoteAccessSessionController from '@modules/cluster/infrastructure/http/controllers/CreateTeamClusterRemoteAccessSessionController';
-import DeleteTeamClusterByIdController from '@modules/cluster/infrastructure/http/controllers/DeleteTeamClusterByIdController';
-import DownloadTeamClusterRemoteExplorerObjectController from '@modules/cluster/infrastructure/http/controllers/DownloadTeamClusterRemoteExplorerObjectController';
-import GetTeamClusterRemoteExplorerNodeController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterRemoteExplorerNodeController';
-import GetClusterResourceLimitsController from '@modules/cluster/infrastructure/http/controllers/GetClusterResourceLimitsController';
-import GetTeamClusterByIdController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterByIdController';
-import GetTeamClusterRuntimeSnapshotController from '@modules/cluster/infrastructure/http/controllers/GetTeamClusterRuntimeSnapshotController';
-import ListTeamClusterRemoteExplorerEntriesController from '@modules/cluster/infrastructure/http/controllers/ListTeamClusterRemoteExplorerEntriesController';
-import ListTeamClustersByTeamIdController from '@modules/cluster/infrastructure/http/controllers/ListTeamClustersByTeamIdController';
-import ListTeamClusterTransferJobsController from '@modules/cluster/infrastructure/http/controllers/ListTeamClusterTransferJobsController';
-import RecordTeamClusterHeartbeatController from '@modules/cluster/infrastructure/http/controllers/RecordTeamClusterHeartbeatController';
-import RegenerateTeamClusterEnrollmentTokenController from '@modules/cluster/infrastructure/http/controllers/RegenerateTeamClusterEnrollmentTokenController';
-import RevealTeamClusterCredentialsController from '@modules/cluster/infrastructure/http/controllers/RevealTeamClusterCredentialsController';
-import UpdateTeamClusterLifecycleController from '@modules/cluster/infrastructure/http/controllers/UpdateTeamClusterLifecycleController';
-import UpdateTeamClusterQueueConcurrencyController from '@modules/cluster/infrastructure/http/controllers/UpdateTeamClusterQueueConcurrencyController';
-import UpdateTeamClusterRoleController from '@modules/cluster/infrastructure/http/controllers/UpdateTeamClusterRoleController';
-import { createController } from '@shared/infrastructure/http/controllers/createController';
+import ProvisionDemoTeamClusterUseCase from '@modules/cluster/application/use-cases/ProvisionDemoTeamClusterUseCase';
+import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
+import RegenerateTeamClusterEnrollmentTokenUseCase from '@modules/cluster/application/use-cases/RegenerateTeamClusterEnrollmentTokenUseCase';
+import RevealTeamClusterCredentialsUseCase from '@modules/cluster/application/use-cases/RevealTeamClusterCredentialsUseCase';
+import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
+import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
+import UpdateTeamClusterRoleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterRoleUseCase';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import {
+    createController,
+    createPaginatedController,
+    createPreparedDownloadStreamController
+} from '@shared/infrastructure/http/controllers/createController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
+const CompleteTeamClusterDeletionController = createController(CompleteTeamClusterDeletionUseCase);
+const CreateTeamClusterRemoteAccessSessionController = createController(CreateTeamClusterRemoteAccessSessionUseCase);
+const CreateTeamClusterTransferRequestController = createController(CreateTeamClusterTransferRequestUseCase);
+const CreateTeamClusterController = createController(CreateTeamClusterUseCase, {
+    statusCode: HttpStatus.Created
+});
+const DeleteDemoTeamClusterController = createController(DeleteDemoTeamClusterUseCase);
+const DeleteTeamClusterByIdController = createController(DeleteTeamClusterByIdUseCase);
+const DownloadTeamClusterRemoteExplorerObjectController = createPreparedDownloadStreamController(DownloadTeamClusterRemoteExplorerObjectUseCase);
 const GenerateTeamClusterInstallManifestController = createController(GenerateTeamClusterInstallManifestUseCase);
+const GetClusterResourceLimitsController = createController(GetClusterResourceLimitsUseCase);
+const GetDemoTeamClusterStatusController = createController(GetDemoTeamClusterStatusUseCase);
+const GetTeamClusterByIdController = createController(GetTeamClusterByIdUseCase);
+const GetTeamClusterRemoteExplorerNodeController = createController(GetTeamClusterRemoteExplorerNodeUseCase);
+const GetTeamClusterRuntimeSnapshotController = createController(GetTeamClusterRuntimeSnapshotUseCase);
+const ListTeamClusterRemoteExplorerEntriesController = createController(ListTeamClusterRemoteExplorerEntriesUseCase);
+const ListTeamClusterTransferJobsController = createPaginatedController(ListTeamClusterTransferJobsUseCase);
+const ListTeamClustersByTeamIdController = createPaginatedController(ListTeamClustersByTeamIdUseCase);
 const ProcessTeamClusterHealthcheckController = createController(ProcessTeamClusterHealthcheckUseCase);
+const ProvisionDemoTeamClusterController = createController(ProvisionDemoTeamClusterUseCase, {
+    statusCode: HttpStatus.Created
+});
+const RecordTeamClusterHeartbeatController = createController(RecordTeamClusterHeartbeatUseCase);
+const RegenerateTeamClusterEnrollmentTokenController = createController(RegenerateTeamClusterEnrollmentTokenUseCase);
+const RevealTeamClusterCredentialsController = createController(RevealTeamClusterCredentialsUseCase);
+const UpdateTeamClusterLifecycleController = createController(UpdateTeamClusterLifecycleUseCase);
+const UpdateTeamClusterQueueConcurrencyController = createController(UpdateTeamClusterQueueConcurrencyUseCase);
+const UpdateTeamClusterRoleController = createController(UpdateTeamClusterRoleUseCase);
 
 export default createControllerRegistry({
     completeDeletion: CompleteTeamClusterDeletionController,

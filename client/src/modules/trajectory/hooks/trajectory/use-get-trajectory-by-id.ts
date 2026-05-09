@@ -1,6 +1,6 @@
 import { useTrajectoryByIdQuery } from './queries';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import type { Trajectory } from '../../api/entities/trajectory';
+import useAccessDenied, { createAccessDeniedRetry } from '@/shared/presentation/hooks/use-access-denied';
+import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 
 interface UseGetTrajectoryByIdParams {
     trajectoryId?: string;
@@ -33,12 +33,7 @@ export default function useGetTrajectoryById(params: UseGetTrajectoryByIdParams 
         {
             enabled: shouldFetch,
             refetchOnMount: 'always',
-            retry: (failureCount, error) => {
-                if (checkAccessDeniedError(error)) {
-                    return false;
-                }
-                return failureCount < 2;
-            }
+            retry: createAccessDeniedRetry(checkAccessDeniedError)
         }
     );
 

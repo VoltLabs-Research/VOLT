@@ -3,7 +3,7 @@ import {
 } from '@/modules/fractal/api/entities/scene';
 
 import type { SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
 interface MaybeParticleFilterCondition {
     property?: string;

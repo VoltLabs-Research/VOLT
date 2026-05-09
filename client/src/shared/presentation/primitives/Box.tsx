@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { buildBoxClasses, splitBoxProps } from './buildBoxClasses';
 import { forwardRef } from 'react';
 import type { BoxStyleProps } from './buildBoxClasses';

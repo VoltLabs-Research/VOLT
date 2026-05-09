@@ -1,5 +1,5 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
-import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
+import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils/file';
 import Box from '@/shared/presentation/primitives/Box';
 import Divider from '@/shared/presentation/primitives/Divider';
 import IconButton from '@/shared/presentation/primitives/IconButton';

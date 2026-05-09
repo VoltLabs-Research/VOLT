@@ -1,4 +1,11 @@
-import service from '../api/service';
+import service, {
+    type CreateContainerParams,
+    type GetContainerFilesInputDTO,
+    type GetContainersParams,
+    type MoveContainerParams,
+    type ReadContainerFileInputDTO,
+    type UpdateContainerFields
+} from '../api/service';
 import { teamClusterService } from '@/modules/cluster/api/service';
 import {
     buildKeys,
@@ -7,19 +14,15 @@ import {
     createPaginatedQuery,
     createQuery
 } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type {
+    FolderCreateParams,
+    FolderDeleteParams,
+    FolderGetParams,
+    FolderListParams,
+    FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
-import type { CreateContainerParams } from '../api/dtos/create-container';
-import type { CreateContainerFolderParams } from '../api/dtos/create-container-folder';
-import type { DeleteContainerFolderParams } from '../api/dtos/delete-container-folder';
-import type { GetContainerFilesInputDTO } from '../api/dtos/get-container-files';
-import type { GetContainerFolderParams } from '../api/dtos/get-container-folder';
-import type { GetContainersParams } from '../api/dtos/get-containers';
-import type { ListContainerFoldersParams } from '../api/dtos/list-container-folders';
-import type { MoveContainerParams } from '../api/dtos/move-container';
-import type { ReadContainerFileInputDTO } from '../api/dtos/read-container-file';
-import type { UpdateContainerFolderParams } from '../api/dtos/update-container-folder';
-import type { UpdateContainerFields } from '../api/dtos/update-container';
 import type { Container } from '../api/entities/container';
 import type { ContainerFolder } from '../api/entities/container-folder';
 
@@ -29,8 +32,8 @@ interface ContainerQueryKeys extends Record<string, unknown> {
     detail: string;
     files: GetContainerFilesInputDTO;
     fileContent: ReadContainerFileInputDTO;
-    folder: GetContainerFolderParams;
-    folders: ListContainerFoldersParams;
+    folder: FolderGetParams;
+    folders: FolderListParams;
     processes: string;
     resourceLimits: {
         teamId: string;
@@ -55,11 +58,11 @@ export const containerQuery = createPaginatedQuery<Container, GetContainersParam
 const containerFolderQueries = createFolderResourceQueries<
     ContainerFolder,
     PaginatedResponse<ContainerFolder>,
-    ListContainerFoldersParams,
-    GetContainerFolderParams,
-    CreateContainerFolderParams,
-    UpdateContainerFolderParams,
-    DeleteContainerFolderParams
+    FolderListParams,
+    FolderGetParams,
+    FolderCreateParams,
+    FolderUpdateParams,
+    FolderDeleteParams
 >({
     baseKey: `${BASE_KEY}-folder`,
     service: {
@@ -69,7 +72,6 @@ const containerFolderQueries = createFolderResourceQueries<
         updateFolder: service.updateFolder,
         deleteFolder: service.deleteFolder
     },
-    buildFolderParams: (folderId) => ({ folderId }),
     listingQueryKeys: [containerQuery.QUERY_KEYS.lists()]
 });
 

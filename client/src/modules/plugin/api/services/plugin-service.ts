@@ -1,19 +1,93 @@
 import { createService, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Plugin } from '../entities/plugin';
-import type { GetPluginsInputDTO } from '../dtos/plugin/get-plugins';
-import type { GetPluginInputDTO } from '../dtos/plugin/get-plugin';
-import type { CreatePluginInputDTO } from '../dtos/plugin/create-plugin';
-import type { UpdatePluginInputDTO } from '../dtos/plugin/update-plugin';
-import type { DeletePluginInputDTO } from '../dtos/plugin/delete-plugin';
-import type { ClonePluginInputDTO } from '../dtos/plugin/clone-plugin';
-import type { UploadBinaryInputDTO, UploadBinaryOutputDTO } from '../dtos/plugin/upload-binary';
-import type { ExportPluginInputDTO } from '../dtos/plugin/export-plugin';
-import type { ExportAnalysisResultsInputDTO } from '../dtos/plugin/export-analysis-results';
-import type { ImportPluginInputDTO } from '../dtos/plugin/import-plugin';
-import type { ExecutePluginInputDTO, ExecutePluginOutputDTO } from '../dtos/plugin/execute-plugin';
-import type { ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO } from '@/modules/plugin/api/dtos/plugin/list-team-clusters';
+import type { Plugin } from '../entities/plugin/plugin';
+import type { PluginTeamClusterOption } from '../entities/plugin/team-cluster';
+import type { IWorkflow } from '../entities/plugin/workflow';
+import type { PluginStatus } from '../entities/plugin/workflow-enums';
+
+export interface ClonePluginInputDTO {
+    pluginId: string;
+    teamId?: string;
+}
+
+export interface CreatePluginInputDTO {
+    workflow: IWorkflow;
+}
+
+export interface DeletePluginInputDTO {
+    _id: string;
+}
+
+export interface ExecutePluginInputDTO {
+    pluginId: string;
+    trajectoryId: string;
+    teamClusterId: string;
+    config: Record<string, unknown>;
+    selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
+    timestep?: number;
+}
+
+export interface ExecutePluginOutputDTO {
+    analysisId: string;
+}
+
+export interface ExportAnalysisResultsInputDTO {
+    pluginId: string;
+    analysisId: string;
+}
+
+export interface ExportPluginInputDTO {
+    _id: string;
+}
+
+export interface GetPluginInputDTO {
+    _id: string;
+}
+
+export interface GetPluginsInputDTO {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+}
+
+export interface ImportPluginInputDTO {
+    file: File;
+}
+
+export interface ListPluginTeamClustersInputDTO {
+    teamId: string;
+    page: number;
+    limit: number;
+}
+
+export type ListPluginTeamClustersOutputDTO = PaginatedResponse<PluginTeamClusterOption>;
+
+export interface SavePluginInputDTO {
+    _id?: string;
+    workflow: IWorkflow;
+}
+
+export interface UpdatePluginInputDTO {
+    _id: string;
+    workflow?: IWorkflow;
+    status?: PluginStatus;
+}
+
+export interface UploadBinaryInputDTO {
+    pluginId: string;
+    teamId: string;
+    file: File;
+    onProgress?: (progress: number) => void;
+}
+
+export interface UploadBinaryOutputDTO {
+    objectPath: string;
+    fileName: string;
+    size: number;
+}
 
 interface DeleteBinaryInputDTO {
     pluginId: string;

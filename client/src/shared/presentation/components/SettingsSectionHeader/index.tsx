@@ -1,5 +1,5 @@
 import './SettingsSectionHeader.css';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import type { ReactNode } from 'react';

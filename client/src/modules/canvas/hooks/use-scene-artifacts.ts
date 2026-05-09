@@ -6,7 +6,7 @@ import { toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-iden
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
 interface UseSceneArtifactsOptions {
     trajectoryId?: string;

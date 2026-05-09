@@ -5,7 +5,7 @@ import CreateGroupModal from '../CreateGroupModal';
 import GroupManagementModal from '../GroupManagementModal';
 import ChatDetailsPanel from '../ChatDetailsPanel';
 import Box from '@/shared/presentation/primitives/Box';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { useParams } from 'react-router-dom';
 import useTip from '@/shared/tips/use-tip';
 import './MessagesPage.css';

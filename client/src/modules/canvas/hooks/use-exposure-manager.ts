@@ -12,7 +12,7 @@ import { sileo } from 'sileo';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/dtos/scene-artifacts';
+import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
 export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 

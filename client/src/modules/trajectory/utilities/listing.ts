@@ -1,4 +1,4 @@
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { TrajectoryFolder } from '@/modules/trajectory/api/entities/trajectory/trajectory-folder';
 
 export enum TrajectoryListingRowType {

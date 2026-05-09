@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import './DashedActionBox.css';
 import { Plus } from 'lucide-react';
 import { forwardRef } from 'react';

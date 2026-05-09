@@ -8,7 +8,7 @@ import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { joinTeamSchema } from './validation-schema';
-import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/dtos/team/join-by-invite-code';
+import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
 import type { JoinTeamForm } from './validation-schema';
 
 const MODAL_ID = 'join-team-modal';

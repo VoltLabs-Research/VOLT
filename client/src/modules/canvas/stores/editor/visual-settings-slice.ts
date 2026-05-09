@@ -2,12 +2,7 @@ import { mergeSectionState, resetSectionState } from './store-section';
 import { getDefaultEnvironmentSettings } from '@/shared/domain/rendering/environment';
 
 import type { EditorStore } from './types';
-import type {
-    CanvasGridSettingsState,
-    CanvasGridSettingsStore,
-    EnvironmentConfigStore,
-    FogConfig
-} from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { CanvasGridSettingsState, CanvasGridSettingsStore, EnvironmentConfigStore, FogConfig } from '@/modules/fractal/stores/contracts/editor/visual-types';
 import type { StateCreator } from 'zustand';
 
 export interface VisualSettingsSlice {

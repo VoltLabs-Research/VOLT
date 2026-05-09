@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import './Skeleton.css';
 import type { CSSProperties } from 'react';
 

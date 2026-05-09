@@ -8,9 +8,8 @@ import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import type { CreateSSHConnectionParams } from '@/modules/ssh/api/dtos/create-ssh-connection';
 import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
-import type { UpdateSSHConnectionParams } from '@/modules/ssh/api/dtos/update-ssh-connection';
+import type { CreateSSHConnectionParams, UpdateSSHConnectionParams } from '@/modules/ssh/api/service';
 import type { SSHConnectionFormData } from '@/modules/ssh/utilities/ssh-connection-form-schema';
 
 export const SSH_CONNECTION_MODAL_ID = 'ssh-connection-modal';

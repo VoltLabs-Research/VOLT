@@ -1,7 +1,7 @@
 import Button from '@/shared/presentation/primitives/Button';
 import { openModal } from '@/shared/presentation/primitives/Modal';
-import { Folder, Pencil, Trash2 } from 'lucide-react';
-import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
+import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface NewFolderHeaderActionProps {
     modalId: string;
@@ -11,6 +11,7 @@ interface FolderHeaderMenuOptionsParams<TFolder> {
     currentFolder: TFolder | null;
     onRenameFolderOpen: (folder: TFolder) => void;
     onDeleteCurrentFolder: (() => void | Promise<void>) | null;
+    newFolderModalId?: string;
     extraOptions?: MenuOption[];
 };
 
@@ -32,9 +33,18 @@ export const getFolderHeaderMenuOptions = <TFolder,>({
     currentFolder,
     onRenameFolderOpen,
     onDeleteCurrentFolder,
+    newFolderModalId,
     extraOptions = []
 }: FolderHeaderMenuOptionsParams<TFolder>): MenuOption[] => {
     const options: MenuOption[] = [];
+
+    if (newFolderModalId) {
+        options.push({
+            label: 'New Folder',
+            icon: FolderPlus,
+            onClick: () => openModal(newFolderModalId)
+        });
+    }
 
     if (currentFolder) {
         options.push(

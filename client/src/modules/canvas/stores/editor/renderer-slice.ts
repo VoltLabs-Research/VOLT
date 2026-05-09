@@ -5,12 +5,7 @@ import {
 } from '@/shared/domain/rendering/renderer';
 
 import type { EditorStore } from './types';
-import type {
-    RendererCreateState,
-    RendererRuntimeState,
-    RendererSettingsState,
-    RendererSettingsStore
-} from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { RendererCreateState, RendererRuntimeState, RendererSettingsState, RendererSettingsStore } from '@/shared/domain/rendering/renderer';
 import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {

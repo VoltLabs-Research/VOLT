@@ -42,12 +42,6 @@
     .dashboard-header-center {
         min-width: 0;
     }
-
-    /*
-     * On phones, the breadcrumb needs to yield space to the action icons on the
-     * right. Let it shrink and scroll horizontally instead of pushing the icon
-     * cluster off-screen.
-     */
     .dashboard-header-left {
         flex: 1 1 auto;
         min-width: 0;
@@ -68,8 +62,6 @@
     .dashboard-header-left .breadcrumb-nav > * {
         flex-shrink: 0;
     }
-
-    /* Right icon cluster must hold its natural width. */
     .dashboard-header-right {
         flex: 0 0 auto;
         gap: 0.25rem;
@@ -85,11 +77,6 @@
         display: none;
     }
 }
-
-/*
- * Very narrow phones: collapse the breadcrumb to just the final segment to
- * guarantee the action icons on the right remain visible and tappable.
- */
 @media screen and (max-width: 420px) {
     .dashboard-header-left .breadcrumb-nav > *:not(:last-child) {
         display: none;

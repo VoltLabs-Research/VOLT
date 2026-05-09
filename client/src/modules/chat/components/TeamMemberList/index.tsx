@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import { IoCheckmark } from 'react-icons/io5';
 import Avatar from '@/shared/presentation/primitives/Avatar';
 import Box from '@/shared/presentation/primitives/Box';

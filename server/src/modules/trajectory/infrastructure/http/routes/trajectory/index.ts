@@ -1,9 +1,21 @@
 import { Resource } from '@core/constants/resources';
+import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
 import { trajectoryValidation } from '@modules/trajectory/infrastructure/http/validation/trajectory';
+import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 import { uploadTrajectoryFiles } from '@shared/infrastructure/http/middleware/upload';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
+import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
+import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const folderHandlers = createCatalogFolderRouteHandlers({
+    repository: container.resolve(TrajectoryFolderRepository),
+    folderLabel: 'Trajectory folder',
+    deleteFolder: (input) => container.resolve(DeleteTrajectoryFolderUseCase).execute(input),
+    deleteStatusCode: HttpStatus.NoContent
+});
 
 export default createHttpModule({
     basePath: '/api/trajectories/:teamId',
@@ -17,11 +29,11 @@ export default createHttpModule({
             .post(uploadTrajectoryFiles('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
         router.post('/clones', trajectoryValidation.clone, controllers.cloneTrajectory.handle);
-        router.get('/folders', trajectoryValidation.listFolders, controllers.listFolders.handle);
-        router.get('/folders/:folderId', trajectoryValidation.getFolder, controllers.getFolder.handle);
-        router.post('/folders', trajectoryValidation.createFolder, controllers.createFolder.handle);
-        router.patch('/folders/:folderId', trajectoryValidation.updateFolder, controllers.updateFolder.handle);
-        router.delete('/folders/:folderId', trajectoryValidation.deleteFolder, controllers.deleteFolder.handle);
+        router.get('/folders', trajectoryValidation.listFolders, folderHandlers.list);
+        router.get('/folders/:folderId', trajectoryValidation.getFolder, folderHandlers.get);
+        router.post('/folders', trajectoryValidation.createFolder, folderHandlers.create);
+        router.patch('/folders/:folderId', trajectoryValidation.updateFolder, folderHandlers.update);
+        router.delete('/folders/:folderId', trajectoryValidation.deleteFolder, folderHandlers.delete);
         router.get('/metrics', trajectoryValidation.getMetrics, controllers.getMetrics.handle);
         router.get('/:trajectoryId/preview', trajectoryValidation.getPreview, controllers.getPreview.handle);
         router.get('/:trajectoryId/analyses/download', trajectoryValidation.downloadTrajectoryAnalyses, controllers.downloadTrajectoryAnalyses.handle);

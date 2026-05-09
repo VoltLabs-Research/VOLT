@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import './StatusDot.css';
 
 export type StatusDotTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'brand';

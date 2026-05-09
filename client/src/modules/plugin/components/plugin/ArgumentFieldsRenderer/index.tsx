@@ -18,7 +18,7 @@ import Select from '@/shared/presentation/primitives/Select';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
+import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface ArgumentFieldsRendererProps {

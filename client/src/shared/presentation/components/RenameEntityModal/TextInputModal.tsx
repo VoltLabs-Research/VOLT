@@ -3,7 +3,7 @@ import Modal from '@/shared/presentation/primitives/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Box from '@/shared/presentation/primitives/Box';
 import { useCallback } from 'react';
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
+import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 
 interface TextInputModalProps {
@@ -19,6 +19,9 @@ interface TextInputModalProps {
     submitDisabled: boolean;
     isSubmitting: boolean;
     primaryIsLoading?: boolean;
+    inputProps?: InputHTMLAttributes<HTMLInputElement>;
+    leadingContent?: ReactNode;
+    helperText?: ReactNode;
     onValueChange: (value: string) => void;
     onSubmit: () => void | Promise<void>;
     onCancel: () => void;
@@ -38,6 +41,9 @@ const TextInputModal = ({
     submitDisabled,
     isSubmitting,
     primaryIsLoading,
+    inputProps,
+    leadingContent,
+    helperText,
     onValueChange,
     onSubmit,
     onCancel,
@@ -47,12 +53,19 @@ const TextInputModal = ({
         onValueChange(event.target.value);
     }, [onValueChange]);
 
-    const inputProps: InputHTMLAttributes<HTMLInputElement> = {
-        onKeyDown: (event) => {
-            if (event.key === 'Enter') {
-                onSubmit();
-            }
+    const handleKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+        inputProps?.onKeyDown?.(event);
+        if (event.defaultPrevented || event.key !== 'Enter') {
+            return;
         }
+
+        event.preventDefault();
+        onSubmit();
+    }, [inputProps, onSubmit]);
+
+    const mergedInputProps: InputHTMLAttributes<HTMLInputElement> = {
+        ...inputProps,
+        onKeyDown: handleKeyDown
     };
 
     const secondaryAction: ModalFooterAction = {
@@ -77,15 +90,17 @@ const TextInputModal = ({
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
             <Box p='1-5'>
+                {leadingContent}
                 <FormFieldRHF
                     label={fieldLabel}
                     placeholder={placeholder}
                     autoFocus={autoFocus}
                     value={value}
                     onChange={handleValueChange}
-                    inputProps={inputProps}
+                    inputProps={mergedInputProps}
                     error={error}
                 />
+                {helperText}
             </Box>
         </Modal>
     );

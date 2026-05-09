@@ -9,8 +9,8 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { useEffect, useMemo } from 'react';
 
-import type { RenderableExposurePayload } from '@/modules/trajectory/api/dtos/scene-artifacts';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 interface FallbackListingExposure {
     exposureId: string;

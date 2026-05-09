@@ -1,1 +1,0 @@
-export { teamClusterService } from '../../service';

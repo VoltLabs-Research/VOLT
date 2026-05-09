@@ -6,7 +6,7 @@ import {
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 
-import type { RendererRuntimeState } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { RendererRuntimeState } from '@/shared/domain/rendering/renderer';
 import type { WebGLRenderer } from 'three';
 
 interface DynamicRendererProps {

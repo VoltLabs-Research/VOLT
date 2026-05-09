@@ -1,8 +1,12 @@
 import { createService, get, post } from '@/app/core/http/utilities/create-service';
 
-import type { EmptyParams } from '@/app/core/http/utilities/create-service';
+import type { EmptyParams } from '@voltstack/voltclient';
 import type { Chat } from '../entities/chat';
-import type { GetOrCreateChatInputDTO } from '../dtos/chat';
+
+export interface GetOrCreateChatInputDTO {
+    teamId: string;
+    participantId: string;
+}
 
 const endpoints = {
     getAll: get<EmptyParams, Chat[]>('/'),

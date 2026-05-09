@@ -1,6 +1,6 @@
 import queryClient from './query-client';
 import { skipToken, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { FetchQueryOptions, InfiniteData, QueryKey, UseInfiniteQueryOptions, UseMutationOptions, UseQueryOptions } from '@tanstack/react-query';
 import type { MutationFunctionContext } from '@tanstack/react-query';
 
