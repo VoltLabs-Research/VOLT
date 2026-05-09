@@ -4,6 +4,7 @@ import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import IconButton from '@/shared/presentation/primitives/IconButton';
 import Loader from '@/shared/presentation/primitives/Loader';
@@ -16,7 +17,7 @@ import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { formatDistanceToNow } from 'date-fns';
-import { FolderInput, Play, ScanSearch } from 'lucide-react';
+import { Download, FolderInput, Play, ScanSearch } from 'lucide-react';
 import { sileo } from 'sileo';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
@@ -164,6 +165,7 @@ export default function SimulationCardFooter({
     const teamId = useSelectedTeamId();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const triggerRasterizationMutation = useTriggerRasterizationMutation();
+    const { downloadTrajectory, isDownloading: isExporting } = useDownloadTrajectory();
     const { data: jobGroups = [] } = teamJobsGroups();
     const requestedRasterTrajectoryIds = useTeamJobsStore((state) => state.requestedRasterTrajectoryIds);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -183,6 +185,14 @@ export default function SimulationCardFooter({
     const handleViewRaster = useCallback(() => {
         navigate(`/canvas/${trajectoryId}?workspace=raster`);
     }, [navigate, trajectoryId]);
+
+    const handleExport = useCallback(() => {
+        void downloadTrajectory({
+            trajectoryId,
+            filename: name || trajectoryId,
+            archive: true
+        });
+    }, [downloadTrajectory, name, trajectoryId]);
 
     const handleDelete = useCallback(async () => {
         const isConfirmed = await confirm({
@@ -240,6 +250,12 @@ export default function SimulationCardFooter({
         onClick: handleViewRaster,
         label: 'Open raster workspace',
         icon: <ScanSearch />
+    }, {
+        onClick: handleExport,
+        label: 'Export',
+        icon: <Download />,
+        isLoading: isExporting,
+        disabled: isExporting
     }, ...(onMoveToFolder ? [{
         onClick: onMoveToFolder,
         label: 'Move to folder',

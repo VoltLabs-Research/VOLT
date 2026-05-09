@@ -9,11 +9,9 @@ interface BuildMenusParams {
     onToggleStatusBar: () => void;
     onScreenshot: () => void;
     onImport: () => void;
-    onExport?: () => void;
     onDownloadAnalyses?: () => void;
     onUndo: () => void;
     onRedo: () => void;
-    canExport?: boolean;
     canDownloadAnalyses?: boolean;
     canUndo?: boolean;
     canRedo?: boolean;
@@ -49,11 +47,9 @@ export const buildMenus = ({
     onToggleStatusBar,
     onScreenshot,
     onImport,
-    onExport,
     onDownloadAnalyses,
     onUndo,
     onRedo,
-    canExport = false,
     canDownloadAnalyses = false,
     canUndo = false,
     canRedo = false
@@ -73,14 +69,6 @@ export const buildMenus = ({
                 icon: <Upload size={ICON_SIZE} />,
                 shortcut: 'Ctrl+I',
                 action: onImport
-            },
-            {
-                type: MenuItemType.Item,
-                label: 'Export',
-                icon: <Download size={ICON_SIZE} />,
-                shortcut: 'Ctrl+E',
-                action: onExport,
-                disabled: !canExport || !onExport
             },
             {
                 type: MenuItemType.Item,
