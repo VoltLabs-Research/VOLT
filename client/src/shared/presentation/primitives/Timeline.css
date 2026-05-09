@@ -49,11 +49,12 @@
 }
 
 .volt-timeline-item__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
     padding: 0 0 0.75rem;
     min-width: 0;
 }
-
-/* Tones */
 .volt-timeline-item--tone-brand .volt-timeline-item__dot {
     background: var(--status-info-bg);
     color: var(--color-brand-primary);

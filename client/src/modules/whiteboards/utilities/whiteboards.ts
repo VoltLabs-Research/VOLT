@@ -1,5 +1,4 @@
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 
 /**
  * Excalidraw `appState` keys that are safe to persist across sessions.
@@ -262,22 +261,10 @@ export const extractWhiteboardFileIds = (elements: WhiteboardElement[]): string[
     return Array.from(fileIds);
 };
 
-export const createEmptyWhiteboardsResponse = createEmptyPaginatedResponse;
-
 export const getDeleteConfirmationMessage = (selectedItems: Whiteboard[]): string => {
     if (selectedItems.length === 1) {
-        return `Delete whiteboard "${selectedItems[0].title || 'Untitled Whiteboard'}"? This action cannot be undone.`;
+        return `Delete whiteboard "${selectedItems[0].title}"? This action cannot be undone.`;
     }
 
     return `Delete ${selectedItems.length} whiteboards? This action cannot be undone.`;
-};
-
-export const getSafeWhiteboardTitle = (title: string | null | undefined): string => {
-    const trimmedTitle = title?.trim();
-    return trimmedTitle || 'Untitled Whiteboard';
-};
-
-export const getSafeFolderTitle = (title: string | null | undefined): string => {
-    const trimmedTitle = title?.trim();
-    return trimmedTitle || 'Untitled Folder';
 };

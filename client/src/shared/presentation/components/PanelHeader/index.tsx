@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import Button from '@/shared/presentation/primitives/Button';
 import CloseButton from '@/shared/presentation/primitives/CloseButton';
 import Row from '@/shared/presentation/primitives/Row';

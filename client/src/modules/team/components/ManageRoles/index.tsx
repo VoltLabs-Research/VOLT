@@ -15,7 +15,8 @@ import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listin
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { useCallback, useState } from 'react';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
-import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import { SOCKET_TEAM_ROLE_EVENTS } from '@/modules/socket/events/team';
 import type { RoleEditorPayload } from '../RoleEditorModal';
 

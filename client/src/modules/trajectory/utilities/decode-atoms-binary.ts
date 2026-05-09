@@ -1,4 +1,4 @@
-import type { AtomColumnDType, AtomColumnView, AtomData, GetAtomsOutputDTO } from '@/modules/trajectory/api/dtos/trajectory';
+import type { AtomColumnDType, AtomColumnView, AtomData, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
 
 const DTYPE_BY_ID: Record<number, AtomColumnDType> = {
     0: 'f32',

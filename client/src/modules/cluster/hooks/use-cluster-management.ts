@@ -9,24 +9,22 @@ import {
     useUpdateTeamClusterQueueConcurrencyMutation,
     useUpdateTeamClusterRoleMutation
 } from '@/modules/cluster/hooks/team-cluster/queries';
-import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
+import { teamClusterService } from '@/modules/cluster/api/service';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
-import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/delete-team-cluster';
 import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/create-team-cluster-transfer-request';
 import type {
+    CreateTeamClusterTransferRequestOutputDTO,
+    DeleteTeamClusterOutputDTO,
     TeamClusterQueueConcurrencyInputDTO,
     TeamClusterQueueScopeLimitsInputDTO,
-    UpdateTeamClusterQueueConcurrencyOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
-import type {
+    UpdateTeamClusterQueueConcurrencyOutputDTO,
     UpdateTeamClusterRoleOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
+} from '@/modules/cluster/api/service';
 import type {
     TeamClusterRemoteAccessSession,
     TeamClusterRemoteAccessTarget,

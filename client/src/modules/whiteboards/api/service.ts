@@ -1,47 +1,70 @@
 import { buildFileFormData } from '@/shared/utils/file';
-import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
+import {
+    createFolderCrudEndpoints,
+    type FolderCreateParams,
+    type FolderDeleteParams,
+    type FolderGetParams,
+    type FolderListParams,
+    type FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
 
 import { createService, del, download, get, paginated, patch, post, request } from '@/app/core/http/utilities/create-service';
-import type { CreateWhiteboardFolderParams } from './dtos/create-whiteboard-folder-params';
-import type { CreateWhiteboardParams } from './dtos/create-whiteboard-params';
-import type { DeleteWhiteboardFolderParams } from './dtos/delete-whiteboard-folder-params';
-import type { DeleteWhiteboardParams } from './dtos/delete-whiteboard-params';
-import type { GetWhiteboardFolderParams } from './dtos/get-whiteboard-folder-params';
-import type { ListWhiteboardFoldersParams } from './dtos/list-whiteboard-folders-params';
-import type { ListWhiteboardsParams } from './dtos/list-whiteboards-params';
-import type { MoveWhiteboardParams } from './dtos/move-whiteboard-params';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { UpdateWhiteboardFolderParams } from './dtos/update-whiteboard-folder-params';
-import type { UpdateWhiteboardParams } from './dtos/update-whiteboard-params';
 import type { Whiteboard } from './entities/whiteboard';
 import type { WhiteboardFolder } from './entities/whiteboard-folder';
 
+export interface CreateWhiteboardParams {
+    teamId: string;
+    title: string;
+    folderId?: string | null;
+}
+
+export interface DeleteWhiteboardParams {
+    whiteboardId: string;
+}
+
+export interface ListWhiteboardsParams {
+    page?: number;
+    limit?: number;
+    folderId?: string;
+}
+
+export interface MoveWhiteboardParams {
+    whiteboardId: string;
+    folderId: string | null;
+}
+
+export interface UpdateWhiteboardParams {
+    whiteboardId: string;
+    title?: string;
+}
+
 export interface WhiteboardIdParams {
     whiteboardId: string;
-};
+}
 
 export interface SaveStateParams extends WhiteboardIdParams {
     state: unknown;
-};
+}
 
 export interface UploadAssetParams extends WhiteboardIdParams {
     file: File;
-};
+}
 
 export interface GetAssetParams extends WhiteboardIdParams {
     assetId: string;
-};
+}
 
 export interface UploadAssetResult {
     assetId: string;
-};
+}
 
 const folderEndpoints = createFolderCrudEndpoints<
-    ListWhiteboardFoldersParams,
-    GetWhiteboardFolderParams,
-    CreateWhiteboardFolderParams,
-    UpdateWhiteboardFolderParams,
-    DeleteWhiteboardFolderParams,
+    FolderListParams,
+    FolderGetParams,
+    FolderCreateParams,
+    FolderUpdateParams,
+    FolderDeleteParams,
     WhiteboardFolder
 >();
 

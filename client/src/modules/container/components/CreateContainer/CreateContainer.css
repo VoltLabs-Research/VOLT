@@ -7,16 +7,9 @@
     max-width: 46rem;
 }
 
-.create-container-image-preview,
-.create-container-validation-notice,
-.create-container-review-help {
+.create-container-image-preview {
     background: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
     border: 1px solid var(--color-border-soft);
-}
-
-.create-container-validation-list {
-    margin: 0;
-    padding-left: 1rem;
 }
 
 .create-container-template-logo {
@@ -58,59 +51,6 @@
 
 .create-container-config-card.full-width {
     grid-column: 1 / -1;
-}
-
-.create-container-resource-row {
-    background: var(--color-surface-1);
-}
-
-.create-container-resource-row:last-child {
-    margin-bottom: 0;
-}
-
-.create-container-resource-value {
-    background: var(--color-surface-2);
-    color: var(--color-text-primary);
-    padding: 0.2rem 0.6rem;
-    font-size: 0.8rem;
-}
-
-.create-container-mapping-input {
-    flex: 1;
-}
-
-.create-container-mapping-input label {
-    display: block;
-    margin-bottom: 0.25rem;
-}
-
-.create-container-field-input {
-    height: 40px;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border-soft);
-    border-radius: 6px;
-    padding: 0 0.75rem;
-    font-size: 0.9rem;
-    color: var(--color-text-primary);
-}
-
-.create-container-field-input:focus {
-    outline: none;
-    border-color: var(--color-brand-primary);
-}
-
-.create-container-empty-state {
-    background: var(--color-surface-2);
-    border: 1px dashed var(--color-border-soft);
-    border-radius: 6px;
-    font-size: 0.875rem;
-}
-
-.create-container-checkbox {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--color-brand-primary);
-    cursor: pointer;
 }
 
 .create-container-step-actions {

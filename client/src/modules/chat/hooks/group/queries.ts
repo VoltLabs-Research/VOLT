@@ -7,7 +7,7 @@ import type {
     RemoveUsersFromGroupInputDTO,
     UpdateGroupAdminsInputDTO,
     UpdateGroupInfoInputDTO
-} from '../../api/dtos/group';
+} from '../../api/services/group-service';
 
 interface LeaveGroupParams {
     chatId: string;

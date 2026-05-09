@@ -6,17 +6,21 @@ import {
     createPaginatedQuery,
     createQuery
 } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { CreateWhiteboardFolderParams } from '../api/dtos/create-whiteboard-folder-params';
-import type { CreateWhiteboardParams } from '../api/dtos/create-whiteboard-params';
-import type { DeleteWhiteboardFolderParams } from '../api/dtos/delete-whiteboard-folder-params';
-import type { DeleteWhiteboardParams } from '../api/dtos/delete-whiteboard-params';
-import type { GetWhiteboardFolderParams } from '../api/dtos/get-whiteboard-folder-params';
-import type { ListWhiteboardFoldersParams } from '../api/dtos/list-whiteboard-folders-params';
-import type { ListWhiteboardsParams } from '../api/dtos/list-whiteboards-params';
-import type { MoveWhiteboardParams } from '../api/dtos/move-whiteboard-params';
-import type { UpdateWhiteboardFolderParams } from '../api/dtos/update-whiteboard-folder-params';
-import type { UpdateWhiteboardParams } from '../api/dtos/update-whiteboard-params';
+import type {
+    FolderCreateParams,
+    FolderDeleteParams,
+    FolderGetParams,
+    FolderListParams,
+    FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type {
+    CreateWhiteboardParams,
+    DeleteWhiteboardParams,
+    ListWhiteboardsParams,
+    MoveWhiteboardParams,
+    UpdateWhiteboardParams
+} from '../api/service';
 import type { WhiteboardFolder } from '../api/entities/whiteboard-folder';
 import type { Whiteboard } from '../api/entities/whiteboard';
 
@@ -24,8 +28,8 @@ const BASE_KEY = 'whiteboards';
 
 interface WhiteboardQueryKeys extends Record<string, unknown> {
     single: { whiteboardId: string };
-    folders: ListWhiteboardFoldersParams;
-    folder: GetWhiteboardFolderParams;
+    folders: FolderListParams;
+    folder: FolderGetParams;
 };
 
 const KEYS = buildKeys<WhiteboardQueryKeys>(BASE_KEY);
@@ -46,11 +50,11 @@ export const whiteboardQuery = createQuery(KEYS.single, service.getWhiteboard);
 const whiteboardFolderQueries = createFolderResourceQueries<
     WhiteboardFolder,
     PaginatedResponse<WhiteboardFolder>,
-    ListWhiteboardFoldersParams,
-    GetWhiteboardFolderParams,
-    CreateWhiteboardFolderParams,
-    UpdateWhiteboardFolderParams,
-    DeleteWhiteboardFolderParams
+    FolderListParams,
+    FolderGetParams,
+    FolderCreateParams,
+    FolderUpdateParams,
+    FolderDeleteParams
 >({
     baseKey: 'whiteboards-folder',
     service: {
@@ -60,7 +64,6 @@ const whiteboardFolderQueries = createFolderResourceQueries<
         updateFolder: service.updateWhiteboardFolder,
         deleteFolder: service.deleteWhiteboardFolder
     },
-    buildFolderParams: (folderId) => ({ folderId }),
     listingQueryKeys: [whiteboardPaginatedQuery.QUERY_KEYS.lists()]
 });
 

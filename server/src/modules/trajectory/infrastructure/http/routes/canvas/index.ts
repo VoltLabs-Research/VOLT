@@ -5,8 +5,9 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 
 export default createHttpModule({
     basePath: '/api/canvas',
-    middleware: authenticateOptional,
     routes: (router) => {
+        router.use(authenticateOptional);
+
         router.get('/:trajectoryId/bootstrap', canvasValidation.getBootstrap, controllers.bootstrap.handle);
         router.get('/:trajectoryId', canvasValidation.getTrajectory, controllers.trajectory.handle);
         router.get('/:trajectoryId/preview', canvasValidation.getPreview, controllers.preview.handle);

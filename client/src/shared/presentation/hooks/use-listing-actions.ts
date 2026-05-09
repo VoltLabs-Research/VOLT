@@ -5,7 +5,7 @@ import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import type { ComponentType } from 'react';
 import type { MenuIconProps, MenuOption } from '@/shared/presentation/types/menu';
 
-interface ActionConfig<T = unknown> {
+export interface ActionConfig<T = unknown> {
     label?: string;
     icon?: ComponentType<MenuIconProps>;
     handler: (payload: { item: T; selectedItems: T[] }) => void | Promise<void>;

@@ -1,6 +1,6 @@
 import service from '../api/service';
 import { buildKeys, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
-import type { GetDailyActivityParams } from '../api/dtos/get-daily-activity';
+import type { GetDailyActivityParams } from '../api/service';
 
 type DailyActivityQueryKeys = {
     activity: GetDailyActivityParams;

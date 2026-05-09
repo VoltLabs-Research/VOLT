@@ -3,7 +3,6 @@ import type {
     ScriptingNotebookContainerResources,
     ScriptingNotebookTrajectory
 } from '@/modules/scripting/api/entities/scripting-notebook';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 
 const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): string => {
     if (typeof trajectory === 'string') {
@@ -12,8 +11,6 @@ const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): stri
 
     return trajectory._id;
 };
-
-export const createEmptyNotebooksResponse = createEmptyPaginatedResponse<ScriptingNotebook>;
 
 export const getPrimaryTrajectory = (notebook: ScriptingNotebook): ScriptingNotebookTrajectory | string | null => {
     return notebook.trajectory ?? null;

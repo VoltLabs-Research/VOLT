@@ -1,6 +1,6 @@
 import { DragControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { BoxBounds } from '@/modules/fractal/types';
+import type { BoxBounds } from '@/modules/fractal/api/entities/model';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';

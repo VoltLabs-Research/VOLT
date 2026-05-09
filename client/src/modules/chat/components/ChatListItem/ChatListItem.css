@@ -7,11 +7,6 @@
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 3px var(--focus-ring);
 }
 
-.chat-list-item-avatar-group {
-    background: var(--color-surface-3);
-    color: var(--color-text-secondary);
-}
-
 .chat-list-item-name {
     margin: 0;
 }

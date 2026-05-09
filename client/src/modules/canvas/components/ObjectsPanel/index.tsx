@@ -27,8 +27,8 @@ import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-c
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/entities/scene-artifacts';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 

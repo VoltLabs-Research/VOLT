@@ -3,7 +3,6 @@
     max-width: 320px;
     box-shadow: var(--shadow-elevated);
     animation: popoverIn .15s cubic-bezier(0.16, 1, 0.3, 1);
-    /* max-height: min(24rem, calc(100dvh - 2rem)); */
     overflow-y: auto;
     overscroll-behavior: contain;
     z-index: var(--z-floating);

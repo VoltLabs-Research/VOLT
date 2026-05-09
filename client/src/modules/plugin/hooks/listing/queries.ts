@@ -14,12 +14,16 @@ import {
     useCanvasDataAccess,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import listingService from '../../api/services/listing';
-import type { ExportListingByAnalysisInputDTO } from '../../api/dtos/listing/export-listing-by-analysis';
-import type { ExportPluginListingInputDTO } from '../../api/dtos/listing/export-plugin-listing';
-import type { GetAnalysisListingExportOptionsInputDTO } from '../../api/dtos/listing/get-analysis-listing-export-options';
-import type { GetPluginListingInputDTO, GetPluginListingOutputDTO } from '../../api/dtos/listing/get-plugin-listing';
-import type { GetSubListingInputDTO, GetSubListingOutputDTO } from '../../api/dtos/listing/get-sub-listing';
+import listingService from '../../api/services/listing-service';
+import type {
+    ExportListingByAnalysisInputDTO,
+    ExportPluginListingInputDTO,
+    GetAnalysisListingExportOptionsInputDTO,
+    GetPluginListingInputDTO,
+    GetPluginListingOutputDTO,
+    GetSubListingInputDTO,
+    GetSubListingOutputDTO
+} from '../../api/services/listing-service';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 

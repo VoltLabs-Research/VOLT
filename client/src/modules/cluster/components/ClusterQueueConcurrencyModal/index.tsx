@@ -14,7 +14,7 @@ import type {
     TeamClusterQueueScopeLimitInputDTO,
     TeamClusterQueueScopeLimitsInputDTO,
     UpdateTeamClusterQueueConcurrencyOutputDTO
-} from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-queue-concurrency';
+} from '@/modules/cluster/api/service';
 
 interface QueueFieldDefinition {
     key: keyof TeamClusterQueueConcurrencyInputDTO;

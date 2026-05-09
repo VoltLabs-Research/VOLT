@@ -7,7 +7,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Tag from '@/shared/presentation/primitives/Tag';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import { formatNumber } from '@/shared/utils/format';
 
 interface PeriodicAxisStatus {

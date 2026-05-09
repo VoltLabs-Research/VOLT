@@ -1,12 +1,44 @@
 import { createService, get, post } from '@/app/core/http/utilities/create-service';
 
-import type {
-    ApplyColorCodingInputDTO,
-    ColorCodingProperties,
-    ColorCodingStats,
-    GetColorCodingPropertiesInputDTO,
-    GetColorCodingStatsInputDTO
-} from '../dtos/color-coding';
+export interface ColorCodingPayload {
+    property: string;
+    startValue: number;
+    endValue: number;
+    gradient: string;
+    exposureId?: string;
+}
+
+export interface ApplyColorCodingInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    payload: ColorCodingPayload;
+}
+
+export interface GetColorCodingPropertiesInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+}
+
+export interface ColorCodingProperties {
+    base: string[];
+    modifiers: Record<string, string[]>;
+}
+
+export interface GetColorCodingStatsInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    property: string;
+    type: string;
+    exposureId?: string;
+}
+
+export interface ColorCodingStats {
+    min: number;
+    max: number;
+}
 
 const endpoints = {
     getProperties: get<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(

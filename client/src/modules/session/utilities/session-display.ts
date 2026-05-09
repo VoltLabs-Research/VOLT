@@ -9,16 +9,8 @@ interface SessionUserAgentInfo {
 
 const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
 
-const normalizeSessionString = (value: string | null | undefined): string => {
-    if (typeof value !== 'string') {
-        return '';
-    }
-
-    return value.trim();
-};
-
 export const parseSessionUserAgent = (userAgent: string | null | undefined): SessionUserAgentInfo => {
-    const normalizedUserAgent = normalizeSessionString(userAgent);
+    const normalizedUserAgent = typeof userAgent === 'string' ? userAgent.trim() : '';
     let browser = 'Unknown Browser';
     let os = 'Unknown OS';
 
@@ -39,7 +31,7 @@ export const parseSessionUserAgent = (userAgent: string | null | undefined): Ses
 };
 
 export const isMobileUserAgent = (userAgent: string | null | undefined): boolean => {
-    return MOBILE_USER_AGENT_PATTERN.test(normalizeSessionString(userAgent));
+    return MOBILE_USER_AGENT_PATTERN.test(typeof userAgent === 'string' ? userAgent.trim() : '');
 };
 
 export const formatSessionRelativeTime = (dateValue: string | null | undefined): string => {

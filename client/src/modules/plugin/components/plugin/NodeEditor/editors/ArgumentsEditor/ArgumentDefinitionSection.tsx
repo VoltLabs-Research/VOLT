@@ -16,15 +16,16 @@ import DashedActionBox from '@/shared/presentation/primitives/DashedActionBox';
 import Select from '@/shared/presentation/primitives/Select';
 import Tag from '@/shared/presentation/primitives/Tag';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
     IArgumentDefinition,
     IArgumentOption,
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { FormFieldChangeHandler } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, InputHTMLAttributes } from 'react';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];
@@ -71,6 +72,34 @@ const BOOLEAN_ARGUMENT_VALUE_OPTIONS: SelectOption[] = [{
     value: 'false',
     title: 'false'
 }];
+
+const ANY_PLUGIN_OPTION: SelectOption = {
+    value: '',
+    title: 'Any plugin'
+};
+
+const ANY_PLUGIN_KEY_OPTION: SelectOption = {
+    value: '',
+    title: 'Any key'
+};
+
+type ArgumentFieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+
+interface ArgumentFieldProps {
+    label: string;
+    name: string;
+    fieldType?: 'input' | 'select' | 'checkbox' | 'textarea';
+    value?: string | number | boolean;
+    onChange?: FormFieldChangeHandler;
+    options?: SelectOption[];
+    placeholder?: string;
+    inputProps?: InputHTMLAttributes<HTMLInputElement>;
+    rows?: number;
+}
+
+const ArgumentField = (props: ArgumentFieldProps) => (
+    <FormFieldRHF {...props} variant='inline' />
+);
 
 const isMultiValueVisibilityOperator = (
     operator?: ArgumentVisibilityOperator
@@ -152,6 +181,25 @@ const parseValueMapInput = (rawValue: string): Record<string, unknown> | undefin
     return undefined;
 };
 
+const getMultiSelectTriggerLabel = (
+    selectedCount: number,
+    selectedValues: string[] | undefined,
+    options: SelectOption[],
+    emptyLabel: string,
+    selectedSuffix: string
+): string => {
+    if (selectedCount === 0) {
+        return emptyLabel;
+    }
+
+    if (selectedCount === 1) {
+        const selectedValue = selectedValues?.[0];
+        return options.find((option) => option.value === selectedValue)?.title ?? '1 selected';
+    }
+
+    return `${selectedCount} ${selectedSuffix}`;
+};
+
 const ArgumentDefinitionSection = ({
     arguments: argumentDefinitions,
     onAddArgument,
@@ -161,10 +209,6 @@ const ArgumentDefinitionSection = ({
 }: ArgumentDefinitionSectionProps) => {
     const { publishedPlugins, getPluginArguments } = usePluginSelectors();
     const [expandedIndex, setExpandedIndex] = useState<number>(-1);
-
-    const handleArgumentChange = useCallback((index: number, nextArgument: IArgumentDefinition) => {
-        onUpdateArgument(index, nextArgument);
-    }, [onUpdateArgument]);
 
     const allowedPluginOptions = useMemo<SelectOption[]>(() => {
         return publishedPlugins.map((plugin) => ({
@@ -191,25 +235,25 @@ const ArgumentDefinitionSection = ({
         return Array.from(optionsByKey.values());
     }, [publishedPlugins]);
 
-    const handleAddArgument = useCallback(() => {
+    const handleAddArgument = () => {
         onAddArgument();
         setExpandedIndex(argumentDefinitions.length);
-    }, [onAddArgument, argumentDefinitions.length]);
+    };
 
-    const handleRemoveArgument = useCallback((index: number) => {
+    const handleRemoveArgument = (index: number) => {
         onRemoveArgument(index);
         setExpandedIndex((current) => {
             if (current === index) return -1;
             if (current > index) return current - 1;
             return current;
         });
-    }, [onRemoveArgument]);
+    };
 
-    const toggleExpanded = useCallback((index: number) => {
+    const toggleExpanded = (index: number) => {
         setExpandedIndex((current) => (current === index ? -1 : index));
-    }, []);
+    };
 
-    const handleOptionsChange = useCallback((argumentIndex: number, nextOptions: IArgumentOption[]) => {
+    const handleOptionsChange = (argumentIndex: number, nextOptions: IArgumentOption[]) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const nextArgument: IArgumentDefinition = {
             ...currentArgument,
@@ -221,16 +265,17 @@ const ArgumentDefinitionSection = ({
             delete nextArgument.default;
         }
 
-        handleArgumentChange(argumentIndex, nextArgument);
-    }, [argumentDefinitions, handleArgumentChange]);
+        onUpdateArgument(argumentIndex, nextArgument);
+    };
 
-    const createArgumentFieldHandler = useCallback((argumentIndex: number, field: keyof IArgumentDefinition) => {
-        return (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const createArgumentFieldHandler = (argumentIndex: number, field: keyof IArgumentDefinition) => {
+        return (event: ArgumentFieldChangeEvent) => {
             const nextValue = event.target.value;
             const currentArgument = argumentDefinitions[argumentIndex];
 
             if (field === 'type') {
                 const nextType = nextValue as ArgumentType;
+                const isPluginReferenceType = isPluginReferenceArgumentType(nextType);
                 const nextArgument: IArgumentDefinition = {
                     ...currentArgument,
                     type: nextType
@@ -240,11 +285,13 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.options;
                 }
 
-                if (nextType !== ArgumentType.SELECT && !isPluginReferenceArgumentType(nextType)) {
+                if (nextType !== ArgumentType.SELECT && !isPluginReferenceType) {
                     delete nextArgument.multipleSelection;
                 }
 
-                if (nextType !== ArgumentType.LIST) {
+                if (nextType === ArgumentType.LIST) {
+                    nextArgument.listArguments ??= [];
+                } else {
                     delete nextArgument.listArguments;
                     if (Array.isArray(nextArgument.default)) {
                         delete nextArgument.default;
@@ -254,11 +301,7 @@ const ArgumentDefinitionSection = ({
                     }
                 }
 
-                if (nextType === ArgumentType.LIST && !nextArgument.listArguments) {
-                    nextArgument.listArguments = [];
-                }
-
-                if (isPluginReferenceArgumentType(nextType)) {
+                if (isPluginReferenceType) {
                     delete nextArgument.options;
                     delete nextArgument.min;
                     delete nextArgument.max;
@@ -267,7 +310,7 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.value;
                 }
 
-                if (!isPluginReferenceArgumentType(nextType)) {
+                if (!isPluginReferenceType) {
                     delete nextArgument.pluginReferenceFilter;
                     delete nextArgument.pluginReferenceFilterKeys;
                     delete nextArgument.showPluginConfiguration;
@@ -280,12 +323,12 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.step;
                 }
 
-                handleArgumentChange(argumentIndex, nextArgument);
+                onUpdateArgument(argumentIndex, nextArgument);
                 return;
             }
 
             if (field === 'min' || field === 'max' || field === 'step') {
-                handleArgumentChange(argumentIndex, {
+                onUpdateArgument(argumentIndex, {
                     ...currentArgument,
                     [field]: nextValue === '' ? undefined : Number(nextValue)
                 });
@@ -293,7 +336,7 @@ const ArgumentDefinitionSection = ({
             }
 
             if (field === 'multipleSelection' || field === 'showPluginConfiguration' || field === 'required') {
-                handleArgumentChange(argumentIndex, {
+                onUpdateArgument(argumentIndex, {
                     ...currentArgument,
                     [field]: nextValue === 'true'
                 });
@@ -309,21 +352,21 @@ const ArgumentDefinitionSection = ({
                             ? Number(nextValue)
                             : nextValue;
 
-                handleArgumentChange(argumentIndex, {
+                onUpdateArgument(argumentIndex, {
                     ...currentArgument,
                     [field]: nextScalarValue
                 });
                 return;
             }
 
-            handleArgumentChange(argumentIndex, {
+            onUpdateArgument(argumentIndex, {
                 ...currentArgument,
                 [field]: nextValue
             });
         };
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleVisibilityEnabledChange = useCallback((argumentIndex: number, enabled: boolean) => {
+    const handleVisibilityEnabledChange = (argumentIndex: number, enabled: boolean) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const nextArgument: IArgumentDefinition = {
             ...currentArgument
@@ -331,7 +374,7 @@ const ArgumentDefinitionSection = ({
 
         if (!enabled) {
             delete nextArgument.visibleWhen;
-            handleArgumentChange(argumentIndex, nextArgument);
+            onUpdateArgument(argumentIndex, nextArgument);
             return;
         }
 
@@ -344,26 +387,26 @@ const ArgumentDefinitionSection = ({
             operator: ArgumentVisibilityOperator.EQUALS
         };
 
-        handleArgumentChange(argumentIndex, nextArgument);
-    }, [argumentDefinitions, handleArgumentChange]);
+        onUpdateArgument(argumentIndex, nextArgument);
+    };
 
-    const handleVisibilityArgumentChange = useCallback((argumentIndex: number, value: string) => {
+    const handleVisibilityArgumentChange = (argumentIndex: number, value: string) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const currentVisibility = currentArgument.visibleWhen;
         if (!currentVisibility) {
             return;
         }
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             visibleWhen: {
                 ...currentVisibility,
                 argument: value
             }
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleVisibilityOperatorChange = useCallback((argumentIndex: number, value: string) => {
+    const handleVisibilityOperatorChange = (argumentIndex: number, value: string) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const currentVisibility = currentArgument.visibleWhen;
         if (!currentVisibility) {
@@ -388,13 +431,13 @@ const ArgumentDefinitionSection = ({
             nextVisibility.value = currentVisibility.values[0];
         }
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             visibleWhen: nextVisibility
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleVisibilityValueChange = useCallback((argumentIndex: number, rawValue: string) => {
+    const handleVisibilityValueChange = (argumentIndex: number, rawValue: string) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const currentVisibility = currentArgument.visibleWhen;
         if (!currentVisibility) {
@@ -444,33 +487,33 @@ const ArgumentDefinitionSection = ({
             }
         }
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             visibleWhen: nextVisibility
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleNestedArgumentAdd = useCallback((argumentIndex: number) => {
+    const handleNestedArgumentAdd = (argumentIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const nestedArguments = currentArgument.listArguments ?? [];
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             listArguments: [...nestedArguments, createDefaultArgumentDefinition()]
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleNestedArgumentRemove = useCallback((argumentIndex: number, nestedIndex: number) => {
+    const handleNestedArgumentRemove = (argumentIndex: number, nestedIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const nestedArguments = currentArgument.listArguments ?? [];
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             listArguments: nestedArguments.filter((_, index) => index !== nestedIndex)
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handleNestedArgumentUpdate = useCallback((
+    const handleNestedArgumentUpdate = (
         argumentIndex: number,
         nestedIndex: number,
         nextNestedArgument: IArgumentDefinition
@@ -485,13 +528,13 @@ const ArgumentDefinitionSection = ({
             return nextNestedArgument;
         });
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             listArguments: nextNestedArguments
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const createDefaultPluginReferenceMapping = useCallback((argumentIndex: number): IPluginReferenceArgumentMapping => {
+    const createDefaultPluginReferenceMapping = (argumentIndex: number): IPluginReferenceArgumentMapping => {
         const sourceArgument = argumentDefinitions.find((candidate, index) => {
             return index !== argumentIndex && candidate.argument.trim().length > 0;
         })?.argument ?? '';
@@ -500,33 +543,33 @@ const ArgumentDefinitionSection = ({
             sourceArgument,
             targetArgument: ''
         };
-    }, [argumentDefinitions]);
+    };
 
-    const handlePluginReferenceMappingAdd = useCallback((argumentIndex: number) => {
+    const handlePluginReferenceMappingAdd = (argumentIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const currentMappings = currentArgument.pluginReferenceMappings ?? [];
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             pluginReferenceMappings: [
                 ...currentMappings,
                 createDefaultPluginReferenceMapping(argumentIndex)
             ]
         });
-    }, [argumentDefinitions, createDefaultPluginReferenceMapping, handleArgumentChange]);
+    };
 
-    const handlePluginReferenceMappingRemove = useCallback((argumentIndex: number, mappingIndex: number) => {
+    const handlePluginReferenceMappingRemove = (argumentIndex: number, mappingIndex: number) => {
         const currentArgument = argumentDefinitions[argumentIndex];
         const nextMappings = (currentArgument.pluginReferenceMappings ?? [])
             .filter((_, index) => index !== mappingIndex);
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             pluginReferenceMappings: nextMappings.length > 0 ? nextMappings : undefined
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const handlePluginReferenceMappingUpdate = useCallback((
+    const handlePluginReferenceMappingUpdate = (
         argumentIndex: number,
         mappingIndex: number,
         patch: Partial<IPluginReferenceArgumentMapping>
@@ -556,13 +599,26 @@ const ArgumentDefinitionSection = ({
                 return nextMapping;
             });
 
-        handleArgumentChange(argumentIndex, {
+        onUpdateArgument(argumentIndex, {
             ...currentArgument,
             pluginReferenceMappings: nextMappings
         });
-    }, [argumentDefinitions, handleArgumentChange]);
+    };
 
-    const getTargetArgumentOptions = useCallback((mapping: IPluginReferenceArgumentMapping): SelectOption[] => {
+    const createMappingFieldHandler = (
+        argumentIndex: number,
+        mappingIndex: number,
+        field: keyof IPluginReferenceArgumentMapping,
+        mapValue: (value: string) => unknown = (value) => value
+    ) => {
+        return (event: ArgumentFieldChangeEvent) => {
+            handlePluginReferenceMappingUpdate(argumentIndex, mappingIndex, {
+                [field]: mapValue(event.target.value)
+            } as Partial<IPluginReferenceArgumentMapping>);
+        };
+    };
+
+    const getTargetArgumentOptions = (mapping: IPluginReferenceArgumentMapping): SelectOption[] => {
         const targetPluginIds = new Set<string>();
         const targetPluginId = mapping.targetPluginId?.trim();
         const targetPluginKey = mapping.targetPluginKey?.trim();
@@ -596,7 +652,7 @@ const ArgumentDefinitionSection = ({
         }
 
         return Array.from(optionsByArgument.values());
-    }, [getPluginArguments, publishedPlugins]);
+    };
 
     return (
         <div className='argument-definition-list'>
@@ -673,26 +729,21 @@ const ArgumentDefinitionSection = ({
                         {isExpanded && (
                             <div className='argument-row-body' id={`argument-row-body-${level}-${index}`}>
                                 <FormSection title='General'>
-                                    <FormFieldRHF
-                                        variant='inline'
+                                    <ArgumentField
                                         label='Key'
                                         name={`argument-${level}-${index}`}
-                                        fieldType='input'
                                         value={argument.argument}
                                         onChange={createArgumentFieldHandler(index, 'argument')}
                                         placeholder='my_argument'
                                     />
-                                    <FormFieldRHF
-                                        variant='inline'
+                                    <ArgumentField
                                         label='Label'
                                         name={`label-${level}-${index}`}
-                                        fieldType='input'
                                         value={argument.label}
                                         onChange={createArgumentFieldHandler(index, 'label')}
                                         placeholder='My Argument'
                                     />
-                                    <FormFieldRHF
-                                        variant='inline'
+                                    <ArgumentField
                                         label='Type'
                                         name={`type-${level}-${index}`}
                                         fieldType='select'
@@ -704,31 +755,25 @@ const ArgumentDefinitionSection = ({
 
                                 {argument.type === ArgumentType.NUMBER && (
                                     <FormSection title='Constraints'>
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Min'
                                             name={`min-${level}-${index}`}
-                                            fieldType='input'
                                             value={argument.min ?? ''}
                                             onChange={createArgumentFieldHandler(index, 'min')}
                                             placeholder='0'
                                             inputProps={{ type: 'number' }}
                                         />
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Max'
                                             name={`max-${level}-${index}`}
-                                            fieldType='input'
                                             value={argument.max ?? ''}
                                             onChange={createArgumentFieldHandler(index, 'max')}
                                             placeholder='100'
                                             inputProps={{ type: 'number' }}
                                         />
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Step'
                                             name={`step-${level}-${index}`}
-                                            fieldType='input'
                                             value={argument.step ?? ''}
                                             onChange={createArgumentFieldHandler(index, 'step')}
                                             placeholder='1'
@@ -739,8 +784,7 @@ const ArgumentDefinitionSection = ({
 
                                 {(argument.type === ArgumentType.SELECT || isPluginReferenceArgumentType(argument.type)) && (
                                     <FormSection title='Selection'>
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Multiple'
                                             name={`multiple-selection-${level}-${index}`}
                                             fieldType='checkbox'
@@ -752,8 +796,7 @@ const ArgumentDefinitionSection = ({
 
                                 {showValueSection && (
                                     <FormSection title='Values'>
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Value'
                                             name={`value-${level}-${index}`}
                                             fieldType={scalarFieldType}
@@ -762,8 +805,7 @@ const ArgumentDefinitionSection = ({
                                             options={scalarOptions}
                                             placeholder='Preset hidden value'
                                         />
-                                        <FormFieldRHF
-                                            variant='inline'
+                                        <ArgumentField
                                             label='Default'
                                             name={`default-${level}-${index}`}
                                             fieldType={scalarFieldType}
@@ -776,8 +818,7 @@ const ArgumentDefinitionSection = ({
                                 )}
 
                                 <FormSection title='Visibility'>
-                                    <FormFieldRHF
-                                        variant='inline'
+                                    <ArgumentField
                                         label='Conditional'
                                         name={`visibility-enabled-${level}-${index}`}
                                         fieldType='checkbox'
@@ -788,8 +829,7 @@ const ArgumentDefinitionSection = ({
                                     />
                                     {visibilityCondition && (
                                         <>
-                                            <FormFieldRHF
-                                                variant='inline'
+                                            <ArgumentField
                                                 label='Depends on'
                                                 name={`visibility-argument-${level}-${index}`}
                                                 fieldType='select'
@@ -797,8 +837,7 @@ const ArgumentDefinitionSection = ({
                                                 onChange={(event) => handleVisibilityArgumentChange(index, event.target.value)}
                                                 options={visibilityReferenceOptions}
                                             />
-                                            <FormFieldRHF
-                                                variant='inline'
+                                            <ArgumentField
                                                 label='Operator'
                                                 name={`visibility-operator-${level}-${index}`}
                                                 fieldType='select'
@@ -806,11 +845,9 @@ const ArgumentDefinitionSection = ({
                                                 onChange={(event) => handleVisibilityOperatorChange(index, event.target.value)}
                                                 options={ARGUMENT_VISIBILITY_OPERATOR_OPTIONS}
                                             />
-                                            <FormFieldRHF
-                                                variant='inline'
+                                            <ArgumentField
                                                 label={isMultiValueVisibilityOperator(visibilityCondition.operator) ? 'Values' : 'Value'}
                                                 name={`visibility-value-${level}-${index}`}
-                                                fieldType='input'
                                                 value={getVisibilityValueInput(visibilityCondition)}
                                                 onChange={(event) => handleVisibilityValueChange(index, event.target.value)}
                                                 placeholder={visibilityReferenceArgument?.type === ArgumentType.BOOLEAN
@@ -861,7 +898,7 @@ const ArgumentDefinitionSection = ({
                                                     isMulti
                                                     selectedValues={argument.pluginReferenceFilter ?? []}
                                                     onMultiChange={(pluginReferenceFilter) => {
-                                                        handleArgumentChange(index, {
+                                                        onUpdateArgument(index, {
                                                             ...argument,
                                                             pluginReferenceFilter: pluginReferenceFilter.length > 0
                                                                 ? pluginReferenceFilter
@@ -870,18 +907,13 @@ const ArgumentDefinitionSection = ({
                                                     }}
                                                     hasSearch
                                                     placeholder='Select plugins'
-                                                    renderTriggerLabel={(selectedCount) => {
-                                                        if (selectedCount === 0) {
-                                                            return 'Select plugins';
-                                                        }
-
-                                                        if (selectedCount === 1) {
-                                                            const selectedPluginId = argument.pluginReferenceFilter?.[0];
-                                                            return allowedPluginOptions.find((option) => option.value === selectedPluginId)?.title ?? '1 selected';
-                                                        }
-
-                                                        return `${selectedCount} selected`;
-                                                    }}
+                                                    renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
+                                                        selectedCount,
+                                                        argument.pluginReferenceFilter,
+                                                        allowedPluginOptions,
+                                                        'Select plugins',
+                                                        'selected'
+                                                    )}
                                                 />
                                                 <Select
                                                     id={`plugin-reference-filter-keys-${level}-${index}`}
@@ -889,7 +921,7 @@ const ArgumentDefinitionSection = ({
                                                     isMulti
                                                     selectedValues={argument.pluginReferenceFilterKeys ?? []}
                                                     onMultiChange={(pluginReferenceFilterKeys) => {
-                                                        handleArgumentChange(index, {
+                                                        onUpdateArgument(index, {
                                                             ...argument,
                                                             pluginReferenceFilterKeys: pluginReferenceFilterKeys.length > 0
                                                                 ? pluginReferenceFilterKeys
@@ -898,32 +930,25 @@ const ArgumentDefinitionSection = ({
                                                     }}
                                                     hasSearch
                                                     placeholder='Select portable keys'
-                                                    renderTriggerLabel={(selectedCount) => {
-                                                        if (selectedCount === 0) {
-                                                            return 'Select portable keys';
-                                                        }
-
-                                                        if (selectedCount === 1) {
-                                                            const selectedPluginKey = argument.pluginReferenceFilterKeys?.[0];
-                                                            return allowedPluginKeyOptions.find((option) => option.value === selectedPluginKey)?.title ?? '1 selected';
-                                                        }
-
-                                                        return `${selectedCount} keys selected`;
-                                                    }}
+                                                    renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
+                                                        selectedCount,
+                                                        argument.pluginReferenceFilterKeys,
+                                                        allowedPluginKeyOptions,
+                                                        'Select portable keys',
+                                                        'keys selected'
+                                                    )}
                                                 />
                                             </div>
                                         </div>
                                         <FormSection title='Plugin Reference'>
-                                            <FormFieldRHF
-                                                variant='inline'
+                                            <ArgumentField
                                                 label='Required'
                                                 name={`plugin-reference-required-${level}-${index}`}
                                                 fieldType='checkbox'
                                                 value={Boolean(argument.required)}
                                                 onChange={createArgumentFieldHandler(index, 'required')}
                                             />
-                                            <FormFieldRHF
-                                                variant='inline'
+                                            <ArgumentField
                                                 label='Show config'
                                                 name={`plugin-reference-config-${level}-${index}`}
                                                 fieldType='checkbox'
@@ -943,6 +968,7 @@ const ArgumentDefinitionSection = ({
                                                             value: mapping.targetArgument,
                                                             title: mapping.targetArgument
                                                         }, ...targetArgumentOptions];
+                                                    const hasTargetOptions = targetOptions.length > 0;
 
                                                     return (
                                                         <div key={`${level}-${index}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
@@ -958,82 +984,45 @@ const ArgumentDefinitionSection = ({
                                                                     <Trash2 size={14} aria-hidden='true' />
                                                                 </button>
                                                             </div>
-                                                            <FormFieldRHF
-                                                                variant='inline'
+                                                            <ArgumentField
                                                                 label='Source'
                                                                 name={`plugin-reference-mapping-source-${level}-${index}-${mappingIndex}`}
                                                                 fieldType='select'
                                                                 value={mapping.sourceArgument}
-                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                    sourceArgument: event.target.value
-                                                                })}
+                                                                onChange={createMappingFieldHandler(index, mappingIndex, 'sourceArgument')}
                                                                 options={visibilityReferenceOptions}
                                                             />
-                                                            <FormFieldRHF
-                                                                variant='inline'
+                                                            <ArgumentField
                                                                 label='Target plugin'
                                                                 name={`plugin-reference-mapping-plugin-${level}-${index}-${mappingIndex}`}
                                                                 fieldType='select'
                                                                 value={mapping.targetPluginId ?? ''}
-                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                    targetPluginId: event.target.value || undefined
-                                                                })}
-                                                                options={[{
-                                                                    value: '',
-                                                                    title: 'Any plugin'
-                                                                }, ...allowedPluginOptions]}
+                                                                onChange={createMappingFieldHandler(index, mappingIndex, 'targetPluginId', (value) => value || undefined)}
+                                                                options={[ANY_PLUGIN_OPTION, ...allowedPluginOptions]}
                                                             />
-                                                            <FormFieldRHF
-                                                                variant='inline'
+                                                            <ArgumentField
                                                                 label='Target key'
                                                                 name={`plugin-reference-mapping-key-${level}-${index}-${mappingIndex}`}
                                                                 fieldType='select'
                                                                 value={mapping.targetPluginKey ?? ''}
-                                                                onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                    targetPluginKey: event.target.value || undefined
-                                                                })}
-                                                                options={[{
-                                                                    value: '',
-                                                                    title: 'Any key'
-                                                                }, ...allowedPluginKeyOptions]}
+                                                                onChange={createMappingFieldHandler(index, mappingIndex, 'targetPluginKey', (value) => value || undefined)}
+                                                                options={[ANY_PLUGIN_KEY_OPTION, ...allowedPluginKeyOptions]}
                                                             />
-                                                            {targetOptions.length > 0 ? (
-                                                                <FormFieldRHF
-                                                                    variant='inline'
-                                                                    label='Target argument'
-                                                                    name={`plugin-reference-mapping-target-${level}-${index}-${mappingIndex}`}
-                                                                    fieldType='select'
-                                                                    value={mapping.targetArgument}
-                                                                    onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                        targetArgument: event.target.value
-                                                                    })}
-                                                                    options={targetOptions}
-                                                                />
-                                                            ) : (
-                                                                <FormFieldRHF
-                                                                    variant='inline'
-                                                                    label='Target argument'
-                                                                    name={`plugin-reference-mapping-target-${level}-${index}-${mappingIndex}`}
-                                                                    fieldType='input'
-                                                                    value={mapping.targetArgument}
-                                                                    onChange={(event) => handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                        targetArgument: event.target.value
-                                                                    })}
-                                                                    placeholder='crystalStructure'
-                                                                />
-                                                            )}
-                                                            <FormFieldRHF
-                                                                variant='inline'
+                                                            <ArgumentField
+                                                                label='Target argument'
+                                                                name={`plugin-reference-mapping-target-${level}-${index}-${mappingIndex}`}
+                                                                fieldType={hasTargetOptions ? 'select' : 'input'}
+                                                                value={mapping.targetArgument}
+                                                                onChange={createMappingFieldHandler(index, mappingIndex, 'targetArgument')}
+                                                                options={targetOptions}
+                                                                placeholder={hasTargetOptions ? undefined : 'crystalStructure'}
+                                                            />
+                                                            <ArgumentField
                                                                 label='Value map'
                                                                 name={`plugin-reference-mapping-value-map-${level}-${index}-${mappingIndex}`}
                                                                 fieldType='textarea'
                                                                 value={formatValueMapInput(mapping.valueMap)}
-                                                                onChange={(event) => {
-                                                                    const parsedValueMap = parseValueMapInput(event.target.value);
-                                                                    handlePluginReferenceMappingUpdate(index, mappingIndex, {
-                                                                        valueMap: parsedValueMap
-                                                                    });
-                                                                }}
+                                                                onChange={createMappingFieldHandler(index, mappingIndex, 'valueMap', parseValueMapInput)}
                                                                 placeholder='{"fcc":"FCC"}'
                                                                 rows={2}
                                                             />

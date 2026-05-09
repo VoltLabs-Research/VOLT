@@ -6,8 +6,7 @@ import {
     withAccessMode
 } from '@/modules/canvas/api/access';
 import service from '../api/service';
-import type { GetSimulationCellsParams } from '../api/dtos/get-simulation-cells';
-import type { GetSimulationCellByTrajectoryParams } from '../api/dtos/get-simulation-cell-by-trajectory';
+import type { GetSimulationCellByTrajectoryParams, GetSimulationCellsParams } from '../api/service';
 
 type SimulationCellQueryKeys = {
     listing: GetSimulationCellsParams;

@@ -3,7 +3,7 @@ import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/
 import chatService from '../../api/services/chat-service';
 import type { QueryClient } from '@tanstack/react-query';
 import type { Chat } from '../../api/entities/chat';
-import type { GetOrCreateChatInputDTO } from '../../api/dtos/chat';
+import type { GetOrCreateChatInputDTO } from '../../api/services/chat-service';
 
 type ChatQueryKeyMap = {
     chats: void;

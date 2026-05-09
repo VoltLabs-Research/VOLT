@@ -1,33 +1,111 @@
 import { createService, custom, paginated, get, patch, del, download } from '@/app/core/http/utilities/create-service';
 
-import { createFolderCrudEndpoints } from '@/shared/api/folder-endpoints';
+import {
+    createFolderCrudEndpoints,
+    type FolderCreateParams,
+    type FolderDeleteParams,
+    type FolderGetParams,
+    type FolderListParams,
+    type FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
 import { base64ToBlob } from '@/shared/utils/file';
 import { getAtomsBinary } from './atoms-binary-request';
-import type { EmptyParams } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { EmptyParams } from '@voltstack/voltclient';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { VoltClient } from '@voltstack/voltclient';
 import type { DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
-import type { Trajectory } from '../entities/trajectory';
+import type { Trajectory } from '../entities/trajectory/trajectory';
 import type { TrajectoryFolder } from '../entities/trajectory/trajectory-folder';
-import type {
-    CreateTrajectoryInputDTO,
-    CreateTrajectoryOutputDTO,
-    DeleteTrajectoryInputDTO,
-    DownloadSampleInputDTO,
-    DownloadTrajectoryAnalysesInputDTO,
-    DownloadTrajectoryInputDTO,
-    GetAtomsInputDTO,
-    GetAtomsOutputDTO,
-    GetPreviewInputDTO,
-    GetPreviewOutputDTO,
-    GetTrajectoriesInputDTO,
-    UpdateTrajectoryInputDTO
-} from '../dtos/trajectory';
-import type { CreateTrajectoryFolderParams } from '../dtos/trajectory/create-trajectory-folder';
-import type { DeleteTrajectoryFolderParams } from '../dtos/trajectory/delete-trajectory-folder';
-import type { GetTrajectoryFolderParams } from '../dtos/trajectory/get-trajectory-folder';
-import type { ListTrajectoryFoldersParams } from '../dtos/trajectory/list-trajectory-folders';
-import type { UpdateTrajectoryFolderParams } from '../dtos/trajectory/update-trajectory-folder';
+
+export interface CreateTrajectoryInputDTO {
+    formData: FormData;
+    onProgress?: (progress: number) => void;
+}
+
+export type CreateTrajectoryOutputDTO = Trajectory;
+
+export interface DeleteTrajectoryInputDTO {
+    trajectoryId: string;
+}
+
+export interface DownloadSampleInputDTO {
+    filename: string;
+}
+
+export interface DownloadTrajectoryAnalysesInputDTO {
+    trajectoryId: string;
+    filename?: string;
+}
+
+export interface DownloadTrajectoryInputDTO {
+    trajectoryId: string;
+    filename?: string;
+    archive?: boolean;
+}
+
+export interface GetAtomsInputDTO {
+    trajectoryId: string;
+    analysisId?: string;
+    timestep: number;
+    page?: number;
+    limit?: number;
+}
+
+export type AtomColumnDType = 'f32' | 'u32' | 'u16';
+
+export interface AtomColumnView {
+    name: string;
+    dtype: AtomColumnDType;
+    values: Float32Array | Uint32Array | Uint16Array;
+}
+
+export interface GetAtomsOutputDTO {
+    count: number;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    propertyNames: string[];
+    columns: AtomColumnView[];
+    getColumn: (name: string) => AtomColumnView | undefined;
+}
+
+export interface AtomData {
+    id: number;
+    type: string | number;
+    x: number;
+    y: number;
+    z: number;
+    [key: string]: unknown;
+}
+
+export interface GetPreviewInputDTO {
+    trajectoryId: string;
+    frame?: number;
+    quality?: 'low' | 'medium' | 'high';
+}
+
+export interface GetPreviewOutputDTO {
+    blob: Blob;
+}
+
+export interface GetTrajectoriesInputDTO {
+    page: number;
+    limit: number;
+    folderId?: string;
+    search?: string;
+}
+
+export interface MoveTrajectoryParams {
+    trajectoryId: string;
+    folderId: string | null;
+}
+
+export interface UpdateTrajectoryInputDTO {
+    trajectoryId: string;
+    name?: string;
+    isPublic?: boolean;
+}
 
 interface GetTrajectoryByIdParams {
     trajectoryId: string;
@@ -47,11 +125,11 @@ type RequestArgsWithTimeout = NonNullable<Parameters<VoltClient['request']>[2]> 
 };
 
 const folderEndpoints = createFolderCrudEndpoints<
-    ListTrajectoryFoldersParams,
-    GetTrajectoryFolderParams,
-    CreateTrajectoryFolderParams,
-    UpdateTrajectoryFolderParams,
-    DeleteTrajectoryFolderParams,
+    FolderListParams,
+    FolderGetParams,
+    FolderCreateParams,
+    FolderUpdateParams,
+    FolderDeleteParams,
     TrajectoryFolder
 >();
 

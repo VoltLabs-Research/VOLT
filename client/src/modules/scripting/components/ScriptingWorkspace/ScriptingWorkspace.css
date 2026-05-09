@@ -37,9 +37,3 @@
 .scripting-workspace__description {
     line-height: 1.5;
 }
-
-.scripting-workspace__error {
-    max-width: 400px;
-    text-align: center;
-    color: var(--status-error);
-}

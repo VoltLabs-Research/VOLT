@@ -1,9 +1,18 @@
 import { createService, paginated, get } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { SimulationCell } from './entities/simulation-cell';
-import type { GetSimulationCellsParams } from './dtos/get-simulation-cells';
-import type { GetSimulationCellByTrajectoryParams } from './dtos/get-simulation-cell-by-trajectory';
+
+export interface GetSimulationCellByTrajectoryParams {
+    trajectoryId: string;
+    timestep?: number;
+}
+
+export interface GetSimulationCellsParams {
+    page: number;
+    limit: number;
+    search?: string;
+}
 
 const endpoints = {
     getAll: paginated<GetSimulationCellsParams | undefined, PaginatedResponse<SimulationCell>>('/'),

@@ -1,14 +1,14 @@
-import canvasService from '../api/services/canvas';
+import canvasService from '../api/services/canvas-service';
 import trajectoryCloneService from '../api/services/trajectory-clone';
 import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { CloneTrajectoryInput, CloneTrajectoryOutput } from '@/modules/canvas/api/dtos/clone';
+import type { CloneTrajectoryInput, CloneTrajectoryOutput } from '@/modules/canvas/api/services/trajectory-clone';
 import type {
     GetPublicCanvasBootstrapInput,
     GetPublicCanvasBootstrapOutput
-} from '@/modules/canvas/api/dtos/bootstrap';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+} from '@/modules/canvas/api/services/canvas-service';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 const BASE_KEY = 'canvas';
 

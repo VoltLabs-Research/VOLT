@@ -13,10 +13,11 @@ import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../SSHConnectionMod
 import { LuFolderOpen } from 'react-icons/lu';
 import { RiEditLine, RiWifiLine } from 'react-icons/ri';
 import { useMemo, useState } from 'react';
-import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/dtos/get-ssh-connections';
+import type { GetSSHConnectionsInputDTO } from '@/modules/ssh/api/service';
 import type { SSHConnection } from '@/modules/ssh/api/entities/ssh-connection';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { SOCKET_SSH_CONNECTION_EVENTS } from '@/modules/socket/events/ssh';
 import { useNavigate } from 'react-router-dom';

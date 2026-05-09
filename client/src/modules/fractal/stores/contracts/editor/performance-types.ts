@@ -10,21 +10,6 @@ import type {
     ResolvedCanvasRuntimeProps
 } from '@/shared/domain/rendering/performance';
 
-export type {
-    RendererCreateState,
-    RendererRuntimeState,
-    RendererSettingsState,
-    RendererSettingsStore
-} from '@/shared/domain/rendering/renderer';
-
-export type {
-    AdaptiveEventsSettings,
-    CanvasPerformanceProp,
-    DprSettings,
-    InteractionDegradeSettings,
-    PerformanceSettingsState
-} from '@/shared/domain/rendering/performance';
-
 export interface PerformanceSettingsActions {
     setPreset: (preset: PerformancePreset) => void;
     setDpr: (partial: Partial<DprSettings>) => void;

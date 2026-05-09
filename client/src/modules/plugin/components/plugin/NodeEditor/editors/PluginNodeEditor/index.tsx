@@ -26,7 +26,7 @@ import type {
     IPluginNodeData
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { EditorProps } from '../types';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
+import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 const EXECUTION_MODE_OPTIONS = [{

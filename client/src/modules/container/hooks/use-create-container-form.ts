@@ -22,8 +22,6 @@ import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import { v4 as uuidv4 } from 'uuid';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
-export type { EnvVariable } from '../api/entities/env-variable';
-export type { PortMapping } from '../api/entities/port-mapping';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;

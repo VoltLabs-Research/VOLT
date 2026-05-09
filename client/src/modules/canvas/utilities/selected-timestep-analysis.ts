@@ -1,5 +1,5 @@
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
@@ -13,13 +13,6 @@ type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
 
 const isFiniteNumber = (value: unknown): value is number => {
     return typeof value === 'number' && Number.isFinite(value);
-};
-
-const sanitizeTimestepList = (timesteps: number[], availableTimesteps: number[]): number[] => {
-    const availableTimestepsSet = new Set(availableTimesteps);
-    const filteredTimesteps = timesteps.filter((timestep) => availableTimestepsSet.has(timestep));
-
-    return Array.from(new Set(filteredTimesteps)).sort((left, right) => left - right);
 };
 
 export const extractTrajectoryTimesteps = (trajectory?: Trajectory | null): number[] => {
@@ -67,7 +60,10 @@ export const normalizeSelectedTimesteps = (
         return undefined;
     }
 
-    const sanitizedTimesteps = sanitizeTimestepList(selectedTimesteps, availableTimesteps);
+    const availableTimestepsSet = new Set(availableTimesteps);
+    const sanitizedTimesteps = Array.from(
+        new Set(selectedTimesteps.filter((timestep) => availableTimestepsSet.has(timestep)))
+    ).sort((left, right) => left - right);
     if (!sanitizedTimesteps.length) {
         return undefined;
     }

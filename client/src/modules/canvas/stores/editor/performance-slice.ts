@@ -10,14 +10,8 @@ import {
 } from '@/shared/domain/rendering/performance';
 
 import type { EditorStore } from './types';
-import type {
-    AdaptiveEventsSettings,
-    CanvasPerformanceProp,
-    DprSettings,
-    InteractionDegradeSettings,
-    PerformanceSettingsState,
-    PerformanceSettingsStore
-} from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { PerformanceSettingsStore } from '@/modules/fractal/stores/contracts/editor/performance-types';
+import type { AdaptiveEventsSettings, CanvasPerformanceProp, DprSettings, InteractionDegradeSettings, PerformanceSettingsState } from '@/shared/domain/rendering/performance';
 import type { StateCreator } from 'zustand';
 
 export interface PerformanceSlice {

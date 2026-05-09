@@ -1,13 +1,37 @@
 import { createService, post, patch, del } from '@/app/core/http/utilities/create-service';
 
 import type { Chat } from '../entities/chat';
-import type {
-    AddUsersToGroupInputDTO,
-    CreateGroupChatDTO,
-    RemoveUsersFromGroupInputDTO,
-    UpdateGroupAdminsInputDTO,
-    UpdateGroupInfoInputDTO
-} from '../dtos/group';
+
+export interface AddUsersToGroupInputDTO {
+    chatId: string;
+    userIds: string[];
+}
+
+export interface CreateGroupChatDTO {
+    teamId: string;
+    groupName: string;
+    groupDescription?: string;
+    participantIds: string[];
+}
+
+export interface RemoveUsersFromGroupInputDTO {
+    chatId: string;
+    userIds: string[];
+}
+
+export interface UpdateGroupAdminsDTO {
+    targetUserIds: string[];
+    action: 'add' | 'remove';
+}
+
+export type UpdateGroupAdminsInputDTO = { chatId: string } & UpdateGroupAdminsDTO;
+
+export interface UpdateGroupInfoDTO {
+    groupName?: string;
+    groupDescription?: string;
+}
+
+export type UpdateGroupInfoInputDTO = { chatId: string } & UpdateGroupInfoDTO;
 
 interface LeaveGroupParams {
     chatId: string;

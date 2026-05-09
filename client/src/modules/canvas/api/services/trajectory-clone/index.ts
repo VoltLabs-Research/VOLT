@@ -1,5 +1,16 @@
 import { createService, post } from '@/app/core/http/utilities/create-service';
-import type { CloneTrajectoryInput, CloneTrajectoryOutput } from '@/modules/canvas/api/dtos/clone';
+
+export interface CloneTrajectoryInput {
+    sourceTrajectoryId: string;
+    targetClusterId?: string;
+}
+
+export interface CloneTrajectoryOutput {
+    trajectoryId: string;
+    jobId: string;
+    sourceTrajectoryId: string;
+    destinationClusterId: string;
+}
 
 export default createService({
     clients: {

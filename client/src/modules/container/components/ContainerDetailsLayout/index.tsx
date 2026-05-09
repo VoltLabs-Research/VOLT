@@ -14,7 +14,7 @@ import Box from '@/shared/presentation/primitives/Box';
 import Stack from '@/shared/presentation/primitives/Stack';
 import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ContainerAction } from '../../api/dtos/update-container';
+import { ContainerAction } from '../../api/service';
 import ContainerDetailsSkeleton from '../ContainerDetailsSkeleton';
 import ContainerDetailsHeader from '../ContainerDetailsHeader';
 import { containerQuery, useContainerByIdQuery } from '../../hooks/queries';

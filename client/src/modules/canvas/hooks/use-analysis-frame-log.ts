@@ -8,7 +8,7 @@ import type {
     AnalysisFrameLogStatus,
     AnalysisLogSegment,
     GetAnalysisFrameLogResponse
-} from '@/modules/analysis/api/dtos/get-analysis-frame-log';
+} from '@/modules/analysis/api/service';
 
 interface AnalysisLogChunkEvent {
     analysisId: string;

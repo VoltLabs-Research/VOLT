@@ -13,7 +13,7 @@ import type {
     GetFilterPropertiesInputDTO,
     GetUniqueValuesInputDTO,
     GetUniqueValuesOutputDTO
-} from '../../api/dtos/particle-filter';
+} from '../../api/services/particle-filter-service';
 
 const BASE_KEY = 'trajectory';
 

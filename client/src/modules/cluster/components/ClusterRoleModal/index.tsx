@@ -19,7 +19,7 @@ import {
 } from '@/modules/cluster/utilities/team-cluster-role';
 import { useEffect, useMemo, useState } from 'react';
 import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import type { UpdateTeamClusterRoleOutputDTO } from '@/modules/cluster/api/dtos/team-cluster/update-team-cluster-role';
+import type { UpdateTeamClusterRoleOutputDTO } from '@/modules/cluster/api/service';
 
 interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;

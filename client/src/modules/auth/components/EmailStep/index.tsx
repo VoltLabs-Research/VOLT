@@ -7,7 +7,7 @@ import Stack from '@/shared/presentation/primitives/Stack';
 import { Github, Mail } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
-import type { OAuthProviderKey } from '@/modules/auth/api/dtos/oauth-providers';
+import type { OAuthProviderKey } from '@/modules/auth/api/service';
 import type { SignInForm } from '../SignIn/validation-schema';
 
 interface OAuthProvider {

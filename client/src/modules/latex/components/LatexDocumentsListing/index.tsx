@@ -1,10 +1,11 @@
-import RenameLatexDocumentModal from '@/modules/latex/components/RenameLatexDocumentModal';
 import useImportLatexDocument from '@/modules/latex/hooks/use-import-latex-document';
 import useLatexDocumentsListing, {
     MOVE_LATEX_DOCUMENT_MODAL_ID,
     NEW_LATEX_FOLDER_MODAL_ID,
+    RENAME_LATEX_DOCUMENT_MODAL_ID,
     RENAME_LATEX_FOLDER_MODAL_ID
 } from '@/modules/latex/hooks/use-latex-documents-listing';
+import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
 import Heading from '@/shared/presentation/primitives/Heading';
 import {
@@ -16,7 +17,8 @@ import {
 import useTip from '@/shared/tips/use-tip';
 import { Upload } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/presentation/components/DocumentListing';
+import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { LatexListingRowType } from '@/modules/latex/utilities/listing';
 
@@ -29,6 +31,8 @@ const COLUMNS = createFolderedListingColumns<LatexListingRow>({
     resolveTitle: (row) => row.title || 'Untitled Document',
     skeletonWidth: 200
 });
+
+const getLatexDocumentTitle = (document: LatexDocument): string => document.title;
 
 const LatexDocumentsListing = () => {
     useTip('latex-documents-organization');
@@ -86,8 +90,14 @@ const LatexDocumentsListing = () => {
                 headerMenuOptions={headerMenuOptions}
                 emptyMessage='No LaTeX documents found in this location.'
             />
-            <RenameLatexDocumentModal
-                document={renamingDocument}
+            <RenameEntityModal
+                entity={renamingDocument}
+                modalId={RENAME_LATEX_DOCUMENT_MODAL_ID}
+                title='Rename Document'
+                description='Enter a new name for this LaTeX document.'
+                fieldLabel='Document title'
+                placeholder='Enter document title'
+                getInitialTitle={getLatexDocumentTitle}
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
             />

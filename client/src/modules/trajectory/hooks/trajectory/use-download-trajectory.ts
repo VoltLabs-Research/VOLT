@@ -4,7 +4,7 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 
-import type { DownloadTrajectoryInputDTO } from '../../api/dtos/trajectory';
+import type { DownloadTrajectoryInputDTO } from '../../api/services/trajectory-service';
 
 interface UseDownloadTrajectoryReturn {
     downloadTrajectory: (params: DownloadTrajectoryInputDTO) => Promise<void>;

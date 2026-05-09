@@ -1,14 +1,50 @@
 import { createService, get, paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
 import type { TeamUsageMetrics, KeyUsageMetrics } from '@/modules/team/api/entities/secret-key/secret-key-metrics';
-import type { GetSecretKeysInputDTO } from '../dtos/secret-key/get-secret-keys';
-import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse } from '../dtos/secret-key/create-secret-key';
-import type { RevokeSecretKeyInputDTO } from '../dtos/secret-key/revoke-secret-key';
-import type { DeleteSecretKeyInputDTO } from '../dtos/secret-key/delete-secret-key';
-import type { GetSecretKeyTeamMetricsInputDTO } from '../dtos/secret-key/get-secret-key-team-metrics';
-import type { GetSecretKeyUsageInputDTO } from '../dtos/secret-key/get-secret-key-usage';
+
+export interface CreateSecretKeyResponse {
+    secretKeyId: string;
+    teamId: string;
+    roleId: string;
+    name: string;
+    keyPrefix: string;
+    secretKey: string;
+    isActive: boolean;
+    createdAt: Date | string;
+}
+
+export interface CreateSecretKeyInputDTO {
+    teamId: string;
+    name: string;
+    roleId: string;
+}
+
+export interface DeleteSecretKeyInputDTO {
+    teamId: string;
+    secretKeyId: string;
+}
+
+export interface GetSecretKeyTeamMetricsInputDTO {
+    teamId: string;
+    days?: number;
+}
+
+export interface GetSecretKeyUsageInputDTO {
+    teamId: string;
+    secretKeyId: string;
+    days?: number;
+}
+
+export interface GetSecretKeysInputDTO {
+    teamId: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+}
+
+export type RevokeSecretKeyInputDTO = DeleteSecretKeyInputDTO;
 
 const endpoints = {
     listByTeamId: paginated<GetSecretKeysInputDTO, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),

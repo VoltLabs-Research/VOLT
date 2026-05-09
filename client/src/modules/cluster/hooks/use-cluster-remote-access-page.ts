@@ -1,4 +1,4 @@
-import { teamClusterService } from '@/modules/cluster/api/service/team-cluster';
+import { teamClusterService } from '@/modules/cluster/api/service';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';

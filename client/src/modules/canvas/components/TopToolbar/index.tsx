@@ -21,7 +21,7 @@ import './TopToolbar.css';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import { useNavigate } from 'react-router-dom';
 interface TopToolbarShareInfo {
     trajectoryId: string;

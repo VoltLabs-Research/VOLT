@@ -4,11 +4,11 @@ import DocumentListing, { type DocumentListingTab } from '@/shared/presentation/
 import SubListingDetailPanel from '@/modules/plugin/components/listing/SubListingDetailPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
-import listingService from '@/modules/plugin/api/services/listing';
+import listingService from '@/modules/plugin/api/services/listing-service';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { GetSubListingOutputDTO } from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+import type { GetSubListingOutputDTO } from '@/modules/plugin/api/services/listing-service';
 import './SubListingsPage.css';
 
 interface SubListingRow extends Record<string, unknown> {
@@ -35,16 +35,8 @@ const hashString = (value: string): string => {
     return Math.abs(hash).toString(36);
 };
 
-const sanitizePersistenceKey = (value: string): string => {
-    return value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 48) || 'listing';
-};
-
 const resolvePersistenceKey = (queryKey: unknown[]): string => {
-    return sanitizePersistenceKey(`list-${hashString(JSON.stringify(queryKey))}`);
+    return `list-${hashString(JSON.stringify(queryKey))}`;
 };
 
 const buildTabs = (names: string[]): DocumentListingTab[] => {

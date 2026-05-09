@@ -1,5 +1,5 @@
 import { buildKeys, queryClient } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { QueryKey } from '@tanstack/react-query';
 
 interface TeamScopedPaginatedParams {

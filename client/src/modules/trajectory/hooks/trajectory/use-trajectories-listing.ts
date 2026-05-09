@@ -1,6 +1,5 @@
 import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
-import type { TrajectoryFolder } from '@/modules/trajectory/api/entities/trajectory/trajectory-folder';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import {
     createTrajectoryFolderRow,
     createTrajectoryItemRow,
@@ -8,24 +7,25 @@ import {
     getTrajectoryListingDroppableId,
     isTrajectoryFolderRow,
     isTrajectoryItemRow,
-    type TrajectoryListingRow
+    type TrajectoryItemRow
 } from '@/modules/trajectory/utilities/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
+import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import useFolderedListingDragAndDropMove from '@/shared/presentation/hooks/use-foldered-listing-drag-and-drop-move';
-import useFolderedListing, { type FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
-import useFolderedListingMoveModal from '@/shared/presentation/hooks/use-foldered-listing-move-modal';
-import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useRenameFolderModal from '@/shared/presentation/hooks/use-rename-folder-modal';
+import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
+import {
+    createFolderedResourceFetchers,
+    createFolderResourceDeleteConfirm,
+    FOLDER_RESOURCE_TOASTS
+} from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { createCrudToastOptions } from '@/shared/presentation/toast-options';
-import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
-import { FolderInput, FolderOpen, Pencil, Trash2 } from 'lucide-react';
+import { FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
@@ -39,16 +39,18 @@ import {
     useUpdateTrajectoryFolderMutation
 } from './queries';
 import { useNavigate } from 'react-router-dom';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
 export const NEW_TRAJECTORY_FOLDER_MODAL_ID = 'new-trajectory-folder-modal';
 export const RENAME_TRAJECTORY_FOLDER_MODAL_ID = 'rename-trajectory-folder-modal';
 export const MOVE_TRAJECTORY_MODAL_ID = 'move-trajectory-modal';
 
 const DELETE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Trajectory' });
-const CREATE_FOLDER_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Folder' });
-const RENAME_FOLDER_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Folder' });
-const DELETE_FOLDER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Folder' });
 const MOVE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Trajectory' });
+
+const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
+    { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
+    { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] }
+];
 
 interface TrajectoryMoveTarget {
     _id: string;
@@ -62,26 +64,16 @@ const getTrajectoryMoveTarget = (trajectory: Trajectory): TrajectoryMoveTarget =
     folder: trajectory.folder
 });
 
-const fetchTrajectories = (params: PaginationParams & FolderedListingContext): Promise<PaginatedResponse<Trajectory>> => {
-    return trajectoryQuery.useListQuery.fetch({
-        page: params.page,
-        limit: params.limit,
-        folderId: params.folderId ?? ROOT_FOLDER_ID,
-        ...(params.search ? { search: params.search } : {})
-    });
-};
+const trajectoryFetchers = createFolderedResourceFetchers({
+    listItems: trajectoryQuery.useListQuery.fetch,
+    listFolders: trajectoryFoldersQuery.fetch,
+    getFolder: trajectoryFolderQuery.fetch
+});
 
-const fetchFolders = (folderId: string | null): Promise<PaginatedResponse<TrajectoryFolder>> => {
-    return trajectoryFoldersQuery.fetch({
-        page: 1,
-        limit: FOLDER_LIST_LIMIT,
-        ...(folderId ? { parentId: folderId } : {})
-    });
-};
-
-const fetchFolderById = (folderId: string): Promise<TrajectoryFolder> => {
-    return trajectoryFolderQuery.fetch({ folderId });
-};
+const getDeleteFolderConfirm = createFolderResourceDeleteConfirm({
+    pluralName: 'trajectories',
+    singularName: 'trajectory'
+});
 
 const buildDeleteTrajectoryMenuOption = (
     targets: Trajectory[],
@@ -110,77 +102,13 @@ const useTrajectoriesListing = () => {
     const { mutateAsync: deleteFolder } = useDeleteTrajectoryFolderMutation();
     const { mutateAsync: moveTrajectory } = useMoveTrajectoryMutation();
 
-    const {
-        breadcrumbs,
-        context,
-        currentFolder,
-        fetchData,
-        getMoveFolder,
-        currentFolderId,
-        handleCreateFolder,
-        handleDeleteCurrentFolder,
-        handleDeleteFolder,
-        handleRenameFolderClose: handleRenameFolderStateClose,
-        handleRenameFolderOpen: handleRenameFolderStateOpen,
-        handleRenameFolderSubmit: handleRenameFolderStateSubmit,
-        listMoveFolders,
-        navigateToFolder,
-        openFolder,
-        renamingFolder
-    } = useFolderedListing<Trajectory, TrajectoryFolder, TrajectoryListingRow>({
-        teamId,
-        fetchItems: fetchTrajectories,
-        fetchFolders,
-        getFolder: fetchFolderById,
-        createEmptyResponse: createEmptyPaginatedResponse,
-        mapFolderRow: createTrajectoryFolderRow,
-        mapItemRow: createTrajectoryItemRow,
-        onFetchErrorTitle: 'Failed to fetch trajectories',
-        invalidFolderMessage: 'This trajectory folder no longer exists. Showing Root instead.',
-        createFolder,
-        createFolderToast: CREATE_FOLDER_TOAST,
-        updateFolder,
-        renameFolderToast: RENAME_FOLDER_TOAST,
-        deleteFolder,
-        deleteFolderToast: DELETE_FOLDER_TOAST,
-        getDeleteFolderConfirm: (folder) => ({
-            title: `Delete "${folder.title}"? Nested folders and all trajectories inside them will be deleted recursively.`,
-            description: 'This permanently deletes the folder tree and every trajectory contained in it.'
-        })
-    });
-
-    const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, currentFolderId);
-
-    const {
-        handleRenameFolderOpen,
-        handleRenameFolderClose,
-        handleRenameFolderSubmit
-    } = useRenameFolderModal({
-        modalId: RENAME_TRAJECTORY_FOLDER_MODAL_ID,
-        openRenameState: handleRenameFolderStateOpen,
-        closeRenameState: handleRenameFolderStateClose,
-        submitRenameState: handleRenameFolderStateSubmit
-    });
-
-    const handleCreate = useCallback(() => {
-        openFilePicker();
-    }, [openFilePicker]);
-
     const moveTrajectoryToFolder = useCallback((trajectoryId: string, folderId: string | null) => {
         return moveTrajectory({ trajectoryId, folderId });
     }, [moveTrajectory]);
 
-    const {
-        movingItem: movingTrajectory,
-        handleMoveOpen: handleMoveTrajectoryOpen,
-        handleMoveClose: handleMoveTrajectoryClose,
-        handleMoveSubmit: handleMoveTrajectorySubmit
-    } = useFolderedListingMoveModal<Trajectory, TrajectoryMoveTarget>({
-        modalId: MOVE_TRAJECTORY_MODAL_ID,
-        getMoveTarget: getTrajectoryMoveTarget,
-        moveItem: moveTrajectoryToFolder,
-        moveToast: MOVE_TRAJECTORY_TOAST
-    });
+    const openTrajectory = useCallback((trajectory: Trajectory) => {
+        navigate(`/canvas/${trajectory._id}`);
+    }, [navigate]);
 
     const handleDeleteTrajectories = useCallback(async (targets: Trajectory[]) => {
         const deleteLabel = targets.length === 1 ? 'Delete trajectory' : 'Delete trajectories';
@@ -206,130 +134,114 @@ const useTrajectoriesListing = () => {
         }
     }, [confirm, deleteTrajectoryMutation]);
 
-    const { getMenuOptions: getTrajectoryMenuOptions } = useListingActions<Trajectory>({
-        actions: {
-            view: {
-                label: 'View Scene',
-                handler: ({ item: trajectory }) => navigate(`/canvas/${trajectory._id}`),
-                requiredPermission: 'trajectory:read'
+    const getTrajectoryActions = useCallback(({ openMove }: { openMove: (trajectory: TrajectoryItemRow) => void }): Record<string, ActionConfig<TrajectoryItemRow>> => ({
+        view: {
+            label: 'View Scene',
+            handler: ({ item: trajectory }) => openTrajectory(trajectory),
+            requiredPermission: 'trajectory:read'
+        },
+        viewAtoms: {
+            label: 'Inspect Atoms',
+            icon: RiTableLine,
+            handler: ({ item: trajectory }) => {
+                const firstTimestep = trajectory.firstTimestep ?? extractTrajectoryTimesteps(trajectory)[0];
+                if (firstTimestep === undefined) {
+                    return;
+                }
+                navigate(buildAtomsViewerPath({
+                    trajectoryId: trajectory._id,
+                    timestep: firstTimestep
+                }));
             },
-            viewAtoms: {
-                label: 'Inspect Atoms',
-                icon: RiTableLine,
-                handler: ({ item: trajectory }) => {
-                    const firstTimestep = trajectory.firstTimestep ?? extractTrajectoryTimesteps(trajectory)[0];
-                    if (firstTimestep === undefined) {
-                        return;
-                    }
-                    navigate(buildAtomsViewerPath({
-                        trajectoryId: trajectory._id,
-                        timestep: firstTimestep
-                    }));
-                },
-                requiredPermission: 'trajectory:read'
-            },
-            move: {
-                label: 'Move to Folder',
-                icon: FolderInput,
-                handler: ({ item: trajectory }) => handleMoveTrajectoryOpen(trajectory),
-                requiredPermission: 'trajectory:update'
-            }
+            requiredPermission: 'trajectory:read'
+        },
+        move: {
+            label: 'Move to Folder',
+            icon: FolderInput,
+            handler: ({ item: trajectory }) => openMove(trajectory),
+            requiredPermission: 'trajectory:update'
         }
-    });
+    }), [navigate, openTrajectory]);
 
-    const { getMenuOptions: getFolderMenuOptions } = useListingActions<TrajectoryFolder>({
-        actions: {
-            open: {
-                label: 'Open Folder',
-                icon: FolderOpen,
-                handler: ({ item }) => openFolder(item._id)
-            },
-            rename: {
-                label: 'Rename Folder',
-                icon: Pencil,
-                handler: ({ item }) => handleRenameFolderOpen(item),
-                requiredPermission: 'trajectory:update'
-            },
-            delete: {
-                label: 'Delete Folder',
-                icon: Trash2,
-                variant: 'danger',
-                handler: async ({ item }) => handleDeleteFolder(item),
-                requiredPermission: 'trajectory:delete'
-            }
-        }
-    });
-
-    const getMenuOptions = useCallback((item: TrajectoryListingRow, selectedItems: TrajectoryListingRow[]): MenuOption[] => {
-        if (isTrajectoryFolderRow(item)) {
-            return getFolderMenuOptions(item, [item]);
-        }
-
-        const selectedTrajectories = selectedItems.filter(isTrajectoryItemRow);
-        const options = getTrajectoryMenuOptions(item, selectedTrajectories);
-
+    const appendTrajectoryDeleteOption = useCallback((options: MenuOption[], {
+        item,
+        selectedItems
+    }: {
+        item: TrajectoryItemRow;
+        selectedItems: TrajectoryItemRow[];
+    }): MenuOption[] => {
         if (!canDeleteTrajectories) {
             return options;
         }
 
-        const deleteTargets = selectedTrajectories.length > 0 ? selectedTrajectories : [item];
-
         return [
             ...options,
-            buildDeleteTrajectoryMenuOption(deleteTargets, handleDeleteTrajectories)
+            buildDeleteTrajectoryMenuOption(selectedItems.length > 0 ? selectedItems : [item], handleDeleteTrajectories)
         ];
-    }, [canDeleteTrajectories, getFolderMenuOptions, getTrajectoryMenuOptions, handleDeleteTrajectories]);
+    }, [canDeleteTrajectories, handleDeleteTrajectories]);
 
-    const handleItemClick = useCallback((item: TrajectoryListingRow): boolean => {
-        if (isTrajectoryFolderRow(item)) {
-            openFolder(item._id);
-            return true;
-        }
-
-        navigate(`/canvas/${item._id}`);
-        return true;
-    }, [navigate, openFolder]);
-
-    const dragAndDrop = useFolderedListingDragAndDropMove({
-        canMove: canMoveTrajectories,
+    const {
+        handleMoveOpen,
+        handleMoveClose,
+        handleMoveSubmit,
+        movingItem,
+        ...folderedListing
+    } = useFolderedResourceListing({
+        teamId,
+        ...trajectoryFetchers,
+        mapFolderRow: createTrajectoryFolderRow,
+        mapItemRow: createTrajectoryItemRow,
+        onFetchErrorTitle: 'Failed to fetch trajectories',
+        invalidFolderMessage: 'This trajectory folder no longer exists. Showing Root instead.',
+        createFolder,
+        createFolderToast: FOLDER_RESOURCE_TOASTS.create,
+        updateFolder,
+        renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
+        deleteFolder,
+        deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
+        getDeleteFolderConfirm,
+        renameFolderModalId: RENAME_TRAJECTORY_FOLDER_MODAL_ID,
+        moveModalId: MOVE_TRAJECTORY_MODAL_ID,
+        canMoveItems: canMoveTrajectories,
         activationDistance: 8,
         getDraggableId: getTrajectoryListingDraggableId,
         getDroppableId: getTrajectoryListingDroppableId,
         isItemRow: isTrajectoryItemRow,
         isFolderRow: isTrajectoryFolderRow,
+        getMoveTarget: getTrajectoryMoveTarget,
         moveItem: moveTrajectoryToFolder,
-        moveToast: MOVE_TRAJECTORY_TOAST
+        moveToast: MOVE_TRAJECTORY_TOAST,
+        folderPermissions: {
+            rename: 'trajectory:update',
+            delete: 'trajectory:delete'
+        },
+        getItemActions: getTrajectoryActions,
+        mapItemMenuOptions: appendTrajectoryDeleteOption,
+        onOpenItem: openTrajectory
     });
 
+    const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(
+        undefined,
+        folderedListing.currentFolderId
+    );
+
+    const handleCreate = useCallback(() => {
+        openFilePicker();
+    }, [openFilePicker]);
+
     return {
-        breadcrumbs,
+        ...folderedListing,
         canCreate,
-        context,
-        currentFolder,
-        currentFolderId,
-        dragAndDrop,
-        fetchData,
         fileInputRef,
-        getMenuOptions,
-        getMoveFolder,
         handleCreate,
-        handleCreateFolder,
-        handleDeleteCurrentFolder,
-        handleItemClick,
-        handleMoveTrajectoryOpen,
-        handleMoveTrajectoryClose,
-        handleMoveTrajectorySubmit,
+        handleMoveTrajectoryOpen: handleMoveOpen,
+        handleMoveTrajectoryClose: handleMoveClose,
+        handleMoveTrajectorySubmit: handleMoveSubmit,
         handlePickerChange,
-        handleRenameFolderClose,
-        handleRenameFolderOpen,
-        handleRenameFolderSubmit,
         isUploading,
-        listMoveFolders,
-        movingTrajectory,
-        navigateToFolder,
-        openFolder,
+        movingTrajectory: movingItem,
         queryKey: trajectoryQuery.QUERY_KEYS.lists(),
-        renamingFolder
+        socketInvalidation: SOCKET_INVALIDATION
     };
 };
 

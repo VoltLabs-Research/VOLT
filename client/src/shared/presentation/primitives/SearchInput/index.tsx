@@ -7,15 +7,6 @@ import type { InputHTMLAttributes, ReactNode } from 'react';
 const MISSING_SEARCH_INPUT_NAME_ERROR = 'SearchInput requires an accessible name via aria-label, aria-labelledby, or an external label bound to its id.';
 const FALLBACK_SEARCH_LABEL = 'Search';
 
-const resolveAccessibleText = (value?: string): string | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const trimmedValue = value.trim();
-    return trimmedValue || undefined;
-};
-
 interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
     containerClassName?: string;
     variant?: 'default' | 'small';
@@ -38,9 +29,9 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
     ...props
 }, ref) => {
     const hasWarnedForMissingNameRef = useRef(false);
-    const resolvedAriaLabel = resolveAccessibleText(ariaLabel);
-    const resolvedAriaLabelledBy = resolveAccessibleText(ariaLabelledBy);
-    const resolvedTitle = resolveAccessibleText(title);
+    const resolvedAriaLabel = ariaLabel?.trim() || undefined;
+    const resolvedAriaLabelledBy = ariaLabelledBy?.trim() || undefined;
+    const resolvedTitle = title?.trim() || undefined;
     const hasExternalLabelContract = Boolean(id);
 
     let accessibleName = resolvedAriaLabel ?? resolvedTitle;

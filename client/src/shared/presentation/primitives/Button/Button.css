@@ -1,5 +1,4 @@
 .button {
-    /* Base Properties */
     display: inline-flex;
     border: 1px solid transparent;
     text-decoration: none;
@@ -24,8 +23,6 @@
     cursor: not-allowed;
     opacity: 0.5;
 }
-
-/* --- Sizes --- */
 .button.size-sm {
     height: 2rem;
     padding: 0 1rem;
@@ -53,17 +50,14 @@
     font-size: 1rem;
     gap: 0.6875rem;
 }
-
-/* --- Shapes --- */
-/* Default radius; per-size overrides below tune the ratio radius/height toward 0.25–0.30 (Apple HIG). */
 .button.shape-rounded {
     border-radius: var(--radius-sm);
 }
 
-.button.shape-rounded.size-sm { border-radius: var(--radius-xs); }   /* 6 / 32 = 0.19 */
-.button.shape-rounded.size-md { border-radius: 10px; }               /* 10 / 40 = 0.25 */
-.button.shape-rounded.size-lg { border-radius: var(--radius-md); }   /* 12 / 44 = 0.27 */
-.button.shape-rounded.size-xl { border-radius: 14px; }               /* 14 / 48 = 0.29 */
+.button.shape-rounded.size-sm { border-radius: var(--radius-xs); }
+.button.shape-rounded.size-md { border-radius: 10px; }
+.button.shape-rounded.size-lg { border-radius: var(--radius-md); }
+.button.shape-rounded.size-xl { border-radius: 14px; }
 
 .button.shape-pill {
     border-radius: var(--radius-full);
@@ -77,20 +71,14 @@
     padding: 0;
     border-radius: var(--radius-full);
 }
-
-/* Circle buttons must be square — width = height. */
 .button.size-sm.shape-circle { width: 2rem; }
 .button.size-md.shape-circle { width: 2.5rem; }
 .button.size-lg.shape-circle { width: 2.75rem; }
 .button.size-xl.shape-circle { width: 3rem; }
-
-/* --- Block --- */
 .button.block {
     width: 100%;
     display: flex;
 }
-
-/* --- Alignment --- */
 .button.align-start {
     justify-content: flex-start;
 }
@@ -98,8 +86,6 @@
 .button.align-end {
     justify-content: flex-end;
 }
-
-/* --- Loading --- */
 .button.is-loading {
     color: transparent !important;
     pointer-events: none;
@@ -118,8 +104,6 @@
 .button-icon-right {
     font-size: var(--button-icon-size, inherit);
 }
-
-/* Loader color for each intent */
 .button.is-loading.intent-neutral .button-loader,
 .button.is-loading.intent-white .button-loader {
     color: var(--color-contrast-high);
@@ -136,16 +120,10 @@
 .button.is-loading.intent-success .button-loader {
     color: var(--color-contrast-high);
 }
-
-/* Start Analysis button specific styling */
 .start-analysis-btn {
     background: var(--color-surface-2) !important;
     border: 1px solid var(--color-border-soft) !important;
 }
-
-/* --- Variants & Intents --- */
-
-/* Intent: Neutral (Default) - Theme aware */
 .button.intent-neutral.variant-solid {
     background-color: var(--color-surface-2);
     color: var(--color-text-primary);
@@ -187,8 +165,6 @@
     background-color: var(--hover-bg);
     color: var(--color-text-primary);
 }
-
-/* Intent: Brand - Apple accent blue in both themes (theme token drives hue) */
 .button.intent-brand.variant-solid {
     background-color: var(--color-brand-primary);
     color: #ffffff;
@@ -230,8 +206,6 @@
 .button.intent-brand.variant-ghost:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
 }
-
-/* Intent: Danger (Red) */
 .button.intent-danger.variant-solid {
     background-color: var(--accent-red);
     color: var(--color-surface-1);
@@ -270,8 +244,6 @@
 .button.intent-danger.variant-ghost:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--accent-red) 8%, transparent);
 }
-
-/* Intent: White (For Dark Backgrounds) */
 .button.intent-white.variant-solid {
     background-color: var(--color-contrast-high);
     color: var(--color-bg);
@@ -302,8 +274,6 @@
     background-color: var(--hover-bg);
     color: var(--color-contrast-high);
 }
-
-/* Intent: Success (Green) */
 .button.intent-success.variant-solid {
     background-color: var(--accent-green);
     color: var(--color-surface-1);
@@ -342,8 +312,6 @@
 .button.intent-success.variant-ghost:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--accent-green) 8%, transparent);
 }
-
-/* Intent: Canvas (subtle for canvas UI) */
 .button.intent-canvas.variant-solid {
     background-color: var(--button-bg);
     color: var(--color-text-primary);
@@ -386,8 +354,6 @@
     background-color: var(--hover-bg);
     color: var(--color-text-primary);
 }
-
-/* --- Icon Only --- */
 .button.icon-only {
     padding: 0;
     display: inline-flex;
@@ -414,9 +380,6 @@
     width: 3.25rem;
     height: 3.25rem;
 }
-
-
-/* --- Premium (CTA buttons) - Dark: white, Light: accent blue --- */
 .button.premium {
     background: var(--color-contrast-high);
     color: var(--color-bg);
@@ -427,8 +390,6 @@
     background: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
     border-color: color-mix(in srgb, var(--color-contrast-high) 85%, transparent);
 }
-
-/* Light mode premium */
 :root[data-theme='light'] .button.premium {
     background: var(--accent-blue);
     color: var(--color-surface-1);
@@ -438,8 +399,6 @@
 :root[data-theme='light'] .button.premium:hover:not(:disabled) {
     filter: brightness(1.1);
 }
-
-/* --- Variant: Toggle (for inline toggle groups) --- */
 .button.variant-toggle {
     background: transparent;
     color: var(--color-text-muted);
@@ -493,11 +452,6 @@
         transform: none;
     }
 }
-
-/* --- Touch target sizing ---
- * On coarse pointers (touch), bump small sizes to WCAG 2.5.5 AAA minimum (44×44).
- * Desktop mouse pointers are unaffected.
- */
 @media (pointer: coarse) and (max-width: 1024px) {
     .button.size-sm {
         min-height: 2.75rem;

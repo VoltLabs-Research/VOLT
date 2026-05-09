@@ -2,15 +2,16 @@ import { createConversationStreamTransport } from '../services/stream-transport'
 import service from '../api/service';
 import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
-import type { CreateAIConversationParams, CreateAIConversationResult } from '@/modules/ai/api/dtos/create-ai-conversation';
 import type {
+    CreateAIConversationParams,
+    CreateAIConversationResult,
     CreateConversationStreamTransportParams,
-    CreateConversationStreamTransportResult
-} from '@/modules/ai/api/dtos/create-conversation-stream-transport';
-import type { ListAIConversationMessagesParams } from '@/modules/ai/api/dtos/list-ai-conversation-messages';
-import type { ListAIConversationsParams } from '@/modules/ai/api/dtos/list-ai-conversations';
-import type { UpdateAIConversationParams } from '@/modules/ai/api/dtos/update-ai-conversation';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+    CreateConversationStreamTransportResult,
+    ListAIConversationMessagesParams,
+    ListAIConversationsParams,
+    UpdateAIConversationParams
+} from '@/modules/ai/api/service';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { MutationOptions } from '@/shared/infrastructure/query';
 
 export interface ConversationsQueryParams {

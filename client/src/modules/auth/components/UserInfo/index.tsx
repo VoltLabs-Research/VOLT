@@ -1,21 +1,14 @@
 import './UserInfo.css';
-import { cn } from '@/shared/utils';
 import Avatar from '@/shared/presentation/primitives/Avatar';
 import Row from '@/shared/presentation/primitives/Row';
 import Text from '@/shared/presentation/primitives/Text';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
 
-enum UserInfoVariant {
-    Default = 'default',
-    Compact = 'compact'
-}
-
 interface UserInfoProps {
     user: User | null;
     showStatus?: boolean;
     isOnline?: boolean;
-    variant?: UserInfoVariant;
     suffix?: ReactNode;
     className?: string;
 }
@@ -24,12 +17,11 @@ const UserInfo = ({
     user, 
     showStatus = false, 
     isOnline = false, 
-    variant = UserInfoVariant.Default,
     suffix,
     className 
 }: UserInfoProps) => {
     return (
-        <Row gap='075' width='max' justify='between' className={cn(`user-info-${variant}`, className)}>
+        <Row gap='075' width='max' justify='between' className={className}>
             <Avatar
                 user={user}
                 size='sm'

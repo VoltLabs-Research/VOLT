@@ -1,7 +1,4 @@
 import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination';
-
-export const createEmptyDocumentsResponse = createEmptyPaginatedResponse;
 
 export const getDeleteConfirmationMessage = (selectedItems: LatexDocument[]): string => {
     if (selectedItems.length === 1) {

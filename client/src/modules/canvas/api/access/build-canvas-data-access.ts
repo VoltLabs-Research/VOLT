@@ -1,29 +1,29 @@
-import canvasService from '@/modules/canvas/api/services/canvas';
-import trajectoryService from '@/modules/trajectory/api/services/trajectory';
+import canvasService from '@/modules/canvas/api/services/canvas-service';
+import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import simulationCellService from '@/modules/simulation-cell/api/service';
-import sceneArtifactsService from '@/modules/trajectory/api/services/scene-artifacts';
-import colorCodingService from '@/modules/trajectory/api/services/color-coding';
-import particleFilterService from '@/modules/trajectory/api/services/particle-filter';
-import pluginService from '@/modules/plugin/api/services/plugin';
-import listingService from '@/modules/plugin/api/services/listing';
+import sceneArtifactsService from '@/modules/trajectory/api/services/scene-artifacts-service';
+import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
+import particleFilterService from '@/modules/trajectory/api/services/particle-filter-service';
+import pluginService from '@/modules/plugin/api/services/plugin-service';
+import listingService from '@/modules/plugin/api/services/listing-service';
 import analysisService from '@/modules/analysis/api/service';
 import rasterService from '@/modules/raster/api/service';
 import type { CanvasAccessState } from './types';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/dtos/trajectory';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
-import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/dtos/get-simulation-cell-by-trajectory';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
+import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 import type {
     ListSceneArtifactsInputDTO,
     RenderableExposurePayload
-} from '@/modules/trajectory/api/dtos/scene-artifacts';
+} from '@/modules/trajectory/api/services/scene-artifacts-service';
 import type {
     ColorCodingProperties,
     ColorCodingStats,
     GetColorCodingPropertiesInputDTO,
     GetColorCodingStatsInputDTO
-} from '@/modules/trajectory/api/dtos/color-coding';
+} from '@/modules/trajectory/api/services/color-coding-service';
 import type {
     FilterPropertiesData,
     GetFilterPropertiesInputDTO,
@@ -31,26 +31,26 @@ import type {
     GetUniqueValuesOutputDTO,
     PreviewFilterInputDTO,
     PreviewFilterOutputDTO
-} from '@/modules/trajectory/api/dtos/particle-filter';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin';
+} from '@/modules/trajectory/api/services/particle-filter-service';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type {
     GetPluginListingInputDTO,
     GetPluginListingOutputDTO
-} from '@/modules/plugin/api/dtos/listing/get-plugin-listing';
+} from '@/modules/plugin/api/services/listing-service';
 import type {
     GetSubListingInputDTO,
     GetSubListingOutputDTO
-} from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+} from '@/modules/plugin/api/services/listing-service';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { GetAnalysesByTrajectoryParams } from '@/modules/analysis/api/dtos/get-analyses-by-trajectory';
 import type {
+    GetAnalysesByTrajectoryParams,
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
-} from '@/modules/analysis/api/dtos/get-analysis-frame-log';
+} from '@/modules/analysis/api/service';
 import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
-} from '@/modules/raster/api/dtos/get-raster-metadata';
+} from '@/modules/raster/api/service';
 
 interface TrajectoryScopedParams {
     trajectoryId: string;

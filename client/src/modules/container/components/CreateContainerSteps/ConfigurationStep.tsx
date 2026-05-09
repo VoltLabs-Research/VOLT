@@ -14,7 +14,7 @@ import type { ContainerConfig } from '../../hooks/use-create-container-form';
 import type { ClusterResourceLimits } from '../../api/entities/cluster-resource-limits';
 import type { ContainerTemplateCustomField } from '../../api/entities/container-template';
 import type { FieldConfig } from '@/shared/presentation/components/EditableKeyValueCard';
-import type { SelectOption } from '@/shared/presentation/components/FormFieldRHF';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';

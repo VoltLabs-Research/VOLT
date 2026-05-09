@@ -2,7 +2,7 @@ import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summar
 import { formatSize } from '@/shared/utils/format';
 import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { ReactNode } from 'react';
 
 import './StatusBar.css';

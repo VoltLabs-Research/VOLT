@@ -1,4 +1,4 @@
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import './StatusBadge.css';
 import type { ReactNode } from 'react';
 

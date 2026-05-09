@@ -36,23 +36,16 @@
     display: flex;
 }
 
-.editor-sidebar-wrapper[data-collapsible='false'] .editor-sidebar-scene-option-title,
 .editor-sidebar-wrapper[data-collapsible='false'] .editor-sidebar-option-title {
     display: block;
 }
 
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-container {
-    padding: .5rem;
-}
-
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-option-title,
 .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-option-title,
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-options-container {
+.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-options-container {
     gap: .25rem;
 }
 
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-option-container,
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-option {
+.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-option-container {
     height: 40px;
     width: 40px;
     min-height: 40px;
@@ -63,24 +56,8 @@
     place-items: center;
 }
 
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-option-icon-container,
-.editor-sidebar-wrapper[data-collapsed='true'] .sidebar-user-details-container {
-    display: none !important;
-}
-
 .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-user-avatar-wrapper {
     padding: .5rem;
-}
-
-.editor-sidebar-wrapper[data-collapsed='true'] .sidebar-user-avatar-container {
-    height: 36px;
-    width: 36px;
-    font-size: .9rem;
-}
-
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-trajectory-name,
-.editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-header-team-name {
-    pointer-events: none !important;
 }
 
 .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-header-container {
@@ -185,22 +162,12 @@
         max-width: 100%;
     }
 
-    .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-scene-option-icon-container {
-        font-size: .8rem;
-    }
-
     .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-header-container {
         padding: 1rem;
     }
 
     .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-toggle-btn {
         width: 2.75rem;
-    }
-
-    .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-user-avatar-wrapper .sidebar-user-avatar-container {
-        width: 25px;
-        height: 25px;
-        font-size: .8rem;
     }
 
     .editor-sidebar-wrapper[data-collapsed='true'] .editor-sidebar-container,

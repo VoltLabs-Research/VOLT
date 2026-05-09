@@ -1,9 +1,9 @@
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { inferColumnType, type InferredCellKind, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
-import type { ColumnConfig as DocumentColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig as DocumentColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig as CompactColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
-import type { SubListingColumn } from '@/modules/plugin/api/dtos/listing/get-sub-listing';
+import type { SubListingColumn } from '@/modules/plugin/api/services/listing-service';
 
 export interface SubListingColumnSnapshot<TRow extends Record<string, unknown>> {
     columns: DocumentColumnConfig<TRow>[];

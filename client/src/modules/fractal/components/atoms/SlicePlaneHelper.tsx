@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { getSlicePlaneVisualizationQuaternion, getSlicePlaneVisualizationSize, resolveSlicePlaneDefinition } from '@/modules/fractal/utilities/slice-plane';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
-import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/types/configuration';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { FC } from 'react';
 
 interface SlicePlaneHelperProps {

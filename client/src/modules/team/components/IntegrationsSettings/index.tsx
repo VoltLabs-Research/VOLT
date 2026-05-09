@@ -24,8 +24,7 @@ import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
 import useTip from '@/shared/tips/use-tip';
 import { AIProvider } from '@/modules/ai/api/entities/ai-provider';
-import type { CreateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/create-team-ai-integration';
-import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/dtos/ai-integration/update-team-ai-integration';
+import type { CreateTeamAIIntegrationParams, UpdateTeamAIIntegrationParams } from '@/modules/team/api/services/ai-integration-service';
 import type {
     AIProviderCatalogItem,
     TeamAIIntegration,

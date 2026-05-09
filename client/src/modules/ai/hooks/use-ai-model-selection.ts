@@ -1,6 +1,6 @@
 import { useTeamAIIntegrationModelsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AIModelSelection } from '@/modules/ai/api/dtos/create-conversation-stream-transport';
+import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
 import type { TeamAIModelListItem, TeamAIProviderModelsCatalog } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
 

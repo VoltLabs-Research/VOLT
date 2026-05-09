@@ -10,7 +10,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
-import type { CreateAIConversationParams } from '@/modules/ai/api/dtos/create-ai-conversation';
+import type { CreateAIConversationParams } from '@/modules/ai/api/service';
 import { useNavigate } from 'react-router-dom';
 interface UseAIConversationsOptions {
     navigateOnConversationChange?: boolean;

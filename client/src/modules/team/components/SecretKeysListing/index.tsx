@@ -20,7 +20,8 @@ import { RiBarChartLine, RiFileCopyLine, RiLineChartLine, RiShieldKeyholeLine } 
 import { useCallback } from 'react';
 import { sileo } from 'sileo';
 import type { SecretKey } from '@/modules/team/api/entities/secret-key/secret-key';
-import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import { SOCKET_SECRET_KEY_EVENTS } from '@/modules/socket/events/team';
 import { useNavigate } from 'react-router-dom';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;

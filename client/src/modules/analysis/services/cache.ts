@@ -1,9 +1,9 @@
 import { analysisQuery, KEYS } from '../hooks/queries';
 import { patchPaginatedPage } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Analysis } from '../api/entities/analysis';
-import type { GetAnalysesByTrajectoryParams } from '../api/dtos/get-analyses-by-trajectory';
+import type { GetAnalysesByTrajectoryParams } from '../api/service';
 
 export interface PatchAnalysisStatusInput {
     analysisId: string;

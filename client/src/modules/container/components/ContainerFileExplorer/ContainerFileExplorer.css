@@ -1,45 +1,5 @@
-.container-file-explorer-header {
-    padding: 0 1rem 1rem;
-    border-bottom: 1px solid var(--color-border-soft);
-}
-
 .container-file-current-path {
     color: var(--color-text-muted);
-}
-
-.container-file-item {
-    display: grid;
-    grid-template-columns: 40px 1fr 100px 150px;
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--color-border-soft);
-    transition: background 0.15s;
-}
-
-.container-file-item:hover {
-    background: var(--hover-bg);
-}
-
-.container-file-icon {
-    font-size: 1.1rem;
-    color: var(--color-text-muted);
-}
-
-.container-file-item:hover .container-file-icon {
-    color: var(--color-text-secondary);
-}
-
-.container-file-name {
-    color: var(--color-text-secondary);
-}
-
-.container-file-item:hover .container-file-name {
-    color: var(--color-text-primary);
-}
-
-.container-file-size,
-.container-file-date {
-    color: var(--color-text-muted);
-    font-size: 0.85rem;
 }
 
 .container-file-viewer-header {

@@ -196,7 +196,6 @@ const AIPage = () => {
                         isResponding={isSendingMessage}
                         error={messagesError}
                         onOpenTableArtifact={handleOpenTableArtifact}
-                        activeTableArtifactId={openArtifact?.id || null}
                         addToolApprovalResponse={addToolApprovalResponse}
                         starterInput={starterInput}
                         onRetry={handleRetry}

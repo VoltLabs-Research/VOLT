@@ -8,7 +8,7 @@ import NotificationsPopover from '@/modules/notification/components/Notification
 import Button from '@/shared/presentation/primitives/Button';
 import { openModal } from '@/shared/presentation/primitives/Modal';
 import type { ReactNode } from 'react';
-import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/dtos/team/join-by-invite-code';
+import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
 
 interface OnboardingLayoutProps {
     children: ReactNode;

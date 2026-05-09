@@ -27,7 +27,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
-import type { ColumnConfig, SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import { SOCKET_TEAM_MEMBER_EVENTS } from '@/modules/socket/events/team';
 import './MyTeam.css';
 

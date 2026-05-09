@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GetPasswordInfoOutputDTO } from '@/modules/auth/api/dtos/password-info';
+import type { GetPasswordInfoOutputDTO } from '@/modules/auth/api/service';
 
 export type PasswordInfo = GetPasswordInfoOutputDTO;
 

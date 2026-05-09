@@ -2,9 +2,7 @@ import roleService from '../../api/services/role-service';
 import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { TeamRole } from '../../api/entities/role/team-role';
-import type { CreateTeamRoleInputDTO } from '../../api/dtos/role/create-team-role';
-import type { UpdateTeamRoleInputDTO } from '../../api/dtos/role/update-team-role';
-import type { DeleteTeamRoleInputDTO } from '../../api/dtos/role/delete-team-role';
+import type { CreateTeamRoleInputDTO, DeleteTeamRoleInputDTO, UpdateTeamRoleInputDTO } from '../../api/services/role-service';
 
 interface TeamRolesAggregateQueryParams {
     teamId: string;

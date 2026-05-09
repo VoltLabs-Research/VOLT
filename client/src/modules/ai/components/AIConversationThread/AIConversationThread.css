@@ -306,86 +306,9 @@
     line-height: 1.35;
 }
 
-.ai-action-request-feedback {
-    color: var(--color-text-secondary);
-}
-
-.ai-action-request-feedback.is-failed {
-    color: var(--status-error);
-}
-
 .ai-action-request-controls {
     margin-top: 0.1rem;
 }
-
-.ai-message-artifact-list {
-    width: 100%;
-}
-
-.ai-inline-artifact-card,
-.ai-table-artifact-card {
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-1);
-    padding: 0.65rem;
-}
-
-.ai-inline-artifact-payload {
-    white-space: pre-wrap;
-    word-break: break-word;
-    font-family: var(--font-mono, 'SF Mono', Menlo, Monaco, Consolas, monospace);
-    font-size: 0.7rem;
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    padding: 0.45rem 0.5rem;
-}
-
-.ai-inline-artifact-image {
-    width: 100%;
-    max-height: 220px;
-    object-fit: contain;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border-soft);
-    background: var(--color-bg);
-}
-
-.ai-table-artifact-card.is-active {
-    border-color: var(--accent-blue);
-}
-
-.ai-table-artifact-preview-scroll {
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-sm);
-}
-
-.ai-table-artifact-preview {
-    width: 100%;
-    min-width: min(360px, 100%);
-    border-collapse: collapse;
-}
-
-.ai-table-artifact-preview th,
-.ai-table-artifact-preview td {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.7rem;
-    text-align: left;
-    border-bottom: 1px solid var(--color-border-soft);
-    white-space: nowrap;
-}
-
-.ai-table-artifact-preview th {
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 600;
-}
-
-.ai-table-artifact-preview tr:last-child td {
-    border-bottom: none;
-}
-
-/* Markdown inline table wrapper */
 .ai-md-table-wrapper {
     margin: 0.4rem 0;
     border: 1px solid var(--color-border-soft);
@@ -426,4 +349,3 @@
         padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
     }
 }
-

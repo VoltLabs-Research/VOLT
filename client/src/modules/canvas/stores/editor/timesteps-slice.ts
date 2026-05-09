@@ -3,7 +3,8 @@ import { useCanvasAccessStore } from '@/modules/canvas/api/access';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 
 import type { EditorStore } from './types';
-import type { TimestepStore, SceneObjectType } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { TimestepStore } from '@/modules/fractal/stores/contracts/editor/scene-types';
+import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { StateCreator } from 'zustand';
 
 const getAnalysisIdFromScene = (scene: SceneObjectType): string => {

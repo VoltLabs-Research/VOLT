@@ -7,12 +7,12 @@ import {
     useCanvasAccessStore,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
-import type { SceneArtifact } from '../../api/entities/scene-artifacts';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { SceneArtifact } from '../../api/entities/scene-artifacts/scene-artifact';
 import type {
     ListSceneArtifactsInputDTO,
     RenderableExposurePayload
-} from '../../api/dtos/scene-artifacts';
+} from '../../api/services/scene-artifacts-service';
 
 type SceneArtifactsPage = PaginatedResponse<SceneArtifact | RenderableExposurePayload>;
 

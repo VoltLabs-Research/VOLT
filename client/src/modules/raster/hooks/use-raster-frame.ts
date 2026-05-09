@@ -1,4 +1,4 @@
-import canvasService from '@/modules/canvas/api/services/canvas';
+import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
 import { isApiError } from '@/shared/errors/core';
 import { useQuery } from '@tanstack/react-query';

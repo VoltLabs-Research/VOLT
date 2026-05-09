@@ -3,16 +3,6 @@
     max-width: 100%;
 }
 
-.analysis-listing-download-modal__section {
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--color-border-soft);
-}
-
-.analysis-listing-download-modal__section:first-child {
-    padding-top: 0;
-    border-top: none;
-}
-
 .analysis-listing-download-modal__options {
     max-height: 16rem;
     overflow: auto;

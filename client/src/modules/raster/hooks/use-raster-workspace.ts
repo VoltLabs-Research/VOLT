@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isApiError } from '@/shared/errors/core';
 
 import type { RasterAnalysisMetadata, RasterSceneFrame } from '@/modules/raster/api/entities/raster';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 interface RasterModelOption {
     value: string;

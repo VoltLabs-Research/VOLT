@@ -1,11 +1,12 @@
-import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts';
+import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import Text from '@/shared/presentation/primitives/Text';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts';
-import { createEmptyPaginatedResponse, type PaginatedResponse } from '@/shared/domain/pagination';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useCallback, useMemo } from 'react';
 

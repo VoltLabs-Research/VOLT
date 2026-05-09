@@ -4,7 +4,7 @@ import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/componen
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
-import type { AtomData } from '@/modules/trajectory/api/dtos/trajectory';
+import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 
 interface PluginAtomsTableProps {

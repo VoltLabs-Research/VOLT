@@ -1,6 +1,7 @@
 import { closeModal } from '@/shared/presentation/primitives/Modal';
 import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
 import { useCallback, useEffect, useState } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
 
 interface RenameEntityModalProps<TEntity> {
     entity: TEntity | null;
@@ -11,6 +12,10 @@ interface RenameEntityModalProps<TEntity> {
     placeholder: string;
     getInitialTitle: (entity: TEntity) => string;
     validateTitle?: (title: string) => string | undefined;
+    isSubmitDisabled?: (title: string, entity: TEntity | null) => boolean;
+    inputProps?: InputHTMLAttributes<HTMLInputElement>;
+    leadingContent?: ReactNode;
+    helperText?: ReactNode;
     onSubmit: (title: string) => Promise<void>;
     onClose: () => void;
 };
@@ -24,6 +29,10 @@ const RenameEntityModal = <TEntity,>({
     placeholder,
     getInitialTitle,
     validateTitle,
+    isSubmitDisabled,
+    inputProps,
+    leadingContent,
+    helperText,
     onSubmit,
     onClose
 }: RenameEntityModalProps<TEntity>) => {
@@ -71,6 +80,8 @@ const RenameEntityModal = <TEntity,>({
         setError(undefined);
     }, []);
 
+    const trimmedTitle = title.trim();
+
     return (
         <TextInputModal
             modalId={modalId}
@@ -82,8 +93,11 @@ const RenameEntityModal = <TEntity,>({
             value={title}
             error={error}
             primaryLabel='Rename'
-            submitDisabled={isSubmitting || !title.trim()}
+            submitDisabled={isSubmitting || !trimmedTitle || Boolean(isSubmitDisabled?.(trimmedTitle, entity))}
             isSubmitting={isSubmitting}
+            inputProps={inputProps}
+            leadingContent={leadingContent}
+            helperText={helperText}
             onValueChange={handleTitleChange}
             onSubmit={handleSubmit}
             onCancel={handleClose}

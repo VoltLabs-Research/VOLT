@@ -2,17 +2,7 @@ import { mergeNestedSectionState, resetSectionState } from './store-section';
 import { getDefaultEffectsSettings } from '@/shared/domain/rendering/effects';
 
 import type { EditorStore } from './types';
-import type {
-    EffectsConfigState,
-    EffectsConfigStore,
-    SSAOEffectConfig,
-    BloomEffectConfig,
-    ChromaticAberrationConfig,
-    VignetteEffectConfig,
-    DepthOfFieldConfig,
-    NoiseEffectConfig,
-    SepiaEffectConfig
-} from '@/modules/fractal/stores/contracts/editor/visual-types';
+import type { EffectsConfigState, EffectsConfigStore, SSAOEffectConfig, BloomEffectConfig, ChromaticAberrationConfig, VignetteEffectConfig, DepthOfFieldConfig, NoiseEffectConfig, SepiaEffectConfig } from '@/modules/fractal/stores/contracts/editor/visual-types';
 import type { StateCreator } from 'zustand';
 
 export interface EffectsSlice {

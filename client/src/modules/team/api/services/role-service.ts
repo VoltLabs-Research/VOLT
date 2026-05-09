@@ -1,11 +1,32 @@
 import { createService, paginated, post, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
-import type { GetTeamRolesInputDTO } from '../dtos/role/get-team-roles';
-import type { CreateTeamRoleInputDTO } from '../dtos/role/create-team-role';
-import type { DeleteTeamRoleInputDTO } from '../dtos/role/delete-team-role';
-import type { UpdateTeamRoleInputDTO } from '../dtos/role/update-team-role';
+
+export interface CreateTeamRoleInputDTO {
+    teamId: string;
+    name: string;
+    permissions: string[];
+}
+
+export interface DeleteTeamRoleInputDTO {
+    teamId: string;
+    roleId: string;
+}
+
+export interface GetTeamRolesParams {
+    page: number;
+    limit: number;
+}
+
+export type GetTeamRolesInputDTO = { teamId: string } & GetTeamRolesParams;
+
+export interface UpdateTeamRoleInputDTO {
+    teamId: string;
+    roleId: string;
+    name?: string;
+    permissions?: string[];
+}
 
 const endpoints = {
     getAll: paginated<GetTeamRolesInputDTO, PaginatedResponse<TeamRole>>('/:teamId/roles'),

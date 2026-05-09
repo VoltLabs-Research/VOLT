@@ -2,7 +2,6 @@ import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 
-export type { SceneObjectType };
 
 export enum PointCloudDetailLevel {
     Auto = 'auto',

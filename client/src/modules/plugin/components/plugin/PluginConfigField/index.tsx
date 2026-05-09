@@ -12,7 +12,7 @@ import type {
     IArgumentDefinition,
     IPluginReferenceSelection
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF';
+import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PluginConfigFieldProps {

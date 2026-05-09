@@ -1,5 +1,5 @@
-import trajectoryService from '../../api/services/trajectory';
-import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared';
+import trajectoryService from '../../api/services/trajectory-service';
+import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared/query-keys';
 import {
     buildKeys,
     createInfiniteQuery,
@@ -12,6 +12,13 @@ import {
 import { batchInvalidateQueries } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type {
+    FolderCreateParams,
+    FolderDeleteParams,
+    FolderGetParams,
+    FolderListParams,
+    FolderUpdateParams
+} from '@/shared/api/folder-endpoints';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
@@ -20,7 +27,7 @@ import {
     useCanvasDataAccess,
     withAccessMode
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type {
     CreateTrajectoryInputDTO,
     CreateTrajectoryOutputDTO,
@@ -30,14 +37,9 @@ import type {
     GetAtomsOutputDTO,
     GetPreviewInputDTO,
     GetTrajectoriesInputDTO
-} from '../../api/dtos/trajectory';
-import type { CreateTrajectoryFolderParams } from '../../api/dtos/trajectory/create-trajectory-folder';
-import type { DeleteTrajectoryFolderParams } from '../../api/dtos/trajectory/delete-trajectory-folder';
-import type { GetTrajectoryFolderParams } from '../../api/dtos/trajectory/get-trajectory-folder';
-import type { ListTrajectoryFoldersParams } from '../../api/dtos/trajectory/list-trajectory-folders';
-import type { MoveTrajectoryParams } from '../../api/dtos/trajectory/move-trajectory';
-import type { UpdateTrajectoryFolderParams } from '../../api/dtos/trajectory/update-trajectory-folder';
-import type { Trajectory } from '../../api/entities/trajectory';
+} from '../../api/services/trajectory-service';
+import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';
+import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 import type { TrajectoryFolder } from '../../api/entities/trajectory/trajectory-folder';
 import type { InfiniteQueryOptions, QueryOptions } from '@/shared/infrastructure/query/create-paginated-query';
 
@@ -61,12 +63,12 @@ const KEYS = buildKeys<{
     simulationGrid: void;
     preview: GetPreviewInputDTO;
     atoms: GetAtomsInputDTO;
-        atomsInfinite: void;
-        perAtom: void;
-        samples: void;
-        folder: GetTrajectoryFolderParams;
-        folders: ListTrajectoryFoldersParams;
-    }>(BASE_KEY);
+    atomsInfinite: void;
+    perAtom: void;
+    samples: void;
+    folder: FolderGetParams;
+    folders: FolderListParams;
+}>(BASE_KEY);
 
 const stripTrajectoryPage = ({ page: _page, ...params }: GetTrajectoriesInputDTO) => params;
 
@@ -130,11 +132,11 @@ const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService
 const trajectoryFolderQueries = createFolderResourceQueries<
     TrajectoryFolder,
     PaginatedResponse<TrajectoryFolder>,
-    ListTrajectoryFoldersParams,
-    GetTrajectoryFolderParams,
-    CreateTrajectoryFolderParams,
-    UpdateTrajectoryFolderParams,
-    DeleteTrajectoryFolderParams
+    FolderListParams,
+    FolderGetParams,
+    FolderCreateParams,
+    FolderUpdateParams,
+    FolderDeleteParams
 >({
     baseKey: `${BASE_KEY}-folder`,
     service: {
@@ -144,7 +146,6 @@ const trajectoryFolderQueries = createFolderResourceQueries<
         updateFolder: trajectoryService.updateFolder,
         deleteFolder: trajectoryService.deleteFolder
     },
-    buildFolderParams: (folderId) => ({ folderId }),
     listingQueryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
 });
 

@@ -1,4 +1,3 @@
-import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import useTrajectoriesListing, {
     MOVE_TRAJECTORY_MODAL_ID,
     NEW_TRAJECTORY_FOLDER_MODAL_ID,
@@ -6,44 +5,31 @@ import useTrajectoriesListing, {
 } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
-import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
-import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
+import {
+    createFolderedTitleColumn,
+    FolderedDocumentListing,
+    FolderedListingModals,
+    useFolderedListingDashboardBreadcrumb
+} from '@/shared/presentation/components/DocumentListing/foldered-listing';
 import Heading from '@/shared/presentation/primitives/Heading';
-import { openModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
-import { Folder, Pencil, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
-import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/presentation/types/menu';
 
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
-    {
+    createFolderedTitleColumn<TrajectoryListingRow>({
         key: 'name',
         title: 'Name',
-        sortable: true,
-        render: (value, row) => (
-            <Row gap='075'>
-                {isTrajectoryFolderRow(row) && (
-                    <Row className='flex-center color-secondary'>
-                        <Folder size={16} />
-                    </Row>
-                )}
-                <Box overflow='hidden' minW='0'>
-                    <span className='font-weight-6 color-secondary'>{String(value)}</span>
-                </Box>
-            </Row>
-        ),
-        skeleton: { variant: 'text', width: 160 }
-    },
+        isFolder: isTrajectoryFolderRow,
+        resolveTitle: ({ name }) => name,
+        skeletonWidth: 160
+    }),
     {
         key: 'atoms',
         title: 'Atoms',
@@ -80,20 +66,16 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
 export default function TrajectoriesListing() {
     useTip('trajectories-organization');
 
+    const listing = useTrajectoriesListing();
     const {
         breadcrumbs,
         canCreate,
-        context,
         currentFolder,
-        dragAndDrop,
-        fetchData,
         fileInputRef,
-        getMenuOptions,
         getMoveFolder,
         handleCreate,
         handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleItemClick,
         handleMoveTrajectoryClose,
         handleMoveTrajectorySubmit,
         handlePickerChange,
@@ -104,50 +86,25 @@ export default function TrajectoriesListing() {
         listMoveFolders,
         movingTrajectory,
         navigateToFolder,
-        queryKey,
-        renamingFolder
-    } = useTrajectoriesListing();
+        renamingFolder,
+    } = listing;
 
-    const globalSearchBreadcrumb = useMemo(() => ({
-        items: breadcrumbs,
-        onNavigate: navigateToFolder
-    }), [breadcrumbs, navigateToFolder]);
+    useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
 
-    useDashboardHeaderContent({ globalSearchBreadcrumb });
-
-    const headerMenuOptions = useMemo<MenuOption[]>(() => {
-        if (!currentFolder) {
-            return [];
-        }
-
-        return [
-            {
-                label: 'Rename Folder',
-                icon: Pencil,
-                onClick: () => handleRenameFolderOpen(currentFolder)
-            },
-            {
-                label: 'Delete Folder',
-                icon: Trash2,
-                onClick: () => handleDeleteCurrentFolder?.(),
-                destructive: true,
-                disabled: !handleDeleteCurrentFolder
-            }
-        ];
-    }, [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
+    const headerMenuOptions = useMemo<MenuOption[]>(() => getFolderHeaderMenuOptions({
+        currentFolder,
+        onRenameFolderOpen: handleRenameFolderOpen,
+        onDeleteCurrentFolder: handleDeleteCurrentFolder
+    }), [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
 
     return (
         <>
-            <DocumentListing<TrajectoryListingRow, { folderId: string | null }>
+            <FolderedDocumentListing<TrajectoryListingRow, { folderId: string | null }>
                 title={<Heading level={3} size='3xl' weight='medium' tone='primary' className='sm:font-size-4'>Trajectories</Heading>}
-                queryKey={queryKey}
                 columns={COLUMNS}
-                context={context}
-                fetchData={fetchData}
+                listing={listing}
                 defaultLimit={20}
-                getMenuOptions={getMenuOptions}
-                onItemClick={handleItemClick}
-                dragAndDrop={dragAndDrop}
+                createButtonTitle={canCreate ? 'Upload' : undefined}
                 emptyMessage='No trajectories found in this location.'
                 emptyButtonText='Upload'
                 onEmptyButtonClick={handleCreate}
@@ -160,56 +117,31 @@ export default function TrajectoriesListing() {
                             hidden
                             onChange={handlePickerChange}
                         />
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            size='sm'
-                            shape='rounded'
-                            onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
-                            title='Create folder'
-                        >
-                            <Folder size={14} />
-                            New Folder
-                        </Button>
+                        <NewFolderHeaderAction modalId={NEW_TRAJECTORY_FOLDER_MODAL_ID} />
                     </>
                 )}
                 headerMenuOptions={headerMenuOptions}
-                createNew={canCreate ? {
-                    buttonTitle: 'Upload',
-                    onCreate: handleCreate
-                } : undefined}
                 emptyButtonIsLoading={isUploading}
-                socketInvalidation={[
-                    { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [queryKey] },
-                    { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [queryKey] },
-                    { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [queryKey] }
-                ]}
             />
 
-            <NewFolderModal
-                id={NEW_TRAJECTORY_FOLDER_MODAL_ID}
-                title='New Trajectory Folder'
-                description='Create a folder in the current trajectories location.'
-                onSubmit={handleCreateFolder}
-            />
-            <RenameFolderModal
-                id={RENAME_TRAJECTORY_FOLDER_MODAL_ID}
-                title='Rename Trajectory Folder'
-                description='Update the current trajectory folder name.'
-                folderName={renamingFolder?.title ?? null}
-                onSubmit={handleRenameFolderSubmit}
-                onClose={handleRenameFolderClose}
-            />
-            <MoveToFolderModal
-                id={MOVE_TRAJECTORY_MODAL_ID}
-                itemId={movingTrajectory?._id ?? null}
-                itemName={movingTrajectory?.name ?? null}
+            <FolderedListingModals
+                newFolderModalId={NEW_TRAJECTORY_FOLDER_MODAL_ID}
+                newFolderTitle='New Trajectory Folder'
+                newFolderDescription='Create a folder in the current trajectories location.'
+                onCreateFolder={handleCreateFolder}
+                renameFolderModalId={RENAME_TRAJECTORY_FOLDER_MODAL_ID}
+                renameFolderTitle='Rename Trajectory Folder'
+                renameFolderDescription='Update the current trajectory folder name.'
+                renamingFolder={renamingFolder}
+                onRenameFolderSubmit={handleRenameFolderSubmit}
+                onRenameFolderClose={handleRenameFolderClose}
+                moveModalId={MOVE_TRAJECTORY_MODAL_ID}
+                movingItem={movingTrajectory}
                 itemLabel='Trajectory'
-                sourceFolderId={movingTrajectory?.folder ?? null}
                 listFolders={listMoveFolders}
                 getFolder={getMoveFolder}
-                onSubmit={handleMoveTrajectorySubmit}
-                onClose={handleMoveTrajectoryClose}
+                onMoveSubmit={handleMoveTrajectorySubmit}
+                onMoveClose={handleMoveTrajectoryClose}
             />
         </>
     );

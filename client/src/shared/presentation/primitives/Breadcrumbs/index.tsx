@@ -1,6 +1,6 @@
 import './Breadcrumbs.css';
 import { ChevronRight } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/cn';
 import type { ReactNode } from 'react';
 
 export interface BreadcrumbItem {

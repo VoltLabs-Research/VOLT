@@ -32,10 +32,6 @@
     white-space: nowrap;
 }
 
-.job-count-badge {
-    color: var(--status-info);
-}
-
 .job-error {
     color: var(--status-error);
     line-height: 1.3;
