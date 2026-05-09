@@ -7,19 +7,151 @@ import useTrajectoriesListing, {
     MOVE_TRAJECTORY_MODAL_ID,
     NEW_TRAJECTORY_FOLDER_MODAL_ID
 } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
-import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
+import {
+    getTrajectoryListingFolderDroppableId,
+    isTrajectoryFolderRow
+} from '@/modules/trajectory/utilities/listing';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import Box from '@/shared/presentation/primitives/Box';
-import { Download, Upload } from 'lucide-react';
+import { ChevronRight, Download, Upload } from 'lucide-react';
+import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useCallback, useMemo, useState } from 'react';
-import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
+import './SimulationGrid.css';
 
 export type SimulationGridItem = TrajectoryListingRow;
+
+interface SimulationBreadcrumbItem {
+    key: string;
+    title: string;
+    folderId: string | null;
+}
+
+interface DroppableSimulationBreadcrumbProps {
+    item: SimulationBreadcrumbItem;
+    isCurrent: boolean;
+    onOpen: (folderId: string | null) => void;
+}
+
+const DroppableSimulationBreadcrumb = ({ item, isCurrent, onOpen }: DroppableSimulationBreadcrumbProps) => {
+    const {
+        setNodeRef,
+        isOver
+    } = useDroppable({
+        id: getTrajectoryListingFolderDroppableId(item.folderId)
+    });
+
+    const className = [
+        'trajectory-breadcrumb-drop-target',
+        isOver ? 'is-drag-over' : ''
+    ].filter(Boolean).join(' ');
+
+    if (isCurrent) {
+        return (
+            <span
+                ref={setNodeRef}
+                className={`${className} volt-breadcrumbs__current`}
+                aria-current='page'
+                title={item.title}
+            >
+                {item.title}
+            </span>
+        );
+    }
+
+    return (
+        <button
+            ref={setNodeRef}
+            type='button'
+            className={`${className} volt-breadcrumbs__trigger`}
+            onClick={() => onOpen(item.folderId)}
+            title={item.title}
+            aria-label={`Open ${item.title}`}
+        >
+            {item.title}
+        </button>
+    );
+};
+
+interface DroppableSimulationBreadcrumbsProps {
+    items: SimulationBreadcrumbItem[];
+    onOpen: (folderId: string | null) => void;
+}
+
+const DroppableSimulationBreadcrumbs = ({ items, onOpen }: DroppableSimulationBreadcrumbsProps) => {
+    if (!items.length) {
+        return null;
+    }
+
+    return (
+        <Box className='dashboard-simulations-breadcrumbs'>
+            <nav className='volt-breadcrumbs trajectory-breadcrumbs' aria-label='Folder breadcrumbs'>
+                <ol className='volt-breadcrumbs__list'>
+                    {items.map((item, index) => (
+                        <li key={item.key} className='volt-breadcrumbs__item trajectory-breadcrumb-wrapper'>
+                            {index > 0 ? (
+                                <ChevronRight size={12} className='volt-breadcrumbs__separator' aria-hidden='true' />
+                            ) : null}
+                            <DroppableSimulationBreadcrumb
+                                item={item}
+                                isCurrent={index === items.length - 1}
+                                onOpen={onOpen}
+                            />
+                        </li>
+                    ))}
+                </ol>
+            </nav>
+        </Box>
+    );
+};
+
+const StaticSimulationBreadcrumbs = ({ items, onOpen }: DroppableSimulationBreadcrumbsProps) => {
+    if (!items.length) {
+        return null;
+    }
+
+    return (
+        <Box className='dashboard-simulations-breadcrumbs'>
+            <nav className='volt-breadcrumbs trajectory-breadcrumbs' aria-label='Folder breadcrumbs'>
+                <ol className='volt-breadcrumbs__list'>
+                    {items.map((item, index) => {
+                        const isCurrent = index === items.length - 1;
+
+                        return (
+                            <li key={item.key} className='volt-breadcrumbs__item trajectory-breadcrumb-wrapper'>
+                                {index > 0 ? (
+                                    <ChevronRight size={12} className='volt-breadcrumbs__separator' aria-hidden='true' />
+                                ) : null}
+                                {isCurrent ? (
+                                    <span
+                                        className='volt-breadcrumbs__current'
+                                        aria-current='page'
+                                        title={item.title}
+                                    >
+                                        {item.title}
+                                    </span>
+                                ) : (
+                                    <button
+                                        type='button'
+                                        className='volt-breadcrumbs__trigger'
+                                        onClick={() => onOpen(item.folderId)}
+                                        title={item.title}
+                                        aria-label={`Open ${item.title}`}
+                                    >
+                                        {item.title}
+                                    </button>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ol>
+            </nav>
+        </Box>
+    );
+};
 
 export default function SimulationGrid() {
     const { selectedIds, isSelected, clearSelection } = useSelectionParams();
@@ -32,6 +164,7 @@ export default function SimulationGrid() {
         currentFolderId,
         fetchData,
         fileInputRef,
+        getMenuOptions,
         getMoveFolder,
         handleCreate,
         handleCreateFolder,
@@ -45,6 +178,7 @@ export default function SimulationGrid() {
         navigateToFolder,
         openFolder,
         queryKey,
+        dragAndDrop,
         socketInvalidation
     } = useTrajectoriesListing();
 
@@ -78,7 +212,11 @@ export default function SimulationGrid() {
     const renderGridItem = useCallback((item: SimulationGridItem) => {
         if (isTrajectoryFolderRow(item)) {
             return (
-                <SimulationFolderCard folder={item} onOpen={handleFolderOpen} />
+                <SimulationFolderCard
+                    folder={item}
+                    onOpen={handleFolderOpen}
+                    menuOptions={getMenuOptions?.(item, [])}
+                />
             );
         }
 
@@ -89,7 +227,7 @@ export default function SimulationGrid() {
                 onMoveToFolder={handleMoveTrajectoryOpen}
             />
         );
-    }, [handleFolderOpen, handleMoveTrajectoryOpen, isSelected]);
+    }, [getMenuOptions, handleFolderOpen, handleMoveTrajectoryOpen, isSelected]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
@@ -133,15 +271,28 @@ export default function SimulationGrid() {
         };
     }, [currentFolderId, handleCreate, handleDownloadSamples, hasDownloadedSamples, isDownloading, isUploading]);
 
-    const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
+    const breadcrumbItems = useMemo<SimulationBreadcrumbItem[]>(() => {
         return breadcrumbs.map((crumb) => ({
-            id: crumb.id ?? 'root',
+            key: crumb.id ?? 'root',
             title: crumb.title,
-            onClick: () => navigateToFolder(crumb.id)
+            folderId: crumb.id ?? null
         }));
-    }, [breadcrumbs, navigateToFolder]);
+    }, [breadcrumbs]);
 
     const shouldShowBreadcrumbs = breadcrumbs.length > 1;
+    const breadcrumbsContent = shouldShowBreadcrumbs
+        ? dragAndDrop ? (
+            <DroppableSimulationBreadcrumbs
+                items={breadcrumbItems}
+                onOpen={navigateToFolder}
+            />
+        ) : (
+            <StaticSimulationBreadcrumbs
+                items={breadcrumbItems}
+                onOpen={navigateToFolder}
+            />
+        )
+        : null;
 
     return (
         <>
@@ -152,11 +303,6 @@ export default function SimulationGrid() {
                 hidden
                 onChange={handlePickerChange}
             />
-            {shouldShowBreadcrumbs && (
-                <Box className='dashboard-simulations-breadcrumbs'>
-                    <Breadcrumbs items={breadcrumbItems} ariaLabel='Folder breadcrumbs' />
-                </Box>
-            )}
             <DocumentListing<SimulationGridItem, { folderId: string | null }>
                 title='Trajectories'
                 queryKey={queryKey}
@@ -164,6 +310,9 @@ export default function SimulationGrid() {
                 fetchData={fetchData}
                 context={context}
                 renderGridItem={renderGridItem}
+                gridBeforeContent={breadcrumbsContent}
+                getMenuOptions={getMenuOptions}
+                dragAndDrop={dragAndDrop}
                 hideHeader={true}
                 hideTabs={true}
                 renderGridSkeleton={renderGridSkeleton}

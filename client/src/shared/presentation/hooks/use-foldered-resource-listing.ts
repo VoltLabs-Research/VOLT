@@ -48,6 +48,7 @@ interface UseFolderedResourceListingOptions<
     isFolderRow: (row: TRow) => row is TFolderRow;
     getMoveTarget: (item: TItem) => TMoveTarget;
     moveItem: (itemId: string, folderId: string | null) => Promise<unknown>;
+    getMoveFolderIdFromDroppableId?: (droppableId: string) => string | null | undefined;
     moveToast: PromiseToastOptions<unknown>;
     folderPermissions: FolderActionPermissions;
     getItemActions: (helpers: FolderedItemActionHelpers<TItemRow>) => Record<string, ActionConfig<TItemRow>>;
@@ -73,6 +74,7 @@ const useFolderedResourceListing = <
     isFolderRow,
     getMoveTarget,
     moveItem,
+    getMoveFolderIdFromDroppableId,
     moveToast,
     folderPermissions,
     getItemActions,
@@ -123,19 +125,26 @@ const useFolderedResourceListing = <
         payload: Parameters<DocumentListingDragAndDropConfig<TRow>['onDragEnd']>[0]
     ) => {
         const { activeItem, overItem } = payload;
-        if (!activeItem || !overItem || !isItemRow(activeItem) || !isFolderRow(overItem)) {
+        if (!activeItem || !isItemRow(activeItem)) {
             return;
         }
 
-        if (activeItem.folder === overItem._id) {
+        let targetFolderId: string | null | undefined;
+        if (overItem && isFolderRow(overItem)) {
+            targetFolderId = overItem._id;
+        } else if (payload.overId) {
+            targetFolderId = getMoveFolderIdFromDroppableId?.(payload.overId);
+        }
+
+        if (targetFolderId === undefined || activeItem.folder === targetFolderId) {
             return;
         }
 
         await showPromise(
-            moveItem(activeItem._id, overItem._id),
+            moveItem(activeItem._id, targetFolderId),
             moveToast
         );
-    }, [isFolderRow, isItemRow, moveItem, moveToast]);
+    }, [getMoveFolderIdFromDroppableId, isFolderRow, isItemRow, moveItem, moveToast]);
 
     const dragAndDrop = useMemo<DocumentListingDragAndDropConfig<TRow> | undefined>(() => {
         if (!canMoveItems) {

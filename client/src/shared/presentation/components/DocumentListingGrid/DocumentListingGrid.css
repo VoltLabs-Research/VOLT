@@ -12,11 +12,117 @@
     display: flex;
     height: 100%;
     min-width: 0;
+    position: relative;
+    border-radius: var(--radius-md);
+    transition:
+        opacity 0.16s ease,
+        filter 0.16s ease,
+        transform 0.16s ease;
 }
 
 .document-listing-grid-item > * {
     width: 100%;
     height: 100%;
+}
+
+.document-listing-grid-item.is-draggable {
+    touch-action: none;
+}
+
+.document-listing-grid-item.is-dragging {
+    opacity: 0.24;
+    filter: saturate(0.7);
+}
+
+.document-listing-grid-drag-affordance {
+    position: absolute;
+    z-index: 12;
+    top: 0.75rem;
+    left: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 999px;
+    color: var(--color-text-secondary);
+    background: color-mix(in srgb, var(--color-surface-1) 84%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+    box-shadow: var(--shadow-card);
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    transition:
+        opacity 0.16s ease,
+        transform 0.16s ease,
+        color 0.16s ease,
+        background-color 0.16s ease;
+    pointer-events: none;
+}
+
+.document-listing-grid-item.is-draggable:hover .document-listing-grid-drag-affordance,
+.document-listing-grid-item.is-draggable:focus-within .document-listing-grid-drag-affordance {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.document-listing-grid-item.is-dragging .document-listing-grid-drag-affordance {
+    opacity: 0;
+}
+
+.document-listing-grid-item.is-drag-over .simulation-folder-card {
+    border-color: color-mix(in srgb, var(--accent-blue) 76%, var(--color-border));
+}
+
+.document-listing-grid-drag-overlay {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 15rem;
+    max-width: 22rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--color-surface-1) 92%, var(--accent-blue)) 0%,
+            color-mix(in srgb, var(--color-surface-1) 84%, var(--color-text-primary)) 100%
+        );
+    border: 1px solid color-mix(in srgb, var(--accent-blue) 34%, var(--color-border));
+    box-shadow:
+        var(--shadow-elevated),
+        0 1rem 3rem color-mix(in srgb, var(--accent-blue) 18%, transparent);
+}
+
+.document-listing-grid-drag-overlay__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    color: var(--accent-blue);
+    background: color-mix(in srgb, var(--accent-blue) 13%, transparent);
+}
+
+.document-listing-grid-drag-overlay__content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.document-listing-grid-drag-overlay__title {
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.document-listing-grid-drag-overlay__meta {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
 }
 
 .document-listing-grid-item:focus-visible {
@@ -42,5 +148,12 @@
     .document-listing-grid {
         grid-template-columns: 1fr;
         padding: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .document-listing-grid-item,
+    .document-listing-grid-drag-affordance {
+        transition: none;
     }
 }
