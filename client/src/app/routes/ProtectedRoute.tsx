@@ -59,10 +59,9 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeamId;
-    const isStartRoute = location.pathname === '/start';
     const isOnboardingRoute = location.pathname === '/onboarding' || location.pathname.startsWith('/onboarding/');
     const isTeamInvitationRoute = location.pathname.startsWith('/team-invitation/');
-    const canAccessWithoutSelectedTeam = isStartRoute || isTeamInvitationRoute || isOnboardingRoute;
+    const canAccessWithoutSelectedTeam = isTeamInvitationRoute || isOnboardingRoute;
 
     const shouldCheckTeamClusterAccess = mode === RouteMode.Protected
         && hasToken

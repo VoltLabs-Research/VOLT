@@ -141,7 +141,10 @@ export const getClusterGlbStream = async (
     }
 
     const response = await objectGatewayClient.getStream(teamClusterId, SYS_BUCKETS.MODELS, objectName);
-    return finalizeGlbStream(response.stream, objectName, requestContext);
+    return {
+        ...finalizeGlbStream(response.stream, objectName, requestContext),
+        size: response.contentLength
+    };
 };
 
 export const getLocalGlbStream = async (
@@ -153,6 +156,13 @@ export const getLocalGlbStream = async (
         throw new Error(`Unsupported GLB object key: ${objectName}`);
     }
 
-    const stream = await storageService.getStream(SYS_BUCKETS.MODELS, objectName);
-    return finalizeGlbStream(stream, objectName, requestContext);
+    const [stat, stream] = await Promise.all([
+        storageService.getStat(SYS_BUCKETS.MODELS, objectName).catch(() => undefined),
+        storageService.getStream(SYS_BUCKETS.MODELS, objectName)
+    ]);
+
+    return {
+        ...finalizeGlbStream(stream, objectName, requestContext),
+        size: stat?.size
+    };
 };

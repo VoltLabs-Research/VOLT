@@ -295,7 +295,7 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
     }
 
     private isGlbJobId(jobId: string): boolean {
-        return jobId.startsWith('trajectory-glb:');
+        return jobId.startsWith('trajectory-glb:') || jobId.startsWith('trajectory-frame:');
     }
 
     private isSshImportJobId(jobId: string): boolean {

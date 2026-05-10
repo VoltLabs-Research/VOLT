@@ -10,5 +10,6 @@ export const SOCKET_CONTAINER_TERMINAL_EVENTS = {
     DETACH: 'container:terminal:detach',
     DATA: 'container:terminal:data',
     INPUT: 'container:terminal:input',
+    RESIZE: 'container:terminal:resize',
     ERROR: 'container:error'
 } as const;

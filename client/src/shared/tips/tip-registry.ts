@@ -51,15 +51,6 @@ export const CONTEXTUAL_TIPS = {
         duration: 6500,
         position: 'top-center'
     },
-    'start-page-history': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Recent pages live here',
-        description: 'This page keeps previews of recent visits on this device. Press Escape to toggle between Start and Dashboard.',
-        buttonLabel: 'Got it',
-        delay: 1200,
-        position: 'top-center'
-    },
     'canvas-screenshot-shortcut': {
         surface: 'action',
         dismissMode: 'auto',

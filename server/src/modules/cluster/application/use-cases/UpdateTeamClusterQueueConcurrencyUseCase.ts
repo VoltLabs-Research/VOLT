@@ -4,7 +4,11 @@ import {
     UpdateTeamClusterQueueConcurrencyOutputDTO
 } from '@modules/cluster/application/dtos/UpdateTeamClusterQueueConcurrencyDTO';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    TeamClusterStatus,
+    type TeamClusterQueueScopeLimitsProps
+} from '@modules/cluster/domain/entities/TeamCluster';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ServerSideQueueConcurrencyCoordinator from '@modules/cluster/infrastructure/services/ServerSideQueueConcurrencyCoordinator';
 import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
@@ -18,6 +22,15 @@ import {
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+const disableTeamScopeLimits = (queueScopeLimits: TeamClusterQueueScopeLimitsProps): TeamClusterQueueScopeLimitsProps => ({
+    analysisProcessing: { ...queueScopeLimits.analysisProcessing, maxRunningPerTeam: 0 },
+    artifactUpload: { ...queueScopeLimits.artifactUpload, maxRunningPerTeam: 0 },
+    trajectoryRasterization: { ...queueScopeLimits.trajectoryRasterization, maxRunningPerTeam: 0 },
+    trajectoryGlbConversion: { ...queueScopeLimits.trajectoryGlbConversion, maxRunningPerTeam: 0 },
+    cloudUpload: { ...queueScopeLimits.cloudUpload, maxRunningPerTeam: 0 },
+    trajectoryCompression: { ...queueScopeLimits.trajectoryCompression, maxRunningPerTeam: 0 }
+});
 
 @Singleton()
 export default class UpdateTeamClusterQueueConcurrencyUseCase
@@ -47,9 +60,11 @@ export default class UpdateTeamClusterQueueConcurrencyUseCase
             ...input.queueConcurrency
         };
 
+        const persistedQueueScopeLimits = disableTeamScopeLimits(input.queueScopeLimits);
+
         const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
             queueConcurrency: persistedQueueConcurrency,
-            queueScopeLimits: input.queueScopeLimits
+            queueScopeLimits: persistedQueueScopeLimits
         });
 
         if (!updatedTeamCluster) {

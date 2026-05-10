@@ -28,7 +28,7 @@ export interface TrajectoryFrame {
     // Why: accepts either the raw ObjectId string (write path) or the fully
     // populated simulation-cell payload (read path — what HTTP consumers need
     // to render box bounds client-side). The repository maps accordingly.
-    simulationCell: string | TrajectoryFrameSimulationCellEmbed;
+    simulationCell?: string | TrajectoryFrameSimulationCellEmbed;
 }
 
 export interface TrajectoryStats {

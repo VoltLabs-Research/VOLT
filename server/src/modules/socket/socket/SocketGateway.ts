@@ -53,7 +53,7 @@ export default class SocketGateway{
 
     private corsOrigins = SOCKET_CORS_ORIGINS;
 
-    private pingTimeout = 60_000;
+    private pingTimeout = 300_000;
     private pingInterval = 25_000;
 
     constructor(
@@ -111,7 +111,7 @@ export default class SocketGateway{
             // Raised from 10 MB because binary attachments now travel without
             // base64 inflation (≈ 1.33× reduction) but we also carry masks
             // and property columns for multi-million atom trajectories.
-            maxHttpBufferSize: 64 * 1024 * 1024
+            maxHttpBufferSize: 512 * 1024 * 1024
         });
 
         this.adapterPub = createRedisClient();

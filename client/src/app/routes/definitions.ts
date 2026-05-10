@@ -17,11 +17,6 @@ export const protectedRoutes: RouteConfig[] = [
         component: RootDashboardRedirect
     },
     {
-        path: '/start',
-        title: 'Start',
-        loader: () => import('@/modules/start/components/templates/StartPage')
-    },
-    {
         path: '/dashboard',
         title: 'Dashboard',
         loader: () => import('@/modules/dashboard/components/Dashboard'),

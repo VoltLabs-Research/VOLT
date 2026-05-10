@@ -1,9 +1,7 @@
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes, renderOptionalAuthRoutes } from './routes/RouteRenderer';
 import { resolveConfiguredRouteTitle } from './routes/metadata';
 import { reportHotspotDuration } from './core/http/utilities/client-instrumentation';
-import { useGlobalShortcuts } from '@/shared/presentation/hooks/use-global-shortcuts';
 import { useFallbackPageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { usePageTracker } from '@/modules/start/hooks/use-page-tracker';
 import { useRouteCleanup } from '@/shared/presentation/hooks/use-route-cleanup';
 import { ErrorSurface, getErrorMessage, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
@@ -55,13 +53,6 @@ const resetPageScale = () => {
     document.documentElement.style.removeProperty('--volt-root-font-size');
 };
 
-const WorkspaceGlobals = () => {
-    useGlobalShortcuts();
-    usePageTracker();
-
-    return null;
-};
-
 const AppChrome = () => {
     const location = useLocation();
     const shouldMountGlobals = shouldMountWorkspaceGlobals(location.pathname);
@@ -81,7 +72,6 @@ const AppChrome = () => {
 
     const appContent = (
         <>
-            {shouldMountGlobals && <WorkspaceGlobals />}
             <AppRoutes />
             <AppToaster />
         </>
