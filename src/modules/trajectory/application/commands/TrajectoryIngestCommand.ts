@@ -1,6 +1,8 @@
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import unzipper from 'unzipper';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
@@ -20,6 +22,7 @@ const METADATA_READ_BYTES = readPositiveIntegerEnv('TRAJECTORY_METADATA_READ_BYT
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_FRAME_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_BACKOFF_MS') ?? 2000;
 const SESSION_TTL_SECONDS = 86400;
+const ZIP_ENTRY_JUNK_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
 interface TrajectoryIngestStagedObject {
     objectKey: string;
@@ -75,17 +78,18 @@ export class TrajectoryIngestCommand {
         const ownerClusterId = this.config.teamClusterId;
         const bucket = ObjectBucketName.Dumps;
 
-        // Phase 1: Download and parse metadata only (fast, <5s)
+        // Phase 1: Download and parse metadata only. ZIP uploads are expanded into normal staged frames.
         const parsedFrames = await withNativeProcessingTempDir(
             'trajectory-ingest',
             async (tempDirectory) => {
-                return mapLimited(
+                const frameGroups = await mapLimited(
                     stagedObjects,
                     INGEST_FRAME_CONCURRENCY,
                     async (staged, index) => {
-                        return this.parseFrameMetadata(staged, index, bucket, tempDirectory);
+                        return this.parseStagedObject(staged, index, trajectoryId, bucket, tempDirectory);
                     }
                 );
+                return frameGroups.flat();
             }
         );
         const frames = this.deduplicateFrames(parsedFrames, trajectoryId);
@@ -150,6 +154,126 @@ export class TrajectoryIngestCommand {
             size: staged.size,
             objectKey: staged.objectKey
         };
+    }
+
+    private async parseStagedObject(
+        staged: TrajectoryIngestStagedObject,
+        index: number,
+        trajectoryId: string,
+        bucket: string,
+        tempDirectory: string
+    ): Promise<TrajectoryIngestFrame[]> {
+        if (this.isZipUpload(staged)) {
+            return this.expandZipAndParseFrames(staged, index, trajectoryId, bucket, tempDirectory);
+        }
+
+        return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
+    }
+
+    private async expandZipAndParseFrames(
+        staged: TrajectoryIngestStagedObject,
+        archiveIndex: number,
+        trajectoryId: string,
+        bucket: string,
+        tempDirectory: string
+    ): Promise<TrajectoryIngestFrame[]> {
+        const safeArchiveName = path.basename(staged.originalName || `archive-${archiveIndex}.zip`);
+        const archivePath = path.join(tempDirectory, `archive-${archiveIndex}-${safeArchiveName}`);
+        const extractRoot = path.join(tempDirectory, `archive-${archiveIndex}-frames`);
+        const resolvedExtractRoot = path.resolve(extractRoot);
+
+        await fs.mkdir(extractRoot, { recursive: true });
+
+        const archiveStream = await this.minioService.getObjectStream(bucket, staged.objectKey);
+        await pipeline(archiveStream, createWriteStream(archivePath));
+
+        const directory = await unzipper.Open.file(archivePath);
+        const frames: TrajectoryIngestFrame[] = [];
+
+        for (let entryIndex = 0; entryIndex < directory.files.length; entryIndex += 1) {
+            const entry = directory.files[entryIndex];
+            const basename = path.basename(entry.path);
+
+            if (entry.type === 'Directory' || this.isJunkZipEntry(entry.path, basename)) {
+                continue;
+            }
+
+            const outputPath = path.join(extractRoot, entry.path);
+            const resolvedOutputPath = path.resolve(outputPath);
+            if (!resolvedOutputPath.startsWith(resolvedExtractRoot + path.sep) && resolvedOutputPath !== resolvedExtractRoot) {
+                logger.warn(
+                    { entry: entry.path, trajectoryId },
+                    '@trajectory-ingest: skipping ZIP entry with path traversal'
+                );
+                continue;
+            }
+
+            await fs.mkdir(path.dirname(resolvedOutputPath), { recursive: true });
+            await pipeline(entry.stream(), createWriteStream(resolvedOutputPath));
+
+            const stat = await fs.stat(resolvedOutputPath);
+            if (stat.size === 0) {
+                continue;
+            }
+
+            let metadata;
+            try {
+                metadata = await parseTrajectoryMetadata(resolvedOutputPath);
+            } catch (error) {
+                if (this.isUnsupportedTrajectoryFormatError(error)) {
+                    logger.debug(
+                        `@trajectory-ingest: skipping unsupported ZIP entry trajectoryId=${trajectoryId} entry=${entry.path}`
+                    );
+                    continue;
+                }
+                throw error;
+            }
+
+            const expandedObjectKey = `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`;
+            await this.minioService.putObjectStream({
+                bucket,
+                objectKey: expandedObjectKey,
+                stream: createReadStream(resolvedOutputPath),
+                size: stat.size
+            });
+
+            frames.push({
+                timestep: metadata.timestep,
+                natoms: metadata.natoms,
+                headers: metadata.headers,
+                simulationCell: metadata.simulationCell ?? null,
+                size: stat.size,
+                objectKey: expandedObjectKey
+            });
+        }
+
+        if (frames.length === 0) {
+            throw new Error(`Unsupported trajectory archive: no LAMMPS dump/data frames found in ${staged.originalName}`);
+        }
+
+        await this.minioService.removeObject(bucket, staged.objectKey).catch((error) => {
+            logger.debug(`@trajectory-ingest: archive staging cleanup failed ${staged.objectKey}: ${String(error)}`);
+        });
+
+        logger.info(
+            `@trajectory-ingest: expanded ZIP trajectoryId=${trajectoryId}, archive=${staged.originalName}, frames=${frames.length}`
+        );
+
+        return frames;
+    }
+
+    private isZipUpload(staged: TrajectoryIngestStagedObject): boolean {
+        return staged.originalName.toLowerCase().endsWith('.zip') || staged.objectKey.toLowerCase().endsWith('.zip');
+    }
+
+    private isJunkZipEntry(entryPath: string, basename: string): boolean {
+        return basename.startsWith('.') ||
+            ZIP_ENTRY_JUNK_BASENAMES.has(basename) ||
+            entryPath.split('/').some((part) => ZIP_ENTRY_JUNK_BASENAMES.has(part));
+    }
+
+    private isUnsupportedTrajectoryFormatError(error: unknown): boolean {
+        return error instanceof Error && error.message === 'Unsupported trajectory format';
     }
 
     private async enqueueFrameProcessingJobs(

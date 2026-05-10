@@ -15,6 +15,9 @@ export interface AnalysisJobFactoryContext {
 const buildCommonJobFields = (context: AnalysisJobFactoryContext, timestamp: string) => ({
     name: context.input.pluginDisplayName,
     teamId: context.input.teamId,
+    trajectoryId: context.input.trajectoryId,
+    analysisId: context.input.analysisId,
+    pluginId: context.input.pluginId,
     status: 'queued',
     queueType: ANALYSIS_QUEUE_NAME,
     createdAt: timestamp,

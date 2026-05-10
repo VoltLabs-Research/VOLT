@@ -13,8 +13,14 @@ export interface PluginListingRowDocument {
     [key: string]: unknown;
 };
 
-const pluginListingRowSchema = new Schema({}, {
+const pluginListingRowSchema = new Schema({
+    _id: {
+        type: String,
+        required: true
+    }
+}, {
     collection: 'pluginlistingrows',
+    id: false,
     strict: false
 });
 

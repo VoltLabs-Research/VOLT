@@ -9,8 +9,14 @@ export interface PluginSubListingRowDocument {
     [key: string]: unknown;
 };
 
-const pluginSubListingRowSchema = new Schema({}, {
+const pluginSubListingRowSchema = new Schema({
+    _id: {
+        type: String,
+        required: true
+    }
+}, {
     collection: 'pluginsublistingrows',
+    id: false,
     strict: false
 });
 

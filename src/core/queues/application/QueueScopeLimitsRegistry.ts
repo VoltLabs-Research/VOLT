@@ -57,7 +57,7 @@ export class QueueScopeLimitsRegistry {
         }
 
         const trajectoryKey = trajectoryId ? `${scope}:${trajectoryId}` : null;
-        const teamKey = !trajectoryKey && teamId ? `${scope}:${teamId}` : null;
+        const teamKey = teamId ? `${scope}:${teamId}` : null;
 
         const trajectoryCount = trajectoryKey ? this.byTrajectory.get(trajectoryKey) ?? 0 : 0;
         const teamCount = teamKey ? this.byTeam.get(teamKey) ?? 0 : 0;
