@@ -15,7 +15,6 @@ export interface TeamClusterRuntimeRoleConfig {
 
 export interface TeamClusterQueueScopeLimit {
     maxRunningPerTrajectory: number;
-    maxRunningPerTeam: number;
 }
 
 export interface TeamClusterDaemonQueueScopeLimits {
@@ -23,8 +22,6 @@ export interface TeamClusterDaemonQueueScopeLimits {
     artifactUpload: TeamClusterQueueScopeLimit;
     trajectoryRasterization: TeamClusterQueueScopeLimit;
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
-    cloudUpload: TeamClusterQueueScopeLimit;
-    trajectoryCompression: TeamClusterQueueScopeLimit;
 }
 
 export interface TeamClusterDaemonRoleApplyPayload {
@@ -59,28 +56,16 @@ export interface TeamClusterDaemonRuntimeConfig {
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = {
     analysisProcessing: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
+        maxRunningPerTrajectory: 0
     },
     artifactUpload: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
+        maxRunningPerTrajectory: 0
     },
     trajectoryRasterization: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
+        maxRunningPerTrajectory: 0
     },
     trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    cloudUpload: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    trajectoryCompression: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
+        maxRunningPerTrajectory: 0
     }
 };
 

@@ -23,14 +23,6 @@ const normalizeQueueScopeLimits = (
     trajectoryGlbConversion: {
         ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion,
         ...queueScopeLimits.trajectoryGlbConversion
-    },
-    cloudUpload: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload,
-        ...queueScopeLimits.cloudUpload
-    },
-    trajectoryCompression: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression,
-        ...queueScopeLimits.trajectoryCompression
     }
 });
 
@@ -38,7 +30,6 @@ export class QueueScopeLimitsRegistry {
     private queueScopeLimits: TeamClusterDaemonQueueScopeLimits = DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS;
 
     private readonly byTrajectory = new Map<string, number>();
-    private readonly byTeam = new Map<string, number>();
 
     readonly apply = (queueScopeLimits: TeamClusterDaemonQueueScopeLimits): void => {
         this.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
@@ -46,38 +37,27 @@ export class QueueScopeLimitsRegistry {
 
     readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => this.queueScopeLimits;
 
-    tryAcquire(
-        scope: QueueScopeKey,
-        trajectoryId: string | undefined,
-        teamId: string | undefined
-    ): ScopeRelease | null {
+    tryAcquire(scope: QueueScopeKey, trajectoryId: string | undefined): ScopeRelease | null {
         const limit = this.queueScopeLimits[scope];
         if (!limit) {
             return () => undefined;
         }
 
         const trajectoryKey = trajectoryId ? `${scope}:${trajectoryId}` : null;
-        const teamKey = teamId ? `${scope}:${teamId}` : null;
 
         const trajectoryCount = trajectoryKey ? this.byTrajectory.get(trajectoryKey) ?? 0 : 0;
-        const teamCount = teamKey ? this.byTeam.get(teamKey) ?? 0 : 0;
 
         if (limit.maxRunningPerTrajectory > 0 && trajectoryKey && trajectoryCount >= limit.maxRunningPerTrajectory) {
             return null;
         }
-        if (limit.maxRunningPerTeam > 0 && teamKey && teamCount >= limit.maxRunningPerTeam) {
-            return null;
-        }
 
         if (trajectoryKey) this.byTrajectory.set(trajectoryKey, trajectoryCount + 1);
-        if (teamKey) this.byTeam.set(teamKey, teamCount + 1);
 
         let released = false;
         return () => {
             if (released) return;
             released = true;
             this.decrement(this.byTrajectory, trajectoryKey);
-            this.decrement(this.byTeam, teamKey);
         };
     }
 

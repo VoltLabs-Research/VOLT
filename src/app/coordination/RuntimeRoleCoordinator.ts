@@ -33,10 +33,21 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
 
 const normalizeQueueConcurrency = (
     queueConcurrency: Partial<TeamClusterDaemonQueueConcurrency> | undefined
-): TeamClusterDaemonQueueConcurrency => ({
-    ...DEFAULT_QUEUE_CONCURRENCY,
-    ...queueConcurrency
-});
+): TeamClusterDaemonQueueConcurrency => {
+    const source = {
+        ...DEFAULT_QUEUE_CONCURRENCY,
+        ...queueConcurrency
+    };
+
+    return {
+        analysis: source.analysis,
+        rasterizer: source.rasterizer,
+        glbPreprocessing: source.glbPreprocessing,
+        artifactUpload: source.artifactUpload,
+        sshImport: source.sshImport,
+        pluginWarmup: source.pluginWarmup
+    };
+};
 
 const normalizeQueueScopeLimits = (
     queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits> | undefined
@@ -56,14 +67,6 @@ const normalizeQueueScopeLimits = (
     trajectoryGlbConversion: {
         ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryGlbConversion,
         ...queueScopeLimits?.trajectoryGlbConversion
-    },
-    cloudUpload: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.cloudUpload,
-        ...queueScopeLimits?.cloudUpload
-    },
-    trajectoryCompression: {
-        ...DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS.trajectoryCompression,
-        ...queueScopeLimits?.trajectoryCompression
     }
 });
 
@@ -122,7 +125,7 @@ export class RuntimeRoleCoordinator {
         this.trajectoryRasterWorker.setConcurrency(this.snapshot.queueConcurrency.rasterizer);
 
         if (this.computeWorkersRunning) {
-            this.queueConcurrencyCoordinator.apply(queueConcurrency);
+            this.queueConcurrencyCoordinator.apply(this.snapshot.queueConcurrency);
         }
 
         return {

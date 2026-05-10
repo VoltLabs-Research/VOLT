@@ -93,12 +93,12 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
             return this.process(payload, bullJob);
         }
 
-        const { trajectoryId, teamId } = payload as Partial<JobIdentity>;
-        if (!trajectoryId && !teamId) {
+        const { trajectoryId } = payload as Partial<JobIdentity>;
+        if (!trajectoryId) {
             return this.process(payload, bullJob);
         }
 
-        const release = registry.tryAcquire(scopeKey, trajectoryId, teamId);
+        const release = registry.tryAcquire(scopeKey, trajectoryId);
         if (!release) {
             await bullJob.moveToDelayed(Date.now() + nextScopeDeferredRetryMs(), bullJob.token);
             throw new DelayedError();
