@@ -4,7 +4,6 @@ import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyVa
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
 import Divider from '@/shared/presentation/primitives/Divider';
-import Heading from '@/shared/presentation/primitives/Heading';
 import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';

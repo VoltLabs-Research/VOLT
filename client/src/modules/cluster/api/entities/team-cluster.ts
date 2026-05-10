@@ -49,11 +49,11 @@ export interface TeamClusterQueueConcurrency {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
+    pluginWarmup: number;
 }
 
 export interface TeamClusterQueueScopeLimit {
     maxRunningPerTrajectory: number;
-    maxRunningPerTeam: number;
 }
 
 export interface TeamClusterQueueScopeLimits {
@@ -61,8 +61,6 @@ export interface TeamClusterQueueScopeLimits {
     artifactUpload: TeamClusterQueueScopeLimit;
     trajectoryRasterization: TeamClusterQueueScopeLimit;
     trajectoryGlbConversion: TeamClusterQueueScopeLimit;
-    cloudUpload: TeamClusterQueueScopeLimit;
-    trajectoryCompression: TeamClusterQueueScopeLimit;
 }
 
 export interface TeamClusterRoleDraining {

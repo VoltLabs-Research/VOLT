@@ -1,5 +1,7 @@
 import TeamCluster, {
     TeamClusterDaemonServiceProps,
+    TeamClusterQueueConcurrencyProps,
+    TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterServiceProps,
     TeamClusterServicesProps,
@@ -40,11 +42,11 @@ export interface TeamClusterQueueConcurrencyDTO {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
+    pluginWarmup: number;
 }
 
 export interface TeamClusterQueueScopeLimitDTO {
     maxRunningPerTrajectory: number;
-    maxRunningPerTeam: number;
 }
 
 export interface TeamClusterQueueScopeLimitsDTO {
@@ -52,8 +54,6 @@ export interface TeamClusterQueueScopeLimitsDTO {
     artifactUpload: TeamClusterQueueScopeLimitDTO;
     trajectoryRasterization: TeamClusterQueueScopeLimitDTO;
     trajectoryGlbConversion: TeamClusterQueueScopeLimitDTO;
-    cloudUpload: TeamClusterQueueScopeLimitDTO;
-    trajectoryCompression: TeamClusterQueueScopeLimitDTO;
 }
 
 export interface TeamClusterRuntimeRoleConfigDTO {
@@ -101,6 +101,34 @@ const toServiceDTO = (service: TeamClusterServiceProps | TeamClusterDaemonServic
     };
 };
 
+export const toTeamClusterQueueConcurrencyDTO = (
+    queueConcurrency: TeamClusterQueueConcurrencyProps
+): TeamClusterQueueConcurrencyDTO => ({
+    analysis: queueConcurrency.analysis,
+    rasterizer: queueConcurrency.rasterizer,
+    glbPreprocessing: queueConcurrency.glbPreprocessing,
+    artifactUpload: queueConcurrency.artifactUpload,
+    sshImport: queueConcurrency.sshImport,
+    pluginWarmup: queueConcurrency.pluginWarmup
+});
+
+export const toTeamClusterQueueScopeLimitsDTO = (
+    queueScopeLimits: TeamClusterQueueScopeLimitsProps
+): TeamClusterQueueScopeLimitsDTO => ({
+    analysisProcessing: {
+        maxRunningPerTrajectory: queueScopeLimits.analysisProcessing.maxRunningPerTrajectory
+    },
+    artifactUpload: {
+        maxRunningPerTrajectory: queueScopeLimits.artifactUpload.maxRunningPerTrajectory
+    },
+    trajectoryRasterization: {
+        maxRunningPerTrajectory: queueScopeLimits.trajectoryRasterization.maxRunningPerTrajectory
+    },
+    trajectoryGlbConversion: {
+        maxRunningPerTrajectory: queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory
+    }
+});
+
 export const toTeamClusterDTO = (
     teamCluster: TeamCluster,
     options: {
@@ -144,29 +172,8 @@ export const toTeamClusterDTO = (
             mongodb: toServiceDTO(services.mongodb),
             daemon: toServiceDTO(services.daemon)
         },
-        queueConcurrency: {
-            ...teamCluster.props.queueConcurrency
-        },
-        queueScopeLimits: {
-            analysisProcessing: {
-                ...teamCluster.props.queueScopeLimits.analysisProcessing
-            },
-            artifactUpload: {
-                ...teamCluster.props.queueScopeLimits.artifactUpload
-            },
-            trajectoryRasterization: {
-                ...teamCluster.props.queueScopeLimits.trajectoryRasterization
-            },
-            trajectoryGlbConversion: {
-                ...teamCluster.props.queueScopeLimits.trajectoryGlbConversion
-            },
-            cloudUpload: {
-                ...teamCluster.props.queueScopeLimits.cloudUpload
-            },
-            trajectoryCompression: {
-                ...teamCluster.props.queueScopeLimits.trajectoryCompression
-            }
-        },
+        queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
+        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(teamCluster.props.queueScopeLimits),
         roleConfig: {
             desiredRole: roleConfig.desiredRole,
             effectiveRole: roleConfig.effectiveRole,

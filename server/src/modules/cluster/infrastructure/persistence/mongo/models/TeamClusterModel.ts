@@ -81,25 +81,7 @@ const queueConcurrencySchema = new Schema({
         type: Number,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: 2
-    },
-    trajectoryBackgroundProcessor: {
-        type: Number,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: 5
-    },
-    trajectoryCompression: {
-        type: Number,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: 1
-    },
-    cloudUpload: {
-        type: Number,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        min: [1, TEAM_CLUSTER_VALIDATION_ERROR],
-        default: 5
+        default: 4
     }
 }, {
     _id: false
@@ -107,11 +89,6 @@ const queueConcurrencySchema = new Schema({
 
 const queueScopeLimitSchema = new Schema({
     maxRunningPerTrajectory: {
-        type: Number,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        min: [0, TEAM_CLUSTER_VALIDATION_ERROR]
-    },
-    maxRunningPerTeam: {
         type: Number,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         min: [0, TEAM_CLUSTER_VALIDATION_ERROR]
@@ -134,14 +111,6 @@ const queueScopeLimitsSchema = new Schema({
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     },
     trajectoryGlbConversion: {
-        type: queueScopeLimitSchema,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
-    },
-    cloudUpload: {
-        type: queueScopeLimitSchema,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
-    },
-    trajectoryCompression: {
         type: queueScopeLimitSchema,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR]
     }

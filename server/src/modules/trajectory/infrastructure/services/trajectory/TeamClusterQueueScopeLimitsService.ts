@@ -9,9 +9,7 @@ export type TeamClusterScopedQueueLimitKey =
     | 'analysisProcessing'
     | 'artifactUpload'
     | 'trajectoryRasterization'
-    | 'trajectoryGlbConversion'
-    | 'cloudUpload'
-    | 'trajectoryCompression';
+    | 'trajectoryGlbConversion';
 
 @Singleton()
 export default class TeamClusterQueueScopeLimitsService {
@@ -30,7 +28,7 @@ export default class TeamClusterQueueScopeLimitsService {
         }
 
         return {
-            ...teamCluster.props.queueScopeLimits[queueKey]
+            maxRunningPerTrajectory: teamCluster.props.queueScopeLimits[queueKey].maxRunningPerTrajectory
         };
     }
 
@@ -42,22 +40,16 @@ export default class TeamClusterQueueScopeLimitsService {
 
         return {
             analysisProcessing: {
-                ...teamCluster.props.queueScopeLimits.analysisProcessing
+                maxRunningPerTrajectory: teamCluster.props.queueScopeLimits.analysisProcessing.maxRunningPerTrajectory
             },
             artifactUpload: {
-                ...teamCluster.props.queueScopeLimits.artifactUpload
+                maxRunningPerTrajectory: teamCluster.props.queueScopeLimits.artifactUpload.maxRunningPerTrajectory
             },
             trajectoryRasterization: {
-                ...teamCluster.props.queueScopeLimits.trajectoryRasterization
+                maxRunningPerTrajectory: teamCluster.props.queueScopeLimits.trajectoryRasterization.maxRunningPerTrajectory
             },
             trajectoryGlbConversion: {
-                ...teamCluster.props.queueScopeLimits.trajectoryGlbConversion
-            },
-            cloudUpload: {
-                ...teamCluster.props.queueScopeLimits.cloudUpload
-            },
-            trajectoryCompression: {
-                ...teamCluster.props.queueScopeLimits.trajectoryCompression
+                maxRunningPerTrajectory: teamCluster.props.queueScopeLimits.trajectoryGlbConversion.maxRunningPerTrajectory
             }
         };
     }
