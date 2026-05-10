@@ -18,6 +18,7 @@ export interface FieldConfig {
 
 export interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
     title?: string;
+    titleClassName?: string;
     items: T[];
     fields: FieldConfig[];
     emptyMessage?: string;
@@ -33,6 +34,7 @@ export interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
 
 const EditableKeyValueCard = <T extends Record<string, unknown>>({
     title,
+    titleClassName,
     items,
     fields,
     emptyMessage = 'No items',
@@ -122,7 +124,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
             </span>
             {showHeader && (
                 <Row justify='between' className='mb-1'>
-                    {title && <Heading level={3} weight='bold' id={headingId}>{title}</Heading>}
+                    {title && <Heading level={3} weight='bold' id={headingId} className={titleClassName}>{title}</Heading>}
                     <Box display='flex' gap='05'>
                         {alwaysEditing && addButtonPosition === 'top' && (
                             <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={handleAdd}>

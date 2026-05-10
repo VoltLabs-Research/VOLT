@@ -1,5 +1,9 @@
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
-import type { TeamClusterReverseChannelStreamAttachment, TeamClusterTunnelOpenRequest } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import type {
+    TeamClusterReverseChannelStreamAttachment,
+    TeamClusterTunnelOpenOptions,
+    TeamClusterTunnelOpenRequest
+} from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
 import TeamClusterReverseChannelService from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
 import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
 import { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
@@ -427,27 +431,35 @@ export default class TeamClusterDaemonClient {
     async openTunnel(
         teamClusterId: string,
         exposureId: string,
-        accessMode: TeamClusterServiceExposureAccessMode
+        accessMode: TeamClusterServiceExposureAccessMode,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
-        request: TeamClusterTunnelOpenRequest
+        request: TeamClusterTunnelOpenRequest,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
         target: string | TeamClusterTunnelOpenRequest,
-        accessMode?: TeamClusterServiceExposureAccessMode
+        accessModeOrOptions?: TeamClusterServiceExposureAccessMode | TeamClusterTunnelOpenOptions,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream> {
         if (typeof target === 'string') {
+            const accessMode = accessModeOrOptions as TeamClusterServiceExposureAccessMode | undefined;
             if (accessMode === undefined) {
                 throw ApplicationError.internalServerError('Tunnel access mode is required for exposure tunnel requests');
             }
 
-            return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target, accessMode);
+            return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target, accessMode, options);
         }
 
-        return this.teamClusterReverseChannelService.openTunnel(teamClusterId, target);
+        return this.teamClusterReverseChannelService.openTunnel(
+            teamClusterId,
+            target,
+            accessModeOrOptions as TeamClusterTunnelOpenOptions | undefined
+        );
     }
 }

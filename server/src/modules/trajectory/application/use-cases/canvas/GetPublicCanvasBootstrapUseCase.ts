@@ -26,7 +26,9 @@ const toBootstrapTrajectory = (trajectory: Trajectory, frames: TrajectoryFrame[]
         frames: frames.map((frame) => ({
             timestep: frame.timestep,
             natoms: frame.natoms,
-            simulationCell: String(frame.simulationCell)
+            simulationCell: (typeof frame.simulationCell === 'string'
+                ? frame.simulationCell
+                : frame.simulationCell?._id) ?? ''
         }))
     };
 };

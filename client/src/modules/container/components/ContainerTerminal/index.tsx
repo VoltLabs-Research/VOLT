@@ -51,7 +51,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
             return 'Terminal error';
         };
     }, []);
-    const { handleTerminalData } = useSocketTerminalSession({
+    const { handleTerminalData, handleTerminalResize } = useSocketTerminalSession({
         sessionKey: container._id,
         terminalRef,
         attachEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.ATTACH,
@@ -61,6 +61,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
         dataEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.DATA,
         errorEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.ERROR,
         inputEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.INPUT,
+        resizeEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.RESIZE,
         resolveErrorMessage
     });
 
@@ -84,7 +85,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
                 </Row>
             )}
             <Box className='container-terminal-body p-relative' flex='1' overflow='hidden'>
-                <Terminal ref={terminalRef} onData={handleTerminalData} />
+                <Terminal ref={terminalRef} onData={handleTerminalData} onResize={handleTerminalResize} />
             </Box>
         </Stack>
     );

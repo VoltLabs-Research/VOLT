@@ -30,7 +30,8 @@ const TrajectoryFrameSchema: Schema<TrajectoryFrameDocument> = new Schema({
     simulationCell: {
         type: Schema.Types.ObjectId,
         ref: 'SimulationCell',
-        required: true
+        required: false,
+        default: undefined
     }
 }, {
     timestamps: false,

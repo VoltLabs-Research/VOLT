@@ -27,21 +27,6 @@
     height: 200px;
 }
 
-.cover-container::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-overlay) 58%, transparent) 0%,
-        transparent 28%,
-        transparent 64%,
-        color-mix(in srgb, var(--color-overlay) 72%, transparent) 100%
-    );
-    pointer-events: none;
-}
-
 .cover-image {
     object-fit: cover;
     display: block;

@@ -1,5 +1,5 @@
 import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
-import { BookOpen, Braces, FileCode, Home, PlugZap } from 'lucide-react';
+import { BookOpen, Braces, FileCode, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -30,11 +30,6 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
 
     const menuOptions = useMemo<MenuOption[]>(() => {
         return [
-            {
-                label: 'Startpage',
-                icon: Home,
-                onClick: () => navigate('/start')
-            },
             {
                 label: 'Connect new cluster',
                 icon: PlugZap,

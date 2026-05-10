@@ -1,13 +1,13 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/primitives/Button';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import Heading from '@/shared/presentation/primitives/Heading';
+import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
+import Table from '@/shared/presentation/primitives/Table';
 import Text from '@/shared/presentation/primitives/Text';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
+import type { Column } from '@/shared/presentation/primitives/Table';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterQueueConcurrencyInputDTO,
@@ -25,7 +25,6 @@ interface QueueFieldDefinition {
 interface QueueScopeFieldDefinition {
     key: keyof TeamClusterQueueScopeLimitsInputDTO;
     label: string;
-    description: string;
 }
 
 type QueueConcurrencyValues = Record<keyof TeamClusterQueueConcurrencyInputDTO, string>;
@@ -43,119 +42,36 @@ interface ClusterQueueConcurrencyModalProps {
 
 const MIN_CONCURRENCY = 1;
 const MIN_SCOPE_LIMIT = 0;
-const RECOMMENDED_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyInputDTO = {
-    analysis: 8,
-    rasterizer: 5,
-    glbPreprocessing: 8,
-    artifactUpload: 8,
-    sshImport: 2
-};
-const RECOMMENDED_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsInputDTO = {
-    analysisProcessing: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    artifactUpload: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    trajectoryRasterization: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    cloudUpload: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    },
-    trajectoryCompression: {
-        maxRunningPerTrajectory: 0,
-        maxRunningPerTeam: 0
-    }
-};
 
 const QUEUE_FIELDS: QueueFieldDefinition[] = [
-    {
-        key: 'analysis',
-        label: 'Analysis',
-        description: 'Workflow analysis jobs'
-    },
-    {
-        key: 'rasterizer',
-        label: 'Rasterizer',
-        description: 'Trajectory preview generation'
-    },
-    {
-        key: 'glbPreprocessing',
-        label: 'GLB preprocessing',
-        description: 'Trajectory model preprocessing'
-    },
-    {
-        key: 'artifactUpload',
-        label: 'Artifact upload',
-        description: 'Analysis artifact upload jobs'
-    },
-    {
-        key: 'sshImport',
-        label: 'SSH import',
-        description: 'Remote trajectory imports'
-    }
+    { key: 'analysis', label: 'Analysis', description: 'Workflow analysis jobs' },
+    { key: 'rasterizer', label: 'Rasterizer', description: 'Trajectory preview generation' },
+    { key: 'glbPreprocessing', label: 'GLB preprocessing', description: 'Trajectory model preprocessing' },
+    { key: 'artifactUpload', label: 'Artifact upload', description: 'Analysis artifact upload jobs' },
+    { key: 'sshImport', label: 'SSH import', description: 'Remote trajectory imports' }
 ];
 
 const QUEUE_SCOPE_FIELDS: QueueScopeFieldDefinition[] = [
-    {
-        key: 'analysisProcessing',
-        label: 'Analysis processing',
-        description: 'Workflow analysis execution slots'
-    },
-    {
-        key: 'artifactUpload',
-        label: 'Artifact upload',
-        description: 'Artifact transfer jobs produced by analyses'
-    },
-    {
-        key: 'trajectoryRasterization',
-        label: 'Rasterization',
-        description: 'Trajectory preview generation jobs'
-    },
-    {
-        key: 'trajectoryGlbConversion',
-        label: 'GLB preprocessing',
-        description: 'Trajectory model preprocessing jobs'
-    },
-    {
-        key: 'cloudUpload',
-        label: 'Cloud upload',
-        description: 'Server-side dump upload jobs for the selected cluster'
-    },
-    {
-        key: 'trajectoryCompression',
-        label: 'Trajectory compression',
-        description: 'Server-side zstd compression jobs for the selected cluster'
-    }
+    { key: 'analysisProcessing', label: 'Analysis processing' },
+    { key: 'artifactUpload', label: 'Artifact upload' },
+    { key: 'trajectoryRasterization', label: 'Rasterization' },
+    { key: 'trajectoryGlbConversion', label: 'GLB preprocessing' },
+    { key: 'cloudUpload', label: 'Cloud upload' },
+    { key: 'trajectoryCompression', label: 'Trajectory compression' }
 ];
 const QUEUE_SCOPE_LIMIT_KEYS = ['maxRunningPerTrajectory', 'maxRunningPerTeam'] as const;
 
 export const CLUSTER_QUEUE_CONCURRENCY_MODAL_ID = 'cluster-queue-concurrency-modal';
 
-const createQueueValues = (source?: TeamClusterQueueConcurrencyInputDTO): QueueConcurrencyValues => {
+const createInitialValues = (teamCluster: TeamCluster | null): QueueConcurrencyValues => {
+    const source = teamCluster?.queueConcurrency;
     return Object.fromEntries(
         QUEUE_FIELDS.map((field) => [field.key, String(source?.[field.key] ?? '')])
     ) as QueueConcurrencyValues;
 };
 
-const createInitialValues = (teamCluster: TeamCluster | null): QueueConcurrencyValues => {
-    return createQueueValues(teamCluster?.queueConcurrency);
-};
-
-const createRecommendedValues = (): QueueConcurrencyValues => {
-    return createQueueValues(RECOMMENDED_QUEUE_CONCURRENCY);
-};
-
-const createScopeValues = (source?: TeamClusterQueueScopeLimitsInputDTO): QueueScopeValues => {
+const createInitialScopeValues = (teamCluster: TeamCluster | null): QueueScopeValues => {
+    const source = teamCluster?.queueScopeLimits;
     return Object.fromEntries(
         QUEUE_SCOPE_FIELDS.map((field) => [
             field.key,
@@ -164,14 +80,6 @@ const createScopeValues = (source?: TeamClusterQueueScopeLimitsInputDTO): QueueS
             )
         ])
     ) as QueueScopeValues;
-};
-
-const createInitialScopeValues = (teamCluster: TeamCluster | null): QueueScopeValues => {
-    return createScopeValues(teamCluster?.queueScopeLimits);
-};
-
-const createRecommendedScopeValues = (): QueueScopeValues => {
-    return createScopeValues(RECOMMENDED_QUEUE_SCOPE_LIMITS);
 };
 
 const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQueueConcurrencyModalProps) => {
@@ -187,12 +95,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
     }, [teamCluster]);
 
     const clusterName = teamCluster?.name ?? 'cluster';
-
-    const handleApplyRecommended = () => {
-        setValues(createRecommendedValues());
-        setScopeValues(createRecommendedScopeValues());
-        setError(undefined);
-    };
 
     const handleClose = () => {
         setValues(createInitialValues(teamCluster));
@@ -318,6 +220,46 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         }
     };
 
+    const scopeColumns: Column<QueueScopeFieldDefinition>[] = [
+        {
+            key: 'label',
+            header: 'Queue',
+            render: (row) => <Text as='span' size='sm' weight='medium'>{row.label}</Text>
+        },
+        {
+            key: 'maxPerTrajectory',
+            header: 'Max / trajectory',
+            render: (row) => (
+                <input
+                    type='number'
+                    min={MIN_SCOPE_LIMIT}
+                    step={1}
+                    inputMode='numeric'
+                    className='form-field-input radius-sm'
+                    style={{ width: '5rem' }}
+                    value={scopeValues[row.key].maxRunningPerTrajectory}
+                    onChange={(e) => handleScopeFieldChange(row.key, 'maxRunningPerTrajectory', e.target.value)}
+                />
+            )
+        },
+        {
+            key: 'maxPerTeam',
+            header: 'Max / team',
+            render: (row) => (
+                <input
+                    type='number'
+                    min={MIN_SCOPE_LIMIT}
+                    step={1}
+                    inputMode='numeric'
+                    className='form-field-input radius-sm'
+                    style={{ width: '5rem' }}
+                    value={scopeValues[row.key].maxRunningPerTeam}
+                    onChange={(e) => handleScopeFieldChange(row.key, 'maxRunningPerTeam', e.target.value)}
+                />
+            )
+        }
+    ];
+
     const footer = (
         <ClusterModalActionFooter
             confirmLabel='Save queue settings'
@@ -328,23 +270,8 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
     );
 
     return (
-        <Modal id={CLUSTER_QUEUE_CONCURRENCY_MODAL_ID} title={`Queue settings for ${clusterName}`} description='Edit per-cluster worker concurrency and execution scope limits for runtime queues.' footer={footer} onClose={handleClose}>
+        <Modal id={CLUSTER_QUEUE_CONCURRENCY_MODAL_ID} title={`Queue settings for ${clusterName}`} description='Configure worker concurrency for runtime queues.' footer={footer} onClose={handleClose}>
             <Stack gap='1' p='1-5'>
-                <Stack gap='05'>
-                    <Heading level={3} size='md' weight='medium' tone='secondary'>Worker concurrency</Heading>
-                    <Row gap='075' wrap>
-                        <Text as='p' size='sm' tone='muted'>Use the recommended preset to auto-fill balanced high-throughput limits for this cluster.</Text>
-                        <Button
-                            variant='outline'
-                            intent='brand'
-                            size='sm'
-                            onClick={handleApplyRecommended}
-                            disabled={isSubmitting}
-                        >
-                            Apply recommended
-                        </Button>
-                    </Row>
-                </Stack>
                 <Stack gap='1'>
                     {QUEUE_FIELDS.map((field) => (
                         <Stack key={field.key} gap='025'>
@@ -363,42 +290,20 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                         </Stack>
                     ))}
                 </Stack>
-                <Stack gap='05' mt='05'>
-                    <Heading level={3} size='md' weight='medium' tone='secondary'>Execution scope limits</Heading>
-                    <Text as='p' size='sm' tone='muted'>Limits are enforced per cluster. Use 0 for no limit.</Text>
-                </Stack>
-                <Stack gap='1'>
-                    {QUEUE_SCOPE_FIELDS.map((field) => (
-                        <Stack key={field.key} gap='05'>
-                            <Heading level={3} size='md' weight='medium' tone='secondary'>{field.label}</Heading>
-                            <Text as='p' size='sm' tone='muted'>{field.description}</Text>
-                            <Row align='start' gap='1' wrap>
-                                <FormFieldRHF
-                                    label='Max per trajectory'
-                                    type='number'
-                                    value={scopeValues[field.key].maxRunningPerTrajectory}
-                                    onChange={(event) => handleScopeFieldChange(field.key, 'maxRunningPerTrajectory', event.target.value)}
-                                    inputProps={{
-                                        min: MIN_SCOPE_LIMIT,
-                                        step: 1,
-                                        inputMode: 'numeric'
-                                    }}
-                                />
-                                <FormFieldRHF
-                                    label='Max per team'
-                                    type='number'
-                                    value={scopeValues[field.key].maxRunningPerTeam}
-                                    onChange={(event) => handleScopeFieldChange(field.key, 'maxRunningPerTeam', event.target.value)}
-                                    inputProps={{
-                                        min: MIN_SCOPE_LIMIT,
-                                        step: 1,
-                                        inputMode: 'numeric'
-                                    }}
-                                />
-                            </Row>
-                        </Stack>
-                    ))}
-                </Stack>
+                <CollapsibleSection
+                    title='Execution scope limits'
+                    titleAs='h3'
+                    noSpacing
+                >
+                    <Stack gap='05' mt='05'>
+                        <Text as='p' size='sm' tone='muted'>Per-cluster limits. Use 0 for no limit.</Text>
+                        <Table
+                            columns={scopeColumns}
+                            data={QUEUE_SCOPE_FIELDS}
+                            getRowKey={(row) => row.key}
+                        />
+                    </Stack>
+                </CollapsibleSection>
                 {error && (
                     <Text as='p' size='md' className='color-danger'>{error}</Text>
                 )}

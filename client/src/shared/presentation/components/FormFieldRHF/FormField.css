@@ -258,6 +258,25 @@
     box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
+.form-field-canvas-input--compact {
+    width: 72px;
+    font-size: 0.7rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    padding: 0 0.4rem;
+    transition: border-color 0.15s ease;
+}
+
+.form-field-canvas-input--compact:hover {
+    border-color: var(--color-border-strong);
+}
+
+.form-field-canvas-input--compact:focus-visible {
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .form-field-container,
     .form-field-input,

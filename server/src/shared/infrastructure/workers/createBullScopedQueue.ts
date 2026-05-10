@@ -79,6 +79,13 @@ export interface BullScopedQueueHandle<TJobData, TResult> {
     close(): Promise<void>;
 }
 
+const isFinalFailedAttempt = <TJobData extends object>(job: Job<TJobData>): boolean => {
+    const attempts = typeof job.opts.attempts === 'number' && job.opts.attempts > 0
+        ? job.opts.attempts
+        : 1;
+    return job.attemptsMade >= attempts;
+};
+
 export interface BullScopedQueueController<TJobData, TResult> {
     start(): void;
     getHandle(): BullScopedQueueHandle<TJobData, TResult> | null;
@@ -182,6 +189,7 @@ export const createBullScopedQueue = <TJobData extends object, TResult>(
         worker.on('failed', async (job, error) => {
             if (!job) return;
             if (error instanceof DelayedError) return;
+            if (!isFinalFailedAttempt(job)) return;
 
             if (options.onJobFailed) {
                 await runListenerStep('run onJobFailed handler', async () => {
