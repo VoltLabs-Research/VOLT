@@ -23,10 +23,8 @@ enum TempStoragePolicyMatchMode {
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const TEMP_STORAGE_CLEANUP_INTERVAL_MS = HOUR_IN_MS;
-const TRAJECTORY_CACHE_MAX_AGE_MS = 48 * HOUR_IN_MS;
 const PLUGIN_BINARY_CACHE_MAX_AGE_MS = 7 * 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_MAX_AGE_MS = 2 * HOUR_IN_MS;
-const TRAJECTORY_UPLOAD_WORKDIR_MAX_AGE_MS = 24 * HOUR_IN_MS;
 const LATEX_WORKDIR_MAX_AGE_MS = 24 * HOUR_IN_MS;
 const PLUGIN_BINARY_TEMP_SEGMENT = '.tmp.';
 
@@ -52,28 +50,12 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
         this.tempRootPath = this.tempFileService.rootPath;
         this.policies = [
             {
-                name: 'trajectory-cache',
-                matcher: {
-                    value: 'trajectory-cache',
-                    mode: TempStoragePolicyMatchMode.Exact
-                },
-                execute: this.cleanupTrajectoryCache.bind(this)
-            },
-            {
                 name: 'plugin-bin-cache',
                 matcher: {
                     value: 'plugin-bin-cache',
                     mode: TempStoragePolicyMatchMode.Exact
                 },
                 execute: this.cleanupPluginBinaryCache.bind(this)
-            },
-            {
-                name: 'trajectory-uploads',
-                matcher: {
-                    value: 'trajectory-uploads',
-                    mode: TempStoragePolicyMatchMode.Exact
-                },
-                execute: this.cleanupTrajectoryUploads.bind(this)
             },
             {
                 name: 'latex-compile',
@@ -149,45 +131,6 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
         });
     }
 
-    private async cleanupTrajectoryCache(cacheRootPath: string): Promise<void> {
-        const cacheEntries = await fs.readdir(cacheRootPath, { withFileTypes: true }).catch(() => []);
-
-        for (const entry of cacheEntries) {
-            const entryPath = path.join(cacheRootPath, entry.name);
-            await this.cleanupTrajectoryCacheEntry(entryPath);
-        }
-    }
-
-    private async cleanupTrajectoryCacheEntry(entryPath: string): Promise<boolean> {
-        const stats = await this.safeLstat(entryPath);
-        if (!stats) {
-            return false;
-        }
-
-        if (!stats.isDirectory()) {
-            if (this.isExpired(toMilliseconds(stats.mtimeMs), TRAJECTORY_CACHE_MAX_AGE_MS)) {
-                return this.deleteManagedPath(entryPath, false);
-            }
-
-            return false;
-        }
-
-        const childEntries = await fs.readdir(entryPath, { withFileTypes: true }).catch(() => []);
-        let deletedStaleChild = false;
-
-        for (const childEntry of childEntries) {
-            const childPath = path.join(entryPath, childEntry.name);
-            const childDeleted = await this.cleanupTrajectoryCacheEntry(childPath);
-            deletedStaleChild = childDeleted || deletedStaleChild;
-        }
-
-        if (await this.isDirectoryEmpty(entryPath) && (deletedStaleChild || this.isExpired(toMilliseconds(stats.mtimeMs), TRAJECTORY_CACHE_MAX_AGE_MS))) {
-            return this.deleteManagedPath(entryPath, true);
-        }
-
-        return deletedStaleChild;
-    }
-
     private async cleanupPluginBinaryCache(cacheRootPath: string): Promise<void> {
         const cacheEntries = await fs.readdir(cacheRootPath, { withFileTypes: true }).catch(() => []);
 
@@ -209,10 +152,6 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
 
             await this.deleteManagedPath(entryPath, false);
         }
-    }
-
-    private async cleanupTrajectoryUploads(uploadsRootPath: string): Promise<void> {
-        await this.cleanupStaleChildren(uploadsRootPath, TRAJECTORY_UPLOAD_WORKDIR_MAX_AGE_MS);
     }
 
     private async cleanupLatexWorkdir(workdirPath: string): Promise<void> {

@@ -56,9 +56,11 @@ const toPopulatedSimulationCell = (value: SimulationCellPopulated): TrajectoryFr
 const mapLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => ({
     timestep: doc.timestep,
     natoms: doc.natoms,
-    simulationCell: isPopulated(doc.simulationCell)
-        ? toPopulatedSimulationCell(doc.simulationCell)
-        : doc.simulationCell.toString()
+    simulationCell: doc.simulationCell
+        ? (isPopulated(doc.simulationCell)
+            ? toPopulatedSimulationCell(doc.simulationCell)
+            : doc.simulationCell.toString())
+        : undefined
 });
 
 @Singleton()
@@ -129,15 +131,21 @@ export default class TrajectoryFrameRepository {
         if (frames.length === 0) return;
 
         const documents = frames.map((frame) => {
-            const simulationCellId = typeof frame.simulationCell === 'string'
-                ? frame.simulationCell
-                : frame.simulationCell._id;
-            return {
+            const doc: Record<string, unknown> = {
                 trajectoryId: toObjectId(trajectoryId),
                 timestep: frame.timestep,
-                natoms: frame.natoms,
-                simulationCell: toObjectId(simulationCellId)
+                natoms: frame.natoms
             };
+
+            const cellId = typeof frame.simulationCell === 'string'
+                ? frame.simulationCell
+                : frame.simulationCell?._id;
+
+            if (cellId) {
+                doc.simulationCell = toObjectId(cellId);
+            }
+
+            return doc;
         });
 
         // Why: `ordered: false` lets MongoDB finish the rest of the batch when a

@@ -203,6 +203,17 @@ export interface TeamClusterDaemonTunnelDataPayload {
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
+    sequence?: number;
+    requiresAck?: boolean;
+}
+
+/**
+ * Flow-control acknowledgement for bytes accepted by the opposite tunnel end.
+ */
+export interface TeamClusterDaemonTunnelDrainPayload {
+    type: 'tunnel-drain';
+    sessionId: string;
+    sequence: number;
 }
 
 /**
@@ -382,6 +393,7 @@ export type TeamClusterDaemonMessage =
     | TeamClusterDaemonTunnelOpenPayload
     | TeamClusterDaemonTunnelStatePayload
     | TeamClusterDaemonTunnelDataPayload
+    | TeamClusterDaemonTunnelDrainPayload
     | TeamClusterDaemonTunnelClosePayload
     | TeamClusterDaemonRuntimeProgressPayload
     | TeamClusterDaemonServerEventMessage;

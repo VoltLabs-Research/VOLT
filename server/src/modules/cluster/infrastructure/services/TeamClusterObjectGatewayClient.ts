@@ -2,6 +2,7 @@ import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/m
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
@@ -126,9 +127,10 @@ const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 const DEFAULT_LIST_LIMIT = 100;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 const TOKEN_TTL_SECONDS = 5 * 60;
-const HTTP_PROXY_SESSION_TTL_MS = 30_000;
-const HTTP_PROXY_REQUEST_TIMEOUT_MS = 120_000;
-const MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER = 4;
+const HTTP_PROXY_SESSION_TTL_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_SESSION_TTL_MS', 30_000);
+const HTTP_PROXY_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_REQUEST_TIMEOUT_MS', 10 * 60 * 1000);
+const HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_TUNNEL_ATTACH_TIMEOUT_MS', 120_000);
+const MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_MAX_SESSIONS_PER_CLUSTER', 16);
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -592,7 +594,11 @@ export default class TeamClusterObjectGatewayClient {
             const tunnel = await this.teamClusterDaemonClient.openTunnel(
                 teamClusterId,
                 OBJECT_GATEWAY_EXPOSURE_ID,
-                TeamClusterServiceExposureAccessMode.Http
+                TeamClusterServiceExposureAccessMode.Http,
+                {
+                    timeoutMs: HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
+                    timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS}ms`
+                }
             );
             const latestSessions = this.pruneHttpSessions(sessionKey);
             const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex);
@@ -679,7 +685,7 @@ export default class TeamClusterObjectGatewayClient {
     private pruneHttpSessions(sessionKey: string): ObjectGatewayHttpSessionEntry[] {
         const sessions = this.httpSessions.get(sessionKey) || [];
         const activeSessions = sessions.filter((session) => {
-            if (session.tunnel.destroyed || session.expiresAt <= Date.now()) {
+            if (session.tunnel.destroyed || (!session.inUse && session.expiresAt <= Date.now())) {
                 this.destroyHttpSession(session);
                 return false;
             }

@@ -21,16 +21,16 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO, ApplicationError> {
     constructor(
-        
+
         private readonly trajectoryRepo: TrajectoryRepository,
 
-        
+
         private readonly dumpStorage: TrajectoryDumpStorageService,
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService,
 
-        
+
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
@@ -54,16 +54,16 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
 
         if (archive) {
             return Result.ok(this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps));
         }
 
         const firstTimestep = timesteps[0];
-        const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
+        const objectName = buildTrajectoryDumpObjectName(trajectoryId, firstTimestep);
 
         if (storageClusterId) {
-            const objectName = buildTrajectoryDumpObjectName(trajectoryId, firstTimestep);
             const response = await this.objectGatewayClient.getStream(storageClusterId, SYS_BUCKETS.DUMPS, objectName);
 
             return Result.ok(createDownloadStreamResponse({
@@ -74,11 +74,11 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             }));
         }
 
-        const stream = await this.dumpStorage.getDumpStream(trajectoryId, firstTimestep);
+        const stream = await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
         return Result.ok(createDownloadStreamResponse({
             stream,
             contentType: 'application/octet-stream',
-            filename: `${filenameBase}.dump`,
+            filename: `${filenameBase}.dump.zst`,
             cacheControl: 'no-cache'
         }));
     }

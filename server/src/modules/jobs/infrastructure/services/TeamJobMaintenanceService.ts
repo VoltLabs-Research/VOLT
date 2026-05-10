@@ -7,7 +7,9 @@ import type {
     TeamClusterFailureDetail
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryBackgroundProcessor';
+import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -36,6 +38,18 @@ interface PartitionedJobs {
     localJobs: TeamJobSummary[];
 }
 
+interface GlbPreprocessingEnqueueResult {
+    queuedJobs: number;
+    duplicateJobs: number;
+    skippedJobs: number;
+}
+
+interface GlbFrameDescriptor {
+    timestep: number;
+    objectKey: string;
+    ownerClusterId: string;
+}
+
 @Singleton()
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     constructor(
@@ -45,7 +59,9 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
         private readonly teamJobsService: TeamJobsService,
-        private readonly trajectoryBackgroundProcessor: TrajectoryBackgroundProcessor
+        private readonly trajectoryRepo: TrajectoryRepository,
+        private readonly trajectoryFrameRepo: TrajectoryFrameRepository,
+        private readonly dumpStorage: TrajectoryDumpStorageService
     ) {}
 
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {
@@ -249,7 +265,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
                     await this.publishRetriedDaemonJob(job);
                 }));
 
-                const requeuedJobIds = await this.trajectoryBackgroundProcessor.requeueGlbPreprocessing({
+                const requeuedJobIds = await this.requeueGlbPreprocessing({
                     teamId,
                     trajectoryId,
                     timesteps
@@ -264,6 +280,65 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         }
 
         return recoveredJobIds;
+    }
+
+    /**
+     * Requeues GLB preprocessing for specific timesteps by directly calling
+     * the daemon's trajectory.enqueue-preprocessing command.
+     */
+    private async requeueGlbPreprocessing(input: {
+        trajectoryId: string;
+        teamId: string;
+        timesteps?: number[];
+    }): Promise<string[]> {
+        const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
+        if (!trajectory) {
+            logger.warn(`[TeamJobMaintenanceService] requeue skipped — trajectory not found trajectoryId=${input.trajectoryId}`);
+            return [];
+        }
+
+        const storageClusterId = trajectory.props.storageClusterId;
+        if (!storageClusterId) {
+            logger.warn(`[TeamJobMaintenanceService] requeue skipped — no storageClusterId trajectoryId=${input.trajectoryId}`);
+            return [];
+        }
+
+        const persistedFrames = await this.trajectoryFrameRepo.getFrames(input.trajectoryId);
+        if (persistedFrames.length === 0) {
+            logger.warn(`[TeamJobMaintenanceService] requeue skipped — no persisted frames trajectoryId=${input.trajectoryId}`);
+            return [];
+        }
+
+        const requestedTimesteps = input.timesteps && input.timesteps.length > 0
+            ? new Set(input.timesteps)
+            : null;
+
+        const frames = persistedFrames
+            .filter((frame) => requestedTimesteps?.has(frame.timestep) ?? true);
+
+        if (frames.length === 0) {
+            return [];
+        }
+
+        const frameDescriptors: GlbFrameDescriptor[] = frames.map((frame) => ({
+            timestep: frame.timestep,
+            objectKey: this.dumpStorage.getObjectName(input.trajectoryId, String(frame.timestep)),
+            ownerClusterId: storageClusterId
+        }));
+
+        await this.teamClusterDaemonClient.command<GlbPreprocessingEnqueueResult>(
+            storageClusterId,
+            ChannelCommands.TrajectoryEnqueuePreprocessing,
+            {
+                trajectoryId: input.trajectoryId,
+                teamId: input.teamId,
+                storageClusterId,
+                frames: frameDescriptors
+            },
+            { timeoutClass: 'long-running-control-plane' }
+        );
+
+        return frameDescriptors.map((frame) => `trajectory-glb:${input.trajectoryId}:${frame.timestep}`);
     }
 
     private async resolveJobs(teamId: string, jobIds: string[]): Promise<TeamJobSummary[]> {

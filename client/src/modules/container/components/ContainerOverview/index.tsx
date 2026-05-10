@@ -195,41 +195,40 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                 <ContainerInspectorList title='Information' rows={inspectorRows} />
 
                 <Box className='container-overview-inspector-side'>
-                    <Stack>
-                        <Heading level={3} className='container-overview-section-title'>Environment Variables</Heading>
-                        <EditableKeyValueCard<EnvVariableFormItem>
-                            items={envItems}
-                            fields={[
-                                { key: 'key', placeholder: 'Key' },
-                                { key: 'value', placeholder: 'Value' }
-                            ]}
-                            emptyMessage='No environment variables'
-                            onSave={onUpdateEnv}
-                            createEmpty={() => ({ key: '', value: '' })}
-                            showCard={false}
-                            className='d-flex column'
-                            renderItem={(item, i) => (
-                                <KeyValueList key={i}>
-                                    <KeyValueRow label={item.key} value={item.value} />
-                                </KeyValueList>
-                            )}
-                        />
-                    </Stack>
+                    <EditableKeyValueCard<EnvVariableFormItem>
+                        title='Environment Variables'
+                        titleClassName='container-overview-section-title'
+                        items={envItems}
+                        fields={[
+                            { key: 'key', placeholder: 'Key' },
+                            { key: 'value', placeholder: 'Value' }
+                        ]}
+                        emptyMessage='No environment variables'
+                        onSave={onUpdateEnv}
+                        createEmpty={() => ({ key: '', value: '' })}
+                        showCard={false}
+                        className='d-flex column'
+                        renderItem={(item, i) => (
+                            <KeyValueList key={i}>
+                                <KeyValueRow label={item.key} value={item.value} />
+                            </KeyValueList>
+                        )}
+                    />
 
-                    <Stack>
-                        <Heading level={3} className='container-overview-section-title'>Port Bindings</Heading>
-                        <EditableKeyValueCard<PortMappingFormItem>
-                            items={portItems}
-                            fields={[
-                                { key: 'private', placeholder: 'Container Port', type: 'number' },
-                                { key: 'public', placeholder: 'Host Port', type: 'number' }
-                            ]}
-                            emptyMessage='No ports exposed'
-                            onSave={onUpdatePorts}
-                            createEmpty={() => ({ private: 0 })}
-                            showCard={false}
-                            className='d-flex column'
-                            renderItem={(item, i) => {
+                    <EditableKeyValueCard<PortMappingFormItem>
+                        title='Port Bindings'
+                        titleClassName='container-overview-section-title'
+                        items={portItems}
+                        fields={[
+                            { key: 'private', placeholder: 'Container Port', type: 'number' },
+                            { key: 'public', placeholder: 'Host Port', type: 'number' }
+                        ]}
+                        emptyMessage='No ports exposed'
+                        onSave={onUpdatePorts}
+                        createEmpty={() => ({ private: 0 })}
+                        showCard={false}
+                        className='d-flex column'
+                        renderItem={(item, i) => {
                                 const resolvedPublicPort = typeof item.public === 'number' && item.public > 0
                                     ? item.public
                                     : null;
@@ -274,7 +273,6 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                                 );
                             }}
                         />
-                    </Stack>
                 </Box>
             </Box>
         </Stack>

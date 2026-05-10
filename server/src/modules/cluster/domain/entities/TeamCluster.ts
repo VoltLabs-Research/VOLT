@@ -85,14 +85,14 @@ export interface TeamClusterEffectiveCapabilitiesProps {
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
     analysis: 8,
-    rasterizer: 5,
-    glbPreprocessing: 8,
-    artifactUpload: 8,
+    rasterizer: 8,
+    glbPreprocessing: 16,
+    artifactUpload: 16,
     sshImport: 2,
-    pluginWarmup: 2,
-    trajectoryBackgroundProcessor: 5,
-    trajectoryCompression: 1,
-    cloudUpload: 5
+    pluginWarmup: 4,
+    trajectoryBackgroundProcessor: 8,
+    trajectoryCompression: 4,
+    cloudUpload: 32
 };
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = {

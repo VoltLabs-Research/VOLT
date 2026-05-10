@@ -12,7 +12,7 @@ export interface ComputeGlbUrlParams {
     teamId: string;
     trajectoryId: string;
     currentTimestep: number | undefined;
-    analysisId: string;
+    analysisId?: string;
     activeScene?: SceneObjectType;
     mode?: CanvasAccessMode;
 }
@@ -141,6 +141,6 @@ export const computeGlbUrl = ({
         case 'particle-filter':
             return buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
         default:
-            return buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId}`);
+            return buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`);
     }
 };

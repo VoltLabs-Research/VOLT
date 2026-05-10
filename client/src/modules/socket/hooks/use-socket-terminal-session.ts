@@ -15,6 +15,7 @@ interface UseSocketTerminalSessionOptions<TAttachPayload> {
     detachPayload?: unknown;
     errorEvent: string;
     inputEvent: string;
+    resizeEvent?: string;
     resolveErrorMessage?: (error: unknown) => string;
     sessionKey: string;
     terminalRef: MutableRefObject<TerminalHandle | null>;
@@ -23,6 +24,7 @@ interface UseSocketTerminalSessionOptions<TAttachPayload> {
 
 interface UseSocketTerminalSessionResult {
     handleTerminalData: (data: string) => void;
+    handleTerminalResize: (cols: number, rows: number) => void;
 }
 
 export const useSocketTerminalSession = <TAttachPayload>({
@@ -34,6 +36,7 @@ export const useSocketTerminalSession = <TAttachPayload>({
     detachPayload,
     errorEvent,
     inputEvent,
+    resizeEvent,
     resolveErrorMessage,
     sessionKey,
     terminalRef,
@@ -130,7 +133,14 @@ export const useSocketTerminalSession = <TAttachPayload>({
         socketService.emitWithoutAck(inputEvent, data);
     }, [inputEvent, socketService]);
 
+    const handleTerminalResize = useCallback((cols: number, rows: number) => {
+        if (resizeEvent && isAttachedRef.current) {
+            socketService.emitWithoutAck(resizeEvent, { cols, rows });
+        }
+    }, [resizeEvent, socketService]);
+
     return {
-        handleTerminalData
+        handleTerminalData,
+        handleTerminalResize
     };
 };

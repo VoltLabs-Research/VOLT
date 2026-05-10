@@ -231,6 +231,28 @@ export default class DaemonAnalysisCompletionService {
     }
 
     /**
+     * Called by trajectory ingestion after the daemon has accepted frame
+     * processing jobs. Terminal receipts may arrive before this initializer
+     * runs, so use the same late-receipt-aware script as analysis sessions.
+     */
+    async initializeGlbSession(trajectoryId: string, totalJobs: number, teamId: string): Promise<void> {
+        const keys = this.glbKeys(trajectoryId);
+        const [remainingJobs, failedJobs] = await this.redis.eval(
+            INITIALIZE_SESSION_SCRIPT,
+            3,
+            keys.remaining,
+            keys.failed,
+            keys.terminalSet,
+            totalJobs.toString(),
+            SESSION_TTL_SECONDS.toString()
+        ) as [number, number];
+
+        if (remainingJobs === 0) {
+            await this.finalizeGlbSession(trajectoryId, teamId, failedJobs);
+        }
+    }
+
+    /**
      * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
      * Publishes queued job events so the jobs module can project them and the
      * team module can notify connected clients.

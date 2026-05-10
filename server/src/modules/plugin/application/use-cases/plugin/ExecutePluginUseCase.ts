@@ -281,9 +281,9 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 trajectoryFrames: trajectoryFrames.map((frame) => ({
                     timestep: frame.timestep,
                     natoms: frame.natoms,
-                    simulationCell: typeof frame.simulationCell === 'string'
+                    simulationCell: (typeof frame.simulationCell === 'string'
                         ? frame.simulationCell
-                        : frame.simulationCell._id
+                        : frame.simulationCell?._id) ?? ''
                 })),
                 teamId: input.teamId,
                 plugin,

@@ -33,6 +33,7 @@ import {
     type TeamClusterDaemonSocketStreamStatePayload,
     type TeamClusterDaemonTunnelClosePayload,
     type TeamClusterDaemonTunnelDataPayload,
+    type TeamClusterDaemonTunnelDrainPayload,
     type TeamClusterDaemonTunnelStatePayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -72,6 +73,11 @@ interface TeamClusterDirectTunnelOpenRequest {
 }
 
 export type TeamClusterTunnelOpenRequest = TeamClusterExposureTunnelOpenRequest | TeamClusterDirectTunnelOpenRequest;
+
+export interface TeamClusterTunnelOpenOptions {
+    timeoutMs?: number;
+    timeoutMessage?: string;
+}
 
 interface TeamClusterDaemonExposureTunnelOpenMessage {
     type: 'tunnel-open';
@@ -136,6 +142,10 @@ interface PendingTunnelEntry extends BasePendingEntry {
     stream: TeamClusterTunnelStream;
     resolve: (stream: TeamClusterTunnelStream) => void;
     reject: (error: Error) => void;
+    nextWriteSequence: number;
+    pendingWriteAcks: Map<number, PendingTunnelWriteAck>;
+    pendingWriteBytes: number;
+    blockedWriteCallback?: (error?: Error | null) => void;
 }
 
 interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
@@ -145,6 +155,11 @@ interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
     timeoutMessage: string;
     createEntry: (resolve: (value: TResult) => void, reject: (error: Error) => void, timeout: NodeJS.Timeout) => TEntry;
     emitMessage: () => void;
+}
+
+interface PendingTunnelWriteAck {
+    bytes: number;
+    timeout: NodeJS.Timeout;
 }
 
 export interface TeamClusterReverseChannelStreamAttachment {
@@ -170,6 +185,26 @@ const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => 
         ? selectedProtocol.trim()
         : undefined;
 };
+
+const readPositiveIntegerEnv = (name: string, fallback: number): number => {
+    const value = Number(process.env[name]);
+    return Number.isFinite(value) && value > 0
+        ? Math.floor(value)
+        : fallback;
+};
+
+const TUNNEL_FLOW_CONTROL_WINDOW_BYTES = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_REVERSE_TUNNEL_WINDOW_BYTES',
+    8 * 1024 * 1024
+);
+const TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES = Math.max(
+    64 * 1024,
+    Math.floor(TUNNEL_FLOW_CONTROL_WINDOW_BYTES / 2)
+);
+const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
+    120_000
+);
 
 @Singleton()
 export default class TeamClusterReverseChannelService {
@@ -246,6 +281,7 @@ export default class TeamClusterReverseChannelService {
                     } else if (entry.type === 'websocket') {
                         entry.stream.destroy();
                     } else if (entry.type === 'tunnel') {
+                        this.failPendingTunnelWrites(entry, new Error('Tunnel session idle TTL expired'));
                         entry.stream.closeRemote();
                     } else if (entry.type === 'stream') {
                         entry.stream.destroy();
@@ -412,26 +448,35 @@ export default class TeamClusterReverseChannelService {
     async openTunnel(
         teamClusterId: string,
         exposureId: string,
-        accessMode: TeamClusterServiceExposureAccessMode
+        accessMode: TeamClusterServiceExposureAccessMode,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
-        request: TeamClusterTunnelOpenRequest
+        request: TeamClusterTunnelOpenRequest,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream>;
 
     async openTunnel(
         teamClusterId: string,
         target: string | TeamClusterTunnelOpenRequest,
-        accessMode?: TeamClusterServiceExposureAccessMode
+        accessModeOrOptions?: TeamClusterServiceExposureAccessMode | TeamClusterTunnelOpenOptions,
+        options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream> {
         const socketId = await this.requireDaemonSocketId(teamClusterId);
         const sessionId = randomUUID();
+        const tunnelOptions = typeof target === 'string'
+            ? options
+            : accessModeOrOptions as TeamClusterTunnelOpenOptions | undefined;
+        const accessMode = typeof target === 'string'
+            ? accessModeOrOptions as TeamClusterServiceExposureAccessMode | undefined
+            : undefined;
         const openPayload = this.createTunnelOpenPayload(sessionId, target, accessMode);
 
         const stream = new TeamClusterReverseTunnelStream({
-            onWrite: (chunk) => {
-                this.emitTunnelData(socketId, sessionId, chunk.data, chunk.isBinary);
+            onWrite: (chunk, callback) => {
+                this.emitTunnelData(socketId, sessionId, chunk.data, chunk.isBinary, callback);
             },
             onClose: () => {
                 this.closeTunnel(sessionId);
@@ -441,15 +486,18 @@ export default class TeamClusterReverseChannelService {
         return this.createPendingPromise({
             correlationId: sessionId,
             entryType: 'tunnel',
-            timeoutMs: this.terminalTimeoutMs,
-            timeoutMessage: 'Timed out waiting for daemon tunnel attachment',
+            timeoutMs: tunnelOptions?.timeoutMs ?? this.terminalTimeoutMs,
+            timeoutMessage: tunnelOptions?.timeoutMessage ?? 'Timed out waiting for daemon tunnel attachment',
             createEntry: (resolve, reject, timeout) => ({
                 type: 'tunnel',
                 socketId,
                 timeout,
                 stream,
                 resolve,
-                reject
+                reject,
+                nextWriteSequence: 0,
+                pendingWriteAcks: new Map(),
+                pendingWriteBytes: 0
             }),
             emitMessage: () => {
                 this.emitToDaemon(socketId, openPayload);
@@ -532,6 +580,10 @@ export default class TeamClusterReverseChannelService {
                 this.handleTunnelDataPayload(payload);
                 return;
 
+            case 'tunnel-drain':
+                this.handleTunnelDrainPayload(payload);
+                return;
+
             case 'tunnel-close':
                 this.handleTunnelClosePayload(payload);
                 return;
@@ -611,6 +663,7 @@ export default class TeamClusterReverseChannelService {
             sessionId
         };
         this.emitToDaemon(entry.socketId, closePayload);
+        this.failPendingTunnelWrites(entry, new Error('Tunnel session closed'));
         this.pendingEntries.delete(sessionId);
         this.untouchSession(sessionId);
     }
@@ -870,6 +923,7 @@ export default class TeamClusterReverseChannelService {
             entry.timeout = null;
 
             if (payload.status !== TeamClusterTunnelSessionStatus.Open || error) {
+                this.failPendingTunnelWrites(entry, error || new Error(payload.message || 'Failed to open daemon tunnel'));
                 this.pendingEntries.delete(payload.sessionId);
                 this.untouchSession(payload.sessionId);
                 entry.reject(error || new Error(payload.message || 'Failed to open daemon tunnel'));
@@ -882,8 +936,10 @@ export default class TeamClusterReverseChannelService {
         }
 
         if (error) {
+            this.failPendingTunnelWrites(entry, error);
             entry.stream.fail(error);
         } else if (payload.status === TeamClusterTunnelSessionStatus.Closed) {
+            this.failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
             entry.stream.closeRemote();
         }
 
@@ -898,7 +954,38 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.sessionId);
-        entry.stream.pushChunk(this.unwrapEnvelopeBuffer(payload.chunk));
+        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        if (payload.requiresAck && typeof payload.sequence === 'number') {
+            entry.stream.pushChunk(chunk, () => {
+                this.emitTunnelDrain(entry.socketId, payload.sessionId, payload.sequence!);
+            });
+            return;
+        }
+
+        entry.stream.pushChunk(chunk);
+    }
+
+    private handleTunnelDrainPayload(payload: TeamClusterDaemonTunnelDrainPayload): void {
+        const entry = this.pendingEntries.get(payload.sessionId);
+        if (!entry || entry.type !== 'tunnel') {
+            return;
+        }
+
+        const pendingAck = entry.pendingWriteAcks.get(payload.sequence);
+        if (!pendingAck) {
+            return;
+        }
+
+        this.touchSession(payload.sessionId);
+        clearTimeout(pendingAck.timeout);
+        entry.pendingWriteAcks.delete(payload.sequence);
+        entry.pendingWriteBytes = Math.max(0, entry.pendingWriteBytes - pendingAck.bytes);
+
+        if (entry.blockedWriteCallback && entry.pendingWriteBytes <= TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES) {
+            const callback = entry.blockedWriteCallback;
+            entry.blockedWriteCallback = undefined;
+            callback();
+        }
     }
 
     private handleTunnelClosePayload(payload: TeamClusterDaemonTunnelClosePayload): void {
@@ -908,6 +995,7 @@ export default class TeamClusterReverseChannelService {
         }
 
         // destroy() after closeRemote() so http.Agent evicts the dead socket from its pool.
+        this.failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
         entry.stream.closeRemote();
         entry.stream.destroy();
         this.pendingEntries.delete(payload.sessionId);
@@ -1009,13 +1097,64 @@ export default class TeamClusterReverseChannelService {
         socketId: string,
         sessionId: string,
         chunk: Buffer,
-        isBinary: boolean
+        isBinary: boolean,
+        callback: (error?: Error | null) => void
     ): void {
+        const entry = this.pendingEntries.get(sessionId);
+        if (!entry || entry.type !== 'tunnel') {
+            callback(new Error('Tunnel session is not open'));
+            return;
+        }
+
+        const sequence = ++entry.nextWriteSequence;
+        const bytes = chunk.byteLength;
+        const timeout = setTimeout(() => {
+            const activeEntry = this.pendingEntries.get(sessionId);
+            if (!activeEntry || activeEntry.type !== 'tunnel') {
+                return;
+            }
+
+            const pendingAck = activeEntry.pendingWriteAcks.get(sequence);
+            if (!pendingAck) {
+                return;
+            }
+
+            activeEntry.pendingWriteAcks.delete(sequence);
+            activeEntry.pendingWriteBytes = Math.max(0, activeEntry.pendingWriteBytes - pendingAck.bytes);
+            const error = new Error(`Timed out waiting for tunnel drain acknowledgement after ${TUNNEL_DRAIN_TIMEOUT_MS}ms`);
+            this.failPendingTunnelWrites(activeEntry, error);
+            activeEntry.stream.fail(error);
+            this.closeTunnel(sessionId);
+        }, TUNNEL_DRAIN_TIMEOUT_MS);
+        timeout.unref();
+
+        entry.pendingWriteAcks.set(sequence, { bytes, timeout });
+        entry.pendingWriteBytes += bytes;
+
         const payload: TeamClusterDaemonTunnelDataPayload = {
             type: 'tunnel-data',
             sessionId,
             chunk: this.wrapEnvelopeBuffer(chunk),
-            isBinary
+            isBinary,
+            sequence,
+            requiresAck: true
+        };
+
+        this.emitToDaemon(socketId, payload);
+
+        if (entry.pendingWriteBytes <= TUNNEL_FLOW_CONTROL_WINDOW_BYTES) {
+            callback();
+            return;
+        }
+
+        entry.blockedWriteCallback = callback;
+    }
+
+    private emitTunnelDrain(socketId: string, sessionId: string, sequence: number): void {
+        const payload: TeamClusterDaemonTunnelDrainPayload = {
+            type: 'tunnel-drain',
+            sessionId,
+            sequence
         };
 
         this.emitToDaemon(socketId, payload);
@@ -1148,6 +1287,23 @@ export default class TeamClusterReverseChannelService {
         });
     }
 
+    private failPendingTunnelWrites(entry: PendingTunnelEntry, error: Error): void {
+        for (const pendingAck of entry.pendingWriteAcks.values()) {
+            clearTimeout(pendingAck.timeout);
+        }
+
+        entry.pendingWriteAcks.clear();
+        entry.pendingWriteBytes = 0;
+
+        if (!entry.blockedWriteCallback) {
+            return;
+        }
+
+        const callback = entry.blockedWriteCallback;
+        entry.blockedWriteCallback = undefined;
+        callback(error);
+    }
+
     private rejectPendingEntry(correlationId: string, entry: PendingEntry, error: Error): void {
         this.pendingEntries.delete(correlationId);
         this.untouchSession(correlationId);
@@ -1174,6 +1330,7 @@ export default class TeamClusterReverseChannelService {
                 return;
 
             case 'tunnel':
+                this.failPendingTunnelWrites(entry, error);
                 entry.stream.fail(error);
                 return;
 

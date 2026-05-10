@@ -23,6 +23,7 @@ export interface TerminalHandle {
 
 interface TerminalProps {
     onData?: (data: string) => void;
+    onResize?: (cols: number, rows: number) => void;
     fontSize?: number;
     fontFamily?: string;
     className?: string;
@@ -51,8 +52,9 @@ const getTerminalTheme = (): TerminalTheme => {
     };
 };
 
-const Terminal = forwardRef<TerminalHandle, TerminalProps>(({ 
+const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     onData,
+    onResize,
     fontSize = 14,
     fontFamily = '"JetBrains Mono Variable", "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Consolas, monospace',
     className = '',
@@ -63,6 +65,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     const xtermRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
     const onDataRef = useRef(onData);
+    const onResizeRef = useRef(onResize);
     const onDataDisposableRef = useRef<IDisposable | null>(null);
     const isReadyRef = useRef(false);
     const lastRenderedValueRef = useRef('');
@@ -133,6 +136,10 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     useEffect(() => {
         onDataRef.current = onData;
     }, [onData]);
+
+    useEffect(() => {
+        onResizeRef.current = onResize;
+    }, [onResize]);
 
     useEffect(() => {
         pendingControlledValueRef.current = value;
@@ -209,6 +216,10 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
                     fitAddonRef.current.fit();
                     isReadyRef.current = true;
                     flushPendingOutput();
+                    const terminal = xtermRef.current;
+                    if (terminal && onResizeRef.current) {
+                        onResizeRef.current(terminal.cols, terminal.rows);
+                    }
                 } catch {
                     return;
                 }
