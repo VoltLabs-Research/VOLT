@@ -3,10 +3,10 @@ import {
     type GetTeamClusterRuntimeSnapshotOutputDTO,
     type DaemonQueueSnapshotEntry
 } from '@modules/cluster/application/dtos/GetTeamClusterRuntimeSnapshotDTO';
+import { toTeamClusterQueueConcurrencyDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import ServerSideQueueConcurrencyCoordinator from '@modules/cluster/infrastructure/services/ServerSideQueueConcurrencyCoordinator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -27,8 +27,7 @@ export default class GetTeamClusterRuntimeSnapshotUseCase
 
     constructor(
         private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly serverSideQueueConcurrencyCoordinator: ServerSideQueueConcurrencyCoordinator
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}
 
     async execute(
@@ -38,8 +37,6 @@ export default class GetTeamClusterRuntimeSnapshotUseCase
         if (teamCluster instanceof ApplicationError) {
             return Result.fail(teamCluster);
         }
-
-        const serverSnapshot = this.serverSideQueueConcurrencyCoordinator.snapshot();
 
         let daemonQueues: DaemonQueueSnapshotEntry[] = [];
         let capturedAt = new Date().toISOString();
@@ -61,13 +58,9 @@ export default class GetTeamClusterRuntimeSnapshotUseCase
 
         return Result.ok({
             capturedAt,
-            queueConcurrency: { ...teamCluster.props.queueConcurrency },
+            queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
             daemonQueues,
-            serverQueues: [
-                { name: 'trajectory_compression', location: 'server', concurrency: serverSnapshot.trajectoryCompression },
-                { name: 'cloud_upload', location: 'server', concurrency: serverSnapshot.cloudUpload },
-                { name: 'trajectory_background_processor', location: 'server', concurrency: serverSnapshot.trajectoryBackgroundProcessor }
-            ]
+            serverQueues: []
         });
     }
 }

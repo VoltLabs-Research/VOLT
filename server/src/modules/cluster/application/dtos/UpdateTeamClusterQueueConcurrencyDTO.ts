@@ -7,15 +7,11 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     glbPreprocessing: number;
     artifactUpload: number;
     sshImport: number;
-    pluginWarmup?: number;
-    trajectoryBackgroundProcessor?: number;
-    trajectoryCompression?: number;
-    cloudUpload?: number;
+    pluginWarmup: number;
 }
 
 export interface TeamClusterQueueScopeLimitInputDTO {
     maxRunningPerTrajectory: number;
-    maxRunningPerTeam: number;
 }
 
 export interface TeamClusterQueueScopeLimitsInputDTO {
@@ -23,8 +19,6 @@ export interface TeamClusterQueueScopeLimitsInputDTO {
     artifactUpload: TeamClusterQueueScopeLimitInputDTO;
     trajectoryRasterization: TeamClusterQueueScopeLimitInputDTO;
     trajectoryGlbConversion: TeamClusterQueueScopeLimitInputDTO;
-    cloudUpload: TeamClusterQueueScopeLimitInputDTO;
-    trajectoryCompression: TeamClusterQueueScopeLimitInputDTO;
 }
 
 export interface UpdateTeamClusterQueueConcurrencyInputDTO extends TeamScopedEntityIdInputDTO<'teamClusterId'> {

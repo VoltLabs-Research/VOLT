@@ -48,18 +48,16 @@ const QUEUE_FIELDS: QueueFieldDefinition[] = [
     { key: 'rasterizer', label: 'Rasterizer', description: 'Trajectory preview generation' },
     { key: 'glbPreprocessing', label: 'GLB preprocessing', description: 'Trajectory model preprocessing' },
     { key: 'artifactUpload', label: 'Artifact upload', description: 'Analysis artifact upload jobs' },
-    { key: 'sshImport', label: 'SSH import', description: 'Remote trajectory imports' }
+    { key: 'sshImport', label: 'SSH import', description: 'Remote trajectory imports' },
+    { key: 'pluginWarmup', label: 'Plugin warmup', description: 'Plugin binary preparation jobs' }
 ];
 
 const QUEUE_SCOPE_FIELDS: QueueScopeFieldDefinition[] = [
     { key: 'analysisProcessing', label: 'Analysis processing' },
     { key: 'artifactUpload', label: 'Artifact upload' },
     { key: 'trajectoryRasterization', label: 'Rasterization' },
-    { key: 'trajectoryGlbConversion', label: 'GLB preprocessing' },
-    { key: 'cloudUpload', label: 'Cloud upload' },
-    { key: 'trajectoryCompression', label: 'Trajectory compression' }
+    { key: 'trajectoryGlbConversion', label: 'GLB preprocessing' }
 ];
-const QUEUE_SCOPE_LIMIT_KEYS = ['maxRunningPerTrajectory', 'maxRunningPerTeam'] as const;
 
 export const CLUSTER_QUEUE_CONCURRENCY_MODAL_ID = 'cluster-queue-concurrency-modal';
 
@@ -75,9 +73,9 @@ const createInitialScopeValues = (teamCluster: TeamCluster | null): QueueScopeVa
     return Object.fromEntries(
         QUEUE_SCOPE_FIELDS.map((field) => [
             field.key,
-            Object.fromEntries(
-                QUEUE_SCOPE_LIMIT_KEYS.map((scopeKey) => [scopeKey, String(source?.[field.key]?.[scopeKey] ?? '')])
-            )
+            {
+                maxRunningPerTrajectory: String(source?.[field.key]?.maxRunningPerTrajectory ?? '')
+            }
         ])
     ) as QueueScopeValues;
 };
@@ -117,14 +115,13 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
 
     const handleScopeFieldChange = (
         key: keyof TeamClusterQueueScopeLimitsInputDTO,
-        scopeKey: keyof TeamClusterQueueScopeLimitInputDTO,
         nextValue: string
     ) => {
         setScopeValues((currentValues) => ({
             ...currentValues,
             [key]: {
                 ...currentValues[key],
-                [scopeKey]: nextValue
+                maxRunningPerTrajectory: nextValue
             }
         }));
 
@@ -139,7 +136,8 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             rasterizer: 0,
             glbPreprocessing: 0,
             artifactUpload: 0,
-            sshImport: 0
+            sshImport: 0,
+            pluginWarmup: 0
         };
 
         for (const field of QUEUE_FIELDS) {
@@ -166,25 +164,21 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
 
         for (const field of QUEUE_SCOPE_FIELDS) {
             const currentValues = scopeValues[field.key];
-            const parsedField = {} as TeamClusterQueueScopeLimitInputDTO;
-
-            for (const scopeKey of QUEUE_SCOPE_LIMIT_KEYS) {
-                const rawValue = currentValues[scopeKey].trim();
-                if (!/^\d+$/.test(rawValue)) {
-                    setError(`${field.label} ${scopeKey === 'maxRunningPerTrajectory' ? 'max per trajectory' : 'max per team'} must be an integer greater than or equal to ${MIN_SCOPE_LIMIT}.`);
-                    return null;
-                }
-
-                const parsedValue = Number(rawValue);
-                if (parsedValue < MIN_SCOPE_LIMIT) {
-                    setError(`${field.label} ${scopeKey === 'maxRunningPerTrajectory' ? 'max per trajectory' : 'max per team'} must be greater than or equal to ${MIN_SCOPE_LIMIT}.`);
-                    return null;
-                }
-
-                parsedField[scopeKey] = parsedValue;
+            const rawValue = currentValues.maxRunningPerTrajectory.trim();
+            if (!/^\d+$/.test(rawValue)) {
+                setError(`${field.label} max per trajectory must be an integer greater than or equal to ${MIN_SCOPE_LIMIT}.`);
+                return null;
             }
 
-            parsedValues[field.key] = parsedField;
+            const parsedValue = Number(rawValue);
+            if (parsedValue < MIN_SCOPE_LIMIT) {
+                setError(`${field.label} max per trajectory must be greater than or equal to ${MIN_SCOPE_LIMIT}.`);
+                return null;
+            }
+
+            parsedValues[field.key] = {
+                maxRunningPerTrajectory: parsedValue
+            };
         }
 
         return parsedValues;
@@ -238,23 +232,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                     className='form-field-input radius-sm'
                     style={{ width: '5rem' }}
                     value={scopeValues[row.key].maxRunningPerTrajectory}
-                    onChange={(e) => handleScopeFieldChange(row.key, 'maxRunningPerTrajectory', e.target.value)}
-                />
-            )
-        },
-        {
-            key: 'maxPerTeam',
-            header: 'Max / team',
-            render: (row) => (
-                <input
-                    type='number'
-                    min={MIN_SCOPE_LIMIT}
-                    step={1}
-                    inputMode='numeric'
-                    className='form-field-input radius-sm'
-                    style={{ width: '5rem' }}
-                    value={scopeValues[row.key].maxRunningPerTeam}
-                    onChange={(e) => handleScopeFieldChange(row.key, 'maxRunningPerTeam', e.target.value)}
+                    onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
                 />
             )
         }
@@ -296,7 +274,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                     noSpacing
                 >
                     <Stack gap='05' mt='05'>
-                        <Text as='p' size='sm' tone='muted'>Per-cluster limits. Use 0 for no limit.</Text>
+                        <Text as='p' size='sm' tone='muted'>Per-trajectory limits. Use 0 for no limit.</Text>
                         <Table
                             columns={scopeColumns}
                             data={QUEUE_SCOPE_FIELDS}

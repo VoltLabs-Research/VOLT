@@ -9,6 +9,10 @@ import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketI
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import {
+    toTeamClusterQueueConcurrencyDTO,
+    toTeamClusterQueueScopeLimitsDTO
+} from '@modules/cluster/application/dtos/TeamClusterDTO';
 import CompleteTeamClusterDeletionUseCase from '@modules/cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import ProcessDaemonJobCompletionUseCase from '@modules/cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
@@ -305,8 +309,8 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 data: {
                     status: 'success',
                     data: {
-                        queueConcurrency: teamCluster.props.queueConcurrency,
-                        queueScopeLimits: teamCluster.props.queueScopeLimits,
+                        queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
+                        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(teamCluster.props.queueScopeLimits),
                         roleConfig: teamCluster.props.roleConfig,
                         effectiveCapabilities: teamCluster.effectiveCapabilities
                     }
