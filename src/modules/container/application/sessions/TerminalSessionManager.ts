@@ -14,6 +14,8 @@ import type {
 } from '@/core/reverse-channel/contracts/binary-messages';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 
+type SessionCommandResult = CommandResult<object | null>;
+
 interface ReverseChannelTerminalState {
     sessionId: string;
     attachment: RuntimeTerminalAttachment;
@@ -48,7 +50,7 @@ export class TerminalSessionManager {
 
     constructor(private readonly options: TerminalSessionManagerOptions) {}
 
-    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
+    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<SessionCommandResult> {
         const dockerRuntime = this.options.dockerRuntime;
         if (!dockerRuntime) {
             return this.failAttach(payload.sessionId, 503, 'Terminal services are not available');
@@ -203,7 +205,7 @@ export class TerminalSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private failAttach(sessionId: string, status: number, message: string): CommandResult {
+    private failAttach(sessionId: string, status: number, message: string): SessionCommandResult {
         this.options.coordinator.emitSessionEnd({
             type: 'session-end',
             sessionId,

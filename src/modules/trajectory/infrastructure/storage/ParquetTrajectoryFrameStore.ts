@@ -3,8 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
+import { Worker } from 'node:worker_threads';
 import { DuckDBConnection } from '@duckdb/node-api';
-import { dataParser, dumpParser, type NativeParseResult } from '@voltstack/lammps-io';
 
 import { DAEMON_PATHS } from '@/core/paths';
 import { Service } from '@/core/decorators/service';
@@ -31,9 +31,6 @@ interface CachedFrame {
     bytes: number;
 }
 
-const quoteIdentifier = (value: string): string =>
-    `"${value.replace(/"/g, '""')}"`;
-
 const sqlString = (value: string): string =>
     `'${value.replace(/'/g, "''")}'`;
 
@@ -48,40 +45,6 @@ const normalizeCustomPropertyNames = (properties: string[] | undefined): string[
         result.push(name);
     }
 
-    return result;
-};
-
-const readFrameFromFile = (filePath: string, includeProperties: string[] | undefined): NativeParseResult => {
-    const dumpResult = dumpParser.parseDump(filePath, {
-        includeIds: true,
-        properties: includeProperties ?? []
-    });
-    if (dumpResult) return dumpResult;
-
-    const dataResult = dataParser.parseData(filePath, { includeIds: true });
-    if (dataResult) return dataResult;
-
-    throw new Error(`Unsupported trajectory format: ${filePath}`);
-};
-
-const toFloat32PropertyMap = (
-    properties: NativeParseResult['properties']
-): Record<string, Float32Array> | undefined => {
-    if (!properties) return undefined;
-    const entries = Object.entries(properties);
-    if (entries.length === 0) return undefined;
-    const result: Record<string, Float32Array> = {};
-    for (const [name, values] of entries) {
-        if (values instanceof Float32Array) {
-            result[name] = values;
-            continue;
-        }
-        if (values instanceof Float64Array) {
-            result[name] = Float32Array.from(values);
-            continue;
-        }
-        result[name] = Float32Array.from(values as ArrayLike<number>);
-    }
     return result;
 };
 
@@ -127,6 +90,58 @@ const getNumericValue = (value: unknown): number => {
     return Number(value);
 };
 
+interface ParquetBuildWorkerInput {
+    outputPath: string;
+    frames: Array<{ timestep: number; dumpPath: string }>;
+    customProperties: string[];
+}
+
+interface ParquetBuildWorkerMessage {
+    ok: boolean;
+    error?: {
+        name?: string;
+        message?: string;
+        stack?: string;
+    };
+}
+
+const parquetBuildWorkerPath = (): string => (
+    path.join(__dirname, 'parquet-ingest-worker.cjs')
+);
+
+const runParquetBuildWorker = (input: ParquetBuildWorkerInput): Promise<void> => (
+    new Promise((resolve, reject) => {
+        const worker = new Worker(parquetBuildWorkerPath(), { workerData: input });
+        let settled = false;
+
+        const settle = (fn: () => void): void => {
+            if (settled) return;
+            settled = true;
+            fn();
+        };
+
+        worker.once('message', (message: ParquetBuildWorkerMessage) => {
+            if (message.ok) {
+                settle(() => resolve());
+                return;
+            }
+
+            const error = new Error(message.error?.message ?? 'Parquet ingest worker failed');
+            error.name = message.error?.name ?? 'ParquetIngestWorkerError';
+            error.stack = message.error?.stack ?? error.stack;
+            settle(() => reject(error));
+        });
+        worker.once('error', (error) => {
+            settle(() => reject(error));
+        });
+        worker.once('exit', (code) => {
+            if (code !== 0) {
+                settle(() => reject(new Error(`Parquet ingest worker exited with code ${code}`)));
+            }
+        });
+    })
+);
+
 @Service('trajectoryFrameStore')
 export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     private readonly frameCache = new Map<string, CachedFrame>();
@@ -143,28 +158,11 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         return withNativeProcessingTempDir('trajectory-parquet-ingest', async (tempDirectory) => {
             const outputPath = path.join(tempDirectory, `${input.trajectoryId}.parquet`);
             const customProperties = normalizeCustomPropertyNames(input.customProperties);
-            const connection = await DuckDBConnection.create();
-
-            try {
-                await this.createFramesTable(connection, customProperties);
-                const appender = await connection.createAppender('frames');
-                try {
-                    const sortedFrames = [...input.frames].sort((a, b) => a.timestep - b.timestep);
-                    for (const frame of sortedFrames) {
-                        const parsed = readFrameFromFile(frame.dumpPath, customProperties);
-                        this.appendFrame(appender, frame.timestep, parsed, customProperties);
-                    }
-                } finally {
-                    appender.closeSync();
-                }
-
-                await connection.run(
-                    `COPY (SELECT * FROM frames ORDER BY timestep, atom_index) TO ${sqlString(outputPath)} ` +
-                    '(FORMAT PARQUET, COMPRESSION ZSTD)'
-                );
-            } finally {
-                connection.closeSync();
-            }
+            await runParquetBuildWorker({
+                outputPath,
+                frames: [...input.frames].sort((a, b) => a.timestep - b.timestep),
+                customProperties
+            });
 
             const stat = await fs.stat(outputPath);
             const objectKey = toTrajectoryParquetObjectKey(input.trajectoryId);
@@ -223,61 +221,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             throw this.rethrowNotFound(error, input);
         } finally {
             connection?.closeSync();
-        }
-    }
-
-    private async createFramesTable(connection: DuckDBConnection, customProperties: string[]): Promise<void> {
-        const propertyColumns = customProperties
-            .map((property) => `${quoteIdentifier(property)} FLOAT`)
-            .join(', ');
-        await connection.run(
-            'CREATE TABLE frames (' +
-            'timestep BIGINT NOT NULL, ' +
-            'atom_index UINTEGER NOT NULL, ' +
-            'id UINTEGER, ' +
-            'type USMALLINT NOT NULL, ' +
-            'x FLOAT NOT NULL, ' +
-            'y FLOAT NOT NULL, ' +
-            'z FLOAT NOT NULL' +
-            (propertyColumns ? `, ${propertyColumns}` : '') +
-            ')'
-        );
-    }
-
-    private appendFrame(
-        appender: Awaited<ReturnType<DuckDBConnection['createAppender']>>,
-        timestep: number,
-        parsed: NativeParseResult,
-        customProperties: string[]
-    ): void {
-        const atomCount = parsed.positions.length / 3;
-        const properties = toFloat32PropertyMap(parsed.properties) ?? {};
-
-        for (let atomIndex = 0; atomIndex < atomCount; atomIndex++) {
-            appender.appendBigInt(BigInt(timestep));
-            appender.appendUInteger(atomIndex);
-
-            if (parsed.ids) {
-                appender.appendUInteger(Number(parsed.ids[atomIndex]));
-            } else {
-                appender.appendNull();
-            }
-
-            appender.appendUSmallInt(parsed.types[atomIndex]);
-            appender.appendFloat(parsed.positions[atomIndex * 3]);
-            appender.appendFloat(parsed.positions[atomIndex * 3 + 1]);
-            appender.appendFloat(parsed.positions[atomIndex * 3 + 2]);
-
-            for (const property of customProperties) {
-                const values = properties[property];
-                if (values) {
-                    appender.appendFloat(values[atomIndex]);
-                } else {
-                    appender.appendNull();
-                }
-            }
-
-            appender.endRow();
         }
     }
 

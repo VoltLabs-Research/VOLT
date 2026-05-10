@@ -4,6 +4,10 @@ import { logger } from '@/core/logger';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { TrajectoryRasterQueue } from '@/modules/trajectory/application/raster/TrajectoryRasterQueue';
+import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
+
+const DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_ATTEMPTS') ?? 3;
+const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_BACKOFF_MS') ?? 2000;
 
 @CommandGroup('trajectory')
 export class TrajectoryQueueCommands {
@@ -62,7 +66,13 @@ export class TrajectoryQueueCommands {
         }
 
         if (jobsToEnqueue.length > 0) {
-            await this.queueService.enqueueBulk(TRAJECTORY_GLB_QUEUE_NAME, jobsToEnqueue);
+            await this.queueService.enqueueBulk(TRAJECTORY_GLB_QUEUE_NAME, jobsToEnqueue, {
+                attempts: DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS,
+                backoff: {
+                    type: 'exponential',
+                    delay: DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS
+                }
+            });
             result.queuedJobs = jobsToEnqueue.length;
         }
 

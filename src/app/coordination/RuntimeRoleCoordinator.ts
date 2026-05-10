@@ -12,6 +12,7 @@ import type { ArtifactUploadWorker } from '@/modules/plugin/application/artifact
 import type { PluginWarmupWorker } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
 import type { AnalysisWorker } from '@/modules/analysis/application/workers/AnalysisWorker';
 import type { SSHImportWorker } from '@/modules/trajectory/application/import/SSHImportWorker';
+import type { TrajectoryFrameProcessingWorker } from '@/modules/trajectory/application/frame-processing/TrajectoryFrameProcessingWorker';
 import type { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/TrajectoryGlbWorker';
 import type { TrajectoryRasterWorker } from '@/modules/trajectory/application/raster/TrajectoryRasterWorker';
 import type { QueueConcurrencyCoordinator } from './QueueConcurrencyCoordinator';
@@ -23,11 +24,11 @@ interface QueueSettingsSnapshot {
 
 const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
     analysis: 8,
-    rasterizer: 5,
-    glbPreprocessing: 8,
-    artifactUpload: 8,
+    rasterizer: 8,
+    glbPreprocessing: 16,
+    artifactUpload: 16,
     sshImport: 2,
-    pluginWarmup: 2
+    pluginWarmup: 4
 };
 
 const normalizeQueueConcurrency = (
@@ -84,6 +85,7 @@ export class RuntimeRoleCoordinator {
         private readonly pluginWarmupWorker: PluginWarmupWorker,
         private readonly trajectoryRasterWorker: TrajectoryRasterWorker,
         private readonly trajectoryGlbWorker: TrajectoryGlbWorker,
+        private readonly trajectoryFrameProcessingWorker: TrajectoryFrameProcessingWorker,
         private readonly sshImportWorker: SSHImportWorker
     ) {}
 
@@ -96,6 +98,8 @@ export class RuntimeRoleCoordinator {
             };
 
             this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
+            this.trajectoryFrameProcessingWorker.start(this.snapshot.queueConcurrency.glbPreprocessing);
+            this.trajectoryRasterWorker.start(this.snapshot.queueConcurrency.rasterizer);
 
             await this.applyRoleConfigInternal(this.snapshot.roleConfig);
 
@@ -114,6 +118,8 @@ export class RuntimeRoleCoordinator {
         this.snapshot.queueConcurrency = normalizeQueueConcurrency(queueConcurrency);
         this.snapshot.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
         this.queueScopeLimitsRegistry.apply(this.snapshot.queueScopeLimits);
+        this.trajectoryFrameProcessingWorker.setConcurrency(this.snapshot.queueConcurrency.glbPreprocessing);
+        this.trajectoryRasterWorker.setConcurrency(this.snapshot.queueConcurrency.rasterizer);
 
         if (this.computeWorkersRunning) {
             this.queueConcurrencyCoordinator.apply(queueConcurrency);
@@ -172,12 +178,11 @@ export class RuntimeRoleCoordinator {
             return;
         }
 
-        const { analysis, rasterizer, glbPreprocessing, artifactUpload, sshImport, pluginWarmup } = this.snapshot.queueConcurrency;
+        const { analysis, glbPreprocessing, artifactUpload, sshImport, pluginWarmup } = this.snapshot.queueConcurrency;
 
         this.analysisWorker.start(analysis);
         this.artifactUploadWorker.start(artifactUpload);
         this.pluginWarmupWorker.start(pluginWarmup);
-        this.trajectoryRasterWorker.start(rasterizer);
         this.trajectoryGlbWorker.start(glbPreprocessing);
         this.sshImportWorker.start(sshImport);
 
@@ -191,7 +196,6 @@ export class RuntimeRoleCoordinator {
             this.analysisWorker.stop(),
             this.artifactUploadWorker.stop(),
             this.pluginWarmupWorker.stop(),
-            this.trajectoryRasterWorker.stop(),
             this.trajectoryGlbWorker.stop(),
             this.sshImportWorker.stop()
         ]);

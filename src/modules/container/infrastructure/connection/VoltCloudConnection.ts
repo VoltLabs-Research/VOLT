@@ -91,7 +91,7 @@ export class VoltCloudConnection {
                 reconnectMaxDelayMs: 30_000,
                 randomizationFactor: 0.3
             },
-            commandTimeout: 30_000
+            commandTimeout: 180_000
         });
 
         this.backgroundCommandLimiter = new Bottleneck({

@@ -15,6 +15,14 @@ export interface BinaryTunnelDataPayload {
     sessionId: string;
     chunk: Uint8Array;
     isBinary: boolean;
+    sequence?: number;
+    requiresAck?: boolean;
+}
+
+export interface BinaryTunnelDrainPayload {
+    type: 'tunnel-drain';
+    sessionId: string;
+    sequence: number;
 }
 
 export interface BinarySessionDataPayload {

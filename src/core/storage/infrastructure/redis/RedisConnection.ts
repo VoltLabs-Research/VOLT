@@ -146,6 +146,12 @@ export class RedisConnection {
         return result === 1;
     };
 
+    readonly decrementKey = async (key: string): Promise<number> => {
+        await this.connect();
+
+        return this.client.decr(key);
+    };
+
     readonly deleteKey = async (key: string): Promise<number> => {
         await this.connect();
 

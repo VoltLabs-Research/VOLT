@@ -1,5 +1,6 @@
 import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
+import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 
 interface ZstdStreamResult {
     stream: Readable;
@@ -7,6 +8,7 @@ interface ZstdStreamResult {
 }
 
 const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
+const DEFAULT_ZSTD_THREADS = 2;
 
 const rejectSpawnError = (reject: (error: Error) => void) => (error: NodeJS.ErrnoException): void => {
     if (error.code === 'ENOENT') {
@@ -88,7 +90,15 @@ export const runZstdCommand = async (args: string[]): Promise<void> => {
 };
 
 export const compressFileWithZstd = (sourcePath: string, outputPath: string): Promise<void> =>
-    runZstdCommand(['-T0', '-5', '--no-progress', '-f', '-o', outputPath, sourcePath]);
+    runZstdCommand([
+        `-T${readPositiveIntegerEnv('TRAJECTORY_ZSTD_THREADS') ?? DEFAULT_ZSTD_THREADS}`,
+        '-5',
+        '--no-progress',
+        '-f',
+        '-o',
+        outputPath,
+        sourcePath
+    ]);
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 

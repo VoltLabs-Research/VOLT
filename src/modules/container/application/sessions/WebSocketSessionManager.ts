@@ -13,6 +13,8 @@ import type {
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 import { assign, createActor, createMachine, type ActorRefFrom } from 'xstate';
 
+type SessionCommandResult = CommandResult<object | null>;
+
 type WebSocketMessageData = string | ArrayBuffer | Blob | ArrayBufferView | Buffer[];
 type PendingWebSocketMessage = Buffer | string;
 
@@ -129,7 +131,7 @@ export class WebSocketSessionManager {
 
     constructor(private readonly options: WebSocketSessionManagerOptions) {}
 
-    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<CommandResult> {
+    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<SessionCommandResult> {
         if (!payload.targetUrl) {
             const message = 'targetUrl is required';
             this.options.coordinator.emitSessionEnd({
@@ -161,7 +163,7 @@ export class WebSocketSessionManager {
             });
             sessionActor.start();
 
-            return await new Promise<CommandResult>((resolve) => {
+            return await new Promise<SessionCommandResult>((resolve) => {
                 let openTimeout: ReturnType<typeof setTimeout> | null = null;
                 let attachSettled = false;
 
@@ -438,7 +440,7 @@ export class WebSocketSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    private createSessionAttachFailureResult(status: number, message: string): CommandResult {
+    private createSessionAttachFailureResult(status: number, message: string): SessionCommandResult {
         return {
             status,
             data: {

@@ -71,3 +71,18 @@ export interface EnqueuePreprocessingResponse {
     duplicateJobs: number;
     skippedJobs: number;
 }
+
+export interface FrameProcessingQueueJobPayload extends JobIdentity {
+    trajectoryId: string;
+    timestep: number;
+    stagingObjectKey: string;
+    ownerClusterId: string;
+    status: string;
+    queueType: string;
+    metadata: {
+        trajectoryId: string;
+        timestep: number;
+    };
+    createdAt: string;
+    updatedAt: string;
+}

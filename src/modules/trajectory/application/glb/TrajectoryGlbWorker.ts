@@ -35,9 +35,13 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
     }
 
     protected async process(payload: GlbConversionQueueJobPayload, bullJob: Job<GlbConversionQueueJobPayload>): Promise<void> {
+        const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
+        const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
+
         await withJobLifecycle(
             {
                 reportStatus: this.buildStatusReporter(payload),
+                shouldReportTerminal: () => isFinalAttempt(),
                 progress: (value) => bullJob.updateProgress(value)
             },
             () => this.glbExporter.preprocessTrajectory(payload)

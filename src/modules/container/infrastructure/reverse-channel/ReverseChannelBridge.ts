@@ -15,6 +15,7 @@ import type {
 import type {
     BinarySessionDataPayload,
     BinarySessionInputPayload,
+    BinaryTunnelDrainPayload,
     BinaryTunnelDataPayload
 } from '@/core/reverse-channel/contracts/binary-messages';
 import type {
@@ -49,6 +50,10 @@ interface ReverseChannelTunnelState {
     socket: net.Socket;
     isOpen: boolean;
     isObjectGatewayTunnel: boolean;
+    nextOutboundSequence: number;
+    pendingOutboundAcks: Map<number, PendingTunnelAck>;
+    pendingOutboundBytes: number;
+    isOutboundPaused: boolean;
     onConnect: () => void;
     onData: (chunk: Buffer) => void;
     onError: (error: Error) => void;
@@ -89,12 +94,37 @@ type OutboundBridgeMessage =
     | TeamClusterDaemonSessionEndPayload
     | TeamClusterDaemonTunnelStatePayload
     | BinaryTunnelDataPayload
+    | BinaryTunnelDrainPayload
     | TeamClusterDaemonTunnelClosePayload;
 
-type InboundMessageHandler = (message: InboundTeamClusterDaemonMessage) => void;
+type InboundBridgeMessage = InboundTeamClusterDaemonMessage | BinaryTunnelDrainPayload;
+type InboundMessageHandler = (message: InboundBridgeMessage) => void;
 type SessionAttachHandler = (payload: TeamClusterDaemonSessionAttachPayload) => Promise<CommandResult>;
 
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
+const readPositiveIntegerEnv = (name: string, fallback: number): number => {
+    const value = Number(process.env[name]);
+    return Number.isFinite(value) && value > 0
+        ? Math.floor(value)
+        : fallback;
+};
+const TUNNEL_FLOW_CONTROL_WINDOW_BYTES = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_REVERSE_TUNNEL_WINDOW_BYTES',
+    8 * 1024 * 1024
+);
+const TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES = Math.max(
+    64 * 1024,
+    Math.floor(TUNNEL_FLOW_CONTROL_WINDOW_BYTES / 2)
+);
+const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
+    120_000
+);
+
+interface PendingTunnelAck {
+    bytes: number;
+    timeout: NodeJS.Timeout;
+}
 
 @Service('reverseChannelBridge')
 export class ReverseChannelBridge {
@@ -122,12 +152,13 @@ export class ReverseChannelBridge {
 
     private readonly pendingCommands: RegisteredReverseChannelCommand[] = [];
     private voltCloudConnection: VoltCloudConnection | null = null;
-    private readonly inboundMessageHandlers: Partial<Record<InboundTeamClusterDaemonMessage['type'], InboundMessageHandler>> = {
+    private readonly inboundMessageHandlers: Partial<Record<string, InboundMessageHandler>> = {
         'session-input': (message) => this.handleSessionInput(message as unknown as BinarySessionInputPayload),
         'session-resize': (message) => this.handleSessionResize(message as TeamClusterDaemonSessionResizePayload),
         'session-detach': (message) => this.handleSessionDetach(message as { sessionId: string }),
         'tunnel-open': (message) => this.handleTunnelOpen(message as unknown as InboundTunnelOpenPayload),
         'tunnel-data': (message) => this.handleTunnelData(message as unknown as BinaryTunnelDataPayload),
+        'tunnel-drain': (message) => this.handleTunnelDrain(message as unknown as BinaryTunnelDrainPayload),
         'tunnel-close': (message) => this.handleTunnelClose(message as { sessionId: string })
     };
     private readonly sessionAttachHandlers: Partial<Record<TeamClusterDaemonSessionAttachPayload['kind'], SessionAttachHandler>> = {
@@ -330,7 +361,8 @@ export class ReverseChannelBridge {
     }
 
     private routeInboundMessage(message: InboundTeamClusterDaemonMessage): void {
-        this.inboundMessageHandlers[message.type]?.(message);
+        const bridgeMessage = message as unknown as InboundBridgeMessage;
+        this.inboundMessageHandlers[bridgeMessage.type]?.(bridgeMessage);
     }
 
     attachSession(payload: ParsedSessionAttachPayload): Promise<CommandResult> {
@@ -427,19 +459,17 @@ export class ReverseChannelBridge {
             });
         };
         const onData = (chunk: Buffer) => {
-            this.touchSession(payload.sessionId);
-            const envelope = encodeEnvelope(
-                0,
-                EnvelopeKind.StreamChunk,
-                chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
+            const tunnelState = this.tunnelStates.get(payload.sessionId);
+            if (!tunnelState) {
+                return;
+            }
+
+            this.emitTunnelData(
+                payload.sessionId,
+                tunnelState,
+                chunk,
+                payload.accessMode !== TeamClusterServiceExposureAccessMode.Http
             );
-            const dataPayload: BinaryTunnelDataPayload = {
-                type: 'tunnel-data',
-                sessionId: payload.sessionId,
-                chunk: envelope,
-                isBinary: payload.accessMode !== TeamClusterServiceExposureAccessMode.Http
-            };
-            this.emitMessage(dataPayload);
         };
         const onError = (error: Error) => {
             this.closeTunnelWithError(payload.sessionId, error.message, sessionTransition);
@@ -468,6 +498,10 @@ export class ReverseChannelBridge {
             socket: tunnelSocket,
             isOpen: false,
             isObjectGatewayTunnel,
+            nextOutboundSequence: 0,
+            pendingOutboundAcks: new Map(),
+            pendingOutboundBytes: 0,
+            isOutboundPaused: false,
             onConnect,
             onData,
             onError,
@@ -511,11 +545,116 @@ export class ReverseChannelBridge {
         }
 
         this.touchSession(payload.sessionId);
-        tunnelState.socket.write(Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength));
+        const chunk = Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
+        if (payload.requiresAck && typeof payload.sequence === 'number') {
+            tunnelState.socket.write(chunk, (error?: Error | null) => {
+                if (error) {
+                    this.closeTunnelWithError(payload.sessionId, error.message);
+                    return;
+                }
+
+                this.emitTunnelDrain(payload.sessionId, payload.sequence!);
+            });
+            return;
+        }
+
+        tunnelState.socket.write(chunk);
+    }
+
+    private handleTunnelDrain(payload: BinaryTunnelDrainPayload): void {
+        const tunnelState = this.tunnelStates.get(payload.sessionId);
+        if (!tunnelState) {
+            this.sessionActivity.delete(payload.sessionId);
+            return;
+        }
+
+        const pendingAck = tunnelState.pendingOutboundAcks.get(payload.sequence);
+        if (!pendingAck) {
+            return;
+        }
+
+        this.touchSession(payload.sessionId);
+        clearTimeout(pendingAck.timeout);
+        tunnelState.pendingOutboundAcks.delete(payload.sequence);
+        tunnelState.pendingOutboundBytes = Math.max(0, tunnelState.pendingOutboundBytes - pendingAck.bytes);
+
+        if (
+            tunnelState.isOutboundPaused
+            && tunnelState.pendingOutboundBytes <= TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES
+            && !tunnelState.socket.destroyed
+        ) {
+            tunnelState.isOutboundPaused = false;
+            tunnelState.socket.resume();
+        }
     }
 
     private emitMessage(message: OutboundBridgeMessage): void {
         this.voltCloudConnection?.emitMessage(message as unknown as Parameters<VoltCloudConnection['emitMessage']>[0]);
+    }
+
+    private emitTunnelData(
+        sessionId: string,
+        tunnelState: ReverseChannelTunnelState,
+        chunk: Buffer,
+        isBinary: boolean
+    ): void {
+        this.touchSession(sessionId);
+        const sequence = ++tunnelState.nextOutboundSequence;
+        const envelope = encodeEnvelope(
+            0,
+            EnvelopeKind.StreamChunk,
+            chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
+        );
+        const bytes = chunk.byteLength;
+        const timeout = setTimeout(() => {
+            const activeTunnelState = this.tunnelStates.get(sessionId);
+            if (!activeTunnelState) {
+                return;
+            }
+
+            const pendingAck = activeTunnelState.pendingOutboundAcks.get(sequence);
+            if (!pendingAck) {
+                return;
+            }
+
+            activeTunnelState.pendingOutboundAcks.delete(sequence);
+            activeTunnelState.pendingOutboundBytes = Math.max(0, activeTunnelState.pendingOutboundBytes - pendingAck.bytes);
+            this.closeTunnelWithError(
+                sessionId,
+                `Timed out waiting for tunnel drain acknowledgement after ${TUNNEL_DRAIN_TIMEOUT_MS}ms`
+            );
+        }, TUNNEL_DRAIN_TIMEOUT_MS);
+        timeout.unref();
+
+        tunnelState.pendingOutboundAcks.set(sequence, { bytes, timeout });
+        tunnelState.pendingOutboundBytes += bytes;
+
+        const dataPayload: BinaryTunnelDataPayload = {
+            type: 'tunnel-data',
+            sessionId,
+            chunk: envelope,
+            isBinary,
+            sequence,
+            requiresAck: true
+        };
+        this.emitMessage(dataPayload);
+
+        if (
+            tunnelState.pendingOutboundBytes > TUNNEL_FLOW_CONTROL_WINDOW_BYTES
+            && !tunnelState.isOutboundPaused
+            && !tunnelState.socket.destroyed
+        ) {
+            tunnelState.isOutboundPaused = true;
+            tunnelState.socket.pause();
+        }
+    }
+
+    private emitTunnelDrain(sessionId: string, sequence: number): void {
+        this.emitMessage({
+            type: 'tunnel-drain',
+            sessionId,
+            sequence
+        });
     }
 
     private emitTunnelState(payload: TeamClusterDaemonTunnelStatePayload): void {
@@ -553,6 +692,8 @@ export class ReverseChannelBridge {
         tunnelState.socket.removeListener('close', tunnelState.onClose);
         tunnelState.socket.removeListener('timeout', tunnelState.onTimeout);
 
+        this.clearPendingTunnelAcks(tunnelState);
+
         if (!tunnelState.socket.destroyed) {
             tunnelState.socket.destroy();
         }
@@ -563,5 +704,15 @@ export class ReverseChannelBridge {
 
         this.tunnelStates.delete(sessionId);
         this.clearSessionActivityIfUntracked(sessionId);
+    }
+
+    private clearPendingTunnelAcks(tunnelState: ReverseChannelTunnelState): void {
+        for (const pendingAck of tunnelState.pendingOutboundAcks.values()) {
+            clearTimeout(pendingAck.timeout);
+        }
+
+        tunnelState.pendingOutboundAcks.clear();
+        tunnelState.pendingOutboundBytes = 0;
+        tunnelState.isOutboundPaused = false;
     }
 }

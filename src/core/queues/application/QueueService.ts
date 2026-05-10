@@ -1,5 +1,5 @@
 import { Service } from '@/core/decorators/service';
-import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import { Queue, Worker, type Job, type JobState } from 'bullmq';
 
@@ -15,6 +15,11 @@ type EnqueueOptions = {
     preserveExistingJob?: boolean;
     removeOnComplete?: number | boolean;
     removeOnFail?: number | boolean;
+    attempts?: number;
+    backoff?: {
+        type: string;
+        delay: number;
+    };
 };
 
 type PreservedJobState = Extract<JobState, 'active' | 'waiting' | 'delayed'>;
@@ -25,7 +30,8 @@ const KNOWN_QUEUE_NAMES = [
     PLUGIN_WARMUP_QUEUE_NAME,
     SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
-    TRAJECTORY_GLB_QUEUE_NAME
+    TRAJECTORY_GLB_QUEUE_NAME,
+    TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME
 ] as const;
 
 const PRESERVED_JOB_STATES = new Set<PreservedJobState>([
@@ -84,6 +90,8 @@ export class QueueService {
 
         await queue.add(queueName, payload, {
             jobId,
+            attempts: options.attempts,
+            backoff: options.backoff,
             removeOnComplete: options.removeOnComplete ?? 1000,
             removeOnFail: options.removeOnFail ?? 1000
         });
@@ -105,7 +113,7 @@ export class QueueService {
         }
     }
 
-    async enqueueBulk<T extends QueuePayload>(queueName: string, payloads: T[]): Promise<void> {
+    async enqueueBulk<T extends QueuePayload>(queueName: string, payloads: T[], options: EnqueueOptions = {}): Promise<void> {
         if (payloads.length === 0) return;
 
         const queue = this.getQueue(queueName);
@@ -115,8 +123,10 @@ export class QueueService {
             data: payload,
             opts: {
                 jobId: payload.jobId,
-                removeOnComplete: 1000,
-                removeOnFail: 1000
+                attempts: options.attempts,
+                backoff: options.backoff,
+                removeOnComplete: options.removeOnComplete ?? 1000,
+                removeOnFail: options.removeOnFail ?? 1000
             }
         })));
     }
