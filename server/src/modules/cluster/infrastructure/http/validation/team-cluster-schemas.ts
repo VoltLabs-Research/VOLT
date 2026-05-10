@@ -153,8 +153,7 @@ const teamClusterInstallManifestSchema = z.object({
 const queueConcurrencyValueSchema = z.number().int().min(1);
 const queueScopeLimitValueSchema = z.number().int().min(0);
 const queueScopeLimitSchema = z.object({
-    maxRunningPerTrajectory: queueScopeLimitValueSchema,
-    maxRunningPerTeam: queueScopeLimitValueSchema
+    maxRunningPerTrajectory: queueScopeLimitValueSchema
 }).strict();
 
 const updateQueueConcurrencySchema = z.object({
@@ -164,21 +163,13 @@ const updateQueueConcurrencySchema = z.object({
         glbPreprocessing: queueConcurrencyValueSchema,
         artifactUpload: queueConcurrencyValueSchema,
         sshImport: queueConcurrencyValueSchema,
-        // The new tunables are optional for backward compatibility with clients
-        // built before they existed. Server fills the documented defaults when
-        // the field is missing (see DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY).
-        pluginWarmup: queueConcurrencyValueSchema.optional(),
-        trajectoryBackgroundProcessor: queueConcurrencyValueSchema.optional(),
-        trajectoryCompression: queueConcurrencyValueSchema.optional(),
-        cloudUpload: queueConcurrencyValueSchema.optional()
+        pluginWarmup: queueConcurrencyValueSchema
     }).strict(),
     queueScopeLimits: z.object({
         analysisProcessing: queueScopeLimitSchema,
         artifactUpload: queueScopeLimitSchema,
         trajectoryRasterization: queueScopeLimitSchema,
-        trajectoryGlbConversion: queueScopeLimitSchema,
-        cloudUpload: queueScopeLimitSchema,
-        trajectoryCompression: queueScopeLimitSchema
+        trajectoryGlbConversion: queueScopeLimitSchema
     }).strict()
 }).strict();
 
