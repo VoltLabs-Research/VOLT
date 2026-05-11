@@ -1,4 +1,4 @@
-import { createService, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, del, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
@@ -59,6 +59,14 @@ export interface DeleteTeamClusterOutputDTO {
     message: string;
     manualUninstallCommand?: string;
     teamCluster?: TeamCluster;
+}
+
+export interface DeleteDemoTeamClusterInputDTO {
+    teamId: string;
+}
+
+export interface DeleteDemoTeamClusterOutputDTO {
+    teardownScheduled: boolean;
 }
 
 export interface DownloadTeamClusterRemoteExplorerObjectInputDTO {
@@ -243,6 +251,9 @@ const teamClusterEndpoints = {
         '/:teamId/clusters/:teamClusterId/role'
     ),
     provisionDemo: post<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO>(
+        '/:teamId/clusters/demo'
+    ),
+    deleteDemo: del<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO>(
         '/:teamId/clusters/demo'
     )
 };
