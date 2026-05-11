@@ -153,6 +153,9 @@ export const loadConfig = (): DaemonConfig => {
         ObjectBucketName.Models,
         ObjectBucketName.Plugins,
         ObjectBucketName.Rasterizer,
+        ObjectBucketName.AnalysisLogs,
+        ObjectBucketName.Whiteboards,
+        ObjectBucketName.LatexAssets,
         ObjectBucketName.Trajectories
     ];
 

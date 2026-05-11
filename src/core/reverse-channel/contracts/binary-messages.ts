@@ -25,6 +25,13 @@ export interface BinaryTunnelDrainPayload {
     sequence: number;
 }
 
+export interface BinaryStreamPayload {
+    type: 'stream';
+    requestId: string;
+    streamId: string;
+    chunk: Uint8Array;
+}
+
 export interface BinarySessionDataPayload {
     type: 'session-data';
     sessionId: string;
