@@ -8,8 +8,9 @@ interface ContainerPortProxyAccessTokenSignOptions extends SignOptions {
 }
 
 interface ContainerPortProxyAccessTokenContext {
-    sessionId: string;
-    relayPort: number;
+    containerId: string;
+    privatePort: number;
+    publicPort: number;
     userId: string;
 }
 
@@ -21,14 +22,16 @@ interface BuildContainerPortProxyRelayUrlInput extends ContainerPortProxyAccessT
 
 interface ContainerPortProxyAccessTokenClaims extends JwtPayload {
     type: 'container-port-proxy';
-    sessionId: string;
-    relayPort: number;
+    containerId: string;
+    privatePort: number;
+    publicPort: number;
     userId: string;
 }
 
 export interface VerifiedContainerPortProxyAccessToken {
-    sessionId: string;
-    relayPort: number;
+    containerId: string;
+    privatePort: number;
+    publicPort: number;
     userId: string;
 }
 
@@ -54,8 +57,9 @@ const isClaimsPayload = (value: unknown): value is ContainerPortProxyAccessToken
 
     const payload = value as Record<string, unknown>;
     return payload.type === 'container-port-proxy'
-        && typeof payload.sessionId === 'string'
-        && typeof payload.relayPort === 'number'
+        && typeof payload.containerId === 'string'
+        && typeof payload.privatePort === 'number'
+        && typeof payload.publicPort === 'number'
         && typeof payload.userId === 'string';
 };
 
@@ -82,11 +86,12 @@ export const resolveContainerPortProxyRelayProtocol = (): 'http' | 'https' => {
 
 export const buildContainerPortProxyRelayUrl = (input: BuildContainerPortProxyRelayUrlInput): string => {
     const accessToken = input.createAccessToken({
-        sessionId: input.sessionId,
-        relayPort: input.relayPort,
+        containerId: input.containerId,
+        privatePort: input.privatePort,
+        publicPort: input.publicPort,
         userId: input.userId
     });
-    const relayUrl = new URL(`${input.protocol}://${input.advertisedHost}:${input.relayPort}/`);
+    const relayUrl = new URL(`${input.protocol}://${input.advertisedHost}:${input.publicPort}/`);
     relayUrl.searchParams.set(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM, accessToken);
     return relayUrl.toString();
 };
@@ -111,8 +116,9 @@ export class ContainerPortProxyAccessTokenService {
     create(input: ContainerPortProxyAccessTokenContext): string {
         return jwt.sign({
             type: 'container-port-proxy',
-            sessionId: input.sessionId,
-            relayPort: input.relayPort,
+            containerId: input.containerId,
+            privatePort: input.privatePort,
+            publicPort: input.publicPort,
             userId: input.userId
         }, this.secret, this.signOptions);
     }
@@ -125,12 +131,20 @@ export class ContainerPortProxyAccessTokenService {
             }
 
             return {
-                sessionId: decoded.sessionId,
-                relayPort: decoded.relayPort,
+                containerId: decoded.containerId,
+                privatePort: decoded.privatePort,
+                publicPort: decoded.publicPort,
                 userId: decoded.userId
             };
         } catch {
             return null;
         }
+    }
+
+    getTtlMs(): number {
+        return readPositiveIntegerEnv(
+            'CONTAINER_PORT_PROXY_SESSION_TTL_MS',
+            DEFAULT_CONTAINER_PORT_PROXY_SESSION_TTL_MS
+        );
     }
 }

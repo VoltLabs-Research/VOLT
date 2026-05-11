@@ -46,7 +46,7 @@ export default createHttpModule({
             .patch(controllers.updateById.handle)
             .delete(controllers.deleteById.handle);
 
-        router.post('/:containerId/ports/:privatePort/session', controllers.createPortProxySession.handle);
+        router.post('/:containerId/ports/:privatePort/access-url', controllers.createPortAccessUrl.handle);
 
         router.patch('/:containerId/folder', controllers.move.handle);
 

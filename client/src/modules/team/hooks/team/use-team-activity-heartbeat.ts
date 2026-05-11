@@ -2,6 +2,7 @@ import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketConnectionEffect from '@/modules/socket/hooks/use-socket-connection-effect';
 import { emitOrSwallow } from '@/modules/socket/services/socket-emit-helpers';
+import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useEffect } from 'react';
 
@@ -16,7 +17,15 @@ export default function useTeamActivityHeartbeat(): void {
             return;
         }
 
-        emitOrSwallow(SOCKET_TEAM_EVENTS.HEARTBEAT, { teamId });
+        teamSocketRoomService.waitUntilSubscribed(teamId)
+            .then(() => {
+                if (!socketService.isConnected() || document.hidden) {
+                    return;
+                }
+
+                emitOrSwallow(SOCKET_TEAM_EVENTS.HEARTBEAT, { teamId });
+            })
+            .catch(() => undefined);
     }, [socketService, teamId]);
 
     useSocketConnectionEffect((connected) => {

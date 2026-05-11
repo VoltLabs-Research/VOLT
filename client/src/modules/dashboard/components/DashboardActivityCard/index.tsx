@@ -56,6 +56,7 @@ interface DashboardChartTooltipProps {
 }
 
 const ACTIVITY_LOOKBACK_DAYS = 7;
+const ACTIVITY_REFRESH_INTERVAL_MS = 10_000;
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DASHBOARD_ACTIVITY_TABS: Array<{ id: DashboardActivityTabId; label: string }> = [
     { id: 'activity', label: 'Activity' },
@@ -189,7 +190,11 @@ const buildInAppActivitySummary = (activityData: DailyActivity[]) => {
 
 const DashboardActivityCard = () => {
     const [activeTab, setActiveTab] = useState<DashboardActivityTabId>('in-app-activity');
-    const { activityData, isLoading, error, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData();
+    const { activityData, isLoading, error, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData({
+        range: ACTIVITY_LOOKBACK_DAYS,
+        scope: 'self',
+        refetchIntervalMs: ACTIVITY_REFRESH_INTERVAL_MS
+    });
 
     const timelineEntries = useMemo(() => buildTimelineEntries(activityData), [activityData]);
     const inAppActivity = useMemo(() => buildInAppActivitySummary(activityData), [activityData]);
@@ -268,13 +273,13 @@ const DashboardActivityCard = () => {
     const renderTimeline = (): ReactNode => {
         if (!hasTimelineEntries) {
             return (
-                <EmptyState
-                    icon={<GoBeaker size={20} />}
-                    title='No activity this week'
-                    description='Team activity from the last 7 days will appear here.'
-                    className='flex-1'
-                />
-            );
+                    <EmptyState
+                        icon={<GoBeaker size={20} />}
+                        title='No activity this week'
+                        description='Your activity from the last 7 days will appear here.'
+                        className='flex-1'
+                    />
+                );
         }
 
         return (
@@ -308,7 +313,7 @@ const DashboardActivityCard = () => {
                     className='dashboard-activity-empty-state h-max'
                     icon={<ActivityIcon size={20} strokeWidth={1.6} />}
                     title='No activity yet'
-                    description='Once your team starts navigating the app, this chart will compare time spent and actions taken across the week.'
+                    description='Once you start navigating the app, this chart will show your time spent and actions across the week.'
                 />
             );
         }

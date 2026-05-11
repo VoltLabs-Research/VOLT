@@ -22,8 +22,8 @@ export default class UpdateTeamClusterLifecycleUseCase implements IUseCase<
     async execute(input: UpdateTeamClusterLifecycleInputDTO): Promise<Result<UpdateTeamClusterLifecycleOutputDTO, ApplicationError>> {
         if (input.status === TeamClusterStatus.Connected) {
             return Result.fail(ApplicationError.badRequest(
-                'TeamCluster::HeartbeatRequired',
-                'Connected status must be reported through the heartbeat endpoint'
+                'TeamCluster::SocketLifecycleOnly',
+                'Connected status is managed by daemon socket registration'
             ));
         }
 

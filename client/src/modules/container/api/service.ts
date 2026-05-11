@@ -11,7 +11,7 @@ import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationRes
 import type { Container } from './entities/container';
 import type { ContainerFile } from './entities/container-file';
 import type { ContainerFolder } from './entities/container-folder';
-import type { ContainerPortProxySession } from './entities/container-port-proxy-session';
+import type { ContainerPortAccessUrl } from './entities/container-port-access-url';
 import type { ContainerStatsResponse } from './entities/container-stats';
 import type { EnvVariable } from './entities/env-variable';
 import type { PortMapping } from './entities/port-mapping';
@@ -82,7 +82,7 @@ export interface ReadContainerFileOutputDTO {
     content: string;
 }
 
-export interface CreateContainerPortProxySessionParams {
+export interface CreateContainerPortAccessUrlParams {
     teamId: string;
     containerId: string;
     privatePort: number;
@@ -147,7 +147,7 @@ const endpoints = {
         FolderDeleteParams,
         ContainerFolder
     >(),
-    createPortProxySession: post<CreateContainerPortProxySessionParams, ContainerPortProxySession>('/:containerId/ports/:privatePort/session', {
+    createPortAccessUrl: post<CreateContainerPortAccessUrlParams, ContainerPortAccessUrl>('/:containerId/ports/:privatePort/access-url', {
         client: 'scoped',
         omit: ['teamId'],
         body: () => ({})

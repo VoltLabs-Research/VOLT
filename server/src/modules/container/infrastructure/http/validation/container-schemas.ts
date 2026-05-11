@@ -86,7 +86,7 @@ export const containerValidation = {
         params: byTeamParamsSchema,
         body: createContainerSchema
     },
-    createPortProxySession: {
+    createPortAccessUrl: {
         params: byContainerPortParamsSchema
     },
     update: {

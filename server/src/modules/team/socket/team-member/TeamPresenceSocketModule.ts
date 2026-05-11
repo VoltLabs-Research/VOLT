@@ -12,6 +12,7 @@ import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subsc
 import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import { teamScopedSocketPayloadSchema } from '@modules/socket/utilities/team-subscription-schemas';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
+import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
@@ -28,6 +29,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         eventRegistry: SocketIOEventRegistry,
         
         private readonly teamPresenceService: TeamPresenceService,
+        private readonly teamRoomPresenceService: TeamRoomPresenceService,
         
         private readonly userRepository: UserRepository,
         
@@ -127,9 +129,11 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
             });
         }
 
+        const onlineUserIds = await this.teamRoomPresenceService.getOnlineUserIds(payload.teamId);
+
         this.emitToSocket(connection.id, 'user:list', {
             teamId: payload.teamId,
-            users: attachResult.onlineUserIds.map((_id) => ({ _id }))
+            users: onlineUserIds.map((_id) => ({ _id }))
         });
 
         logger.info(`[TeamPresenceSocketModule] User ${currentUserId} joined team ${payload.teamId}`);
@@ -173,13 +177,17 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         }
 
         if (session.userWentOffline) {
-            this.emitToRoom(roomName, 'user:offline', {
-                teamId: session.teamId,
-                userId: session.userId
-            });
+            const isStillOnlineInTeam = await this.teamRoomPresenceService.isUserOnline(session.teamId, session.userId);
 
-            if (session.userWentOfflineCompletely) {
-                await this.userRepository.updateById(session.userId, { lastSeenAt: session.endedAt });
+            if (!isStillOnlineInTeam) {
+                this.emitToRoom(roomName, 'user:offline', {
+                    teamId: session.teamId,
+                    userId: session.userId
+                });
+
+                if (session.userWentOfflineCompletely) {
+                    await this.userRepository.updateById(session.userId, { lastSeenAt: session.endedAt });
+                }
             }
         }
 

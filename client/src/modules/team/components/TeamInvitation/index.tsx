@@ -10,6 +10,7 @@ import {
     getPostAuthRedirectPath,
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
+import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -81,8 +82,9 @@ export default function TeamInvitationTemplate() {
             await runAction({
                 action: () => acceptMutation.mutateAsync({ invitationId, teamId: invitation.team._id }),
                 toast: ACCEPT_INVITATION_TOAST_OPTIONS,
-                afterSuccess: () => {
+                afterSuccess: async () => {
                     setSelectedTeamId(invitation.team._id);
+                    await refreshSocketSession();
                     setError(null);
                     navigate(getOnboardingRedirectPath(nextDestination));
                 }

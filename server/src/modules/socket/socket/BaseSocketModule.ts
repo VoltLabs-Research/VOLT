@@ -57,10 +57,10 @@ export default abstract class BaseSocketModule implements ISocketModule{
     /**
      * Register an event handler for a socket.
      */
-    protected on<T = unknown>(
+    protected on<T = unknown, TResult = unknown>(
         socketId: string,
         event: string,
-        handler: SocketEventHandler<T>
+        handler: SocketEventHandler<T, TResult>
     ): void{
         this.eventRegistry.on(socketId, event, handler);
     }

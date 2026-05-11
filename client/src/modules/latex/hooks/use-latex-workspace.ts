@@ -147,6 +147,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
     const fileEditorStatesRef = useRef<Record<string, FileEditorState>>({});
     const sendContentUpdateRef = useRef<((content: string, fileId: string) => void) | null>(null);
+    const applyLocalContentChangeRef = useRef<((fileId: string, content: string) => boolean) | null>(null);
     const compiledPdfUrlRef = useRef<string | null>(null);
     const autosaveTimersRef = useRef<Record<string, number>>({});
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
@@ -473,18 +474,26 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         if (!file) return;
         const currentState = fileEditorStatesRef.current[file._id] ?? createFileEditorState(file.content);
         const isRemoteEcho = content === currentState.remoteContent;
+        const appliedCollaboratively = isRemoteEcho
+            ? true
+            : applyLocalContentChangeRef.current?.(file._id, content) ?? false;
         setFileEditorStates((currentStates) => ({
             ...currentStates,
             [file._id]: {
                 ...currentState,
                 content,
-                isDirty: content !== currentState.lastSavedContent,
-                remoteContent: isRemoteEcho ? '' : currentState.remoteContent
+                lastSavedContent: appliedCollaboratively ? content : currentState.lastSavedContent,
+                isDirty: appliedCollaboratively ? false : content !== currentState.lastSavedContent,
+                remoteContent: isRemoteEcho || appliedCollaboratively ? content : currentState.remoteContent
             }
         }));
-        if (!isRemoteEcho) sendContentUpdateRef.current?.(content, file._id);
-        scheduleFileAutosave(file._id, content);
-    }, [latexFiles, scheduleFileAutosave]);
+        if (!isRemoteEcho && !appliedCollaboratively) sendContentUpdateRef.current?.(content, file._id);
+        if (appliedCollaboratively) {
+            clearAutosaveTimer(file._id);
+        } else {
+            scheduleFileAutosave(file._id, content);
+        }
+    }, [clearAutosaveTimer, latexFiles, scheduleFileAutosave]);
 
     const handleInsertAssetRef = useCallback((ref: string): void => {
         if (!selection || selection.type !== 'file') return;
@@ -562,7 +571,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         });
     }, [clearAutosaveTimer, documentId]);
 
-    const { collaborators, sendContentUpdate } = useLatexDocumentSocket({
+    const {
+        collaborators,
+        sendContentUpdate,
+        ensureFileSession,
+        applyLocalContentChange
+    } = useLatexDocumentSocket({
         documentId,
         teamId: teamId ?? undefined,
         enabled: !!documentId && !!teamId,
@@ -572,6 +586,53 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     useEffect(() => {
         sendContentUpdateRef.current = sendContentUpdate;
     }, [sendContentUpdate]);
+
+    useEffect(() => {
+        applyLocalContentChangeRef.current = applyLocalContentChange;
+    }, [applyLocalContentChange]);
+
+    const openCollaborativeFileIds = useMemo(() => {
+        const ids = new Set<string>();
+
+        Object.values(editorGroupsState).forEach((group) => {
+            if (group.selection?.type === 'file') {
+                ids.add(group.selection.id);
+            }
+
+            group.openTabs.forEach((tab) => {
+                if (tab.type === 'file') {
+                    ids.add(tab.id);
+                }
+            });
+        });
+
+        return Array.from(ids);
+    }, [editorGroupsState]);
+
+    useEffect(() => {
+        if (!documentId || !teamId || openCollaborativeFileIds.length === 0) {
+            return;
+        }
+
+        openCollaborativeFileIds.forEach((fileId) => {
+            const file = latexFiles.find((currentFile) => currentFile._id === fileId);
+            if (!file) {
+                return;
+            }
+
+            const initialContent = fileEditorStatesRef.current[fileId]?.content ?? file.content;
+            ensureFileSession(fileId, initialContent).then((joined) => {
+                if (!joined) {
+                    return;
+                }
+
+                const latestContent = fileEditorStatesRef.current[fileId]?.content ?? initialContent;
+                if (latestContent !== initialContent) {
+                    applyLocalContentChangeRef.current?.(fileId, latestContent);
+                }
+            });
+        });
+    }, [documentId, ensureFileSession, latexFiles, openCollaborativeFileIds, teamId]);
 
     const isSelectionAvailable = useCallback((candidate: LatexWorkspaceSelection): candidate is LatexWorkspaceTab => {
         if (!candidate) {
@@ -603,10 +664,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     }, [checkAccessDeniedError, documentQueryResult.error]);
 
     useEffect(() => {
+        const autosaveTimers = autosaveTimersRef.current;
+
         return () => {
             revokePdfUrl();
 
-            Object.values(autosaveTimersRef.current).forEach((timerId) => {
+            Object.values(autosaveTimers).forEach((timerId) => {
                 window.clearTimeout(timerId);
             });
         };

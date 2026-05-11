@@ -39,24 +39,13 @@ const particleFilterPropertiesQuerySchema = z.object({
     exposureId: exposureIdSchema.optional()
 }).strict();
 
-const particleFilterLegacyExpressionQuerySchema = z.object({
-    timestep: z.string().trim().min(1),
-    property: z.string().trim().min(1),
-    operator: particleFilterOperatorSchema,
-    value: z.coerce.number().finite(),
-    exposureId: exposureIdSchema.optional()
-}).strict();
-
 const particleFilterCompositeExpressionQuerySchema = z.object({
     timestep: z.string().trim().min(1),
     combinator: particleFilterCombinatorSchema,
     conditions: parseConditionsQuerySchema
 }).strict();
 
-const particleFilterPreviewQuerySchema = z.union([
-    particleFilterLegacyExpressionQuerySchema,
-    particleFilterCompositeExpressionQuerySchema
-]);
+const particleFilterPreviewQuerySchema = particleFilterCompositeExpressionQuerySchema;
 
 const particleFilterUniqueValuesQuerySchema = z.object({
     timestep: z.string().trim().min(1),
@@ -65,27 +54,11 @@ const particleFilterUniqueValuesQuerySchema = z.object({
     maxValues: z.coerce.number().int().min(1).optional()
 }).strict();
 
-const particleFilterLegacyModelQuerySchema = particleFilterLegacyExpressionQuerySchema.extend({
-    action: z.enum(['delete', 'highlight']).optional()
-}).strict();
-
 const particleFilterCompositeModelQuerySchema = particleFilterCompositeExpressionQuerySchema.extend({
     action: z.enum(['delete', 'highlight']).optional()
 }).strict();
 
-const particleFilterModelQuerySchema = z.union([
-    particleFilterLegacyModelQuerySchema,
-    particleFilterCompositeModelQuerySchema
-]);
-
-const applyLegacyFilterBodySchema = z.object({
-    timestep: z.string().min(1),
-    action: z.enum(['delete', 'highlight']),
-    property: z.string().min(1),
-    operator: particleFilterOperatorSchema,
-    value: z.coerce.number().finite(),
-    exposureId: exposureIdSchema.optional()
-}).strict();
+const particleFilterModelQuerySchema = particleFilterCompositeModelQuerySchema;
 
 const applyCompositeFilterBodySchema = z.object({
     timestep: z.string().min(1),
@@ -94,10 +67,7 @@ const applyCompositeFilterBodySchema = z.object({
     conditions: particleFilterConditionSchema.array().min(1)
 }).strict();
 
-const applyFilterBodySchema = z.union([
-    applyLegacyFilterBodySchema,
-    applyCompositeFilterBodySchema
-]);
+const applyFilterBodySchema = applyCompositeFilterBodySchema;
 
 export const particleFilterValidation = createResourceValidation({
     getProperties: {

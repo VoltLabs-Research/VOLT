@@ -127,14 +127,10 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
-    trajectoryFrames?: TrajectoryFramePayload[];
-    trajectoryFramesCompressed?: string;
-    workflow?: WorkflowSerializable;
-    workflowCompressed?: string;
-    nestedPlugins?: NestedPluginDefinition[];
-    nestedPluginsCompressed?: string;
-    pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
-    pluginReferenceExecutionsCompressed?: string;
+    trajectoryFramesCompressed: string;
+    workflowCompressed: string;
+    nestedPluginsCompressed: string;
+    pluginReferenceExecutionsCompressed: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
@@ -149,13 +145,10 @@ interface DispatchCleanupSummary {
     payloadBytes: number;
 }
 
-const COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES = 1024;
-
-interface EncodedDispatchSection<T> {
+interface EncodedDispatchSection {
     rawBytes: number;
     storedBytes: number;
-    compressedValue?: string;
-    rawValue?: T;
+    compressedValue: string;
 }
 
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => {
@@ -208,20 +201,12 @@ const dedupePluginReferenceExecutions = (
     return Array.from(dedupedPluginReferenceExecutions.values());
 };
 
-const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection<T>> => {
+const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection> => {
     // Why: single serialization pass — the Buffer carries both the byte count
     // and the raw bytes fed to gzip, eliminating `JSON.stringify(value)` +
     // `Buffer.byteLength(stringified)` as distinct passes over the same data.
     const serializedBuffer = Buffer.from(JSON.stringify(value), 'utf8');
     const rawBytes = serializedBuffer.byteLength;
-
-    if (rawBytes < COMPRESSIBLE_ANALYSIS_SECTION_THRESHOLD_BYTES) {
-        return {
-            rawBytes,
-            storedBytes: rawBytes,
-            rawValue: value
-        };
-    }
 
     const compressed = await gzipAsync(serializedBuffer);
     const compressedValue = compressed.toString('base64');
@@ -243,20 +228,20 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         private readonly redis: IORedis
     ) {}
 
-    private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection<unknown>>>();
+    private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection>>();
     private readonly inflightPluginSyncs = new Map<string, Promise<void>>();
 
-    private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection<T>> {
+    private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection> {
         try {
             const cached = await this.redis.get(cacheKey);
             if (cached) {
-                return JSON.parse(cached) as EncodedDispatchSection<T>;
+                return JSON.parse(cached) as EncodedDispatchSection;
             }
         } catch (error: unknown) {
             logger.warn({ err: error, cacheKey }, '@plugin-execution-router: dispatch section cache read failed');
         }
 
-        const existing = this.inflightEncodes.get(cacheKey) as Promise<EncodedDispatchSection<T>> | undefined;
+        const existing = this.inflightEncodes.get(cacheKey);
         if (existing) return existing;
 
         const pending = (async () => {
@@ -271,11 +256,11 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             this.inflightEncodes.delete(cacheKey);
         });
 
-        this.inflightEncodes.set(cacheKey, pending as Promise<EncodedDispatchSection<unknown>>);
+        this.inflightEncodes.set(cacheKey, pending);
         return pending;
     }
 
-    private encodeWorkflowSection(plugin: Plugin): Promise<EncodedDispatchSection<WorkflowSerializable>> {
+    private encodeWorkflowSection(plugin: Plugin): Promise<EncodedDispatchSection> {
         const revision = plugin.props.updatedAt.getTime();
         const cacheKey = `plugin-dispatch:workflow:${plugin.id}:${revision}`;
         return this.cachedEncode(cacheKey, plugin.props.workflow.props as unknown as WorkflowSerializable);
@@ -285,7 +270,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         rootPluginId: string,
         deps: Plugin[],
         nestedPlugins: NestedPluginDefinition[]
-    ): Promise<EncodedDispatchSection<NestedPluginDefinition[]>> {
+    ): Promise<EncodedDispatchSection> {
         const revisionToken = deps
             .map((d) => `${d.id}@${d.props.updatedAt.getTime()}`)
             .sort()
@@ -319,18 +304,10 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
-            ...(encodedTrajectoryFrames.rawValue
-                ? { trajectoryFrames: encodedTrajectoryFrames.rawValue }
-                : { trajectoryFramesCompressed: encodedTrajectoryFrames.compressedValue }),
-            ...(encodedWorkflow.rawValue
-                ? { workflow: encodedWorkflow.rawValue }
-                : { workflowCompressed: encodedWorkflow.compressedValue }),
-            ...(encodedNestedPlugins.rawValue
-                ? { nestedPlugins: encodedNestedPlugins.rawValue }
-                : { nestedPluginsCompressed: encodedNestedPlugins.compressedValue }),
-            ...(encodedPluginReferenceExecutions.rawValue
-                ? { pluginReferenceExecutions: encodedPluginReferenceExecutions.rawValue }
-                : { pluginReferenceExecutionsCompressed: encodedPluginReferenceExecutions.compressedValue }),
+            trajectoryFramesCompressed: encodedTrajectoryFrames.compressedValue,
+            workflowCompressed: encodedWorkflow.compressedValue,
+            nestedPluginsCompressed: encodedNestedPlugins.compressedValue,
+            pluginReferenceExecutionsCompressed: encodedPluginReferenceExecutions.compressedValue,
             config: input.config,
             selectedFrameOnly: input.selectedFrameOnly,
             selectedTimesteps: input.selectedTimesteps,

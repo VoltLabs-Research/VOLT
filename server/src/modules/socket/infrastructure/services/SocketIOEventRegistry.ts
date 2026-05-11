@@ -46,10 +46,10 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         this.disconnectHandlers.delete(socketId);
     }
 
-    on<T = unknown>(
+    on<T = unknown, TResult = unknown>(
         socketId: string,
         event: string,
-        handler: SocketEventHandler<T>
+        handler: SocketEventHandler<T, TResult>
     ): void{
         const socket = this.sockets.get(socketId);
         if(!socket) return;
@@ -57,9 +57,9 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         socket.on(event, async (payload: T, ack?: (...args: unknown[]) => void) => {
             try {
                 const connection = this.socketMapper.toDomain(socket);
-                await handler(connection, payload);
+                const result = await handler(connection, payload);
                 if(typeof ack === 'function'){
-                    ack({ ok: true });
+                    ack(result === undefined ? { ok: true } : result);
                 }
             } catch(error) {
                 if(typeof ack === 'function'){

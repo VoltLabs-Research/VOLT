@@ -8,6 +8,7 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
 import type { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
+import mongoose from 'mongoose';
 
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const PLACEHOLDER_PUBLIC_PORT = 0;
@@ -107,5 +108,29 @@ export class ContainerRepository extends MongooseBaseRepository<Container, ICont
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }
         return container;
+    }
+
+    async isPublicPortAssigned(publicPort: number, excludeContainerId?: string): Promise<boolean> {
+        const filter: Record<string, unknown> = {
+            'ports.public': publicPort
+        };
+
+        if (excludeContainerId) {
+            filter._id = {
+                $ne: new mongoose.Types.ObjectId(excludeContainerId)
+            };
+        }
+
+        return Boolean(await this.model.exists(filter));
+    }
+
+    async findWithPublicPorts(): Promise<Container[]> {
+        const docs = await this.model.find({
+            'ports.public': {
+                $gt: 0
+            }
+        }).exec();
+
+        return docs.map((doc) => this.mapper.toDomain(doc));
     }
 }

@@ -38,30 +38,13 @@ export default class TeamClusterRepository
         return document ? this.mapper.toDomain(document) : null;
     }
 
-    async findHeartbeatTimedOutConnectedClusters(cutoff: Date): Promise<TeamCluster[]> {
-        const documents = await this.model.find({
-            status: TeamClusterStatus.Connected,
-            lastHeartbeatAt: {
-                $lt: cutoff
-            }
-        }).exec();
-
-        return documents.map((document) => this.mapper.toDomain(document));
-    }
-
-    async findHeartbeatTimedOutDeletingClusters(cutoff: Date): Promise<TeamCluster[]> {
+    async findDeletingClustersDisconnectedBefore(cutoff: Date): Promise<TeamCluster[]> {
         const documents = await this.model.find({
             status: TeamClusterStatus.Deleting,
-            $or: [
-                {
-                    lastHeartbeatAt: {
-                        $lt: cutoff
-                    }
-                },
-                {
-                    lastHeartbeatAt: null
-                }
-            ]
+            lastDisconnectAt: {
+                $ne: null,
+                $lt: cutoff
+            }
         }).exec();
 
         return documents.map((document) => this.mapper.toDomain(document));
@@ -140,12 +123,6 @@ export default class TeamClusterRepository
         if (preconditions?.allowedCurrentStatuses?.length) {
             filter.status = {
                 $in: preconditions.allowedCurrentStatuses
-            };
-        }
-
-        if (preconditions?.requireHeartbeatBefore) {
-            filter.lastHeartbeatAt = {
-                $lt: preconditions.requireHeartbeatBefore
             };
         }
 

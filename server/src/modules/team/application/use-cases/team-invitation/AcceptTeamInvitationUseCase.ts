@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
 import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
@@ -16,7 +17,8 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         private readonly invitationRepository: TeamInvitationRepository,
         private readonly teamMemberRepository: TeamMemberRepository,
         private readonly teamRepository: TeamRepository,
-        private readonly teamRoleRepository: TeamRoleRepository
+        private readonly teamRoleRepository: TeamRoleRepository,
+        private readonly userRepository: UserRepository
     ){}
 
     async execute(input: AcceptTeamInvitationInputDTO): Promise<Result<AcceptTeamInvitationOutputDTO, ApplicationError>> {
@@ -68,6 +70,7 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
         });
 
         await this.teamRepository.addMemberToTeam(teamMember._id, teamId);
+        await this.userRepository.addTeamToUser(userId, teamId);
 
         await this.invitationRepository.updateById(invitation._id, invitation.accept());
 

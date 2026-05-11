@@ -26,6 +26,7 @@ import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
+import type { DailyActivity } from '@/modules/daily-activity/api/entities/daily-activity';
 import type { TeamMemberStats } from '@/modules/team/api/entities/member/team-member';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
@@ -64,6 +65,23 @@ const leaveTeamToastOptions = createPromiseToastOptions({
     error: 'Failed to leave team'
 });
 
+const TEAM_ACTIVITY_LOOKBACK_DAYS = 7;
+const TEAM_ACTIVITY_REFRESH_INTERVAL_MS = 10_000;
+
+const buildTimeSpentByUser = (activityData: DailyActivity[]): Map<string, number> => {
+    const totalsByUser = new Map<string, number>();
+
+    for (const entry of activityData) {
+        const userId = typeof entry.user === 'string'
+            ? entry.user
+            : entry.user._id;
+        const current = totalsByUser.get(userId) ?? 0;
+        totalsByUser.set(userId, current + (entry.minutesOnline || 0));
+    }
+
+    return totalsByUser;
+};
+
 export default function MyTeamTemplate() {
     const chatActions = useChatActions();
 
@@ -82,7 +100,13 @@ export default function MyTeamTemplate() {
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
     const removeTeamMemberMutation = useRemoveTeamMemberMutation();
     const leaveTeamMutation = useLeaveTeamMutation();
-    const { activityData } = useDailyActivityData();
+    const { activityData } = useDailyActivityData({ scope: 'team' });
+    const { activityData: recentActivityData } = useDailyActivityData({
+        range: TEAM_ACTIVITY_LOOKBACK_DAYS,
+        scope: 'team',
+        refetchIntervalMs: TEAM_ACTIVITY_REFRESH_INTERVAL_MS
+    });
+    const timeSpentByUser = useMemo(() => buildTimeSpentByUser(recentActivityData), [recentActivityData]);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         await runAction({
@@ -236,15 +260,17 @@ export default function MyTeamTemplate() {
             key: 'timeSpentLast7Days',
             title: 'Time (7d)',
             render: (_value, member) => {
+                const timeSpentLast7Days = timeSpentByUser.get(member.user._id) ?? 0;
+
                 return (
                     <span className='color-secondary font-size-2'>
-                        {formatDuration(member.timeSpentLast7Days)}
+                        {formatDuration(timeSpentLast7Days)}
                     </span>
                 );
             }
         },
         dateColumn<TeamMemberStats>('joinedAt', 'Joined At', { sortable: false, withTitle: true })
-    ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot]);
+    ], [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({
         actions: {

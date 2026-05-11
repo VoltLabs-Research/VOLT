@@ -6,7 +6,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
 import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
-import type { DailyActivityRecord, IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import type { DailyActivityRecord, FindActivityByTeamIdOptions, IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import type { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
@@ -54,13 +54,18 @@ export default class DailyActivityRepository
         );
     }
 
-    async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityRecord[]> {
+    async findActivityByTeamId(
+        teamId: string,
+        range: number,
+        options?: FindActivityByTeamIdOptions
+    ): Promise<DailyActivityRecord[]> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - range);
         startDate.setHours(0, 0, 0, 0);
 
         const statsQuery = {
             team: teamId,
+            ...(options?.userId ? { user: options.userId } : {}),
             date: { $gte: startDate }
         };
 

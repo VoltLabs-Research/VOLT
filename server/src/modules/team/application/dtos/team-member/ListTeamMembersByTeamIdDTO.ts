@@ -4,7 +4,6 @@ import { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamM
 export type ListTeamMembersByTeamIdInputDTO = PaginatedTeamScopedInputDTO;
 
 export interface TeamMemberStatsProps extends TeamMemberProps {
-    timeSpentLast7Days: number;
     trajectoriesCount: number;
     analysesCount: number;
     latexCount: number;

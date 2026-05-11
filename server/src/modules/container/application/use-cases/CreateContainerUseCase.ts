@@ -5,6 +5,8 @@ import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/contai
 import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
+import { ContainerPublicPortAllocator } from '@modules/container/infrastructure/services/ContainerPublicPortAllocator';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -22,6 +24,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         private repository: ContainerRepository,
         private readonly folderRepository: ContainerFolderRepository,
         private containerRuntimeService: DaemonContainerRuntimeService,
+        private readonly publicPortAllocator: ContainerPublicPortAllocator,
+        private readonly relayService: ContainerPortProxyRelayService,
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
@@ -58,34 +62,6 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             cmd: options.cmd,
             user: options.user
         };
-    }
-
-    private resolveCanonicalPorts(
-        requestedPorts: ContainerPortMapping[] | undefined,
-        runtimeContainer: RuntimeContainerInfo
-    ): ContainerPortMapping[] {
-        if (!requestedPorts || requestedPorts.length === 0) {
-            return [];
-        }
-
-        const runtimeBindings = runtimeContainer.NetworkSettings?.Ports;
-
-        return requestedPorts.map((requestedPort) => {
-            const runtimePortBindings = runtimeBindings?.[`${requestedPort.private}/tcp`];
-            const runtimePortBinding = Array.isArray(runtimePortBindings) ? runtimePortBindings[0] : undefined;
-            const publicPort = Number(runtimePortBinding?.HostPort);
-
-            if (Number.isFinite(publicPort) && publicPort > 0) {
-                return {
-                    private: requestedPort.private,
-                    public: publicPort
-                };
-            }
-
-            return {
-                private: requestedPort.private
-            };
-        });
     }
 
     private resolveInternalIp(runtimeContainer: RuntimeContainerInfo): string | undefined {
@@ -136,6 +112,24 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         }
     }
 
+    private requireInternalIp(runtimeContainer: RuntimeContainerInfo): string {
+        const internalIp = this.resolveInternalIp(runtimeContainer);
+        if (!internalIp) {
+            throw ApplicationError.conflict(
+                'Container::NetworkingUnavailable',
+                'Container networking is not ready'
+            );
+        }
+
+        return internalIp;
+    }
+
+    private toRuntimePorts(ports: ContainerPortMapping[]): ContainerPortMapping[] {
+        return ports.map((port) => ({
+            private: port.private
+        }));
+    }
+
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
 
@@ -175,51 +169,81 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             binds.push('/var/run/docker.sock:/var/run/docker.sock');
         }
 
-        const dockerConfig = this.buildContainerRuntimeConfig({
-            image,
-            name,
-            env,
-            ports,
-            teamId: input.teamId,
-            teamClusterId
-        }, {
-            memoryInMegabytes,
-            cpus: cpuCount,
-            binds,
-            groupAdd,
-            cmd: containerCmd
-        });
+        const reservedPortMappings = await this.publicPortAllocator.reservePortMappings(ports);
+        const assignedPorts = reservedPortMappings.ports;
+        let dockerId: string | null = null;
+        let persistedContainerId: string | null = null;
 
-        const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
-        const dockerId = containerInfo.Id;
-        const runtimeContainer = await this.containerRuntimeService.getContainer(teamClusterId, dockerId);
-        const resolvedPorts = this.resolveCanonicalPorts(ports, runtimeContainer);
-        const internalIp = this.resolveInternalIp(runtimeContainer);
+        try {
+            const dockerConfig = this.buildContainerRuntimeConfig({
+                image,
+                name,
+                env,
+                ports: this.toRuntimePorts(assignedPorts),
+                teamId: input.teamId,
+                teamClusterId
+            }, {
+                memoryInMegabytes,
+                cpus: cpuCount,
+                binds,
+                groupAdd,
+                cmd: containerCmd
+            });
 
-        const container = await this.repository.create({
-            name,
-            image,
-            containerId: dockerId,
-            folder: input.folderId ?? null,
-            status: runtimeContainer.State?.Status || containerInfo.State?.Status || 'running',
-            memory: memoryInMegabytes,
-            cpus: cpuCount,
-            env: env || [],
-            ports: resolvedPorts,
-            createdBy: input.userId,
-            team: input.teamId,
-            teamCluster: teamClusterId,
-            mountDockerSocket: mountDockerSocket || false,
-            ...(internalIp ? { internalIp } : {})
-        });
+            const containerInfo = await this.containerRuntimeService.createContainer(teamClusterId, dockerConfig);
+            dockerId = containerInfo.Id;
+            const runtimeContainer = await this.containerRuntimeService.getContainer(teamClusterId, dockerId);
+            const internalIp = this.requireInternalIp(runtimeContainer);
 
-        await this.eventBus.publish(new ContainerCreatedEvent({
-            containerId: container._id,
-            teamId: input.teamId,
-            name,
-            userId: input.userId
-        }));
+            const container = await this.repository.create({
+                name,
+                image,
+                containerId: dockerId,
+                folder: input.folderId ?? null,
+                status: runtimeContainer.State?.Status || containerInfo.State?.Status || 'running',
+                memory: memoryInMegabytes,
+                cpus: cpuCount,
+                env: env || [],
+                ports: assignedPorts,
+                createdBy: input.userId,
+                team: input.teamId,
+                teamCluster: teamClusterId,
+                mountDockerSocket: mountDockerSocket || false,
+                internalIp
+            });
+            persistedContainerId = container._id;
 
-        return Result.ok({ container });
+            await this.relayService.ensureContainerRelays(assignedPorts.map((port) => ({
+                teamId: input.teamId,
+                containerId: container._id,
+                teamClusterId,
+                internalIp,
+                privatePort: port.private,
+                publicPort: port.public as number
+            })));
+            this.publicPortAllocator.commitReservations(reservedPortMappings.reservedPublicPorts);
+
+            await this.eventBus.publish(new ContainerCreatedEvent({
+                containerId: container._id,
+                teamId: input.teamId,
+                name,
+                userId: input.userId
+            }));
+
+            return Result.ok({ container });
+        } catch (error) {
+            this.publicPortAllocator.releaseReservations(reservedPortMappings.reservedPublicPorts);
+
+            if (persistedContainerId) {
+                await this.repository.deleteById(persistedContainerId).catch(() => undefined);
+                await this.relayService.stopContainerRelays(persistedContainerId).catch(() => undefined);
+            }
+
+            if (dockerId) {
+                await this.containerRuntimeService.removeContainer(teamClusterId, dockerId).catch(() => undefined);
+            }
+
+            throw error;
+        }
     }
 }

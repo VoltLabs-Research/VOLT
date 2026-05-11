@@ -5,7 +5,8 @@ const teamIdParamsSchema = z.object({
 }).strict();
 
 const findActivityQuerySchema = z.object({
-    range: z.coerce.number().int().min(1).max(365).default(7)
+    range: z.coerce.number().int().min(1).max(365).default(7),
+    scope: z.enum(['team', 'self']).default('team')
 }).strict();
 
 export const dailyActivityValidation = {
