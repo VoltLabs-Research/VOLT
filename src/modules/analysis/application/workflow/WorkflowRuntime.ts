@@ -446,12 +446,26 @@ export class WorkflowRuntime {
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {
-        const { binaryObjectPath, arguments: argumentsTemplate, type, requirementsFile, entrypointScript } = input.executionData.entrypoint;
+        const {
+            binaryObjectPath,
+            ownerClusterId: pluginOwnerClusterId,
+            arguments: argumentsTemplate,
+            type,
+            requirementsFile,
+            entrypointScript
+        } = input.executionData.entrypoint;
         const storageClusterId = input.executionData.identity.storageClusterId;
 
         return {
             entrypoint: {
-                defaults: { binaryObjectPath, argumentsTemplate, entrypointType: type, requirementsFile, entrypointScript },
+                defaults: {
+                    binaryObjectPath,
+                    ownerClusterId: pluginOwnerClusterId,
+                    argumentsTemplate,
+                    entrypointType: type,
+                    requirementsFile,
+                    entrypointScript
+                },
                 jobId: input.jobId,
                 outputDir: input.outputDir,
                 pluginBinaryCache: this.pluginBinaryCache,

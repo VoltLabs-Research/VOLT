@@ -9,6 +9,7 @@ import type { Job } from 'bullmq';
 export interface PluginWarmupJobPayload extends QueuePayload {
     pluginId: string;
     binaryObjectPath: string;
+    ownerClusterId?: string;
     requirementsFile: string;
     entrypointScript?: string;
 }
@@ -39,6 +40,7 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
             const descriptor = await this.pluginBinaryCache.warmUpPlugin({
                 pluginId: payload.pluginId,
                 binaryObjectPath: payload.binaryObjectPath,
+                ownerClusterId: payload.ownerClusterId,
                 requirementsFile: payload.requirementsFile,
                 entrypointScript: payload.entrypointScript
             });

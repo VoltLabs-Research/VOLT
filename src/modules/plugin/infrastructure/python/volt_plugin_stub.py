@@ -18,10 +18,12 @@ bytes otherwise. The caller may always fall back to inline payloads.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import importlib.util
 import io
 import os
+import subprocess
 import struct
 import sys
 import traceback
@@ -201,6 +203,61 @@ def _materialize_frame(frame: Optional[dict], mmap_cache: Dict[str, memoryview])
     return materialized
 
 
+def _emit_captured_process_output(payload: Any) -> None:
+    if payload is None:
+        return
+    if isinstance(payload, bytes):
+        if payload:
+            sys.stderr.buffer.write(payload)
+            sys.stderr.flush()
+        return
+    text = str(payload)
+    if text:
+        sys.stderr.write(text)
+        sys.stderr.flush()
+
+
+@contextlib.contextmanager
+def _mirror_subprocess_output_to_stderr():
+    original_run = subprocess.run
+
+    def _mirrored_run(*popenargs, **kwargs):
+        if kwargs.get("capture_output"):
+            return original_run(*popenargs, **kwargs)
+
+        stdout_target = kwargs.get("stdout")
+        stderr_target = kwargs.get("stderr")
+
+        capture_stdout = stdout_target is None or stdout_target is subprocess.DEVNULL
+        capture_stderr = stderr_target is None or stderr_target is subprocess.DEVNULL
+
+        if not capture_stdout and not capture_stderr:
+            return original_run(*popenargs, **kwargs)
+
+        patched_kwargs = dict(kwargs)
+        if capture_stdout:
+            patched_kwargs["stdout"] = subprocess.PIPE
+        if capture_stderr:
+            patched_kwargs["stderr"] = subprocess.PIPE
+
+        completed = original_run(*popenargs, **patched_kwargs)
+
+        if capture_stdout:
+            _emit_captured_process_output(completed.stdout)
+            completed.stdout = None
+        if capture_stderr:
+            _emit_captured_process_output(completed.stderr)
+            completed.stderr = None
+
+        return completed
+
+    subprocess.run = _mirrored_run
+    try:
+        yield
+    finally:
+        subprocess.run = original_run
+
+
 def _invoke(
     callables: Dict[str, Callable[..., Any]],
     opcode: str,
@@ -226,18 +283,20 @@ def _invoke(
             if materialized is not None:
                 materialized_frames.append(materialized)
 
-        if process_batch is not None:
-            batch_result = process_batch(materialized_frames, config)
-            return {"ok": True, "results": list(batch_result) if batch_result is not None else []}
+        with _mirror_subprocess_output_to_stderr():
+            if process_batch is not None:
+                batch_result = process_batch(materialized_frames, config)
+                return {"ok": True, "results": list(batch_result) if batch_result is not None else []}
 
-        single = callables["process"]
-        results = [single(frame, config) for frame in materialized_frames]
-        return {"ok": True, "results": results}
+            single = callables["process"]
+            results = [single(frame, config) for frame in materialized_frames]
+            return {"ok": True, "results": results}
 
     if opcode == "process":
         process = callables["process"]
         frame = _materialize_frame(request.get("frame"), mmap_cache)
-        result = process(frame, config)
+        with _mirror_subprocess_output_to_stderr():
+            result = process(frame, config)
         return {"ok": True, "result": result}
 
     raise ValueError(f"Unsupported opcode '{opcode}'")

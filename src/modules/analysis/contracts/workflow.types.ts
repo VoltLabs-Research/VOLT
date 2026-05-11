@@ -49,6 +49,7 @@ export type WorkflowNodeOutput = WorkflowValueMap;
 
 export interface WorkflowEntrypointConfigDefaults {
     binaryObjectPath?: string;
+    ownerClusterId?: string;
     argumentsTemplate?: string;
     entrypointType?: import('@/core/runtime/contracts/http-runtime').EntrypointType;
     requirementsFile?: string;

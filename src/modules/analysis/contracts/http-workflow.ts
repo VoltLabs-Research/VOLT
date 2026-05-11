@@ -118,6 +118,7 @@ export interface WorkflowPluginNodeData {
 export interface WorkflowEntrypointData {
     arguments?: string;
     binaryObjectPath?: string;
+    ownerClusterId?: string;
     entrypointScript?: string;
     requirementsFile?: string;
     type?: EntrypointType;

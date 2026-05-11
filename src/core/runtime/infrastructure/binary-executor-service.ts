@@ -40,6 +40,7 @@ export interface PersistentPluginInvocationInput {
     pluginRoot: string;
     entrypointScript: string;
     env?: NodeJS.ProcessEnv;
+    logSink?: ProcessExecutionLogSink;
     frame?: PluginFrameDescriptor;
     frames?: PluginFrameDescriptor[];
     shmFramePublish?: SharedFramePublishInput;
@@ -165,7 +166,10 @@ export class BinaryExecutorService {
 
         try {
             const request = await this.buildProcessRequest(input, releaseables);
-            const response = await pooled.send(request, { timeoutMs: input.timeoutMs });
+            const response = await pooled.send(request, {
+                timeoutMs: input.timeoutMs,
+                logSink: input.logSink
+            });
             return { response };
         } finally {
             pooled.release();

@@ -6,6 +6,7 @@ import { pack, unpack } from 'msgpackr';
 import path from 'node:path';
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
+import type { ProcessExecutionLogSink } from '@/core/runtime/contracts/execution-log';
 import type {
     PluginProcessRequest,
     PluginProcessResponse
@@ -34,6 +35,7 @@ export interface PooledProcessConfig {
 
 export interface PooledRequestOptions {
     timeoutMs?: number;
+    logSink?: ProcessExecutionLogSink;
 }
 
 interface PooledProcessInternals {
@@ -55,6 +57,7 @@ interface PooledProcessInternals {
     closed: boolean;
     closeReason: string | null;
     closeEmitter: EventEmitter;
+    activeLogSink?: ProcessExecutionLogSink;
 }
 
 interface PendingRequest {
@@ -197,11 +200,14 @@ export class PluginProcessPool {
         return new Promise<PluginProcessResponse>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 internals.pendingByOpId.delete(opId);
+                void this.flushProcessLogSink(internals.activeLogSink);
+                internals.activeLogSink = undefined;
                 reject(new Error(`Plugin request ${opId} timed out after ${timeoutMs}ms`));
                 this.restartInternals(internals, `request-timeout:${opId}`);
             }, timeoutMs);
             timeout.unref();
 
+            internals.activeLogSink = options.logSink;
             const pending: PendingRequest = { opId, resolve, reject, timeout };
             internals.pendingByOpId.set(opId, pending);
 
@@ -294,7 +300,8 @@ export class PluginProcessPool {
             ready: false,
             closed: false,
             closeReason: null,
-            closeEmitter: new EventEmitter()
+            closeEmitter: new EventEmitter(),
+            activeLogSink: undefined
         };
 
         child.stdout.on('data', (chunk: Buffer) => {
@@ -302,6 +309,7 @@ export class PluginProcessPool {
         });
 
         child.stderr.on('data', (chunk: Buffer) => {
+            this.forwardProcessStderr(internals, chunk);
             if (internals.stderrBytes < MAX_STDERR_BYTES) {
                 const text = chunk.toString('utf-8');
                 internals.stderrBuffer += text;
@@ -457,8 +465,12 @@ export class PluginProcessPool {
             const decoded = payload.byteLength > 0
                 ? (unpack(payload) as PluginProcessResponse)
                 : ({ ok: true } as PluginProcessResponse);
+            void this.flushProcessLogSink(internals.activeLogSink);
+            internals.activeLogSink = undefined;
             pending.resolve(decoded);
         } catch (error: unknown) {
+            void this.flushProcessLogSink(internals.activeLogSink);
+            internals.activeLogSink = undefined;
             pending.reject(error instanceof Error ? error : new Error(`Failed to decode plugin response: ${String(error)}`));
         }
     }
@@ -477,6 +489,8 @@ export class PluginProcessPool {
             pending.reject(new Error(`Plugin process terminated (${reason})`));
         }
         internals.pendingByOpId.clear();
+        void this.flushProcessLogSink(internals.activeLogSink);
+        internals.activeLogSink = undefined;
         internals.closeEmitter.emit('closed');
 
         group.active.delete(internals);
@@ -522,6 +536,34 @@ export class PluginProcessPool {
         try {
             internals.child.kill('SIGTERM');
         } catch { /* ignore */ }
+    }
+
+    private forwardProcessStderr(internals: PooledProcessInternals, chunk: Buffer): void {
+        const text = chunk.toString('utf-8');
+        const logSink = internals.activeLogSink;
+        if (!logSink || text.length === 0) {
+            return;
+        }
+
+        Promise.resolve(logSink.handleChunk({
+            stream: 'stderr',
+            text,
+            occurredAt: new Date().toISOString()
+        })).catch((error: unknown) => {
+            logger.warn({ err: error, pluginId: internals.pluginId }, '@plugin-process-pool: failed to forward stderr log chunk');
+        });
+    }
+
+    private async flushProcessLogSink(logSink: ProcessExecutionLogSink | undefined): Promise<void> {
+        if (!logSink?.flush) {
+            return;
+        }
+
+        try {
+            await logSink.flush();
+        } catch (error: unknown) {
+            logger.warn({ err: error }, '@plugin-process-pool: failed to flush process log sink');
+        }
     }
 
     private waitForSlot(group: PluginProcessInternalsGroup): Promise<void> {

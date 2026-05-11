@@ -33,6 +33,7 @@ type ProcessExecutionResult = Awaited<ReturnType<BinaryExecutorService['executeP
 
 interface WorkflowEntrypointConfig {
     binaryObjectPath: string;
+    ownerClusterId?: string;
     argumentsTemplate: string;
     entrypointType?: EntrypointType;
     requirementsFile?: string;
@@ -118,6 +119,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
 
         return {
             binaryObjectPath,
+            ownerClusterId: entrypointData?.ownerClusterId ?? defaults?.ownerClusterId,
             argumentsTemplate,
             entrypointType,
             requirementsFile: entrypointData?.requirementsFile ?? defaults?.requirementsFile,
@@ -136,6 +138,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
 
         const executionRuntime = await execution.pluginBinaryCache.getExecutionRuntime({
             binaryObjectPath: entrypoint.binaryObjectPath,
+            ownerClusterId: entrypoint.ownerClusterId,
             entrypointType: entrypoint.entrypointType,
             requirementsFile: entrypoint.requirementsFile,
             entrypointScript: entrypoint.entrypointScript
@@ -238,6 +241,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             pluginRoot,
             entrypointScript: WorkflowEntrypointHandler.resolvePersistentEntrypointScript(entrypoint, executionRuntime),
             env: executionRuntime.env,
+            logSink: execution.logSink,
             frame: frameDescriptor,
             shmFramePublish,
             config,
@@ -438,6 +442,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
                 const startedAt = Date.now();
                 const result = await wasmRuntime.execute({
                     binaryObjectPath: entrypoint.binaryObjectPath,
+                    ownerClusterId: entrypoint.ownerClusterId,
                     pluginId: context.pluginId,
                     frame,
                     config,

@@ -29,6 +29,7 @@ export interface PluginSyncRequest {
 export interface PluginWarmupRequest {
     pluginId: string;
     binaryObjectPath: string;
+    ownerClusterId?: string;
     requirementsFile: string;
     entrypointScript?: string;
     expectedHash?: string;
@@ -91,6 +92,7 @@ export interface AnalysisExecutionDataReference {
 
 export interface AnalysisEntrypointSnapshot {
     binaryObjectPath: string;
+    ownerClusterId?: string;
     arguments: string;
     type: EntrypointType;
     requirementsFile?: string;

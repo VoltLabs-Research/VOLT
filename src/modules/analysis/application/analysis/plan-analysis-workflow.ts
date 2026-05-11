@@ -87,6 +87,7 @@ export const planAnalysisWorkflow = async (
     const executionData: AnalysisJobExecutionData = {
         entrypoint: {
             binaryObjectPath: entrypoint.binaryObjectPath,
+            ownerClusterId: entrypoint.ownerClusterId,
             arguments: entrypoint.arguments,
             type: entrypoint.type ?? EntrypointType.Executable,
             requirementsFile: entrypoint.requirementsFile,

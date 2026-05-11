@@ -49,6 +49,7 @@ export class PluginCommands {
             jobId,
             pluginId: payload.pluginId,
             binaryObjectPath: payload.binaryObjectPath,
+            ownerClusterId: payload.ownerClusterId,
             requirementsFile: payload.requirementsFile,
             entrypointScript: payload.entrypointScript
         };

@@ -23,6 +23,7 @@ interface CachedModule {
 
 export interface WasmExecutionInput {
     binaryObjectPath: string;
+    ownerClusterId?: string;
     pluginId: string;
     frame: WasmFrameChunk;
     config?: unknown;
@@ -43,7 +44,7 @@ export class WasmRuntime {
     }
 
     public async execute(input: WasmExecutionInput): Promise<WasmProcessResult> {
-        const module = await this.resolveModule(input.binaryObjectPath);
+        const module = await this.resolveModule(input.binaryObjectPath, input.ownerClusterId);
         const instance = new WasmPluginInstance(module.compiled);
         const timeoutMs = input.timeoutMs ?? 30_000;
 
@@ -65,9 +66,10 @@ export class WasmRuntime {
         }
     }
 
-    private async resolveModule(binaryObjectPath: string): Promise<CachedModule> {
+    private async resolveModule(binaryObjectPath: string, ownerClusterId?: string): Promise<CachedModule> {
         const runtime = await this.pluginBinaryCache.getExecutionRuntime({
-            binaryObjectPath
+            binaryObjectPath,
+            ownerClusterId
         });
         const artifactPath = runtime.artifactPath;
         const bytes = await fs.readFile(artifactPath);
