@@ -88,6 +88,7 @@
 
 .canvas-center-timeline.canvas-overlay-glass {
     left: 0;
+    z-index: 20;
     right: max(12px, var(--canvas-right-overlay-size, 0px));
     bottom: 0;
     overflow: hidden;

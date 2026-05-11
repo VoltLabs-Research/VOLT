@@ -556,6 +556,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         if (
             payload.type === 'analysis-job-completion'
             || payload.type === 'analysis-job-status'
+            || payload.type === 'analysis-stage-status'
             || payload.type === 'trajectory-raster-job-status'
             || payload.type === 'trajectory-glb-job-status'
             || payload.type === 'ssh-import-job-status'

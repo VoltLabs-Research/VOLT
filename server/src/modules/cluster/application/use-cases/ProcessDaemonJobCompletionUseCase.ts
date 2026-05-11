@@ -37,6 +37,31 @@ interface ProcessDaemonAnalysisJobStatusInputDTO {
     error?: string;
 }
 
+interface ProcessDaemonAnalysisStageStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    stageKey: string;
+    label: string;
+    stageType: 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
+    stageStatus: 'pending' | 'running' | 'completed' | 'failed' | 'cached';
+    pluginId?: string;
+    pluginDisplayName?: string;
+    nodeId?: string;
+    exposureId?: string;
+    configHash?: string;
+    cacheHit?: boolean;
+    detail?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    durationMs?: number;
+}
+
 interface ProcessDaemonRasterJobStatusInputDTO {
     teamClusterId: string;
     daemonPassword: string;
@@ -100,6 +125,7 @@ interface ValidProcessDaemonArtifactUploadJobStatusInputDTO extends ProcessDaemo
 export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisJobCompletionInputDTO
     | ProcessDaemonAnalysisJobStatusInputDTO
+    | ProcessDaemonAnalysisStageStatusInputDTO
     | ProcessDaemonRasterJobStatusInputDTO
     | ProcessDaemonGlbJobStatusInputDTO
     | ProcessDaemonSshImportJobStatusInputDTO
@@ -128,6 +154,34 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 input.teamClusterId,
                 input.daemonPassword
             );
+
+            if (this.isAnalysisStageStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleAnalysisStageStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    name: input.name,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    stageKey: input.stageKey,
+                    label: input.label,
+                    stageType: input.stageType,
+                    stageStatus: input.stageStatus,
+                    pluginId: input.pluginId,
+                    pluginDisplayName: input.pluginDisplayName,
+                    nodeId: input.nodeId,
+                    exposureId: input.exposureId,
+                    configHash: input.configHash,
+                    cacheHit: input.cacheHit,
+                    detail: input.detail,
+                    startedAt: input.startedAt,
+                    finishedAt: input.finishedAt,
+                    durationMs: input.durationMs
+                });
+
+                return Result.ok({ acknowledged: true });
+            }
 
             if (this.isAnalysisJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleAnalysisJobStatus({
@@ -238,6 +292,16 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ProcessDaemonAnalysisJobStatusInputDTO {
         return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
+    }
+
+    private isAnalysisStageStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonAnalysisStageStatusInputDTO {
+        return 'analysisId' in input
+            && 'name' in input
+            && 'stageKey' in input
+            && 'stageStatus' in input
+            && 'stageType' in input;
     }
 
     private isAnalysisJobCompletionInput(

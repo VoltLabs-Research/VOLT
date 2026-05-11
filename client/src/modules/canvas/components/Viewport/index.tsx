@@ -34,6 +34,7 @@ interface ViewportProps {
     showGizmo: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
+    analysisOverlay?: ReactNode;
     hideGradient?: boolean;
     renderScene?: boolean;
     showSceneActions?: boolean;
@@ -79,6 +80,7 @@ const Viewport = ({
     showGizmo,
     sceneRef,
     bodyContent,
+    analysisOverlay,
     hideGradient = false,
     renderScene = true,
     showSceneActions = true
@@ -247,6 +249,8 @@ const Viewport = ({
                 )}
 
                 {!hideGradient && <Box position='absolute' inset='0' className="canvas-viewport-gradient" />}
+
+                {analysisOverlay}
 
                 {showSceneActions && <ViewportFloatingControls />}
             </Box>

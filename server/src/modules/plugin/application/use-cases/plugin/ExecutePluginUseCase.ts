@@ -12,6 +12,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { AnalysisExpectedArtifact } from '@modules/analysis/domain/entities/Analysis';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
@@ -106,6 +107,46 @@ const createAnalysisConfig = (
         ...sanitizedConfig,
         [ANALYSIS_EXECUTION_METADATA_KEY]: metadata
     };
+};
+
+const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures?: unknown } }): AnalysisExpectedArtifact[] => {
+    const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
+
+    const artifacts = exposures
+        .filter((exposure): exposure is {
+            _id: string;
+            name?: string;
+            export?: {
+                exporter?: string;
+                type?: string;
+            } | null;
+        } => {
+            return typeof exposure === 'object'
+                && exposure !== null
+                && typeof (exposure as { _id?: unknown })._id === 'string';
+        })
+        .map((exposure): AnalysisExpectedArtifact => ({
+            exposureId: exposure._id,
+            name: exposure.name || exposure._id,
+            pluginId,
+            exporter: exposure.export?.exporter,
+            exportType: exposure.export?.type,
+            status: 'pending'
+        }));
+
+    const primaryIndex = artifacts.findIndex((artifact) => {
+        const name = artifact.name.toLowerCase();
+        const exporter = artifact.exporter?.toLowerCase() ?? '';
+        return name === 'dislocations'
+            || name.includes('dislocation')
+            || exporter.includes('dislocation');
+    });
+    const selectedPrimaryIndex = primaryIndex >= 0 ? primaryIndex : 0;
+
+    return artifacts.map((artifact, index) => ({
+        ...artifact,
+        isPrimary: index === selectedPrimaryIndex
+    }));
 };
 
 @Singleton()
@@ -254,7 +295,11 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
             team: input.teamId,
             trajectory: input.trajectoryId,
             createdBy: input.userId,
-            startedAt: new Date()
+            startedAt: new Date(),
+            artifactStatus: 'pending',
+            expectedArtifacts: resolveExpectedArtifacts(plugin._id, plugin),
+            stages: [],
+            childAnalyses: []
         });
 
         try {
@@ -268,6 +313,8 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
                 teamId: input.teamId,
                 config: analysisConfig,
                 status: 'pending',
+                artifactStatus: analysis.props.artifactStatus,
+                expectedArtifacts: analysis.props.expectedArtifacts,
                 createdAt: new Date()
             }));
 

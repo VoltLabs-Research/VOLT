@@ -10,6 +10,18 @@ export interface PatchAnalysisStatusInput {
     status: Analysis['status'];
     completedFrames?: number;
     totalFrames?: number;
+    artifactStatus?: Analysis['artifactStatus'];
+    expectedArtifacts?: Analysis['expectedArtifacts'];
+    stages?: Analysis['stages'];
+    childAnalyses?: Analysis['childAnalyses'];
+};
+
+export interface PatchAnalysisExecutionInput {
+    analysisId: string;
+    artifactStatus?: Analysis['artifactStatus'];
+    expectedArtifacts?: Analysis['expectedArtifacts'];
+    stages?: Analysis['stages'];
+    childAnalyses?: Analysis['childAnalyses'];
 };
 
 interface FindCachedAnalysisByIdInput {
@@ -19,7 +31,11 @@ interface FindCachedAnalysisByIdInput {
 };
 
 const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTrajectoryParams | undefined => {
-    const candidate = queryKey[2] as Partial<GetAnalysesByTrajectoryParams> | undefined;
+    const candidate = queryKey.find((entry): entry is Partial<GetAnalysesByTrajectoryParams> => {
+        return typeof entry === 'object'
+            && entry !== null
+            && typeof (entry as Partial<GetAnalysesByTrajectoryParams>).trajectoryId === 'string';
+    });
 
     if (typeof candidate?.trajectoryId !== 'string'
         || typeof candidate.page !== 'number'
@@ -34,13 +50,34 @@ const getTrajectoryParams = (queryKey: readonly unknown[]): GetAnalysesByTraject
     };
 };
 
+const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return queryKey.some((entry) => entry === 'analysis')
+        && queryKey.some((entry) => entry === 'byTrajectory');
+};
+
+const patchByTrajectoryQueries = (
+    updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
+): void => {
+    queryClient.setQueriesData<PaginatedResponse<Analysis>>(
+        {
+            predicate: (query) => Array.isArray(query.queryKey)
+                && isAnalysisByTrajectoryQueryKey(query.queryKey)
+        },
+        (current) => {
+            if (!current || !Array.isArray(current.data)) return current;
+            return updater(current);
+        }
+    );
+};
+
 export const upsertAnalysisCaches = (analysis: Analysis): void => {
     analysisQuery.cache.upsert(analysis);
 
     const analysisTrajectoryId = analysis.trajectory?._id;
 
     queryClient.getQueriesData<PaginatedResponse<Analysis>>({
-        queryKey: KEYS.byTrajectory()
+        predicate: (query) => Array.isArray(query.queryKey)
+            && isAnalysisByTrajectoryQueryKey(query.queryKey)
     }).forEach(([queryKey, page]) => {
         if (!page) return;
         const params = getTrajectoryParams(queryKey);
@@ -85,6 +122,10 @@ export const upsertAnalysisFromSocketPayload = (data: Record<string, unknown>, t
         totalFrames: data.totalFrames,
         completedFrames: data.completedFrames,
         status: data.status,
+        artifactStatus: data.artifactStatus,
+        expectedArtifacts: data.expectedArtifacts,
+        stages: data.stages,
+        childAnalyses: data.childAnalyses,
         createdAt: data.createdAt,
         updatedAt: data.createdAt
     } as unknown as Analysis;
@@ -104,7 +145,10 @@ export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnaly
         return detailMatch;
     }
 
-    for (const [queryKey, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({ queryKey: KEYS.byTrajectory() })) {
+    for (const [queryKey, page] of queryClient.getQueriesData<PaginatedResponse<Analysis>>({
+        predicate: (query) => Array.isArray(query.queryKey)
+            && isAnalysisByTrajectoryQueryKey(query.queryKey)
+    })) {
         if (!page?.data?.length) {
             continue;
         }
@@ -137,7 +181,11 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
             ...a,
             status: patch.status,
             completedFrames: patch.completedFrames ?? a.completedFrames,
-            totalFrames: patch.totalFrames ?? a.totalFrames
+            totalFrames: patch.totalFrames ?? a.totalFrames,
+            artifactStatus: patch.artifactStatus ?? a.artifactStatus,
+            expectedArtifacts: patch.expectedArtifacts ?? a.expectedArtifacts,
+            stages: patch.stages ?? a.stages,
+            childAnalyses: patch.childAnalyses ?? a.childAnalyses
         };
     };
 
@@ -151,6 +199,41 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
     }));
 
     patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => ({
+        ...page,
+        data: page.data.map(patchEntity)
+    }));
+    patchByTrajectoryQueries((page) => ({
+        ...page,
+        data: page.data.map(patchEntity)
+    }));
+};
+
+export const updateAnalysisExecutionCaches = (patch: PatchAnalysisExecutionInput): void => {
+    const patchEntity = (a: Analysis): Analysis => {
+        if (a._id !== patch.analysisId) return a;
+        return {
+            ...a,
+            artifactStatus: patch.artifactStatus ?? a.artifactStatus,
+            expectedArtifacts: patch.expectedArtifacts ?? a.expectedArtifacts,
+            stages: patch.stages ?? a.stages,
+            childAnalyses: patch.childAnalyses ?? a.childAnalyses
+        };
+    };
+
+    queryClient.setQueryData<Analysis>(KEYS.detail(patch.analysisId), (current) => {
+        return current ? patchEntity(current) : current;
+    });
+
+    analysisQuery.cache.patchAllLists((current) => ({
+        ...current,
+        data: current.data.map(patchEntity)
+    }));
+
+    patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => ({
+        ...page,
+        data: page.data.map(patchEntity)
+    }));
+    patchByTrajectoryQueries((page) => ({
         ...page,
         data: page.data.map(patchEntity)
     }));

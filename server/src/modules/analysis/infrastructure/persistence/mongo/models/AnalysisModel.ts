@@ -60,6 +60,67 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         enum: ['pending', 'running', 'completed', 'failed'],
         default: 'pending'
     },
+    artifactStatus: {
+        type: String,
+        enum: ['pending', 'generating', 'uploading', 'ready', 'failed'],
+        default: 'pending'
+    },
+    expectedArtifacts: [{
+        exposureId: { type: String, required: true },
+        name: { type: String, required: true },
+        pluginId: { type: String },
+        exporter: { type: String },
+        exportType: { type: String },
+        status: {
+            type: String,
+            enum: ['pending', 'generating', 'uploading', 'ready', 'failed'],
+            default: 'pending'
+        },
+        isPrimary: { type: Boolean, default: false },
+        objectName: { type: String },
+        readyAt: { type: Date }
+    }],
+    stages: [{
+        stageKey: { type: String, required: true },
+        label: { type: String, required: true },
+        type: {
+            type: String,
+            enum: ['system', 'plugin-ref', 'entrypoint', 'exposure', 'artifact-upload'],
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'running', 'completed', 'failed', 'cached'],
+            required: true
+        },
+        timestep: { type: Number },
+        pluginId: { type: String },
+        pluginDisplayName: { type: String },
+        nodeId: { type: String },
+        exposureId: { type: String },
+        configHash: { type: String },
+        cacheHit: { type: Boolean },
+        detail: { type: String },
+        startedAt: { type: Date },
+        finishedAt: { type: Date },
+        durationMs: { type: Number }
+    }],
+    childAnalyses: [{
+        id: { type: String, required: true },
+        pluginId: { type: String, required: true },
+        pluginDisplayName: { type: String },
+        configHash: { type: String },
+        timestep: { type: Number },
+        status: {
+            type: String,
+            enum: ['pending', 'running', 'completed', 'failed', 'cached'],
+            required: true
+        },
+        cacheHit: { type: Boolean },
+        startedAt: { type: Date },
+        finishedAt: { type: Date },
+        durationMs: { type: Number }
+    }],
     startedAt: {
         type: Date
     },

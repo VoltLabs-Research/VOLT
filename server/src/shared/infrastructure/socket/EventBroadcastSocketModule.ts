@@ -26,6 +26,7 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'analysis.created',
         'analysis.deleted',
         'analysis.status.changed',
+        'analysis.stage.changed',
         'scene-artifact.upserted',
         'plugin.created',
         'plugin.deleted',
