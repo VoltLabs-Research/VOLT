@@ -6,6 +6,7 @@ import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-up
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExposureInspectionResult } from '@/modules/analysis/application/workflow/exposure-payload-reader';
 import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
+import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 
 import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from './http-analysis';
 import type {
@@ -93,6 +94,7 @@ export interface WorkflowExposureExecutionOptions {
     timestep?: number;
     artifactUploadBatch?: ArtifactUploadBatch;
     resultProcessor?: ResultProcessorService;
+    stageReporter?: AnalysisStageReporter;
     onInspection?: (nodeId: string, inspection: WorkflowExposureInspectionResult) => void;
 }
 

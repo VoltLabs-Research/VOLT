@@ -4,6 +4,10 @@ import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { createAnalysisExecutionLogSink } from '@/core/runtime/infrastructure/execution-log-streaming';
 import { logAndSwallow } from '@/support/error/errorMessage';
 import { AnalysisEnvironment, type AnalysisEnvironmentState } from '@/modules/analysis/application/workflow/AnalysisEnvironment';
+import {
+    createAnalysisStageReporter,
+    type AnalysisStageReportInput
+} from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 import type { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import type {
     AnalysisJobMetadata,
@@ -78,6 +82,26 @@ export const processAnalysisJob = async (
         timestep
     };
     const reportAnalysisStatus = buildStatusReporter(statusPayload);
+    const stageReporter = createAnalysisStageReporter(deps.daemonJobReporter, statusPayload);
+
+    const runStage = async <T>(
+        stage: Omit<AnalysisStageReportInput, 'stageStatus'>,
+        operation: () => Promise<T>
+    ): Promise<T> => {
+        await stageReporter.report({ ...stage, stageStatus: 'running' });
+        try {
+            const result = await operation();
+            await stageReporter.report({ ...stage, stageStatus: 'completed' });
+            return result;
+        } catch (error) {
+            await stageReporter.report({
+                ...stage,
+                stageStatus: 'failed',
+                detail: error instanceof Error ? error.message : undefined
+            });
+            throw error;
+        }
+    };
 
     const setProgress = async (value: number) => {
         if (!hooks.updateProgress) return;
@@ -110,36 +134,58 @@ export const processAnalysisJob = async (
             }
         },
         async () => {
-            runtime = await deps.analysisEnvironment.prepare(executionData, metadata, timestep);
+            runtime = await runStage(
+                {
+                    stageKey: `${job.jobId}:prepare`,
+                    label: 'Prepare timestep',
+                    stageType: 'system'
+                },
+                () => deps.analysisEnvironment.prepare(executionData, metadata, timestep)
+            );
             await setProgress(10);
 
-            await deps.workflowRuntime.execute({
-                jobId: job.jobId,
-                executionData,
-                outputs: runtime.outputs,
-                dumpTargets: runtime.dumpTargets,
-                outputDir: runtime.outputDir,
-                timestep: runtime.dumpTargets[0]!.timestep,
-                isBatchMode,
-                artifactUploadBatch,
-                logSinkFactory: (context) => createAnalysisExecutionLogSink({
-                    reporter: deps.daemonJobReporter,
+            await runStage(
+                {
+                    stageKey: `${job.jobId}:workflow`,
+                    label: 'Execute workflow',
+                    stageType: 'system'
+                },
+                () => deps.workflowRuntime.execute({
                     jobId: job.jobId,
-                    analysisId: executionData.identity.analysisId,
-                    teamId: executionData.identity.teamId,
-                    trajectoryId: executionData.identity.trajectoryId,
-                    timesteps: context.timesteps,
-                    metadata: {
-                        nodeId: context.nodeId,
-                        nodeType: context.nodeType,
-                        pluginId: context.pluginId,
-                        executionPath: context.executionPath
-                    }
+                    executionData,
+                    outputs: runtime!.outputs,
+                    dumpTargets: runtime!.dumpTargets,
+                    outputDir: runtime!.outputDir,
+                    timestep: runtime!.dumpTargets[0]!.timestep,
+                    isBatchMode,
+                    artifactUploadBatch,
+                    stageReporter,
+                    logSinkFactory: (context) => createAnalysisExecutionLogSink({
+                        reporter: deps.daemonJobReporter,
+                        jobId: job.jobId,
+                        analysisId: executionData.identity.analysisId,
+                        teamId: executionData.identity.teamId,
+                        trajectoryId: executionData.identity.trajectoryId,
+                        timesteps: context.timesteps,
+                        metadata: {
+                            nodeId: context.nodeId,
+                            nodeType: context.nodeType,
+                            pluginId: context.pluginId,
+                            executionPath: context.executionPath
+                        }
+                    })
                 })
-            });
+            );
             await setProgress(70);
 
-            await artifactUploadBatch.enqueue();
+            await runStage(
+                {
+                    stageKey: `${job.jobId}:artifact-enqueue`,
+                    label: 'Queue artifact uploads',
+                    stageType: 'artifact-upload'
+                },
+                () => artifactUploadBatch.enqueue()
+            );
             await setProgress(95);
         }
     );

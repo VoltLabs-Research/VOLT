@@ -13,6 +13,7 @@ import { processExportNode } from '@/modules/plugin/application/exports/ExportNo
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
 import { getRecommendedResultProcessingConcurrency } from '@/support/policies/analysis-resource-policy';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/modules/analysis/contracts/http-analysis';
+import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { PluginMongoRow, PluginMongoValue } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
@@ -39,10 +40,12 @@ export class DefaultResultProcessor implements ResultProcessorService {
         outputDir: string,
         timestep: number,
         teamId: string,
-        artifactUploadBatch: ArtifactUploadBatch
+        artifactUploadBatch: ArtifactUploadBatch,
+        stageReporter?: AnalysisStageReporter
     ): Promise<void> {
         const outputFilePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
         const startedAt = Date.now();
+        const stageKey = `${executionData.identity.analysisId}:${timestep}:exposure:${exposure.nodeId}`;
 
         try {
             await fs.access(outputFilePath);
@@ -62,78 +65,112 @@ export class DefaultResultProcessor implements ResultProcessorService {
             throw new Error(`Missing storage owner cluster for analysis ${analysisId}`);
         }
 
-        const queuedAt = Date.now();
-        await this.exposureProcessingLimiter.schedule(async () => {
-            const waitMs = Date.now() - queuedAt;
-            if (waitMs >= 250) {
-                const counts = this.exposureProcessingLimiter.counts();
-                logger.info(`Exposure result processing waited for capacity: analysisId=${analysisId}, exposure=${exposure.name}, timestep=${timestep}, waitMs=${waitMs}, activeCount=${counts.RUNNING + counts.EXECUTING}, pending=${counts.QUEUED}, concurrency=${EXPOSURE_RESULT_PROCESSING_CONCURRENCY}`);
-            }
-
-            let {
-                listing: listingPayload,
-                subListingNames,
-                subListings,
-                perAtomProperties,
-                exportData: exportPayload
-            } = await readWorkflowExposurePayload(outputFilePath);
-
-            const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
-                trajectoryId,
-                analysisId,
-                exposureId: exposure.nodeId,
-                timestep,
-                ownerClusterId: storageOwnerClusterId,
-                rows: perAtomProperties
-            });
-            const propertyObjectKey = propertyStorage?.objectKey;
-            if (propertyStorage) {
-                logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
-            }
-
-            await precomputeListingRows(
-                this.pluginListingRepository,
-                executionData,
-                exposure,
-                listingPayload,
-                subListingNames,
-                propertyObjectKey,
-                storageOwnerClusterId,
-                timestep,
-                teamId
-            );
-
-            await precomputeSubListingRows(
-                this.pluginListingRepository,
-                executionData,
-                exposure,
-                subListings,
-                timestep
-            );
-
-            listingPayload = null;
-            subListingNames = [];
-            subListings = {};
-            perAtomProperties = [];
-
-            if (exposure.export && exportPayload) {
-                await processExportNode({
-                    executionData: {
-                        analysisId,
-                        trajectoryId,
-                        pluginId,
-                        storageClusterId: storageOwnerClusterId
-                    },
-                    exposure,
-                    decodedPayload: exportPayload,
-                    timestep,
-                    storageClusterId: storageOwnerClusterId,
-                    artifactUploadBatch
-                });
-            }
-
-            exportPayload = null;
+        await stageReporter?.report({
+            stageKey,
+            label: `Process ${exposure.name}`,
+            stageType: 'exposure',
+            stageStatus: 'running',
+            pluginId,
+            nodeId: exposure.nodeId,
+            exposureId: exposure.nodeId
         });
+
+        const queuedAt = Date.now();
+        try {
+            await this.exposureProcessingLimiter.schedule(async () => {
+                const waitMs = Date.now() - queuedAt;
+                if (waitMs >= 250) {
+                    const counts = this.exposureProcessingLimiter.counts();
+                    logger.info(`Exposure result processing waited for capacity: analysisId=${analysisId}, exposure=${exposure.name}, timestep=${timestep}, waitMs=${waitMs}, activeCount=${counts.RUNNING + counts.EXECUTING}, pending=${counts.QUEUED}, concurrency=${EXPOSURE_RESULT_PROCESSING_CONCURRENCY}`);
+                }
+
+                let {
+                    listing: listingPayload,
+                    subListingNames,
+                    subListings,
+                    perAtomProperties,
+                    exportData: exportPayload
+                } = await readWorkflowExposurePayload(outputFilePath);
+
+                const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
+                    trajectoryId,
+                    analysisId,
+                    exposureId: exposure.nodeId,
+                    timestep,
+                    ownerClusterId: storageOwnerClusterId,
+                    rows: perAtomProperties
+                });
+                const propertyObjectKey = propertyStorage?.objectKey;
+                if (propertyStorage) {
+                    logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
+                }
+
+                await precomputeListingRows(
+                    this.pluginListingRepository,
+                    executionData,
+                    exposure,
+                    listingPayload,
+                    subListingNames,
+                    propertyObjectKey,
+                    storageOwnerClusterId,
+                    timestep,
+                    teamId
+                );
+
+                await precomputeSubListingRows(
+                    this.pluginListingRepository,
+                    executionData,
+                    exposure,
+                    subListings,
+                    timestep
+                );
+
+                listingPayload = null;
+                subListingNames = [];
+                subListings = {};
+                perAtomProperties = [];
+
+                if (exposure.export && exportPayload) {
+                    await processExportNode({
+                        executionData: {
+                            analysisId,
+                            trajectoryId,
+                            pluginId,
+                            storageClusterId: storageOwnerClusterId
+                        },
+                        exposure,
+                        decodedPayload: exportPayload,
+                        timestep,
+                        storageClusterId: storageOwnerClusterId,
+                        artifactUploadBatch
+                    });
+                }
+
+                exportPayload = null;
+            });
+
+            await stageReporter?.report({
+                stageKey,
+                label: `Process ${exposure.name}`,
+                stageType: 'exposure',
+                stageStatus: 'completed',
+                pluginId,
+                nodeId: exposure.nodeId,
+                exposureId: exposure.nodeId
+            });
+        } catch (error) {
+            await stageReporter?.report({
+                stageKey,
+                label: `Process ${exposure.name}`,
+                stageType: 'exposure',
+                stageStatus: 'failed',
+                pluginId,
+                nodeId: exposure.nodeId,
+                exposureId: exposure.nodeId,
+                detail: error instanceof Error ? error.message : undefined
+            });
+            throw error;
+        }
 
         logger.info(`Finished exposure result processing: analysisId=${analysisId}, exposure=${exposure.name}, durationMs=${Date.now() - startedAt}, timestep=${timestep}`);
     }

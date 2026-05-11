@@ -80,7 +80,8 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
             execution.outputDir,
             execution.timestep,
             context.teamId,
-            execution.artifactUploadBatch
+            execution.artifactUploadBatch,
+            execution.stageReporter
         );
 
         return {

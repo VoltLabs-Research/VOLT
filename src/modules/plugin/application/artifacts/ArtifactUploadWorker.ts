@@ -21,6 +21,8 @@ import type {
 import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 import { compressFileWithZstd } from '@/support/serialization/storage-codec';
 import { mapLimited } from '@/support/concurrency/map-limited';
+import { createAnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
+import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 
 const DEFAULT_PER_JOB_UPLOAD_CONCURRENCY = 4;
 
@@ -33,6 +35,8 @@ interface ArtifactUploadStatusReporter {
     reportArtifactUploadCompleted(input: BaseArtifactUploadEventData): Promise<void>;
     reportArtifactUploadFailed(input: ArtifactUploadFailedEventData): Promise<void>;
     reportArtifactUploadStarted(input: BaseArtifactUploadEventData): Promise<void>;
+    reportAnalysisStageStatus: DaemonJobReporter['reportAnalysisStageStatus'];
+    reportAnalysisLogChunk: DaemonJobReporter['reportAnalysisLogChunk'];
 }
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;
@@ -48,7 +52,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly objectStore: ClusterObjectStore,
         private readonly daemonArtifactReporter: ArtifactUploadReporter,
-        daemonJobReporter: ArtifactUploadStatusReporter
+        private readonly daemonJobReporter: ArtifactUploadStatusReporter
     ) {
         super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
         this.buildStatusReporter = createLifecycleStatusReporter<BaseArtifactUploadEventData>(
@@ -75,10 +79,32 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         };
         const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
         const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
+        const stageReporter = createAnalysisStageReporter(this.daemonJobReporter, {
+            jobId: payload.jobId,
+            name: 'Artifact Upload',
+            analysisId: payload.analysisId,
+            teamId: payload.teamId,
+            trajectoryId: payload.trajectoryId,
+            timestep: payload.timestep
+        });
+        const stageKey = `${payload.jobId}:artifact-upload`;
 
         await withJobLifecycle(
             {
-                reportStatus: this.buildStatusReporter(statusPayload),
+                reportStatus: (status, error) => {
+                    this.buildStatusReporter(statusPayload)(status, error);
+                    void stageReporter.report({
+                        stageKey,
+                        label: 'Upload artifacts',
+                        stageType: 'artifact-upload',
+                        stageStatus: status === 'started'
+                            ? 'running'
+                            : status === 'completed'
+                                ? 'completed'
+                                : 'failed',
+                        detail: error
+                    });
+                },
                 shouldReportTerminal: (err) => !(err instanceof DelayedError) && isFinalAttempt(),
                 cleanup: async ({ error }) => {
                     if (error instanceof DelayedError) {

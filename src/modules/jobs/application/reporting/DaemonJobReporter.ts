@@ -5,6 +5,7 @@ import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,
     AnalysisLogChunkReportedEvent,
+    AnalysisStageStatusReportedEvent,
     AnalysisStartedEvent,
     DebugLogChunkReportedEvent
 } from '@/modules/analysis/domain/events';
@@ -39,6 +40,7 @@ const REPORT_MAP = {
     AnalysisStarted: AnalysisStartedEvent,
     AnalysisCompleted: AnalysisCompletedEvent,
     AnalysisFailed: AnalysisFailedEvent,
+    AnalysisStageStatus: AnalysisStageStatusReportedEvent,
     AnalysisLogChunk: {
         event: AnalysisLogChunkReportedEvent,
         skipIf: (input: PayloadOf<typeof AnalysisLogChunkReportedEvent>) => input.segments.length === 0

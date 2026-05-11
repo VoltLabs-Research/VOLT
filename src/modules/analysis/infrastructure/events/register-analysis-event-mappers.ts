@@ -6,12 +6,15 @@ import {
     createAnalysisJobStatusDedupeKey,
     createAnalysisJobStatusMessage,
     createAnalysisLogChunkMessage,
+    createAnalysisStageStatusDedupeKey,
+    createAnalysisStageStatusMessage,
     createDebugLogChunkMessage
 } from '@/modules/analysis/contracts/reverse-channel-analysis';
 import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,
     AnalysisLogChunkReportedEvent,
+    AnalysisStageStatusReportedEvent,
     AnalysisStartedEvent,
     DebugLogChunkReportedEvent,
     type BaseAnalysisEventData
@@ -38,6 +41,12 @@ export const registerAnalysisEventMappers = (bridge: DomainEventBridge): void =>
     bridge.register(AnalysisLogChunkReportedEvent, (payload, { messageContext }) => ({
         kind: 'immediate',
         message: createAnalysisLogChunkMessage(messageContext, payload)
+    }));
+
+    bridge.register(AnalysisStageStatusReportedEvent, (payload, { messageContext }) => ({
+        kind: 'buffered',
+        message: createAnalysisStageStatusMessage(messageContext, payload),
+        options: { dedupeKey: createAnalysisStageStatusDedupeKey(payload) }
     }));
 
     bridge.register(DebugLogChunkReportedEvent, (payload, { messageContext }) => ({

@@ -10,6 +10,26 @@ import type {
 
 type AnalysisJobCompletionPayload = BaseAnalysisEventData & { error?: string };
 
+export type AnalysisStageType = 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
+export type AnalysisStageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cached';
+
+export interface AnalysisStageStatusPayload extends BaseAnalysisEventData {
+    stageKey: string;
+    label: string;
+    stageType: AnalysisStageType;
+    stageStatus: AnalysisStageStatus;
+    pluginId?: string;
+    pluginDisplayName?: string;
+    nodeId?: string;
+    exposureId?: string;
+    configHash?: string;
+    cacheHit?: boolean;
+    detail?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    durationMs?: number;
+}
+
 export interface AnalysisLogChunkPayload {
     analysisId: string;
     jobId: string;
@@ -33,6 +53,11 @@ export type AnalysisJobStatusMessage = AuthenticatedReverseChannelMessage<
 export type AnalysisJobCompletionMessage = AuthenticatedReverseChannelMessage<
     'analysis-job-completion',
     AnalysisJobCompletionPayload & { success: boolean }
+>;
+
+export type AnalysisStageStatusMessage = AuthenticatedReverseChannelMessage<
+    'analysis-stage-status',
+    AnalysisStageStatusPayload
 >;
 
 export type AnalysisLogChunkMessage = AuthenticatedReverseChannelMessage<'analysis-log-chunk', AnalysisLogChunkPayload>;
@@ -65,6 +90,21 @@ export const createAnalysisJobCompletionMessage = (
     ...(payload.error !== undefined ? { error: payload.error } : {}),
     success: payload.error === undefined
 });
+
+export const createAnalysisStageStatusMessage = (
+    context: AuthenticatedMessageContext,
+    payload: AnalysisStageStatusPayload
+): AnalysisStageStatusMessage => ({
+    type: 'analysis-stage-status',
+    ...context,
+    ...payload
+});
+
+export const createAnalysisStageStatusDedupeKey = (
+    payload: Pick<AnalysisStageStatusPayload, 'jobId' | 'stageKey' | 'stageStatus' | 'timestep'>
+): string => {
+    return `analysis.stage-status:${payload.jobId}:${payload.stageKey}:${payload.stageStatus}:${readTimestepDedupeSegment(payload.timestep)}`;
+};
 
 export const createAnalysisJobCompletionDedupeKey = (
     payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'> & { error?: string }

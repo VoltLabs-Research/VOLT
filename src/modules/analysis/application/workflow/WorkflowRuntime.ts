@@ -29,9 +29,12 @@ import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-up
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
 import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
+import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 import ApplicationError from '@/app/coordination/ApplicationError';
 import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 import { mapLimited } from '@/support/concurrency/map-limited';
 
@@ -71,6 +74,7 @@ interface WorkflowExecutionBaseInput {
     rootNodeId: string;
     executionPath: string[];
     logSinkFactory?: WorkflowLogSinkFactory;
+    stageReporter?: AnalysisStageReporter;
 }
 
 type PluginNodeLike = Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
@@ -189,6 +193,7 @@ export interface WorkflowExecuteInput {
     isBatchMode: boolean;
     artifactUploadBatch: ArtifactUploadBatch;
     logSinkFactory: WorkflowLogSinkFactory;
+    stageReporter?: AnalysisStageReporter;
 }
 
 interface WorkflowVisitContext {
@@ -383,12 +388,50 @@ export class WorkflowRuntime {
             return;
         }
 
-        const execution = await this.nodeExecutor.executeNode(ctx.node, this.buildRuntimeNodeContext(ctx));
+        const stageKey = `${ctx.input.jobId}:entrypoint:${ctx.node.id}`;
+        if (ctx.node.type === WorkflowNodeType.Entrypoint) {
+            await ctx.input.stageReporter?.report({
+                stageKey,
+                label: 'Run plugin binary',
+                stageType: 'entrypoint',
+                stageStatus: 'running',
+                pluginId: ctx.input.executionData.identity.pluginId,
+                nodeId: ctx.node.id
+            });
+        }
+
+        let execution: Awaited<ReturnType<WorkflowNodeExecutor['executeNode']>>;
+        try {
+            execution = await this.nodeExecutor.executeNode(ctx.node, this.buildRuntimeNodeContext(ctx));
+        } catch (error) {
+            if (ctx.node.type === WorkflowNodeType.Entrypoint) {
+                await ctx.input.stageReporter?.report({
+                    stageKey,
+                    label: 'Run plugin binary',
+                    stageType: 'entrypoint',
+                    stageStatus: 'failed',
+                    pluginId: ctx.input.executionData.identity.pluginId,
+                    nodeId: ctx.node.id,
+                    detail: error instanceof Error ? error.message : undefined
+                });
+            }
+            throw error;
+        }
         if (execution.status === 'skipped') {
             return;
         }
 
         const output = execution.output as WorkflowNodeOutput;
+        if (ctx.node.type === WorkflowNodeType.Entrypoint) {
+            await ctx.input.stageReporter?.report({
+                stageKey,
+                label: 'Run plugin binary',
+                stageType: 'entrypoint',
+                stageStatus: 'completed',
+                pluginId: ctx.input.executionData.identity.pluginId,
+                nodeId: ctx.node.id
+            });
+        }
         ctx.session.setOutput(ctx.node.id, output);
         await this.visitRuntimeChildren(ctx, output);
     }
@@ -481,7 +524,8 @@ export class WorkflowRuntime {
                 executionData: input.executionData,
                 timestep: input.timestep,
                 artifactUploadBatch: input.artifactUploadBatch,
-                resultProcessor: this.resultProcessor
+                resultProcessor: this.resultProcessor,
+                stageReporter: input.stageReporter
             }
         };
     }
@@ -535,7 +579,8 @@ export class WorkflowRuntime {
             ownerClusterId: identity.storageClusterId,
             rootNodeId: ctx.node.id,
             executionPath: ctx.executionPath,
-            logSinkFactory: ctx.input.logSinkFactory
+            logSinkFactory: ctx.input.logSinkFactory,
+            stageReporter: ctx.input.stageReporter
         };
     }
 
@@ -626,6 +671,25 @@ export class WorkflowRuntime {
             throw new Error(`Nested plugin workflow not found for ${pluginId}`);
         }
 
+        const pluginDisplayName = this.resolveWorkflowDisplayName(nestedPlugin.workflow) ?? pluginId;
+        const configHash = this.hashPluginRefConfig(pluginNodeData.config);
+        const cacheKey = this.hashPluginRefConfig({
+            trajectoryId: input.trajectoryId,
+            timestep: input.dumpTarget.timestep,
+            pluginId,
+            configHash
+        });
+        const stageKey = `${input.analysisId}:${input.dumpTarget.timestep}:plugin-ref:${pluginId}:${configHash}`;
+        const stageBase = {
+            stageKey,
+            label: pluginDisplayName,
+            stageType: 'plugin-ref' as const,
+            pluginId,
+            pluginDisplayName,
+            configHash,
+            nodeId: executionPath[executionPath.length - 1]
+        };
+
         await fs.mkdir(parentOutputDir, { recursive: true });
         const nestedOutputDir = pluginNodeData.outputPathMode === 'parent'
             ? parentOutputDir
@@ -634,6 +698,31 @@ export class WorkflowRuntime {
                 prefix: `inline-${pluginId}-`,
                 unsafeCleanup: true
             })).path;
+        const cacheDir = pluginNodeData.outputPathMode === 'parent'
+            ? path.join(path.dirname(parentOutputDir), 'plugin-ref-cache', cacheKey)
+            : undefined;
+
+        await input.stageReporter?.report({
+            ...stageBase,
+            stageStatus: 'running'
+        });
+
+        if (cacheDir) {
+            const cachedExposures = await this.restorePluginRefCache(cacheDir, parentOutputDir);
+            if (cachedExposures) {
+                await input.stageReporter?.report({
+                    ...stageBase,
+                    stageStatus: 'cached',
+                    cacheHit: true,
+                    detail: `${cachedExposures.length} cached artifact${cachedExposures.length === 1 ? '' : 's'} reused`
+                });
+                return {
+                    output: this.createNestedExecutionResult(cachedExposures),
+                    trace: []
+                };
+            }
+        }
+
         const nestedOutputs = WorkflowSession.cloneOutputs(parentOutputs);
         const nestedSession = WorkflowSession.createFromDefinition({
             outputs: nestedOutputs,
@@ -698,114 +787,141 @@ export class WorkflowRuntime {
             WorkflowNodeType.ForEach
         ]);
 
-        for (const node of nestedContext.workflow.topologicalSort()) {
-            if (!planningNodeTypes.has(node.type)) {
-                continue;
-            }
-
-            const nodeStartedAt = Date.now();
-            try {
-                const execution = await this.nodeExecutor.executeNode(node, nestedContext);
-                if (execution.status === 'skipped') {
-                    this.appendTraceNode(trace, workflowTraceContext, {
-                        nodeId: node.id,
-                        nodeType: node.type,
-                        status: 'skipped',
-                        durationMs: Date.now() - nodeStartedAt,
-                        reason: execution.reason
-                    });
+        try {
+            for (const node of nestedContext.workflow.topologicalSort()) {
+                if (!planningNodeTypes.has(node.type)) {
                     continue;
                 }
 
-                let output = execution.output as WorkflowNodeOutput;
-
-                if (node.type === WorkflowNodeType.Context) {
-                    output = WorkflowSession.createLocalizedContextOutput(
-                        output,
-                        localizedDumpTarget,
-                        nestedOutputDir
-                    );
-                    nestedSession.setOutput(node.id, output);
-                }
-
-                this.appendTraceNode(trace, workflowTraceContext, {
-                    nodeId: node.id,
-                    nodeType: node.type,
-                    status: 'completed',
-                    durationMs: Date.now() - nodeStartedAt,
-                    output
-                });
-
-                if (node.type === WorkflowNodeType.ForEach) {
-                    const forEachOutput = nestedSession.getOutput(node.id);
-                    if (!forEachOutput) {
-                        return {
-                            output: this.createNestedExecutionResult([]),
-                            trace
-                        };
-                    }
-                    const items = forEachOutput.items as WorkflowNodeOutput[];
-                    if (!items.length) {
-                        return {
-                            output: this.createNestedExecutionResult([]),
-                            trace
-                        };
+                const nodeStartedAt = Date.now();
+                try {
+                    const execution = await this.nodeExecutor.executeNode(node, nestedContext);
+                    if (execution.status === 'skipped') {
+                        this.appendTraceNode(trace, workflowTraceContext, {
+                            nodeId: node.id,
+                            nodeType: node.type,
+                            status: 'skipped',
+                            durationMs: Date.now() - nodeStartedAt,
+                            reason: execution.reason
+                        });
+                        continue;
                     }
 
-                    nestedSession.setForEachCurrentValue(
-                        {
-                            ...(items[0] as WorkflowNodeOutput),
-                            path: input.dumpTarget.localPath
-                        } as TrajectoryDumpDescriptor,
-                        0,
-                        nestedOutputDir
-                    );
-                }
-            } catch (error) {
-                const runtimeError = error instanceof Error ? error : undefined;
-                const message = runtimeError?.message ?? `Nested node ${node.id} failed`;
-                this.appendTraceNode(trace, workflowTraceContext, {
-                    nodeId: node.id,
-                    nodeType: node.type,
-                    status: 'error',
-                    durationMs: Date.now() - nodeStartedAt,
-                    error: message,
-                    stack: runtimeError?.stack
-                });
+                    let output = execution.output as WorkflowNodeOutput;
 
-                if (workflowTraceContext) {
-                    throw createWorkflowTraceFailure(message, trace, error);
-                }
+                    if (node.type === WorkflowNodeType.Context) {
+                        output = WorkflowSession.createLocalizedContextOutput(
+                            output,
+                            localizedDumpTarget,
+                            nestedOutputDir
+                        );
+                        nestedSession.setOutput(node.id, output);
+                    }
 
-                throw this.toError(runtimeError, message);
+                    this.appendTraceNode(trace, workflowTraceContext, {
+                        nodeId: node.id,
+                        nodeType: node.type,
+                        status: 'completed',
+                        durationMs: Date.now() - nodeStartedAt,
+                        output
+                    });
+
+                    if (node.type === WorkflowNodeType.ForEach) {
+                        const forEachOutput = nestedSession.getOutput(node.id);
+                        if (!forEachOutput) {
+                            await input.stageReporter?.report({
+                                ...stageBase,
+                                stageStatus: 'completed',
+                                detail: 'No nested timesteps selected'
+                            });
+                            return {
+                                output: this.createNestedExecutionResult([]),
+                                trace
+                            };
+                        }
+                        const items = forEachOutput.items as WorkflowNodeOutput[];
+                        if (!items.length) {
+                            await input.stageReporter?.report({
+                                ...stageBase,
+                                stageStatus: 'completed',
+                                detail: 'No nested timesteps selected'
+                            });
+                            return {
+                                output: this.createNestedExecutionResult([]),
+                                trace
+                            };
+                        }
+
+                        nestedSession.setForEachCurrentValue(
+                            {
+                                ...(items[0] as WorkflowNodeOutput),
+                                path: input.dumpTarget.localPath
+                            } as TrajectoryDumpDescriptor,
+                            0,
+                            nestedOutputDir
+                        );
+                    }
+                } catch (error) {
+                    const runtimeError = error instanceof Error ? error : undefined;
+                    const message = runtimeError?.message ?? `Nested node ${node.id} failed`;
+                    this.appendTraceNode(trace, workflowTraceContext, {
+                        nodeId: node.id,
+                        nodeType: node.type,
+                        status: 'error',
+                        durationMs: Date.now() - nodeStartedAt,
+                        error: message,
+                        stack: runtimeError?.stack
+                    });
+
+                    if (workflowTraceContext) {
+                        throw createWorkflowTraceFailure(message, trace, error);
+                    }
+
+                    throw this.toError(runtimeError, message);
+                }
             }
-        }
 
-        const nestedRuntimeRootNodes = nestedContext.workflow.getRuntimeStartNodes();
-        const visitedNodeIds = new Set<string>();
+            const nestedRuntimeRootNodes = nestedContext.workflow.getRuntimeStartNodes();
+            const visitedNodeIds = new Set<string>();
 
-        for (const runtimeRootNode of nestedRuntimeRootNodes) {
-            await this.executeNestedRuntimeNode({
-                workflow: nestedContext.workflow,
-                node: runtimeRootNode,
-                session: nestedSession,
-                input,
-                outputDir: nestedOutputDir,
-                rootNodeId,
-                executionPath,
-                trace,
-                traceContext: workflowTraceContext,
-                logSinkFactory,
-                visitedNodeIds
+            for (const runtimeRootNode of nestedRuntimeRootNodes) {
+                await this.executeNestedRuntimeNode({
+                    workflow: nestedContext.workflow,
+                    node: runtimeRootNode,
+                    session: nestedSession,
+                    input,
+                    outputDir: nestedOutputDir,
+                    rootNodeId,
+                    executionPath,
+                    trace,
+                    traceContext: workflowTraceContext,
+                    logSinkFactory,
+                    visitedNodeIds
+                });
+            }
+
+            const exposures = this.collectNestedExposureArtifacts(nestedSession);
+            if (cacheDir) {
+                await this.persistPluginRefCache(cacheDir, nestedOutputDir, exposures);
+            }
+            await input.stageReporter?.report({
+                ...stageBase,
+                stageStatus: 'completed',
+                detail: `${exposures.length} artifact${exposures.length === 1 ? '' : 's'} generated`
             });
+
+            return {
+                output: this.createNestedExecutionResult(exposures),
+                trace
+            };
+        } catch (error) {
+            await input.stageReporter?.report({
+                ...stageBase,
+                stageStatus: 'failed',
+                detail: error instanceof Error ? error.message : undefined
+            });
+            throw error;
         }
-
-        const exposures = this.collectNestedExposureArtifacts(nestedSession);
-
-        return {
-            output: this.createNestedExecutionResult(exposures),
-            trace
-        };
     }
 
     private createNestedPluginExecutionInput(
@@ -831,8 +947,120 @@ export class WorkflowRuntime {
             captureTrace: params.traceContext !== null,
             rootNodeId: params.rootNodeId,
             executionPath,
-            logSinkFactory: params.logSinkFactory
+            logSinkFactory: params.logSinkFactory,
+            stageReporter: params.input.stageReporter
         };
+    }
+
+    private async restorePluginRefCache(
+        cacheDir: string,
+        targetOutputDir: string
+    ): Promise<WorkflowExposureArtifact[] | null> {
+        try {
+            const manifestPath = path.join(cacheDir, 'manifest.json');
+            const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as {
+                files?: Array<{ cacheName: string; suffix: string }>;
+                exposures?: Array<Omit<WorkflowExposureArtifact, 'filePath'> & { suffix: string }>;
+            };
+            if (!Array.isArray(manifest.files) || !Array.isArray(manifest.exposures)) {
+                return null;
+            }
+
+            await fs.mkdir(path.dirname(targetOutputDir), { recursive: true });
+            for (const file of manifest.files) {
+                if (typeof file.cacheName !== 'string' || typeof file.suffix !== 'string') {
+                    return null;
+                }
+
+                const source = path.join(cacheDir, file.cacheName);
+                const target = `${targetOutputDir}${file.suffix}`;
+                await fs.copyFile(source, target);
+            }
+
+            return manifest.exposures.map((exposure) => ({
+                exposureId: exposure.exposureId,
+                name: exposure.name,
+                results: exposure.results,
+                filePath: `${targetOutputDir}${exposure.suffix}`
+            }));
+        } catch {
+            return null;
+        }
+    }
+
+    private async persistPluginRefCache(
+        cacheDir: string,
+        sourceOutputDir: string,
+        exposures: WorkflowExposureArtifact[]
+    ): Promise<void> {
+        const outputDirname = path.dirname(sourceOutputDir);
+        const outputPrefix = `${path.basename(sourceOutputDir)}_`;
+        const files = (await fs.readdir(outputDirname))
+            .filter((filename) => filename.startsWith(outputPrefix))
+            .map((filename) => {
+                const suffix = filename.slice(path.basename(sourceOutputDir).length);
+                return {
+                    sourcePath: path.join(outputDirname, filename),
+                    cacheName: filename.slice(outputPrefix.length),
+                    suffix
+                };
+            });
+
+        if (!files.length) {
+            return;
+        }
+
+        await fs.rm(cacheDir, { recursive: true, force: true });
+        await fs.mkdir(cacheDir, { recursive: true });
+
+        await Promise.all(files.map((file) => fs.copyFile(
+            file.sourcePath,
+            path.join(cacheDir, file.cacheName)
+        )));
+
+        const manifest = {
+            version: 1,
+            createdAt: new Date().toISOString(),
+            files: files.map(({ cacheName, suffix }) => ({ cacheName, suffix })),
+            exposures: exposures
+                .filter((exposure) => exposure.filePath.startsWith(sourceOutputDir))
+                .map((exposure) => ({
+                    exposureId: exposure.exposureId,
+                    name: exposure.name,
+                    results: exposure.results,
+                    suffix: exposure.filePath.slice(sourceOutputDir.length)
+                }))
+        };
+
+        await fs.writeFile(path.join(cacheDir, 'manifest.json'), JSON.stringify(manifest), 'utf8');
+    }
+
+    private hashPluginRefConfig(value: unknown): string {
+        return crypto
+            .createHash('sha256')
+            .update(this.stableStringify(value))
+            .digest('hex')
+            .slice(0, 24);
+    }
+
+    private stableStringify(value: unknown): string {
+        if (value === null || typeof value !== 'object') {
+            return JSON.stringify(value);
+        }
+        if (Array.isArray(value)) {
+            return `[${value.map((item) => this.stableStringify(item)).join(',')}]`;
+        }
+
+        const record = value as Record<string, unknown>;
+        return `{${Object.keys(record).sort().map((key) =>
+            `${JSON.stringify(key)}:${this.stableStringify(record[key])}`
+        ).join(',')}}`;
+    }
+
+    private resolveWorkflowDisplayName(workflow: WorkflowDefinition): string | null {
+        const modifierNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
+        const name = modifierNode?.data.modifier?.name;
+        return typeof name === 'string' && name.trim().length > 0 ? name : null;
     }
 
     private collectNestedExposureArtifacts(session: WorkflowSession): WorkflowExposureArtifact[] {
