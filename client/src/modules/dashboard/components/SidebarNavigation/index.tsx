@@ -58,6 +58,10 @@ const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> =
 
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
 const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
+const PLUGIN_NAVIGATION_LABEL_COLLATOR = new Intl.Collator(undefined, {
+    numeric: true,
+    sensitivity: 'base'
+});
 
 const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar }: SidebarNavigationProps) => {
     const [searchParams] = useSearchParams();
@@ -127,16 +131,17 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
         ...plugins
             .map((plugin) => {
                 const exposures = getListingRelevantExposures(plugin.exposures);
+                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin._id;
 
                 return {
                     plugin,
-                    exposures
+                    exposures,
+                    pluginLabel
                 };
             })
             .filter(({ exposures }) => exposures.length > 0)
-            .map(({ plugin, exposures }) => {
-                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin._id;
-
+            .sort((left, right) => PLUGIN_NAVIGATION_LABEL_COLLATOR.compare(left.pluginLabel, right.pluginLabel))
+            .map(({ plugin, exposures, pluginLabel }) => {
                 return {
                     label: pluginLabel,
                     isSelected: exposures.some((exposure) =>

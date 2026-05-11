@@ -7,7 +7,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import logger from '@shared/infrastructure/logger';
 import type IORedis from 'ioredis';
 import { Buffer } from 'node:buffer';
 import { inject } from 'tsyringe';
@@ -67,27 +66,12 @@ interface GetFrameLogInput {
     afterCursor?: string;
 }
 
-interface ParsedRedisSegment {
-    cursor: string;
-    segment: AnalysisExecutionLogSegment;
-}
-
-interface LogMetaRecord {
-    analysisId?: string;
-    teamId?: string;
-    trajectoryId?: string;
+interface StoredAnalysisFrameLogRecord extends AnalysisFrameLogSnapshot {
     jobId?: string;
-    status?: AnalysisFrameLogStatus;
-    sealed?: '0' | '1';
-    truncated?: '0' | '1';
-    bytes?: string;
-    lastCursor?: string;
+    bytes?: number;
 }
 
 const MAX_LOG_BYTES = 16 * 1024 * 1024;
-const SEALED_REDIS_TTL_SECONDS = 24 * 60 * 60;
-const STREAM_KEY_SUFFIX = 'stream';
-const META_KEY_SUFFIX = 'meta';
 
 const isAnalysisFrameLogStatus = (value: string | undefined): value is AnalysisFrameLogStatus => {
     return value === 'pending' || value === 'running' || value === 'completed' || value === 'failed';
@@ -131,6 +115,8 @@ export const getAnalysisLogRoom = (analysisId: string, timestep: number): string
 
 @Singleton()
 export default class AnalysisExecutionLogService {
+    private readonly mutationChains = new Map<string, Promise<void>>();
+
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
@@ -156,33 +142,27 @@ export default class AnalysisExecutionLogService {
     }
 
     async markFrameRunning(input: MarkFrameRunningInput): Promise<void> {
-        const metaKey = this.metaKey(input.analysisId, input.timestep);
-        const streamKey = this.streamKey(input.analysisId, input.timestep);
-        const currentMeta = await this.redis.hgetall(metaKey) as LogMetaRecord;
-        const shouldReset = currentMeta.jobId !== input.jobId || currentMeta.sealed === '1';
+        await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
+            const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
+            const current = await this.readStoredRecord(storageClusterId, input);
+            const shouldReset = !current || current.jobId !== input.jobId || current.sealed;
+            const nextRecord = shouldReset
+                ? this.createEmptyStoredRecord(input, 'running')
+                : {
+                    ...current,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    jobId: input.jobId,
+                    status: 'running' as const,
+                    sealed: false,
+                    nextCursor: this.resolveCursor(current.nextCursor, current.segments.length),
+                    bytes: this.resolveRecordBytes(current)
+                };
 
-        const pipeline = this.redis.pipeline();
-
-        if (shouldReset) {
-            pipeline.del(streamKey);
-            pipeline.del(metaKey);
-        }
-
-        pipeline.hset(metaKey, this.createMetaRecord({
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            jobId: input.jobId,
-            status: 'running',
-            sealed: false,
-            truncated: false,
-            bytes: shouldReset ? 0 : this.parseNumber(currentMeta.bytes),
-            lastCursor: shouldReset ? null : this.normalizeCursor(currentMeta.lastCursor)
-        }));
-        pipeline.persist(metaKey);
-        pipeline.persist(streamKey);
-
-        await pipeline.exec();
+            await this.writeStoredRecord(storageClusterId, nextRecord);
+        });
     }
 
     async appendFrameSegments(input: AppendFrameSegmentsInput): Promise<void> {
@@ -194,203 +174,141 @@ export default class AnalysisExecutionLogService {
             return;
         }
 
-        const metaKey = this.metaKey(input.analysisId, input.timestep);
-        const streamKey = this.streamKey(input.analysisId, input.timestep);
-        const meta = await this.redis.hgetall(metaKey) as LogMetaRecord;
+        const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
+            const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
+            const current = await this.readStoredRecord(storageClusterId, input);
+            const record = !current || current.jobId !== input.jobId || current.sealed
+                ? this.createEmptyStoredRecord(input, 'running')
+                : current;
 
-        if (meta.sealed === '1') {
-            return;
-        }
-
-        let totalBytes = this.parseNumber(meta.bytes);
-        const acceptedSegments: AnalysisExecutionLogSegment[] = [];
-        let truncated = meta.truncated === '1';
-        let appendedTruncationMarker = false;
-
-        for (const segment of normalizedSegments) {
-            if (truncated) {
-                break;
+            if (record.truncated) {
+                return null;
             }
 
-            const nextBytes = totalBytes + Buffer.byteLength(segment.text, 'utf8');
-            if (nextBytes > MAX_LOG_BYTES) {
-                truncated = true;
-                if (meta.truncated !== '1') {
+            let totalBytes = this.resolveRecordBytes(record);
+            const acceptedSegments: AnalysisExecutionLogSegment[] = [];
+            let truncated = false;
+            let appendedTruncationMarker = false;
+
+            for (const segment of normalizedSegments) {
+                const nextBytes = totalBytes + Buffer.byteLength(segment.text, 'utf8');
+                if (nextBytes > MAX_LOG_BYTES) {
+                    truncated = true;
                     acceptedSegments.push(createTruncatedSegment());
                     appendedTruncationMarker = true;
+                    break;
                 }
-                break;
+
+                acceptedSegments.push(segment);
+                totalBytes = nextBytes;
             }
 
-            acceptedSegments.push(segment);
-            totalBytes = nextBytes;
-        }
+            if (acceptedSegments.length === 0 && !appendedTruncationMarker) {
+                return null;
+            }
 
-        if (acceptedSegments.length === 0 && !appendedTruncationMarker) {
-            return;
-        }
+            const nextSegments = [...record.segments, ...acceptedSegments];
+            const nextCursor = this.resolveCursor(null, nextSegments.length);
+            const updatedRecord: StoredAnalysisFrameLogRecord = {
+                ...record,
+                analysisId: input.analysisId,
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                timestep: input.timestep,
+                jobId: input.jobId,
+                status: 'running',
+                sealed: false,
+                truncated,
+                nextCursor,
+                bytes: totalBytes,
+                segments: nextSegments
+            };
 
-        const pipeline = this.redis.pipeline();
-        for (const segment of acceptedSegments) {
-            pipeline.xadd(streamKey, '*', 'segment', JSON.stringify(segment));
-        }
-        pipeline.hset(metaKey, this.createMetaRecord({
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            jobId: input.jobId,
-            status: 'running',
-            sealed: false,
-            truncated,
-            bytes: totalBytes,
-            lastCursor: this.normalizeCursor(meta.lastCursor)
-        }));
-        pipeline.persist(metaKey);
-        pipeline.persist(streamKey);
+            await this.writeStoredRecord(storageClusterId, updatedRecord);
 
-        const results = await pipeline.exec();
-        const xaddResults = results
-            ?.slice(0, acceptedSegments.length)
-            .map((result) => (typeof result?.[1] === 'string' ? result[1] : null))
-            .filter((value): value is string => value !== null) ?? [];
-
-        const latestCursor = xaddResults[xaddResults.length - 1]
-            ?? this.normalizeCursor(meta.lastCursor);
-        if (latestCursor) {
-            await this.redis.hset(metaKey, 'lastCursor', latestCursor);
-        }
-
-        this.emitChunk({
-            analysisId: input.analysisId,
-            timestep: input.timestep,
-            cursor: latestCursor,
-            segments: acceptedSegments,
-            sealed: false,
-            status: 'running',
-            truncated
+            return {
+                analysisId: input.analysisId,
+                timestep: input.timestep,
+                cursor: nextCursor,
+                segments: acceptedSegments,
+                sealed: false,
+                status: 'running' as const,
+                truncated
+            };
         });
+
+        if (chunk) {
+            this.emitChunk(chunk);
+        }
     }
 
     async sealFrameLog(input: SealFrameLogInput): Promise<void> {
-        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-        const streamKey = this.streamKey(input.analysisId, input.timestep);
-        const metaKey = this.metaKey(input.analysisId, input.timestep);
-        const meta = await this.redis.hgetall(metaKey) as LogMetaRecord;
-        const redisSegments = await this.readRedisSegments(streamKey);
-        const segments = redisSegments.map((entry) => entry.segment);
-        const lastCursor = redisSegments[redisSegments.length - 1]?.cursor
-            ?? this.normalizeCursor(meta.lastCursor);
-        const truncated = meta.truncated === '1';
-        const snapshot: AnalysisFrameLogSnapshot = {
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            timestep: input.timestep,
-            status: input.status,
-            sealed: true,
-            truncated,
-            nextCursor: lastCursor,
-            segments
-        };
+        const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
+            const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
+            const current = await this.readStoredRecord(storageClusterId, input);
+            const record = !current || current.jobId !== input.jobId || current.sealed
+                ? this.createEmptyStoredRecord(input, input.status)
+                : current;
+            const nextCursor = this.resolveCursor(record.nextCursor, record.segments.length);
+            const updatedRecord: StoredAnalysisFrameLogRecord = {
+                ...record,
+                analysisId: input.analysisId,
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                timestep: input.timestep,
+                jobId: input.jobId,
+                status: input.status,
+                sealed: true,
+                nextCursor,
+                bytes: this.resolveRecordBytes(record)
+            };
 
-        const snapshotBuffer = Buffer.from(JSON.stringify(snapshot), 'utf8');
-        await this.objectGatewayClient.putBuffer(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
-            objectKey: this.storageObjectKey(input.trajectoryId, input.analysisId, input.timestep),
-            buffer: snapshotBuffer,
-            contentLength: snapshotBuffer.length,
-            contentType: 'application/json'
+            await this.writeStoredRecord(storageClusterId, updatedRecord);
+
+            return {
+                analysisId: input.analysisId,
+                timestep: input.timestep,
+                cursor: nextCursor,
+                segments: [],
+                sealed: true,
+                status: input.status,
+                truncated: updatedRecord.truncated
+            };
         });
 
-        const pipeline = this.redis.pipeline();
-        pipeline.hset(metaKey, this.createMetaRecord({
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            jobId: input.jobId,
-            status: input.status,
-            sealed: true,
-            truncated,
-            bytes: this.parseNumber(meta.bytes),
-            lastCursor
-        }));
-        pipeline.expire(metaKey, SEALED_REDIS_TTL_SECONDS);
-        pipeline.expire(streamKey, SEALED_REDIS_TTL_SECONDS);
-
-        await pipeline.exec();
-
-        this.emitChunk({
-            analysisId: input.analysisId,
-            timestep: input.timestep,
-            cursor: lastCursor,
-            segments: [],
-            sealed: true,
-            status: input.status,
-            truncated
-        });
+        this.emitChunk(chunk);
     }
 
     async getFrameLog(input: GetFrameLogInput): Promise<AnalysisFrameLogSnapshot> {
-        const streamKey = this.streamKey(input.analysisId, input.timestep);
-        const metaKey = this.metaKey(input.analysisId, input.timestep);
-        const meta = await this.redis.hgetall(metaKey) as LogMetaRecord;
-        const hasRedisState = Object.keys(meta).length > 0 || await this.redis.exists(streamKey) === 1;
+        await this.waitForFrameLogMutations(input.analysisId, input.timestep);
 
-        if (hasRedisState) {
-            const redisSegments = await this.readRedisSegments(streamKey, input.afterCursor);
-            const lastCursor = redisSegments[redisSegments.length - 1]?.cursor
-                ?? this.normalizeCursor(meta.lastCursor)
-                ?? this.normalizeCursor(input.afterCursor);
+        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
+        const record = await this.readStoredRecord(storageClusterId, input);
 
+        if (!record) {
             return {
                 analysisId: input.analysisId,
                 teamId: input.teamId,
                 trajectoryId: input.trajectoryId,
                 timestep: input.timestep,
-                status: this.resolveStatus(meta.status),
-                sealed: meta.sealed === '1',
-                truncated: meta.truncated === '1',
-                nextCursor: lastCursor,
-                segments: redisSegments.map((entry) => entry.segment)
+                status: 'pending',
+                sealed: false,
+                truncated: false,
+                nextCursor: this.normalizeCursor(input.afterCursor),
+                segments: []
             };
         }
 
-        const objectName = this.storageObjectKey(input.trajectoryId, input.analysisId, input.timestep);
-        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-
-        try {
-            const buffer = await this.objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS, objectName);
-            const parsed = JSON.parse(buffer.toString('utf8')) as AnalysisFrameLogSnapshot;
-
-            if (input.afterCursor) {
-                return {
-                    ...parsed,
-                    segments: [],
-                    nextCursor: parsed.nextCursor ?? input.afterCursor
-                };
-            }
-
-            return parsed;
-        } catch (error) {
-            if (!(error instanceof ApplicationError) || error.statusCode !== 404) {
-                throw error;
-            }
-        }
-
-        return {
-            analysisId: input.analysisId,
-            teamId: input.teamId,
-            trajectoryId: input.trajectoryId,
-            timestep: input.timestep,
-            status: 'pending',
-            sealed: false,
-            truncated: false,
-            nextCursor: this.normalizeCursor(input.afterCursor),
-            segments: []
-        };
+        return this.buildSnapshot(record, input.afterCursor);
     }
 
     async clearRuntimeState(analysisId: string): Promise<void> {
+        await Promise.all(
+            [...this.mutationChains.entries()]
+                .filter(([frameKey]) => frameKey.startsWith(`${analysisId}:`))
+                .map(([, mutation]) => mutation.catch(() => undefined))
+        );
+
         const keys = await this.scanKeys(`analysis-log:${analysisId}:*`);
         if (keys.length === 0) {
             return;
@@ -407,45 +325,201 @@ export default class AnalysisExecutionLogService {
         );
     }
 
-    private streamKey(analysisId: string, timestep: number): string {
-        return `analysis-log:${analysisId}:${timestep}:${STREAM_KEY_SUFFIX}`;
-    }
-
-    private metaKey(analysisId: string, timestep: number): string {
-        return `analysis-log:${analysisId}:${timestep}:${META_KEY_SUFFIX}`;
-    }
-
     private storageObjectKey(trajectoryId: string, analysisId: string, timestep: number): string {
         return `trajectory-${trajectoryId}/analysis-${analysisId}/frame-${timestep}.json`;
     }
 
-    private createMetaRecord(input: {
-        analysisId: string;
-        teamId: string;
-        trajectoryId: string;
-        jobId: string;
-        status: AnalysisFrameLogStatus;
-        sealed: boolean;
-        truncated: boolean;
-        bytes: number;
-        lastCursor: string | null;
-    }): Record<string, string> {
-        const record: Record<string, string> = {
+    private frameMutationKey(analysisId: string, timestep: number): string {
+        return `${analysisId}:${timestep}`;
+    }
+
+    private async runFrameLogMutation<TResult>(
+        analysisId: string,
+        timestep: number,
+        operation: () => Promise<TResult>
+    ): Promise<TResult> {
+        const frameKey = this.frameMutationKey(analysisId, timestep);
+        const previous = this.mutationChains.get(frameKey) ?? Promise.resolve();
+        let releaseCurrent!: () => void;
+        const current = new Promise<void>((resolve) => {
+            releaseCurrent = resolve;
+        });
+        const tail = previous
+            .catch(() => undefined)
+            .then(() => current);
+
+        this.mutationChains.set(frameKey, tail);
+
+        try {
+            await previous.catch(() => undefined);
+            return await operation();
+        } finally {
+            releaseCurrent();
+            if (this.mutationChains.get(frameKey) === tail) {
+                this.mutationChains.delete(frameKey);
+            }
+        }
+    }
+
+    private async waitForFrameLogMutations(analysisId: string, timestep: number): Promise<void> {
+        const pending = this.mutationChains.get(this.frameMutationKey(analysisId, timestep));
+        if (!pending) {
+            return;
+        }
+
+        await pending.catch(() => undefined);
+    }
+
+    private createEmptyStoredRecord(
+        input: MarkFrameRunningInput,
+        status: AnalysisFrameLogStatus
+    ): StoredAnalysisFrameLogRecord {
+        return {
             analysisId: input.analysisId,
             teamId: input.teamId,
             trajectoryId: input.trajectoryId,
+            timestep: input.timestep,
             jobId: input.jobId,
-            status: input.status,
-            sealed: input.sealed ? '1' : '0',
-            truncated: input.truncated ? '1' : '0',
-            bytes: input.bytes.toString()
+            status,
+            sealed: status === 'completed' || status === 'failed',
+            truncated: false,
+            nextCursor: null,
+            bytes: 0,
+            segments: []
         };
+    }
 
-        if (input.lastCursor) {
-            record.lastCursor = input.lastCursor;
+    private async readStoredRecord(
+        storageClusterId: string,
+        identity: Pick<MarkFrameRunningInput, 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'>
+    ): Promise<StoredAnalysisFrameLogRecord | null> {
+        try {
+            const buffer = await this.objectGatewayClient.getBuffer(
+                storageClusterId,
+                TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+                this.storageObjectKey(identity.trajectoryId, identity.analysisId, identity.timestep)
+            );
+            return this.normalizeStoredRecord(JSON.parse(buffer.toString('utf8')) as unknown, identity);
+        } catch (error) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
+                return null;
+            }
+
+            throw error;
+        }
+    }
+
+    private async writeStoredRecord(
+        storageClusterId: string,
+        record: StoredAnalysisFrameLogRecord
+    ): Promise<void> {
+        const snapshotBuffer = Buffer.from(JSON.stringify(record), 'utf8');
+        await this.objectGatewayClient.putBuffer(storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+            objectKey: this.storageObjectKey(record.trajectoryId, record.analysisId, record.timestep),
+            buffer: snapshotBuffer,
+            contentLength: snapshotBuffer.length,
+            contentType: 'application/json'
+        });
+    }
+
+    private normalizeStoredRecord(
+        value: unknown,
+        identity: Pick<MarkFrameRunningInput, 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'>
+    ): StoredAnalysisFrameLogRecord {
+        if (typeof value !== 'object' || value === null) {
+            return this.createEmptyStoredRecord({ ...identity, jobId: '' }, 'pending');
         }
 
-        return record;
+        const record = value as Partial<StoredAnalysisFrameLogRecord>;
+        const segments = Array.isArray(record.segments)
+            ? record.segments
+                .map((segment) => normalizeSegment(segment as AnalysisExecutionLogSegment))
+                .filter((segment): segment is AnalysisExecutionLogSegment => segment !== null)
+            : [];
+
+        const normalized: StoredAnalysisFrameLogRecord = {
+            analysisId: typeof record.analysisId === 'string' && record.analysisId.length > 0
+                ? record.analysisId
+                : identity.analysisId,
+            teamId: typeof record.teamId === 'string' && record.teamId.length > 0
+                ? record.teamId
+                : identity.teamId,
+            trajectoryId: typeof record.trajectoryId === 'string' && record.trajectoryId.length > 0
+                ? record.trajectoryId
+                : identity.trajectoryId,
+            timestep: typeof record.timestep === 'number' && Number.isFinite(record.timestep)
+                ? record.timestep
+                : identity.timestep,
+            jobId: typeof record.jobId === 'string' && record.jobId.length > 0
+                ? record.jobId
+                : undefined,
+            status: this.resolveStatus(record.status),
+            sealed: record.sealed === true,
+            truncated: record.truncated === true,
+            nextCursor: this.resolveCursor(this.normalizeCursor(record.nextCursor), segments.length),
+            bytes: typeof record.bytes === 'number' && Number.isFinite(record.bytes)
+                ? record.bytes
+                : undefined,
+            segments
+        };
+
+        return normalized;
+    }
+
+    private buildSnapshot(
+        record: StoredAnalysisFrameLogRecord,
+        afterCursor?: string
+    ): AnalysisFrameLogSnapshot {
+        const nextCursor = this.resolveCursor(record.nextCursor, record.segments.length);
+        if (!afterCursor) {
+            return {
+                analysisId: record.analysisId,
+                teamId: record.teamId,
+                trajectoryId: record.trajectoryId,
+                timestep: record.timestep,
+                status: record.status,
+                sealed: record.sealed,
+                truncated: record.truncated,
+                nextCursor,
+                segments: [...record.segments]
+            };
+        }
+
+        const replayOffset = this.parseCursorOffset(afterCursor);
+        if (replayOffset === null) {
+            return {
+                analysisId: record.analysisId,
+                teamId: record.teamId,
+                trajectoryId: record.trajectoryId,
+                timestep: record.timestep,
+                status: record.status,
+                sealed: record.sealed,
+                truncated: record.truncated,
+                nextCursor: nextCursor ?? this.normalizeCursor(afterCursor),
+                segments: []
+            };
+        }
+
+        return {
+            analysisId: record.analysisId,
+            teamId: record.teamId,
+            trajectoryId: record.trajectoryId,
+            timestep: record.timestep,
+            status: record.status,
+            sealed: record.sealed,
+            truncated: record.truncated,
+            nextCursor: nextCursor ?? this.normalizeCursor(afterCursor),
+            segments: record.segments.slice(Math.max(0, replayOffset))
+        };
+    }
+
+    private resolveRecordBytes(record: StoredAnalysisFrameLogRecord): number {
+        if (typeof record.bytes === 'number' && Number.isFinite(record.bytes)) {
+            return record.bytes;
+        }
+
+        return record.segments.reduce((total, segment) => total + Buffer.byteLength(segment.text, 'utf8'), 0);
     }
 
     private resolveStatus(status: string | undefined): AnalysisFrameLogStatus {
@@ -456,11 +530,6 @@ export default class AnalysisExecutionLogService {
         return 'running';
     }
 
-    private parseNumber(value: string | undefined): number {
-        const parsed = Number.parseInt(value ?? '0', 10);
-        return Number.isFinite(parsed) ? parsed : 0;
-    }
-
     private normalizeCursor(value: string | null | undefined): string | null {
         if (typeof value !== 'string' || value.trim().length === 0) {
             return null;
@@ -469,33 +538,22 @@ export default class AnalysisExecutionLogService {
         return value;
     }
 
-    private async readRedisSegments(
-        streamKey: string,
-        afterCursor?: string
-    ): Promise<ParsedRedisSegment[]> {
-        const start = afterCursor ? `(${afterCursor}` : '-';
-        const entries = await this.redis.xrange(streamKey, start, '+');
+    private resolveCursor(value: string | null | undefined, segmentCount: number): string | null {
+        const normalized = this.normalizeCursor(value);
+        if (normalized) {
+            return normalized;
+        }
 
-        return entries
-            .map((entry) => {
-                const [cursor, fields] = entry;
-                const segmentFieldIndex = fields.findIndex((field) => field === 'segment');
-                const serializedSegment = segmentFieldIndex >= 0 ? fields[segmentFieldIndex + 1] : undefined;
-                if (typeof serializedSegment !== 'string') {
-                    return null;
-                }
+        return segmentCount > 0 ? `${segmentCount}` : null;
+    }
 
-                try {
-                    return {
-                        cursor,
-                        segment: JSON.parse(serializedSegment) as AnalysisExecutionLogSegment
-                    };
-                } catch {
-                    logger.warn(`Failed to parse analysis log segment from Redis stream cursor=${cursor}`);
-                    return null;
-                }
-            })
-            .filter((entry): entry is ParsedRedisSegment => entry !== null);
+    private parseCursorOffset(cursor: string): number | null {
+        if (!/^\d+$/.test(cursor)) {
+            return null;
+        }
+
+        const parsed = Number.parseInt(cursor, 10);
+        return Number.isFinite(parsed) ? parsed : null;
     }
 
     private async scanKeys(pattern: string): Promise<string[]> {
