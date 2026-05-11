@@ -51,10 +51,13 @@ export default class StoragePlacementService {
         const existingPlacement = await this.storagePlacementRepository.findByScope(scopeType, scopeId);
         const resolved = await this.resolvePlacementDefinition(scopeType, scopeId);
         const nextPlacementProps = createStoragePlacementProps({
-            team: resolved.team,
+            team: existingPlacement?.props.team ?? resolved.team,
             scopeType,
             scopeId,
-            primaryClusterId: resolved.primaryClusterId,
+            // Persist the original primary owner once the placement exists.
+            // Ownership changes must go through switchPrimaryCluster() so the
+            // underlying bytes can be transferred before metadata flips.
+            primaryClusterId: existingPlacement?.props.primaryClusterId ?? resolved.primaryClusterId,
             replicaClusterIds: existingPlacement?.props.replicaClusterIds ?? [],
             buckets: resolved.buckets,
             state: existingPlacement?.props.state ?? DEFAULT_STORAGE_PLACEMENT_STATE,

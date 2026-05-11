@@ -16,7 +16,7 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
 
         await this.createNotificationUseCase.execute({
             recipient: id,
-            title: 'Welcome to Volt!',
+            title: 'Create your first team',
             content: `Hi ${firstName}, get started by creating your first team and connecting a cluster.`,
             link: '/onboarding'
         });
