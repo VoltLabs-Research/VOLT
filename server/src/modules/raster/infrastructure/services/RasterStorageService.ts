@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import {
@@ -9,24 +9,19 @@ import {
 } from '@modules/raster/utilities/raster-storage-paths';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export class RasterStorageService {
     constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
-    async hasTrajectoryPreview(trajectoryId: string, teamClusterId?: string): Promise<boolean> {
+    async hasTrajectoryPreview(trajectoryId: string, teamClusterId: string): Promise<boolean> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
 
-        for await (const key of this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId)) {
+        for await (const key of this.listObjectKeys(TEAM_CLUSTER_BUCKETS.RASTERIZER, prefix, teamClusterId)) {
             if (key.endsWith('.png')) {
                 return true;
             }
@@ -35,29 +30,25 @@ export class RasterStorageService {
         return false;
     }
 
-    async *listPreviewFiles(trajectoryId: string, teamClusterId?: string): AsyncIterable<string> {
+    async *listPreviewFiles(trajectoryId: string, teamClusterId: string): AsyncIterable<string> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
-        yield* this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId);
+        yield* this.listObjectKeys(TEAM_CLUSTER_BUCKETS.RASTERIZER, prefix, teamClusterId);
     }
 
     async *listAnalysisPreviewFiles(
         trajectoryId: string,
         analysisId: string,
-        teamClusterId?: string
+        teamClusterId: string
     ): AsyncIterable<string> {
         const prefix = getAnalysisRasterPreviewsPrefix(trajectoryId, analysisId);
-        yield* this.listObjectKeys(SYS_BUCKETS.RASTERIZER, prefix, teamClusterId);
+        yield* this.listObjectKeys(TEAM_CLUSTER_BUCKETS.RASTERIZER, prefix, teamClusterId);
     }
 
-    async getRasterFramePNG(trajectoryId: string, timestep: number, teamClusterId?: string): Promise<RasterFrameResult> {
+    async getRasterFramePNG(trajectoryId: string, timestep: number, teamClusterId: string): Promise<RasterFrameResult> {
         const objectName = getRasterFrameObjectName(trajectoryId, timestep);
 
         try {
-            if (teamClusterId) {
-                return await this.getRemoteRasterFramePNG(teamClusterId, objectName, `trajectory-${trajectoryId}-timestep-${timestep}.png`);
-            }
-
-            return this.getLocalRasterFramePNG(objectName, `trajectory-${trajectoryId}-timestep-${timestep}.png`);
+            return await this.getRemoteRasterFramePNG(teamClusterId, objectName, `trajectory-${trajectoryId}-timestep-${timestep}.png`);
         } catch (error) {
             if (error instanceof ApplicationError) {
                 throw error;
@@ -77,20 +68,13 @@ export class RasterStorageService {
         analysisId: string,
         timestep: number,
         model: string,
-        teamClusterId?: string
+        teamClusterId: string
     ): Promise<RasterFrameResult> {
         const objectName = getAnalysisRasterFrameObjectName(trajectoryId, analysisId, timestep, model);
 
         try {
-            if (teamClusterId) {
-                return await this.getRemoteRasterFramePNG(
-                    teamClusterId,
-                    objectName,
-                    `trajectory-${trajectoryId}-analysis-${analysisId}-timestep-${timestep}-${model}.png`
-                );
-            }
-
-            return this.getLocalRasterFramePNG(
+            return await this.getRemoteRasterFramePNG(
+                teamClusterId,
                 objectName,
                 `trajectory-${trajectoryId}-analysis-${analysisId}-timestep-${timestep}-${model}.png`
             );
@@ -111,40 +95,9 @@ export class RasterStorageService {
     private async *listObjectKeys(
         bucket: string,
         prefix: string,
-        teamClusterId?: string
+        teamClusterId: string
     ): AsyncIterable<string> {
-        if (teamClusterId) {
-            yield* this.objectGatewayClient.listAll(teamClusterId, { bucket, prefix });
-            return;
-        }
-
-        for await (const key of this.storageService.listByPrefix(bucket, prefix)) {
-            yield key;
-        }
-    }
-
-    private async getLocalRasterFramePNG(objectName: string, filename: string): Promise<RasterFrameResult> {
-        const exists = await this.storageService.exists(SYS_BUCKETS.RASTERIZER, objectName);
-
-        if (!exists) {
-            throw ApplicationError.notFound(
-                ErrorCodes.RASTER_NOT_FOUND,
-                'Raster frame not found'
-            );
-        }
-
-        const [stream, stat] = await Promise.all([
-            this.storageService.getStream(SYS_BUCKETS.RASTERIZER, objectName),
-            this.storageService.getStat(SYS_BUCKETS.RASTERIZER, objectName)
-        ]);
-
-        return {
-            stream,
-            contentLength: stat.size,
-            contentType: stat.mimetype || 'image/png',
-            cacheControl: 'public, max-age=86400',
-            filename
-        };
+        yield* this.objectGatewayClient.listAll(teamClusterId, { bucket, prefix });
     }
 
     private async getRemoteRasterFramePNG(
@@ -155,7 +108,7 @@ export class RasterStorageService {
         try {
             const response = await this.objectGatewayClient.getStream(
                 teamClusterId,
-                SYS_BUCKETS.RASTERIZER,
+                TEAM_CLUSTER_BUCKETS.RASTERIZER,
                 objectName
             );
 

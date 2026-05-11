@@ -5,23 +5,22 @@ import {
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO, ApplicationError> {
     constructor(
         private pluginRepository: PluginRepository,
-        @inject(SHARED_TOKENS.StorageService) private storageService: IStorageService
+        private readonly storagePlacementService: StoragePlacementService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: DownloadPluginBinaryInputDTO): Promise<Result<DownloadPluginBinaryOutputDTO, ApplicationError>> {
@@ -57,11 +56,17 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
             ));
         }
 
+        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
+
         let stream;
         try {
-            stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, binaryObjectPath);
+            stream = await this.objectGatewayClient.getStream(
+                placement.props.primaryClusterId,
+                TEAM_CLUSTER_BUCKETS.PLUGINS,
+                binaryObjectPath
+            );
         } catch (error: unknown) {
-            if (isStorageObjectNotFoundError(error)) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
                 return Result.fail(ApplicationError.notFound(
                     ErrorCodes.RESOURCE_NOT_FOUND,
                     `Plugin binary not found for plugin ${input.pluginId}`
@@ -72,7 +77,7 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
 
         const fileName = binaryFileName || `${plugin._id}.bin`;
         const response = createDownloadStreamResponse({
-            stream,
+            stream: stream.stream,
             contentType: 'application/octet-stream',
             filename: fileName,
             cacheControl: 'no-cache'

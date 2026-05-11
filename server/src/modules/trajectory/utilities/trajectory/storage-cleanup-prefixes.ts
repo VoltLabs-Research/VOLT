@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 export interface TrajectoryStorageCleanupTarget {
     bucket: string;
@@ -10,23 +10,23 @@ export const getTrajectoryStorageCleanupTargets = (trajectoryId: string): Trajec
 
     return [
         {
-            bucket: SYS_BUCKETS.DUMPS,
+            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
             prefix: trajectoryPrefix
         },
         {
-            bucket: SYS_BUCKETS.MODELS,
+            bucket: TEAM_CLUSTER_BUCKETS.MODELS,
             prefix: trajectoryPrefix
         },
         {
-            bucket: SYS_BUCKETS.RASTERIZER,
+            bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
             prefix: trajectoryPrefix
         },
         {
-            bucket: SYS_BUCKETS.PLUGINS,
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
             prefix: trajectoryPrefix
         },
         {
-            bucket: SYS_BUCKETS.PLUGINS,
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
             prefix: `plugins/trajectory-${trajectoryId}/`
         }
     ];

@@ -1,12 +1,11 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
+import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
-import { inject } from 'tsyringe';
 
 /**
  * Cascades cleanup when a LaTeX document is deleted:
@@ -18,16 +17,18 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
     constructor(
         private readonly latexAssetRepository: LatexAssetRepository,
         private readonly latexFileRepository: LatexFileRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {
         const { documentId, teamId } = event.payload;
         const storagePrefix = `latex-assets/${teamId}/${documentId}/`;
+        const storageClusterId = requireLatexStorageClusterId(documentId, {
+            storageClusterId: event.payload.storageClusterId
+        });
 
         await Promise.all([
-            this.storageService.deleteByPrefix(SYS_BUCKETS.LATEX_ASSETS, storagePrefix),
+            this.objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, storagePrefix),
             this.latexAssetRepository.deleteMany({ document: documentId }),
             this.latexFileRepository.deleteMany({ document: documentId })
         ]);

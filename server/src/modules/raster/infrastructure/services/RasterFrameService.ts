@@ -21,11 +21,18 @@ export class RasterFrameService implements IRasterFrameReader {
         if (!trajectory || trajectory.props.team !== teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            );
+        }
 
         return this.rasterStorage.getRasterFramePNG(
             trajectoryId,
             timestep,
-            resolveTrajectoryStorageClusterId(trajectory.props)
+            storageClusterId
         );
     }
 
@@ -53,6 +60,12 @@ export class RasterFrameService implements IRasterFrameReader {
             analysisRepository: this.analysisRepository,
             trajectoryRepository: this.trajectoryRepository
         });
+        if (!teamClusterId) {
+            throw ApplicationError.conflict(
+                'Analysis::StorageClusterRequired',
+                'Analysis storage cluster is required'
+            );
+        }
 
         return this.rasterStorage.getAnalysisRasterFramePNG(
             trajectoryId,

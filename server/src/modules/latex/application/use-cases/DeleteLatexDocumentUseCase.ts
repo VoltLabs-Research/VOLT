@@ -37,6 +37,7 @@ export class DeleteLatexDocumentUseCase implements IUseCase<DeleteLatexDocumentI
             await this.eventBus.publish(new LatexDocumentDeletedEvent({
                 documentId: input.documentId,
                 teamId: input.teamId,
+                storageClusterId: document.props.storageClusterId,
                 userId: input.userId ?? '',
                 documentTitle: document.props.title ?? ''
             }));

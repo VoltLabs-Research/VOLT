@@ -9,13 +9,11 @@ import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@mo
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 const DASHBOARD_PREVIEW_MAX_WIDTH = 960;
 const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
@@ -25,10 +23,6 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
     constructor(
         
         private readonly trajectoryRepository: TrajectoryRepository,
-
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-
         
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ){}
@@ -42,11 +36,16 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            return Result.fail(ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            ));
+        }
 
         const preview = await readTrajectoryPreview({
             trajectoryId,
             storageClusterId,
-            storageService: this.storageService,
             objectGatewayClient: this.objectGatewayClient,
             createOutput: this.createPreviewOutput.bind(this)
         });

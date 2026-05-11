@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import {
     getDocumentCompileWorkDirSegment,
     prepareWorkDir,
@@ -11,16 +12,13 @@ import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/m
 import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import TempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO, ApplicationError> {
@@ -28,8 +26,7 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
         private readonly latexFileRepository: LatexFileRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly tempFileService: TempFileService
     ) {}
 
@@ -51,7 +48,7 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                         latexDocumentRepository: this.latexDocumentRepository,
                         latexAssetRepository: this.latexAssetRepository,
                         latexFileRepository: this.latexFileRepository,
-                        storageService: this.storageService,
+                        objectGatewayClient: this.objectGatewayClient,
                         tempFileService: this.tempFileService
                     }
                 );

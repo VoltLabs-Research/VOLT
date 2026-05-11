@@ -5,22 +5,20 @@ import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@
 import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IStorageService } from '@shared/domain/port/IStorageService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import archiver from 'archiver';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
-import { inject } from 'tsyringe';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
@@ -49,10 +47,14 @@ export default class PluginStorageService implements IPluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,
         private readonly storagePlacementService: StoragePlacementService,
-        @inject(SHARED_TOKENS.StorageService)
-        private storageService: IStorageService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly workflowValidator: WorkflowValidatorService
     ) {}
+
+    private async resolveOwnerClusterId(pluginId: string): Promise<string> {
+        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId);
+        return placement.props.primaryClusterId;
+    }
 
     private async persistWorkflow(pluginId: string, workflow: Workflow): Promise<void> {
         const projection = WorkflowProjectionService.project(workflow, pluginId);
@@ -90,7 +92,8 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
-        await this.storageService.delete(SYS_BUCKETS.PLUGINS, pathToDelete);
+        const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
+        await this.objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, pathToDelete);
 
         plugin.props.workflow.updateEntrypoint({
             binaryObjectPath: undefined,
@@ -124,26 +127,28 @@ export default class PluginStorageService implements IPluginStorageService {
         const uniqueName = `${v4()}${fileExtension}`;
         const objectPath = `plugin-binaries/${pluginId}/${uniqueName}`;
 
+        const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const oldBinaryPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
         if (oldBinaryPath) {
-            await this.storageService.delete(SYS_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
+            await this.objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
                 logger.warn(`@plugin-storage-service: failed to delete old binary ${oldBinaryPath}: ${err}`);
             });
         }
 
         const binaryHash = computeSha256(file.buffer);
 
-        await this.storageService.upload(
-            SYS_BUCKETS.PLUGINS,
-            objectPath,
-            file.buffer,
-            {
-                'Content-Type': file.mimetype || 'application/octet-stream',
-                'x-amz-meta-original-name': originalName,
-                'x-amz-meta-sha256': binaryHash
+        await this.objectGatewayClient.putBuffer(ownerClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            objectKey: objectPath,
+            buffer: file.buffer,
+            contentLength: file.buffer.length,
+            contentType: file.mimetype || 'application/octet-stream',
+            metadata: {
+                'original-name': originalName,
+                sha256: binaryHash
             }
-        );
+        });
 
         plugin.props.workflow.updateEntrypoint({
             binary: originalName,
@@ -153,8 +158,6 @@ export default class PluginStorageService implements IPluginStorageService {
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
-        await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId);
-
         logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
         return {
             objectPath,
@@ -182,6 +185,7 @@ export default class PluginStorageService implements IPluginStorageService {
         const binaryObjectPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
         const binaryFileName = entrypointNode?.data.entrypoint?.binaryFileName;
 
+        const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
         const outputStream = new PassThrough();
         const archive = archiver('zip', { zlib: { level: 5 } });
 
@@ -190,8 +194,12 @@ export default class PluginStorageService implements IPluginStorageService {
         archive.append(JSON.stringify(exportData, null, 2), { name: 'plugin.json' });
 
         if (binaryObjectPath) {
-            const binaryStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, binaryObjectPath);
-            archive.append(binaryStream, { name: `binary/${binaryFileName}` });
+            const binaryStream = await this.objectGatewayClient.getStream(
+                ownerClusterId,
+                TEAM_CLUSTER_BUCKETS.PLUGINS,
+                binaryObjectPath
+            );
+            archive.append(binaryStream.stream, { name: `binary/${binaryFileName}` });
         }
         archive.finalize();
 
@@ -271,16 +279,18 @@ export default class PluginStorageService implements IPluginStorageService {
             const binaryObjectPath = `plugin-binaries/${newPlugin._id}/${v4()}-${binaryFileName}`;
             const binaryHash = computeSha256(binaryBuffer);
 
-            await this.storageService.upload(
-                SYS_BUCKETS.PLUGINS,
-                binaryObjectPath,
-                binaryBuffer,
-                {
-                    'Content-Type': 'application/octet-stream',
-                    'x-amz-meta-original-name': binaryFileName,
-                    'x-amz-meta-sha256': binaryHash
+            const ownerClusterId = await this.resolveOwnerClusterId(newPlugin.id);
+            await this.objectGatewayClient.putBuffer(ownerClusterId, {
+                bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+                objectKey: binaryObjectPath,
+                buffer: binaryBuffer,
+                contentLength: binaryBuffer.length,
+                contentType: 'application/octet-stream',
+                metadata: {
+                    'original-name': binaryFileName,
+                    sha256: binaryHash
                 }
-            );
+            });
 
             newPlugin.props.workflow.updateEntrypoint({
                 binary: binaryFileName,
@@ -290,8 +300,6 @@ export default class PluginStorageService implements IPluginStorageService {
             });
 
             await this.persistWorkflow(newPlugin._id, newPlugin.props.workflow);
-            await this.storagePlacementService.ensurePlacement('plugin-binary', newPlugin.id);
-
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;
         }

@@ -4,6 +4,7 @@ import GetLatexDocumentController from './GetLatexDocumentController';
 import ListLatexDocumentsController from './ListLatexDocumentsController';
 import UpdateLatexDocumentController from './UpdateLatexDocumentController';
 import UploadLatexAssetController from './UploadLatexAssetController';
+import GetLatexAssetContentController from './GetLatexAssetContentController';
 import ListLatexAssetsController from './ListLatexAssetsController';
 import DeleteLatexAssetController from './DeleteLatexAssetController';
 import UpdateLatexAssetController from './UpdateLatexAssetController';
@@ -26,6 +27,7 @@ export default createControllerRegistry({
     listDocuments: ListLatexDocumentsController,
     updateDocument: UpdateLatexDocumentController,
     uploadAsset: UploadLatexAssetController,
+    getAssetContent: GetLatexAssetContentController,
     listAssets: ListLatexAssetsController,
     deleteAsset: DeleteLatexAssetController,
     updateAsset: UpdateLatexAssetController,

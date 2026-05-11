@@ -1,7 +1,10 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -131,10 +134,26 @@ export default class AnalysisExecutionLogService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-        private readonly emitter: SocketIOEmitter
+        private readonly emitter: SocketIOEmitter,
+        private readonly trajectoryRepository: TrajectoryRepository,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
+
+    private async requireStorageClusterId(trajectoryId: string): Promise<string> {
+        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
+
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                `Trajectory ${trajectoryId} does not have a storage cluster assigned`
+            );
+        }
+
+        return storageClusterId;
+    }
 
     async markFrameRunning(input: MarkFrameRunningInput): Promise<void> {
         const metaKey = this.metaKey(input.analysisId, input.timestep);
@@ -253,6 +272,7 @@ export default class AnalysisExecutionLogService {
     }
 
     async sealFrameLog(input: SealFrameLogInput): Promise<void> {
+        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
         const streamKey = this.streamKey(input.analysisId, input.timestep);
         const metaKey = this.metaKey(input.analysisId, input.timestep);
         const meta = await this.redis.hgetall(metaKey) as LogMetaRecord;
@@ -273,14 +293,14 @@ export default class AnalysisExecutionLogService {
             segments
         };
 
-        await this.storageService.upload(
-            SYS_BUCKETS.ANALYSIS_LOGS,
-            this.storageObjectKey(input.trajectoryId, input.analysisId, input.timestep),
-            Buffer.from(JSON.stringify(snapshot), 'utf8'),
-            {
-                'content-type': 'application/json'
-            }
-        );
+        const snapshotBuffer = Buffer.from(JSON.stringify(snapshot), 'utf8');
+        await this.objectGatewayClient.putBuffer(storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+            objectKey: this.storageObjectKey(input.trajectoryId, input.analysisId, input.timestep),
+            buffer: snapshotBuffer,
+            contentLength: snapshotBuffer.length,
+            contentType: 'application/json'
+        });
 
         const pipeline = this.redis.pipeline();
         pipeline.hset(metaKey, this.createMetaRecord({
@@ -336,8 +356,10 @@ export default class AnalysisExecutionLogService {
         }
 
         const objectName = this.storageObjectKey(input.trajectoryId, input.analysisId, input.timestep);
-        if (await this.storageService.exists(SYS_BUCKETS.ANALYSIS_LOGS, objectName)) {
-            const buffer = await this.storageService.getBuffer(SYS_BUCKETS.ANALYSIS_LOGS, objectName);
+        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
+
+        try {
+            const buffer = await this.objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS, objectName);
             const parsed = JSON.parse(buffer.toString('utf8')) as AnalysisFrameLogSnapshot;
 
             if (input.afterCursor) {
@@ -349,6 +371,10 @@ export default class AnalysisExecutionLogService {
             }
 
             return parsed;
+        } catch (error) {
+            if (!(error instanceof ApplicationError) || error.statusCode !== 404) {
+                throw error;
+            }
         }
 
         return {

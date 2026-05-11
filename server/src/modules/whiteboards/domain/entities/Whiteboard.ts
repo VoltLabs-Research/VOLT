@@ -11,6 +11,7 @@ export interface WhiteboardProps {
     createdBy: string;
     title: string;
     folder: string | null;
+    storageClusterId?: string;
     payloadKey: string;
     thumbnailKey?: string;
     lastEditedBy?: string | PopulatedWhiteboardUser | null;

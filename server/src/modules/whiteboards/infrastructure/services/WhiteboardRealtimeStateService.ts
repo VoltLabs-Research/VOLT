@@ -1,10 +1,9 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
 
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 type WhiteboardElement = Record<string, unknown>;
 type WhiteboardAppState = Record<string, unknown>;
@@ -18,6 +17,7 @@ interface StoredWhiteboardScene {
 interface WhiteboardRoomState {
     whiteboardId: string;
     teamId: string;
+    storageClusterId: string;
     payloadKey: string;
     revision: number;
     elements: Map<string, WhiteboardElement>;
@@ -171,8 +171,7 @@ export default class WhiteboardRealtimeStateService {
 
     constructor(
         private readonly whiteboardRepository: WhiteboardRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async getSnapshot(whiteboardId: string): Promise<WhiteboardSceneSnapshot | null> {
@@ -336,12 +335,26 @@ export default class WhiteboardRealtimeStateService {
             return null;
         }
 
-        const payloadKey = whiteboard.props.payloadKey || `${whiteboard.props.team}/${whiteboardId}/state.json`;
+        if (!whiteboard.props.payloadKey) {
+            throw ApplicationError.conflict(
+                'Whiteboard::PayloadKeyRequired',
+                `Whiteboard ${whiteboard._id} does not have a payload key assigned`
+            );
+        }
+        const storageClusterId = whiteboard.props.storageClusterId?.trim();
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Whiteboard::StorageClusterRequired',
+                `Whiteboard ${whiteboard._id} does not have a storage cluster assigned`
+            );
+        }
+
+        const payloadKey = whiteboard.props.payloadKey;
         let storedScene = EMPTY_SCENE();
 
-        if (await this.storageService.exists(SYS_BUCKETS.WHITEBOARDS, payloadKey)) {
+        if (await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
             try {
-                const buffer = await this.storageService.getBuffer(SYS_BUCKETS.WHITEBOARDS, payloadKey);
+                const buffer = await this.objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
                 const parsed: unknown = JSON.parse(buffer.toString('utf8'));
 
                 if (typeof parsed === 'object' && parsed !== null) {
@@ -356,6 +369,7 @@ export default class WhiteboardRealtimeStateService {
         const room: WhiteboardRoomState = {
             whiteboardId,
             teamId: whiteboard.props.team,
+            storageClusterId,
             payloadKey,
             revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
             elements: new Map(elements.map((element) => [element.id as string, element])),
@@ -400,12 +414,14 @@ export default class WhiteboardRealtimeStateService {
             appState: snapshot.appState
         };
 
-        await this.storageService.upload(
-            SYS_BUCKETS.WHITEBOARDS,
-            room.payloadKey,
-            Buffer.from(JSON.stringify(storedScene)),
-            { 'Content-Type': 'application/json' }
-        );
+        const payload = Buffer.from(JSON.stringify(storedScene));
+        await this.objectGatewayClient.putBuffer(room.storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            objectKey: room.payloadKey,
+            buffer: payload,
+            contentLength: payload.byteLength,
+            contentType: 'application/json'
+        });
         room.lastPersistedRevision = room.revision;
 
         if (room.lastEditedBy) {

@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
@@ -7,24 +7,32 @@ import {
     buildTrajectoryDumpObjectName,
     createZstdDecompressionStream
 } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
-import { IStorageService } from '@shared/domain/port/IStorageService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Readable } from 'node:stream';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
     constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-
-
         private readonly trajectoryRepo: TrajectoryRepository,
-
-
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
+
+    private async requireStorageClusterId(trajectoryId: string): Promise<string> {
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        const storageClusterId = trajectory
+            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            : undefined;
+
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                `Trajectory ${trajectoryId} does not have a storage cluster assigned`
+            );
+        }
+
+        return storageClusterId;
+    }
 
     getObjectName(trajectoryId: string, timestep: string): string {
         return buildTrajectoryDumpObjectName(trajectoryId, timestep);
@@ -35,50 +43,29 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
     }
 
     async getDumpStream(trajectoryId: string, timestep: string): Promise<Readable> {
-        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const storageClusterId = await this.requireStorageClusterId(trajectoryId);
 
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
-
-        if (storageClusterId) {
-            const response = await this.objectGatewayClient.getStream(storageClusterId, SYS_BUCKETS.DUMPS, objectName);
-            const decompressed = createZstdDecompressionStream(response.stream);
-            return decompressed.stream;
-        }
-
-        const remoteStream = await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
-        const decompressed = createZstdDecompressionStream(remoteStream);
+        const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
+        const decompressed = createZstdDecompressionStream(response.stream);
         return decompressed.stream;
     }
 
     async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
-        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const storageClusterId = await this.requireStorageClusterId(trajectoryId);
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
 
-        return storageClusterId
-            ? this.objectGatewayClient.exists(storageClusterId, SYS_BUCKETS.DUMPS, objectName)
-            : this.storageService.exists(SYS_BUCKETS.DUMPS, objectName);
+        return this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
     }
 
     async listDumps(trajectoryId: string): Promise<string[]> {
-        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
-
+        const storageClusterId = await this.requireStorageClusterId(trajectoryId);
         const prefix = this.getPrefix(trajectoryId);
         const timesteps = new Set<string>();
-        const source = storageClusterId
-            ? this.objectGatewayClient.listAll(storageClusterId, {
-                bucket: SYS_BUCKETS.DUMPS,
-                prefix
-            })
-            : this.storageService.listByPrefix(SYS_BUCKETS.DUMPS, prefix);
+        const source = this.objectGatewayClient.listAll(storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+            prefix
+        });
 
         for await (const name of source) {
             const match = name.match(/timestep-(\d+)\.dump\.zst$/);

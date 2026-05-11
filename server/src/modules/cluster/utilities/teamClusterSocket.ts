@@ -321,7 +321,13 @@ export interface TeamClusterDaemonExecutionLogSegment {
     executionPath?: string[];
 }
 
-interface TeamClusterDaemonAnalysisLogChunkEventPayload {
+export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
+    AnalysisLogChunk: 'analysis-log-chunk',
+    DebugLogChunk: 'debug-log-chunk',
+    TrajectorySceneArtifactUpsertBatch: 'trajectory-scene-artifact-upsert-batch'
+} as const;
+
+export interface TeamClusterDaemonAnalysisLogChunkStreamPayload {
     type: 'analysis-log-chunk';
     teamClusterId: string;
     daemonPassword: string;
@@ -333,7 +339,7 @@ interface TeamClusterDaemonAnalysisLogChunkEventPayload {
     segments: TeamClusterDaemonExecutionLogSegment[];
 }
 
-interface TeamClusterDaemonDebugLogChunkEventPayload {
+export interface TeamClusterDaemonDebugLogChunkStreamPayload {
     type: 'debug-log-chunk';
     teamClusterId: string;
     daemonPassword: string;
@@ -342,7 +348,7 @@ interface TeamClusterDaemonDebugLogChunkEventPayload {
     segments: TeamClusterDaemonExecutionLogSegment[];
 }
 
-interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
+export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
     storageClusterId: string;
     analysis?: string;
@@ -357,7 +363,7 @@ interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     metadata?: Record<string, unknown>;
 }
 
-interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
+export interface TeamClusterDaemonSceneArtifactUpsertBatchStreamPayload {
     type: 'trajectory-scene-artifact-upsert-batch';
     teamClusterId: string;
     daemonPassword: string;
@@ -367,13 +373,10 @@ interface TeamClusterDaemonSceneArtifactUpsertBatchEventPayload {
 type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisJobCompletionEventPayload
     | TeamClusterDaemonAnalysisJobStatusEventPayload
-    | TeamClusterDaemonAnalysisLogChunkEventPayload
-    | TeamClusterDaemonDebugLogChunkEventPayload
     | TeamClusterDaemonRasterJobStatusEventPayload
     | TeamClusterDaemonGlbJobStatusEventPayload
     | TeamClusterDaemonSshImportJobStatusEventPayload
-    | TeamClusterDaemonArtifactUploadJobStatusEventPayload
-    | TeamClusterDaemonSceneArtifactUpsertBatchEventPayload;
+    | TeamClusterDaemonArtifactUploadJobStatusEventPayload;
 
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage

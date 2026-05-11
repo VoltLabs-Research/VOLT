@@ -1,23 +1,31 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { SaveWhiteboardStateInputDTO, SaveWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/SaveWhiteboardStateDTO';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateInputDTO, SaveWhiteboardStateOutputDTO, ApplicationError> {
     constructor(
         private readonly whiteboardRepository: WhiteboardRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
+
+    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
+        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
+            return props.storageClusterId;
+        }
+
+        throw ApplicationError.conflict(
+            'Whiteboard::StorageClusterRequired',
+            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
+        );
+    }
 
     async execute(input: SaveWhiteboardStateInputDTO): Promise<Result<SaveWhiteboardStateOutputDTO, ApplicationError>> {
         try {
@@ -40,14 +48,23 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
                 ));
             }
 
-            const key = whiteboard.props.payloadKey || `${input.teamId}/${input.whiteboardId}/state.json`;
+            if (!whiteboard.props.payloadKey) {
+                return Result.fail(ApplicationError.conflict(
+                    'Whiteboard::PayloadKeyRequired',
+                    `Whiteboard ${whiteboard._id} does not have a payload key assigned`
+                ));
+            }
 
-            await this.storageService.upload(
-                SYS_BUCKETS.WHITEBOARDS,
-                key,
-                input.stateBuffer,
-                { 'Content-Type': 'application/json' }
-            );
+            const key = whiteboard.props.payloadKey;
+            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+
+            await this.objectGatewayClient.putBuffer(storageClusterId, {
+                bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+                objectKey: key,
+                buffer: input.stateBuffer,
+                contentLength: input.stateBuffer.byteLength,
+                contentType: 'application/json'
+            });
 
             const updates: Partial<WhiteboardProps> = {
                 lastEditedBy: input.userId
