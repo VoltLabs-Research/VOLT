@@ -5,6 +5,9 @@
 .notification-item.button {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    border: 0;
     white-space: normal;
     line-height: 1.4;
     text-align: left;
@@ -12,13 +15,18 @@
 }
 
 .notification-item.is-unread {
-    border-color: var(--color-brand-primary);
     background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-surface-1));
+}
+
+.notification-item-header {
+    width: 100%;
 }
 
 .notification-item-title,
 .notification-item-content {
     display: block;
+    width: 100%;
+    text-align: left;
 }
 
 .notification-item-title {

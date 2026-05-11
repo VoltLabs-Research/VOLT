@@ -17,6 +17,7 @@
     color: var(--color-text-primary);
 }
 
+/*
 .canvas-analysis-log-terminal-chunk--stderr {
     color: color-mix(in srgb, var(--status-error) 85%, var(--color-text-primary));
 }
@@ -24,6 +25,7 @@
 .canvas-analysis-log-terminal-chunk--system {
     color: color-mix(in srgb, var(--accent-blue) 85%, var(--color-text-primary));
 }
+*/
 
 .canvas-analysis-log-empty {
     padding: 1rem;

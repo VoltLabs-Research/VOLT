@@ -9,6 +9,7 @@ import type {
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -151,10 +152,49 @@ interface EncodedDispatchSection {
     compressedValue: string;
 }
 
-const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const injectOwnerClusterIdIntoWorkflow = (
+    workflow: WorkflowSerializable,
+    ownerClusterId: string
+): WorkflowSerializable => {
+    if (!ownerClusterId) {
+        return workflow;
+    }
+
+    return {
+        ...workflow,
+        nodes: workflow.nodes.map((node) => {
+            if (node.type !== 'entrypoint' || !isRecord(node.data.entrypoint)) {
+                return node;
+            }
+
+            return {
+                ...node,
+                data: {
+                    ...node.data,
+                    entrypoint: {
+                        ...node.data.entrypoint,
+                        ownerClusterId
+                    }
+                }
+            };
+        })
+    };
+};
+
+const buildNestedPluginDefinitionWithOwner = (
+    plugin: Plugin,
+    ownerClusterId: string
+): NestedPluginDefinition => {
     return {
         pluginId: plugin.id,
-        workflow: plugin.props.workflow.props as unknown as WorkflowSerializable
+        workflow: injectOwnerClusterIdIntoWorkflow(
+            plugin.props.workflow.props as unknown as WorkflowSerializable,
+            ownerClusterId
+        )
     };
 };
 
@@ -221,6 +261,7 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
         private readonly storagePlacementService: StoragePlacementService,
+        private readonly teamClusterRepository: TeamClusterRepository,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
@@ -260,23 +301,103 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         return pending;
     }
 
-    private encodeWorkflowSection(plugin: Plugin): Promise<EncodedDispatchSection> {
+    private encodeWorkflowSection(plugin: Plugin, ownerClusterId: string): Promise<EncodedDispatchSection> {
         const revision = plugin.props.updatedAt.getTime();
-        const cacheKey = `plugin-dispatch:workflow:${plugin.id}:${revision}`;
-        return this.cachedEncode(cacheKey, plugin.props.workflow.props as unknown as WorkflowSerializable);
+        const cacheKey = `plugin-dispatch:workflow:${plugin.id}:${revision}:${ownerClusterId || 'unknown-owner'}`;
+        return this.cachedEncode(
+            cacheKey,
+            injectOwnerClusterIdIntoWorkflow(
+                plugin.props.workflow.props as unknown as WorkflowSerializable,
+                ownerClusterId
+            )
+        );
     }
 
     private encodeNestedPluginsSection(
         rootPluginId: string,
         deps: Plugin[],
-        nestedPlugins: NestedPluginDefinition[]
+        nestedPlugins: NestedPluginDefinition[],
+        ownerClusterIds: Map<string, string>
     ): Promise<EncodedDispatchSection> {
         const revisionToken = deps
-            .map((d) => `${d.id}@${d.props.updatedAt.getTime()}`)
+            .map((d) => `${d.id}@${d.props.updatedAt.getTime()}@${ownerClusterIds.get(d.id) || 'unknown-owner'}`)
             .sort()
             .join('|');
         const cacheKey = `plugin-dispatch:nested:${rootPluginId}:${revisionToken || 'empty'}`;
         return this.cachedEncode(cacheKey, nestedPlugins);
+    }
+
+    private async resolvePluginBinaryOwnerClusterId(plugin: Plugin): Promise<string> {
+        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
+        const currentOwnerClusterId = placement.props.primaryClusterId;
+        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
+        const objectKey = entrypointNode?.data.entrypoint?.binaryObjectPath;
+
+        if (!objectKey) {
+            return currentOwnerClusterId;
+        }
+
+        if (await this.pluginBinaryExists(currentOwnerClusterId, objectKey)) {
+            return currentOwnerClusterId;
+        }
+
+        const teamClusters = await this.teamClusterRepository.export({
+            filter: {
+                team: plugin.props.team
+            }
+        });
+
+        for (const candidateCluster of teamClusters) {
+            if (candidateCluster.id === currentOwnerClusterId) {
+                continue;
+            }
+
+            if (!(await this.pluginBinaryExists(candidateCluster.id, objectKey))) {
+                continue;
+            }
+
+            await this.storagePlacementService.switchPrimaryCluster(
+                'plugin-binary',
+                plugin.id,
+                candidateCluster.id,
+                {
+                    replicaClusterIds: placement.props.replicaClusterIds,
+                    state: placement.props.state,
+                    lastVerifiedAt: new Date()
+                }
+            );
+
+            logger.warn(
+                {
+                    pluginId: plugin.id,
+                    objectKey,
+                    previousOwnerClusterId: currentOwnerClusterId,
+                    repairedOwnerClusterId: candidateCluster.id
+                },
+                '@plugin-execution-router: repaired plugin binary storage placement owner'
+            );
+
+            return candidateCluster.id;
+        }
+
+        return currentOwnerClusterId;
+    }
+
+    private async pluginBinaryExists(ownerClusterId: string, objectKey: string): Promise<boolean> {
+        try {
+            await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
+            return true;
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
+                return false;
+            }
+
+            logger.warn(
+                { err: error, ownerClusterId, objectKey },
+                '@plugin-execution-router: failed to inspect plugin binary while resolving owner'
+            );
+            return false;
+        }
     }
 
     async route(input: RoutePluginExecutionInput): Promise<void> {
@@ -286,14 +407,28 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             ...uniqueDependencyPlugins
         ]);
 
-        const nestedPlugins = uniqueDependencyPlugins.map(buildNestedPluginDefinition);
+        const pluginOwnerClusterIds = new Map(await Promise.all(
+            uniquePluginsToSync.map(async (plugin) => {
+                const ownerClusterId = await this.resolvePluginBinaryOwnerClusterId(plugin);
+                return [plugin.id, ownerClusterId] as const;
+            })
+        ));
+        const rootPluginOwnerClusterId = pluginOwnerClusterIds.get(input.plugin.id) ?? '';
+        const nestedPlugins = uniqueDependencyPlugins.map((plugin) => buildNestedPluginDefinitionWithOwner(
+            plugin,
+            pluginOwnerClusterIds.get(plugin.id) ?? ''
+        ));
         const pluginReferenceExecutions = dedupePluginReferenceExecutions(input.pluginReferenceExecutions);
 
         const [, encodedTrajectoryFrames, encodedWorkflow, encodedNestedPlugins, encodedPluginReferenceExecutions] = await Promise.all([
-            Promise.all(uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(input.teamClusterId, dependency))),
+            Promise.all(uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(
+                input.teamClusterId,
+                dependency,
+                pluginOwnerClusterIds.get(dependency.id)
+            ))),
             encodeDispatchSection(input.trajectoryFrames),
-            this.encodeWorkflowSection(input.plugin),
-            this.encodeNestedPluginsSection(input.plugin.id, uniqueDependencyPlugins, nestedPlugins),
+            this.encodeWorkflowSection(input.plugin, rootPluginOwnerClusterId),
+            this.encodeNestedPluginsSection(input.plugin.id, uniqueDependencyPlugins, nestedPlugins, pluginOwnerClusterIds),
             encodeDispatchSection(pluginReferenceExecutions)
         ]);
         const dispatchPayload: PluginDispatchPayload = {
@@ -379,7 +514,11 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         }
     }
 
-    private async syncPluginBinaryIfNeeded(teamClusterId: string, plugin: Plugin): Promise<void> {
+    private async syncPluginBinaryIfNeeded(
+        teamClusterId: string,
+        plugin: Plugin,
+        ownerClusterIdOverride?: string
+    ): Promise<void> {
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
         const entrypoint = entrypointNode?.data.entrypoint;
         const objectKey = entrypoint?.binaryObjectPath;
@@ -390,8 +529,8 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             );
         }
 
-        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
-        const ownerClusterId = placement.props.primaryClusterId;
+        const ownerClusterId = ownerClusterIdOverride
+            ?? (await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id)).props.primaryClusterId;
         const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(ownerClusterId, objectKey);
 
         const syncKey = `${teamClusterId}:${ownerClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
