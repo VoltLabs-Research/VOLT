@@ -1,4 +1,15 @@
-import { ChevronDown, ChevronRight, Download, Atom, MousePointerClick, Trash2 } from 'lucide-react';
+import {
+    AlertCircle,
+    Atom,
+    ChevronDown,
+    ChevronRight,
+    Clock3,
+    Download,
+    LoaderCircle,
+    MousePointerClick,
+    Trash2,
+    UploadCloud
+} from 'lucide-react';
 import {
     DEFAULT_DISLOCATION_LINE_WIDTH,
     buildPluginScene,
@@ -25,12 +36,13 @@ import Button from '@/shared/presentation/primitives/Button';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utilities/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
+import type { Analysis, AnalysisExpectedArtifact } from '@/modules/analysis/api/entities/analysis';
+import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -65,6 +77,53 @@ interface AnalysisTreeNodeProps {
 }
 
 const SCENE_ICON_COLOR = 'var(--accent-blue)';
+const READY_ARTIFACT_HIGHLIGHT_MS = 1400;
+
+const getArtifactIcon = (artifact: AnalysisExpectedArtifact) => {
+    if (artifact.status === 'failed') return <AlertCircle style={{ width: 12, height: 12 }} />;
+    if (artifact.status === 'ready') return <Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />;
+    if (artifact.status === 'uploading') return <UploadCloud style={{ width: 12, height: 12 }} />;
+    if (artifact.status === 'generating') return <LoaderCircle style={{ width: 12, height: 12 }} />;
+    return <Clock3 style={{ width: 12, height: 12 }} />;
+};
+
+const buildArtifactRows = (
+    expectedArtifacts: AnalysisExpectedArtifact[] | undefined,
+    exposures: RenderableExposure[]
+): Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> => {
+    const exposureById = new Map(exposures.map((exposure) => [exposure.exposureId, exposure]));
+    const rows: Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> = (expectedArtifacts ?? []).map((artifact) => ({
+        key: artifact.exposureId,
+        artifact,
+        exposure: exposureById.get(artifact.exposureId)
+    }));
+    const expectedIds = new Set((expectedArtifacts ?? []).map((artifact) => artifact.exposureId));
+    for (const exposure of exposures) {
+        if (!expectedIds.has(exposure.exposureId)) {
+            rows.push({
+                key: exposure.exposureId,
+                artifact: undefined,
+                exposure
+            });
+        }
+    }
+    return rows;
+};
+
+const buildArtifactNameClassName = (
+    artifact: AnalysisExpectedArtifact | undefined,
+    isRecentlyReady: boolean
+): string => {
+    const classes = ['canvas-tree-artifact-label'];
+
+    if (isRecentlyReady) {
+        classes.push('canvas-tree-artifact-label--ready-recent');
+    } else if (artifact && artifact.status !== 'ready') {
+        classes.push(`canvas-tree-artifact-label--${artifact.status}`);
+    }
+
+    return classes.join(' ');
+};
 
 const AnalysisTreeNode = ({
     section,
@@ -90,7 +149,12 @@ const AnalysisTreeNode = ({
 }: AnalysisTreeNodeProps) => {
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
-    const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
+    const expectedArtifacts = analysis.expectedArtifacts ?? [];
+    const artifactRows = buildArtifactRows(expectedArtifacts, entry.exposures);
+    const hasArtifactRows = artifactRows.length > 0;
+    const [recentReadyArtifactIds, setRecentReadyArtifactIds] = useState<Set<string>>(() => new Set());
+    const previousArtifactStatusesRef = useRef<Map<string, AnalysisExpectedArtifact['status']>>(new Map());
+    const readyArtifactTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
     const fallbackStatus = normalizeCanvasAnalysisStatus(analysis.status);
     const resolvedStatus = status ?? fallbackStatus;
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
@@ -100,6 +164,81 @@ const AnalysisTreeNode = ({
         : isCurrentAnalysis;
 
     const hasConfig = useMemo(() => Object.keys(userConfig ?? {}).length > 0, [userConfig]);
+
+    useEffect(() => {
+        const previousStatuses = previousArtifactStatusesRef.current;
+        const currentStatuses = new Map<string, AnalysisExpectedArtifact['status']>();
+        let shouldRemoveReadyIds = false;
+        const staleReadyIds = new Set<string>();
+
+        expectedArtifacts.forEach((artifact) => {
+            const artifactId = artifact.exposureId;
+            const previousStatus = previousStatuses.get(artifactId);
+            currentStatuses.set(artifactId, artifact.status);
+
+            if (artifact.status === 'ready' && previousStatus && previousStatus !== 'ready') {
+                setRecentReadyArtifactIds((current) => {
+                    const next = new Set(current);
+                    next.add(artifactId);
+                    return next;
+                });
+
+                const existingTimer = readyArtifactTimersRef.current.get(artifactId);
+                if (existingTimer) {
+                    clearTimeout(existingTimer);
+                }
+
+                const timer = setTimeout(() => {
+                    setRecentReadyArtifactIds((current) => {
+                        if (!current.has(artifactId)) return current;
+                        const next = new Set(current);
+                        next.delete(artifactId);
+                        return next;
+                    });
+                    readyArtifactTimersRef.current.delete(artifactId);
+                }, READY_ARTIFACT_HIGHLIGHT_MS);
+                readyArtifactTimersRef.current.set(artifactId, timer);
+                return;
+            }
+
+            if (artifact.status !== 'ready') {
+                const existingTimer = readyArtifactTimersRef.current.get(artifactId);
+                if (existingTimer) {
+                    clearTimeout(existingTimer);
+                    readyArtifactTimersRef.current.delete(artifactId);
+                }
+                staleReadyIds.add(artifactId);
+                shouldRemoveReadyIds = true;
+            }
+        });
+
+        readyArtifactTimersRef.current.forEach((timer, artifactId) => {
+            if (currentStatuses.has(artifactId)) {
+                return;
+            }
+            clearTimeout(timer);
+            readyArtifactTimersRef.current.delete(artifactId);
+            staleReadyIds.add(artifactId);
+            shouldRemoveReadyIds = true;
+        });
+
+        if (shouldRemoveReadyIds) {
+            setRecentReadyArtifactIds((current) => {
+                const next = new Set(current);
+                staleReadyIds.forEach((artifactId) => next.delete(artifactId));
+                return next.size === current.size ? current : next;
+            });
+        }
+
+        previousArtifactStatusesRef.current = currentStatuses;
+    }, [expectedArtifacts]);
+
+    useEffect(() => {
+        return () => {
+            readyArtifactTimersRef.current.forEach(clearTimeout);
+            readyArtifactTimersRef.current.clear();
+        };
+    }, []);
 
     const tooltipContent = useMemo(() => {
         if (!isAnalysisInProgress && !hasConfig) return null;
@@ -123,9 +262,12 @@ const AnalysisTreeNode = ({
     }, [hasConfig, isAnalysisInProgress, userConfig]);
 
     const handleSelectAnalysis = () => {
-        if (isAnalysisInProgress) return;
-
         if (isRasterSelectionMode) {
+            onToggle(analysis._id);
+            return;
+        }
+
+        if (isAnalysisInProgress) {
             onToggle(analysis._id);
             return;
         }
@@ -152,7 +294,7 @@ const AnalysisTreeNode = ({
     ].filter(Boolean).join(' ');
 
     const analysisRow = (
-        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} aria-disabled={isAnalysisInProgress} tabIndex={isAnalysisInProgress ? -1 : 0}>
+        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0}>
             <span className={nameClassName} title={pluginDisplayName}>
                 {pluginDisplayName}
             </span>
@@ -163,13 +305,11 @@ const AnalysisTreeNode = ({
                 iconOnly
                 size='sm'
                 onClick={(e) => {
-                    if (isAnalysisInProgress) return;
                     e.stopPropagation();
                     onToggle(analysis._id);
                 }}
                 className="canvas-tree-toggle b-none p-0"
                 aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                disabled={isAnalysisInProgress}
             >
                 {isExpanded
                     ? <ChevronDown style={{ width: 13, height: 13 }} />
@@ -195,7 +335,7 @@ const AnalysisTreeNode = ({
                 {analysisTrigger}
             </MaybeContextMenu>
 
-            {isExpanded && entry.state === 'loading' && (
+            {isExpanded && entry.state === 'loading' && expectedArtifacts.length === 0 && (
                 <CanvasTreeSkeletonRows count={1} compact indent='lg' />
             )}
 
@@ -203,7 +343,28 @@ const AnalysisTreeNode = ({
                 <AnalysisTreeRetryRow onRetry={() => onRetryLoadExposures(analysis._id)} />
             )}
 
-            {isExpanded && hasExposures && entry.exposures.map((exposure) => {
+            {isExpanded && hasArtifactRows && artifactRows.map(({ key, artifact, exposure }) => {
+                const artifactNameClassName = buildArtifactNameClassName(
+                    artifact,
+                    artifact ? recentReadyArtifactIds.has(artifact.exposureId) : false
+                );
+
+                if (!exposure) {
+                    return (
+                        <CanvasTreeRow
+                            key={key}
+                            indent='lg'
+                            disabled
+                            icon={<span className={`canvas-tree-artifact-icon canvas-tree-artifact-icon--${artifact?.status ?? 'pending'}`} title={artifact?.status ?? 'pending'}>{artifact ? getArtifactIcon(artifact) : <Clock3 style={{ width: 12, height: 12 }} />}</span>}
+                            label={(
+                                <span className={artifactNameClassName}>
+                                    <span className="truncate">{artifact?.name ?? key}</span>
+                                </span>
+                            )}
+                        />
+                    );
+                }
+
                 const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
                     ?? resolveSceneRenderMetadata?.(section.pluginId, exposure.exposureId);
                 const scene = buildPluginScene({
@@ -250,7 +411,11 @@ const AnalysisTreeNode = ({
                         indent='lg'
                         isActive={isActive}
                         icon={<Atom style={{ width: 12, height: 12, color: SCENE_ICON_COLOR }} />}
-                        label={exposure.name}
+                        label={(
+                            <span className={artifactNameClassName}>
+                                <span className="truncate">{exposure.name}</span>
+                            </span>
+                        )}
                         onClick={() => {
                             if (isRasterSelectionMode) {
                                 onSelectRasterScene?.(scene, exposure.name);
@@ -273,7 +438,7 @@ const AnalysisTreeNode = ({
                 );
             })}
 
-            {isExpanded && entry.state === 'loaded' && entry.exposures.length === 0 && (
+            {isExpanded && entry.state === 'loaded' && artifactRows.length === 0 && (
                 <CanvasTreeEmptyRow label='No models' indent='lg' />
             )}
         </>

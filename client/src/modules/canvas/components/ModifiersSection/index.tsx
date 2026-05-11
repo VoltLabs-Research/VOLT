@@ -8,10 +8,13 @@ import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import { Check, ChevronLeft, Play, X } from 'lucide-react';
 
 import { ExecState } from '../../hooks/use-plugin-execution';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type React from 'react';
 
 const SKELETON_ROWS = 5;
+const CLOSE_AFTER_RESPONSE_DELAY_MS = 250;
+const CLOSE_ANIMATION_MS = 160;
 
 const getPluginActionCopy = (execState: ExecState, isForeignTrajectory = false) => {
     if (execState === ExecState.Success) {
@@ -43,7 +46,7 @@ interface ModifierPopoverItemProps {
     showAction: boolean;
     hasContent: boolean;
     isForeignTrajectory?: boolean;
-    onAction: () => void;
+    onAction: () => boolean | void | Promise<boolean | void>;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 }
 
@@ -56,7 +59,50 @@ const ModifierPopoverItem = ({
     onAction,
     renderModifierConfig
 }: ModifierPopoverItemProps) => {
+    const [isClosing, setIsClosing] = useState(false);
+    const closeDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const closeAnimationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pluginAction = getPluginActionCopy(execState, isForeignTrajectory);
+
+    const clearCloseTimers = useCallback(() => {
+        if (closeDelayRef.current) {
+            clearTimeout(closeDelayRef.current);
+            closeDelayRef.current = null;
+        }
+        if (closeAnimationRef.current) {
+            clearTimeout(closeAnimationRef.current);
+            closeAnimationRef.current = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        return clearCloseTimers;
+    }, [clearCloseTimers]);
+
+    const handleActionAndClose = useCallback(async (close: () => void) => {
+        if (execState === ExecState.Loading) {
+            return;
+        }
+
+        clearCloseTimers();
+        setIsClosing(false);
+
+        const shouldClose = await onAction();
+        if (shouldClose === false) {
+            return;
+        }
+
+        closeDelayRef.current = setTimeout(() => {
+            setIsClosing(true);
+            closeAnimationRef.current = setTimeout(() => {
+                close();
+                setIsClosing(false);
+                closeAnimationRef.current = null;
+            }, CLOSE_ANIMATION_MS);
+            closeDelayRef.current = null;
+        }, CLOSE_AFTER_RESPONSE_DELAY_MS);
+    }, [clearCloseTimers, execState, onAction]);
+
     const trigger = (
         <button
             type='button'
@@ -82,8 +128,8 @@ const ModifierPopoverItem = ({
                 <ContextMenuPopover
                     id={`plugin-config-${option.modifierId}`}
                     trigger={trigger}
-                    content={() => (
-                        <Stack gap='075' className='canvas-plugin-popover-content'>
+                    content={(close) => (
+                        <Stack gap='075' className={`canvas-plugin-popover-content ${isClosing ? 'canvas-plugin-popover-content--closing' : ''}`.trim()}>
                             {renderModifierConfig(option)}
                             {option.isPlugin && showAction && (
                                 <Stack className='canvas-plugin-popover-footer'>
@@ -95,7 +141,7 @@ const ModifierPopoverItem = ({
                                         block
                                         isLoading={execState === ExecState.Loading}
                                         leftIcon={execState === ExecState.Loading ? undefined : pluginAction.icon}
-                                        onClick={onAction}
+                                        onClick={() => { void handleActionAndClose(close); }}
                                     >
                                         {execState === ExecState.Loading ? 'Executing...' : pluginAction.label}
                                     </Button>
@@ -106,7 +152,7 @@ const ModifierPopoverItem = ({
                     triggerAction='click'
                     placement='left-start'
                     ariaLabel={`${option.title} settings`}
-                    className='context-menu-popover--plugin-config'
+                    className={`context-menu-popover--plugin-config ${isClosing ? 'context-menu-popover--plugin-config-closing' : ''}`.trim()}
                 />
             ) : trigger}
         </Row>
@@ -120,7 +166,7 @@ interface ModifiersSectionProps {
     showAction: (option: ModifierOption) => boolean;
     hasContent: (option: ModifierOption) => boolean;
     isForeignTrajectory?: boolean;
-    onAction: (option: ModifierOption) => void;
+    onAction: (option: ModifierOption) => boolean | void | Promise<boolean | void>;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 }
 

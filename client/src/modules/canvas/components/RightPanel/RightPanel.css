@@ -80,8 +80,18 @@
     max-width: min(24rem, calc(100vw - 2rem));
 }
 
+.context-menu-popover--plugin-config-closing {
+    pointer-events: none;
+    animation: canvas-plugin-popover-close 160ms ease-in forwards;
+}
+
 .canvas-plugin-popover-content {
     min-width: min(21rem, calc(100vw - 3rem));
+    transform-origin: right top;
+}
+
+.canvas-plugin-popover-content--closing {
+    animation: canvas-plugin-config-content-close 160ms ease-in forwards;
 }
 
 .canvas-plugin-popover-footer {
@@ -109,5 +119,35 @@
 
     .canvas-plugin-popover-trigger {
         min-height: 34px;
+    }
+}
+
+@keyframes canvas-plugin-popover-close {
+    from {
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    to {
+        opacity: 0;
+        filter: blur(2px);
+    }
+}
+
+@keyframes canvas-plugin-config-content-close {
+    from {
+        transform: translateX(0) scale(1);
+    }
+
+    to {
+        transform: translateX(6px) scale(0.97);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .context-menu-popover--plugin-config-closing,
+    .canvas-plugin-popover-content--closing {
+        animation-duration: 1ms;
+        filter: none;
     }
 }

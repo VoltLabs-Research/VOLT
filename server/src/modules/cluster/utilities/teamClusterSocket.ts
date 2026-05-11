@@ -262,6 +262,32 @@ interface TeamClusterDaemonAnalysisJobStatusEventPayload {
     error?: string;
 }
 
+interface TeamClusterDaemonAnalysisStageStatusEventPayload {
+    type: 'analysis-stage-status';
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    stageKey: string;
+    label: string;
+    stageType: 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
+    stageStatus: 'pending' | 'running' | 'completed' | 'failed' | 'cached';
+    pluginId?: string;
+    pluginDisplayName?: string;
+    nodeId?: string;
+    exposureId?: string;
+    configHash?: string;
+    cacheHit?: boolean;
+    detail?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    durationMs?: number;
+}
+
 interface TeamClusterDaemonRasterJobStatusEventPayload {
     type: 'trajectory-raster-job-status';
     teamClusterId: string;
@@ -373,6 +399,7 @@ export interface TeamClusterDaemonSceneArtifactUpsertBatchStreamPayload {
 type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisJobCompletionEventPayload
     | TeamClusterDaemonAnalysisJobStatusEventPayload
+    | TeamClusterDaemonAnalysisStageStatusEventPayload
     | TeamClusterDaemonRasterJobStatusEventPayload
     | TeamClusterDaemonGlbJobStatusEventPayload
     | TeamClusterDaemonSshImportJobStatusEventPayload

@@ -1,5 +1,4 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type {
     AnalysisArtifactStatus,
     AnalysisChildAnalysis,
@@ -7,22 +6,18 @@ import type {
     AnalysisStage
 } from '@modules/analysis/domain/entities/Analysis';
 
-export interface AnalysisStatusChangedEventPayload {
+export interface AnalysisStageChangedEventPayload {
     analysisId: string;
     trajectoryId: string;
     teamId: string;
-    status: Analysis['props']['status'];
-    completedFrames?: number;
-    totalFrames?: number;
-    failedFrames?: number;
     artifactStatus?: AnalysisArtifactStatus;
     expectedArtifacts?: AnalysisExpectedArtifact[];
     stages?: AnalysisStage[];
     childAnalyses?: AnalysisChildAnalysis[];
 }
 
-export default class AnalysisStatusChangedEvent extends BaseDomainEvent<AnalysisStatusChangedEventPayload> {
-    constructor(payload: AnalysisStatusChangedEventPayload) {
-        super('analysis.status.changed', payload);
+export default class AnalysisStageChangedEvent extends BaseDomainEvent<AnalysisStageChangedEventPayload> {
+    constructor(payload: AnalysisStageChangedEventPayload) {
+        super('analysis.stage.changed', payload);
     }
 }

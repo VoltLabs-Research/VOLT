@@ -290,9 +290,9 @@ const RightPanel = ({
 
     const handleAction = useCallback((option: ModifierOption) => {
         if (!option.isPlugin) {
-            return;
+            return false;
         }
-        handleExecutePlugin(option);
+        return handleExecutePlugin(option);
     }, [handleExecutePlugin]);
 
     const renderModifierConfig = useCallback((option: ModifierOption) => {

@@ -1,5 +1,9 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
-import type { AnalysisConfig } from '@modules/analysis/domain/entities/Analysis';
+import type {
+    AnalysisArtifactStatus,
+    AnalysisConfig,
+    AnalysisExpectedArtifact
+} from '@modules/analysis/domain/entities/Analysis';
 
 export interface AnalysisCreatedEventPayload {
     analysisId: string;
@@ -9,6 +13,8 @@ export interface AnalysisCreatedEventPayload {
     teamId: string;
     config: AnalysisConfig;
     status: string;
+    artifactStatus?: AnalysisArtifactStatus;
+    expectedArtifacts?: AnalysisExpectedArtifact[];
     createdAt: Date;
 }
 

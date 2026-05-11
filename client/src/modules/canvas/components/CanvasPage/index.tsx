@@ -32,6 +32,7 @@ import StatusBar from '../StatusBar';
 import Timeline from '../Timeline';
 import TopToolbar from '../TopToolbar';
 import Viewport from '../Viewport';
+import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 
@@ -556,6 +557,10 @@ const CanvasPage = () => {
                                 showGizmo={showGizmo}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
+                                analysisOverlay={!isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
+                                    ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} />
+                                    : undefined
+                                }
                                 hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}
                                 renderScene={!isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState}
                                 showSceneActions={!isRasterWorkspace && !isScriptingWorkspace && !showNoFramesState}
@@ -605,7 +610,11 @@ const CanvasPage = () => {
                 </Stack>
 
                 {!isLocalGlbViewer && showStatusBar && (
-                    <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
+                    <StatusBar
+                        trajectory={trajectory}
+                        currentTimestep={currentTimestep}
+                        analysisId={analysisId}
+                    />
                 )}
             </Stack>
 

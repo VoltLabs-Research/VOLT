@@ -4,6 +4,7 @@ import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
+import useCanvasUrlState from './use-canvas-url-state';
 
 import type { ModifierOption } from '../utilities/modifier-registry';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -88,6 +89,7 @@ const usePluginExecution = ({
 }: UsePluginExecutionArgs) => {
     const [execStates, setExecStates] = useState<Map<string, ExecState>>(new Map());
     const successTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const { setAnalysisId } = useCanvasUrlState();
 
     useEffect(() => () => {
         successTimers.current.forEach(clearTimeout);
@@ -105,8 +107,8 @@ const usePluginExecution = ({
         successTimers.current.set(modId, timer);
     }, []);
 
-    const handleExecutePlugin = useCallback(async (option: ModifierOption) => {
-        if (!option.isPlugin || !option.pluginModifierId || !trajectoryId) return;
+    const handleExecutePlugin = useCallback(async (option: ModifierOption): Promise<boolean> => {
+        if (!option.isPlugin || !option.pluginModifierId || !trajectoryId) return false;
 
         const modId = option.modifierId;
         const pluginName = option.title;
@@ -123,7 +125,7 @@ const usePluginExecution = ({
                 if (!result.proceed) {
                     setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
                     clearExecStateLater(modId);
-                    return;
+                    return true;
                 }
             }
 
@@ -172,6 +174,7 @@ const usePluginExecution = ({
                 timestep: currentTimestep,
                 autoSelect: true
             });
+            setAnalysisId(result.analysisId, { replace: true });
 
             sileo.success({
                 title: `${pluginName} is being computed`
@@ -179,10 +182,12 @@ const usePluginExecution = ({
 
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Success));
             clearExecStateLater(modId);
+            return true;
         } catch {
             sileo.error({ title: `${pluginName} failed to start`, description: 'Please try again.' });
             setExecStates((prev) => new Map(prev).set(modId, ExecState.Error));
             clearExecStateLater(modId);
+            return false;
         }
     }, [
         trajectoryId,
@@ -193,7 +198,8 @@ const usePluginExecution = ({
         executePlugin,
         pluginConfigs,
         beforeExecute,
-        clearExecStateLater
+        clearExecStateLater,
+        setAnalysisId
     ]);
 
     return { execStates, handleExecutePlugin };
