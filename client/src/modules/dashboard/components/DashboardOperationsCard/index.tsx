@@ -8,7 +8,7 @@ import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
 import Stack from '@/shared/presentation/primitives/Stack';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
-import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import { formatNetworkSpeed } from '@/modules/cluster/utilities/format-network';
@@ -16,7 +16,6 @@ import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-clus
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useCallback, useMemo, useState } from 'react';
@@ -138,11 +137,8 @@ const ClusterNetworkMetric = ({ incomingLabel, outgoingLabel, latencyLabel }: Cl
 const DashboardOperationsCard = () => {
     const [activeTab, setActiveTab] = useState<DashboardOperationsTabId>('compute-jobs');
     const [activeMetricByClusterId, setActiveMetricByClusterId] = useState<Record<string, ClusterMetricTabId>>({});
-    const selectedTeamId = useSelectedTeamId();
-    const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
-        enabled: Boolean(selectedTeamId)
-    });
-    const teamClusters = teamClustersQuery.data?.data ?? [];
+    const clusterManagement = useClusterManagement();
+    const teamClusters = clusterManagement.clusters;
     const { clusters, isConnected } = useClusterMetrics();
     const jobsStatusCounts = useJobStatusCounts();
 
@@ -372,8 +368,8 @@ const DashboardOperationsCard = () => {
             {activeTab === 'clusters' ? (
                 <AsyncBoundary
                     state={{
-                        loading: teamClustersQuery.isLoading && teamClusters.length === 0,
-                        error: teamClustersQuery.error && teamClusters.length === 0 ? teamClustersQuery.error : undefined,
+                        loading: clusterManagement.isLoading && teamClusters.length === 0,
+                        error: clusterManagement.error && teamClusters.length === 0 ? clusterManagement.error : undefined,
                         empty: orderedClusters.length === 0
                     }}
                     loading={clustersLoadingState}

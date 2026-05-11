@@ -1002,7 +1002,10 @@ export default class TeamClusterReverseChannelService {
                 this.emitSessionInput(entry.socketId, sessionId, Buffer.from(input, 'utf8'), false);
             }, () => {
                 this.detachSession(sessionId);
-            })
+            }),
+            close: async () => {
+                this.detachSession(sessionId);
+            }
         };
     }
 
