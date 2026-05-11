@@ -15,6 +15,8 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import AnalysisStageChangedEvent from '@modules/analysis/domain/events/AnalysisStageChangedEvent';
+import type { AnalysisExpectedArtifact } from '@modules/analysis/domain/entities/Analysis';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -80,6 +82,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         try {
             const entries = await this.prepareUpsertEntries([input]);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.markAnalysisArtifactsReady(entries);
             await this.publishBatchUpserted(entries);
 
             return Result.ok({ acknowledged: true });
@@ -100,6 +103,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         try {
             const entries = await this.prepareUpsertEntries(inputs);
             await this.sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.markAnalysisArtifactsReady(entries);
             await this.publishBatchUpserted(entries);
 
             return Result.ok({ acknowledged: true });
@@ -151,6 +155,87 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                     '[ProcessDaemonSceneArtifactUpsertUseCase] Failed to publish scene-artifact.upserted');
             })
         ));
+    }
+
+    private async markAnalysisArtifactsReady(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
+        const grouped = new Map<string, PreparedSceneArtifactUpsertEntry[]>();
+        for (const entry of entries) {
+            if (!entry.data.analysis || entry.data.sourceType !== 'plugin-exposure') {
+                continue;
+            }
+
+            const group = grouped.get(entry.data.analysis) ?? [];
+            group.push(entry);
+            grouped.set(entry.data.analysis, group);
+        }
+
+        await Promise.all(Array.from(grouped.entries()).map(async ([analysisId, group]) => {
+            const analysis = await this.analysisRepository.findById(analysisId);
+            if (!analysis) {
+                return;
+            }
+
+            const expectedArtifacts = this.updateExpectedArtifacts(
+                analysis.props.expectedArtifacts ?? [],
+                group
+            );
+            const artifactStatus = expectedArtifacts.length > 0
+                && expectedArtifacts.every((artifact) => artifact.status === 'ready')
+                ? 'ready'
+                : (analysis.props.artifactStatus ?? 'uploading');
+
+            const updatedAnalysis = await this.analysisRepository.updateById(analysisId, {
+                expectedArtifacts,
+                artifactStatus
+            });
+            if (!updatedAnalysis) {
+                return;
+            }
+
+            await this.eventBus.publish(new AnalysisStageChangedEvent({
+                analysisId,
+                teamId: group[0]!.teamId,
+                trajectoryId: updatedAnalysis.props.trajectory,
+                artifactStatus: updatedAnalysis.props.artifactStatus,
+                expectedArtifacts: updatedAnalysis.props.expectedArtifacts,
+                stages: updatedAnalysis.props.stages,
+                childAnalyses: updatedAnalysis.props.childAnalyses
+            })).catch((err) => {
+                logger.warn({ err, analysisId },
+                    '[ProcessDaemonSceneArtifactUpsertUseCase] Failed to publish analysis.stage.changed after artifact upsert');
+            });
+        }));
+    }
+
+    private updateExpectedArtifacts(
+        expectedArtifacts: AnalysisExpectedArtifact[],
+        entries: PreparedSceneArtifactUpsertEntry[]
+    ): AnalysisExpectedArtifact[] {
+        if (!expectedArtifacts.length) {
+            return expectedArtifacts;
+        }
+
+        const byExposureId = new Map<string, PreparedSceneArtifactUpsertEntry>();
+        for (const entry of entries) {
+            const exposureId = entry.data.params.exposureId;
+            if (typeof exposureId === 'string' && exposureId.length > 0) {
+                byExposureId.set(exposureId, entry);
+            }
+        }
+
+        return expectedArtifacts.map((artifact) => {
+            const entry = byExposureId.get(artifact.exposureId);
+            if (!entry) {
+                return artifact;
+            }
+
+            return {
+                ...artifact,
+                status: entry.data.status === 'ready' ? 'ready' : 'failed',
+                objectName: entry.objectName,
+                readyAt: entry.data.status === 'ready' ? new Date() : artifact.readyAt
+            };
+        });
     }
 
     private async prepareUpsertEntries(

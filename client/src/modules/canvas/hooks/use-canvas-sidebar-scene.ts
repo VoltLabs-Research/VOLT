@@ -11,7 +11,12 @@ import useCanvasUrlState from './use-canvas-url-state';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
-import { findCachedAnalysisById, updateAnalysisStatusCaches, upsertAnalysisFromSocketPayload } from '@/modules/analysis/services/cache';
+import {
+    findCachedAnalysisById,
+    updateAnalysisExecutionCaches,
+    updateAnalysisStatusCaches,
+    upsertAnalysisFromSocketPayload
+} from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
@@ -46,6 +51,27 @@ interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
 }
+
+const scrollRightPanelToTop = (): (() => void) | undefined => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return undefined;
+    }
+
+    const raf = window.requestAnimationFrame(() => {
+        const panel = document.getElementById('canvas-right-panel');
+        const targets = [
+            panel,
+            panel?.querySelector<HTMLElement>('.canvas-objects-panel__top'),
+            panel?.querySelector<HTMLElement>('.canvas-tree-container')
+        ].filter((target): target is HTMLElement => Boolean(target));
+
+        targets.forEach((target) => {
+            target.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    return () => window.cancelAnimationFrame(raf);
+};
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
@@ -195,9 +221,36 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             analysisId,
             status: normalizedStatus,
             completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
-            totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined
+            totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined,
+            artifactStatus: update.artifactStatus as Analysis['artifactStatus'],
+            expectedArtifacts: update.expectedArtifacts as Analysis['expectedArtifacts'],
+            stages: update.stages as Analysis['stages'],
+            childAnalyses: update.childAnalyses as Analysis['childAnalyses']
         });
     }, [trajectoryId, resolvedAnalyses]);
+
+    const handleAnalysisStageChanged = useCallback((update: Record<string, unknown>) => {
+        if (!trajectoryId || update.trajectoryId !== trajectoryId || !update.analysisId) {
+            return;
+        }
+
+        updateAnalysisExecutionCaches({
+            analysisId: String(update.analysisId),
+            artifactStatus: update.artifactStatus as Analysis['artifactStatus'],
+            expectedArtifacts: update.expectedArtifacts as Analysis['expectedArtifacts'],
+            stages: update.stages as Analysis['stages'],
+            childAnalyses: update.childAnalyses as Analysis['childAnalyses']
+        });
+
+        if (Array.isArray(update.expectedArtifacts)
+            && update.expectedArtifacts.some((artifact) => {
+                return typeof artifact === 'object'
+                    && artifact !== null
+                    && (artifact as { status?: unknown }).status === 'ready';
+            })) {
+            void invalidateSceneArtifacts();
+        }
+    }, [trajectoryId]);
 
     const handleAnalysisStatusChanged = useCallback((update: Record<string, unknown>) => {
         patchStatusFromSocket(update);
@@ -238,6 +291,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 const canAutoSelect = Boolean(entry?.autoSelect)
                     && (!currentSelectedAnalysisId || currentSelectedAnalysisId === analysisId);
 
+                const artifactsReady = update.artifactStatus === 'ready' || update.artifactStatus === undefined;
+
                 if (canAutoSelect) {
                     if (entry?.timestep !== undefined) {
                         setCurrentTimestep(entry.timestep);
@@ -245,14 +300,18 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     setAnalysisId(analysisId, { replace: true });
                     sileo.success({
                         title: `${pluginName} completed`,
-                        description: 'Analysis selected — results are ready in Scene Collection.'
+                        description: artifactsReady
+                            ? 'Analysis selected - results are ready in Scene Collection.'
+                            : 'Analysis selected - artifacts are still uploading.'
                     });
                     return;
                 }
 
                 sileo.success({
                     title: `${pluginName} completed`,
-                    description: 'Artifacts are ready in Scene Collection.',
+                    description: artifactsReady
+                        ? 'Artifacts are ready in Scene Collection.'
+                        : 'Analysis completed. Artifacts are still uploading.',
                     button: {
                         title: 'View',
                         onClick: () => {
@@ -268,7 +327,9 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
             sileo.success({
                 title: `${pluginName} completed`,
-                description: 'Artifacts are ready in Scene Collection.'
+                description: update.artifactStatus === 'ready' || update.artifactStatus === undefined
+                    ? 'Artifacts are ready in Scene Collection.'
+                    : 'Analysis completed. Artifacts are still uploading.'
             });
             return;
         }
@@ -306,6 +367,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.CREATED, handleAnalysisCreated, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, patchStatusFromSocket, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, handleAnalysisStatusChanged, { enabled: socketEnabled });
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STAGE_CHANGED, handleAnalysisStageChanged, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_SCENE_ARTIFACT_EVENTS.UPSERTED, handleSceneArtifactUpserted, { enabled: socketEnabled });
 
     useEffect(() => {
@@ -316,6 +378,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             return next;
         });
         loadExposuresForAnalysis(analysisConfigId);
+        return scrollRightPanelToTop();
     }, [analysisConfigId, loadExposuresForAnalysis]);
 
     useEffect(() => {
@@ -379,13 +442,14 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (exposures.length > 0) {
-            const next = exposures[0];
+            const primaryExposureId = selectedAnalysis?.expectedArtifacts?.find((artifact) => artifact.isPrimary)?.exposureId;
+            const next = exposures.find((exposure) => exposure.exposureId === primaryExposureId) ?? exposures[0];
             setActiveScene(buildSceneFromExposure(next.analysisId, next.exposureId, next.export));
             return;
         }
 
         setActiveScene({ sceneType: 'trajectory', source: 'default' });
-    }, [analysisConfigId, getEntry, pluginsById, selectedAnalysisPluginId, setActiveScene]);
+    }, [analysisConfigId, getEntry, pluginsById, selectedAnalysis, selectedAnalysisPluginId, setActiveScene]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 

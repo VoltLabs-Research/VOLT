@@ -44,6 +44,14 @@
     color: var(--status-warning);
 }
 
+.canvas-status-activity--ready {
+    color: var(--status-success);
+}
+
+.canvas-status-activity--failed {
+    color: var(--status-error, var(--accent-red, #ff5c5c));
+}
+
 .canvas-status-activity-queued {
     color: var(--color-text-muted);
 }
