@@ -16,7 +16,6 @@ export interface CreateNotebookSessionRequest {
     notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
-    containerResources: NotebookContainerResources;
 }
 
 export interface CreateNotebookSessionResponse {

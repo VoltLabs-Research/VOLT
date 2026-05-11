@@ -16,12 +16,12 @@ import { createHash } from 'node:crypto';
 import type { CreateNotebookSessionResponse, NotebookContainerStage, NotebookContainerResources, NotebookSessionSnapshot } from '@/contracts';
 import type { DaemonConfig } from '@/core/config';
 import path from 'node:path';
+import os from 'node:os';
 
 interface EnsureNotebookSessionInput {
     notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
-    containerResources: NotebookContainerResources;
 }
 
 interface EnsureJupyterServerInput {
@@ -239,6 +239,7 @@ export class JupyterRuntime {
             throw new Error('No available host port for Jupyter runtime');
         }
 
+        const containerResources = this.resolveNotebookContainerResources();
         const container = await this.dockerRuntime.createContainer({
             image: this.config.jupyter.image,
             name: this.buildContainerName(input.notebook._id),
@@ -280,8 +281,8 @@ export class JupyterRuntime {
                 private: this.config.jupyter.port,
                 public: reservedHostPort === null ? undefined : reservedHostPort
             }],
-            memoryInMegabytes: input.containerResources.memoryMB,
-            cpus: input.containerResources.cpus,
+            memoryInMegabytes: containerResources.memoryMB,
+            cpus: containerResources.cpus,
             labels: {
                 [RUNTIME_LABEL_KEY]: RUNTIME_LABEL_VALUE,
                 [NOTEBOOK_ID_LABEL_KEY]: input.notebook._id,
@@ -692,6 +693,7 @@ export class JupyterRuntime {
     }
 
     private buildRuntimeFingerprint(input: EnsureNotebookSessionInput): string {
+        const containerResources = this.resolveNotebookContainerResources();
         return createHash('sha1').update(JSON.stringify({
             image: this.config.jupyter.image,
             notebookPath: input.notebook.notebookPath,
@@ -704,9 +706,23 @@ export class JupyterRuntime {
             frameAncestors: this.config.jupyter.frameAncestors,
             notebookRoot: this.config.jupyter.notebookRoot,
             networkMode: resolveComposeDefaultNetworkName(this.config.composeProjectName),
-            containerResources: input.containerResources,
+            containerResources,
             startupCommand: this.buildNativeStartupCommand(input.publicBasePath)
         })).digest('hex');
+    }
+
+    private resolveNotebookContainerResources(): NotebookContainerResources {
+        const detectedCpus = os.availableParallelism();
+        const detectedMemoryMB = Math.floor(os.totalmem() / (1024 * 1024));
+
+        return {
+            cpus: Number.isFinite(detectedCpus) && detectedCpus > 0
+                ? detectedCpus
+                : Math.max(1, Math.floor(this.config.jupyter.cpus)),
+            memoryMB: Number.isFinite(detectedMemoryMB) && detectedMemoryMB > 0
+                ? detectedMemoryMB
+                : Math.max(128, Math.floor(this.config.jupyter.memoryInMegabytes))
+        };
     }
 
     private buildNativeStartupCommand(publicBasePath: string): string[] {
