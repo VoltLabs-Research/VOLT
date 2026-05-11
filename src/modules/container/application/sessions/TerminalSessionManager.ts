@@ -83,7 +83,7 @@ export class TerminalSessionManager {
             );
 
             if (this.options.coordinator.wasSessionTransitionCancelled(sessionTransition)) {
-                attachment.stream.destroy();
+                void attachment.close().catch(() => undefined);
                 return {
                     status: 409,
                     data: {
@@ -200,9 +200,9 @@ export class TerminalSessionManager {
         terminalState.attachment.stream.removeListener('data', terminalState.onData);
         terminalState.attachment.stream.removeListener('end', terminalState.onEnd);
         terminalState.attachment.stream.removeListener('error', terminalState.onError);
-        terminalState.attachment.stream.destroy();
         this.terminalStates.delete(sessionId);
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
+        void terminalState.attachment.close().catch(() => undefined);
     }
 
     private failAttach(sessionId: string, status: number, message: string): SessionCommandResult {
