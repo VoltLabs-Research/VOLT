@@ -6,6 +6,8 @@ import type {
     CreateTeamClusterOutputDTO,
     CreateTeamClusterTransferRequestInputDTO,
     CreateTeamClusterTransferRequestOutputDTO,
+    DeleteDemoTeamClusterInputDTO,
+    DeleteDemoTeamClusterOutputDTO,
     DeleteTeamClusterInputDTO,
     DeleteTeamClusterOutputDTO,
     ListTeamClustersInputDTO,
@@ -23,6 +25,7 @@ import type {
     UpdateTeamClusterRoleInputDTO,
     UpdateTeamClusterRoleOutputDTO
 } from '@/modules/cluster/api/service';
+import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@/modules/cluster/api/entities/team-cluster';
 
 interface TeamClusterQueryKeyMap {
@@ -79,6 +82,12 @@ export const useTeamClustersQuery = (teamId: string, options?: QueryOptions<List
     });
 };
 
+export const invalidateTeamClustersQuery = (teamId: string) => {
+    return queryClient.invalidateQueries({
+        queryKey: TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId)
+    });
+};
+
 export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamCluster) => {
     queryClient.setQueryData<ListTeamClustersOutputDTO>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
         if (!current) {
@@ -119,6 +128,24 @@ export const removeTeamClusterQueryData = (teamId: string, teamClusterId: string
             ...current,
             data: nextData,
             pagination: getConsistentClusterPagination(current.pagination.page, current.pagination.limit, total)
+        };
+    });
+};
+
+export const markDemoTeamClusterDeletingQueryData = (teamId: string) => {
+    queryClient.setQueryData<ListTeamClustersOutputDTO>(TEAM_CLUSTER_QUERY_KEYS.byTeam(teamId), (current) => {
+        if (!current) {
+            return current;
+        }
+
+        return {
+            ...current,
+            data: current.data.map((cluster) => cluster.isDemo
+                ? {
+                    ...cluster,
+                    status: TeamClusterStatus.Deleting
+                }
+                : cluster)
         };
     });
 };
@@ -240,6 +267,24 @@ export const useProvisionDemoTeamClusterMutation = (
         ...options,
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
+            void invalidateDemoTeamClusterStatusQuery(variables.teamId);
+        }, options)
+    });
+};
+
+export const useDeleteDemoTeamClusterMutation = (
+    options?: MutationOptions<DeleteDemoTeamClusterOutputDTO, DeleteDemoTeamClusterInputDTO>
+) => {
+    return createMutation<DeleteDemoTeamClusterOutputDTO, DeleteDemoTeamClusterInputDTO>(
+        teamClusterService.deleteDemo
+    )({
+        ...options,
+        onSuccess: withSuccess((data, variables) => {
+            if (data.teardownScheduled) {
+                markDemoTeamClusterDeletingQueryData(variables.teamId);
+            }
+
+            void invalidateTeamClustersQuery(variables.teamId);
             void invalidateDemoTeamClusterStatusQuery(variables.teamId);
         }, options)
     });

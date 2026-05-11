@@ -14,6 +14,7 @@ import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBan
 import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
+import { isTeamClusterUsable } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
@@ -72,7 +73,7 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         const clusters = demoTeamClustersQuery.data?.data ?? [];
-        const demoCluster = clusters.find((cluster) => cluster.isDemo) ?? null;
+        const demoCluster = clusters.find((cluster) => cluster.isDemo && isTeamClusterUsable(cluster)) ?? null;
         if (demoCluster) {
             setDemoFromCluster(demoCluster);
         } else {

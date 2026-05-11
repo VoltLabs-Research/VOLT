@@ -41,6 +41,7 @@ const useChatData = () => {
     const currentChatIdRef = useRef<string | null>(null);
     const cachedChatIdsRef = useRef<string[]>([]);
     const selectionVersionRef = useRef(0);
+    const desiredChatIdRef = useRef<string | null>(null);
     const lastPresenceRequestKeyRef = useRef<string | null>(null);
 
     const markAsReadMutationResult = useMarkAsReadMutation();
@@ -158,6 +159,7 @@ const useChatData = () => {
 
     const resetState = useCallback(() => {
         selectionVersionRef.current += 1;
+        desiredChatIdRef.current = null;
         lastPresenceRequestKeyRef.current = null;
 
         if (currentChatIdRef.current) {
@@ -174,6 +176,7 @@ const useChatData = () => {
         if (currentChatIdRef.current === chatId) return;
 
         const selectionVersion = ++selectionVersionRef.current;
+        desiredChatIdRef.current = chatId;
         const previousChatId = currentChatIdRef.current;
 
         if (previousChatId) {
@@ -187,7 +190,9 @@ const useChatData = () => {
         expectSocketAck(joinAck, `Unable to join chat "${chatId}".`);
 
         if (selectionVersion !== selectionVersionRef.current) {
-            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, chatId);
+            if (desiredChatIdRef.current !== chatId) {
+                emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, chatId);
+            }
             return;
         }
 

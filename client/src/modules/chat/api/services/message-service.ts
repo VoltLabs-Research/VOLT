@@ -51,7 +51,10 @@ const endpoints = {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    markAsRead: patch<MarkAsReadParams, void>('/:chatId/messages/read', { unwrap: 'void' }),
+    markAsRead: patch<MarkAsReadParams, void>('/:chatId/messages/read', {
+        unwrap: 'void',
+        body: () => ({})
+    }),
     toggleReaction: patch<ToggleReactionInputDTO, ChatMessage>('/:chatId/messages/:messageId/reactions')
 };
 
