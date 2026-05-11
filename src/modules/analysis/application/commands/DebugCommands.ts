@@ -11,7 +11,7 @@ interface DebugStartPayload {
     trajectoryId: string;
     config?: ReverseChannelCommandPayloadView;
     timestep?: number;
-    storageClusterId?: string;
+    storageClusterId: string;
     nestedPlugins?: NestedPluginDefinition[];
 }
 

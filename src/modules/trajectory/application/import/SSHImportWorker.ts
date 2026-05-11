@@ -9,7 +9,6 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
 import { BaseWorker } from '@/core/queues/application/BaseWorker';
-import { createLifecycleStatusReporter } from '@/core/queues/application/create-status-reporter';
 import { QueueService } from '@/core/queues/application/QueueService';
 import { withJobLifecycle } from '@/core/queues/application/with-job-lifecycle';
 import { SSH_IMPORT_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
@@ -24,11 +23,9 @@ import type {
     SSHImportJobPayload,
     TrajectoryImportPayload
 } from '@/modules/trajectory/contracts/ssh-import-trajectory';
-import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
 import { errorMessage } from '@/support/error/errorMessage';
 import { sanitizeFileName } from '@/support/fs/sanitize-file-name';
-import type { JobIdentity } from '@/support/contracts/job-identity';
 import { mapLimited } from '@/support/concurrency/map-limited';
 
 const SSH_IMPORT_FRAME_CONCURRENCY = 4;
@@ -38,27 +35,17 @@ const scryptAsync = promisify(crypto.scrypt);
 @Service('sshImportWorker')
 export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
     protected readonly queueName = SSH_IMPORT_QUEUE_NAME;
-    private readonly buildStatusReporter: ReturnType<typeof createLifecycleStatusReporter<JobIdentity>>;
 
     constructor(
         private readonly config: DaemonConfig,
         queueService: QueueService,
         private readonly glbExporter: GlbExporter,
-        daemonJobReporter: DaemonJobReporter,
         private readonly voltCloudConnection: VoltCloudConnection,
         private readonly sshConnection: SSHConnection,
         private readonly fileExtractor: FileExtractor,
         private readonly trajectoryFrameStore: TrajectoryFrameStore
     ) {
         super({ queueService });
-        this.buildStatusReporter = createLifecycleStatusReporter<JobIdentity>(
-            {
-                started: daemonJobReporter.reportSshImportStarted,
-                completed: daemonJobReporter.reportSshImportCompleted,
-                failed: daemonJobReporter.reportSshImportFailed
-            },
-            'SSH import'
-        );
     }
 
     protected async process(payload: SSHImportJobPayload, _bullJob: Job<SSHImportJobPayload>): Promise<void> {
@@ -78,29 +65,14 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
         });
         const workdir = workdirHandle.path;
 
-        // SSH import has custom terminal reporting semantics (remote ack wins;
-        // the local ssh-import status event is only a fallback). We supply a
-        // no-op reportStatus to `withJobLifecycle` and dispatch status
-        // ourselves so ordering/fallback behaviour is preserved.
-        const reportFallbackStatus = this.buildStatusReporter({
-            jobId: payload.jobId,
-            teamId: payload.teamId,
-            trajectoryId: payload.trajectoryId
-        });
-
         await withJobLifecycle(
             {
-                // Suppress the default `started` / `completed` / `failed`
-                // reports — SSH import only emits them when the remote ack
-                // report fails (see below).
                 reportStatus: () => undefined,
                 cleanup: async () => {
                     await workdirHandle.cleanup().catch(() => {});
                 }
             },
             async () => {
-                reportFallbackStatus('started');
-
                 try {
                     const password = await this.decryptPassword(payload.encryptedPassword);
                     const connection: SSHConnectionConfig = {
@@ -173,33 +145,22 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
                         });
                     }
 
-                    const reported = await this.reportTrajectoryImport({ ...importContext, success: true, frames })
-                        .catch((err: unknown) => {
-                            logger.error(`Failed to report SSH import success jobId=${payload.jobId}: ${errorMessage(err)}`);
-                            return false;
-                        });
-
-                    if (!reported) {
-                        reportFallbackStatus('completed');
-                    }
+                    await this.reportTrajectoryImport({ ...importContext, success: true, frames });
                 } catch (error) {
                     if (!(error instanceof Error)) {
                         throw error;
                     }
 
                     logger.error(`SSH import failed trajectoryId=${payload.trajectoryId}: ${error.message}`);
-                    const reported = await this.reportTrajectoryImport({
-                        ...importContext,
-                        success: false,
-                        failureCode: 'SSH::Import::Error',
-                        failureDetails: error.message
-                    }).catch((err: unknown) => {
-                        logger.error(`Failed to report SSH import failure jobId=${payload.jobId}: ${errorMessage(err)}`);
-                        return false;
-                    });
-
-                    if (!reported) {
-                        reportFallbackStatus('failed', error.message);
+                    try {
+                        await this.reportTrajectoryImport({
+                            ...importContext,
+                            success: false,
+                            failureCode: 'SSH::Import::Error',
+                            failureDetails: error.message
+                        });
+                    } catch (reportError: unknown) {
+                        logger.error(`Failed to report SSH import failure jobId=${payload.jobId}: ${errorMessage(reportError)}`);
                     }
 
                     throw error;
@@ -223,15 +184,7 @@ export class SSHImportWorker extends BaseWorker<SSHImportJobPayload> {
         return decrypted;
     }
 
-    private async reportTrajectoryImport(payload: TrajectoryImportPayload): Promise<boolean> {
-        const queued = await this.voltCloudConnection.sendBackgroundServerCommand('trajectory.import-complete', payload, {
-            dedupeKey: `trajectory.import:${payload.trajectoryId}:${payload.success ? 'completed' : 'failed'}`
-        });
-        if (queued !== undefined) {
-            return true;
-        }
-
-        const direct = await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
-        return direct !== undefined;
+    private async reportTrajectoryImport(payload: TrajectoryImportPayload): Promise<void> {
+        await this.voltCloudConnection.sendServerCommand('trajectory.import-complete', payload);
     }
 }

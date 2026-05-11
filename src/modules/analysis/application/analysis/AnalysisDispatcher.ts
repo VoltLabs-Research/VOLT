@@ -4,7 +4,7 @@ import { logger } from '@/core/logger';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { QueueService } from '@/core/queues/application/QueueService';
-import { createTraceLogContext, serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
+import { serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import { WorkflowEngine, type WorkflowExecutionRequest } from '@/modules/analysis/application/workflow/WorkflowEngine';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
@@ -12,7 +12,6 @@ import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnec
 import { planAnalysisWorkflow } from '@/modules/analysis/application/analysis/plan-analysis-workflow';
 import { createHash } from 'node:crypto';
 import type {
-    AnalysisExecutionDataReference,
     AnalysisStartRequestWithTrace,
     AnalysisStartResponse,
     QueuedJobNotification
@@ -22,11 +21,6 @@ import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storag
 const PLAN_CACHE_TTL_SECONDS = 600;
 
 type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
-
-interface StoredExecutionDataResult {
-    executionDataCompressed?: string;
-    executionDataReference?: AnalysisExecutionDataReference;
-}
 
 @Service('analysisDispatcher')
 export class AnalysisDispatcher {
@@ -109,36 +103,16 @@ export class AnalysisDispatcher {
             await this.storeCachedPlan(planCacheKey, plan);
         }
 
-        let storedExecutionData: StoredExecutionDataResult = {};
-
-        try {
-            const serializedExecutionData = serializeAnalysisExecutionData(executionData);
-            const executionDataCompressed = await compressSerializedAnalysisExecutionData(serializedExecutionData);
-            const executionDataReference = await this.analysisDataStore.store(executionData, {
-                serializedPayload: serializedExecutionData,
-                compressedPayload: executionDataCompressed
-            });
-
-            storedExecutionData = {
-                executionDataCompressed,
-                executionDataReference
-            };
-        } catch (error) {
-            logger.warn(
-                {
-                    analysisId: input.analysisId,
-                    err: error,
-                    ...createTraceLogContext(input.traceContext)
-                },
-                'Failed to store shared analysis execution data reference; falling back to inline payloads'
-            );
-        }
-
-        const { executionDataCompressed, executionDataReference } = storedExecutionData;
-
-        const queuedPayloads = jobs.map((job) => executionDataReference
-            ? { ...job, executionDataCompressed, executionDataReference }
-            : { ...job, executionData });
+        const serializedExecutionData = serializeAnalysisExecutionData(executionData);
+        const executionDataCompressed = await compressSerializedAnalysisExecutionData(serializedExecutionData);
+        const executionDataReference = await this.analysisDataStore.store(executionData, {
+            serializedPayload: serializedExecutionData,
+            compressedPayload: executionDataCompressed
+        });
+        const queuedPayloads = jobs.map((job) => ({
+            ...job,
+            executionDataReference
+        }));
 
         await this.queueService.enqueueBulk(ANALYSIS_QUEUE_NAME, queuedPayloads);
 

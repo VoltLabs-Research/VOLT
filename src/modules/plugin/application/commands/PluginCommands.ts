@@ -2,7 +2,6 @@ import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import {
     ObjectBucketName,
-    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
     type PluginSyncRequest,
     type PluginWarmupRequest,
     type PluginWarmupResponse,
@@ -29,10 +28,8 @@ export class PluginCommands {
 
     @Command('sync')
     async sync(payload: PluginSyncRequest) {
-        const ownerClusterId = payload.ownerClusterId || VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
-
         try {
-            await this.objectStore.head(ownerClusterId, ObjectBucketName.Plugins, payload.objectKey);
+            await this.objectStore.head(payload.ownerClusterId, ObjectBucketName.Plugins, payload.objectKey);
             return {
                 synced: true,
                 objectKey: payload.objectKey

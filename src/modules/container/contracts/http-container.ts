@@ -15,6 +15,7 @@ export interface CreateContainerRequest {
     user?: string;
     env?: ContainerEnvironmentVariable[];
     ports?: ContainerPortMapping[];
+    publishUnassignedPorts?: boolean;
     memoryInMegabytes: number;
     cpus: number;
     binds?: string[];

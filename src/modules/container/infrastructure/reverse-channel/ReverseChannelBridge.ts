@@ -19,6 +19,7 @@ import type {
     BinaryTunnelDataPayload
 } from '@/core/reverse-channel/contracts/binary-messages';
 import type {
+    ReverseChannelCommandResult,
     ReverseChannelCommandExecutor,
     ReverseChannelCommandPayloadView
 } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
@@ -99,7 +100,7 @@ type OutboundBridgeMessage =
 
 type InboundBridgeMessage = InboundTeamClusterDaemonMessage | BinaryTunnelDrainPayload;
 type InboundMessageHandler = (message: InboundBridgeMessage) => void;
-type SessionAttachHandler = (payload: TeamClusterDaemonSessionAttachPayload) => Promise<CommandResult>;
+type SessionAttachHandler = (payload: TeamClusterDaemonSessionAttachPayload) => Promise<ReverseChannelCommandResult>;
 
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
 const readPositiveIntegerEnv = (name: string, fallback: number): number => {
@@ -190,6 +191,8 @@ export class ReverseChannelBridge {
         this.webSocketSessionManager = new WebSocketSessionManager({
             coordinator: sharedCoordinator
         });
+
+        this.registerCommand('session.attach', (payload) => this.attachSession(payload as ParsedSessionAttachPayload));
     }
 
     registerCommand(commandName: string, execute: ReverseChannelCommandExecutor): void {
@@ -365,7 +368,7 @@ export class ReverseChannelBridge {
         this.inboundMessageHandlers[bridgeMessage.type]?.(bridgeMessage);
     }
 
-    attachSession(payload: ParsedSessionAttachPayload): Promise<CommandResult> {
+    attachSession(payload: ParsedSessionAttachPayload): Promise<ReverseChannelCommandResult> {
         const attachSession = this.sessionAttachHandlers[payload.kind as TeamClusterDaemonSessionAttachPayload['kind']];
         if (attachSession) {
             return attachSession(payload as TeamClusterDaemonSessionAttachPayload);

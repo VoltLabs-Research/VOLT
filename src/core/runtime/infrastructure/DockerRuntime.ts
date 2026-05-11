@@ -134,7 +134,12 @@ export class DockerRuntime {
         for(const port of input.ports ?? []){
             const key = `${port.private}/tcp`;
             exposedPorts[key] = {};
-            portBindings[key] = [{ HostPort: port.public && port.public > 0 ? `${port.public}` : '' }];
+
+            if (port.public && port.public > 0) {
+                portBindings[key] = [{ HostPort: `${port.public}` }];
+            } else if (input.publishUnassignedPorts) {
+                portBindings[key] = [{ HostPort: '' }];
+            }
         }
         
         return { exposedPorts, portBindings };

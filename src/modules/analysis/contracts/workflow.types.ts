@@ -69,8 +69,8 @@ export interface WorkflowEntrypointExecutionOptions {
     // Why: optional dependencies enabling the persistent Python pool path.
     // When both frame store + cluster id are present and the entrypoint is a
     // Python/packaged plugin, the handler routes through the pool + result
-    // cache + shared-memory bridge; otherwise it falls back to the legacy
-    // one-shot spawn.
+    // cache + shared-memory bridge; otherwise it routes through direct process
+    // execution.
     trajectoryFrameStore?: TrajectoryFrameStore;
     ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
@@ -141,10 +141,10 @@ export const matchesIfBranchHandle = (
     selectedBranch: string
 ): boolean => {
     if (selectedBranch === 'true') {
-        return edgeHandle === 'output-true' || edgeHandle === 'true';
+        return edgeHandle === 'output-true';
     }
 
-    return edgeHandle === 'output-false' || edgeHandle === 'false';
+    return edgeHandle === 'output-false';
 };
 
 export class WorkflowGraph {

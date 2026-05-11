@@ -281,6 +281,7 @@ export class JupyterRuntime {
                 private: this.config.jupyter.port,
                 public: reservedHostPort === null ? undefined : reservedHostPort
             }],
+            publishUnassignedPorts: true,
             memoryInMegabytes: containerResources.memoryMB,
             cpus: containerResources.cpus,
             labels: {

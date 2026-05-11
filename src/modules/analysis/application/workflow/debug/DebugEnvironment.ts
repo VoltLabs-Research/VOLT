@@ -1,7 +1,5 @@
 import { Service } from '@/core/decorators/service';
-import { logger } from '@/core/logger';
 import { DAEMON_PATHS } from '@/core/paths';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http-object-store';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { downloadCompressedDump } from '@/modules/analysis/application/workflow/dump-download';
@@ -33,16 +31,9 @@ export class DebugEnvironment {
     async prepare(
         sessionId: string,
         context: WorkflowExecutionContext,
-        storageClusterId?: string
+        storageClusterId: string
     ): Promise<DebugEnvironmentState> {
         const workflowSession = new WorkflowSession(context);
-        const resolvedStorageClusterId = storageClusterId || VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
-        if (!storageClusterId) {
-            logger.warn(
-                { sessionId, fallbackOwnerClusterId: resolvedStorageClusterId },
-                'Missing trajectory storage cluster id for debug session, falling back to Volt server owner'
-            );
-        }
 
         const selectedDump = workflowSession.resolveSelectedDump();
         if (!selectedDump) {
@@ -52,7 +43,7 @@ export class DebugEnvironment {
         const dumpPath = await downloadCompressedDump(
             this.objectStore,
             selectedDump.dump.path,
-            resolvedStorageClusterId,
+            storageClusterId,
             DAEMON_PATHS.analysisDumps
         );
         await mkdir(DAEMON_PATHS.analysisOutput, { recursive: true });

@@ -22,7 +22,7 @@ type AnalysisValue =
 export interface PluginSyncRequest {
     pluginId: string;
     objectKey: string;
-    ownerClusterId?: string;
+    ownerClusterId: string;
     expectedHash?: string;
 }
 
@@ -164,8 +164,6 @@ export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extend
     progress?: number;
     message?: string;
     workerId?: number;
-    executionData?: AnalysisJobExecutionData;
-    executionDataCompressed?: string;
     executionDataReference?: AnalysisExecutionDataReference;
     createdAt: string;
     updatedAt: string;
@@ -179,14 +177,10 @@ export interface AnalysisStartTransportRequest {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
-    trajectoryFrames?: TrajectoryFrame[];
-    trajectoryFramesCompressed?: string;
-    workflow?: WorkflowDefinition;
-    workflowCompressed?: string;
-    nestedPlugins?: NestedPluginDefinition[];
-    nestedPluginsCompressed?: string;
-    pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
-    pluginReferenceExecutionsCompressed?: string;
+    trajectoryFramesCompressed: string;
+    workflowCompressed: string;
+    nestedPluginsCompressed: string;
+    pluginReferenceExecutionsCompressed: string;
     config: AnalysisValueMap;
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
@@ -197,6 +191,7 @@ export interface AnalysisStartRequest extends AnalysisStartTransportRequest {
     trajectoryFrames: TrajectoryFrame[];
     workflow: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
+    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
 }
 
 export type AnalysisStartRequestWithTrace = WithTrace<AnalysisStartRequest>;

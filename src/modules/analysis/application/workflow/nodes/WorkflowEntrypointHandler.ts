@@ -182,7 +182,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         // Why: the pool only speaks the msgpack protocol to the Python stub,
         // and only plugins packaged as python-script or packaged-executable
         // can expose the `process(frame, config)` entrypoint. Raw executables
-        // still need the legacy spawn path. Also require a projectPath (the
+        // still need direct process execution. Also require a projectPath (the
         // extracted plugin root where the user module lives).
         if (entrypointType !== EntrypointTypeEnum.PythonScript
             && entrypointType !== EntrypointTypeEnum.PackagedExecutable) {
@@ -192,7 +192,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
 
         // Why: without the trajectory frame store we cannot load a frame to
         // hand to the plugin; without an ownerClusterId the store cannot
-        // locate the trajectory in MinIO. Fall back to spawn which feeds the
+        // locate the trajectory in MinIO. Route through direct execution which feeds the
         // plugin via CLI arguments + local dump files instead.
         if (!execution.trajectoryFrameStore || !execution.ownerClusterId) return false;
 

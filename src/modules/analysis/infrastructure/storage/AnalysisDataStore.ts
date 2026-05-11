@@ -1,6 +1,6 @@
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { compressSerializedAnalysisExecutionData, inflateAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
+import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import Redis from 'ioredis';
 import type { DaemonConfig } from '@/core/config';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@/contracts';
@@ -8,9 +8,7 @@ import type { RedisConnectionOptions } from '@/core/storage/contracts/redis-conn
 
 interface AnalysisExecutionDataPayload {
     jobId: string;
-    executionData?: AnalysisJobExecutionData;
-    executionDataCompressed?: string;
-    executionDataReference?: AnalysisExecutionDataReference;
+    executionDataReference: AnalysisExecutionDataReference;
 }
 
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
@@ -78,39 +76,23 @@ export class AnalysisDataStore {
     }
 
     async resolve(payload: AnalysisExecutionDataPayload): Promise<AnalysisJobExecutionData> {
-        if (payload.executionDataReference) {
-            const stored = await this.get(payload.executionDataReference);
-            if (stored) {
-                return stored;
-            }
-        }
-
-        if (payload.executionDataCompressed) {
-            return inflateAnalysisExecutionData(payload.executionDataCompressed);
-        }
-
-        if (payload.executionData) {
-            return payload.executionData;
-        }
-
-        throw new Error(`Missing analysis execution data for job ${payload.jobId}`);
+        return this.get(payload.executionDataReference, payload.jobId);
     }
 
-    async get(reference: AnalysisExecutionDataReference): Promise<AnalysisJobExecutionData | null> {
+    async get(reference: AnalysisExecutionDataReference, jobId?: string): Promise<AnalysisJobExecutionData> {
         await this.connect();
 
         const payload = await this.client.get(reference.key);
         if (!payload) {
-            logger.warn('Shared analysis execution data reference was not found');
-            return null;
+            throw new Error(
+                `Shared analysis execution data reference was not found for job ${jobId ?? 'unknown'}`
+            );
         }
 
         this.client.expire(reference.key, ANALYSIS_EXECUTION_DATA_TTL_SECONDS).catch(() => {});
 
         try {
-            const parsedPayload = await parseStoredAnalysisExecutionData(payload);
-
-            return parsedPayload;
+            return await parseStoredAnalysisExecutionData(payload);
         } catch (error: unknown) {
             logger.warn(
                 {
@@ -119,7 +101,9 @@ export class AnalysisDataStore {
                 },
                 'Failed to parse shared analysis execution data reference payload'
             );
-            return null;
+            throw new Error(
+                `Shared analysis execution data reference payload is invalid for job ${jobId ?? 'unknown'}`
+            );
         }
     }
 

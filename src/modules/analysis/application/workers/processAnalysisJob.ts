@@ -6,8 +6,6 @@ import { logAndSwallow } from '@/support/error/errorMessage';
 import { AnalysisEnvironment, type AnalysisEnvironmentState } from '@/modules/analysis/application/workflow/AnalysisEnvironment';
 import type { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import type {
-    AnalysisExecutionDataReference,
-    AnalysisJobExecutionData,
     AnalysisJobMetadata,
     AnalysisQueueJobPayload
 } from '@/modules/analysis/contracts/http-analysis';
@@ -15,12 +13,6 @@ import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storag
 import type { ArtifactUploadQueue } from '@/modules/plugin/application/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events';
-
-export type AnalysisWorkerJobPayload = AnalysisQueueJobPayload & {
-    executionData?: AnalysisJobExecutionData;
-    executionDataCompressed?: string;
-    executionDataReference?: AnalysisExecutionDataReference;
-};
 
 export interface ProcessAnalysisJobDependencies {
     analysisDataStore: AnalysisDataStore;
@@ -41,9 +33,16 @@ export const processAnalysisJob = async (
     deps: ProcessAnalysisJobDependencies,
     hooks: ProcessAnalysisJobHooks = {}
 ): Promise<void> => {
-    const job = payload as AnalysisWorkerJobPayload;
+    const job = payload;
     const metadata = job.metadata as AnalysisJobMetadata;
-    const executionData = await deps.analysisDataStore.resolve(job);
+    if (!job.executionDataReference) {
+        throw new Error(`Missing executionDataReference for analysis job ${job.jobId}`);
+    }
+
+    const executionData = await deps.analysisDataStore.resolve({
+        jobId: job.jobId,
+        executionDataReference: job.executionDataReference
+    });
     const isBatchMode = executionData.batch !== undefined;
     const timestep = isBatchMode ? undefined : (job.timestep ?? metadata.timestep);
 

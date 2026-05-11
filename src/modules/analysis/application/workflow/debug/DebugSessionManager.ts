@@ -9,7 +9,6 @@ import type { BinaryExecutorService } from '@/core/runtime/infrastructure/binary
 import {
     createDebugExecutionLogSink
 } from '@/core/runtime/infrastructure/execution-log-streaming';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@/core/storage/contracts/http-object-store';
 import {
     inspectWorkflowExposureOutput,
     type WorkflowExposureInspectionResult
@@ -48,7 +47,7 @@ interface DebugSessionRequest {
     pluginId: string;
     teamId: string;
     userConfig: ReverseChannelCommandPayloadView;
-    storageClusterId?: string;
+    storageClusterId: string;
     timestep?: number;
 };
 
@@ -218,7 +217,7 @@ export class DebugSessionManager {
             completedNodeIds: new Set(),
             nodeStatuses: new Map(),
             forEachNodeId: forEachNode ? forEachNode.id : null,
-            storageClusterId: storageClusterId ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            storageClusterId,
             nestedPlugins: sessionParams.nestedPlugins,
             preparedExecution: null,
             exposureCache: new Map(),
