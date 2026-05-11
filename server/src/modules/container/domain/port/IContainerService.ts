@@ -62,4 +62,5 @@ export interface ContainerTerminalExec {
 export interface ContainerTerminalAttachment {
     stream: ContainerTerminalStream;
     exec: ContainerTerminalExec;
+    close(): Promise<void>;
 }

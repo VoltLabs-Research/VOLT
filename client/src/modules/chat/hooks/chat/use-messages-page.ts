@@ -13,6 +13,7 @@ import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
+import { ErrorSurface, reportError } from '@/shared/errors/core';
 import type { User } from '@/modules/auth/api/entities/user';
 
 const useMessagesPage = (chatId?: string) => {
@@ -114,8 +115,27 @@ const useMessagesPage = (chatId?: string) => {
             return;
         }
 
-        selectChat(chatId);
-    }, [chatId, closeDetails, selectChat]);
+        let ignore = false;
+
+        void selectChat(chatId).catch((error: unknown) => {
+            if (ignore) {
+                return;
+            }
+
+            closeDetails();
+            resetState();
+            resetPresenceStore();
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Unable to open this chat.'
+            });
+            navigateToMessages();
+        });
+
+        return () => {
+            ignore = true;
+        };
+    }, [chatId, closeDetails, navigateToMessages, resetPresenceStore, resetState, selectChat]);
 
     useEffect(() => {
         return () => {

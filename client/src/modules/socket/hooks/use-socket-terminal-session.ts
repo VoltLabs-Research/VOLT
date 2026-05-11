@@ -69,9 +69,17 @@ export const useSocketTerminalSession = <TAttachPayload>({
             return;
         }
 
+        terminalRef.current?.clear();
         socketService.emitWithoutAck(attachEvent, attachPayload);
         isAttachedRef.current = true;
-    }, [attachEvent, attachPayload, socketService]);
+
+        if (resizeEvent) {
+            const size = terminalRef.current?.getSize();
+            if (size) {
+                socketService.emitWithoutAck(resizeEvent, size);
+            }
+        }
+    }, [attachEvent, attachPayload, resizeEvent, socketService, terminalRef]);
 
     useSocketEvent<unknown>(dataEvent, (data) => {
         if (typeof data !== 'string') return;
@@ -119,7 +127,10 @@ export const useSocketTerminalSession = <TAttachPayload>({
         const unsubscribeConnection = socketService.onConnectionChange((connected) => {
             if (connected) {
                 attach();
+                return;
             }
+
+            isAttachedRef.current = false;
         });
 
         if (socketService.isConnected()) {

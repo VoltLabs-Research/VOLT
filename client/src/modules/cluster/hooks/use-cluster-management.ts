@@ -117,6 +117,7 @@ export interface ClusterManagementResult {
     setSelectedClusterId: (clusterId: string | null) => void;
     waitingCluster: TeamCluster | null;
     isLoading: boolean;
+    error: Error | null;
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
     deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
@@ -339,6 +340,7 @@ const useClusterManagement = (): ClusterManagementResult => {
         setSelectedClusterId,
         waitingCluster,
         isLoading: teamClustersQuery.isLoading,
+        error: teamClustersQuery.error,
         createCluster,
         revealCredentials,
         deleteCluster,

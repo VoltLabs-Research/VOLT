@@ -19,6 +19,8 @@ export interface TerminalHandle {
     clear: () => void;
     focus: () => void;
     fit: () => void;
+    resize: (cols: number, rows: number) => void;
+    getSize: () => { cols: number; rows: number; } | null;
 };
 
 interface TerminalProps {
@@ -198,6 +200,27 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             }
 
             fitAddonRef.current.fit();
+        },
+        resize: (cols: number, rows: number) => {
+            if (!xtermRef.current || !isReadyRef.current) {
+                return;
+            }
+
+            if (cols < 1 || rows < 1) {
+                return;
+            }
+
+            xtermRef.current.resize(cols, rows);
+        },
+        getSize: () => {
+            if (!xtermRef.current || !isReadyRef.current) {
+                return null;
+            }
+
+            return {
+                cols: xtermRef.current.cols,
+                rows: xtermRef.current.rows
+            };
         }
     }));
 
