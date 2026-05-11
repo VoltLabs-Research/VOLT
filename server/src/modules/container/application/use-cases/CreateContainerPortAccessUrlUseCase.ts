@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CreateContainerPortProxySessionInputDTO, CreateContainerPortProxySessionOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
+import { CreateContainerPortAccessUrlInputDTO, CreateContainerPortAccessUrlOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
 import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
@@ -9,9 +9,9 @@ import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
 @injectable()
-export class CreateContainerPortProxySessionUseCase implements IUseCase<
-    CreateContainerPortProxySessionInputDTO,
-    CreateContainerPortProxySessionOutputDTO
+export class CreateContainerPortAccessUrlUseCase implements IUseCase<
+    CreateContainerPortAccessUrlInputDTO,
+    CreateContainerPortAccessUrlOutputDTO
 > {
     constructor(
         private readonly ownershipService: ContainerOwnershipService,
@@ -19,7 +19,7 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
         private readonly relayService: ContainerPortProxyRelayService
     ) {}
 
-    async execute(input: CreateContainerPortProxySessionInputDTO): Promise<Result<CreateContainerPortProxySessionOutputDTO>> {
+    async execute(input: CreateContainerPortAccessUrlInputDTO): Promise<Result<CreateContainerPortAccessUrlOutputDTO>> {
         const container = await this.ownershipService.getOwnedByTeam(input.containerId, input.teamId);
         const accessiblePorts = this.accessiblePortResolver.resolve(
             input.teamId,
@@ -50,6 +50,13 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
             ));
         }
 
+        if (!port.public) {
+            return Result.fail(ApplicationError.conflict(
+                'Container::PublicPortUnavailable',
+                'Container port has no public port assigned'
+            ));
+        }
+
         if (!container.teamCluster || !container.internalIp) {
             return Result.fail(ApplicationError.conflict(
                 'Container::PortUnavailable',
@@ -57,18 +64,19 @@ export class CreateContainerPortProxySessionUseCase implements IUseCase<
             ));
         }
 
-        const session = await this.relayService.createSession({
+        const accessUrl = await this.relayService.createAccessUrl({
             teamId: input.teamId,
             containerId: container._id,
             userId: input.userId,
             teamClusterId: container.teamCluster,
             internalIp: container.internalIp,
-            privatePort: input.privatePort
+            privatePort: input.privatePort,
+            publicPort: port.public
         });
 
         return Result.ok({
-            url: session.url,
-            expiresAt: session.expiresAt,
+            url: accessUrl.url,
+            expiresAt: accessUrl.expiresAt,
             port
         });
     }

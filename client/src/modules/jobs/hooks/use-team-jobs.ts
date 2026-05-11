@@ -3,7 +3,6 @@ import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
 import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import teamSocketRoomService from '@/modules/socket/services/team-room-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { JobStatus } from '../api/entities/job';
@@ -38,7 +37,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
-    const previousTeamIdRef = useRef<string | null>(null);
     const latestObservedRevisionRef = useRef(0);
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const jobsLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -180,26 +178,19 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         handleJobUpdate(payload);
     }, [handleJobUpdate]);
 
-    const subscribeToTeam = useCallback((teamId: string, previousTeamId?: string | null) => {
+    const prepareTeamJobs = useCallback((teamId: string) => {
         const currentStoreTeamId = useTeamJobsStore.getState().currentTeamId;
-        const roomServiceCurrentTeamId = teamSocketRoomService.getCurrentTeamId();
 
-        if (currentStoreTeamId === teamId && roomServiceCurrentTeamId === teamId) {
+        if (currentStoreTeamId === teamId) {
             return;
         }
 
-        const resolvedPreviousTeamId = previousTeamId ?? currentStoreTeamId ?? roomServiceCurrentTeamId ?? undefined;
         setCurrentTeamId(teamId);
         latestObservedRevisionRef.current = 0;
         setGroups([]);
         setLoading(true);
         startJobsLoadingTimeout();
-
-        teamSocketRoomService.subscribe(teamId, resolvedPreviousTeamId).catch(() => {
-            clearJobsLoadingTimeout();
-            setLoading(false);
-        });
-    }, [clearJobsLoadingTimeout, setCurrentTeamId, setGroups, setLoading, startJobsLoadingTimeout]);
+    }, [setCurrentTeamId, setGroups, setLoading, startJobsLoadingTimeout]);
 
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();
@@ -208,7 +199,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             jobUpdateFlushTimerRef.current = undefined;
         }
         pendingJobUpdatesRef.current = [];
-        previousTeamIdRef.current = null;
         latestObservedRevisionRef.current = 0;
         resetTeamJobsGroupsQueryData(queryClient);
         reset();
@@ -244,13 +234,12 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         }
 
         if (currentTeamId) {
-            subscribeToTeam(currentTeamId, previousTeamIdRef.current);
-            previousTeamIdRef.current = currentTeamId;
+            prepareTeamJobs(currentTeamId);
             return;
         }
 
         clearTeamJobs();
-    }, [clearTeamJobs, currentTeamId, subscribeToTeam, subscribe]);
+    }, [clearTeamJobs, currentTeamId, prepareTeamJobs, subscribe]);
 
     return {
         groups,

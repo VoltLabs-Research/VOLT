@@ -338,9 +338,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             const invalidEdges = outgoingEdges.filter((edge) => {
                 return typeof edge.sourceHandle !== 'undefined'
                     && edge.sourceHandle !== 'output-true'
-                    && edge.sourceHandle !== 'output-false'
-                    && edge.sourceHandle !== 'true'
-                    && edge.sourceHandle !== 'false';
+                    && edge.sourceHandle !== 'output-false';
             });
             if (invalidEdges.length > 0) {
                 errors.push(`If statement ${node.id} has invalid branch handles`);

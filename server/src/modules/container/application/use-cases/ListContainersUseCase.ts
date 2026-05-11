@@ -16,14 +16,13 @@ interface ListContainersFilter extends Record<string, unknown> {
     folder?: string | null;
 }
 
-interface ContainerRuntimeDriftUpdate extends Partial<Pick<IContainerProps, 'status' | 'internalIp' | 'ports'>> {}
+interface ContainerRuntimeDriftUpdate extends Partial<Pick<IContainerProps, 'status' | 'internalIp'>> {}
 
 interface PopulatedContainerTeamCluster {
     _id: string;
 }
 
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
-const PLACEHOLDER_PUBLIC_PORT = 0;
 
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
@@ -145,7 +144,6 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         try {
             const runtimeContainer = await this.containerRuntimeService.getContainer(teamClusterId, container.containerId);
             const runtimeInternalIp = this.getRuntimeInternalIp(runtimeContainer);
-            const runtimePorts = this.getRuntimePorts(container.ports, runtimeContainer);
 
             if (runtimeInternalIp !== undefined) {
                 if (container.internalIp !== runtimeInternalIp) {
@@ -155,9 +153,6 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
                 update.internalIp = runtimeInternalIp;
             }
 
-            if (this.havePortsChanged(container.ports, runtimePorts)) {
-                update.ports = runtimePorts;
-            }
         } catch {
         }
 
@@ -169,7 +164,7 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
             return true;
         }
 
-        return container.ports.some((port) => port.public === undefined || port.public === PLACEHOLDER_PUBLIC_PORT);
+        return false;
     }
 
     private getRuntimeInternalIp(runtimeContainer: RuntimeContainerInfo): string | undefined {
@@ -193,63 +188,6 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         return undefined;
     }
 
-    private getRuntimePorts(
-        currentPorts: IContainerProps['ports'],
-        runtimeContainer: RuntimeContainerInfo
-    ): IContainerProps['ports'] {
-        const publishedPortsByPrivatePort = new Map<number, number>();
-        const runtimePorts = runtimeContainer.NetworkSettings?.Ports;
-
-        if (runtimePorts) {
-            for (const [runtimePortKey, bindings] of Object.entries(runtimePorts)) {
-                const [privatePortValue, protocol] = runtimePortKey.split('/');
-                if (protocol !== 'tcp' || !Array.isArray(bindings) || bindings.length === 0) {
-                    continue;
-                }
-
-                const privatePort = Number(privatePortValue);
-                const hostPort = Number(bindings[0]?.HostPort);
-
-                if (Number.isNaN(privatePort) || Number.isNaN(hostPort) || hostPort <= 0) {
-                    continue;
-                }
-
-                publishedPortsByPrivatePort.set(privatePort, hostPort);
-            }
-        }
-
-        return currentPorts.map((port) => {
-            const publicPort = publishedPortsByPrivatePort.get(port.private);
-
-            if (publicPort === undefined) {
-                if (port.public !== undefined && port.public !== PLACEHOLDER_PUBLIC_PORT) {
-                    return port;
-                }
-
-                return {
-                    private: port.private
-                };
-            }
-
-            return {
-                private: port.private,
-                public: publicPort
-            };
-        });
-    }
-
-    private havePortsChanged(currentPorts: IContainerProps['ports'], runtimePorts: IContainerProps['ports']): boolean {
-        if (currentPorts.length !== runtimePorts.length) {
-            return true;
-        }
-
-        return currentPorts.some((port, index) => {
-            const runtimePort = runtimePorts[index];
-
-            return port.private !== runtimePort.private || port.public !== runtimePort.public;
-        });
-    }
-
     private applyRuntimeDriftUpdate(container: Container, update: ContainerRuntimeDriftUpdate): void {
         if (update.status) {
             container.status = update.status;
@@ -257,10 +195,6 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
 
         if ('internalIp' in update) {
             container.internalIp = update.internalIp;
-        }
-
-        if (update.ports) {
-            container.ports = update.ports;
         }
     }
 }

@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
@@ -24,13 +25,23 @@ export default class TeamMembershipService {
         
         private readonly teamMemberRepository: TeamMemberRepository,
 
+        private readonly userRepository: UserRepository,
+
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
 
     async removeMemberFromTeam(memberId: string, teamId: string): Promise<void> {
+        const membership = await this.teamMemberRepository.findById(memberId);
+        const membershipUserId = typeof membership?.props.user === 'string'
+            ? membership.props.user
+            : membership?.props.user?._id;
+
         await this.teamRepository.removeUserFromTeam(memberId, teamId);
         await this.teamMemberRepository.deleteById(memberId);
+        if (membershipUserId) {
+            await this.userRepository.removeTeamFromUser(membershipUserId, teamId);
+        }
 
         const membersCount = await this.teamMemberRepository.count({ team: teamId });
         const team = await this.teamRepository.findById(teamId);

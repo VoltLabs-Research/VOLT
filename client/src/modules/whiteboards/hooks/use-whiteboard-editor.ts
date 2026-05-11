@@ -1,6 +1,9 @@
 import service from '@/modules/whiteboards/api/service';
 import { useUpdateWhiteboardMutation, whiteboardQuery } from '@/modules/whiteboards/hooks/queries';
 import {
+    cloneWhiteboardAppState,
+    cloneWhiteboardElements,
+    cloneWhiteboardFiles,
     extractWhiteboardFileIds,
     filterPersistableAppState,
     mergeWhiteboardAppState,
@@ -80,10 +83,17 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const loadingFilesRef = useRef(new Map<string, Promise<HydratedWhiteboardFile>>());
 
     const updateSceneState = useCallback((nextState: WhiteboardState) => {
-        currentElementsRef.current = nextState.elements;
-        currentAppStateRef.current = nextState.appState;
-        currentFilesRef.current = nextState.files ?? {};
-        setInitialState(nextState);
+        const resolvedState = {
+            ...nextState,
+            elements: cloneWhiteboardElements(nextState.elements),
+            appState: cloneWhiteboardAppState(nextState.appState),
+            files: cloneWhiteboardFiles(nextState.files ?? {})
+        } satisfies WhiteboardState;
+
+        currentElementsRef.current = resolvedState.elements;
+        currentAppStateRef.current = resolvedState.appState;
+        currentFilesRef.current = resolvedState.files ?? {};
+        setInitialState(resolvedState);
     }, []);
 
     const resetEditorState = useCallback(() => {
@@ -213,9 +223,11 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     }, [hydrateFiles, resetEditorState, updateSceneState, whiteboardId]);
 
     const handleChange = useCallback((elements: ExcalidrawElements, appState: AppState, files?: ExcalidrawFiles) => {
-        currentElementsRef.current = elements;
-        currentAppStateRef.current = appState;
-        currentFilesRef.current = files ?? currentFilesRef.current;
+        currentElementsRef.current = cloneWhiteboardElements(elements);
+        currentAppStateRef.current = cloneWhiteboardAppState(appState);
+        currentFilesRef.current = files
+            ? cloneWhiteboardFiles(files)
+            : currentFilesRef.current;
 
         const incomingTitle = typeof appState['name'] === 'string' ? appState['name'] : null;
         if (incomingTitle && incomingTitle !== titleRef.current) {

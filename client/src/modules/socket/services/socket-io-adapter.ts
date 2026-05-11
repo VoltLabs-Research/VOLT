@@ -221,8 +221,8 @@ class SocketIOAdapter implements ISocketService {
         this.connectErrorAttempts = 0;
         this.hasConnectedOnce = true;
         this.setConnectionStatus(SocketConnectionStatus.Connected);
-        this.notifyConnectionListeners(true);
         this.resubscribeToEvents();
+        this.notifyConnectionListeners(true);
     }
 
     private handleConnectError(error?: Error): void {

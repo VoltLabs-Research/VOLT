@@ -27,11 +27,7 @@ interface GroupedCountResult {
 }
 
 interface CountGroupedByMatchStage {
-    $match: {
-        [field: string]: {
-            $in: string[];
-        };
-    };
+    $match: Record<string, unknown>;
 }
 
 interface CountGroupedByGroupStage {
@@ -211,10 +207,12 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
 
     async countGroupedBy(
         field: string,
-        fieldValues: string[]
+        fieldValues: string[],
+        filter?: RepositoryFilter<TProps>
     ): Promise<Map<string, number>> {
         const matchStage: CountGroupedByMatchStage = {
             $match: {
+                ...(toFilterQuery<TDocument, TProps>(filter) as Record<string, unknown>),
                 [field]: {
                     $in: fieldValues
                 }

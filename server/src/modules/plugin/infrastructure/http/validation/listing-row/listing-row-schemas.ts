@@ -5,7 +5,6 @@ import {
     domainExposureIdSchema,
     objectIdSchema
 } from '@shared/infrastructure/http/validation/shared-schemas';
-import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { z } from 'zod/v4';
 
@@ -51,43 +50,21 @@ const optionalStringArrayQuerySchema = z.preprocess((value) => {
         .filter(Boolean);
 }, z.array(z.string().trim().min(1)).optional());
 
-const stripLegacyTeamIdFromQuery = (value: unknown) => {
-    const query = asRecord(value);
-
-    if (!query) {
-        return value;
-    }
-
-    const nextQuery = { ...query };
-    delete nextQuery.teamId;
-
-    return nextQuery;
-};
-
 const createListingPaginationSchema = () => createPaginationQuerySchema({
     maxLimit: 200
 });
 
-const createLegacySafeQuerySchema = <TSchema extends z.ZodTypeAny>(schema: TSchema) => {
-    return z.preprocess(stripLegacyTeamIdFromQuery, schema);
-};
+const pluginListingQuerySchema = createListingPaginationSchema().extend({
+    analysisId: objectIdSchema.optional(),
+    exposureId: domainExposureIdSchema.optional(),
+    exposureName: z.string().trim().optional(),
+    sortAsc: optionalBooleanQuerySchema,
+    trajectoryId: objectIdSchema.optional()
+}).strict();
 
-const pluginListingQuerySchema = z.preprocess(
-    stripLegacyTeamIdFromQuery,
-    createListingPaginationSchema().extend({
-        analysisId: objectIdSchema.optional(),
-        exposureId: domainExposureIdSchema.optional(),
-        exposureName: z.string().trim().optional(),
-        sortAsc: optionalBooleanQuerySchema,
-        trajectoryId: objectIdSchema.optional()
-    }).strict()
-);
-
-const analysisListingQuerySchema = createLegacySafeQuerySchema(
-    createListingPaginationSchema().extend({
-        sortAsc: optionalBooleanQuerySchema
-    }).strict()
-);
+const analysisListingQuerySchema = createListingPaginationSchema().extend({
+    sortAsc: optionalBooleanQuerySchema
+}).strict();
 
 const subListingParamsSchema = analysisListingParamsSchema.extend({
     exposureId: domainExposureIdSchema,
@@ -95,32 +72,24 @@ const subListingParamsSchema = analysisListingParamsSchema.extend({
     subListingName: subListingNameParamSchema
 }).strict();
 
-const subListingQuerySchema = createLegacySafeQuerySchema(
-    createListingPaginationSchema().strict()
-);
+const subListingQuerySchema = createListingPaginationSchema().strict();
 
-const analysisListingExportQuerySchema = createLegacySafeQuerySchema(
-    z.object({
-        format: exportFormatQuerySchema,
-        includeConfig: optionalBooleanQuerySchema,
-        selectedListingIds: optionalStringArrayQuerySchema,
-        selectedSubListingIds: optionalStringArrayQuerySchema
-    }).strict()
-);
+const analysisListingExportQuerySchema = z.object({
+    format: exportFormatQuerySchema,
+    includeConfig: optionalBooleanQuerySchema,
+    selectedListingIds: optionalStringArrayQuerySchema,
+    selectedSubListingIds: optionalStringArrayQuerySchema
+}).strict();
 
-const analysisListingExportOptionsQuerySchema = createLegacySafeQuerySchema(
-    z.object({
-    }).strict()
-);
+const analysisListingExportOptionsQuerySchema = z.object({
+}).strict();
 
-const pluginListingExportQuerySchema = createLegacySafeQuerySchema(
-    z.object({
-        analysisId: objectIdSchema.optional(),
-        exposureId: domainExposureIdSchema.optional(),
-        exposureName: z.string().trim().optional(),
-        format: exportFormatQuerySchema
-    }).strict()
-);
+const pluginListingExportQuerySchema = z.object({
+    analysisId: objectIdSchema.optional(),
+    exposureId: domainExposureIdSchema.optional(),
+    exposureName: z.string().trim().optional(),
+    format: exportFormatQuerySchema
+}).strict();
 
 export const listingRowValidation = createResourceValidation({
     getListingRowsByAnalysisId: {

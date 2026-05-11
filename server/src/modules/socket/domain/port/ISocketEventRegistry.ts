@@ -3,10 +3,10 @@ import { ISocketConnection } from './ISocketModule';
 /**
  * Callback type for socket event handlers.
  */
-export type SocketEventHandler<T = unknown> = (
+export type SocketEventHandler<T = unknown, TResult = unknown> = (
     connection: ISocketConnection,
     payload: T
-) => void | Promise<void>;
+) => TResult | Promise<TResult>;
 
 /**
  * Port interface for registering socket event listeners.
@@ -18,10 +18,10 @@ export interface ISocketEventRegistry {
      * @param event - Event name to listen for
      * @param handler - Handler function to call when event is received
      */
-    on<T = unknown>(
+    on<T = unknown, TResult = unknown>(
         socketId: string,
         event: string,
-        handler: SocketEventHandler<T>
+        handler: SocketEventHandler<T, TResult>
     ): void;
 
     /**

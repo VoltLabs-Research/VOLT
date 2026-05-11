@@ -11,7 +11,6 @@ export interface TeamMember extends BaseEntity {
 }
 
 export interface TeamMemberStats extends TeamMember {
-    timeSpentLast7Days: number;
     trajectoriesCount: number;
     analysesCount: number;
     latexCount: number;

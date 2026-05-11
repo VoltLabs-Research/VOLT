@@ -4,11 +4,21 @@ import type { DailyActivity } from './entities/daily-activity';
 
 export interface GetDailyActivityParams {
     range?: number;
+    scope?: 'team' | 'self';
 }
 
 const endpoints = {
     getDailyActivity: get<GetDailyActivityParams | undefined, DailyActivity[]>('/', {
-        query: (params) => params?.range ? { range: params.range } : undefined
+        query: (params) => {
+            if (!params) {
+                return undefined;
+            }
+
+            return {
+                ...(params.range ? { range: params.range } : {}),
+                ...(params.scope ? { scope: params.scope } : {})
+            };
+        }
     })
 };
 

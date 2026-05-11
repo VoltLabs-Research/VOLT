@@ -117,37 +117,19 @@ const publicCanvasParticleFilterUniqueValuesQuerySchema = z.object({
     maxValues: z.coerce.number().int().min(1).optional()
 }).strict();
 
-const publicCanvasParticleFilterLegacyExpressionQuerySchema = z.object({
-    timestep: z.string().trim().min(1),
-    property: z.string().trim().min(1),
-    operator: particleFilterOperatorSchema,
-    value: z.coerce.number().finite(),
-    exposureId: domainExposureIdSchema.optional()
-}).strict();
-
 const publicCanvasParticleFilterCompositeExpressionQuerySchema = z.object({
     timestep: z.string().trim().min(1),
     combinator: particleFilterCombinatorSchema,
     conditions: parseConditionsQuerySchema
 }).strict();
 
-const publicCanvasParticleFilterPreviewQuerySchema = z.union([
-    publicCanvasParticleFilterLegacyExpressionQuerySchema,
-    publicCanvasParticleFilterCompositeExpressionQuerySchema
-]);
-
-const publicCanvasParticleFilterLegacyModelQuerySchema = publicCanvasParticleFilterLegacyExpressionQuerySchema.extend({
-    action: z.enum(['delete', 'highlight']).optional()
-}).strict();
+const publicCanvasParticleFilterPreviewQuerySchema = publicCanvasParticleFilterCompositeExpressionQuerySchema;
 
 const publicCanvasParticleFilterCompositeModelQuerySchema = publicCanvasParticleFilterCompositeExpressionQuerySchema.extend({
     action: z.enum(['delete', 'highlight']).optional()
 }).strict();
 
-const publicCanvasParticleFilterModelQuerySchema = z.union([
-    publicCanvasParticleFilterLegacyModelQuerySchema,
-    publicCanvasParticleFilterCompositeModelQuerySchema
-]);
+const publicCanvasParticleFilterModelQuerySchema = publicCanvasParticleFilterCompositeModelQuerySchema;
 
 const publicCanvasPluginParamsSchema = publicCanvasParamsSchema.extend({
     pluginId: objectIdSchema

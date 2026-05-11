@@ -106,7 +106,8 @@ export interface IBaseRepository<T, TProps> {
 
     countGroupedBy(
         field: string,
-        fieldValues: string[]
+        fieldValues: string[],
+        filter?: RepositoryFilter<TProps>
     ): Promise<Map<string, number>>;
 
     /**

@@ -53,8 +53,8 @@ export default class SocketGateway{
 
     private corsOrigins = SOCKET_CORS_ORIGINS;
 
-    private pingTimeout = 300_000;
-    private pingInterval = 25_000;
+    private pingTimeout = 20_000;
+    private pingInterval = 10_000;
 
     constructor(
         private socketEmitter: SocketIOEmitter,

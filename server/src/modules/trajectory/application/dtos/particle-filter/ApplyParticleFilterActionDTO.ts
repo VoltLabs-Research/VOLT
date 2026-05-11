@@ -7,13 +7,9 @@ export interface ApplyParticleFilterActionInputDTO {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
-    exposureId?: string;
     action: 'delete' | 'highlight';
-    property?: string;
-    operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value?: number;
-    combinator?: ParticleFilterCombinator;
-    conditions?: ParticleFilterConditionDTO[];
+    combinator: ParticleFilterCombinator;
+    conditions: ParticleFilterConditionDTO[];
 }
 
 export interface ApplyParticleFilterActionOutputDTO {

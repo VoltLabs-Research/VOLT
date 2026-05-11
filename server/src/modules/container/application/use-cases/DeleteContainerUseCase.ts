@@ -4,6 +4,7 @@ import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDel
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
 import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -16,6 +17,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
     constructor(
         private repository: ContainerRepository,
         private containerRuntimeService: DaemonContainerRuntimeService,
+        private readonly relayService: ContainerPortProxyRelayService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
         private ownershipService: ContainerOwnershipService
     ) {}
@@ -27,6 +29,7 @@ export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO,
 
         await this.containerRuntimeService.removeContainer(teamClusterId, container.containerId);
         await this.repository.deleteById(input.containerId);
+        await this.relayService.stopContainerRelays(container._id);
 
         await this.eventBus.publish(new ContainerDeletedEvent({
             containerId: input.containerId,

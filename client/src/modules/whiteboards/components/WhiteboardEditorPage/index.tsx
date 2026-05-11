@@ -5,7 +5,10 @@ import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
 import { insertWhiteboardImages } from '@/modules/whiteboards/utilities/excalidraw-images';
 import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utilities/whiteboard-image-files';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
-import { filterPersistableAppState } from '@/modules/whiteboards/utilities/whiteboards';
+import {
+    filterPersistableAppState,
+    normalizeWhiteboardRuntimeAppState
+} from '@/modules/whiteboards/utilities/whiteboards';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
@@ -262,7 +265,7 @@ const WhiteboardEditorPage = () => {
             syncSceneFiles(excalidrawApiRef.current, scene.files);
             excalidrawApiRef.current.updateScene({
                 elements: scene.elements as unknown as ExcalidrawElements,
-                appState: scene.appState as unknown as ExcalidrawAppState
+                appState: normalizeWhiteboardRuntimeAppState(scene.appState) as unknown as ExcalidrawAppState
             });
         },
         [mergeRemoteState]
@@ -306,7 +309,7 @@ const WhiteboardEditorPage = () => {
         syncSceneFiles(api, pendingScene.files);
         api.updateScene({
             elements: pendingScene.elements as unknown as ExcalidrawElements,
-            appState: pendingScene.appState as unknown as ExcalidrawAppState
+            appState: normalizeWhiteboardRuntimeAppState(pendingScene.appState) as unknown as ExcalidrawAppState
         });
     }, []);
 
@@ -466,7 +469,7 @@ const WhiteboardEditorPage = () => {
     // Cast from JSON-serialized state to Excalidraw types at the boundary.
     const excalidrawInitialData = {
         elements: initialState?.elements ?? [],
-        appState: initialState?.appState ?? {},
+        appState: normalizeWhiteboardRuntimeAppState(initialState?.appState ?? {}),
         files: initialState?.files
     } as unknown as ExcalidrawProps['initialData'];
 

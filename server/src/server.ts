@@ -6,7 +6,6 @@ import http from 'http';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import type { Duplex } from 'node:stream';
 import { container } from 'tsyringe';
-import { backfillTeamClusterQueueConcurrency } from './core/bootstrap/backfill-team-cluster-queue-concurrency';
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import apiDocsRouter from './core/config/api-docs';
@@ -18,6 +17,7 @@ import type { ISocketModule } from './modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from './modules/socket/infrastructure/di/SocketTokens';
 import SocketGateway from './modules/socket/socket/SocketGateway';
 import ClusterTransferRunner from './modules/cluster/infrastructure/services/ClusterTransferRunner';
+import { ContainerPortRelayLifecycleService } from './modules/container/infrastructure/services/ContainerPortRelayLifecycleService';
 import TrajectoryCloneRunner from './modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
 import { flushPendingSubscriptions } from './shared/infrastructure/events/Subscribe';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
@@ -38,6 +38,7 @@ let activeTerminator: HttpTerminator | null = null;
 let activeSocketGateway: SocketGateway | null = null;
 let activeClusterTransferRunner: ClusterTransferRunner | null = null;
 let activeTrajectoryCloneRunner: TrajectoryCloneRunner | null = null;
+let activeContainerPortRelayLifecycle: ContainerPortRelayLifecycleService | null = null;
 let shuttingDown = false;
 
 const shutdown = async () => {
@@ -79,6 +80,11 @@ const shutdown = async () => {
         if (activeTrajectoryCloneRunner) {
             activeTrajectoryCloneRunner.stop();
             activeTrajectoryCloneRunner = null;
+        }
+
+        if (activeContainerPortRelayLifecycle) {
+            shutdownTasks.push(activeContainerPortRelayLifecycle.stop());
+            activeContainerPortRelayLifecycle = null;
         }
 
         const shutdownResults = await Promise.allSettled(shutdownTasks);
@@ -177,18 +183,18 @@ const startServer = async () => {
                 process.exit(1);
             }
 
-            await backfillTeamClusterQueueConcurrency();
-
             await flushPendingSubscriptions();
 
             activeSocketGateway = container.resolve(SocketGateway);
             activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
             activeTrajectoryCloneRunner = container.resolve(TrajectoryCloneRunner);
+            activeContainerPortRelayLifecycle = container.resolve(ContainerPortRelayLifecycleService);
             const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
             for (const module of socketModules) {
                 activeSocketGateway.register(module);
             }
 
+            await activeContainerPortRelayLifecycle.start();
             await activeSocketGateway.initialize(server);
             activeClusterTransferRunner.start();
             activeTrajectoryCloneRunner.start();

@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 import TeamMemberDeletedEvent from '@modules/team/domain/events/team-member/TeamMemberDeletedEvent';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -13,19 +14,22 @@ import { inject, injectable } from 'tsyringe';
 export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedEntityIdInputDTO<'teamMemberId'>, null, ApplicationError>{
     constructor(
         private teamMemberRepository: TeamMemberRepository,
+        private readonly teamMembershipService: TeamMembershipService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
 
     async execute(input: TeamScopedEntityIdInputDTO<'teamMemberId'>): Promise<Result<null, ApplicationError>>{
         const { teamMemberId, teamId } = input;
-        const teamMember = await this.teamMemberRepository.deleteById(teamMemberId);
+        const teamMember = await this.teamMemberRepository.findById(teamMemberId);
         if(!teamMember){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_MEMBER_NOT_FOUND,
                 'Team member not found'
             ));
         }
+
+        await this.teamMembershipService.removeMemberFromTeam(teamMemberId, teamId);
 
         await this.eventBus.publish(new TeamMemberDeletedEvent({
             teamMemberId,

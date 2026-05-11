@@ -16,13 +16,13 @@ export const useOpenContainerPort = () => {
         setOpeningPort(privatePort);
 
         try {
-            const session = await service.createPortProxySession({
+            const accessUrl = await service.createPortAccessUrl({
                 teamId,
                 containerId,
                 privatePort
             });
 
-            window.open(session.url, '_blank', 'noopener,noreferrer');
+            window.open(accessUrl.url, '_blank', 'noopener,noreferrer');
         } catch {
             sileo.error({ title: 'Failed to open container app' });
         } finally {

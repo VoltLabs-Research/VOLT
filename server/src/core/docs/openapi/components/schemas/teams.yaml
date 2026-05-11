@@ -129,8 +129,6 @@ TeamMember:
     updatedAt:
       type: string
       format: date-time
-    timeSpentLast7Days:
-      type: number
     trajectoriesCount:
       type: integer
     analysesCount:

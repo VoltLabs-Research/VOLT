@@ -232,7 +232,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                                     ? item.public
                                     : null;
                                 const accessiblePort = container.accessiblePorts?.find((port) => port.private === item.private);
-                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available';
+                                const canOpen = accessiblePort?.browserAccessible && accessiblePort.status === 'available' && typeof accessiblePort.public === 'number';
 
                                 const portLabel = (
                                     <Row gap='05'>
@@ -256,7 +256,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                                             onClick={() => openPort(container._id, item.private)}
                                             isLoading={openingPort === item.private}
                                         >
-                                            Open
+                                            Open :{accessiblePort?.public}
                                         </Button>
                                     );
                                 } else if (accessiblePort?.status === 'unavailable') {

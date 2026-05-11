@@ -9654,7 +9654,7 @@ components:
           type: integer
           minimum: 1
           maximum: 65535
-          description: The public (host) port. Omit or set to 0 for auto-assignment.
+          description: The public Volt Server port. Omit or set to 0 for auto-assignment from the configured container proxy range.
       additionalProperties: false
     Chat:
       type: object
@@ -11170,8 +11170,6 @@ components:
         updatedAt:
           type: string
           format: date-time
-        timeSpentLast7Days:
-          type: number
         trajectoriesCount:
           type: integer
         analysesCount:
