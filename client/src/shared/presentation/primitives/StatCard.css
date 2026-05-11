@@ -30,7 +30,6 @@
 
 .volt-stat-card__footer {
     padding-top: 0.25rem;
-    border-top: 1px solid var(--color-border-soft);
 }
 
 .volt-stat-card--tone-success .volt-stat-card__icon { color: var(--status-success); }

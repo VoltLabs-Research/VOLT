@@ -15,10 +15,24 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
-import { emitOrReport, emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
+import { emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import type { ChatMessage } from '../../api/entities/message';
 
 const MAX_CACHED_CHAT_ROOMS = 4;
+
+interface SocketAck<T = unknown> {
+    ok: boolean;
+    data?: T;
+    error?: string;
+}
+
+const expectSocketAck = <T>(ack: SocketAck<T> | undefined, fallbackMessage: string): T | undefined => {
+    if (!ack?.ok) {
+        throw new Error(ack?.error || fallbackMessage);
+    }
+
+    return ack.data;
+};
 
 const useChatData = () => {
     const queryClient = useQueryClient();
@@ -26,6 +40,8 @@ const useChatData = () => {
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const currentChatIdRef = useRef<string | null>(null);
     const cachedChatIdsRef = useRef<string[]>([]);
+    const selectionVersionRef = useRef(0);
+    const lastPresenceRequestKeyRef = useRef<string | null>(null);
 
     const markAsReadMutationResult = useMarkAsReadMutation();
 
@@ -98,7 +114,52 @@ const useChatData = () => {
         }
     }, [queryClient]);
 
+    const requestChatPresence = useCallback((chatId: string, userIds: string[]) => {
+        const uniqueUserIds = Array.from(new Set(userIds));
+        const requestKey = `${chatId}:${uniqueUserIds.join(',')}`;
+
+        if (uniqueUserIds.length === 0 || lastPresenceRequestKeyRef.current === requestKey) {
+            return;
+        }
+
+        lastPresenceRequestKeyRef.current = requestKey;
+
+        emitWithReport<SocketAck<Record<string, string>>>(SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, {
+            userIds: uniqueUserIds
+        })
+            .then((presenceAck) => {
+                expectSocketAck(presenceAck, 'Failed to load chat presence.');
+            })
+            .catch((error: unknown) => {
+                if (lastPresenceRequestKeyRef.current === requestKey) {
+                    lastPresenceRequestKeyRef.current = null;
+                }
+
+                reportError(error, {
+                    surface: ErrorSurface.Toast,
+                    fallbackTitle: 'Failed to load chat presence.'
+                });
+            });
+    }, []);
+
+    useEffect(() => {
+        if (!currentChatId) {
+            lastPresenceRequestKeyRef.current = null;
+            return;
+        }
+
+        const currentChat = chats.find((chat) => chat._id === currentChatId);
+        if (!currentChat) {
+            return;
+        }
+
+        requestChatPresence(currentChatId, currentChat.participants.map((participant) => participant._id));
+    }, [chats, currentChatId, requestChatPresence]);
+
     const resetState = useCallback(() => {
+        selectionVersionRef.current += 1;
+        lastPresenceRequestKeyRef.current = null;
+
         if (currentChatIdRef.current) {
             emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
         }
@@ -112,15 +173,27 @@ const useChatData = () => {
     const selectChat = useCallback(async (chatId: string) => {
         if (currentChatIdRef.current === chatId) return;
 
-        if (currentChatIdRef.current) {
-            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, currentChatIdRef.current);
+        const selectionVersion = ++selectionVersionRef.current;
+        const previousChatId = currentChatIdRef.current;
+
+        if (previousChatId) {
+            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, previousChatId);
+        }
+
+        currentChatIdRef.current = null;
+        setCurrentChatId(null);
+
+        const joinAck = await emitWithReport<SocketAck>(SOCKET_CHAT_EVENTS.JOIN_CHAT, chatId);
+        expectSocketAck(joinAck, `Unable to join chat "${chatId}".`);
+
+        if (selectionVersion !== selectionVersionRef.current) {
+            emitOrSwallow(SOCKET_CHAT_EVENTS.LEAVE_CHAT, chatId);
+            return;
         }
 
         retainChatMessageCache(chatId);
         currentChatIdRef.current = chatId;
         setCurrentChatId(chatId);
-
-        await emitWithReport(SOCKET_CHAT_EVENTS.JOIN_CHAT, chatId);
 
         markAsReadMutationResult.mutateAsync({ chatId }).catch((error: unknown) => {
             if (isAccessDeniedError(error)) {
@@ -131,12 +204,13 @@ const useChatData = () => {
             }
         });
 
-        const chat = chatsRef.current.find((c) => c._id === chatId);
-        if (chat) {
-            const userIds = chat.participants.map((p) => p._id);
-            emitOrReport(SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, { userIds });
+        const chat = chatsRef.current.find((currentChat) => currentChat._id === chatId);
+        if (!chat) {
+            return;
         }
-    }, [markAsReadMutationResult, retainChatMessageCache]);
+
+        requestChatPresence(chatId, chat.participants.map((participant) => participant._id));
+    }, [markAsReadMutationResult, requestChatPresence, retainChatMessageCache]);
 
     return {
         chats,

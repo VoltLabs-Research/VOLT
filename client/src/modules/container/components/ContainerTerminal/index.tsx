@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-terminal-session';
 import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
 import Row from '@/shared/presentation/primitives/Row';
@@ -29,6 +30,11 @@ interface ContainerTerminalSocketError {
     code: string;
     message: string;
     details?: string;
+}
+
+interface ContainerTerminalSizePayload {
+    cols: number;
+    rows: number;
 }
 
 const isContainerTerminalSocketError = (value: unknown): value is ContainerTerminalSocketError => {
@@ -63,6 +69,19 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
         inputEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.INPUT,
         resizeEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.RESIZE,
         resolveErrorMessage
+    });
+
+    useSocketEvent<ContainerTerminalSizePayload>(SOCKET_CONTAINER_TERMINAL_EVENTS.SIZE, (payload) => {
+        if (
+            typeof payload?.cols !== 'number'
+            || typeof payload?.rows !== 'number'
+            || payload.cols < 1
+            || payload.rows < 1
+        ) {
+            return;
+        }
+
+        terminalRef.current?.resize(payload.cols, payload.rows);
     });
 
     useEffect(() => {

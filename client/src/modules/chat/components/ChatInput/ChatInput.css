@@ -16,6 +16,7 @@
 }
 
 .chat-input-textarea {
+    outline: none;
     background-color: transparent;
     resize: none;
     font-family: inherit;
