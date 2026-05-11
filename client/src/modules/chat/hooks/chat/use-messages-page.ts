@@ -50,10 +50,10 @@ const useMessagesPage = (chatId?: string) => {
     const userPresence = useChatPresenceStore((state) => state.userPresence);
     const resetPresenceStore = useChatPresenceStore((state) => state.reset);
 
-    const messageActions = useMessageActions({ chatId });
+    const messageActions = useMessageActions({ chatId: currentChatId ?? chatId });
     const chatActions = useChatActions();
     const groupActions = useGroupActions();
-    const { handleTyping } = useTypingIndicator(chatId);
+    const { handleTyping } = useTypingIndicator(currentChatId ?? undefined);
     const previousTeamIdRef = useRef<string | undefined>(selectedTeamId ?? undefined);
     const handleInfoClick = toggleDetails;
 

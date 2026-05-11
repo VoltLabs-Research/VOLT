@@ -4,6 +4,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Text from '@/shared/presentation/primitives/Text';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 import { useDemoClusterCountdown } from '@/modules/cluster/hooks/use-demo-cluster-countdown';
+import { useDemoSessionActions } from '@/modules/cluster/hooks/use-demo-session-actions';
 import { sileo } from 'sileo';
 import './DemoExpirationBanner.css';
 
@@ -15,6 +16,7 @@ const DemoExpirationBanner = () => {
     const expiresAt = useDemoClusterStore((state) => state.expiresAt);
     const clear = useDemoClusterStore((state) => state.clear);
     const { minutes, seconds, expired } = useDemoClusterCountdown(expiresAt);
+    const { endSession, isEndingSession } = useDemoSessionActions();
     const expiredHandled = useRef(false);
 
     useEffect(() => {
@@ -49,6 +51,16 @@ const DemoExpirationBanner = () => {
                 Connect a Cluster
                 <span aria-hidden='true'>&nbsp;→</span>
             </Link>
+            <button
+                type='button'
+                className='demo-expiration-banner-cta demo-expiration-banner-cta-button'
+                onClick={() => {
+                    void endSession();
+                }}
+                disabled={isEndingSession}
+            >
+                {isEndingSession ? 'Ending session...' : 'End session'}
+            </button>
         </Row>
     );
 };
