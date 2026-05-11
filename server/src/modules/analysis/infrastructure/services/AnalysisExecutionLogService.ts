@@ -145,7 +145,11 @@ export default class AnalysisExecutionLogService {
         await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
             const current = await this.readStoredRecord(storageClusterId, input);
-            const shouldReset = !current || current.jobId !== input.jobId || current.sealed;
+            if (current?.jobId === input.jobId && current.sealed) {
+                return;
+            }
+
+            const shouldReset = !current || current.jobId !== input.jobId;
             const nextRecord = shouldReset
                 ? this.createEmptyStoredRecord(input, 'running')
                 : {
@@ -177,7 +181,7 @@ export default class AnalysisExecutionLogService {
         const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
             const current = await this.readStoredRecord(storageClusterId, input);
-            const record = !current || current.jobId !== input.jobId || current.sealed
+            const record = !current || current.jobId !== input.jobId
                 ? this.createEmptyStoredRecord(input, 'running')
                 : current;
 
@@ -209,6 +213,7 @@ export default class AnalysisExecutionLogService {
 
             const nextSegments = [...record.segments, ...acceptedSegments];
             const nextCursor = this.resolveCursor(null, nextSegments.length);
+            const nextStatus = record.sealed ? record.status : 'running';
             const updatedRecord: StoredAnalysisFrameLogRecord = {
                 ...record,
                 analysisId: input.analysisId,
@@ -216,8 +221,8 @@ export default class AnalysisExecutionLogService {
                 trajectoryId: input.trajectoryId,
                 timestep: input.timestep,
                 jobId: input.jobId,
-                status: 'running',
-                sealed: false,
+                status: nextStatus,
+                sealed: record.sealed,
                 truncated,
                 nextCursor,
                 bytes: totalBytes,
@@ -231,8 +236,8 @@ export default class AnalysisExecutionLogService {
                 timestep: input.timestep,
                 cursor: nextCursor,
                 segments: acceptedSegments,
-                sealed: false,
-                status: 'running' as const,
+                sealed: updatedRecord.sealed,
+                status: nextStatus,
                 truncated
             };
         });
@@ -246,7 +251,7 @@ export default class AnalysisExecutionLogService {
         const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
             const current = await this.readStoredRecord(storageClusterId, input);
-            const record = !current || current.jobId !== input.jobId || current.sealed
+            const record = !current || current.jobId !== input.jobId
                 ? this.createEmptyStoredRecord(input, input.status)
                 : current;
             const nextCursor = this.resolveCursor(record.nextCursor, record.segments.length);
