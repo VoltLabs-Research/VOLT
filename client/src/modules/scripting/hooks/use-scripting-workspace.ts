@@ -154,7 +154,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId, onNotebookIdChange }:
         if (!options?.completed) {
             setDeploymentRequiredMessage(activeNotebook
                 ? 'Configure this notebook deployment before starting Jupyter.'
-                : 'Choose a cluster and resources to create the notebook workspace.'
+                : 'Choose a cluster to create the notebook workspace.'
             );
         } else {
             setDeploymentRequiredMessage(null);
@@ -241,8 +241,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId, onNotebookIdChange }:
                     const session = await createScriptingSession({
                         trajectoryId,
                         notebookId: activeNotebook?._id,
-                        teamClusterId: deploymentSelection?.teamClusterId,
-                        containerResources: deploymentSelection?.containerResources
+                        teamClusterId: deploymentSelection?.teamClusterId
                     });
                     if (!isRequestCancelled()) {
                         setContainerStage(session.jupyter.containerStage ?? 'creating');
@@ -352,14 +351,13 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId, onNotebookIdChange }:
                 teamId,
                 notebook: activeNotebook,
                 title: 'Configure Notebook Deployment',
-                description: 'Select the cluster and resources this notebook should use before starting Jupyter.',
+                description: 'Select the cluster this notebook should use before starting Jupyter.',
                 confirmLabel: 'Save and start',
-                onSubmit: async ({ teamClusterId, containerResources }) => {
+                onSubmit: async ({ teamClusterId }) => {
                     await showPromise(
                         updateNotebook({
                             notebookId: activeNotebook._id,
-                            teamClusterId,
-                            containerResources
+                            teamClusterId
                         }),
                         SAVE_NOTEBOOK_DEPLOYMENT_TOAST
                     );
@@ -373,7 +371,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId, onNotebookIdChange }:
         openDeploymentModal({
             teamId,
             title: 'Create Notebook Workspace',
-            description: 'Choose the cluster and resources for the notebook container before starting Jupyter.',
+            description: 'Choose the cluster for the notebook container before starting Jupyter.',
             confirmLabel: 'Start notebook',
             onSubmit: async (selection) => {
                 await startJupyterSession(selection);

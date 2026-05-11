@@ -28,8 +28,7 @@ const notebookParamsSchema = teamParamsSchema.extend({
 
 const createNotebookSchema = z.object({
     title: z.string().trim().min(1).max(255).optional(),
-    teamClusterId: objectIdSchema,
-    containerResources: notebookContainerResourcesSchema
+    teamClusterId: objectIdSchema
 }).strict();
 
 const updateNotebookSchema = z.object({
@@ -46,11 +45,10 @@ const updateNotebookSchema = z.object({
 
 const createJupyterSessionSchema = z.object({
     notebookId: objectIdSchema.optional(),
-    teamClusterId: objectIdSchema.optional(),
-    containerResources: notebookContainerResourcesSchema.optional()
+    teamClusterId: objectIdSchema.optional()
 }).strict().superRefine((value, context) => {
     if (value.notebookId) {
-        if (value.teamClusterId !== undefined || value.containerResources !== undefined) {
+        if (value.teamClusterId !== undefined) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Existing notebooks use their saved deployment configuration'
@@ -63,13 +61,6 @@ const createJupyterSessionSchema = z.object({
         context.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'teamClusterId is required when creating a notebook session'
-        });
-    }
-
-    if (value.containerResources === undefined) {
-        context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'containerResources are required when creating a notebook session'
         });
     }
 });

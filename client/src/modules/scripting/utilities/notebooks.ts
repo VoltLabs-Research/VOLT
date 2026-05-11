@@ -1,6 +1,5 @@
 import type {
     ScriptingNotebook,
-    ScriptingNotebookContainerResources,
     ScriptingNotebookTrajectory
 } from '@/modules/scripting/api/entities/scripting-notebook';
 
@@ -38,14 +37,8 @@ export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): s
     return notebook.teamCluster._id;
 };
 
-export const getNotebookContainerResources = (
-    notebook?: ScriptingNotebook | null
-): ScriptingNotebookContainerResources | null => {
-    return notebook?.containerResources ?? null;
-};
-
 export const hasNotebookDeploymentConfiguration = (notebook?: ScriptingNotebook | null): boolean => {
-    return Boolean(getNotebookTeamClusterId(notebook) && getNotebookContainerResources(notebook));
+    return Boolean(getNotebookTeamClusterId(notebook));
 };
 
 export const getDeleteConfirmationMessage = (selectedItems: ScriptingNotebook[]): string => {

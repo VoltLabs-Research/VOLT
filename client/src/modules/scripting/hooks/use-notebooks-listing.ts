@@ -38,8 +38,7 @@ import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type {
-    ScriptingNotebookDeploymentModalRequest,
-    ScriptingNotebookDeploymentSelection
+    ScriptingNotebookDeploymentModalRequest
 } from '../components/ScriptingNotebookDeploymentModal';
 import { useNavigate } from 'react-router-dom';
 export interface NotebooksListingContext {
@@ -237,14 +236,13 @@ const useNotebooksListing = () => {
         openDeploymentModal({
             teamId,
             title: 'Create Notebook',
-            description: 'Choose the cluster and container resources for this notebook before saving it.',
+            description: 'Choose the cluster for this notebook before saving it.',
             confirmLabel: 'Create notebook',
-            onSubmit: async ({ teamClusterId, containerResources }) => {
+            onSubmit: async ({ teamClusterId }) => {
                 await showPromise(
                     createNotebook({
                         teamId,
-                        teamClusterId,
-                        containerResources
+                        teamClusterId
                     }),
                     CREATE_NOTEBOOK_TOAST
                 );
@@ -281,14 +279,13 @@ const useNotebooksListing = () => {
                 teamId,
                 notebook,
                 title: 'Configure Notebook Deployment',
-                description: 'Select the cluster and resources this notebook should use before opening Jupyter.',
+                description: 'Select the cluster this notebook should use before opening Jupyter.',
                 confirmLabel: 'Save and open',
-                onSubmit: async ({ teamClusterId, containerResources }: ScriptingNotebookDeploymentSelection) => {
+                onSubmit: async ({ teamClusterId }) => {
                     const updatedNotebook = await showPromise(
                         updateNotebook({
                             notebookId: notebook._id,
-                            teamClusterId,
-                            containerResources
+                            teamClusterId
                         }),
                         SAVE_NOTEBOOK_DEPLOYMENT_TOAST
                     );

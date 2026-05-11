@@ -38,10 +38,6 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
             const createData: ScriptingNotebookProps = {
                 team: input.teamId,
                 teamCluster: teamClusterId,
-                containerResources: {
-                    cpus: input.containerResources.cpus,
-                    memoryMB: input.containerResources.memoryMB
-                },
                 title: input.title?.trim() || DEFAULT_SCRIPTING_NOTEBOOK_TITLE,
                 notebookPath: buildScriptingNotebookPath(randomUUID()),
                 trajectory: null,

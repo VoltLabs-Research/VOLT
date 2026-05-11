@@ -40,10 +40,6 @@ interface DaemonNotebookSessionRequest {
     [key: string]: unknown;
     requestedBy: string;
     publicBasePath: string;
-    containerResources: {
-        cpus: number;
-        memoryMB: number;
-    };
     notebook: DaemonNotebookSessionSnapshot;
 }
 
@@ -74,10 +70,6 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const request: DaemonNotebookSessionRequest = {
             requestedBy: input.userId,
             publicBasePath: buildJupyterProxyBasePath(input.teamId, runtimeNotebookId),
-            containerResources: {
-                cpus: input.containerResources.cpus,
-                memoryMB: input.containerResources.memoryMB
-            },
             notebook: {
                 _id: runtimeNotebookId,
                 teamId: input.teamId,
