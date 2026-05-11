@@ -24,7 +24,9 @@ import SystemMetricsRedisRepository from '@modules/system/infrastructure/persist
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterHeartbeatMonitor from '@modules/cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
 import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
-import TeamClusterReverseChannelService from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import TeamClusterReverseChannelService, {
+    type TeamClusterDaemonInboundStreamPayload
+} from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,
@@ -35,6 +37,7 @@ import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+    TEAM_CLUSTER_DAEMON_STREAM_ID,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
     getTeamClusterRoom,
     type TeamClusterDaemonCommandMessage,
@@ -72,10 +75,63 @@ const daemonRegisterPayloadSchema = z.object({
     daemonPassword: z.string().trim().min(1)
 }).strict();
 
+const daemonExecutionLogSegmentSchema = z.object({
+    stream: z.enum(['stdout', 'stderr', 'system']),
+    text: z.string(),
+    occurredAt: z.string(),
+    nodeId: z.string().optional(),
+    nodeType: z.string().optional(),
+    nodeLabel: z.string().optional(),
+    pluginId: z.string().optional(),
+    executionPath: z.array(z.string()).optional()
+}).strict();
+
+const daemonAnalysisLogChunkStreamPayloadSchema = z.object({
+    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk),
+    teamClusterId: z.string().trim().min(1),
+    daemonPassword: z.string().trim().min(1),
+    jobId: z.string().trim().min(1),
+    analysisId: z.string().trim().min(1),
+    teamId: z.string().trim().min(1),
+    trajectoryId: z.string().trim().min(1),
+    timestep: z.number().int(),
+    segments: z.array(daemonExecutionLogSegmentSchema)
+}).strict();
+
+const daemonDebugLogChunkStreamPayloadSchema = z.object({
+    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk),
+    teamClusterId: z.string().trim().min(1),
+    daemonPassword: z.string().trim().min(1),
+    sessionId: z.string().trim().min(1),
+    nodeId: z.string().trim().min(1),
+    segments: z.array(daemonExecutionLogSegmentSchema)
+}).strict();
+
+const daemonSceneArtifactUpsertBatchStreamPayloadSchema = z.object({
+    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch),
+    teamClusterId: z.string().trim().min(1),
+    daemonPassword: z.string().trim().min(1),
+    items: z.array(z.object({
+        trajectory: z.string().trim().min(1),
+        storageClusterId: z.string().trim().min(1),
+        analysis: z.string().trim().min(1).optional(),
+        plugin: z.string().trim().min(1).optional(),
+        sourceType: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']),
+        timestep: z.number().int(),
+        objectName: z.string().trim().min(1),
+        storageBucket: z.string().trim().min(1),
+        params: z.record(z.string(), z.unknown()),
+        displayName: z.string().trim().min(1),
+        status: z.enum(['ready', 'failed']),
+        metadata: z.record(z.string(), z.unknown()).optional()
+    }).strict())
+}).strict();
+
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
 export default class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
+    private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
 
     constructor(
         emitter: SocketIOEmitter,
@@ -100,9 +156,13 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
     async onInit(): Promise<void> {
         this.teamClusterHeartbeatMonitor.start();
+        this.registerDaemonStreamConsumers();
     }
 
     async onShutdown(): Promise<void> {
+        for (const unsubscribe of this.daemonStreamUnsubscribeFns.splice(0)) {
+            unsubscribe();
+        }
         this.teamClusterHeartbeatMonitor.stop();
     }
 
@@ -263,6 +323,139 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         });
     }
 
+    private registerDaemonStreamConsumers(): void {
+        this.daemonStreamUnsubscribeFns.push(
+            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
+                TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk,
+                (message) => {
+                    void this.handleAnalysisLogChunkStream(message);
+                }
+            )
+        );
+
+        this.daemonStreamUnsubscribeFns.push(
+            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
+                TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk,
+                (message) => {
+                    void this.handleDebugLogChunkStream(message);
+                }
+            )
+        );
+
+        this.daemonStreamUnsubscribeFns.push(
+            this.teamClusterReverseChannelService.registerInboundStreamConsumer(
+                TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch,
+                (message) => {
+                    void this.handleSceneArtifactUpsertBatchStream(message);
+                }
+            )
+        );
+    }
+
+    private async handleAnalysisLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
+        const payload = this.parseInboundStreamPayload(
+            message,
+            daemonAnalysisLogChunkStreamPayloadSchema
+        );
+        if (!payload) {
+            return;
+        }
+
+        await this.analysisExecutionLogService.appendFrameSegments({
+            analysisId: payload.analysisId,
+            teamId: payload.teamId,
+            trajectoryId: payload.trajectoryId,
+            jobId: payload.jobId,
+            timestep: payload.timestep,
+            segments: payload.segments
+        });
+    }
+
+    private async handleDebugLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
+        const payload = this.parseInboundStreamPayload(
+            message,
+            daemonDebugLogChunkStreamPayloadSchema
+        );
+        if (!payload) {
+            return;
+        }
+
+        this.pluginDebugSessionRegistry.emitLogChunk(
+            payload.sessionId,
+            payload.teamClusterId,
+            payload.nodeId,
+            payload.segments
+        );
+    }
+
+    private async handleSceneArtifactUpsertBatchStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
+        const payload = this.parseInboundStreamPayload(
+            message,
+            daemonSceneArtifactUpsertBatchStreamPayloadSchema
+        );
+        if (!payload) {
+            return;
+        }
+
+        const inputs: ProcessDaemonSceneArtifactUpsertInputDTO[] = payload.items.map((item) => ({
+            teamClusterId: payload.teamClusterId,
+            daemonPassword: payload.daemonPassword,
+            trajectory: item.trajectory,
+            storageClusterId: item.storageClusterId,
+            analysis: item.analysis,
+            plugin: item.plugin,
+            sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInputDTO['sourceType'],
+            timestep: item.timestep,
+            objectName: item.objectName,
+            storageBucket: item.storageBucket,
+            params: item.params as ProcessDaemonSceneArtifactUpsertInputDTO['params'],
+            displayName: item.displayName,
+            status: item.status as ProcessDaemonSceneArtifactUpsertInputDTO['status'],
+            metadata: item.metadata
+        }));
+        const result = await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
+
+        if (!result.success) {
+            logger.warn(`Failed to process daemon scene artifact batch streamId=${message.streamId} batchSize=${payload.items.length} statusCode=${result.error.statusCode} message=${result.error.message}`);
+        }
+    }
+
+    private parseInboundStreamPayload<TPayload extends {
+        type: string;
+        teamClusterId: string;
+    }>(
+        message: TeamClusterDaemonInboundStreamPayload,
+        schema: z.ZodType<TPayload>
+    ): TPayload | null {
+        let parsedJson: unknown;
+        try {
+            parsedJson = JSON.parse(message.chunk.toString('utf8'));
+        } catch (error) {
+            logger.warn(
+                error,
+                `Failed to parse daemon stream chunk JSON streamId=${message.streamId} requestId=${message.requestId}`
+            );
+            return null;
+        }
+
+        const parsed = schema.safeParse(parsedJson);
+        if (!parsed.success) {
+            logger.warn(
+                `Ignoring invalid daemon stream payload streamId=${message.streamId} requestId=${message.requestId} issues=${parsed.error.issues.length}`
+            );
+            return null;
+        }
+
+        if (parsed.data.teamClusterId !== message.teamClusterId) {
+            logger.warn(
+                `Ignoring daemon stream payload with mismatched cluster streamId=${message.streamId} socketClusterId=${message.teamClusterId} payloadClusterId=${parsed.data.teamClusterId}`
+            );
+            return null;
+        }
+
+        return parsed.data;
+    }
+
     private async emitLatestMetricsToSocket(socketId: string, teamCluster: TeamCluster): Promise<void> {
         const latestMetric = await this.systemMetricsRepository.getLatestByClusterId(teamCluster.id);
         if (!latestMetric) {
@@ -371,56 +564,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
             if (!result.success) {
                 logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${result.error.statusCode} message=${result.error.message}`);
-            }
-
-            return true;
-        }
-
-        if (payload.type === 'analysis-log-chunk') {
-            await this.analysisExecutionLogService.appendFrameSegments({
-                analysisId: payload.analysisId,
-                teamId: payload.teamId,
-                trajectoryId: payload.trajectoryId,
-                jobId: payload.jobId,
-                timestep: payload.timestep,
-                segments: payload.segments
-            });
-
-            return true;
-        }
-
-        if (payload.type === 'debug-log-chunk') {
-            this.pluginDebugSessionRegistry.emitLogChunk(
-                payload.sessionId,
-                payload.teamClusterId,
-                payload.nodeId,
-                payload.segments
-            );
-
-            return true;
-        }
-
-        if (payload.type === 'trajectory-scene-artifact-upsert-batch') {
-            const inputs: ProcessDaemonSceneArtifactUpsertInputDTO[] = payload.items.map((item) => ({
-                teamClusterId: payload.teamClusterId,
-                daemonPassword: payload.daemonPassword,
-                trajectory: item.trajectory,
-                storageClusterId: item.storageClusterId,
-                analysis: item.analysis,
-                plugin: item.plugin,
-                sourceType: item.sourceType as ProcessDaemonSceneArtifactUpsertInputDTO['sourceType'],
-                timestep: item.timestep,
-                objectName: item.objectName,
-                storageBucket: item.storageBucket,
-                params: item.params as ProcessDaemonSceneArtifactUpsertInputDTO['params'],
-                displayName: item.displayName,
-                status: item.status as ProcessDaemonSceneArtifactUpsertInputDTO['status'],
-                metadata: item.metadata
-            }));
-            const result = await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
-
-            if (!result.success) {
-                logger.warn(`Failed to process daemon scene artifact batch type=${payload.type} batchSize=${payload.items.length} statusCode=${result.error.statusCode} message=${result.error.message}`);
             }
 
             return true;

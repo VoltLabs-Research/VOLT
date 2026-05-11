@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
@@ -7,18 +7,15 @@ import type {
     PluginReferenceExecutionRequest,
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import {
-    ChannelCommands,
-    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
-} from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { isStorageObjectNotFoundError } from '@shared/infrastructure/utilities/storage-errors';
 import type IORedis from 'ioredis';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
@@ -238,8 +235,8 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
 @Singleton()
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
+        private readonly storagePlacementService: StoragePlacementService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
         @inject(SHARED_TOKENS.RedisClient)
@@ -416,9 +413,11 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             );
         }
 
-        const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(objectKey);
+        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
+        const ownerClusterId = placement.props.primaryClusterId;
+        const expectedHash = entrypoint?.binaryHash ?? await this.readObjectSha256(ownerClusterId, objectKey);
 
-        const syncKey = `${teamClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
+        const syncKey = `${teamClusterId}:${ownerClusterId}:${plugin.id}:${objectKey}:${expectedHash ?? 'unknown-hash'}`;
         const redisKey = `${PLUGIN_SYNC_CACHE_PREFIX}${syncKey}`;
 
         try {
@@ -442,7 +441,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
                 {
                     pluginId: plugin.id,
                     objectKey,
-                    ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+                    ownerClusterId,
                     expectedHash
                 },
                 { timeoutClass: 'long-running-control-plane' }
@@ -468,13 +467,12 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         return pendingSync;
     }
 
-    private async readObjectSha256(objectKey: string): Promise<string | undefined> {
-        let objectStat;
-
+    private async readObjectSha256(ownerClusterId: string, objectKey: string): Promise<string | undefined> {
+        let objectHead;
         try {
-            objectStat = await this.storageService.getStat(SYS_BUCKETS.PLUGINS, objectKey);
+            objectHead = await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
         } catch (error: unknown) {
-            if (isStorageObjectNotFoundError(error)) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
                 throw ApplicationError.conflict(
                     ErrorCodes.PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE,
                     `Plugin binary is missing from storage: ${objectKey}`
@@ -488,7 +486,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             );
         }
 
-        const directHash = objectStat['x-amz-meta-sha256'];
+        const directHash = objectHead.metadata.sha256;
         return typeof directHash === 'string' && directHash.length > 0
             ? directHash
             : undefined;

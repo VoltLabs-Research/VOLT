@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
@@ -8,15 +8,13 @@ import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/ser
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
     createDownloadStreamResponse,
     createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO, ApplicationError> {
@@ -26,11 +24,6 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
 
 
         private readonly dumpStorage: TrajectoryDumpStorageService,
-
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-
-
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
@@ -54,6 +47,12 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         }
 
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            return Result.fail(ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            ));
+        }
         const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
 
         if (archive) {
@@ -63,22 +62,11 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         const firstTimestep = timesteps[0];
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, firstTimestep);
 
-        if (storageClusterId) {
-            const response = await this.objectGatewayClient.getStream(storageClusterId, SYS_BUCKETS.DUMPS, objectName);
-
-            return Result.ok(createDownloadStreamResponse({
-                stream: response.stream,
-                contentType: response.contentType || 'application/octet-stream',
-                filename: objectName.split('/').pop() || `${filenameBase}.dump.zst`,
-                cacheControl: 'no-cache'
-            }));
-        }
-
-        const stream = await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
+        const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
         return Result.ok(createDownloadStreamResponse({
-            stream,
-            contentType: 'application/octet-stream',
-            filename: `${filenameBase}.dump.zst`,
+            stream: response.stream,
+            contentType: response.contentType || 'application/octet-stream',
+            filename: objectName.split('/').pop() || `${filenameBase}.dump.zst`,
             cacheControl: 'no-cache'
         }));
     }
@@ -86,7 +74,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
     private createArchiveDownloadResponse(
         input: DownloadTrajectoryInputDTO,
         trajectoryName: string | undefined,
-        teamClusterId: string | undefined,
+        teamClusterId: string,
         timesteps: string[]
     ): DownloadTrajectoryOutputDTO {
         const filenameBase = sanitizeDownloadName(input.name || trajectoryName || input.trajectoryId, 'trajectory');
@@ -97,9 +85,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
             appendEntries: async (archive) => {
                 for (const timestep of timesteps) {
                     const objectName = buildTrajectoryDumpObjectName(input.trajectoryId, timestep);
-                    const stream = teamClusterId
-                        ? (await this.objectGatewayClient.getStream(teamClusterId, SYS_BUCKETS.DUMPS, objectName)).stream
-                        : await this.storageService.getStream(SYS_BUCKETS.DUMPS, objectName);
+                    const stream = (await this.objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName)).stream;
 
                     archive.append(stream, {
                         name: objectName.split('/').pop() || objectName

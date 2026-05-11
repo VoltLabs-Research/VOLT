@@ -1,22 +1,31 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { GetWhiteboardAssetInputDTO, GetWhiteboardAssetOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardAssetDTO';
+import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
 
 @Singleton()
 export class GetWhiteboardAssetUseCase implements IUseCase<GetWhiteboardAssetInputDTO, GetWhiteboardAssetOutputDTO, ApplicationError> {
     constructor(
         private readonly whiteboardRepository: WhiteboardRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
+
+    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
+        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
+            return props.storageClusterId;
+        }
+
+        throw ApplicationError.conflict(
+            'Whiteboard::StorageClusterRequired',
+            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
+        );
+    }
 
     async execute(input: GetWhiteboardAssetInputDTO): Promise<Result<GetWhiteboardAssetOutputDTO, ApplicationError>> {
         try {
@@ -33,18 +42,13 @@ export class GetWhiteboardAssetUseCase implements IUseCase<GetWhiteboardAssetInp
             }
 
             const objectKey = `${input.teamId}/${input.whiteboardId}/assets/${input.assetId}`;
-            let mimetype: string | undefined;
+            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+            const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, objectKey);
 
-            try {
-                const stat = await this.storageService.getStat(SYS_BUCKETS.WHITEBOARDS, objectKey);
-                mimetype = stat.mimetype;
-            } catch {
-                // stat is best-effort
-            }
-
-            const stream = await this.storageService.getStream(SYS_BUCKETS.WHITEBOARDS, objectKey);
-
-            return Result.ok({ stream, mimetype });
+            return Result.ok({
+                stream: response.stream,
+                mimetype: response.contentType
+            });
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);

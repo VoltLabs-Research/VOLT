@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
@@ -34,7 +34,7 @@ export const recordSceneArtifact = async (
         displayName,
         metadata,
         status = 'ready' as SceneArtifactStatus,
-        storageBucket = SYS_BUCKETS.MODELS
+        storageBucket = TEAM_CLUSTER_BUCKETS.MODELS
     } = input;
 
     await sceneArtifactRepository.upsertByObjectName(objectName, {

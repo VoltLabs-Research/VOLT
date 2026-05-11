@@ -1,6 +1,9 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type { ImportLatexDocumentInputDTO, ImportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ImportLatexDocumentDTO';
+import { buildLatexAssetContentUrl, buildLatexAssetStorageKey } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
@@ -8,12 +11,9 @@ import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo
 import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import path from 'node:path';
-import { inject } from 'tsyringe';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
@@ -36,8 +36,8 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         private readonly latexFolderRepository: LatexFolderRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
         private readonly latexFileRepository: LatexFileRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: ImportLatexDocumentInputDTO): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
@@ -75,16 +75,17 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             const ext = path.extname(originalName).toLowerCase();
             const isZip = ext === '.zip' || mimetype === 'application/zip' || mimetype === 'application/x-zip-compressed';
             const isPdf = ext === '.pdf' || mimetype === 'application/pdf';
+            const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(input.teamId);
 
             if (isZip) {
-                return await this.importFromZip(input);
+                return await this.importFromZip(input, storageClusterId);
             }
 
             if (isPdf) {
-                return await this.importFromPdf(input);
+                return await this.importFromPdf(input, storageClusterId);
             }
 
-            return await this.importFromTex(input);
+            return await this.importFromTex(input, storageClusterId);
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);
@@ -98,7 +99,10 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         }
     }
 
-    private async importFromTex(input: ImportLatexDocumentInputDTO): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
+    private async importFromTex(
+        input: ImportLatexDocumentInputDTO,
+        storageClusterId: string
+    ): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
         const content = input.file.buffer.toString('utf-8');
         const title = this.deriveTitle(input.file.originalname);
 
@@ -106,6 +110,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
+            storageClusterId,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -132,7 +137,10 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         });
     }
 
-    private async importFromZip(input: ImportLatexDocumentInputDTO): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
+    private async importFromZip(
+        input: ImportLatexDocumentInputDTO,
+        storageClusterId: string
+    ): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
         let directory: unzipper.CentralDirectory;
 
         try {
@@ -163,6 +171,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
+            storageClusterId,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
@@ -220,6 +229,7 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             assetFiles.map((assetFile) => this.uploadAssetFromZipEntry(
                 assetFile,
                 document._id,
+                storageClusterId,
                 input.teamId,
                 input.userId
             ))
@@ -241,21 +251,14 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
      * Requires `pdfpages` to be available in the TeX environment
      * (shipped with `texlive-latex-extra` or `texlive-full`).
      */
-    private async importFromPdf(input: ImportLatexDocumentInputDTO): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
+    private async importFromPdf(
+        input: ImportLatexDocumentInputDTO,
+        storageClusterId: string
+    ): Promise<Result<ImportLatexDocumentOutputDTO, ApplicationError>> {
         const originalName = input.file.originalname ?? 'imported.pdf';
         const title = this.deriveTitle(originalName);
         const ext = path.extname(originalName);
-        const storageKey = `latex-assets/${input.teamId}/${v4()}${ext}`;
         const mimetype = input.file.mimetype ?? 'application/pdf';
-
-        await this.storageService.upload(
-            SYS_BUCKETS.LATEX_ASSETS,
-            storageKey,
-            input.file.buffer,
-            { 'Content-Type': mimetype }
-        );
-
-        const url = this.storageService.getPublicURL(SYS_BUCKETS.LATEX_ASSETS, storageKey);
 
         const mainTexContent = [
             '\\documentclass{article}',
@@ -269,9 +272,20 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             team: input.teamId,
             title,
             folder: input.folderId ?? null,
+            storageClusterId,
             createdBy: input.userId,
             createdAt: new Date(),
             updatedAt: new Date()
+        });
+        const storageKey = buildLatexAssetStorageKey(input.teamId, document._id, v4(), ext);
+        const url = buildLatexAssetContentUrl(input.teamId, document._id, storageKey);
+
+        await this.objectGatewayClient.putBuffer(storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+            objectKey: storageKey,
+            buffer: input.file.buffer,
+            contentLength: input.file.buffer.byteLength,
+            contentType: mimetype
         });
 
         await this.latexFileRepository.create({
@@ -312,24 +326,25 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
     private async uploadAssetFromZipEntry(
         assetFile: unzipper.File,
         documentId: string,
+        storageClusterId: string,
         teamId: string,
         userId: string
     ): Promise<void> {
         const buffer = await assetFile.buffer();
         const originalName = path.basename(assetFile.path);
         const ext = path.extname(originalName);
-        const storageKey = `latex-assets/${teamId}/${documentId}/${v4()}${ext}`;
+        const storageKey = buildLatexAssetStorageKey(teamId, documentId, v4(), ext);
         const mimetype = 'application/octet-stream';
         const assetPath = sanitizeAssetPath(assetFile.path, originalName);
+        const url = buildLatexAssetContentUrl(teamId, documentId, storageKey);
 
-        await this.storageService.upload(
-            SYS_BUCKETS.LATEX_ASSETS,
-            storageKey,
+        await this.objectGatewayClient.putBuffer(storageClusterId, {
+            bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+            objectKey: storageKey,
             buffer,
-            { 'Content-Type': mimetype }
-        );
-
-        const url = this.storageService.getPublicURL(SYS_BUCKETS.LATEX_ASSETS, storageKey);
+            contentLength: buffer.byteLength,
+            contentType: mimetype
+        });
 
         await this.latexAssetRepository.create({
             team: teamId,

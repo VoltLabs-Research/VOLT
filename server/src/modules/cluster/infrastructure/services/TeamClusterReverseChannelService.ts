@@ -168,6 +168,16 @@ export interface TeamClusterReverseChannelStreamAttachment {
     stream: PassThrough;
 }
 
+export interface TeamClusterDaemonInboundStreamPayload {
+    socketId: string;
+    teamClusterId: string;
+    requestId: string;
+    streamId: string;
+    chunk: Buffer;
+}
+
+type TeamClusterDaemonInboundStreamConsumer = (payload: TeamClusterDaemonInboundStreamPayload) => void | Promise<void>;
+
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
 
 const readSelectedWebSocketProtocol = (payload: unknown): string | undefined => {
@@ -211,6 +221,7 @@ export default class TeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
     private readonly pendingEntries = new Map<string, PendingEntry>();
+    private readonly inboundStreamConsumers = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
     private readonly connectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly requestTimeoutMs = 30_000;
     private readonly terminalTimeoutMs = 15_000;
@@ -340,6 +351,36 @@ export default class TeamClusterReverseChannelService {
 
     getRegisteredTeamClusterId(socketId: string): string | null {
         return this.teamClusterIdsBySocketId.get(socketId) ?? null;
+    }
+
+    registerInboundStreamConsumer(
+        streamId: string,
+        consumer: TeamClusterDaemonInboundStreamConsumer
+    ): () => void {
+        const normalizedStreamId = streamId.trim();
+        if (!normalizedStreamId) {
+            throw new Error('Inbound stream id is required');
+        }
+
+        let consumers = this.inboundStreamConsumers.get(normalizedStreamId);
+        if (!consumers) {
+            consumers = new Set<TeamClusterDaemonInboundStreamConsumer>();
+            this.inboundStreamConsumers.set(normalizedStreamId, consumers);
+        }
+
+        consumers.add(consumer);
+
+        return () => {
+            const activeConsumers = this.inboundStreamConsumers.get(normalizedStreamId);
+            if (!activeConsumers) {
+                return;
+            }
+
+            activeConsumers.delete(consumer);
+            if (activeConsumers.size === 0) {
+                this.inboundStreamConsumers.delete(normalizedStreamId);
+            }
+        };
     }
 
     async command(
@@ -557,11 +598,11 @@ export default class TeamClusterReverseChannelService {
                 return;
 
             case 'stream':
-                this.handleStreamChunkPayload(payload);
+                this.handleStreamChunkPayload(socketId, payload);
                 return;
 
             case 'stream-end':
-                this.handleStreamStatePayload(payload);
+                this.handleStreamStatePayload(socketId, payload);
                 return;
 
             case 'session-data':
@@ -757,9 +798,10 @@ export default class TeamClusterReverseChannelService {
         entry.resolve(entry.stream);
     }
 
-    private handleStreamChunkPayload(payload: TeamClusterDaemonSocketStreamPayload): void {
+    private handleStreamChunkPayload(socketId: string, payload: TeamClusterDaemonSocketStreamPayload): void {
         const entry = this.pendingEntries.get(payload.requestId);
         if (!entry || entry.type !== 'stream') {
+            this.dispatchInboundStreamChunk(socketId, payload);
             return;
         }
 
@@ -778,9 +820,10 @@ export default class TeamClusterReverseChannelService {
         }
     }
 
-    private handleStreamStatePayload(payload: TeamClusterDaemonSocketStreamStatePayload): void {
+    private handleStreamStatePayload(socketId: string, payload: TeamClusterDaemonSocketStreamStatePayload): void {
         const entry = this.pendingEntries.get(payload.requestId);
         if (!entry || entry.type !== 'stream') {
+            this.dispatchInboundStreamEnd(socketId, payload);
             return;
         }
 
@@ -791,6 +834,62 @@ export default class TeamClusterReverseChannelService {
         entry.stream.end();
         this.pendingEntries.delete(payload.requestId);
         this.untouchSession(payload.requestId);
+    }
+
+    private dispatchInboundStreamChunk(socketId: string, payload: TeamClusterDaemonSocketStreamPayload): void {
+        const consumers = this.inboundStreamConsumers.get(payload.streamId);
+        if (!consumers || consumers.size === 0) {
+            return;
+        }
+
+        const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
+        if (!teamClusterId) {
+            return;
+        }
+
+        let chunk: Buffer;
+        try {
+            chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        } catch (error) {
+            logger.warn(
+                error,
+                `[ReverseChannel] Failed to decode inbound stream chunk streamId=${payload.streamId} requestId=${payload.requestId}`
+            );
+            return;
+        }
+        const streamPayload: TeamClusterDaemonInboundStreamPayload = {
+            socketId,
+            teamClusterId,
+            requestId: payload.requestId,
+            streamId: payload.streamId,
+            chunk
+        };
+
+        for (const consumer of consumers) {
+            Promise.resolve(consumer(streamPayload)).catch((error) => {
+                logger.warn(
+                    error,
+                    `[ReverseChannel] Inbound stream consumer failed streamId=${payload.streamId} requestId=${payload.requestId}`
+                );
+            });
+        }
+    }
+
+    private dispatchInboundStreamEnd(socketId: string, payload: TeamClusterDaemonSocketStreamStatePayload): void {
+        const hasConsumer = this.inboundStreamConsumers.has(payload.streamId);
+        if (!hasConsumer) {
+            return;
+        }
+
+        if (!this.teamClusterIdsBySocketId.has(socketId)) {
+            return;
+        }
+
+        if (payload.message) {
+            logger.warn(
+                `[ReverseChannel] Inbound stream ended with message streamId=${payload.streamId} requestId=${payload.requestId} message=${payload.message}`
+            );
+        }
     }
 
     private handleExposureSnapshotPayload(teamClusterId: string, payload: TeamClusterDaemonExposureSnapshotPayload): void {

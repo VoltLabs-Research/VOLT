@@ -77,7 +77,13 @@ export default class CloneTrajectoryUseCase implements IUseCase<
                 input.targetClusterId
             );
 
-            const sourceClusterId = resolveTrajectoryStorageClusterId(source.props) ?? null;
+            const sourceClusterId = resolveTrajectoryStorageClusterId(source.props);
+            if (!sourceClusterId) {
+                throw ApplicationError.conflict(
+                    'TrajectoryClone::StorageClusterRequired',
+                    'Source trajectory does not have a storage cluster assigned'
+                );
+            }
             const sourceFrames = await this.trajectoryFrameRepository.getFrames(source.id);
 
             const now = new Date();

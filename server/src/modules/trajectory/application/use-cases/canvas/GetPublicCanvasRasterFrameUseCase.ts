@@ -67,6 +67,12 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
                     analysisRepository: this.analysisRepository,
                     trajectoryRepository: this.trajectoryRepository
                 });
+                if (!sceneArtifactClusterId) {
+                    return Result.fail(ApplicationError.conflict(
+                        'Analysis::StorageClusterRequired',
+                        'Analysis storage cluster is required'
+                    ));
+                }
 
                 rasterFrame = await this.rasterStorage.getAnalysisRasterFramePNG(
                     input.trajectoryId,
@@ -76,10 +82,18 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
                     sceneArtifactClusterId
                 );
             } else {
+                const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+                if (!storageClusterId) {
+                    return Result.fail(ApplicationError.conflict(
+                        'Trajectory::StorageClusterRequired',
+                        'Trajectory storage cluster is required'
+                    ));
+                }
+
                 rasterFrame = await this.rasterStorage.getRasterFramePNG(
                     input.trajectoryId,
                     input.timestep,
-                    resolveTrajectoryStorageClusterId(trajectory.props)
+                    storageClusterId
                 );
             }
 

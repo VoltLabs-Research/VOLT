@@ -3,6 +3,7 @@ import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
 export interface LatexDocumentDeletedEventPayload {
     documentId: string;
     teamId: string;
+    storageClusterId?: string;
     userId: string;
     documentTitle: string;
 }

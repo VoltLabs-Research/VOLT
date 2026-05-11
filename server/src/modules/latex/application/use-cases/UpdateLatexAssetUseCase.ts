@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO } from '@modules/latex/application/dtos/UpdateLatexAssetDTO';
+import { buildLatexAssetContentUrl } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
@@ -64,7 +65,7 @@ export class UpdateLatexAssetUseCase implements IUseCase<UpdateLatexAssetInputDT
                 documentId: updated.props.document,
                 originalName: updated.props.originalName,
                 path: updated.props.path,
-                url: updated.props.url,
+                url: buildLatexAssetContentUrl(input.teamId, input.documentId, updated.props.storageKey),
                 mimetype: updated.props.mimetype,
                 size: updated.props.size,
                 createdAt: updated.props.createdAt

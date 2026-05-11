@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
 import LatexDocumentCreatedEvent from '@modules/latex/domain/events/LatexDocumentCreatedEvent';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
@@ -16,6 +17,7 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
     constructor(
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexFolderRepository: LatexFolderRepository,
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -45,9 +47,12 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
                 }
             }
 
+            const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(input.teamId);
+
             const document = await this.latexDocumentRepository.create({
                 team: input.teamId,
                 title,
+                storageClusterId,
                 createdBy: input.userId,
                 lastEditedBy: input.userId,
                 folder: input.folderId ?? null,

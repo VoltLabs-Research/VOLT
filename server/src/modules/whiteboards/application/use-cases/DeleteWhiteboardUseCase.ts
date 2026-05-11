@@ -1,12 +1,13 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/DeleteWhiteboardDTO';
+import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardDeletedEvent from '@modules/whiteboards/domain/events/WhiteboardDeletedEvent';
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -16,11 +17,21 @@ import { inject } from 'tsyringe';
 export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO, ApplicationError> {
     constructor(
         private readonly whiteboardRepository: WhiteboardRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
+
+    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
+        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
+            return props.storageClusterId;
+        }
+
+        throw ApplicationError.conflict(
+            'Whiteboard::StorageClusterRequired',
+            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
+        );
+    }
 
     async execute(input: DeleteWhiteboardInputDTO): Promise<Result<DeleteWhiteboardOutputDTO, ApplicationError>> {
         try {
@@ -46,8 +57,9 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             await this.whiteboardRepository.deleteById(input.whiteboardId);
 
             const prefix = `${input.teamId}/${input.whiteboardId}/`;
+            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
             try {
-                await this.storageService.deleteByPrefix(SYS_BUCKETS.WHITEBOARDS, prefix);
+                await this.objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, prefix);
             } catch {
                 // Storage cleanup is best-effort
             }

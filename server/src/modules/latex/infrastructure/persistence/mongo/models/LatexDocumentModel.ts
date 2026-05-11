@@ -24,6 +24,11 @@ const LatexDocumentSchema: Schema<LatexDocumentDocument> = new Schema({
         required: true,
         trim: true
     },
+    storageClusterId: {
+        type: String,
+        required: false,
+        trim: true
+    },
     folder: {
         type: Schema.Types.ObjectId,
         ref: 'CatalogFolder',

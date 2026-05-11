@@ -1,8 +1,7 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { getTrajectoryRasterPreviewsPrefix } from '@modules/raster/utilities/raster-storage-paths';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 type PreviewOutputFactory = (
     buffer: Buffer
@@ -10,8 +9,7 @@ type PreviewOutputFactory = (
 
 interface ReadTrajectoryPreviewInput {
     trajectoryId: string;
-    storageClusterId?: string | null;
-    storageService: IStorageService;
+    storageClusterId: string;
     objectGatewayClient: TeamClusterObjectGatewayClient;
     createOutput: PreviewOutputFactory;
 }
@@ -25,7 +23,7 @@ const firstSortedPreviewKey = async (
     const keys: string[] = [];
 
     for await (const key of objectGatewayClient.listAll(teamClusterId, {
-        bucket: SYS_BUCKETS.RASTERIZER,
+        bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
         prefix
     })) {
         if (key.endsWith('.png')) {
@@ -52,40 +50,15 @@ const readRemotePreview = async (
 
     const buffer = await input.objectGatewayClient.getBuffer(
         teamClusterId,
-        SYS_BUCKETS.RASTERIZER,
+        TEAM_CLUSTER_BUCKETS.RASTERIZER,
         previewKey
     );
 
     return input.createOutput(buffer);
 };
 
-const readLocalPreview = async (
-    input: ReadTrajectoryPreviewInput
-): Promise<GetTrajectoryPreviewOutputDTO | null> => {
-    const prefix = getTrajectoryRasterPreviewsPrefix(input.trajectoryId);
-
-    for await (const key of input.storageService.listByPrefix(SYS_BUCKETS.RASTERIZER, prefix)) {
-        if (!key.endsWith('.png')) {
-            continue;
-        }
-
-        try {
-            const buffer = await input.storageService.getBuffer(SYS_BUCKETS.RASTERIZER, key);
-            return await input.createOutput(buffer);
-        } catch {
-            continue;
-        }
-    }
-
-    return null;
-};
-
 export const readTrajectoryPreview = async (
     input: ReadTrajectoryPreviewInput
 ): Promise<GetTrajectoryPreviewOutputDTO | null> => {
-    if (input.storageClusterId) {
-        return readRemotePreview(input, input.storageClusterId);
-    }
-
-    return readLocalPreview(input);
+    return readRemotePreview(input, input.storageClusterId);
 };

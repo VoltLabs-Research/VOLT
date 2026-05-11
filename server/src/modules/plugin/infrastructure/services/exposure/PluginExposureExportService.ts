@@ -1,6 +1,5 @@
 import {
     groupAnalysisFilesByTimestep,
-    listAnalysisFiles,
     type AnalysisFileRef,
     type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
@@ -13,14 +12,11 @@ import {
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
 
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { finished } from 'node:stream/promises';
-import { inject } from 'tsyringe';
 
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { Archiver } from 'archiver';
 import type { PassThrough } from 'node:stream';
 
@@ -46,8 +42,6 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
 @Singleton()
 export class PluginExposureExportService implements IPluginExposureExportService {
     constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
         private readonly trajectoryRepository: TrajectoryRepository,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
@@ -57,9 +51,7 @@ export class PluginExposureExportService implements IPluginExposureExportService
         analysisId: string
     ): Promise<Map<number, AnalysisFileRef[]>> {
         const teamClusterId = await this.resolveTeamClusterId(trajectoryId);
-        const files = teamClusterId
-            ? await this.listClusterAnalysisFiles(teamClusterId, trajectoryId, analysisId)
-            : await listAnalysisFiles(this.storageService, trajectoryId, analysisId);
+        const files = await this.listClusterAnalysisFiles(teamClusterId, trajectoryId, analysisId);
         const groupedFiles = groupAnalysisFilesByTimestep(files);
 
         for (const [timestep, group] of groupedFiles.entries()) {
@@ -71,7 +63,7 @@ export class PluginExposureExportService implements IPluginExposureExportService
 
     private appendTimestepArchive(
         archive: Archiver,
-        teamClusterId: string | undefined,
+        teamClusterId: string,
         analysisId: string,
         pluginName: string,
         timestep: number,
@@ -80,16 +72,11 @@ export class PluginExposureExportService implements IPluginExposureExportService
         const timestepZipName = `timestep-${timestep}-analysis-${analysisId}-plugin-${pluginName}.zip`;
         const timestepZipStream = createZipArchiveStream(async (timestepArchive) => {
             for (const fileReference of files) {
-                const fileStream = teamClusterId
-                    ? (await this.objectGatewayClient.getStream(
-                        teamClusterId,
-                        fileReference.bucket,
-                        fileReference.objectName
-                    )).stream
-                    : await this.storageService.getStream(
-                        fileReference.bucket,
-                        fileReference.objectName
-                    );
+                const fileStream = (await this.objectGatewayClient.getStream(
+                    teamClusterId,
+                    fileReference.bucket,
+                    fileReference.objectName
+                )).stream;
 
                 timestepArchive.append(fileStream, {
                     name: fileReference.objectName
@@ -106,31 +93,44 @@ export class PluginExposureExportService implements IPluginExposureExportService
         return timestepZipStream;
     }
 
-    private async resolveTeamClusterId(trajectoryId: string): Promise<string | undefined> {
+    private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
-        return trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        if (!trajectory) {
+            throw ApplicationError.notFound(
+                ErrorCodes.TRAJECTORY_NOT_FOUND,
+                ErrorCodes.TRAJECTORY_NOT_FOUND
+            );
+        }
+
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            );
+        }
+
+        return storageClusterId;
     }
 
     private getPrefixCollectionConfigs(trajectoryId: string, analysisId: string): PrefixCollectionConfig[] {
         return [
             {
-                bucket: SYS_BUCKETS.PLUGINS,
+                bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
                 prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
                 type: 'data',
                 timestepRegex: /\/timestep-(\d+)\.parquet$/,
                 extensionFilter: '.parquet'
             },
             {
-                bucket: SYS_BUCKETS.PLUGINS,
+                bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/charts/`,
                 type: 'chart',
                 timestepRegex: /\/charts\/(\d+)\//,
                 extensionFilter: '.png'
             },
             {
-                bucket: SYS_BUCKETS.MODELS,
+                bucket: TEAM_CLUSTER_BUCKETS.MODELS,
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
                 type: 'model',
                 timestepRegex: /\/glb\/(\d+)\//,

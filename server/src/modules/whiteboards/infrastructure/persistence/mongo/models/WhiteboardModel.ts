@@ -33,6 +33,11 @@ const WhiteboardSchema: Schema<WhiteboardDocument> = new Schema({
         required: true,
         trim: true
     },
+    storageClusterId: {
+        type: String,
+        required: false,
+        trim: true
+    },
     payloadKey: {
         type: String,
         required: false,

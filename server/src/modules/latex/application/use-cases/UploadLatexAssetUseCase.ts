@@ -1,5 +1,7 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { buildLatexAssetContentUrl, buildLatexAssetStorageKey, requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import type { LatexAssetDTO } from '@modules/latex/application/dtos/LatexAssetDTO';
 import type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
@@ -7,12 +9,9 @@ import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mong
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import path from 'node:path';
-import { inject } from 'tsyringe';
 import { v4 } from 'uuid';
 
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
@@ -27,8 +26,7 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
     constructor(
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: UploadLatexAssetInputDTO): Promise<Result<UploadLatexAssetOutputDTO, ApplicationError>> {
@@ -55,6 +53,7 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
                     'LaTeX document not found'
                 ));
             }
+            const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
 
             const uploaded: LatexAssetDTO[] = [];
             let failedCount = 0;
@@ -67,19 +66,20 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
 
                 try {
                     const ext = path.extname(file.originalname);
-                    const storageKey = `latex-assets/${input.teamId}/${input.documentId}/${v4()}${ext}`;
+                    const storageKey = buildLatexAssetStorageKey(input.teamId, input.documentId, v4(), ext);
                     const mimetype = file.mimetype || 'application/octet-stream';
 
                     const assetPath = sanitizeAssetPath(input.path ?? file.originalname, file.originalname);
 
-                    await this.storageService.upload(
-                        SYS_BUCKETS.LATEX_ASSETS,
-                        storageKey,
-                        file.buffer,
-                        { 'Content-Type': mimetype }
-                    );
+                    await this.objectGatewayClient.putBuffer(storageClusterId, {
+                        bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+                        objectKey: storageKey,
+                        buffer: file.buffer,
+                        contentLength: file.buffer.byteLength,
+                        contentType: mimetype
+                    });
 
-                    const url = this.storageService.getPublicURL(SYS_BUCKETS.LATEX_ASSETS, storageKey);
+                    const url = buildLatexAssetContentUrl(input.teamId, input.documentId, storageKey);
 
                     const asset = await this.latexAssetRepository.create({
                         team: input.teamId,
@@ -100,7 +100,7 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
                         documentId: asset.props.document,
                         originalName: asset.props.originalName,
                         path: asset.props.path,
-                        url: asset.props.url,
+                        url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.props.storageKey),
                         mimetype: asset.props.mimetype,
                         size: asset.props.size,
                         createdAt: asset.props.createdAt

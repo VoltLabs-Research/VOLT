@@ -22,10 +22,8 @@ import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/serv
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { FileMetadata, IStorageService } from '@shared/domain/port/IStorageService';
 import {
     ChannelCommands,
-    VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
     type StoragePlacementBucketRef,
     type StoragePlacementScopeType,
     type TeamClusterDaemonPluginMongoDocumentType,
@@ -143,27 +141,6 @@ interface TransferJobProjectionContext {
     analysisId?: string;
 }
 
-const readStringMetadata = (metadata: FileMetadata, key: string): string | undefined => {
-    const value = metadata[key];
-    return typeof value === 'string' && value.length > 0
-        ? value
-        : undefined;
-};
-
-const buildLocalUploadMetadata = (head: ObjectHeadSnapshot): Record<string, string> => {
-    const metadata = { ...head.metadata };
-
-    if (head.contentType) {
-        metadata['Content-Type'] = head.contentType;
-    }
-
-    if (head.contentEncoding) {
-        metadata['Content-Encoding'] = head.contentEncoding;
-    }
-
-    return metadata;
-};
-
 const normalizeOpaqueTag = (value?: string): string | undefined => {
     if (!value) {
         return undefined;
@@ -209,8 +186,6 @@ export default class ClusterTransferCoordinator {
         private readonly analysisRepository: AnalysisRepository,
         private readonly trajectoryRepository: TrajectoryRepository,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
@@ -718,13 +693,6 @@ export default class ClusterTransferCoordinator {
     }
 
     private async replicateMongoListings(job: ClusterTransferJob): Promise<void> {
-        if (
-            job.props.sourceClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
-            || job.props.destinationClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
-        ) {
-            return;
-        }
-
         const analysisIds = await this.resolveMongoReplicationAnalysisIds(
             job.props.scopeType,
             job.props.scopeId,
@@ -787,10 +755,6 @@ export default class ClusterTransferCoordinator {
         scopeType: StoragePlacementScopeType,
         scopeId: string
     ): Promise<number> {
-        if (sourceClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            return 0;
-        }
-
         const analysisIds = await this.resolveMongoReplicationAnalysisIds(scopeType, scopeId, sourceClusterId);
         if (!analysisIds.length) {
             return 0;
@@ -915,10 +879,6 @@ export default class ClusterTransferCoordinator {
     }
 
     private async assertSourceReadableCluster(teamId: string, clusterId: string): Promise<void> {
-        if (clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            return;
-        }
-
         const cluster = await this.teamClusterRepository.findById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
@@ -936,10 +896,6 @@ export default class ClusterTransferCoordinator {
     }
 
     private async assertDestinationWritableCluster(teamId: string, clusterId: string): Promise<void> {
-        if (clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            return;
-        }
-
         const cluster = await this.teamClusterRepository.findById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
@@ -969,15 +925,6 @@ export default class ClusterTransferCoordinator {
         bucket: string,
         prefix: string
     ): AsyncIterable<ObjectListEntry> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            for await (const key of this.storageService.listByPrefix(bucket, prefix, true)) {
-                yield {
-                    key
-                };
-            }
-            return;
-        }
-
         yield* this.objectGatewayClient.listAllEntries(ownerClusterId, { bucket, prefix });
     }
 
@@ -1023,26 +970,6 @@ export default class ClusterTransferCoordinator {
         bucket: string,
         objectKey: string
     ): Promise<ObjectHeadSnapshot> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            const stat = await this.storageService.getStat(bucket, objectKey);
-            const head = {
-                contentLength: stat.size,
-                contentType: stat.mimetype,
-                contentEncoding: readStringMetadata(stat, 'Content-Encoding') ?? readStringMetadata(stat, 'content-encoding'),
-                etag: stat.etag,
-                lastModified: stat.lastModified,
-                metadata: Object.fromEntries(
-                    Object.entries(stat)
-                        .filter(([key, value]) => key.startsWith('x-amz-meta-') && typeof value === 'string')
-                        .map(([key, value]) => [key.slice('x-amz-meta-'.length), value as string])
-                )
-            };
-            return {
-                ...head,
-                etag: normalizeOpaqueTag(head.etag)
-            };
-        }
-
         const head = await this.objectGatewayClient.head(ownerClusterId, bucket, objectKey);
         return {
             ...head,
@@ -1055,27 +982,6 @@ export default class ClusterTransferCoordinator {
         bucket: string,
         objectKey: string
     ): Promise<ObjectStreamSnapshot> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            const [stat, stream] = await Promise.all([
-                this.storageService.getStat(bucket, objectKey),
-                this.storageService.getStream(bucket, objectKey)
-            ]);
-
-            return {
-                stream,
-                contentLength: stat.size,
-                contentType: stat.mimetype,
-                contentEncoding: readStringMetadata(stat, 'Content-Encoding') ?? readStringMetadata(stat, 'content-encoding'),
-                etag: normalizeOpaqueTag(stat.etag),
-                lastModified: stat.lastModified,
-                metadata: Object.fromEntries(
-                    Object.entries(stat)
-                        .filter(([key, value]) => key.startsWith('x-amz-meta-') && typeof value === 'string')
-                        .map(([key, value]) => [key.slice('x-amz-meta-'.length), value as string])
-                )
-            };
-        }
-
         const response = await this.objectGatewayClient.getStream(ownerClusterId, bucket, objectKey);
         return {
             ...response,
@@ -1089,11 +995,6 @@ export default class ClusterTransferCoordinator {
         objectKey: string,
         object: ObjectStreamSnapshot
     ): Promise<void> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            await this.storageService.upload(bucket, objectKey, object.stream, buildLocalUploadMetadata(object));
-            return;
-        }
-
         await this.objectGatewayClient.putStream(ownerClusterId, {
             bucket,
             objectKey,
@@ -1110,11 +1011,6 @@ export default class ClusterTransferCoordinator {
         bucket: string,
         prefix: string
     ): Promise<void> {
-        if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-            await this.storageService.deleteByPrefix(bucket, prefix);
-            return;
-        }
-
         await this.objectGatewayClient.deleteByPrefix(ownerClusterId, bucket, prefix);
     }
 

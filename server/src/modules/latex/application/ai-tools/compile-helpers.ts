@@ -1,4 +1,6 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import { spawn } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
@@ -10,7 +12,6 @@ import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatex
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type LatexAsset from '@modules/latex/domain/entities/LatexAsset';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 import type LatexFile from '@modules/latex/domain/entities/LatexFile';
 
@@ -42,7 +43,7 @@ interface PrepareWorkDirDeps {
     latexDocumentRepository: ILatexDocumentRepository;
     latexAssetRepository: ILatexAssetRepository;
     latexFileRepository: ILatexFileRepository;
-    storageService: IStorageService;
+    objectGatewayClient: TeamClusterObjectGatewayClient;
     tempFileService: ITempFileService;
 }
 
@@ -193,7 +194,8 @@ const syncWorkDirInputs = async (
     workDir: string,
     latexFiles: LatexFile[],
     assets: LatexAsset[],
-    storageService: IStorageService
+    storageClusterId: string,
+    objectGatewayClient: TeamClusterObjectGatewayClient
 ): Promise<void> => {
     const limit = pLimit(WORKDIR_SYNC_CONCURRENCY);
     const previousManifest = await readWorkDirManifest(workDir);
@@ -245,10 +247,11 @@ const syncWorkDirInputs = async (
             }
 
             try {
-                const stream = await storageService.getStream(
-                    SYS_BUCKETS.LATEX_ASSETS,
+                const stream = (await objectGatewayClient.getStream(
+                    storageClusterId,
+                    TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
                     asset.props.storageKey
-                );
+                )).stream;
 
                 await fs.mkdir(path.dirname(destPath), { recursive: true });
                 await ensureWritableInputPath(destPath);
@@ -407,6 +410,7 @@ export const prepareWorkDir = async (
     if (!document) {
         return { status: 'no-document' };
     }
+    const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
 
     await deps.tempFileService.ensureDir(workDir);
 
@@ -433,7 +437,7 @@ export const prepareWorkDir = async (
         return { status: 'no-compiler' };
     }
 
-    await syncWorkDirInputs(workDir, latexFiles, assets, deps.storageService);
+    await syncWorkDirInputs(workDir, latexFiles, assets, storageClusterId, deps.objectGatewayClient);
 
     return {
         status: 'ready',

@@ -1,9 +1,10 @@
 import PluginPublishedEvent from '@modules/plugin/domain/events/PluginPublishedEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
+import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
@@ -25,7 +26,8 @@ interface PluginWarmupCommandResponse {
 export default class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly teamClusterRepository: TeamClusterRepository
+        private readonly teamClusterRepository: TeamClusterRepository,
+        private readonly storagePlacementService: StoragePlacementService
     ) {}
 
     async handle(event: PluginPublishedEvent): Promise<void> {
@@ -51,7 +53,7 @@ export default class PluginPublishedEventHandler implements IEventHandler<Plugin
             requirementsFile,
             entrypointScript,
             expectedHash: binaryHash,
-            ownerClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
+            ownerClusterId: (await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId)).props.primaryClusterId
         };
 
         await Promise.allSettled(teamClusters.map(async (cluster) => {
