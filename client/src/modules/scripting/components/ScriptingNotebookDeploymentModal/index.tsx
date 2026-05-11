@@ -3,20 +3,15 @@ import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-
 import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Text from '@/shared/presentation/primitives/Text';
-import {
-    clampScriptingNotebookContainerResources,
-    getDefaultScriptingNotebookContainerResources
-} from '@/modules/scripting/utilities/deployment';
-import { getNotebookContainerResources, getNotebookTeamClusterId } from '@/modules/scripting/utilities/notebooks';
+import { getNotebookTeamClusterId } from '@/modules/scripting/utilities/notebooks';
 import { useCallback, useEffect, useState } from 'react';
-import type { ScriptingNotebook, ScriptingNotebookContainerResources } from '@/modules/scripting/api/entities/scripting-notebook';
+import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 
 export const SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID = 'scripting-notebook-deployment-modal';
 
 export interface ScriptingNotebookDeploymentSelection {
     teamClusterId: string;
-    containerResources: ScriptingNotebookContainerResources;
 };
 
 export interface ScriptingNotebookDeploymentModalRequest {
@@ -38,18 +33,14 @@ const ScriptingNotebookDeploymentModal = ({
     onClose
 }: ScriptingNotebookDeploymentModalProps) => {
     const [selectedTeamClusterId, setSelectedTeamClusterId] = useState<string | null>(null);
-    const [containerResources, setContainerResources] = useState<ScriptingNotebookContainerResources>(
-        getDefaultScriptingNotebookContainerResources()
-    );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const {
-        teamClusters,
-        clusterResourceLimits,
-        isLoadingResourceLimits
+        teamClusters
     } = useTeamClusterResourceSelection({
         teamId: request?.teamId,
         selectedTeamClusterId,
-        onSelectedTeamClusterIdChange: setSelectedTeamClusterId
+        onSelectedTeamClusterIdChange: setSelectedTeamClusterId,
+        includeResourceLimits: false
     });
 
     useEffect(() => {
@@ -58,17 +49,8 @@ const ScriptingNotebookDeploymentModal = ({
         }
 
         setSelectedTeamClusterId(getNotebookTeamClusterId(request.notebook) ?? null);
-        setContainerResources(
-            getNotebookContainerResources(request.notebook) ?? getDefaultScriptingNotebookContainerResources()
-        );
         setIsSubmitting(false);
     }, [request]);
-
-    useEffect(() => {
-        setContainerResources((currentResources) => {
-            return clampScriptingNotebookContainerResources(currentResources, clusterResourceLimits);
-        });
-    }, [clusterResourceLimits?.maxCpus, clusterResourceLimits?.maxMemoryMB]);
 
     const handleClose = useCallback(() => {
         if (isSubmitting) {
@@ -80,27 +62,26 @@ const ScriptingNotebookDeploymentModal = ({
     }, [isSubmitting, onClose]);
 
     const handleSubmit = useCallback(async () => {
-        if (!request || !selectedTeamClusterId || !clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB) {
+        if (!request || !selectedTeamClusterId) {
             return;
         }
 
         setIsSubmitting(true);
         try {
             await request.onSubmit({
-                teamClusterId: selectedTeamClusterId,
-                containerResources
+                teamClusterId: selectedTeamClusterId
             });
             closeModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
             onClose({ completed: true });
         } finally {
             setIsSubmitting(false);
         }
-    }, [clusterResourceLimits?.maxCpus, clusterResourceLimits?.maxMemoryMB, containerResources, onClose, request, selectedTeamClusterId]);
+    }, [onClose, request, selectedTeamClusterId]);
 
     const primaryAction: ModalFooterAction = {
         label: isSubmitting ? 'Saving...' : request?.confirmLabel ?? 'Save',
         onClick: handleSubmit,
-        disabled: isSubmitting || !selectedTeamClusterId || !clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB
+        disabled: isSubmitting || !selectedTeamClusterId
     };
 
     const secondaryAction: ModalFooterAction = {
@@ -129,13 +110,8 @@ const ScriptingNotebookDeploymentModal = ({
                     teamClusters={teamClusters}
                     isTeamSelected={Boolean(request?.teamId)}
                     selectedTeamClusterId={selectedTeamClusterId}
-                    clusterResourceLimits={clusterResourceLimits}
-                    isLoadingResourceLimits={isLoadingResourceLimits}
-                    cpus={containerResources.cpus}
-                    memoryMB={containerResources.memoryMB}
                     onTeamClusterChange={setSelectedTeamClusterId}
-                    onCpusChange={(cpus) => setContainerResources((current) => ({ ...current, cpus }))}
-                    onMemoryChange={(memoryMB) => setContainerResources((current) => ({ ...current, memoryMB }))}
+                    showResourceSelection={false}
                 />
             </div>
         </Modal>

@@ -13,7 +13,7 @@
 .terminal-container .xterm-viewport,
 .terminal-container .xterm-screen,
 .terminal-container .xterm-helper-textarea {
-    background-color: var(--color-surface-1);
+    background-color: var(--color-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

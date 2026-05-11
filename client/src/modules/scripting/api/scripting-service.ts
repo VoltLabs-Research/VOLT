@@ -9,14 +9,12 @@ export interface CreateScriptingNotebookParams {
     teamId: string;
     title?: string;
     teamClusterId: string;
-    containerResources: ScriptingNotebookContainerResources;
 }
 
 export interface CreateScriptingSessionParams {
     trajectoryId: string;
     notebookId?: string;
     teamClusterId?: string;
-    containerResources?: ScriptingNotebookContainerResources;
 }
 
 export interface CreateScriptingNotebookSessionParams {
@@ -55,14 +53,14 @@ const endpoints = {
         { omit: ['trajectoryId'] }
     ),
     createNotebook: post<CreateScriptingNotebookParams, ScriptingNotebook>('/notebooks', {
-        body: ({ title, teamClusterId, containerResources }) => ({ title, teamClusterId, containerResources })
+        body: ({ title, teamClusterId }) => ({ title, teamClusterId })
     }),
     updateNotebook: patch<UpdateScriptingNotebookParams, ScriptingNotebook>('/notebooks/:notebookId', {
         body: ({ title, teamClusterId, containerResources }) => ({ title, teamClusterId, containerResources })
     }),
     deleteNotebook: del<DeleteScriptingNotebookParams>('/notebooks/:notebookId'),
     createSession: post<CreateScriptingSessionParams, ScriptingSession>('/:trajectoryId/sessions', {
-        body: ({ notebookId, teamClusterId, containerResources }) => ({ notebookId, teamClusterId, containerResources })
+        body: ({ notebookId, teamClusterId }) => ({ notebookId, teamClusterId })
     }),
     createNotebookSession: post<CreateScriptingNotebookSessionParams, ScriptingSession>('/sessions', {
         body: ({ notebookId }) => ({ notebookId })
