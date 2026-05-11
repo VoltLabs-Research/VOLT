@@ -8,6 +8,7 @@ interface UseTeamClusterResourceSelectionInput {
     selectedTeamClusterId: string | null;
     onSelectedTeamClusterIdChange: (teamClusterId: string | null) => void;
     autoSelectFirstCluster?: boolean;
+    includeResourceLimits?: boolean;
 }
 
 const toTeamClusterOptions = (teamClusters: Array<{ _id: string; name: string; status: string }>): TeamClusterOption[] => {
@@ -22,7 +23,8 @@ const useTeamClusterResourceSelection = ({
     teamId,
     selectedTeamClusterId,
     onSelectedTeamClusterIdChange,
-    autoSelectFirstCluster = true
+    autoSelectFirstCluster = true,
+    includeResourceLimits = true
 }: UseTeamClusterResourceSelectionInput) => {
     const teamClustersQuery = useTeamClustersQuery(teamId ?? '', {
         enabled: Boolean(teamId)
@@ -66,15 +68,15 @@ const useTeamClusterResourceSelection = ({
             teamClusterId: selectedTeamClusterId ?? ''
         },
         {
-            enabled: Boolean(teamId) && Boolean(selectedTeamClusterId)
+            enabled: includeResourceLimits && Boolean(teamId) && Boolean(selectedTeamClusterId)
         }
     );
 
     return {
         teamClusters,
         isLoadingTeamClusters: teamClustersQuery.isLoading,
-        clusterResourceLimits: clusterResourceLimitsQuery.data ?? null,
-        isLoadingResourceLimits: clusterResourceLimitsQuery.isLoading
+        clusterResourceLimits: includeResourceLimits ? (clusterResourceLimitsQuery.data ?? null) : null,
+        isLoadingResourceLimits: includeResourceLimits ? clusterResourceLimitsQuery.isLoading : false
     };
 };
 
