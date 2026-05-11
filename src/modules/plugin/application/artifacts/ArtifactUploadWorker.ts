@@ -80,7 +80,7 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
         const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
         const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
         const stageReporter = createAnalysisStageReporter(this.daemonJobReporter, {
-            jobId: payload.jobId,
+            jobId: payload.analysisJobId,
             name: 'Artifact Upload',
             analysisId: payload.analysisId,
             teamId: payload.teamId,

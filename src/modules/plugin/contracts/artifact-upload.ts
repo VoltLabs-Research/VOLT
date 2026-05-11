@@ -41,6 +41,7 @@ export type ArtifactUploadBatchUpload = Omit<ArtifactUploadStageFileInput, 'file
 
 export interface ArtifactUploadBatchJobPayload extends JobIdentity {
     analysisId: string;
+    analysisJobId: string;
     trajectoryId: string;
     batchDirectory: string;
     uploads: ArtifactUploadBatchUpload[];

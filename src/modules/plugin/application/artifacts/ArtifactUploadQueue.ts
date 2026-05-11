@@ -74,6 +74,7 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
         const payload: ArtifactUploadBatchJobPayload = {
             jobId: `artifact-upload-${sanitizeFileName(this.context.analysisJobId)}`,
             analysisId: this.context.analysisId,
+            analysisJobId: this.context.analysisJobId,
             teamId: this.context.teamId,
             trajectoryId: this.context.trajectoryId,
             timestep: this.context.timestep,
