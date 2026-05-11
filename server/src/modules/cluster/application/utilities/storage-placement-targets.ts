@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { getAnalysisStorageCleanupTargets } from '@modules/analysis/utilities/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import type { StoragePlacementBucketRef } from '@shared/infrastructure/contracts/team-cluster';
@@ -29,7 +29,7 @@ export const buildAnalysisPlacementBuckets = (
 
 export const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => {
     return [{
-        bucket: SYS_BUCKETS.PLUGINS,
+        bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
         prefix: `plugin-binaries/${pluginId}/`
     }];
 };

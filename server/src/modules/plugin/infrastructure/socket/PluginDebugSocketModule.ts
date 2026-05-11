@@ -20,7 +20,7 @@ import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subsc
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import { ChannelCommands, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -215,8 +215,13 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     });
                     return;
                 }
-                const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props)
-                    ?? VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID;
+                const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+                if (!storageClusterId) {
+                    this.emitToSocket(conn.id, 'debug:session:error', {
+                        error: 'Trajectory does not have a storage cluster assigned'
+                    });
+                    return;
+                }
                 const pluginReferenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
                     runtimePlugin,
                     sanitizedConfig

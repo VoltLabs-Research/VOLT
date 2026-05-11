@@ -1,9 +1,14 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
-import type { DeleteLatexAssetInputDTO, DeleteLatexAssetOutputDTO } from '@modules/latex/application/dtos/DeleteLatexAssetDTO';
-import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import type {
+    GetLatexAssetContentInputDTO,
+    GetLatexAssetContentOutputDTO
+} from '@modules/latex/application/dtos/GetLatexAssetContentDTO';
+import {
+    assertLatexAssetStorageKey,
+    requireLatexStorageClusterId
+} from '@modules/latex/application/utilities/latex-storage';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -11,14 +16,17 @@ import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
-export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDTO, DeleteLatexAssetOutputDTO, ApplicationError> {
+export class GetLatexAssetContentUseCase implements IUseCase<
+    GetLatexAssetContentInputDTO,
+    GetLatexAssetContentOutputDTO,
+    ApplicationError
+> {
     constructor(
         private readonly latexDocumentRepository: LatexDocumentRepository,
-        private readonly latexAssetRepository: LatexAssetRepository,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
-    async execute(input: DeleteLatexAssetInputDTO): Promise<Result<DeleteLatexAssetOutputDTO, ApplicationError>> {
+    async execute(input: GetLatexAssetContentInputDTO): Promise<Result<GetLatexAssetContentOutputDTO, ApplicationError>> {
         try {
             const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
                 input.teamId,
@@ -31,24 +39,22 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
                     'LaTeX document not found'
                 ));
             }
-            const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
 
-            const asset = await this.latexAssetRepository.findByDocumentAndAssetId(
-                input.documentId,
-                input.assetId
+            const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
+            assertLatexAssetStorageKey(input.teamId, input.documentId, input.key);
+
+            const response = await this.objectGatewayClient.getStream(
+                storageClusterId,
+                TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+                input.key
             );
 
-            if (!asset) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
-                    'LaTeX asset not found'
-                ));
-            }
-
-            await this.objectGatewayClient.deleteObject(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, asset.props.storageKey);
-            await this.latexAssetRepository.deleteById(input.assetId);
-
-            return Result.ok(null);
+            return Result.ok({
+                stream: response.stream,
+                contentType: response.contentType,
+                contentLength: response.contentLength,
+                contentEncoding: response.contentEncoding
+            });
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);
@@ -56,7 +62,7 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
 
             return Result.fail(new ApplicationError(
                 ErrorCodes.INTERNAL_SERVER_ERROR,
-                'Failed to delete LaTeX asset',
+                'Failed to load LaTeX asset content',
                 500
             ));
         }

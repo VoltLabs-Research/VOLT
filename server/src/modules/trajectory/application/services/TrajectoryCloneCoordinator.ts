@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
@@ -13,17 +13,11 @@ import {
 } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
 import { inject } from 'tsyringe';
-
-const isLocalCluster = (clusterId: string | null | undefined): boolean => (
-    !clusterId || clusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
-);
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
 const PROGRESS_FLUSH_EVERY_FRAMES = 3;
@@ -78,8 +72,6 @@ export default class TrajectoryCloneCoordinator {
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
         private readonly storagePlacementService: StoragePlacementService,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -187,8 +179,8 @@ export default class TrajectoryCloneCoordinator {
             return currentJob;
         }
 
-        const sourceClusterId = initialJob.props.sourceClusterId ?? null;
-        const destinationClusterId = initialJob.props.destinationClusterId;
+        const sourceClusterId = this.requireStorageClusterId(initialJob.props.sourceClusterId, 'source');
+        const destinationClusterId = this.requireStorageClusterId(initialJob.props.destinationClusterId, 'destination');
         const sortedFrames = [...sourceFrames].sort((a, b) => a.timestep - b.timestep);
 
         let pendingFrames = 0;
@@ -235,34 +227,15 @@ export default class TrajectoryCloneCoordinator {
     }
 
     private async copyDumpObject(
-        sourceClusterId: string | null,
+        sourceClusterId: string,
         destinationClusterId: string,
         sourceObjectName: string,
         destinationObjectName: string
     ): Promise<number> {
         const sourceSnapshot = await this.readSourceObject(sourceClusterId, sourceObjectName);
 
-        if (isLocalCluster(destinationClusterId)) {
-            const uploadMetadata: Record<string, string> = { ...(sourceSnapshot.metadata ?? {}) };
-            if (sourceSnapshot.contentType) {
-                uploadMetadata['Content-Type'] = sourceSnapshot.contentType;
-            }
-            if (sourceSnapshot.contentEncoding) {
-                uploadMetadata['Content-Encoding'] = sourceSnapshot.contentEncoding;
-            }
-
-            await this.storageService.upload(
-                SYS_BUCKETS.DUMPS,
-                destinationObjectName,
-                sourceSnapshot.stream,
-                uploadMetadata
-            );
-
-            return sourceSnapshot.contentLength ?? 0;
-        }
-
         await this.objectGatewayClient.putStream(destinationClusterId, {
-            bucket: SYS_BUCKETS.DUMPS,
+            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
             objectKey: destinationObjectName,
             stream: sourceSnapshot.stream,
             contentLength: sourceSnapshot.contentLength ?? 0,
@@ -275,7 +248,7 @@ export default class TrajectoryCloneCoordinator {
     }
 
     private async readSourceObject(
-        sourceClusterId: string | null,
+        sourceClusterId: string,
         sourceObjectName: string
     ): Promise<{
         stream: Readable;
@@ -284,21 +257,9 @@ export default class TrajectoryCloneCoordinator {
         contentEncoding?: string;
         metadata?: Record<string, string>;
     }> {
-        if (isLocalCluster(sourceClusterId)) {
-            const [stat, stream] = await Promise.all([
-                this.storageService.getStat(SYS_BUCKETS.DUMPS, sourceObjectName),
-                this.storageService.getStream(SYS_BUCKETS.DUMPS, sourceObjectName)
-            ]);
-            return {
-                stream,
-                contentLength: stat.size,
-                contentType: stat.mimetype || 'application/octet-stream'
-            };
-        }
-
         const response = await this.objectGatewayClient.getStream(
-            sourceClusterId!,
-            SYS_BUCKETS.DUMPS,
+            sourceClusterId,
+            TEAM_CLUSTER_BUCKETS.DUMPS,
             sourceObjectName
         );
         return {
@@ -308,6 +269,17 @@ export default class TrajectoryCloneCoordinator {
             contentEncoding: response.contentEncoding,
             metadata: response.metadata
         };
+    }
+
+    private requireStorageClusterId(clusterId: string | null | undefined, role: 'source' | 'destination'): string {
+        if (clusterId && clusterId.trim().length > 0) {
+            return clusterId;
+        }
+
+        throw ApplicationError.conflict(
+            'TrajectoryClone::StorageClusterRequired',
+            `Trajectory clone ${role} storage cluster is required`
+        );
     }
 
     private async setJobState(

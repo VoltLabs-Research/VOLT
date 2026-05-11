@@ -3,7 +3,6 @@ import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/m
 import TeamClusterObjectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
 } from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import VoltServerObjectGatewayService from '@modules/cluster/infrastructure/services/VoltServerObjectGatewayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import {
@@ -11,7 +10,7 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
-    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER, VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import type { Request, Response } from 'express';
@@ -20,10 +19,6 @@ import { container } from 'tsyringe';
 
 const objectGatewayClient = (): TeamClusterObjectGatewayClient => {
     return container.resolve(TeamClusterObjectGatewayClient);
-};
-
-const voltServerObjectGatewayService = (): VoltServerObjectGatewayService => {
-    return container.resolve(VoltServerObjectGatewayService);
 };
 
 const daemonCredentialGuard = (): DaemonCredentialGuard => {
@@ -243,15 +238,11 @@ const assertOwnerAccess = async (
     requesterClusterId: string,
     ownerClusterId: string,
     daemonPassword: string
-): Promise<{ teamId: string; }> => {
+): Promise<void> => {
     const requesterCluster = await daemonCredentialGuard().requireByDaemonPassword(
         requesterClusterId,
         daemonPassword
     );
-
-    if (ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-        return { teamId: requesterCluster.props.team };
-    }
 
     const ownerCluster = await teamClusterRepository().findById(ownerClusterId);
     if (!ownerCluster) {
@@ -267,8 +258,6 @@ const assertOwnerAccess = async (
             'The requested owner cluster does not belong to the same team'
         );
     }
-
-    return { teamId: requesterCluster.props.team };
 };
 
 export default createHttpModule({
@@ -286,54 +275,11 @@ export default createHttpModule({
                 }
 
                 const resolvedRoute = resolveRoute(request.path);
-                const { teamId } = await assertOwnerAccess(
+                await assertOwnerAccess(
                     requesterClusterId,
                     resolvedRoute.ownerClusterId,
                     daemonPassword
                 );
-
-                if (resolvedRoute.ownerClusterId === VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID) {
-                    if (request.method !== 'HEAD' && request.method !== 'GET') {
-                        response.setHeader('allow', 'GET, HEAD');
-                        throw new ApplicationError(
-                            'TeamCluster::ObjectStoreProxyMethodNotAllowed',
-                            'Method not allowed for Volt server-owned objects',
-                            405
-                        );
-                    }
-
-                    if (resolvedRoute.type !== 'object') {
-                        throw ApplicationError.badRequest(
-                            'TeamCluster::ObjectStoreProxyUnsupportedServerCollection',
-                            'Volt server-owned collection operations are not supported'
-                        );
-                    }
-
-                    if (request.method === 'HEAD') {
-                        const head = await voltServerObjectGatewayService().getObjectHead(
-                            teamId,
-                            resolvedRoute.bucket,
-                            resolvedRoute.objectKey
-                        );
-                        voltServerObjectGatewayService().applyResponseHeaders(head, (name, value) => {
-                            response.setHeader(name, value);
-                        });
-                        response.status(200).end();
-                        return;
-                    }
-
-                    const streamResponse = await voltServerObjectGatewayService().getObjectStream(
-                        teamId,
-                        resolvedRoute.bucket,
-                        resolvedRoute.objectKey
-                    );
-                    voltServerObjectGatewayService().applyResponseHeaders(streamResponse, (name, value) => {
-                        response.setHeader(name, value);
-                    });
-                    response.status(200);
-                    await pipeline(streamResponse.stream, response);
-                    return;
-                }
 
                 if (resolvedRoute.type === 'collection') {
                     if (request.method === 'GET') {

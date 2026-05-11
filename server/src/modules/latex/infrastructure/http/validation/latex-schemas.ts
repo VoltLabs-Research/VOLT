@@ -72,6 +72,12 @@ export const latexValidation = {
     listAssets: {
         params: documentParamsSchema
     },
+    getAssetContent: {
+        params: documentParamsSchema,
+        query: z.object({
+            key: z.string().trim().min(1)
+        }).strict()
+    },
     uploadAsset: {
         params: documentParamsSchema,
         body: z.object({

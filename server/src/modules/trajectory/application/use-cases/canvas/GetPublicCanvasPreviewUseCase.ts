@@ -8,13 +8,9 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-
-import { inject } from 'tsyringe';
 
 import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 interface GetPublicCanvasPreviewInput {
     trajectoryId: string;
@@ -30,10 +26,6 @@ export class GetPublicCanvasPreviewUseCase implements IUseCase<
     constructor(
         
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
-
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-
         
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
@@ -46,11 +38,16 @@ export class GetPublicCanvasPreviewUseCase implements IUseCase<
             );
 
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            if (!storageClusterId) {
+                return Result.fail(ApplicationError.conflict(
+                    'Trajectory::StorageClusterRequired',
+                    'Trajectory storage cluster is required'
+                ));
+            }
 
             const preview = await readTrajectoryPreview({
                 trajectoryId: input.trajectoryId,
                 storageClusterId,
-                storageService: this.storageService,
                 objectGatewayClient: this.objectGatewayClient,
                 createOutput: this.createPreviewOutput.bind(this)
             });

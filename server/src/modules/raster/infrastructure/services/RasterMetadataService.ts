@@ -44,6 +44,12 @@ export class RasterMetadataService {
 
         const totalFrames = await this.trajectoryFrameRepository.countFrames(trajectoryId);
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            );
+        }
         const trajectoryRaster = await this.getTrajectoryMetadata(trajectoryId, storageClusterId);
 
         const analyses = await this.getAnalysesMetadata(trajectoryId, totalFrames);
@@ -76,7 +82,7 @@ export class RasterMetadataService {
 
     private async getTrajectoryMetadata(
         trajectoryId: string,
-        teamClusterId?: string
+        teamClusterId: string
     ): Promise<ResolvedTrajectoryRasterMetadata> {
         const availableTimesteps = new Set<number>();
 
@@ -147,8 +153,15 @@ export class RasterMetadataService {
         trajectoryId: string,
         analysisId: string,
         totalFrames: number,
-        teamClusterId?: string
+        teamClusterId: string | undefined
     ): Promise<RasterAnalysisMetadata | null> {
+        if (!teamClusterId) {
+            throw ApplicationError.conflict(
+                'Analysis::StorageClusterRequired',
+                'Analysis storage cluster is required'
+            );
+        }
+
         const framesByTimestep: RasterFramesByTimestep = {};
 
         try {

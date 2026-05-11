@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ListLatexAssetsInputDTO, ListLatexAssetsOutputDTO } from '@modules/latex/application/dtos/ListLatexAssetsDTO';
+import { buildLatexAssetContentUrl } from '@modules/latex/application/utilities/latex-storage';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -35,7 +36,7 @@ export class ListLatexAssetsUseCase implements IUseCase<ListLatexAssetsInputDTO,
                 documentId: asset.props.document,
                 originalName: asset.props.originalName,
                 path: asset.props.path,
-                url: asset.props.url,
+                url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.props.storageKey),
                 mimetype: asset.props.mimetype,
                 size: asset.props.size,
                 createdAt: asset.props.createdAt

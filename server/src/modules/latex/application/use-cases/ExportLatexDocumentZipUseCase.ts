@@ -1,21 +1,20 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
+import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import {
     createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
-import { inject } from 'tsyringe';
 
 /**
  * Exports a LaTeX document as a `.zip` archive.
@@ -29,8 +28,7 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
         private readonly latexFileRepository: LatexFileRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: ExportLatexDocumentInputDTO): Promise<Result<ExportLatexDocumentOutputDTO, ApplicationError>> {
@@ -46,6 +44,7 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
                     'LaTeX document not found'
                 ));
             }
+            const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
 
             const [latexFiles, assets] = await Promise.all([
                 this.latexFileRepository.findAllByDocument(input.documentId),
@@ -72,10 +71,11 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
 
                     for (const asset of assets) {
                         try {
-                            const stream = await this.storageService.getStream(
-                                SYS_BUCKETS.LATEX_ASSETS,
+                            const stream = (await this.objectGatewayClient.getStream(
+                                storageClusterId,
+                                TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
                                 asset.props.storageKey
-                            );
+                            )).stream;
                             const entryName = sanitizeAssetPath(asset.props.path, asset.props.originalName);
 
                             archive.append(stream, { name: entryName });

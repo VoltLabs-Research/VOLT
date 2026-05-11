@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
@@ -283,7 +283,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         }
     ): Promise<void> {
         await this.objectGatewayClient.putStream(storageClusterId, {
-            bucket: SYS_BUCKETS.DUMPS,
+            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
             objectKey: input.objectKey,
             stream: createReadStream(input.filePath),
             contentLength: input.contentLength,

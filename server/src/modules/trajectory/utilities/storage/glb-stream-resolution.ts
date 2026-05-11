@@ -1,9 +1,8 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { PassThrough, Transform } from 'node:stream';
 import { Decompress as ZstdDecompress } from 'fzstd';
 import zlib from 'node:zlib';
 import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import {
     isZstdObjectName,
     stripTrailingZstdExtension
@@ -140,29 +139,9 @@ export const getClusterGlbStream = async (
         throw new Error(`Unsupported GLB object key: ${objectName}`);
     }
 
-    const response = await objectGatewayClient.getStream(teamClusterId, SYS_BUCKETS.MODELS, objectName);
+    const response = await objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_BUCKETS.MODELS, objectName);
     return {
         ...finalizeGlbStream(response.stream, objectName, requestContext),
         size: response.contentLength
-    };
-};
-
-export const getLocalGlbStream = async (
-    storageService: IStorageService,
-    objectName: string,
-    requestContext: GlbStreamRequestContext
-): Promise<ResolvedGlbStream> => {
-    if (!isZstdObjectName(objectName)) {
-        throw new Error(`Unsupported GLB object key: ${objectName}`);
-    }
-
-    const [stat, stream] = await Promise.all([
-        storageService.getStat(SYS_BUCKETS.MODELS, objectName).catch(() => undefined),
-        storageService.getStream(SYS_BUCKETS.MODELS, objectName)
-    ]);
-
-    return {
-        ...finalizeGlbStream(stream, objectName, requestContext),
-        size: stat?.size
     };
 };

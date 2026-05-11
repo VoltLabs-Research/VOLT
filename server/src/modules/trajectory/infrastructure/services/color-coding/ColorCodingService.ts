@@ -1,4 +1,4 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
@@ -7,14 +7,11 @@ import { IColorCodingService } from '@modules/trajectory/domain/port/color-codin
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
-import { getLocalGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IStorageService } from '@shared/domain/port/IStorageService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
@@ -22,14 +19,6 @@ import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence
 import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import { Readable } from 'node:stream';
-import { inject } from 'tsyringe';
-
-const buildDumpNotFoundError = (): ApplicationError => {
-    return ApplicationError.notFound(
-        ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,
-        'Trajectory dump not found'
-    );
-};
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(
@@ -58,9 +47,6 @@ export default class ColorCodingService implements IColorCodingService {
 
         
         private readonly dumpStorage: TrajectoryDumpStorageService,
-
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
 
         
         private readonly sceneArtifactRepository: SceneArtifactRepository,
@@ -320,18 +306,11 @@ export default class ColorCodingService implements IColorCodingService {
         if (storageClusterId) {
             return this.trajectoryNativeDaemonService.getObjectStream(
                 storageClusterId,
-                SYS_BUCKETS.MODELS,
+                TEAM_CLUSTER_BUCKETS.MODELS,
                 objectName
             );
         }
 
-        if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
-            throw buildDumpNotFoundError();
-        }
-
-        // Why: server-side decode — request identity encoding so the downstream
-        // GLB parser gets raw bytes, never the passthrough zstd stream.
-        const response = await getLocalGlbStream(this.storageService, objectName, { acceptEncoding: 'identity' });
-        return response.stream;
+        throw buildClusterRequiredError();
     }
 };

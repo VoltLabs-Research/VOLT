@@ -6,19 +6,13 @@ import {
     GetPublicCanvasGLBOutputDTO
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasGLBDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import {
-    getClusterGlbStream,
-    getLocalGlbStream
-} from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import { getClusterGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
 
 import type { IUseCase } from '@shared/application/IUseCase';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 @Singleton()
 export class GetPublicCanvasGLBUseCase implements IUseCase<
@@ -29,10 +23,6 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
     constructor(
         
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
-
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
-
         
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
@@ -46,14 +36,16 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
                 input.userId
             );
             const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            if (!storageClusterId) {
+                return Result.fail(ApplicationError.conflict(
+                    'Trajectory::StorageClusterRequired',
+                    'Trajectory storage cluster is required'
+                ));
+            }
             const objectName = buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep);
             const requestContext = { acceptEncoding: input.acceptEncoding };
 
-            if (storageClusterId) {
-                return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext));
-            }
-
-            return Result.ok(await getLocalGlbStream(this.storageService, objectName, requestContext));
+            return Result.ok(await getClusterGlbStream(this.objectGatewayClient, storageClusterId, objectName, requestContext));
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);

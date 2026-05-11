@@ -7,6 +7,7 @@ import {
     buildPluginBinaryPlacementBuckets,
     buildTrajectoryPlacementBuckets
 } from '@modules/cluster/application/utilities/storage-placement-targets';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import StoragePlacement, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps
@@ -17,7 +18,6 @@ import SceneArtifactRepository from '@modules/trajectory/infrastructure/persiste
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/infrastructure/contracts/team-cluster';
-import { VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ResolvedPlacementDefinition {
@@ -33,7 +33,8 @@ export default class StoragePlacementService {
         private readonly trajectoryRepository: TrajectoryRepository,
         private readonly analysisRepository: AnalysisRepository,
         private readonly pluginRepository: PluginRepository,
-        private readonly sceneArtifactRepository: SceneArtifactRepository
+        private readonly sceneArtifactRepository: SceneArtifactRepository,
+        private readonly teamClusterSelectionService: TeamClusterSelectionService
     ) {}
 
     async findByScope(
@@ -269,9 +270,11 @@ export default class StoragePlacementService {
             throw ApplicationError.notFound('Plugin::NotFound', 'Plugin not found for storage placement');
         }
 
+        const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(plugin.props.team);
+
         return {
             team: plugin.props.team,
-            primaryClusterId: VOLT_SERVER_OBJECT_OWNER_CLUSTER_ID,
+            primaryClusterId: storageClusterId,
             buckets: buildPluginBinaryPlacementBuckets(scopeId)
         };
     }

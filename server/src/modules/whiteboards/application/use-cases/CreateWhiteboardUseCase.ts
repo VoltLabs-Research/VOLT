@@ -1,5 +1,7 @@
-import { SYS_BUCKETS } from '@core/config/minio';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
+import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardCreatedEvent from '@modules/whiteboards/domain/events/WhiteboardCreatedEvent';
@@ -8,10 +10,9 @@ import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistenc
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 
 const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appState: {} }));
@@ -21,8 +22,8 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
     constructor(
         private readonly whiteboardRepository: WhiteboardRepository,
         private readonly whiteboardFolderRepository: WhiteboardFolderRepository,
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService,
+        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -43,12 +44,15 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
                 }
             }
 
+            const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(input.teamId);
+
             const whiteboard = await this.whiteboardRepository.create({
                 team: input.teamId,
                 createdBy: input.userId,
                 lastEditedBy: input.userId,
                 title: input.title,
                 folder: input.folderId ?? null,
+                storageClusterId,
                 payloadKey: '',
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -56,12 +60,13 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
 
             const payloadKey = `${input.teamId}/${whiteboard._id}/state.json`;
 
-            await this.storageService.upload(
-                SYS_BUCKETS.WHITEBOARDS,
-                payloadKey,
-                EMPTY_STATE,
-                { 'Content-Type': 'application/json' }
-            );
+            await this.objectGatewayClient.putBuffer(storageClusterId, {
+                bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+                objectKey: payloadKey,
+                buffer: EMPTY_STATE,
+                contentLength: EMPTY_STATE.byteLength,
+                contentType: 'application/json'
+            });
 
             const updated = await this.whiteboardRepository.updateById(whiteboard._id, {
                 payloadKey
