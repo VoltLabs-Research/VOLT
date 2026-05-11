@@ -179,6 +179,11 @@ export default class WhiteboardRealtimeStateService {
         return room ? this.toSnapshot(room) : null;
     }
 
+    async getTeamId(whiteboardId: string): Promise<string | null> {
+        const room = await this.getOrLoadRoom(whiteboardId);
+        return room?.teamId ?? null;
+    }
+
     async mergeScene(
         whiteboardId: string,
         elements: WhiteboardElement[],

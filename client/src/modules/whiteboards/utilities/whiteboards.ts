@@ -1,4 +1,5 @@
 import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import { reconcileElements } from '@excalidraw/excalidraw';
 
 /**
  * Excalidraw `appState` keys that are safe to persist across sessions.
@@ -19,6 +20,47 @@ interface WhiteboardSceneDelta {
     elements: WhiteboardElement[];
     appState: WhiteboardAppState;
     elementOrder?: string[];
+};
+
+const cloneSerializable = <T,>(value: T): T => {
+    try {
+        return JSON.parse(JSON.stringify(value)) as T;
+    } catch {
+        return value;
+    }
+};
+
+const normalizeWhiteboardCollaborators = (
+    sourceAppState: WhiteboardAppState,
+    nextAppState: WhiteboardAppState
+): WhiteboardAppState => {
+    const sourceCollaborators = sourceAppState['collaborators'];
+    if (sourceCollaborators instanceof Map) {
+        return {
+            ...nextAppState,
+            collaborators: new Map(sourceCollaborators)
+        };
+    }
+
+    const nextCollaborators = nextAppState['collaborators'];
+    if (nextCollaborators instanceof Map) {
+        return {
+            ...nextAppState,
+            collaborators: new Map(nextCollaborators)
+        };
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(nextAppState, 'collaborators')
+        && nextCollaborators !== undefined
+    ) {
+        return {
+            ...nextAppState,
+            collaborators: new Map()
+        };
+    }
+
+    return nextAppState;
 };
 
 const getElementId = (element: WhiteboardElement): string | null => {
@@ -108,6 +150,21 @@ const buildOrderedElements = (
     return orderedElements;
 };
 
+const reconcileWhiteboardElements = (
+    currentElements: WhiteboardElement[],
+    incomingElements: WhiteboardElement[]
+): WhiteboardElement[] => {
+    try {
+        return reconcileElements(
+            currentElements as never,
+            incomingElements as never,
+            {} as never
+        ) as unknown as WhiteboardElement[];
+    } catch {
+        return incomingElements;
+    }
+};
+
 const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: WhiteboardElement): boolean => {
     if (!current) {
         return true;
@@ -148,6 +205,25 @@ export const filterPersistableAppState = (
     return result;
 };
 
+export const cloneWhiteboardElements = (
+    elements: WhiteboardElement[]
+): WhiteboardElement[] => cloneSerializable(elements);
+
+export const cloneWhiteboardAppState = (
+    appState: WhiteboardAppState
+): WhiteboardAppState => normalizeWhiteboardCollaborators(
+    appState,
+    cloneSerializable(appState)
+);
+
+export const normalizeWhiteboardRuntimeAppState = (
+    appState: WhiteboardAppState
+): WhiteboardAppState => normalizeWhiteboardCollaborators(appState, { ...appState });
+
+export const cloneWhiteboardFiles = <TFiles extends Record<string, unknown> | undefined>(
+    files: TFiles
+): TFiles => cloneSerializable(files);
+
 export const mergeWhiteboardElements = (
     currentElements: WhiteboardElement[],
     incomingElements: WhiteboardElement[],
@@ -180,10 +256,16 @@ export const mergeWhiteboardElements = (
     }
 
     if (Array.isArray(incomingElementOrder) && incomingElementOrder.length > 0) {
-        return buildOrderedElements(merged, incomingElementOrder, currentOrder);
+        return reconcileWhiteboardElements(
+            currentElements,
+            buildOrderedElements(merged, incomingElementOrder, currentOrder)
+        );
     }
 
-    return buildOrderedElements(merged, currentOrder, incomingOrder);
+    return reconcileWhiteboardElements(
+        currentElements,
+        buildOrderedElements(merged, currentOrder, incomingOrder)
+    );
 };
 
 export const mergeWhiteboardAppState = (

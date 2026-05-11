@@ -4,6 +4,12 @@ import { emitOrSwallow, emitWithReport } from './socket-emit-helpers';
 import type { ISocketService } from './contracts/socket-service';
 import type { ITeamSocketRoomService } from './contracts/team-room-service';
 
+interface SocketAck<T = unknown> {
+    ok: boolean;
+    data?: T;
+    error?: string;
+}
+
 class TeamSocketRoomService implements ITeamSocketRoomService {
     private currentTeamId: string | null = null;
     private subscribedTeamId: string | null = null;
@@ -107,10 +113,13 @@ class TeamSocketRoomService implements ITeamSocketRoomService {
                 return;
             }
 
-            await emitWithReport(SOCKET_TEAM_EVENTS.SUBSCRIBE, {
+            const ack = await emitWithReport<SocketAck>(SOCKET_TEAM_EVENTS.SUBSCRIBE, {
                 teamId,
                 previousTeamId
             });
+            if (!ack?.ok) {
+                throw new Error(ack?.error || `Failed to subscribe socket to team "${teamId}".`);
+            }
 
             if (this.currentTeamId === teamId) {
                 this.subscribedTeamId = teamId;

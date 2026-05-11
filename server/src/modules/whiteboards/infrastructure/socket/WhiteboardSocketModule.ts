@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import WhiteboardRealtimeStateService from '@modules/whiteboards/infrastructure/services/WhiteboardRealtimeStateService';
@@ -22,6 +23,22 @@ interface WhiteboardPatchPayload extends Record<string, unknown> {
     appState: Record<string, unknown>;
     elementOrder?: string[];
 }
+
+interface SocketAck<T = unknown> {
+    ok: boolean;
+    data?: T;
+    error?: string;
+}
+
+interface WhiteboardPatchAck {
+    accepted: boolean;
+    revision: number;
+    delta?: Record<string, unknown>;
+    snapshot?: Record<string, unknown>;
+}
+
+const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
+const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -51,7 +68,19 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
     private registerSubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'subscribe_to_whiteboard', async (conn, payload) => {
             if (typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0) {
-                return;
+                return ackError('Invalid whiteboard id');
+            }
+
+            const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+            const teamId = await this.realtimeStateService.getTeamId(payload.whiteboardId);
+            if (!snapshot || !teamId) {
+                this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
+                return ackError('Whiteboard not found');
+            }
+
+            if (!conn.user?.teams?.includes(teamId)) {
+                this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
+                return ackError('You are not a member of this team');
             }
 
             const previousWhiteboardId = conn.data['whiteboardId'] as string | undefined;
@@ -70,12 +99,8 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
 
             await this.joinRoom(conn.id, room);
 
-            const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
-            if (snapshot) {
-                this.emitToSocket(conn.id, 'whiteboard_sync_state', snapshot);
-            }
-
             await this.broadcastPresence(room, 'whiteboard_users_update', this.toPresenceUser);
+            return ackOk({ snapshot });
         });
     }
 
@@ -100,10 +125,37 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
     }
 
     private registerPatch(connection: ISocketConnection): void {
-        this.on<WhiteboardPatchPayload>(connection.id, 'whiteboard_patch', async (conn, payload) => {
-            if (!conn.user || typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0 || typeof payload.clientId !== 'string') {
-                return;
+        this.on<WhiteboardPatchPayload, SocketAck<WhiteboardPatchAck>>(connection.id, 'whiteboard_patch', async (conn, payload) => {
+            if (
+                !conn.user
+                || typeof payload.whiteboardId !== 'string'
+                || payload.whiteboardId.length === 0
+                || typeof payload.clientId !== 'string'
+                || typeof payload.baseRevision !== 'number'
+                || !Number.isFinite(payload.baseRevision)
+            ) {
+                return ackError('Invalid whiteboard patch payload');
             }
+
+            const room = this.buildRoomId(payload.whiteboardId);
+            if (!this.roomManager.isInRoom(conn.id, room)) {
+                this.emitErrorToSocket(conn.id, ErrorCodes.VALIDATION_INVALID_INPUT, 'Socket is not subscribed to this whiteboard');
+                return ackError('Socket is not subscribed to this whiteboard');
+            }
+
+            const teamId = await this.realtimeStateService.getTeamId(payload.whiteboardId);
+            if (!teamId) {
+                this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
+                return ackError('Whiteboard not found');
+            }
+
+            if (!conn.user.teams?.includes(teamId)) {
+                this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
+                return ackError('You are not a member of this team');
+            }
+
+            const previousSnapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+            const isStalePatch = Boolean(previousSnapshot && payload.baseRevision < previousSnapshot.revision);
 
             const mergeResult = await this.realtimeStateService.mergeScene(
                 payload.whiteboardId,
@@ -116,37 +168,73 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
             );
 
             if (!mergeResult) {
-                return;
+                return ackError('Whiteboard state unavailable');
             }
 
             if (!mergeResult.changed) {
-                if (payload.baseRevision < mergeResult.revision) {
+                if (isStalePatch) {
                     const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
                     if (snapshot) {
-                        this.emitToSocket(conn.id, 'whiteboard_sync_state', {
+                        return ackOk({
+                            accepted: false,
+                            revision: snapshot.revision,
+                            snapshot: {
+                                ...snapshot,
+                                senderId: conn.user._id,
+                                clientId: payload.clientId,
+                                baseRevision: payload.baseRevision
+                            }
+                        });
+                    }
+                }
+                return ackOk({
+                    accepted: true,
+                    revision: mergeResult.revision
+                });
+            }
+
+            const socketPayload = mergeResult.delta
+                ? {
+                    ...mergeResult.delta,
+                    senderId: conn.user._id,
+                    clientId: payload.clientId,
+                    baseRevision: payload.baseRevision
+                }
+                : undefined;
+
+            if (socketPayload) {
+                this.emitToRoomExcept(conn.id, room, 'whiteboard_apply_delta', socketPayload);
+            }
+
+            if (isStalePatch) {
+                const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+                if (snapshot) {
+                    return ackOk({
+                        accepted: true,
+                        revision: snapshot.revision,
+                        delta: socketPayload,
+                        snapshot: {
                             ...snapshot,
                             senderId: conn.user._id,
                             clientId: payload.clientId,
                             baseRevision: payload.baseRevision
-                        });
-                    }
+                        }
+                    });
                 }
-                return;
             }
 
             if (!mergeResult.delta) {
-                return;
+                return ackOk({
+                    accepted: true,
+                    revision: mergeResult.revision
+                });
             }
 
-            const socketPayload = {
-                ...mergeResult.delta,
-                senderId: conn.user._id,
-                clientId: payload.clientId,
-                baseRevision: payload.baseRevision
-            };
-
-            const room = this.buildRoomId(payload.whiteboardId);
-            this.emitToRoom(room, 'whiteboard_apply_delta', socketPayload);
+            return ackOk({
+                accepted: true,
+                revision: mergeResult.revision,
+                delta: socketPayload
+            });
         });
     }
 

@@ -4,8 +4,8 @@ export enum IfStatementConditionType {
 }
 
 export enum IfStatementConditionHandler {
-    IsEqualTo = 'is_equal_to',  // Changed from 'is-equal-to' to match legacy format
-    IsNotEqualTo = 'is_not_equal_to'  // Changed from 'is-not-equal-to' to match legacy format
+    IsEqualTo = 'is_equal_to',
+    IsNotEqualTo = 'is_not_equal_to'
 }
 
 export interface IfStatementCondition {

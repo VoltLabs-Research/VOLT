@@ -9,14 +9,14 @@ export interface GetContainerByIdOutputDTO {
     container: Container;
 }
 
-export interface CreateContainerPortProxySessionInputDTO {
+export interface CreateContainerPortAccessUrlInputDTO {
     teamId: string;
     containerId: string;
     privatePort: number;
     userId: string;
 }
 
-export interface CreateContainerPortProxySessionOutputDTO {
+export interface CreateContainerPortAccessUrlOutputDTO {
     url: string;
     expiresAt: string;
     port: ContainerAccessiblePort;

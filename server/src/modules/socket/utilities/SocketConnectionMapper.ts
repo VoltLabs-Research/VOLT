@@ -1,4 +1,3 @@
-
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { Socket } from 'socket.io';
@@ -9,7 +8,9 @@ export default class SocketConnectionMapper {
         const socket = connection as Socket & {
             user?: ISocketConnection['user'] | null;
         };
-        const user = socket.user ?? undefined;
+        const socketData = socket.data as ISocketConnection['data'] | undefined;
+        const dataUser = socketData?.auth?.user;
+        const user = socket.user ?? dataUser ?? undefined;
         const handshakeUserId = socket.handshake?.query?.userId;
         const connectionUserId = user?._id?.toString()
             ?? (Array.isArray(handshakeUserId)
@@ -29,8 +30,8 @@ export default class SocketConnectionMapper {
                     teams: user.teams?.map((teamId) => teamId.toString())
                 }
                 : undefined,
-            data: socket.data,
-            rooms: socket.rooms,
+            data: socketData ?? {},
+            rooms: socket.rooms ?? new Set<string>(),
             nativeSocket: socket
         };
     }

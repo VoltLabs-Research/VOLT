@@ -9,48 +9,38 @@ import {
 } from '@modules/container/infrastructure/utilities/container-port-proxy';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { LocalRelayPortAllocator } from '@shared/infrastructure/services/LocalRelayPortAllocator';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
-    readRelayPortRangeValue,
     resolveRelayAdvertisedHost
 } from '@shared/infrastructure/utilities/relay-network';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
 import httpProxy from 'http-proxy';
-import { randomBytes } from 'node:crypto';
 import type {
     IncomingMessage,
     ServerResponse
 } from 'node:http';
 import http from 'node:http';
 import type { Duplex } from 'node:stream';
-import { injectable } from 'tsyringe';
 
-interface CreateContainerPortProxyRelaySessionInput {
+interface ContainerPortRelayTarget {
     teamId: string;
     containerId: string;
-    userId: string;
     teamClusterId: string;
     internalIp: string;
     privatePort: number;
+    publicPort: number;
 }
 
-interface ContainerPortProxyRelaySession {
-    sessionId: string;
-    relayPort: number;
-    teamId: string;
-    containerId: string;
+interface CreateContainerPortAccessUrlInput extends ContainerPortRelayTarget {
     userId: string;
-    teamClusterId: string;
-    internalIp: string;
-    privatePort: number;
-    expiresAt: number;
+}
+
+interface ContainerPortProxyRelay extends ContainerPortRelayTarget {
     server: http.Server;
-    cleanupTimer: NodeJS.Timeout;
 }
 
 interface ProxyTarget {
@@ -58,10 +48,7 @@ interface ProxyTarget {
     rawQuery: string;
 }
 
-const DEFAULT_SESSION_TTL_MS = 600_000;
 const DEFAULT_RELAY_BIND_HOST = '0.0.0.0';
-const DEFAULT_RELAY_PORT_START = 24000;
-const DEFAULT_RELAY_PORT_END = 24999;
 const PROXY_URL_ORIGIN = 'http://volt.local';
 
 const readCookies = (rawCookieHeader?: string): Record<string, string | undefined> => {
@@ -72,79 +59,31 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-@injectable()
+@Singleton()
 export class ContainerPortProxyRelayService {
-    private readonly sessionTtlMs = readPositiveIntegerEnv('CONTAINER_PORT_PROXY_SESSION_TTL_MS', DEFAULT_SESSION_TTL_MS);
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
     private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_APP_PROXY_ADVERTISED_HOST');
     private readonly publicProtocol = resolveContainerPortProxyRelayProtocol();
-    private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_RELAY_PORT_START);
-    private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_RELAY_PORT_END);
-    private readonly sessionsById = new Map<string, ContainerPortProxyRelaySession>();
-    private readonly portAllocator = new LocalRelayPortAllocator({
-        portStart: this.portStart,
-        portEnd: this.portEnd,
-        exhaustedMessage: 'No available container app relay ports'
-    });
+    private readonly relaysByPublicPort = new Map<number, ContainerPortProxyRelay>();
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly accessTokenService: ContainerPortProxyAccessTokenService
     ) {}
 
-    async createSession(input: CreateContainerPortProxyRelaySessionInput): Promise<{ url: string; expiresAt: string; }> {
-        const relayPort = this.portAllocator.reservePort();
-        const sessionId = randomBytes(16).toString('hex');
-        const expiresAt = Date.now() + this.sessionTtlMs;
-        const server = http.createServer((req, res) => {
-            this.handleHttpRequest(sessionId, req, res).catch((error: unknown) => {
-                this.writeHttpError(res, error);
-            });
-        });
+    async createAccessUrl(input: CreateContainerPortAccessUrlInput): Promise<{ url: string; expiresAt: string; }> {
+        await this.ensureRelay(input);
 
-        server.on('upgrade', (request, socket, head) => {
-            this.handleUpgrade(sessionId, request, socket, head).catch((error: unknown) => {
-                const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
-                const message = error instanceof Error ? error.message : 'WebSocket upgrade failed';
-                writeUpgradeError(socket, statusCode, message);
-            });
-        });
-
-        await this.portAllocator.listen(server, relayPort, this.bindHost);
-
-        const cleanupTimer = setTimeout(() => {
-            this.closeSession(sessionId).catch(() => {
-                logger.error(`Failed to close expired container port proxy session sessionId=${sessionId}`);
-            });
-        }, this.sessionTtlMs);
-        cleanupTimer.unref();
-
-        const session: ContainerPortProxyRelaySession = {
-            sessionId,
-            relayPort,
-            teamId: input.teamId,
-            containerId: input.containerId,
-            userId: input.userId,
-            teamClusterId: input.teamClusterId,
-            internalIp: input.internalIp,
-            privatePort: input.privatePort,
-            expiresAt,
-            server,
-            cleanupTimer
-        };
-
-        this.sessionsById.set(sessionId, session);
-
+        const expiresAt = Date.now() + this.accessTokenService.getTtlMs();
         const url = buildContainerPortProxyRelayUrl({
-            sessionId,
-            relayPort,
+            containerId: input.containerId,
+            privatePort: input.privatePort,
+            publicPort: input.publicPort,
             userId: input.userId,
             advertisedHost: this.advertisedHost,
             protocol: this.publicProtocol,
             createAccessToken: this.accessTokenService.create.bind(this.accessTokenService)
         });
-
-        logger.info(`Created container port proxy relay session sessionId=${sessionId} relayPort=${relayPort} teamId=${input.teamId} containerId=${input.containerId}`);
 
         return {
             url,
@@ -152,18 +91,116 @@ export class ContainerPortProxyRelayService {
         };
     }
 
+    async ensureContainerRelays(relays: ContainerPortRelayTarget[]): Promise<void> {
+        await Promise.all(relays.map((relay) => this.ensureRelay(relay)));
+    }
+
+    async syncContainerRelays(containerId: string, relays: ContainerPortRelayTarget[]): Promise<void> {
+        const nextPublicPorts = new Set(relays.map((relay) => relay.publicPort));
+        const staleRelays = Array.from(this.relaysByPublicPort.values()).filter((relay) => {
+            return relay.containerId === containerId && !nextPublicPorts.has(relay.publicPort);
+        });
+
+        await Promise.all(staleRelays.map((relay) => this.stopRelay(relay.publicPort)));
+        await this.ensureContainerRelays(relays);
+    }
+
+    async stopContainerRelays(containerId: string): Promise<void> {
+        const publicPorts = Array.from(this.relaysByPublicPort.values())
+            .filter((relay) => relay.containerId === containerId)
+            .map((relay) => relay.publicPort);
+
+        await Promise.all(publicPorts.map((publicPort) => this.stopRelay(publicPort)));
+    }
+
+    async stopPublicPortRelays(publicPorts: number[]): Promise<void> {
+        await Promise.all(publicPorts.map((publicPort) => this.stopRelay(publicPort)));
+    }
+
+    async stopAll(): Promise<void> {
+        await Promise.all(Array.from(this.relaysByPublicPort.keys()).map((publicPort) => this.stopRelay(publicPort)));
+    }
+
+    private async ensureRelay(input: ContainerPortRelayTarget): Promise<void> {
+        const existingRelay = this.relaysByPublicPort.get(input.publicPort);
+
+        if (existingRelay) {
+            if (existingRelay.containerId !== input.containerId || existingRelay.privatePort !== input.privatePort) {
+                throw ApplicationError.conflict(
+                    'Container::PublicPortUnavailable',
+                    `Public port ${input.publicPort} is already assigned to another container port`
+                );
+            }
+
+            Object.assign(existingRelay, input);
+            return;
+        }
+
+        const server = http.createServer((req, res) => {
+            this.handleHttpRequest(input.publicPort, req, res).catch((error: unknown) => {
+                this.writeHttpError(res, error);
+            });
+        });
+
+        server.on('upgrade', (request, socket, head) => {
+            this.handleUpgrade(input.publicPort, request, socket, head).catch((error: unknown) => {
+                const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
+                const message = error instanceof Error ? error.message : 'WebSocket upgrade failed';
+                writeUpgradeError(socket, statusCode, message);
+            });
+        });
+
+        await this.listen(server, input.publicPort);
+
+        this.relaysByPublicPort.set(input.publicPort, {
+            ...input,
+            server
+        });
+
+        logger.info(`Started container public port relay publicPort=${input.publicPort} teamId=${input.teamId} containerId=${input.containerId}`);
+    }
+
+    private async listen(server: http.Server, publicPort: number): Promise<void> {
+        await new Promise<void>((resolve, reject) => {
+            let bound = false;
+
+            const cleanup = (): void => {
+                server.off('error', onError);
+                server.off('listening', onListening);
+            };
+
+            const onListening = (): void => {
+                bound = true;
+                cleanup();
+                resolve();
+            };
+
+            const onError = (error: Error): void => {
+                cleanup();
+                if (!bound && server.listening) {
+                    server.close();
+                }
+                reject(error);
+            };
+
+            server.once('error', onError);
+            server.once('listening', onListening);
+            server.listen(publicPort, this.bindHost);
+        });
+    }
+
     private async handleHttpRequest(
-        sessionId: string,
+        publicPort: number,
         req: IncomingMessage,
         res: ServerResponse<IncomingMessage>
     ): Promise<void> {
-        const session = this.requireAuthorizedSession(sessionId, req.url || '/', this.readHeaderValue(req.headers.cookie));
+        const relay = this.requireAuthorizedRelay(publicPort, req.url || '/', this.readHeaderValue(req.headers.cookie));
         const accessTokenFromUrl = readContainerPortProxyAccessTokenFromUrl(req.url || '/');
 
         const target = this.extractProxyTarget(req.url || '/');
-        const tunnel = await this.teamClusterDaemonClient.openTunnel(session.teamClusterId, {
-            targetHost: session.internalIp,
-            targetPort: session.privatePort,
+        const tunnel = await this.teamClusterDaemonClient.openTunnel(relay.teamClusterId, {
+            targetHost: relay.internalIp,
+            targetPort: relay.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.Http
         });
         const agent = this.createSingleUseTunnelHttpAgent(tunnel);
@@ -178,23 +215,13 @@ export class ContainerPortProxyRelayService {
         proxy.once('proxyRes', (proxyResponse) => {
             const location = proxyResponse.headers.location;
             if (typeof location === 'string') {
-                proxyResponse.headers.location = this.rewriteLocationHeader(location, session);
+                proxyResponse.headers.location = this.rewriteLocationHeader(location, relay);
             }
 
-            // Why: `http-proxy` copies upstream `Set-Cookie` into `res` via
-            // `res.setHeader`, which REPLACES any cookie we had set beforehand.
-            // Merging into `proxyResponse.headers['set-cookie']` here (before
-            // http-proxy writes them out) is the only way to keep our auth
-            // cookie alive alongside the container's own cookies. Without this,
-            // the browser never receives the session cookie, subsequent
-            // requests (including the workbench's WebSocket upgrade) arrive
-            // without credentials, and the relay replies 401 — which surfaces
-            // in the browser as a bare `WebSocket close 1006`.
             if (accessTokenFromUrl) {
                 proxyResponse.headers['set-cookie'] = this.appendAccessTokenCookie(
                     proxyResponse.headers['set-cookie'],
-                    accessTokenFromUrl,
-                    session
+                    accessTokenFromUrl
                 );
             }
 
@@ -214,7 +241,7 @@ export class ContainerPortProxyRelayService {
         res.once('close', cleanup);
         req.url = `${target.proxiedPath}${target.rawQuery}`;
         proxy.web(req, res, {
-            target: `http://${session.internalIp}:${session.privatePort}`,
+            target: `http://${relay.internalIp}:${relay.privatePort}`,
             agent,
             changeOrigin: true,
             xfwd: true
@@ -222,12 +249,12 @@ export class ContainerPortProxyRelayService {
         req.url = originalUrl;
     }
 
-    private async handleUpgrade(sessionId: string, request: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
-        const session = this.requireAuthorizedSession(sessionId, request.url || '/', this.readHeaderValue(request.headers.cookie));
+    private async handleUpgrade(publicPort: number, request: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
+        const relay = this.requireAuthorizedRelay(publicPort, request.url || '/', this.readHeaderValue(request.headers.cookie));
         const target = this.extractProxyTarget(request.url || '/');
-        const tunnel = await this.teamClusterDaemonClient.openTunnel(session.teamClusterId, {
-            targetHost: session.internalIp,
-            targetPort: session.privatePort,
+        const tunnel = await this.teamClusterDaemonClient.openTunnel(relay.teamClusterId, {
+            targetHost: relay.internalIp,
+            targetPort: relay.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.WebSocket
         });
         const agent = this.createSingleUseTunnelHttpAgent(tunnel);
@@ -249,7 +276,7 @@ export class ContainerPortProxyRelayService {
         socket.once('close', cleanup);
         request.url = `${target.proxiedPath}${target.rawQuery}`;
         proxy.ws(request, socket, head, {
-            target: `ws://${session.internalIp}:${session.privatePort}`,
+            target: `ws://${relay.internalIp}:${relay.privatePort}`,
             agent,
             changeOrigin: true,
             xfwd: true
@@ -257,21 +284,14 @@ export class ContainerPortProxyRelayService {
         request.url = originalUrl;
     }
 
-    private requireAuthorizedSession(
-        expectedSessionId: string,
+    private requireAuthorizedRelay(
+        publicPort: number,
         requestUrl: string,
         cookieHeader: string | undefined
-    ): ContainerPortProxyRelaySession {
-        const session = this.sessionsById.get(expectedSessionId);
-        if (!session) {
-            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Container proxy session was not found');
-        }
-
-        if (Date.now() >= session.expiresAt) {
-            this.closeSession(session.sessionId).catch(() => {
-                logger.error(`Failed to close expired container port proxy session sessionId=${session.sessionId}`);
-            });
-            throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Container proxy session expired');
+    ): ContainerPortProxyRelay {
+        const relay = this.relaysByPublicPort.get(publicPort);
+        if (!relay) {
+            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Container public port relay was not found');
         }
 
         const cookieToken = readCookies(cookieHeader)[CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME];
@@ -286,26 +306,25 @@ export class ContainerPortProxyRelayService {
         }
 
         if (
-            verifiedToken.sessionId !== session.sessionId
-            || verifiedToken.relayPort !== session.relayPort
-            || verifiedToken.userId !== session.userId
+            verifiedToken.containerId !== relay.containerId
+            || verifiedToken.privatePort !== relay.privatePort
+            || verifiedToken.publicPort !== relay.publicPort
         ) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, ErrorCodes.TEAM_ACCESS_DENIED);
         }
 
-        return session;
+        return relay;
     }
 
     private appendAccessTokenCookie(
         existing: string | string[] | undefined,
-        accessToken: string,
-        session: ContainerPortProxyRelaySession
+        accessToken: string
     ): string[] {
         const ourCookie = serializeCookie(CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
             path: '/',
             httpOnly: true,
             sameSite: 'lax',
-            maxAge: Math.max(1, Math.floor((session.expiresAt - Date.now()) / 1000))
+            maxAge: Math.max(1, Math.floor(this.accessTokenService.getTtlMs() / 1000))
         });
 
         if (Array.isArray(existing)) {
@@ -340,16 +359,16 @@ export class ContainerPortProxyRelayService {
         };
     }
 
-    private rewriteLocationHeader(location: string, session: ContainerPortProxyRelaySession): string {
+    private rewriteLocationHeader(location: string, relay: ContainerPortProxyRelay): string {
         if (!location) {
             return location;
         }
 
         try {
-            const resolvedLocation = new URL(location, `http://${session.internalIp}:${session.privatePort}/`);
+            const resolvedLocation = new URL(location, `http://${relay.internalIp}:${relay.privatePort}/`);
             if (
-                resolvedLocation.hostname === session.internalIp
-                && Number(resolvedLocation.port || '80') === session.privatePort
+                resolvedLocation.hostname === relay.internalIp
+                && Number(resolvedLocation.port || '80') === relay.privatePort
             ) {
                 return `${resolvedLocation.pathname}${resolvedLocation.search}${resolvedLocation.hash}`;
             }
@@ -377,19 +396,19 @@ export class ContainerPortProxyRelayService {
         }));
     }
 
-    private async closeSession(sessionId: string): Promise<void> {
-        const session = this.sessionsById.get(sessionId);
-        if (!session) {
+    private async stopRelay(publicPort: number): Promise<void> {
+        const relay = this.relaysByPublicPort.get(publicPort);
+        if (!relay) {
             return;
         }
 
-        clearTimeout(session.cleanupTimer);
-        this.sessionsById.delete(sessionId);
+        this.relaysByPublicPort.delete(publicPort);
 
-        await this.portAllocator.close(session.server);
-        this.portAllocator.releasePort(session.relayPort);
+        await new Promise<void>((resolve) => {
+            relay.server.close(() => resolve());
+        });
 
-        logger.info(`Closed container port proxy relay session sessionId=${sessionId} relayPort=${session.relayPort} teamId=${session.teamId} containerId=${session.containerId}`);
+        logger.info(`Stopped container public port relay publicPort=${publicPort} teamId=${relay.teamId} containerId=${relay.containerId}`);
     }
 
     private readHeaderValue(value: string | string[] | undefined): string | undefined {

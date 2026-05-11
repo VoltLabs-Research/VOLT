@@ -1,5 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
+import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO } from '@modules/team/application/dtos/team/JoinTeamByInviteCodeDTO';
 import { invalidInviteCodeError, normalizeInviteCode } from '@modules/team/application/use-cases/team/invite-code-helpers';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
@@ -15,7 +16,8 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
     constructor(
         private readonly teamRepository: TeamRepository,
         private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly teamRoleRepository: TeamRoleRepository
+        private readonly teamRoleRepository: TeamRoleRepository,
+        private readonly userRepository: UserRepository
     ) {}
 
     async execute(input: JoinTeamByInviteCodeInputDTO): Promise<Result<JoinTeamByInviteCodeOutputDTO, ApplicationError>> {
@@ -54,6 +56,7 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
         });
 
         await this.teamRepository.addMemberToTeam(teamMember._id, team._id);
+        await this.userRepository.addTeamToUser(userId, team._id);
 
         return Result.ok({
             message: 'Successfully joined team',

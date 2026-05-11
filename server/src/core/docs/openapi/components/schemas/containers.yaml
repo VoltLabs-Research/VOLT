@@ -140,7 +140,7 @@ PortMapping:
       type: integer
       minimum: 1
       maximum: 65535
-      description: The public (host) port. Omit or set to 0 for auto-assignment.
+      description: The public Volt Server port. Omit or set to 0 for auto-assignment from the configured container proxy range.
   additionalProperties: false
 Container:
   type: object

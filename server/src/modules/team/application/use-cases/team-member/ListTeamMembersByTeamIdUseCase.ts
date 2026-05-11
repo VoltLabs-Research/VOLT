@@ -1,10 +1,9 @@
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
 import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
 import { getTeamMemberUserId, isPopulatedTeamMemberUser } from '@modules/team/domain/entities/team-member/TeamMember';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamPresenceService from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
+import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -24,8 +23,7 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
         private readonly analysisRepository: AnalysisRepository,
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly whiteboardRepository: WhiteboardRepository,
-        private readonly dailyActivityRepository: DailyActivityRepository,
-        private readonly teamPresenceService: TeamPresenceService
+        private readonly teamRoomPresenceService: TeamRoomPresenceService
     ) {}
 
     async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
@@ -44,22 +42,20 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
 
         const userIds = teamMembers.data.map((member) => getTeamMemberUserId(member.props.user));
 
-        const [dailyActivities, trajectoryCounts, analysisCounts, latexCounts, whiteboardCounts] = await Promise.all([
-            this.dailyActivityRepository.findActivityByTeamId(teamId, 7),
-            this.trajectoryRepository.countGroupedBy('createdBy', userIds),
-            this.analysisRepository.countGroupedBy('createdBy', userIds),
-            this.latexDocumentRepository.countGroupedBy('createdBy', userIds),
-            this.whiteboardRepository.countGroupedBy('createdBy', userIds)
+        const [
+            trajectoryCounts,
+            analysisCounts,
+            latexCounts,
+            whiteboardCounts,
+            onlineUserIds
+        ] = await Promise.all([
+            this.trajectoryRepository.countGroupedBy('createdBy', userIds, { team: teamId }),
+            this.analysisRepository.countGroupedBy('createdBy', userIds, { team: teamId }),
+            this.latexDocumentRepository.countGroupedBy('createdBy', userIds, { team: teamId }),
+            this.whiteboardRepository.countGroupedBy('createdBy', userIds, { team: teamId }),
+            this.teamRoomPresenceService.getOnlineUserIds(teamId)
         ]);
-
-        const activityByUser = new Map<string, number>();
-        for (const activity of dailyActivities) {
-            const activityUserId = typeof activity.user === 'string'
-                ? activity.user
-                : activity.user._id.toString();
-            const current = activityByUser.get(activityUserId) || 0;
-            activityByUser.set(activityUserId, current + (activity.minutesOnline || 0));
-        }
+        const onlineUserIdSet = new Set(onlineUserIds);
 
         const data = teamMembers.data.map((member) => {
             const userId = getTeamMemberUserId(member.props.user);
@@ -72,11 +68,10 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
                 user: user
                     ? {
                         ...user,
-                        isOnline: this.teamPresenceService.isUserOnline(teamId, userId),
+                        isOnline: onlineUserIdSet.has(userId),
                         lastSeenAt: user.lastSeenAt
                     }
                     : member.props.user,
-                timeSpentLast7Days: activityByUser.get(userId) || 0,
                 trajectoriesCount: trajectoryCounts.get(userId) || 0,
                 analysesCount: analysisCounts.get(userId) || 0,
                 latexCount: latexCounts.get(userId) || 0,

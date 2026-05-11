@@ -1,5 +1,5 @@
 import CreateContainerController from './CreateContainerController';
-import CreateContainerPortProxySessionController from './CreateContainerPortProxySessionController';
+import CreateContainerPortAccessUrlController from './CreateContainerPortAccessUrlController';
 import DeleteContainerByIdController from './DeleteContainerByIdController';
 import GetContainerByIdController from './GetContainerByIdController';
 import GetContainerFilesByIdController from './GetContainerFilesByIdController';
@@ -13,7 +13,7 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 
 export default createControllerRegistry({
     create: CreateContainerController,
-    createPortProxySession: CreateContainerPortProxySessionController,
+    createPortAccessUrl: CreateContainerPortAccessUrlController,
     deleteById: DeleteContainerByIdController,
     getById: GetContainerByIdController,
     getFilesById: GetContainerFilesByIdController,

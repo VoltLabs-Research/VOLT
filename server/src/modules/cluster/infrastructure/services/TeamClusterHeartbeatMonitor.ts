@@ -5,7 +5,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
-const TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS', 60_000);
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
@@ -26,7 +25,7 @@ export default class TeamClusterHeartbeatMonitor {
 
         this.interval = setInterval(() => {
             this.runSweep().catch((error: unknown) => {
-                logger.error(error, '[TeamClusterHeartbeatMonitor] Failed to sweep heartbeat timeouts');
+                logger.error(error, '[TeamClusterHeartbeatMonitor] Failed to sweep cluster lifecycle');
             });
         }, TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS);
     }
@@ -41,11 +40,10 @@ export default class TeamClusterHeartbeatMonitor {
     }
 
     async runSweep(): Promise<void> {
-        const heartbeatCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_TIMEOUT_MS);
+        const disconnectEvidenceCutoff = new Date(Date.now() - TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS);
         const deleteCutoff = new Date(Date.now() - TEAM_CLUSTER_DELETE_TIMEOUT_MS);
         await Promise.all([
-            this.teamClusterLifecycleService.markHeartbeatTimeouts(heartbeatCutoff),
-            this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(heartbeatCutoff),
+            this.teamClusterLifecycleService.finalizeDeletingClustersByEvidence(disconnectEvidenceCutoff),
             this.teamClusterLifecycleService.markDeletingTimeouts(deleteCutoff),
             this.cleanupExpiredDemos()
         ]);

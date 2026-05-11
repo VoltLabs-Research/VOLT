@@ -1,13 +1,13 @@
 import {
+    cloneWhiteboardAppState,
+    cloneWhiteboardElements,
     computeWhiteboardSceneDelta,
     filterPersistableAppState,
     mergeWhiteboardAppState,
     mergeWhiteboardElements
 } from '@/modules/whiteboards/utilities/whiteboards';
 import useSocket from '@/modules/socket/hooks/use-socket';
-import useSocketConnectionEffect from '@/modules/socket/hooks/use-socket-connection-effect';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
 import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,6 +33,23 @@ interface WhiteboardStatePayload {
     senderId?: string;
     clientId?: string;
     baseRevision?: number;
+};
+
+interface SocketAck<TData> {
+    ok: boolean;
+    data?: TData;
+    error?: string;
+};
+
+interface WhiteboardSubscribeAck {
+    snapshot?: WhiteboardStatePayload | null;
+};
+
+interface WhiteboardPatchAck {
+    accepted: boolean;
+    revision: number;
+    delta?: WhiteboardStatePayload;
+    snapshot?: WhiteboardStatePayload;
 };
 
 interface QueuedWhiteboardState {
@@ -67,9 +84,15 @@ const useWhiteboardSync = ({
     const clientIdRef = useRef(uuidv4());
     const revisionRef = useRef(0);
     const hasSnapshotRef = useRef(false);
+    const isSubscribedRef = useRef(false);
+    const isSendingPatchRef = useRef(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
     const remoteApplyChainRef = useRef(Promise.resolve());
+    const applyRemoteStateRef = useRef<(
+        payload: WhiteboardStatePayload | undefined,
+        mode: 'snapshot' | 'delta'
+    ) => void>(() => undefined);
     const syncedSceneRef = useRef<SyncedWhiteboardState>({
         elements: [],
         appState: {}
@@ -77,18 +100,43 @@ const useWhiteboardSync = ({
 
     const subscriptionEnabled = enabled && !!whiteboardId;
 
-    useSocketRoom({
-        joinEvent: SOCKET_WHITEBOARD_EVENTS.SUBSCRIBE,
-        leaveEvent: SOCKET_WHITEBOARD_EVENTS.UNSUBSCRIBE,
-        roomKey: subscriptionEnabled ? whiteboardId ?? null : null,
-        buildJoinPayload: () => whiteboardId ? { whiteboardId } : null,
-        enabled: subscriptionEnabled,
-        fireAndForget: true
-    });
+    const readAckData = useCallback(<TData,>(ack: SocketAck<TData> | undefined, fallbackMessage: string): TData => {
+        if (!ack?.ok || !ack.data) {
+            throw new Error(ack?.error ?? fallbackMessage);
+        }
+
+        return ack.data;
+    }, []);
+
+    const applyPatchAck = useCallback((ack: WhiteboardPatchAck, sentState: QueuedWhiteboardState) => {
+        if (ack.snapshot) {
+            return;
+        }
+
+        if (ack.revision > revisionRef.current) {
+            revisionRef.current = ack.revision;
+        }
+
+        if (ack.accepted) {
+            hasSnapshotRef.current = true;
+            syncedSceneRef.current = {
+                elements: cloneWhiteboardElements(sentState.elements),
+                appState: cloneWhiteboardAppState(filterPersistableAppState(sentState.appState))
+            };
+        }
+    }, []);
 
     const flushQueuedState = useCallback(() => {
         const queuedState = queuedStateRef.current;
-        if (!queuedState || !enabled || !whiteboardId || !socketService.isConnected() || !hasSnapshotRef.current) {
+        if (
+            !queuedState
+            || !enabled
+            || !whiteboardId
+            || !socketService.isConnected()
+            || !hasSnapshotRef.current
+            || !isSubscribedRef.current
+            || isSendingPatchRef.current
+        ) {
             return;
         }
 
@@ -105,6 +153,7 @@ const useWhiteboardSync = ({
         }
 
         queuedStateRef.current = null;
+        isSendingPatchRef.current = true;
 
         const payload: WhiteboardPatchPayload = {
             whiteboardId,
@@ -115,10 +164,27 @@ const useWhiteboardSync = ({
             elementOrder: delta.elementOrder
         };
 
-        socketService.emit(SOCKET_WHITEBOARD_EVENTS.PATCH, payload).catch(() => {
-            queuedStateRef.current = queuedState;
-        });
-    }, [enabled, whiteboardId, socketService]);
+        socketService.emit<SocketAck<WhiteboardPatchAck>>(SOCKET_WHITEBOARD_EVENTS.PATCH, payload)
+            .then((ack) => {
+                const data = readAckData(ack, 'Whiteboard patch was not accepted.');
+                if (data.snapshot) {
+                    if (!data.accepted) {
+                        queuedStateRef.current = queuedState;
+                    }
+                    applyRemoteStateRef.current(data.snapshot, 'snapshot');
+                    return;
+                }
+
+                applyPatchAck(data, queuedState);
+            })
+            .catch(() => {
+                queuedStateRef.current = queuedState;
+            })
+            .finally(() => {
+                isSendingPatchRef.current = false;
+                flushQueuedState();
+            });
+    }, [applyPatchAck, enabled, readAckData, whiteboardId, socketService]);
 
     const sendDelta = useCallback((elements: ExcalidrawElement[], appState: AppState) => {
         if (!enabled || !whiteboardId) {
@@ -126,8 +192,8 @@ const useWhiteboardSync = ({
         }
 
         queuedStateRef.current = {
-            elements,
-            appState: filterPersistableAppState(appState)
+            elements: cloneWhiteboardElements(elements),
+            appState: cloneWhiteboardAppState(filterPersistableAppState(appState))
         };
 
         if (debounceTimerRef.current) {
@@ -139,10 +205,6 @@ const useWhiteboardSync = ({
             flushQueuedState();
         }, DELTA_DEBOUNCE_MS);
     }, [enabled, flushQueuedState, whiteboardId]);
-
-    useSocketConnectionEffect((connected) => {
-        if (!connected) hasSnapshotRef.current = false;
-    });
 
     const applyRemoteState = useCallback((
         payload: WhiteboardStatePayload | undefined,
@@ -165,20 +227,20 @@ const useWhiteboardSync = ({
 
         if (mode === 'snapshot') {
             syncedSceneRef.current = {
-                elements: payload.elements,
-                appState: filterPersistableAppState(payload.appState)
+                elements: cloneWhiteboardElements(payload.elements),
+                appState: cloneWhiteboardAppState(filterPersistableAppState(payload.appState))
             };
         } else {
             syncedSceneRef.current = {
-                elements: mergeWhiteboardElements(
+                elements: cloneWhiteboardElements(mergeWhiteboardElements(
                     syncedSceneRef.current.elements,
                     payload.elements,
                     payload.elementOrder
-                ),
-                appState: mergeWhiteboardAppState(
+                )),
+                appState: cloneWhiteboardAppState(mergeWhiteboardAppState(
                     syncedSceneRef.current.appState,
                     payload.appState
-                )
+                ))
             };
         }
 
@@ -207,6 +269,8 @@ const useWhiteboardSync = ({
             });
     }, [whiteboardId, onRemoteState, flushQueuedState]);
 
+    applyRemoteStateRef.current = applyRemoteState;
+
     useSocketEvent<WhiteboardStatePayload | undefined>(
         SOCKET_WHITEBOARD_EVENTS.SYNC_STATE,
         (payload) => applyRemoteState(payload, 'snapshot'),
@@ -218,6 +282,63 @@ const useWhiteboardSync = ({
         (payload) => applyRemoteState(payload, 'delta'),
         { enabled: subscriptionEnabled }
     );
+
+    useEffect(() => {
+        if (!subscriptionEnabled || !whiteboardId) return;
+
+        let cancelled = false;
+
+        const subscribe = async (): Promise<void> => {
+            try {
+                await socketService.connect();
+                if (cancelled || !socketService.isConnected()) {
+                    return;
+                }
+
+                const ack = await socketService.emit<SocketAck<WhiteboardSubscribeAck>>(
+                    SOCKET_WHITEBOARD_EVENTS.SUBSCRIBE,
+                    { whiteboardId }
+                );
+
+                if (cancelled) {
+                    return;
+                }
+
+                const data = readAckData(ack, 'Whiteboard subscription failed.');
+                isSubscribedRef.current = true;
+                if (data.snapshot) {
+                    applyRemoteState(data.snapshot, 'snapshot');
+                }
+                flushQueuedState();
+            } catch {
+                isSubscribedRef.current = false;
+                hasSnapshotRef.current = false;
+            }
+        };
+
+        subscribe();
+
+        const unsubscribeConnection = socketService.onConnectionChange((connected) => {
+            if (!connected) {
+                isSubscribedRef.current = false;
+                hasSnapshotRef.current = false;
+                return;
+            }
+
+            subscribe();
+        });
+
+        return () => {
+            cancelled = true;
+            unsubscribeConnection();
+            isSubscribedRef.current = false;
+            hasSnapshotRef.current = false;
+
+            if (socketService.isConnected()) {
+                socketService.emitWithoutAck(SOCKET_WHITEBOARD_EVENTS.UNSUBSCRIBE, { whiteboardId });
+            }
+        };
+    }, [applyRemoteState, flushQueuedState, readAckData, socketService, subscriptionEnabled, whiteboardId]);
 
     useEffect(() => {
         if (!subscriptionEnabled) return;

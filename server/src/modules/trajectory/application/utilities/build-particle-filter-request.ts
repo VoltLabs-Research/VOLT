@@ -7,12 +7,8 @@ import type {
 import type { ParticleFilterConditionDTO } from '@modules/trajectory/application/dtos/particle-filter';
 
 interface ParticleFilterRequestInputLike {
-    exposureId?: string;
-    property?: string;
-    operator?: string;
-    value?: string | number;
-    combinator?: ParticleFilterCombinator;
-    conditions?: ParticleFilterConditionDTO[];
+    combinator: ParticleFilterCombinator;
+    conditions: ParticleFilterConditionDTO[];
 }
 
 const resolveFilterOperator = (operator: string | undefined): '==' | '!=' | '>' | '>=' | '<' | '<=' => {
@@ -30,14 +26,14 @@ const resolveFilterOperator = (operator: string | undefined): '==' | '!=' | '>' 
 };
 
 const buildPropertyCondition = (input: {
-    property?: string;
-    operator?: string;
-    value?: string | number;
+    property: string;
+    operator: string;
+    value: number;
     exposureId?: string;
 }): ParticleFilterCondition => ({
-    property: input.property || '',
+    property: input.property,
     operator: resolveFilterOperator(input.operator),
-    value: Number(input.value ?? 0),
+    value: Number(input.value),
     ...(input.exposureId ? { exposureId: input.exposureId } : {})
 });
 
@@ -48,15 +44,12 @@ const resolveCondition = (condition: ParticleFilterConditionDTO): ParticleFilter
 export const buildParticleFilterRequest = (
     input: ParticleFilterRequestInputLike
 ): ParticleFilterRequest => {
-    if (input.conditions && input.conditions.length > 0) {
-        return {
-            combinator: input.combinator || ParticleFilterCombinator.And,
-            conditions: input.conditions.map(resolveCondition)
-        };
+    if (input.conditions.length === 0) {
+        throw new Error('Particle filter requires at least one condition');
     }
 
     return {
-        combinator: input.combinator || ParticleFilterCombinator.And,
-        conditions: [buildPropertyCondition(input)]
+        combinator: input.combinator,
+        conditions: input.conditions.map(resolveCondition)
     };
 };

@@ -155,7 +155,7 @@ const ContainerDetailsHeader = ({
                             onClick={() => openPort(container._id, primaryAccessiblePort.private)}
                             isLoading={openingPort === primaryAccessiblePort.private}
                         >
-                            Open :{primaryAccessiblePort.private}
+                            Open :{primaryAccessiblePort.public}
                         </Button>
                     )}
                 </Row>

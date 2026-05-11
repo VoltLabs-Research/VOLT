@@ -3,14 +3,12 @@ import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 
 export interface TeamClusterLifecycleUpdatePreconditions {
     allowedCurrentStatuses?: TeamClusterStatus[];
-    requireHeartbeatBefore?: Date;
     requireUpdatedBefore?: Date;
 }
 
 export interface ITeamClusterRepository extends IBaseRepository<TeamCluster, TeamClusterProps> {
     findByIdWithSensitiveData(teamClusterId: string): Promise<TeamCluster | null>;
-    findHeartbeatTimedOutConnectedClusters(cutoff: Date): Promise<TeamCluster[]>;
-    findHeartbeatTimedOutDeletingClusters(cutoff: Date): Promise<TeamCluster[]>;
+    findDeletingClustersDisconnectedBefore(cutoff: Date): Promise<TeamCluster[]>;
     findDeletingTimedOutClusters(cutoff: Date): Promise<TeamCluster[]>;
     findActiveDemoByTeamId(teamId: string): Promise<TeamCluster | null>;
     findActiveDemoByTeamIdWithSensitiveData(teamId: string): Promise<TeamCluster | null>;
