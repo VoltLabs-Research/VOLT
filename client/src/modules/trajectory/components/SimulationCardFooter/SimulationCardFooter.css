@@ -12,10 +12,10 @@
     border-radius: inherit;
     background: linear-gradient(
         to top,
-        color-mix(in srgb, var(--color-overlay) 100%, transparent) 0%,
-        color-mix(in srgb, var(--color-overlay) 72%, transparent) 40%,
+        color-mix(in srgb, var(--color-bg) 100%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 72%, transparent) 40%,
         transparent 100%
-    );
+    )
 }
 
 .footer-options-btn {
