@@ -1,8 +1,14 @@
 import type { IExposureExport } from '@/modules/plugin/api/entities/plugin/exposure';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { PluginScene, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 
 export const DEFAULT_DISLOCATION_LINE_WIDTH = 0.08;
+const RENDERABLE_SCENE_EXPORTERS = new Set<string>([
+    Exporter.ATOMISTIC,
+    Exporter.MESH,
+    Exporter.DISLOCATION
+]);
 
 type ExposureExportLike = {
     exporter?: string;
@@ -64,6 +70,16 @@ export const buildSceneRenderMetadata = (
         exportType: exposureExport.type,
         ...(defaultLineWidth ? { defaultLineWidth } : {})
     };
+};
+
+export const isRenderableSceneExporter = (exporter: string | null | undefined): boolean => {
+    return typeof exporter === 'string' && RENDERABLE_SCENE_EXPORTERS.has(exporter);
+};
+
+export const isRenderableSceneExport = (
+    exposureExport: ExposureExportLike | null | undefined
+): boolean => {
+    return isRenderableSceneExporter(exposureExport?.exporter);
 };
 
 export const resolvePluginSceneRenderMetadata = (

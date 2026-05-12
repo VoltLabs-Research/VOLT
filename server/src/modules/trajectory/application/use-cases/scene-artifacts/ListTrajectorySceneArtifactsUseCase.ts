@@ -33,12 +33,22 @@ const toOutput = (artifact: SceneArtifact): SceneArtifactOutput => ({
     ...artifact.props
 });
 
+const RENDERABLE_SCENE_EXPORTERS = new Set([
+    'AtomisticExporter',
+    'MeshExporter',
+    'DislocationExporter'
+]);
+
 const projectRenderableExposures = (artifacts: SceneArtifact[]) => {
     const byExposureId = new Map<string, SceneArtifact>();
 
     for (const artifact of artifacts) {
         const exposureId = artifact.props.params?.exposureId;
         if (!exposureId) continue;
+        const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
+        if (typeof metadata?.exporter !== 'string' || !RENDERABLE_SCENE_EXPORTERS.has(metadata.exporter)) {
+            continue;
+        }
 
         const current = byExposureId.get(String(exposureId));
         if (!current) {

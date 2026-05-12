@@ -13,7 +13,9 @@ import {
 import {
     DEFAULT_DISLOCATION_LINE_WIDTH,
     buildPluginScene,
-    buildSceneRenderMetadata
+    buildSceneRenderMetadata,
+    isRenderableSceneExport,
+    isRenderableSceneExporter
 } from '../../utilities/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
@@ -91,14 +93,18 @@ const buildArtifactRows = (
     expectedArtifacts: AnalysisExpectedArtifact[] | undefined,
     exposures: RenderableExposure[]
 ): Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> => {
-    const exposureById = new Map(exposures.map((exposure) => [exposure.exposureId, exposure]));
-    const rows: Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> = (expectedArtifacts ?? []).map((artifact) => ({
+    const renderableExpectedArtifacts = (expectedArtifacts ?? [])
+        .filter((artifact) => isRenderableSceneExporter(artifact.exporter));
+    const renderableExposures = exposures
+        .filter((exposure) => isRenderableSceneExport(exposure.export));
+    const exposureById = new Map(renderableExposures.map((exposure) => [exposure.exposureId, exposure]));
+    const rows: Array<{ key: string; artifact?: AnalysisExpectedArtifact; exposure?: RenderableExposure }> = renderableExpectedArtifacts.map((artifact) => ({
         key: artifact.exposureId,
         artifact,
         exposure: exposureById.get(artifact.exposureId)
     }));
-    const expectedIds = new Set((expectedArtifacts ?? []).map((artifact) => artifact.exposureId));
-    for (const exposure of exposures) {
+    const expectedIds = new Set(renderableExpectedArtifacts.map((artifact) => artifact.exposureId));
+    for (const exposure of renderableExposures) {
         if (!expectedIds.has(exposure.exposureId)) {
             rows.push({
                 key: exposure.exposureId,
