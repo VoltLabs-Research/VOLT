@@ -684,6 +684,7 @@ export class WorkflowRuntime {
             stageKey,
             label: pluginDisplayName,
             stageType: 'plugin-ref' as const,
+            timestep: input.dumpTarget.timestep,
             pluginId,
             pluginDisplayName,
             configHash,

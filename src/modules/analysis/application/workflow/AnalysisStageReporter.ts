@@ -11,6 +11,7 @@ export interface AnalysisStageReportInput {
     label: string;
     stageType: AnalysisStageType;
     stageStatus: AnalysisStageStatus;
+    timestep?: number;
     pluginId?: string;
     pluginDisplayName?: string;
     nodeId?: string;
@@ -37,20 +38,25 @@ export const createAnalysisStageReporter = (
 ): AnalysisStageReporter => {
     const startedAtByStageKey = new Map<string, Date>();
 
-    const resolveTiming = (input: AnalysisStageReportInput) => {
+    const createTimingKey = (stageKey: string, timestep?: number): string => {
+        return `${stageKey}:${typeof timestep === 'number' ? timestep : 'global'}`;
+    };
+
+    const resolveTiming = (input: AnalysisStageReportInput, timestep?: number) => {
         const now = new Date();
+        const timingKey = createTimingKey(input.stageKey, timestep);
         const startedAt = input.startedAt
-            ?? startedAtByStageKey.get(input.stageKey)
+            ?? startedAtByStageKey.get(timingKey)
             ?? (input.stageStatus === 'running' ? now : undefined);
         const finishedAt = input.finishedAt
             ?? (TERMINAL_STAGE_STATUSES.has(input.stageStatus) ? now : undefined);
 
         if (input.stageStatus === 'running') {
-            startedAtByStageKey.set(input.stageKey, startedAt ?? now);
+            startedAtByStageKey.set(timingKey, startedAt ?? now);
         }
 
         if (finishedAt) {
-            startedAtByStageKey.delete(input.stageKey);
+            startedAtByStageKey.delete(timingKey);
         }
 
         return {
@@ -63,9 +69,11 @@ export const createAnalysisStageReporter = (
 
     return {
         async report(input) {
-            const timing = resolveTiming(input);
+            const timestep = input.timestep ?? basePayload.timestep;
+            const timing = resolveTiming(input, timestep);
             const payload: AnalysisStageStatusPayload = {
                 ...basePayload,
+                timestep,
                 stageKey: input.stageKey,
                 label: input.label,
                 stageType: input.stageType,
@@ -85,7 +93,7 @@ export const createAnalysisStageReporter = (
             await daemonJobReporter.reportAnalysisStageStatus(payload);
 
             if (
-                typeof basePayload.timestep !== 'number'
+                typeof timestep !== 'number'
                 || typeof basePayload.analysisId !== 'string'
                 || typeof basePayload.trajectoryId !== 'string'
                 || payload.stageStatus === 'pending'
@@ -104,7 +112,7 @@ export const createAnalysisStageReporter = (
                 jobId: basePayload.jobId,
                 teamId: basePayload.teamId,
                 trajectoryId: basePayload.trajectoryId,
-                timestep: basePayload.timestep,
+                timestep,
                 segments: [{
                     stream: 'system',
                     text: `[Volt] ${payload.label}: ${payload.stageStatus}${durationText}${cacheText}${detailText}\n`,

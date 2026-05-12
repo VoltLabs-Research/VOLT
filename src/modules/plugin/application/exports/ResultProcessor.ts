@@ -70,6 +70,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
             label: `Process ${exposure.name}`,
             stageType: 'exposure',
             stageStatus: 'running',
+            timestep,
             pluginId,
             nodeId: exposure.nodeId,
             exposureId: exposure.nodeId
@@ -154,6 +155,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                 label: `Process ${exposure.name}`,
                 stageType: 'exposure',
                 stageStatus: 'completed',
+                timestep,
                 pluginId,
                 nodeId: exposure.nodeId,
                 exposureId: exposure.nodeId
@@ -164,6 +166,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                 label: `Process ${exposure.name}`,
                 stageType: 'exposure',
                 stageStatus: 'failed',
+                timestep,
                 pluginId,
                 nodeId: exposure.nodeId,
                 exposureId: exposure.nodeId,
