@@ -1,5 +1,6 @@
 import useAnalysisStatus from './use-analysis-status';
 import { CanvasAnalysisStatusEnum } from '../utilities/analysis-status';
+import { isRenderableSceneExport } from '../utilities/plugin-exposure-export';
 
 import {
     buildSceneArtifactsQueryOptions,
@@ -125,7 +126,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
                 const exposures = ((result.data as { data?: RenderableExposurePayload[] } | undefined)?.data ?? []);
                 map.set(analysisId, {
                     state: 'loaded',
-                    exposures: exposures as RenderableExposure[]
+                    exposures: (exposures as RenderableExposure[]).filter((exposure) => isRenderableSceneExport(exposure.export))
                 });
             } else {
                 map.set(analysisId, DEFAULT_ENTRY);

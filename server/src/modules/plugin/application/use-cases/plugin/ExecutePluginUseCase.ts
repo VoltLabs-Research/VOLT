@@ -43,6 +43,12 @@ interface AnalysisExecutionMetadata {
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 const SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY = 'selectedTimesteps';
+const EXPECTED_ARTIFACT_EXPORTERS = new Set([
+    'AtomisticExporter',
+    'MeshExporter',
+    'DislocationExporter',
+    'ChartExporter'
+]);
 
 const hasArgumentDefinition = (definitions: ArgumentDefinition[], argumentKey: string): boolean => {
     return definitions.some((definition) => {
@@ -124,6 +130,10 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
             return typeof exposure === 'object'
                 && exposure !== null
                 && typeof (exposure as { _id?: unknown })._id === 'string';
+        })
+        .filter((exposure) => {
+            const exporter = exposure.export?.exporter;
+            return typeof exporter === 'string' && EXPECTED_ARTIFACT_EXPORTERS.has(exporter);
         })
         .map((exposure): AnalysisExpectedArtifact => ({
             exposureId: exposure._id,

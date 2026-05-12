@@ -10,7 +10,7 @@ import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/tr
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
@@ -18,6 +18,19 @@ interface UsePluginResultsOptions {
     pluginId: string;
     analysisId: string;
 }
+
+type PluginResultsTab =
+    | { key: string; label: string; type: 'listing'; exposureId: string; exposureName: string }
+    | { key: string; label: string; type: 'atoms' }
+    | { key: string; label: string; type: 'chart'; artifact: SceneArtifact };
+
+const resolveChartLabel = (artifact: SceneArtifact): string => {
+    const metadataName = typeof artifact.metadata?.exposureName === 'string'
+        ? artifact.metadata.exposureName.trim()
+        : '';
+
+    return artifact.displayName || metadataName || 'Chart';
+};
 
 const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => {
     const { setResultsPluginId } = useCanvasUrlState();
@@ -71,28 +84,43 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
             });
     }, [chartArtifactsQuery.data?.data]);
 
-    const tabs = useMemo(() => {
-        const result = listingExposures.map((exposure) => exposure.name);
+    const tabs = useMemo<PluginResultsTab[]>(() => {
+        const result: PluginResultsTab[] = listingExposures.map((exposure) => ({
+            key: `listing:${exposure.exposureId}`,
+            label: exposure.name,
+            type: 'listing',
+            exposureId: exposure.exposureId,
+            exposureName: exposure.name
+        }));
         if (hasAtomProperties) {
-            result.push('Atoms');
+            result.push({ key: 'atoms', label: 'Atoms', type: 'atoms' });
         }
-        if (chartArtifacts.length > 0) {
-            result.push('Charts');
-        }
+        chartArtifacts.forEach((artifact) => {
+            result.push({
+                key: `chart:${artifact._id}`,
+                label: resolveChartLabel(artifact),
+                type: 'chart',
+                artifact
+            });
+        });
         return result;
-    }, [listingExposures, hasAtomProperties, chartArtifacts.length]);
+    }, [listingExposures, hasAtomProperties, chartArtifacts]);
 
-    const isAtomsTab = hasAtomProperties && activeTab === listingExposures.length;
-    const chartsTabIndex = listingExposures.length + (hasAtomProperties ? 1 : 0);
-    const isChartsTab = chartArtifacts.length > 0 && activeTab === chartsTabIndex;
+    useEffect(() => {
+        if (activeTab < tabs.length) return;
+        setActiveTab(0);
+    }, [activeTab, tabs.length]);
 
-    const activeExposureName = !isAtomsTab && !isChartsTab && activeTab < listingExposures.length
-        ? listingExposures[activeTab].name
+    const activeTabItem = tabs[activeTab];
+    const activeExposureName = activeTabItem?.type === 'listing'
+        ? activeTabItem.exposureName
         : null;
 
-    const activeExposureId = !isAtomsTab && !isChartsTab && activeTab < listingExposures.length
-        ? listingExposures[activeTab].exposureId
+    const activeExposureId = activeTabItem?.type === 'listing'
+        ? activeTabItem.exposureId
         : null;
+    const isAtomsTab = activeTabItem?.type === 'atoms';
+    const activeChartArtifact = activeTabItem?.type === 'chart' ? activeTabItem.artifact : null;
 
     const close = useCallback(
         () => setResultsPluginId(undefined, { replace: true }),
@@ -126,8 +154,7 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         activeExposureName,
         activeExposureId,
         isAtomsTab,
-        isChartsTab,
-        chartArtifacts,
+        activeChartArtifact,
         hasAtomProperties,
         trajectoryId,
         teamId,
