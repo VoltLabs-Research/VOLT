@@ -15,7 +15,7 @@ const particleFilterConditionSchema = z.object({
     kind: z.literal('property').optional(),
     property: z.string().trim().min(1),
     operator: particleFilterOperatorSchema,
-    value: z.coerce.number().finite(),
+    value: z.union([z.coerce.number().finite(), z.string().trim().min(1)]),
     exposureId: domainExposureIdSchema.optional()
 }).strict();
 

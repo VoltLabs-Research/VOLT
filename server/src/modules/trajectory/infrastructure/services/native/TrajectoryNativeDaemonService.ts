@@ -38,7 +38,7 @@ interface TrajectoryNativeAtomsPageRequest extends TrajectoryNativeRequest {
 interface TrajectoryNativeConditionFilterPreviewRequest extends TrajectoryNativeRequest, TrajectoryNativeModifierSource {
     property: string;
     operator: string;
-    value: number;
+    value: number | string;
     externalValues?: Float32Array;
 };
 type TrajectoryNativeFilterPreviewRequest = TrajectoryNativeConditionFilterPreviewRequest;

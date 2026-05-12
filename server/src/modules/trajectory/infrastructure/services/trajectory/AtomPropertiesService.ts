@@ -6,7 +6,12 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@modules/cluster/application/utilities/cluster-location';
-import { AnalysisAllAtomsResult, ExposureAtomConfig, IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import {
+    AnalysisAllAtomsResult,
+    ExposureAtomConfig,
+    IAtomPropertiesService,
+    PerAtomPropertyType
+} from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -56,7 +61,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         for (const exposureNode of exposureNodes) {
             const exposureId = String(exposureNode.id);
-            const perAtomProperties = await this.getPerAtomProperties(
+            const perAtomPropertySchemas = await this.getPerAtomPropertySchemas(
                 teamClusterId,
                 trajectoryId,
                 analysisId,
@@ -64,11 +69,13 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                 timestep,
                 ownerClusterId
             );
+            const perAtomProperties = perAtomPropertySchemas.map((schema) => schema.name);
 
             configs.push({
                 exposureId,
                 exposureName: this.getExposureName(exposureNode),
                 perAtomProperties,
+                perAtomPropertyTypes: Object.fromEntries(perAtomPropertySchemas.map((schema) => [schema.name, schema.type])),
                 schemaKeysMap: new Map()
             });
         }
@@ -91,7 +98,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         if (!exposureNode) throw new ApplicationError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404);
 
-        const perAtomProperties = await this.getPerAtomProperties(
+        const perAtomPropertySchemas = await this.getPerAtomPropertySchemas(
             teamClusterId,
             trajectoryId,
             analysisId,
@@ -99,11 +106,13 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             undefined,
             ownerClusterId
         );
+        const perAtomProperties = perAtomPropertySchemas.map((schema) => schema.name);
 
         return {
             exposureId: String(exposureId),
             exposureName: this.getExposureName(exposureNode),
             perAtomProperties,
+            perAtomPropertyTypes: Object.fromEntries(perAtomPropertySchemas.map((schema) => [schema.name, schema.type])),
             schemaKeysMap: new Map()
         };
     }
@@ -252,14 +261,14 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         timestep: string,
         property: string,
         maxValues: number = 100
-    ): Promise<number[]> {
+    ): Promise<Array<number | string>> {
         const { analysis } = await this.getAnalysisAndPlugin(analysisId);
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
         const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         if (!teamClusterId) return [];
 
-        const result = await this.daemonClient.command<number[] | null>(
+        const result = await this.daemonClient.command<Array<number | string> | null>(
             teamClusterId,
             ChannelCommands.TrajectoryPluginModifierUniqueValues,
             {
@@ -329,5 +338,51 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         );
 
         return perAtomProperties || [];
+    }
+
+    private async getPerAtomPropertySchemas(
+        teamClusterId: string,
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep?: string,
+        ownerClusterId?: string
+    ): Promise<Array<{ name: string; type: PerAtomPropertyType }>> {
+        try {
+            const schemas = await this.daemonClient.command<Array<{ name: string; type: PerAtomPropertyType }> | null>(
+                teamClusterId,
+                ChannelCommands.TrajectoryPluginPropertySchema,
+                {
+                    trajectoryId,
+                    analysisId,
+                    exposureId,
+                    ...(timestep ? { timestep: Number(timestep) } : {}),
+                    ownerClusterId
+                }
+            );
+
+            if (Array.isArray(schemas) && schemas.length > 0) {
+                return schemas
+                    .filter((schema) => typeof schema.name === 'string' && schema.name.length > 0)
+                    .map((schema) => ({
+                        name: schema.name,
+                        type: schema.type === 'string' ? 'string' : 'number'
+                    }));
+            }
+        } catch {
+            // Older daemons do not expose property-schema. Fall back to the
+            // historical property-name command and treat all properties as numeric.
+        }
+
+        const propertyNames = await this.getPerAtomProperties(
+            teamClusterId,
+            trajectoryId,
+            analysisId,
+            exposureId,
+            timestep,
+            ownerClusterId
+        );
+
+        return propertyNames.map((name) => ({ name, type: 'number' }));
     }
 };

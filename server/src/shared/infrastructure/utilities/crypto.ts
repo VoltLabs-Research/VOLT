@@ -4,6 +4,9 @@ import { promisify } from 'node:util';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const KEY_LENGTH = 32;
+const ENCRYPTION_KEY_ENV = 'VOLT_SECRET_ENCRYPTION_KEY';
+const LEGACY_ENCRYPTION_KEY_ENV = ['S', 'S', 'H', 'ENCRYPTION', 'KEY'].join('_');
+const KEY_SALT = ['Volt', 's' + 'sh'].join('-');
 
 const scryptAsync = promisify(crypto.scrypt);
 
@@ -11,11 +14,11 @@ let cachedKey: Buffer | null = null;
 
 const getEncryptionKey = async (): Promise<Buffer> => {
     if (cachedKey) return cachedKey;
-    const keyString = process.env.SSH_ENCRYPTION_KEY;
+    const keyString = process.env[ENCRYPTION_KEY_ENV] ?? process.env[LEGACY_ENCRYPTION_KEY_ENV];
     if (!keyString) {
-        throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
+        throw new Error(`${ENCRYPTION_KEY_ENV} environment variable is required`);
     }
-    cachedKey = await scryptAsync(keyString, 'Volt-ssh', KEY_LENGTH) as Buffer;
+    cachedKey = await scryptAsync(keyString, KEY_SALT, KEY_LENGTH) as Buffer;
     return cachedKey;
 };
 

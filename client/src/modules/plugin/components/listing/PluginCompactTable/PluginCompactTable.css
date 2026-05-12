@@ -16,6 +16,11 @@
     background-color: color-mix(in srgb, var(--color-accent, var(--color-primary, #6366f1)) 18%, transparent);
 }
 
+.plugin-compact-table-cell {
+    --plugin-compact-table-cell-text-color: var(--color-text-secondary);
+    color: var(--plugin-compact-table-cell-text-color);
+}
+
 .plugin-cell-empty {
     color: var(--color-text-muted);
     font-style: italic;
@@ -172,4 +177,36 @@
     color: var(--color-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.plugin-compact-table-cell :where(
+    .plugin-cell-empty,
+    .plugin-cell-number,
+    .plugin-cell-integer,
+    .plugin-cell-date,
+    .plugin-cell-string,
+    .plugin-cell-bool,
+    .plugin-cell-bool--true,
+    .plugin-cell-bool--false,
+    .plugin-cell-vector,
+    .plugin-cell-vector__bracket,
+    .plugin-cell-vector__sep,
+    .plugin-cell-vector__component,
+    .plugin-cell-points,
+    .plugin-cell-array,
+    .plugin-cell-array__count,
+    .plugin-cell-array__range,
+    .plugin-cell-matrix,
+    .plugin-cell-matrix__dims,
+    .plugin-cell-matrix__label,
+    .plugin-cell-object,
+    .plugin-cell-object__brace,
+    .plugin-cell-object__key,
+    .plugin-cell-object__colon,
+    .plugin-cell-object__sep,
+    .plugin-cell-object__value,
+    .plugin-cell-object__overflow,
+    .plugin-cell-fallback
+) {
+    color: var(--plugin-compact-table-cell-text-color);
 }

@@ -88,8 +88,6 @@ const ANALYSIS_PROJECTED_JOB_CLEANUP_SCOPE = 'analysis';
 const RASTER_PROJECTED_JOB_CLEANUP_SCOPE = 'raster';
 const GLB_PROJECTED_JOB_CLEANUP_SCOPE = 'glb';
 const ARTIFACT_UPLOAD_PROJECTED_JOB_CLEANUP_SCOPE = 'artifact-upload';
-const SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE = 'ssh-import';
-const SSH_IMPORT_QUEUE_TYPE = 'ssh_import';
 
 interface JobTrajectoryContext {
     trajectoryId?: string;
@@ -129,11 +127,6 @@ interface DaemonAnalysisJobStatusInput extends DaemonJobInputBase {
     analysisId: string;
     trajectoryId?: string;
     timestep?: number;
-    status: JobStatus;
-}
-
-interface DaemonSshImportJobStatusInput extends DaemonJobInputBase {
-    trajectoryId: string;
     status: JobStatus;
 }
 
@@ -573,22 +566,6 @@ export default class DaemonAnalysisCompletionService {
         }
 
         await this.finalizeGlbSession(trajectoryId, teamId, drainResult.failedJobs);
-    }
-
-    async handleSshImportJobStatus(input: DaemonSshImportJobStatusInput): Promise<void> {
-        const resolved = await this.resolveTrajectoryOwnership(input);
-
-        await this.publishJobStatusChanged({
-            jobId: input.jobId,
-            teamId: resolved.teamId,
-            teamClusterId: input.teamClusterId,
-            status: input.status,
-            queueType: SSH_IMPORT_QUEUE_TYPE,
-            cleanupScope: SSH_IMPORT_PROJECTED_JOB_CLEANUP_SCOPE,
-            name: 'Import trajectory from SSH',
-            trajectoryContext: resolved.trajectoryContext,
-            error: input.error
-        });
     }
 
     async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {

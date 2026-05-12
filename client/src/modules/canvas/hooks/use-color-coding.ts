@@ -24,6 +24,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         currentTimestep,
         property,
         propertyValue,
+        propertyType,
         exposureId,
         propertyOptions,
         isLoading: isLoadingProperties,
@@ -64,6 +65,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
 
     const statsType = exposureId ? 'modifier' : 'base';
     const canFetchStats = !!property && !!trajectoryId && currentTimestep !== undefined
+        && propertyType !== 'string'
         && (statsType !== 'modifier' || !!analysisId);
 
     const statsQuery = colorCodingStatsQuery(
@@ -164,6 +166,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
     return {
         property,
         propertyValue,
+        propertyType,
         propertyOptions,
         handlePropertyChange,
         isLoadingProperties,

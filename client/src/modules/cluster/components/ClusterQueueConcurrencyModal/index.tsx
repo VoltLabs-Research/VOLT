@@ -48,7 +48,6 @@ const QUEUE_FIELDS: QueueFieldDefinition[] = [
     { key: 'rasterizer', label: 'Rasterizer', description: 'Trajectory preview generation' },
     { key: 'glbPreprocessing', label: 'GLB preprocessing', description: 'Trajectory model preprocessing' },
     { key: 'artifactUpload', label: 'Artifact upload', description: 'Analysis artifact upload jobs' },
-    { key: 'sshImport', label: 'SSH import', description: 'Remote trajectory imports' },
     { key: 'pluginWarmup', label: 'Plugin warmup', description: 'Plugin binary preparation jobs' }
 ];
 
@@ -136,7 +135,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
             rasterizer: 0,
             glbPreprocessing: 0,
             artifactUpload: 0,
-            sshImport: 0,
             pluginWarmup: 0
         };
 

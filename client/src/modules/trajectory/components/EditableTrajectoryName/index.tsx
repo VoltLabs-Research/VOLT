@@ -9,13 +9,15 @@ interface EditableTrajectoryNameProps {
     name: string;
     className?: string;
     allowSingleClickPropagation?: boolean;
+    readOnly?: boolean;
 }
 
 export default function EditableTrajectoryName({
     trajectoryId,
     name,
     className = '',
-    allowSingleClickPropagation = false
+    allowSingleClickPropagation = false,
+    readOnly = false
 }: EditableTrajectoryNameProps) {
     const user = useCurrentUser();
     const updateTrajectory = useUpdateTrajectory();
@@ -26,7 +28,7 @@ export default function EditableTrajectoryName({
         }
     }, [name, trajectoryId, updateTrajectory]);
 
-    if (!user) {
+    if (readOnly || !user) {
         return (
             <Text as='p' className={`editable-name ${className}`} title={name}>
                 {name}

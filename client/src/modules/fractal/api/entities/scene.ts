@@ -23,7 +23,7 @@ export interface ParticleFilterPropertySceneCondition {
     kind?: 'property';
     property: string;
     operator: string;
-    value: number;
+    value: number | string;
     exposureId?: string;
 }
 export type ParticleFilterSceneCondition = ParticleFilterPropertySceneCondition;
@@ -74,7 +74,7 @@ export type ParticleFilterScene = {
     exposureId?: string;
     property?: string;
     operator?: string;
-    value?: number;
+    value?: number | string;
     action?: string;
 };
 

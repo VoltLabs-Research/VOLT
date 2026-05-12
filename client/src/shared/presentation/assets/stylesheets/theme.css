@@ -38,6 +38,7 @@
 
     --color-text-primary: #f0f0f0;
     --color-text-secondary: #6F717B;
+    --color-text-tertiary: var(--color-text-secondary);
     --color-text-muted: #7e808b;
 
     --color-border-strong: #2B2B2E;
@@ -124,6 +125,7 @@
 
     --color-text-primary: #1D1D1F;
     --color-text-secondary: #6E6E73;
+    --color-text-tertiary: var(--color-text-secondary);
     --color-text-muted: #8E8E93;
 
     --color-border-strong: rgba(60, 60, 67, 0.18);

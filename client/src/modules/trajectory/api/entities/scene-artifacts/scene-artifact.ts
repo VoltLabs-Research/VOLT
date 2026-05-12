@@ -7,7 +7,7 @@ export interface SceneArtifactParticleFilterPropertyCondition {
     kind?: 'property';
     property: string;
     operator: string;
-    value: number;
+    value: number | string;
     exposureId?: string;
 }
 export type SceneArtifactParticleFilterCondition = SceneArtifactParticleFilterPropertyCondition;
@@ -18,7 +18,7 @@ export interface SceneArtifactParams {
     endValue?: number;
     gradient?: string;
     operator?: string;
-    value?: number;
+    value?: number | string;
     action?: 'delete' | 'highlight';
     exposureId?: string;
     combinator?: 'AND' | 'OR';

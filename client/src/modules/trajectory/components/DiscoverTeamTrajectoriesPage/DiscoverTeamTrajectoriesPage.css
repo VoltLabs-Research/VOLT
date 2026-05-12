@@ -1,0 +1,74 @@
+.discover-team-trajectories-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    padding: 2rem 1.5rem 3rem;
+}
+
+.discover-team-trajectories-page__inner {
+    width: min(100%, 1180px);
+    min-height: calc(100vh - 5rem);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.discover-team-trajectories-page__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0 0.25rem;
+}
+
+.discover-team-trajectories-page__title-block {
+    min-width: 0;
+}
+
+.discover-team-trajectories-page__title {
+    margin: 0;
+    line-height: 1.1;
+}
+
+.discover-team-trajectories-page__description {
+    margin: 0.35rem 0 0;
+}
+
+.discover-team-trajectories-page__search {
+    width: min(100%, 22rem);
+    flex-shrink: 0;
+}
+
+.discover-team-trajectories-page__grid {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+}
+
+.discover-team-trajectories-page__grid > * {
+    width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    .discover-team-trajectories-page {
+        padding: 1.25rem 1rem 2rem;
+    }
+
+    .discover-team-trajectories-page__inner {
+        min-height: calc(100vh - 3.25rem);
+    }
+
+    .discover-team-trajectories-page__header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .discover-team-trajectories-page__search {
+        width: 100%;
+    }
+
+    .public-simulation-grid.document-listing-grid {
+        padding: 0;
+    }
+}

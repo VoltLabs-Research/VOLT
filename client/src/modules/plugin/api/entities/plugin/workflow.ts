@@ -154,6 +154,7 @@ export interface IExposureData {
     name: string;
     icon?: string;
     results: string;
+    hasListing?: boolean;
     [key: string]: unknown;
 }
 

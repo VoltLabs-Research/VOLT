@@ -15,7 +15,7 @@ export interface SceneArtifactParams {
     endValue?: number;
     gradient?: string;
     operator?: string;
-    value?: number;
+    value?: number | string;
     action?: 'delete' | 'highlight';
     exposureId?: string;
 }

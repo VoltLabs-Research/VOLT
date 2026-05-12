@@ -1,4 +1,5 @@
 import trajectoryService from '../../api/services/trajectory-service';
+import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { TRAJECTORY_MODULE_QUERY_KEYS } from '../shared/query-keys';
 import {
     buildKeys,
@@ -62,6 +63,7 @@ const KEYS = buildKeys<{
     debug: void;
     simulationGrid: void;
     preview: GetPreviewInputDTO;
+    publicPreview: GetPreviewInputDTO;
     atoms: GetAtomsInputDTO;
     atomsInfinite: void;
     perAtom: void;
@@ -121,6 +123,7 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
     );
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
+export const publicTrajectoryPreviewQuery = createQuery(KEYS.publicPreview, canvasService.getPreview);
 const getAtomsWithAccess = (params: GetAtomsInputDTO) => {
     const mode = useCanvasAccessStore.getState().mode;
     return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getAtoms(params);
@@ -178,6 +181,7 @@ export const TRAJECTORY_QUERY_KEYS = {
     simulationGrid: KEYS.simulationGrid,
     trajectory: KEYS.detail,
     preview: KEYS.preview,
+    publicPreview: KEYS.publicPreview,
     atoms: KEYS.atoms,
     perAtom: KEYS.perAtom,
     ...TRAJECTORY_MODULE_QUERY_KEYS

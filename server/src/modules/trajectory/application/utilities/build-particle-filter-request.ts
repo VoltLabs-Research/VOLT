@@ -28,12 +28,12 @@ const resolveFilterOperator = (operator: string | undefined): '==' | '!=' | '>' 
 const buildPropertyCondition = (input: {
     property: string;
     operator: string;
-    value: number;
+    value: number | string;
     exposureId?: string;
 }): ParticleFilterCondition => ({
     property: input.property,
     operator: resolveFilterOperator(input.operator),
-    value: Number(input.value),
+    value: typeof input.value === 'number' ? input.value : input.value,
     ...(input.exposureId ? { exposureId: input.exposureId } : {})
 });
 

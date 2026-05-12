@@ -5,7 +5,11 @@ export interface IColorCodingService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ base: string[]; modifiers: Record<string, string[]> }>;
+    ): Promise<{
+        base: string[];
+        modifiers: Record<string, string[]>;
+        modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
+    }>;
 
     getStats(
         trajectoryId: string,

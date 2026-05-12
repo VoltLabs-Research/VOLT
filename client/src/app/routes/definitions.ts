@@ -293,24 +293,6 @@ export const protectedRoutes: RouteConfig[] = [
         ]
     },
     {
-        path: '/dashboard/ssh-connections',
-        title: 'SSH Connections',
-        loader: () => import('@/modules/ssh/components/SSHConnectionsPage'),
-        requiredPermissions: ['ssh-connection:read'],
-        navigation: {
-            section: DashboardNavigationSection.Secondary,
-            label: 'Import',
-            icon: DashboardNavigationIconKey.Import,
-            disabledReason: 'You do not have permission to view SSH connections.'
-        }
-    },
-    {
-        path: '/dashboard/ssh-connections/:connectionId/file-explorer',
-        title: 'SSH File Explorer',
-        loader: () => import('@/modules/ssh/components/SSHFileExplorerPage'),
-        requiredPermissions: ['ssh-connection:read']
-    },
-    {
         path: '/dashboard/messages/:chatId?',
         title: 'Messages',
         loader: () => import('@/modules/chat/components/MessagesPage'),
@@ -400,6 +382,11 @@ export const guestRoutes: RouteConfig[] = [
 ];
 
 export const optionalAuthRoutes: RouteConfig[] = [
+    {
+        path: '/discover/teams/:teamId',
+        title: 'Public Trajectories',
+        loader: () => import('@/modules/trajectory/components/DiscoverTeamTrajectoriesPage')
+    },
     {
         path: '/canvas/glb',
         loader: () => import('@/modules/canvas/components/CanvasPage')

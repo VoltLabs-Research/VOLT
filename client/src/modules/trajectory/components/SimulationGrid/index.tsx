@@ -1,6 +1,7 @@
 import SimulationSkeletonCard from '../SimulationSkeletonCard';
 import SimulationCard from '../SimulationCard';
 import SimulationFolderCard from '../SimulationFolderCard';
+import discoverService from '@/modules/trajectory/api/services/discover-service';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
 import useTrajectoriesListing, {
@@ -19,10 +20,24 @@ import Box from '@/shared/presentation/primitives/Box';
 import { ChevronRight, Download, Upload } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useCallback, useMemo, useState } from 'react';
+import type { DiscoverTeamSummary } from '@/modules/trajectory/api/services/discover-service';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 import './SimulationGrid.css';
 
 export type SimulationGridItem = TrajectoryListingRow;
+
+export interface PublicSimulationGridSummary {
+    team: DiscoverTeamSummary | null;
+    total: number;
+}
+
+interface SimulationGridProps {
+    mode?: 'dashboard' | 'public';
+    teamId?: string;
+    onPublicListingChange?: (summary: PublicSimulationGridSummary) => void;
+}
 
 interface SimulationBreadcrumbItem {
     key: string;
@@ -153,7 +168,70 @@ const StaticSimulationBreadcrumbs = ({ items, onOpen }: DroppableSimulationBread
     );
 };
 
-export default function SimulationGrid() {
+const PUBLIC_DISCOVERY_DEFAULT_LIMIT = 20;
+
+const buildPublicDiscoveryQueryKey = (teamId: string | undefined) => [
+    'discover',
+    'team-trajectories',
+    teamId ?? ''
+] as const;
+
+function PublicSimulationGrid({
+    teamId,
+    onPublicListingChange
+}: Pick<SimulationGridProps, 'teamId' | 'onPublicListingChange'>) {
+    const fetchData = useCallback(async (params: PaginationParams) => {
+        if (!teamId) {
+            throw new Error('Team ID is required to load public trajectories.');
+        }
+
+        const response = await discoverService.listPublicTeamTrajectories({
+            teamId,
+            page: params.page,
+            limit: params.limit,
+            search: params.search
+        });
+
+        onPublicListingChange?.({
+            team: response._meta?.team ?? null,
+            total: response.pagination.total
+        });
+
+        return response;
+    }, [onPublicListingChange, teamId]);
+
+    const renderGridItem = useCallback((trajectory: Trajectory) => (
+        <SimulationCard
+            trajectory={trajectory}
+            isSelected={false}
+            readOnly
+        />
+    ), []);
+
+    const renderGridSkeleton = useCallback(() => (
+        <SimulationSkeletonCard n={8} />
+    ), []);
+
+    return (
+        <DocumentListing<Trajectory>
+            title='Public trajectories'
+            queryKey={buildPublicDiscoveryQueryKey(teamId)}
+            view='grid'
+            fetchData={fetchData}
+            defaultLimit={PUBLIC_DISCOVERY_DEFAULT_LIMIT}
+            renderGridItem={renderGridItem}
+            renderGridSkeleton={renderGridSkeleton}
+            hideHeader
+            hideTabs
+            includeCopyDocumentId={false}
+            emptyTitle='No public trajectories'
+            emptyMessage='This team has no public trajectories.'
+            gridClassName='public-simulation-grid'
+        />
+    );
+}
+
+function DashboardSimulationGrid() {
     const { selectedIds, isSelected, clearSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
@@ -347,4 +425,21 @@ export default function SimulationGrid() {
             />
         </>
     );
+}
+
+export default function SimulationGrid({
+    mode = 'dashboard',
+    teamId,
+    onPublicListingChange
+}: SimulationGridProps) {
+    if (mode === 'public') {
+        return (
+            <PublicSimulationGrid
+                teamId={teamId}
+                onPublicListingChange={onPublicListingChange}
+            />
+        );
+    }
+
+    return <DashboardSimulationGrid />;
 }

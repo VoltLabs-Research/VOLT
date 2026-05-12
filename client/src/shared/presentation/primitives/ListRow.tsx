@@ -22,7 +22,7 @@ export interface ListRowProps extends Omit<HTMLAttributes<HTMLElement>, 'title'>
 
 /**
  * Hoverable list row with leading / primary / subtitle / trailing slots.
- * Consolidates team member rows, chat list items, user cells, SSH rows, etc.
+ * Consolidates team member rows, chat list items, user cells, and similar list entries.
  */
 const ListRow = forwardRef<HTMLElement, ListRowProps>(({
     leading,
