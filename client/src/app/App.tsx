@@ -13,6 +13,7 @@ import GlobalContextMenu from '@/shared/presentation/components/GlobalContextMen
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import QueryProvider from '@/shared/presentation/components/QueryProvider';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
+import TrajectoryUploadProgressPanel from '@/modules/trajectory/components/TrajectoryUploadProgressPanel';
 import { useThemeInitialization } from '@/shared/presentation/hooks/use-theme';
 import { useCallback, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -73,6 +74,7 @@ const AppChrome = () => {
     const appContent = (
         <>
             <AppRoutes />
+            <TrajectoryUploadProgressPanel />
             <AppToaster />
         </>
     );
