@@ -106,7 +106,7 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
                 return (
                     <div
                         key={columnKey}
-                        className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
+                        className='plugin-compact-table-cell overflow-hidden font-size-1'
                         style={{
                             minWidth: `${getColumnMinWidth(col)}px`,
                             flex: `1 1 ${getColumnMinWidth(col)}px`
@@ -278,7 +278,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
                             {Array.from({ length: 4 }).map((__, cellIndex) => (
                                 <div
                                     key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                                    className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
+                                    className='plugin-compact-table-cell overflow-hidden font-size-1'
                                     style={{ minWidth: '140px', flex: '1 1 140px' }}
                                 >
                                     <Skeleton variant='text' width={`${55 + ((rowIndex + cellIndex) % 3) * 15}%`} height={16} animation='wave' />

@@ -12,7 +12,7 @@ export interface IExposureComputed {
     name: string;
     icon?: string;
     results: string;
-    hasListing: boolean;
+    hasListing?: boolean;
     export: IExposureExport | null;
 }
 

@@ -13,8 +13,6 @@ Running out of storage or compute resources as your team grows? Not a problem. Y
 
 Inside Volt, you can spin up virtualized Linux environments using Docker containers and assign resources according to your cluster’s capabilities for fully customizable workflows.
 
-Already have simulations stored on another server? You don’t need to upload them to a cloud provider. Volt allows you to import them directly via SSH, connecting seamlessly to your existing infrastructure.
-
 Need to share results with other teams? You're just one link away. They can access everything directly in the browser-no downloads required. Everything stays in the cloud.
 
 And if you ever want to step outside the Volt ecosystem, you can still access your analyses programmatically using VoltSDK and secret keys through the API.

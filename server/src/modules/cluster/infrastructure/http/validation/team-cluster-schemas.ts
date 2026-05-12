@@ -162,7 +162,6 @@ const updateQueueConcurrencySchema = z.object({
         rasterizer: queueConcurrencyValueSchema,
         glbPreprocessing: queueConcurrencyValueSchema,
         artifactUpload: queueConcurrencyValueSchema,
-        sshImport: queueConcurrencyValueSchema,
         pluginWarmup: queueConcurrencyValueSchema
     }).strict(),
     queueScopeLimits: z.object({

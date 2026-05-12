@@ -6,7 +6,6 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     rasterizer: number;
     glbPreprocessing: number;
     artifactUpload: number;
-    sshImport: number;
     pluginWarmup: number;
 }
 

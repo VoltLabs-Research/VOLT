@@ -40,8 +40,6 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'team-role.updated',
         'secret-key.created',
         'secret-key.deleted',
-        'ssh-connection.created',
-        'ssh-connection.deleted',
         'container.created',
         'container.updated',
         'container.deleted',

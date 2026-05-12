@@ -23,7 +23,6 @@ import SessionHttpModule from '@modules/session/infrastructure/http/routes/sessi
 import ScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-routes';
 import ScriptingJupyterHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-jupyter-routes';
 import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/http/routes/simulation-cell-routes';
-import SshConnectionHttpModule from '@modules/ssh/infrastructure/http/routes/ssh-connection-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
 import JobsHttpModule from '@modules/jobs/infrastructure/http/routes/jobs-routes';
 import TeamAIIntegrationHttpModule from '@modules/team/infrastructure/http/routes/ai-integration';
@@ -40,6 +39,7 @@ import TeamClusterObjectStoreProxyHttpModule from '@modules/cluster/infrastructu
 import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
+import DiscoverHttpModule from '@modules/trajectory/infrastructure/http/routes/discover';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
 import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes/trajectory';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
@@ -86,7 +86,6 @@ const HTTP_MODULES: HttpModule[] = [
     PluginExposureHttpModule,
     ScriptingHttpModule,
     ScriptingJupyterHttpModule,
-    SshConnectionHttpModule,
     ContainerHttpModule,
     TrajectoryHttpModule,
     JobsHttpModule,
@@ -96,6 +95,7 @@ const HTTP_MODULES: HttpModule[] = [
     SimulationCellHttpModule,
     DailyActivityHttpModule,
     SystemHttpModule,
+    DiscoverHttpModule,
     CanvasHttpModule,
     ColorCodingHttpModule,
     ParticleFilterHttpModule,

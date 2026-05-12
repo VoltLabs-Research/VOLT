@@ -8,7 +8,7 @@ import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-arti
 interface MaybeParticleFilterCondition {
     property?: string;
     operator?: string;
-    value?: number;
+    value?: number | string;
     exposureId?: string;
 }
 
@@ -21,7 +21,7 @@ interface MaybeScene {
     exposureId?: string;
     property?: string;
     operator?: string;
-    value?: number;
+    value?: number | string;
     action?: string;
     startValue?: string;
     endValue?: string;
@@ -29,11 +29,15 @@ interface MaybeScene {
 }
 
 const normalizeParticleFilterConditionSignature = (condition: MaybeParticleFilterCondition): Record<string, unknown> => {
+    const normalizedValue = typeof condition.value === 'number'
+        ? condition.value
+        : String(condition.value ?? '');
+
     return {
         kind: 'property',
         property: condition.property ?? '',
         operator: condition.operator ?? '',
-        value: Number(condition.value),
+        value: normalizedValue,
         exposureId: condition.exposureId ?? ''
     };
 };
@@ -156,7 +160,7 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
                     kind: 'property',
                     property: String(condition.property),
                     operator: String(condition.operator),
-                    value: Number(condition.value),
+                    value: typeof condition.value === 'number' ? condition.value : String(condition.value),
                     ...(condition.exposureId ? { exposureId: String(condition.exposureId) } : {})
                 }];
             })
@@ -164,7 +168,9 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
                 kind: 'property',
                 property: String(artifact.params.property || ''),
                 operator: String(artifact.params.operator || ''),
-                value: Number(artifact.params.value),
+                value: typeof artifact.params.value === 'number'
+                    ? artifact.params.value
+                    : String(artifact.params.value),
                 ...(artifact.params.exposureId ? { exposureId: String(artifact.params.exposureId) } : {})
             }] satisfies ParticleFilterSceneCondition[];
 

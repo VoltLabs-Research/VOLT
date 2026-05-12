@@ -68,6 +68,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
 TrajectorySchema.index({ name: 'text', status: 'text' });
 TrajectorySchema.index({ team: 1, folder: 1, createdAt: -1 });
 TrajectorySchema.index({ team: 1, storageClusterId: 1, createdAt: -1 });
+TrajectorySchema.index({ team: 1, isPublic: 1, updatedAt: -1 });
 
 const TrajectoryModel: Model<TrajectoryDocument> = mongoose.model('Trajectory', TrajectorySchema);
 

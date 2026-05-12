@@ -312,17 +312,6 @@ interface TeamClusterDaemonGlbJobStatusEventPayload {
     error?: string;
 }
 
-interface TeamClusterDaemonSshImportJobStatusEventPayload {
-    type: 'ssh-import-job-status';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    status: 'running' | 'completed' | 'failed';
-    error?: string;
-}
-
 interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
     type: 'artifact-upload-job-status';
     teamClusterId: string;
@@ -402,7 +391,6 @@ type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisStageStatusEventPayload
     | TeamClusterDaemonRasterJobStatusEventPayload
     | TeamClusterDaemonGlbJobStatusEventPayload
-    | TeamClusterDaemonSshImportJobStatusEventPayload
     | TeamClusterDaemonArtifactUploadJobStatusEventPayload;
 
 export type TeamClusterDaemonMessage =

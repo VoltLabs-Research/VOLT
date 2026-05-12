@@ -9,7 +9,7 @@ export interface ParticleFilterConditionDTO {
     kind?: 'property';
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value: number;
+    value: number | string;
     exposureId?: string;
 }
 
@@ -21,7 +21,7 @@ export interface ApplyFilterInputDTO {
     timestep: number;
     property?: string;
     operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value?: number;
+    value?: number | string;
     exposureId?: string;
     action: FilterAction;
     combinator?: ParticleFilterCombinator;
@@ -43,6 +43,7 @@ export interface GetFilterPropertiesInputDTO {
 export interface FilterPropertiesData {
     dump: string[];
     perAtom: Record<string, string[]>;
+    perAtomTypes?: Record<string, Record<string, 'number' | 'string'>>;
     exposureNames: Record<string, string>;
 }
 
@@ -56,7 +57,7 @@ export interface GetUniqueValuesInputDTO {
 }
 
 export interface GetUniqueValuesOutputDTO {
-    values: number[];
+    values: Array<number | string>;
 }
 
 export interface PreviewFilterInputDTO {
@@ -65,7 +66,7 @@ export interface PreviewFilterInputDTO {
     timestep: number;
     property?: string;
     operator?: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value?: number;
+    value?: number | string;
     exposureId?: string;
     combinator?: ParticleFilterCombinator;
     conditions?: ParticleFilterConditionDTO[];

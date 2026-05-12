@@ -21,11 +21,12 @@ interface PluginResultsViewerProps {
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
-        activeExposureName, activeExposureId, isAtomsTab,
+        activeExposureName, activeExposureId, isAtomsTab, isChartsTab, chartArtifacts,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
     } = usePluginResults({ pluginId, analysisId });
     const resolvedTeamId = teamId ?? undefined;
+    const chartBasePath = resolvedTeamId ? `/api/plugins/${resolvedTeamId}/exposures/artifacts` : '';
 
     return (
         <Surface variant='glass' display='flex' direction='column' position='absolute' right='1' bottom='1' width='max' overflow='hidden' className="canvas-results-viewer">
@@ -96,6 +97,20 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 trajectoryId={trajectoryId}
                                 analysisId={analysisId}
                             />
+                        )}
+                        {isChartsTab && chartBasePath && (
+                            <div className="canvas-results-charts">
+                                {chartArtifacts.map((artifact) => (
+                                    <figure className="canvas-results-chart" key={artifact._id}>
+                                        <img
+                                            src={`${chartBasePath}/${artifact._id}/chart`}
+                                            alt={artifact.displayName}
+                                            loading="lazy"
+                                        />
+                                        <figcaption>{artifact.displayName}</figcaption>
+                                    </figure>
+                                ))}
+                            </div>
                         )}
                     </Box>
                 </>

@@ -11,6 +11,7 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/exposures/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
+        router.get('/exposures/artifacts/:artifactId/chart', controllers.getPluginExposureChart.handle);
         router.get('/exposures/analyses/:analysisId/export', controllers.getPluginExposureExport.handle);
     }
 });

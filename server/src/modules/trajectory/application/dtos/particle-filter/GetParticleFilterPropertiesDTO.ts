@@ -8,5 +8,6 @@ export interface GetParticleFilterPropertiesInputDTO {
 export interface GetParticleFilterPropertiesOutputDTO {
     dump: string[];
     perAtom: Record<string, string[]>;
+    perAtomTypes: Record<string, Record<string, 'number' | 'string'>>;
     exposureNames: Record<string, string>;
 };

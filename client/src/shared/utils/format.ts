@@ -60,6 +60,20 @@ export const formatUnknownValue = (value: unknown): string => {
         return String(value);
     }
     if(value instanceof Date) return value.toISOString();
+    if(Array.isArray(value)){
+        if(value.length === 0) return '[]';
+        const preview = value.slice(0, 3).map(formatUnknownValue).join(', ');
+        return value.length > 3 ? `[${preview}, ...]` : `[${preview}]`;
+    }
+    if(typeof value === 'object'){
+        const entries = Object.entries(value as Record<string, unknown>);
+        if(entries.length === 0) return '{}';
+        const preview = entries
+            .slice(0, 3)
+            .map(([key, entry]) => `${key}: ${formatUnknownValue(entry)}`)
+            .join(', ');
+        return entries.length > 3 ? `{${preview}, ...}` : `{${preview}}`;
+    }
 
     try{
         const serialized = JSON.stringify(value);

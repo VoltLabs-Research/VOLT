@@ -81,8 +81,6 @@ tags:
   description: Direct and group chat between members.
 - name: Notifications
   description: User notifications.
-- name: SSH
-  description: Remote SSH connections.
 - name: LaTeX
   description: LaTeX documents and compilation.
 - name: Scripting
@@ -218,6 +216,8 @@ paths:
     $ref: paths/containers/by-teamid__by-containerid__stats.yaml
   /api/containers/{teamId}/{containerId}/files/content:
     $ref: paths/containers/by-teamid__by-containerid__files__content.yaml
+  /api/discover/teams/{teamId}/trajectories:
+    $ref: paths/discover/teams__by-teamid__trajectories.yaml
   /api/trajectories/{teamId}/samples:
     $ref: paths/trajectories/by-teamid__samples.yaml
   /api/trajectories/{teamId}/samples/{filename}:
@@ -334,14 +334,6 @@ paths:
     $ref: paths/simulation-cells/by-teamid__trajectories__by-trajectoryid.yaml
   /api/simulation-cells/{teamId}/{simulationCellId}:
     $ref: paths/simulation-cells/by-teamid__by-simulationcellid.yaml
-  /api/ssh/connections/{teamId}:
-    $ref: paths/ssh/connections__by-teamid.yaml
-  /api/ssh/connections/{teamId}/{sshConnectionId}:
-    $ref: paths/ssh/connections__by-teamid__by-sshconnectionid.yaml
-  /api/ssh/connections/{teamId}/{sshConnectionId}/files:
-    $ref: paths/ssh/connections__by-teamid__by-sshconnectionid__files.yaml
-  /api/ssh/connections/{teamId}/{sshConnectionId}/connection-tests:
-    $ref: paths/ssh/connections__by-teamid__by-sshconnectionid__connection-tests.yaml
   /api/latex/{teamId}/documents:
     $ref: paths/latex/by-teamid__documents.yaml
   /api/latex/{teamId}/import:
@@ -690,16 +682,6 @@ components:
       $ref: components/schemas/scripting.yaml#/ScriptingSessionStatus
     SimulationCell:
       $ref: components/schemas/simulation-cells.yaml#/SimulationCell
-    SSHConnection:
-      $ref: components/schemas/ssh.yaml#/SSHConnection
-    CreateSSHConnectionRequest:
-      $ref: components/schemas/ssh.yaml#/CreateSSHConnectionRequest
-    UpdateSSHConnectionRequest:
-      $ref: components/schemas/ssh.yaml#/UpdateSSHConnectionRequest
-    SSHFile:
-      $ref: components/schemas/ssh.yaml#/SSHFile
-    SSHConnectionTestResult:
-      $ref: components/schemas/ssh.yaml#/SSHConnectionTestResult
     LatexDocument:
       $ref: components/schemas/latex.yaml#/LatexDocument
     LatexFile:
@@ -713,7 +695,7 @@ components:
     DailyActivity:
       $ref: components/schemas/daily-activities.yaml#/DailyActivity
     Job:
-      $ref: components/schemas/ssh.yaml#/Job
+      $ref: components/schemas/jobs.yaml#/Job
     Notification:
       $ref: components/schemas/notifications.yaml#/Notification
     SystemStats:

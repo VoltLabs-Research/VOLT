@@ -42,6 +42,7 @@ interface ConditionSelection {
     property: string;
     propertyValue: string;
     exposureId: string | null;
+    propertyType: 'number' | 'string';
 }
 
 interface FilterConditionState {
@@ -49,8 +50,9 @@ interface FilterConditionState {
     property: string;
     propertyValue: string;
     exposureId: string | null;
+    propertyType: 'number' | 'string';
     operator: FilterOperator;
-    value: number;
+    value: number | string;
     valueInput: string;
 }
 
@@ -91,17 +93,19 @@ const resolveConditionSelection = (
         return {
             property: selectedOption.property,
             propertyValue: selectedOption.value,
-            exposureId: selectedOption.exposureId
+            exposureId: selectedOption.exposureId,
+            propertyType: selectedOption.type
         };
     }
     const defaultOption = findDefaultPropertyOption(propertyOptions);
     if (!defaultOption) {
-        return { property: '', propertyValue: '', exposureId: null };
+        return { property: '', propertyValue: '', exposureId: null, propertyType: 'number' };
     }
     return {
         property: defaultOption.property,
         propertyValue: defaultOption.value,
-        exposureId: defaultOption.exposureId
+        exposureId: defaultOption.exposureId,
+        propertyType: defaultOption.type
     };
 };
 
@@ -115,6 +119,7 @@ const createPropertyCondition = (
         property: selection.property,
         propertyValue: selection.propertyValue,
         exposureId: selection.exposureId,
+        propertyType: selection.propertyType,
         operator: FilterOperator.Equal,
         value: 0,
         valueInput: DEFAULT_NUMERIC_VALUE
@@ -130,6 +135,7 @@ const syncConditionWithPropertyOptions = (
         condition.property === selection.property
         && condition.propertyValue === selection.propertyValue
         && condition.exposureId === selection.exposureId
+        && condition.propertyType === selection.propertyType
     ) {
         return condition;
     }
@@ -137,11 +143,31 @@ const syncConditionWithPropertyOptions = (
         ...condition,
         property: selection.property,
         propertyValue: selection.propertyValue,
-        exposureId: selection.exposureId
+        exposureId: selection.exposureId,
+        propertyType: selection.propertyType,
+        operator: selection.propertyType === 'string'
+            && condition.operator !== FilterOperator.Equal
+            && condition.operator !== FilterOperator.NotEqual
+            ? FilterOperator.Equal
+            : condition.operator,
+        value: selection.propertyType === 'string' ? '' : 0,
+        valueInput: selection.propertyType === 'string' ? '' : DEFAULT_NUMERIC_VALUE
     };
 };
 
 const toConditionDTO = (condition: FilterConditionState): ParticleFilterConditionDTO | null => {
+    if (condition.propertyType === 'string') {
+        const value = condition.valueInput.trim();
+        if (!condition.property || value.length === 0) return null;
+        if (condition.operator !== FilterOperator.Equal && condition.operator !== FilterOperator.NotEqual) return null;
+        return {
+            property: condition.property,
+            operator: condition.operator,
+            value,
+            ...(condition.exposureId ? { exposureId: condition.exposureId } : {})
+        };
+    }
+
     const parsedValue = parseNumericInput(condition.valueInput);
     if (!condition.property || parsedValue === null) return null;
     return {
@@ -193,6 +219,11 @@ export const OPERATORS: FilterOption<FilterOperator>[] = [
     { value: FilterOperator.GreaterThanOrEqual, title: '>=' },
     { value: FilterOperator.LessThan, title: '<' },
     { value: FilterOperator.LessThanOrEqual, title: '<=' }
+];
+
+export const STRING_OPERATORS: FilterOption<FilterOperator>[] = [
+    { value: FilterOperator.Equal, title: '=' },
+    { value: FilterOperator.NotEqual, title: '!=' }
 ];
 
 export const ACTIONS: FilterOption<FilterAction>[] = [
@@ -354,7 +385,15 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 ...condition,
                 property: selection.property,
                 propertyValue: value,
-                exposureId: selection.exposureId
+                exposureId: selection.exposureId,
+                propertyType: selection.type,
+                operator: selection.type === 'string'
+                    && condition.operator !== FilterOperator.Equal
+                    && condition.operator !== FilterOperator.NotEqual
+                    ? FilterOperator.Equal
+                    : condition.operator,
+                value: selection.type === 'string' ? '' : 0,
+                valueInput: selection.type === 'string' ? '' : DEFAULT_NUMERIC_VALUE
             };
         });
         if (suggestionsConditionId === conditionId) {
@@ -363,14 +402,28 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, [propertyOptions, suggestionsConditionId, updateCondition]);
 
     const handleOperatorChange = useCallback((conditionId: string, operator: FilterOperator) => {
-        updateCondition(conditionId, (condition) => ({
-            ...condition,
-            operator
-        }));
+        updateCondition(conditionId, (condition) => {
+            if (
+                condition.propertyType === 'string'
+                && operator !== FilterOperator.Equal
+                && operator !== FilterOperator.NotEqual
+            ) {
+                return condition;
+            }
+
+            return {
+                ...condition,
+                operator
+            };
+        });
     }, [updateCondition]);
 
     const handleValueChange = useCallback((conditionId: string, nextValue: string) => {
         updateCondition(conditionId, (condition) => {
+            if (condition.propertyType === 'string') {
+                return { ...condition, value: nextValue, valueInput: nextValue };
+            }
+
             const parsedValue = parseNumericInput(nextValue);
             let value = condition.value;
             if (parsedValue !== null) value = parsedValue;
@@ -508,6 +561,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         handleOperatorChange,
         handleValueChange,
         propertyOptions,
+        getOperatorOptions: (conditionId: string) => {
+            const condition = conditions.find((candidate) => candidate.id === conditionId);
+            return condition?.propertyType === 'string' ? STRING_OPERATORS : OPERATORS;
+        },
         matchMode,
         setMatchMode,
         action,

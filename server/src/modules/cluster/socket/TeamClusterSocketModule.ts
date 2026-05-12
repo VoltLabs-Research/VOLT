@@ -17,7 +17,6 @@ import CompleteTeamClusterDeletionUseCase from '@modules/cluster/application/use
 import ProcessDaemonJobCompletionUseCase from '@modules/cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
 import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
 import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import ProcessDaemonTrajectoryImportUseCase from '@modules/cluster/application/use-cases/ProcessDaemonTrajectoryImportUseCase';
 import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
@@ -146,7 +145,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
         private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
-        private readonly processDaemonTrajectoryImportUseCase: ProcessDaemonTrajectoryImportUseCase,
         private readonly analysisExecutionLogService: AnalysisExecutionLogService,
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
@@ -530,12 +528,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             return;
         }
 
-        if (payload.command === 'trajectory.import-complete') {
-            const result = await this.processDaemonTrajectoryImportUseCase.execute(payload.payload as never);
-            this.emitUseCaseResult(socketId, payload.requestId, result);
-            return;
-        }
-
         this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
             type: 'response',
             requestId: payload.requestId,
@@ -559,7 +551,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             || payload.type === 'analysis-stage-status'
             || payload.type === 'trajectory-raster-job-status'
             || payload.type === 'trajectory-glb-job-status'
-            || payload.type === 'ssh-import-job-status'
             || payload.type === 'artifact-upload-job-status'
         ) {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);

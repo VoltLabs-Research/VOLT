@@ -32,6 +32,7 @@ interface SimulationCardProps {
     onMoveToFolder?: (trajectory: Trajectory) => void;
     onDelete?: (_id: string) => void;
     disablePrimaryInteraction?: boolean;
+    readOnly?: boolean;
 }
 
 export default function SimulationCard({
@@ -39,7 +40,8 @@ export default function SimulationCard({
     isSelected,
     onMoveToFolder,
     onDelete,
-    disablePrimaryInteraction = false
+    disablePrimaryInteraction = false,
+    readOnly = false
 }: SimulationCardProps) {
     const navigate = useNavigate();
     const { data: jobGroups = [] } = teamJobsGroups();
@@ -68,7 +70,8 @@ export default function SimulationCard({
     const { previewBlobUrl } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
         isRasterReady: hasRasterPreviewReadySignal,
-        allowPersistedPreviewFallback: hasPersistedPreview
+        allowPersistedPreviewFallback: hasPersistedPreview,
+        accessMode: readOnly ? 'public' : 'rbac'
     });
 
     const processingMessage = getStageMessage(trajectory.status);
@@ -139,9 +142,10 @@ export default function SimulationCard({
                 processingMessage={processingMessage}
                 onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
                 onDelete={onDelete}
+                readOnly={readOnly}
             />
 
-            <SimulationCardUsers trajectoryId={trajectory._id} />
+            {!readOnly && <SimulationCardUsers trajectoryId={trajectory._id} />}
         </article>
     );
 }

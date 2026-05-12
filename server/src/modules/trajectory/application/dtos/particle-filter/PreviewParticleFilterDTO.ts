@@ -6,7 +6,7 @@ export interface ParticleFilterConditionDTO {
     kind?: 'property';
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value: number;
+    value: number | string;
     exposureId?: string;
 }
 

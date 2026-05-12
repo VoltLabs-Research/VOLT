@@ -12,5 +12,9 @@ export const ExposureDataSchema = new Schema({
     results: {
         type: String,
         required: [true, ValidationCodes.PLUGIN_EXPOSURE_RESULTS_REQUIRED]
+    },
+    hasListing: {
+        type: Boolean,
+        default: true
     }
 }, { _id: false });

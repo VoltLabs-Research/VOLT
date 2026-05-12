@@ -41,6 +41,7 @@ interface ColorCodingProps {
 
 interface ColorCodingFormProps {
     propertyValue: string;
+    propertyType: 'number' | 'string';
     propertyOptions: SelectOption[];
     onPropertyChange: (value: string) => void;
     gradient: ColorGradient;
@@ -60,6 +61,7 @@ interface ColorCodingFormProps {
 
 const ColorCodingForm = ({
     propertyValue,
+    propertyType,
     propertyOptions,
     onPropertyChange,
     gradient,
@@ -80,6 +82,7 @@ const ColorCodingForm = ({
         setGradient(value as ColorGradient);
     };
 
+    const isCategorical = propertyType === 'string';
     const selectFields: SelectFieldConfig[] = [
         {
             key: 'property',
@@ -88,13 +91,13 @@ const ColorCodingForm = ({
             onChange: onPropertyChange,
             options: propertyOptions
         },
-        {
+        ...(!isCategorical ? [{
             key: 'gradient',
             label: 'Color Gradient',
             value: gradient,
             onChange: handleGradientChange,
             options: gradientOptions
-        }
+        }] : [])
     ];
 
     const inputFields: NumberFieldConfig[] = [
@@ -143,13 +146,15 @@ const ColorCodingForm = ({
                     />
                 ))}
 
-                <GradientPreview
-                    gradient={gradient}
-                    startValue={startValue}
-                    endValue={endValue}
-                />
+                {!isCategorical && (
+                    <GradientPreview
+                        gradient={gradient}
+                        startValue={startValue}
+                        endValue={endValue}
+                    />
+                )}
 
-                {inputFields.map((field) => (
+                {!isCategorical && inputFields.map((field) => (
                     <FormFieldRHF
                         key={field.key}
                         fieldKey={field.key}
@@ -162,7 +167,7 @@ const ColorCodingForm = ({
                     />
                 ))}
 
-                {checkboxFields.map((field) => (
+                {!isCategorical && checkboxFields.map((field) => (
                     <FormFieldRHF
                         key={field.key}
                         fieldKey={field.key}
@@ -181,6 +186,7 @@ const ColorCodingForm = ({
 const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingProps) => {
     const {
         propertyValue,
+        propertyType,
         propertyOptions,
         handlePropertyChange,
         gradient,
@@ -209,6 +215,7 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingP
         <Stack gap='05'>
             <ColorCodingForm
                 propertyValue={propertyValue}
+                propertyType={propertyType}
                 propertyOptions={propertyOptions}
                 onPropertyChange={handlePropertyChange}
                 gradient={gradient}

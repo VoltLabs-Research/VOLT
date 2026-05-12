@@ -41,7 +41,6 @@ export interface TeamClusterQueueConcurrencyDTO {
     rasterizer: number;
     glbPreprocessing: number;
     artifactUpload: number;
-    sshImport: number;
     pluginWarmup: number;
 }
 
@@ -108,7 +107,6 @@ export const toTeamClusterQueueConcurrencyDTO = (
     rasterizer: queueConcurrency.rasterizer,
     glbPreprocessing: queueConcurrency.glbPreprocessing,
     artifactUpload: queueConcurrency.artifactUpload,
-    sshImport: queueConcurrency.sshImport,
     pluginWarmup: queueConcurrency.pluginWarmup
 });
 
