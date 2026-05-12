@@ -19,7 +19,6 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         skeleton: { variant: 'text', width: 180 }
     },
     enumColumn<SceneArtifact>('sourceType', 'Source', { sortable: true, width: 120 }),
-    populatedNameColumn<SceneArtifact>('plugin', 'Plugin'),
     populatedNameColumn<SceneArtifact>('trajectory', 'Trajectory', { width: 180 }),
     {
         key: 'timestep',

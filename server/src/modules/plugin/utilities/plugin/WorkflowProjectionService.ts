@@ -50,17 +50,19 @@ export default class WorkflowProjectionService {
                 name: exposure?.name ?? '',
                 icon: exposure?.icon,
                 results: exposure?.results ?? '',
-                hasListing: true
+                hasListing: exposure?.hasListing !== false
             };
         });
 
         const argumentsNode = nodes.find((n) => n.type === WorkflowNodeType.Arguments);
         const args: ArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
 
-        const listingEntries = exposures.map((exposure) => ({
-            exposureId: exposure._id,
-            name: exposure.name
-        }));
+        const listingEntries = exposures
+            .filter((exposure) => exposure.hasListing !== false)
+            .map((exposure) => ({
+                exposureId: exposure._id,
+                name: exposure.name
+            }));
 
         let listingExposures: ListingExposuresData | null = null;
         if (modifier && pluginId) {

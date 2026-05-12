@@ -8,4 +8,5 @@ export interface GetColorCodingPropertiesInputDTO {
 export interface GetColorCodingPropertiesOutputDTO {
     base: string[];
     modifiers: Record<string, string[]>;
+    modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
 };

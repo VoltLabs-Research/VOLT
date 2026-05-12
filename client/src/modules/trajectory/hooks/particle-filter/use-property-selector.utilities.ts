@@ -5,6 +5,7 @@ export interface PropertyOption {
     title: string;
     property: string;
     exposureId: string | null;
+    type: 'number' | 'string';
 }
 
 const buildDumpPropertyValue = (property: string): string => `dump:${property}`;
@@ -27,17 +28,20 @@ export const buildPropertyOptions = (properties: FilterPropertiesData | undefine
             value: buildDumpPropertyValue(property),
             title: property,
             property,
-            exposureId: null
+            exposureId: null,
+            type: 'number'
         });
     });
 
     Object.entries(properties.perAtom).forEach(([exposureId, perAtomProperties]) => {
         perAtomProperties.forEach((property) => {
+            const type = properties.perAtomTypes?.[exposureId]?.[property] ?? 'number';
             options.push({
                 value: buildModifierPropertyValue(exposureId, property),
                 title: buildOptionTitle(property),
                 property,
-                exposureId
+                exposureId,
+                type
             });
         });
     });
@@ -48,11 +52,12 @@ export const buildPropertyOptions = (properties: FilterPropertiesData | undefine
 export const resolvePropertySelection = (
     propertyOptions: PropertyOption[],
     value: string
-): { property: string; exposureId: string | null } => {
+): { property: string; exposureId: string | null; type: 'number' | 'string' } => {
     const option = propertyOptions.find((candidate) => candidate.value === value);
 
     return {
         property: option?.property ?? '',
-        exposureId: option?.exposureId ?? null
+        exposureId: option?.exposureId ?? null,
+        type: option?.type ?? 'number'
     };
 };

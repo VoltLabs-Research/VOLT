@@ -5,12 +5,14 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
 interface UsePluginResultsOptions {
     pluginId: string;
@@ -39,22 +41,56 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         analysisId,
         timestep: currentTimestep
     });
+    const chartArtifactsQuery = sceneArtifactsQuery(
+        {
+            trajectoryId: trajectoryId ?? '',
+            analysisId,
+            timestep: currentTimestep,
+            sourceType: 'plugin-exposure',
+            page: 1,
+            limit: 100
+        },
+        {
+            enabled: Boolean(trajectoryId && analysisId && currentTimestep !== undefined)
+        }
+    );
+
+    const chartArtifacts = useMemo(() => {
+        return (chartArtifactsQuery.data?.data ?? [])
+            .filter((artifact): artifact is SceneArtifact => {
+                const candidate = artifact as SceneArtifact;
+                const metadata = candidate.metadata ?? {};
+                return candidate.sourceType === 'plugin-exposure'
+                    && typeof candidate._id === 'string'
+                    && typeof candidate.objectName === 'string'
+                    && candidate.objectName.endsWith('.png')
+                    && (
+                        metadata.exporter === 'ChartExporter'
+                        || metadata.exportType === 'chart-png'
+                    );
+            });
+    }, [chartArtifactsQuery.data?.data]);
 
     const tabs = useMemo(() => {
         const result = listingExposures.map((exposure) => exposure.name);
         if (hasAtomProperties) {
             result.push('Atoms');
         }
+        if (chartArtifacts.length > 0) {
+            result.push('Charts');
+        }
         return result;
-    }, [listingExposures, hasAtomProperties]);
+    }, [listingExposures, hasAtomProperties, chartArtifacts.length]);
 
     const isAtomsTab = hasAtomProperties && activeTab === listingExposures.length;
+    const chartsTabIndex = listingExposures.length + (hasAtomProperties ? 1 : 0);
+    const isChartsTab = chartArtifacts.length > 0 && activeTab === chartsTabIndex;
 
-    const activeExposureName = !isAtomsTab && activeTab < listingExposures.length
+    const activeExposureName = !isAtomsTab && !isChartsTab && activeTab < listingExposures.length
         ? listingExposures[activeTab].name
         : null;
 
-    const activeExposureId = !isAtomsTab && activeTab < listingExposures.length
+    const activeExposureId = !isAtomsTab && !isChartsTab && activeTab < listingExposures.length
         ? listingExposures[activeTab].exposureId
         : null;
 
@@ -90,9 +126,12 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
         activeExposureName,
         activeExposureId,
         isAtomsTab,
+        isChartsTab,
+        chartArtifacts,
         hasAtomProperties,
         trajectoryId,
         teamId,
+        currentTimestep,
         isDownloading,
         isEmpty: tabs.length === 0,
         close,

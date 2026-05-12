@@ -24,6 +24,7 @@ export interface GetColorCodingPropertiesInputDTO {
 export interface ColorCodingProperties {
     base: string[];
     modifiers: Record<string, string[]>;
+    modifierTypes?: Record<string, Record<string, 'number' | 'string'>>;
 }
 
 export interface GetColorCodingStatsInputDTO {

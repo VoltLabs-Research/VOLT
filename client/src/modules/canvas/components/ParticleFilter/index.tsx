@@ -41,6 +41,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
         handleOperatorChange,
         handleValueChange,
         propertyOptions,
+        getOperatorOptions,
         matchMode,
         setMatchMode,
         action,
@@ -83,6 +84,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
 
     const renderConditionRow = (condition: typeof conditions[number], index: number) => {
         const isRemovable = conditions.length > 1;
+        const operatorOptions = getOperatorOptions(condition.id);
 
         return (
             <Stack key={condition.id} gap='05' className='canvas-filter-condition'>
@@ -125,7 +127,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
 
                         handleOperatorChange(condition.id, nextValue);
                     }}
-                    options={OPERATORS}
+                    options={operatorOptions}
                     variant='canvas'
                 />
 
@@ -138,7 +140,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     suggestions={getValueSuggestions(condition.id)}
                     onFetchSuggestions={() => fetchValueSuggestions(condition.id)}
                     isLoading={isLoadingValueSuggestions}
-                    inputProps={{ inputMode: 'decimal' }}
+                    inputProps={{ inputMode: condition.propertyType === 'string' ? 'text' : 'decimal' }}
                     variant='canvas'
                 />
             </Stack>

@@ -15,6 +15,7 @@ interface UsePropertySelectorResult {
     property: string;
     propertyValue: string;
     exposureId: string | null;
+    propertyType: 'number' | 'string';
     propertyOptions: PropertyOption[];
     isLoading: boolean;
     handlePropertyChange: (value: string) => void;
@@ -34,6 +35,7 @@ export default function usePropertySelector(params: UsePropertySelectorParams): 
     const [selectedProperty, setSelectedProperty] = useState<string>('');
     const [selectedPropertyValue, setSelectedPropertyValue] = useState<string>('');
     const [selectedExposureId, setSelectedExposureId] = useState<string | null>(null);
+    const [selectedPropertyType, setSelectedPropertyType] = useState<'number' | 'string'>('number');
 
     const { properties, isLoading } = useFrameProperties({
         trajectoryId,
@@ -60,6 +62,9 @@ export default function usePropertySelector(params: UsePropertySelectorParams): 
             if (selectedExposureId !== selectedOption.exposureId) {
                 setSelectedExposureId(selectedOption.exposureId);
             }
+            if (selectedPropertyType !== selectedOption.type) {
+                setSelectedPropertyType(selectedOption.type);
+            }
             return;
         }
 
@@ -74,25 +79,31 @@ export default function usePropertySelector(params: UsePropertySelectorParams): 
             if (selectedExposureId !== null) {
                 setSelectedExposureId(null);
             }
+            if (selectedPropertyType !== 'number') {
+                setSelectedPropertyType('number');
+            }
             return;
         }
 
         setSelectedProperty(defaultOption.property);
         setSelectedPropertyValue(defaultOption.value);
         setSelectedExposureId(defaultOption.exposureId);
-    }, [propertyOptions, selectedExposureId, selectedProperty, selectedPropertyValue]);
+        setSelectedPropertyType(defaultOption.type);
+    }, [propertyOptions, selectedExposureId, selectedProperty, selectedPropertyType, selectedPropertyValue]);
 
     const handlePropertyChange = useCallback((value: string) => {
         const selection = resolvePropertySelection(propertyOptions, value);
         setSelectedProperty(selection.property);
         setSelectedPropertyValue(value);
         setSelectedExposureId(selection.exposureId);
+        setSelectedPropertyType(selection.type);
     }, [propertyOptions]);
 
     return {
         property: selectedProperty,
         propertyValue: selectedPropertyValue,
         exposureId: selectedExposureId,
+        propertyType: selectedPropertyType,
         propertyOptions,
         isLoading,
         handlePropertyChange

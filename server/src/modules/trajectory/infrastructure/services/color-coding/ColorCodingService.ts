@@ -68,7 +68,11 @@ export default class ColorCodingService implements IColorCodingService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
+    ): Promise<{
+        base: string[];
+        modifiers: Record<string, string[]>;
+        modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
+    }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext({
             trajectoryId: String(trajectoryId),
@@ -89,13 +93,24 @@ export default class ColorCodingService implements IColorCodingService {
         });
         const headers = metadata.headers || [];
 
-        const modifierProps = resolvedAnalysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(resolvedAnalysisId), String(timestep))
-            : {};
+        const modifierProps: Record<string, string[]> = {};
+        const modifierTypes: Record<string, Record<string, 'number' | 'string'>> = {};
+        if (resolvedAnalysisId) {
+            const configs = await this.atomProps.getAnalysisExposureAtomConfigs(
+                String(resolvedAnalysisId),
+                String(timestep)
+            );
+            for (const config of configs) {
+                if (config.perAtomProperties.length === 0) continue;
+                modifierProps[config.exposureId] = config.perAtomProperties;
+                modifierTypes[config.exposureId] = config.perAtomPropertyTypes;
+            }
+        }
 
         return {
             base: headers,
-            modifiers: modifierProps
+            modifiers: modifierProps,
+            modifierTypes
         };
     }
 

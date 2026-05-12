@@ -13,7 +13,7 @@ export const getListingRelevantExposures = (
     }
 
     return exposures
-        .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && exposure?.hasListing)
+        .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && exposure?.hasListing !== false)
         .map((exposure) => ({
             exposureId: exposure._id,
             name: exposure.name

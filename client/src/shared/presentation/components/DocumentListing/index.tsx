@@ -80,6 +80,7 @@ interface DocumentListingProps<T extends { _id: string }, TContext = Record<stri
     onEmptyButtonClick?: () => void;
     hideHeader?: boolean;
     hideTabs?: boolean;
+    includeCopyDocumentId?: boolean;
     tabs?: DocumentListingTab[];
     defaultTabId?: string;
     onTabChange?: (tabId: string) => void;
@@ -154,6 +155,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     onEmptyButtonClick,
     hideHeader = false,
     hideTabs = false,
+    includeCopyDocumentId = true,
     tabs,
     defaultTabId,
     onTabChange,
@@ -284,6 +286,10 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             return menuOptions;
         }
 
+        if (!includeCopyDocumentId) {
+            return menuOptions;
+        }
+
         return [
             ...menuOptions,
             {
@@ -297,7 +303,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 }
             }
         ];
-    }, [getMenuOptions]);
+    }, [getMenuOptions, includeCopyDocumentId]);
 
     const sortedData = useMemo(() => {
         if (!sortConfig || data.length < 2) {

@@ -22,7 +22,12 @@ export interface IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }>;
+    ): Promise<{
+        dump: string[];
+        perAtom: Record<string, string[]>;
+        perAtomTypes: Record<string, Record<string, 'number' | 'string'>>;
+        exposureNames: Record<string, string>;
+    }>;
 
     getUniqueValues(
         trajectoryId: string,
@@ -31,7 +36,7 @@ export interface IParticleFilterService {
         maxValues?: number,
         analysisId?: string,
         exposureId?: string
-    ): Promise<number[]>;
+    ): Promise<Array<number | string>>;
 
     preview(
         trajectoryId: string,

@@ -72,11 +72,6 @@ const queueConcurrencySchema = new Schema({
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
         min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
     },
-    sshImport: {
-        type: Number,
-        required: [true, TEAM_CLUSTER_VALIDATION_ERROR],
-        min: [1, TEAM_CLUSTER_VALIDATION_ERROR]
-    },
     pluginWarmup: {
         type: Number,
         required: [true, TEAM_CLUSTER_VALIDATION_ERROR],

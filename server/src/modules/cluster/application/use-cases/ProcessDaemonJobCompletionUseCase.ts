@@ -8,7 +8,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
-type SshImportJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type ArtifactUploadJobStatus = JobStatus.Queued | JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 
 interface ProcessDaemonAnalysisJobCompletionInputDTO {
@@ -92,20 +91,6 @@ interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStat
     status: GlbJobStatus;
 }
 
-interface ProcessDaemonSshImportJobStatusInputDTO {
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    teamId: string;
-    trajectoryId: string;
-    status: JobStatus;
-    error?: string;
-}
-
-interface ValidProcessDaemonSshImportJobStatusInputDTO extends ProcessDaemonSshImportJobStatusInputDTO {
-    status: SshImportJobStatus;
-}
-
 interface ProcessDaemonArtifactUploadJobStatusInputDTO {
     teamClusterId: string;
     daemonPassword: string;
@@ -128,7 +113,6 @@ export type ProcessDaemonJobCompletionInputDTO =
     | ProcessDaemonAnalysisStageStatusInputDTO
     | ProcessDaemonRasterJobStatusInputDTO
     | ProcessDaemonGlbJobStatusInputDTO
-    | ProcessDaemonSshImportJobStatusInputDTO
     | ProcessDaemonArtifactUploadJobStatusInputDTO;
 
 interface ProcessDaemonJobCompletionOutputDTO {
@@ -229,19 +213,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
                 return Result.ok({ acknowledged: true });
             }
 
-            if (this.isSshImportJobStatusInput(input)) {
-                await this.daemonAnalysisCompletionService.handleSshImportJobStatus({
-                    teamClusterId: input.teamClusterId,
-                    jobId: input.jobId,
-                    teamId: input.teamId,
-                    trajectoryId: input.trajectoryId,
-                    status: input.status,
-                    error: input.error
-                });
-
-                return Result.ok({ acknowledged: true });
-            }
-
             if (this.isArtifactUploadJobStatusInput(input)) {
                 await this.daemonAnalysisCompletionService.handleArtifactUploadJobStatus({
                     teamClusterId: input.teamClusterId,
@@ -319,15 +290,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
             && this.isValidJobStatus(input.status);
     }
 
-    private isSshImportJobStatusInput(
-        input: ProcessDaemonJobCompletionInputDTO
-    ): input is ValidProcessDaemonSshImportJobStatusInputDTO {
-        return this.hasJobStatusFields(input)
-            && !this.hasAnalysisJobCompletionFields(input)
-            && this.isSshImportJobId(input.jobId)
-            && this.isValidJobStatus(input.status);
-    }
-
     private isArtifactUploadJobStatusInput(
         input: ProcessDaemonJobCompletionInputDTO
     ): input is ValidProcessDaemonArtifactUploadJobStatusInputDTO {
@@ -343,7 +305,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
         return this.hasJobStatusFields(input)
             && !this.hasAnalysisJobCompletionFields(input)
             && !this.isGlbJobId(input.jobId)
-            && !this.isSshImportJobId(input.jobId)
             && !this.isArtifactUploadJobId(input.jobId)
             && this.isValidJobStatus(input.status);
     }
@@ -360,10 +321,6 @@ export default class ProcessDaemonJobCompletionUseCase implements IUseCase<
 
     private isGlbJobId(jobId: string): boolean {
         return jobId.startsWith('trajectory-glb:') || jobId.startsWith('trajectory-frame:');
-    }
-
-    private isSshImportJobId(jobId: string): boolean {
-        return jobId.startsWith('ssh-import:');
     }
 
     private isArtifactUploadJobId(jobId: string): boolean {

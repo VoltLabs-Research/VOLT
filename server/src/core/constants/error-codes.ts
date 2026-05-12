@@ -42,19 +42,6 @@ export const ErrorCodes = createErrorCodes({
     CONTAINER_FILE_BINARY_UNSUPPORTED: 'Container::File::BinaryUnsupported',
     CONTAINER_EXEC_FAILED: 'Container::Exec::Failed',
 
-    SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
-    SSH_CONNECTION_UPDATE_ERROR: 'SSHConnection::UpdateError',
-    SSH_CONNECTION_DELETE_ERROR: 'SSHConnection::DeleteError',
-    SSH_AUTH_FAILED: 'SSH::Auth::Failed',
-    SSH_CONNECTION_REFUSED: 'SSH::Connection::Refused',
-    SSH_CONNECTION_TIMEOUT: 'SSH::Connection::Timeout',
-    SSH_HOST_UNREACHABLE: 'SSH::Host::Unreachable',
-    SSH_DECRYPTION_FAILED: 'SSH::Decryption::Failed',
-    SSH_LIST_FILES_ERROR: 'SSH::ListFiles::Error',
-    SSH_PATH_NOT_FOUND: 'SSH::Path::NotFound',
-    SSH_IMPORT_NO_FILES: 'SSH::Import::NoFiles',
-    SSH_IMPORT_ERROR: 'SSH::Import::Error',
-
     SESSION_NOT_FOUND: 'Session::NotFound',
     SESSION_REVOKE_FAILED: 'Session::RevokeSession::Failed',
 

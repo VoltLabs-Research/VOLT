@@ -35,6 +35,7 @@ interface SimulationCardFooterProps {
     processingMessage?: string;
     onMoveToFolder?: () => void;
     onDelete?: (_id: string) => void;
+    readOnly?: boolean;
 }
 
 interface ToastState {
@@ -159,7 +160,8 @@ export default function SimulationCardFooter({
     isProcessing,
     processingMessage,
     onMoveToFolder,
-    onDelete
+    onDelete,
+    readOnly = false
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
@@ -242,7 +244,7 @@ export default function SimulationCardFooter({
         );
     }, [hasPendingRasterization, hasRequestedRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
 
-    const popoverItems: SimulationCardActionItem[] = [{
+    const popoverItems: SimulationCardActionItem[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
         icon: <HiOutlineViewfinderCircle />
@@ -292,6 +294,7 @@ export default function SimulationCardFooter({
                     name={name}
                     className='simulation-card-title font-size-3 color-primary font-weight-5 text-truncate'
                     allowSingleClickPropagation
+                    readOnly={readOnly}
                 />
                 <Row gap='075' className='simulation-card-status color-secondary font-size-2'>
                     {isProcessing ? (
@@ -309,23 +312,25 @@ export default function SimulationCardFooter({
                 </Row>
             </Stack>
 
-            <Popover
-                id={`simulation-card-popover-${trajectoryId}`}
-                trigger={popoverTrigger}
-            >
-                <PopoverMenu>
-                    {popoverItems.map(({ icon, onClick, label, isDanger, ...props }, index) => (
-                        <PopoverMenuItem
-                            icon={icon}
-                            label={label}
-                            onClick={onClick}
-                            key={index}
-                            variant={isDanger ? 'danger' : undefined}
-                            {...props}
-                        />
-                    ))}
-                </PopoverMenu>
-            </Popover>
+            {!readOnly && (
+                <Popover
+                    id={`simulation-card-popover-${trajectoryId}`}
+                    trigger={popoverTrigger}
+                >
+                    <PopoverMenu>
+                        {popoverItems.map(({ icon, onClick, label, isDanger, ...props }, index) => (
+                            <PopoverMenuItem
+                                icon={icon}
+                                label={label}
+                                onClick={onClick}
+                                key={index}
+                                variant={isDanger ? 'danger' : undefined}
+                                {...props}
+                            />
+                        ))}
+                    </PopoverMenu>
+                </Popover>
+            )}
         </Row>
     );
 }

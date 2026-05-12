@@ -8,5 +8,5 @@ export interface GetParticleFilterUniqueValuesInputDTO {
 };
 
 export interface GetParticleFilterUniqueValuesOutputDTO {
-    values: number[];
+    values: Array<number | string>;
 };

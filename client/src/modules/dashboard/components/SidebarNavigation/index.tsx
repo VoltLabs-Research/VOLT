@@ -12,7 +12,6 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useMemo } from 'react';
 import {
-    ArrowUpDown,
     BarChart3,
     BookOpen,
     Box as CubeIcon,
@@ -45,7 +44,6 @@ const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> =
     [DashboardNavigationIconKey.AI]: { inactive: Sparkles, active: Sparkles },
     [DashboardNavigationIconKey.Containers]: { inactive: CubeIcon, active: CubeIcon },
     [DashboardNavigationIconKey.Dashboard]: { inactive: LayoutGrid, active: LayoutGrid },
-    [DashboardNavigationIconKey.Import]: { inactive: ArrowUpDown, active: ArrowUpDown },
     [DashboardNavigationIconKey.Latex]: { inactive: FileText, active: FileText },
     [DashboardNavigationIconKey.ManageRoles]: { inactive: KeyRound, active: KeyRound },
     [DashboardNavigationIconKey.Messages]: { inactive: MessageCircle, active: MessageCircle },

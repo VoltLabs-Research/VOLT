@@ -1,4 +1,4 @@
-import { trajectoryPreviewQuery } from './queries';
+import { publicTrajectoryPreviewQuery, trajectoryPreviewQuery } from './queries';
 import { isApiError } from '@/shared/errors/core';
 import { useEffect, useRef, useState } from 'react';
 
@@ -7,6 +7,7 @@ interface UseTrajectoryPreviewParams {
     enabled?: boolean;
     isRasterReady?: boolean;
     allowPersistedPreviewFallback?: boolean;
+    accessMode?: 'rbac' | 'public';
 }
 
 interface UseTrajectoryPreviewResult {
@@ -21,7 +22,8 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         trajectoryId,
         enabled = true,
         isRasterReady = false,
-        allowPersistedPreviewFallback = false
+        allowPersistedPreviewFallback = false,
+        accessMode = 'rbac'
     } = params;
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
     const previewBlobUrlRef = useRef<string | null>(null);
@@ -37,12 +39,29 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
     } = trajectoryPreviewQuery(
         { trajectoryId },
         {
-            enabled: isPreviewQueryEnabled
+            enabled: isPreviewQueryEnabled && accessMode === 'rbac'
         }
     );
+    const {
+        data: publicData,
+        error: publicError,
+        isLoading: isPublicLoading,
+        isError: isPublicError,
+        refetch: refetchPublic
+    } = publicTrajectoryPreviewQuery(
+        { trajectoryId },
+        {
+            enabled: isPreviewQueryEnabled && accessMode === 'public'
+        }
+    );
+    const activeData = accessMode === 'public' ? publicData : data;
+    const activeError = accessMode === 'public' ? publicError : error;
+    const activeIsLoading = accessMode === 'public' ? isPublicLoading : isLoading;
+    const activeIsError = accessMode === 'public' ? isPublicError : isError;
+    const activeRefetch = accessMode === 'public' ? refetchPublic : refetch;
 
     useEffect(() => {
-        if (!data?.blob) {
+        if (!activeData?.blob) {
             if (previewBlobUrlRef.current) {
                 URL.revokeObjectURL(previewBlobUrlRef.current);
                 previewBlobUrlRef.current = null;
@@ -52,7 +71,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
             return;
         }
 
-        const objectUrl = URL.createObjectURL(data.blob);
+        const objectUrl = URL.createObjectURL(activeData.blob);
         const previousUrl = previewBlobUrlRef.current;
 
         previewBlobUrlRef.current = objectUrl;
@@ -61,7 +80,7 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         if (previousUrl) {
             URL.revokeObjectURL(previousUrl);
         }
-    }, [data?.blob]);
+    }, [activeData?.blob]);
 
     useEffect(() => {
         return () => {
@@ -72,12 +91,12 @@ export default function useTrajectoryPreview(params: UseTrajectoryPreviewParams)
         };
     }, []);
 
-    const hasNoPreviewYet = isApiError(error) && error.status === 404;
+    const hasNoPreviewYet = isApiError(activeError) && activeError.status === 404;
 
     return {
         previewBlobUrl,
-        isLoading,
-        error: isError && !hasNoPreviewYet,
-        retry: refetch
+        isLoading: activeIsLoading,
+        error: activeIsError && !hasNoPreviewYet,
+        retry: activeRefetch
     };
 }

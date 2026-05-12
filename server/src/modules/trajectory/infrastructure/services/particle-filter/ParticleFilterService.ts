@@ -74,7 +74,12 @@ export default class ParticleFilterService implements IParticleFilterService {
         trajectoryId: string,
         timestep: string | number,
         analysisId?: string
-    ): Promise<{ dump: string[]; perAtom: Record<string, string[]>; exposureNames: Record<string, string> }> {
+    ): Promise<{
+        dump: string[];
+        perAtom: Record<string, string[]>;
+        perAtomTypes: Record<string, Record<string, 'number' | 'string'>>;
+        exposureNames: Record<string, string>;
+    }> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext({
             trajectoryId: String(trajectoryId),
@@ -96,6 +101,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         const dumpHeaders = metadata.headers || [];
 
         const modifierProps: Record<string, string[]> = {};
+        const perAtomTypes: Record<string, Record<string, 'number' | 'string'>> = {};
         const exposureNames: Record<string, string> = {};
 
         if (resolvedAnalysisId) {
@@ -110,6 +116,7 @@ export default class ParticleFilterService implements IParticleFilterService {
                 }
 
                 modifierProps[config.exposureId] = config.perAtomProperties;
+                perAtomTypes[config.exposureId] = config.perAtomPropertyTypes;
                 exposureNames[config.exposureId] = config.exposureName;
             }
         }
@@ -117,6 +124,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         return {
             dump: dumpHeaders,
             perAtom: modifierProps,
+            perAtomTypes,
             exposureNames
         };
     }
@@ -128,7 +136,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         maxValues: number = 100,
         analysisId?: string,
         exposureId?: string
-    ): Promise<number[]> {
+    ): Promise<Array<number | string>> {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext({
             trajectoryId: String(trajectoryId),
@@ -470,7 +478,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         if (request.conditions.length === 1 && firstCondition) {
             params.property = String(firstCondition.property);
             params.operator = String(firstCondition.operator);
-            params.value = Number(firstCondition.value);
+            params.value = firstCondition.value;
             params.exposureId = firstCondition.exposureId;
         }
 

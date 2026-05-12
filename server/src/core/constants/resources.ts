@@ -5,7 +5,6 @@ export enum Resource {
     LATEX = 'latex',
     PLUGIN = 'plugin',
     SCRIPTING = 'scripting',
-    SSH_CONNECTION = 'ssh-connection',
     TEAM_INVITATION = 'team-invitation',
     TEAM_MEMBER = 'team-member',
     TEAM_ROLE = 'team-role',

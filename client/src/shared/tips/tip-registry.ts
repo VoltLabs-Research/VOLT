@@ -121,15 +121,6 @@ export const CONTEXTUAL_TIPS = {
         delay: 1500,
         position: 'top-center'
     },
-    'ssh-file-explorer-navigation': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Browse remote files quickly',
-        description: 'Open folders to navigate, use the breadcrumb to jump back, and refresh the current path whenever the remote state changes.',
-        buttonLabel: 'Got it',
-        delay: 1400,
-        position: 'top-center'
-    },
     'plugin-builder-get-started': {
         surface: 'page',
         dismissMode: 'manual',

@@ -5,14 +5,27 @@ import { PanelFooter } from '../PanelFooter';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
-import { useState } from 'react';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
+import { useCallback, useMemo, useState } from 'react';
 import { BookOpen, Copy } from 'lucide-react';
 import './TeamInvitePanel.css';
 
 enum InviteTab {
     Share = 'Share',
-    InvitationCode = 'Invitation Code'
+    InvitationCode = 'Invitation Code',
+    PublicTrajectories = 'Public Trajectories'
 }
+
+const getPublicTrajectoriesLink = (teamId: string): string => {
+    const publicPath = `/discover/teams/${encodeURIComponent(teamId)}`;
+
+    if (typeof window === 'undefined') {
+        return publicPath;
+    }
+
+    return new URL(publicPath, window.location.origin).toString();
+};
 
 interface TeamInvitePanelProps {
     onClose?: () => void;
@@ -22,6 +35,7 @@ export const TeamInvitePanel = ({
     onClose
 }: TeamInvitePanelProps) => {
     const [activeTab, setActiveTab] = useState<InviteTab>(InviteTab.Share);
+    const teamId = useSelectedTeamId();
 
     const {
         emailField,
@@ -44,6 +58,18 @@ export const TeamInvitePanel = ({
         handleCopy
     } = useInviteCode();
 
+    const publicTrajectoriesLink = useMemo(() => {
+        return teamId ? getPublicTrajectoriesLink(teamId) : '';
+    }, [teamId]);
+
+    const handleCopyPublicTrajectoriesLink = useCallback(async () => {
+        if (!publicTrajectoriesLink) return;
+
+        await copyTextToClipboard(publicTrajectoriesLink, {
+            successMessage: 'Public trajectories link copied to clipboard'
+        });
+    }, [publicTrajectoriesLink]);
+
     const tabs = [
         {
             label: InviteTab.Share,
@@ -54,6 +80,11 @@ export const TeamInvitePanel = ({
             label: InviteTab.InvitationCode,
             active: activeTab === InviteTab.InvitationCode,
             onClick: () => setActiveTab(InviteTab.InvitationCode)
+        },
+        {
+            label: InviteTab.PublicTrajectories,
+            active: activeTab === InviteTab.PublicTrajectories,
+            onClick: () => setActiveTab(InviteTab.PublicTrajectories)
         }
     ];
 
@@ -72,6 +103,15 @@ export const TeamInvitePanel = ({
         }
     ];
 
+    const publicTrajectoriesFooterActions = [
+        {
+            label: 'Copy link',
+            icon: <Copy size={16} />,
+            onClick: handleCopyPublicTrajectoriesLink,
+            disabled: !publicTrajectoriesLink
+        }
+    ];
+
     return (
         <div className='team-invite-panel d-flex column'>
             <PanelHeader
@@ -80,7 +120,7 @@ export const TeamInvitePanel = ({
             />
 
             <div className='team-invite-content d-flex column flex-1 y-auto'>
-                {activeTab === InviteTab.Share ? (
+                {activeTab === InviteTab.Share && (
                     <>
                         <InvitationEmailInput
                             value={emailField.value}
@@ -103,7 +143,9 @@ export const TeamInvitePanel = ({
                             actions={footerActions}
                         />
                     </>
-                ) : (
+                )}
+
+                {activeTab === InviteTab.InvitationCode && (
                     <InviteCodeSection
                         inviteCode={inviteCode}
                         canManageCode={canManageCode}
@@ -113,6 +155,23 @@ export const TeamInvitePanel = ({
                         onDelete={handleDelete}
                         onCopy={handleCopy}
                     />
+                )}
+
+                {activeTab === InviteTab.PublicTrajectories && (
+                    <>
+                        <div className='team-public-trajectories-section d-flex column gap-075'>
+                            <span className='font-size-2 font-weight-5 color-primary'>Public Trajectories</span>
+                            <div className='team-public-trajectories-link'>
+                                <span className='team-public-trajectories-link-value font-size-1 color-secondary'>
+                                    {publicTrajectoriesLink || 'No team selected'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <PanelFooter
+                            actions={publicTrajectoriesFooterActions}
+                        />
+                    </>
                 )}
             </div>
         </div>

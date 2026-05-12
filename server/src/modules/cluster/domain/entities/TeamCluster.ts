@@ -35,7 +35,6 @@ export interface TeamClusterQueueConcurrencyProps {
     rasterizer: number;
     glbPreprocessing: number;
     artifactUpload: number;
-    sshImport: number;
     pluginWarmup: number;
 }
 
@@ -82,7 +81,6 @@ export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrency
     rasterizer: 8,
     glbPreprocessing: 16,
     artifactUpload: 16,
-    sshImport: 2,
     pluginWarmup: 4
 };
 

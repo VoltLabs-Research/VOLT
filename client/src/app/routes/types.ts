@@ -12,7 +12,6 @@ export enum DashboardNavigationIconKey {
     AI = 'ai',
     Containers = 'containers',
     Dashboard = 'dashboard',
-    Import = 'import',
     Latex = 'latex',
     Messages = 'messages',
     MyTeam = 'my-team',

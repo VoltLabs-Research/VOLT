@@ -1,0 +1,48 @@
+Job:
+  type: object
+  required:
+  - _id
+  - teamId
+  - type
+  - status
+  - createdAt
+  properties:
+    _id:
+      type: string
+      description: Unique identifier of the job.
+    teamId:
+      type: string
+      description: ID of the team that owns this job.
+    type:
+      type: string
+      description: Type of job being performed.
+    status:
+      type: string
+      enum:
+      - pending
+      - running
+      - completed
+      - failed
+      description: Current status of the job.
+    progress:
+      type:
+      - number
+      - 'null'
+      minimum: 0
+      maximum: 100
+      description: Job progress as a percentage (0-100).
+    error:
+      type:
+      - string
+      - 'null'
+      description: Error message if the job failed.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the job was created.
+    completedAt:
+      type:
+      - string
+      - 'null'
+      format: date-time
+      description: Timestamp when the job completed or failed.

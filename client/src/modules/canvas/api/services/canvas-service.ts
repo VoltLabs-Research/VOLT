@@ -1,6 +1,7 @@
 import { createService, custom, download, get, paginated } from '@/app/core/http/utilities/create-service';
 import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
+import { base64ToBlob } from '@/shared/utils/file';
 
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
@@ -47,6 +48,10 @@ import type {
     GetRasterMetadataParams,
     GetRasterMetadataResponse
 } from '@/modules/raster/api/service';
+import type {
+    GetPreviewInputDTO,
+    GetPreviewOutputDTO
+} from '@/modules/trajectory/api/services/trajectory-service';
 
 export enum PublicCanvasAccessMode {
     ReadOnly = 'read-only'
@@ -129,6 +134,13 @@ interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
 const endpoints = {
     getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),
     getTrajectory: get<GetCanvasTrajectoryParams, Trajectory>('/:trajectoryId'),
+    getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
+        query: ({ frame, quality }) => ({
+            ...(frame !== undefined ? { frame } : {}),
+            ...(quality ? { quality } : {})
+        }),
+        map: (result) => ({ blob: base64ToBlob(result) })
+    }),
     listAnalyses: paginated<ListCanvasAnalysesParams, PaginatedResponse<Analysis>>('/:trajectoryId/analyses', {
         omit: ['trajectoryId'],
         query: ({ page, limit }) => ({

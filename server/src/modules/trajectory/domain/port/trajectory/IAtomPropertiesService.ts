@@ -1,14 +1,17 @@
 export interface FilterExpression {
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
-    value: number;
+    value: number | string;
 }
+
+export type PerAtomPropertyType = 'number' | 'string';
 
 export interface ExposureAtomConfig {
     exposureId: string;
     exposureName: string;
     iterableKey?: string;
     perAtomProperties: string[];
+    perAtomPropertyTypes: Record<string, PerAtomPropertyType>;
     schemaKeysMap: Map<string, string[]>;
 }
 
@@ -62,5 +65,5 @@ export interface IAtomPropertiesService {
         timestep: string,
         property: string,
         maxValues?: number
-    ): Promise<number[]>;
+    ): Promise<Array<number | string>>;
 }
