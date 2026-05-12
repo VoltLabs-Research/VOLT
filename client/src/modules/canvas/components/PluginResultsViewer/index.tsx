@@ -21,7 +21,7 @@ interface PluginResultsViewerProps {
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
-        activeExposureName, activeExposureId, isAtomsTab, isChartsTab, chartArtifacts,
+        activeExposureName, activeExposureId, isAtomsTab, activeChartArtifact,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
     } = usePluginResults({ pluginId, analysisId });
@@ -61,9 +61,9 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
             ) : (
                 <>
                     <Row overflow='auto' className="canvas-results-tabs" role="tablist">
-                        {tabs.map((label, index) => (
+                        {tabs.map((tab, index) => (
                             <Button
-                                key={label}
+                                key={tab.key}
                                 role="tab"
                                 aria-selected={activeTab === index}
                                 variant={activeTab === index ? 'solid' : 'ghost'}
@@ -73,7 +73,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 className="font-size-05 canvas-btn-compact"
                                 onClick={() => setActiveTab(index)}
                             >
-                                {label}
+                                {tab.label}
                             </Button>
                         ))}
                     </Row>
@@ -98,18 +98,16 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 analysisId={analysisId}
                             />
                         )}
-                        {isChartsTab && chartBasePath && (
+                        {activeChartArtifact && chartBasePath && (
                             <div className="canvas-results-charts">
-                                {chartArtifacts.map((artifact) => (
-                                    <figure className="canvas-results-chart" key={artifact._id}>
-                                        <img
-                                            src={`${chartBasePath}/${artifact._id}/chart`}
-                                            alt={artifact.displayName}
-                                            loading="lazy"
-                                        />
-                                        <figcaption>{artifact.displayName}</figcaption>
-                                    </figure>
-                                ))}
+                                <figure className="canvas-results-chart">
+                                    <img
+                                        src={`${chartBasePath}/${activeChartArtifact._id}/chart`}
+                                        alt={activeChartArtifact.displayName}
+                                        loading="lazy"
+                                    />
+                                    <figcaption>{activeChartArtifact.displayName}</figcaption>
+                                </figure>
                             </div>
                         )}
                     </Box>

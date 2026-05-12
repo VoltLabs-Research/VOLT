@@ -5,7 +5,7 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const KEY_LENGTH = 32;
 const ENCRYPTION_KEY_ENV = 'VOLT_SECRET_ENCRYPTION_KEY';
-const LEGACY_ENCRYPTION_KEY_ENV = ['S', 'S', 'H', 'ENCRYPTION', 'KEY'].join('_');
+const LEGACY_ENCRYPTION_KEY_ENV = 'SSH_ENCRYPTION_KEY';
 const KEY_SALT = ['Volt', 's' + 'sh'].join('-');
 
 const scryptAsync = promisify(crypto.scrypt);
