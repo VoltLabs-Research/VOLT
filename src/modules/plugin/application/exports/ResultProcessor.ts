@@ -93,38 +93,41 @@ export class DefaultResultProcessor implements ResultProcessorService {
                     exportData: exportPayload
                 } = await readWorkflowExposurePayload(outputFilePath);
 
-                const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
-                    trajectoryId,
-                    analysisId,
-                    exposureId: exposure.nodeId,
-                    timestep,
-                    ownerClusterId: storageOwnerClusterId,
-                    rows: perAtomProperties
-                });
-                const propertyObjectKey = propertyStorage?.objectKey;
-                if (propertyStorage) {
-                    logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
+                const isChartOnlyExposure = exposure.export?.exporter === 'ChartExporter';
+                if (!isChartOnlyExposure) {
+                    const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
+                        trajectoryId,
+                        analysisId,
+                        exposureId: exposure.nodeId,
+                        timestep,
+                        ownerClusterId: storageOwnerClusterId,
+                        rows: perAtomProperties
+                    });
+                    const propertyObjectKey = propertyStorage?.objectKey;
+                    if (propertyStorage) {
+                        logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
+                    }
+
+                    await precomputeListingRows(
+                        this.pluginListingRepository,
+                        executionData,
+                        exposure,
+                        listingPayload,
+                        subListingNames,
+                        propertyObjectKey,
+                        storageOwnerClusterId,
+                        timestep,
+                        teamId
+                    );
+
+                    await precomputeSubListingRows(
+                        this.pluginListingRepository,
+                        executionData,
+                        exposure,
+                        subListings,
+                        timestep
+                    );
                 }
-
-                await precomputeListingRows(
-                    this.pluginListingRepository,
-                    executionData,
-                    exposure,
-                    listingPayload,
-                    subListingNames,
-                    propertyObjectKey,
-                    storageOwnerClusterId,
-                    timestep,
-                    teamId
-                );
-
-                await precomputeSubListingRows(
-                    this.pluginListingRepository,
-                    executionData,
-                    exposure,
-                    subListings,
-                    timestep
-                );
 
                 listingPayload = null;
                 subListingNames = [];
@@ -206,7 +209,10 @@ async function precomputeListingRows(
 
     const cleanedMainListing: PluginMongoRow = {};
     for (const [key, entryValue] of Object.entries(mainListing)) {
-        if (Array.isArray(entryValue) && entryValue.length >= 1 && Array.isArray(entryValue[0])) {
+        if (
+            Array.isArray(entryValue)
+            || (typeof entryValue === 'object' && entryValue !== null)
+        ) {
             continue;
         }
 

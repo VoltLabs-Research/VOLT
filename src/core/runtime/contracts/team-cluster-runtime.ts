@@ -39,7 +39,6 @@ export interface TeamClusterDaemonQueueConcurrency {
     rasterizer: number;
     glbPreprocessing: number;
     artifactUpload: number;
-    sshImport: number;
     pluginWarmup: number;
 }
 

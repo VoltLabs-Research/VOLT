@@ -6,16 +6,12 @@ import {
 import type {
     GlbFailedEventData,
     RasterFailedEventData,
-    SshImportFailedEventData,
-    TimedTrajectoryJobEventData,
-    TrajectoryJobEventData
+    TimedTrajectoryJobEventData
 } from '@/modules/trajectory/domain/events';
 
 type TimedTrajectoryStatus = 'running' | 'completed' | 'failed';
-type TrajectoryStatus = 'running' | 'completed' | 'failed';
 
 type TimedTrajectoryJobStatusPayload = TimedTrajectoryJobEventData | RasterFailedEventData | GlbFailedEventData;
-type TrajectoryJobStatusPayload = TrajectoryJobEventData | SshImportFailedEventData;
 
 const mergeError = (payload: object): { error?: string } =>
     'error' in payload && typeof (payload as { error?: unknown }).error === 'string'
@@ -32,12 +28,7 @@ export type GlbJobStatusMessage = AuthenticatedReverseChannelMessage<
     TimedTrajectoryJobEventData & { status: TimedTrajectoryStatus; error?: string }
 >;
 
-export type SshImportJobStatusMessage = AuthenticatedReverseChannelMessage<
-    'ssh-import-job-status',
-    TrajectoryJobEventData & { status: TrajectoryStatus; error?: string }
->;
-
-const pickJobIdentity = <T extends TimedTrajectoryJobStatusPayload | TrajectoryJobStatusPayload>(payload: T) => ({
+const pickJobIdentity = <T extends TimedTrajectoryJobStatusPayload>(payload: T) => ({
     jobId: payload.jobId,
     teamId: payload.teamId,
     trajectoryId: payload.trajectoryId,
@@ -68,18 +59,6 @@ export const createGlbJobStatusMessage = (
     status
 });
 
-export const createSshImportJobStatusMessage = (
-    context: AuthenticatedMessageContext,
-    payload: TrajectoryJobStatusPayload,
-    status: TrajectoryStatus
-): SshImportJobStatusMessage => ({
-    type: 'ssh-import-job-status',
-    ...context,
-    ...pickJobIdentity(payload),
-    ...mergeError(payload),
-    status
-});
-
 export const createRasterJobStatusDedupeKey = (
     payload: Pick<TimedTrajectoryJobEventData, 'jobId' | 'timestep'>,
     status: TimedTrajectoryStatus
@@ -91,8 +70,3 @@ export const createGlbJobStatusDedupeKey = (
     status: TimedTrajectoryStatus
 ): string =>
     `trajectory.glb-job-status:${payload.jobId}:${status}:${readTimestepDedupeSegment(payload.timestep)}`;
-
-export const createSshImportJobStatusDedupeKey = (
-    payload: Pick<TrajectoryJobEventData, 'jobId'>,
-    status: TrajectoryStatus
-): string => `ssh-import.job-status:${payload.jobId}:${status}`;

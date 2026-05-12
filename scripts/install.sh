@@ -368,7 +368,7 @@ PY
     }
 
     ensure_interactive_macos_session() {
-        if [ -n "${CI:-}" ] || [ -n "${SSH_TTY:-}" ]; then
+        if [ -n "${CI:-}" ]; then
             fail 'Automatic Docker Desktop installation on macOS requires an interactive desktop session'
         fi
     }

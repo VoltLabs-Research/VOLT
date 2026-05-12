@@ -11,8 +11,7 @@ import type {
 } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type {
     GlbJobStatusMessage,
-    RasterJobStatusMessage,
-    SshImportJobStatusMessage
+    RasterJobStatusMessage
 } from '@/modules/trajectory/contracts/reverse-channel-trajectory';
 
 export type TeamClusterDaemonServerEventMessage =
@@ -24,5 +23,4 @@ export type TeamClusterDaemonServerEventMessage =
     | DebugLogChunkMessage
     | GlbJobStatusMessage
     | RasterJobStatusMessage
-    | SceneArtifactUpsertBatchMessage
-    | SshImportJobStatusMessage;
+    | SceneArtifactUpsertBatchMessage;

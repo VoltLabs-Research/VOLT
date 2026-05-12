@@ -66,8 +66,12 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<vo
                 return;
             }
 
-            const objectPath = buildObjectPath(input, exporter, exportConfig.type);
-            await exportChartArtifact(input, objectPath, ownerClusterId, chartOptions);
+            await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportChartArtifact({
+                    ...input,
+                    decodedPayload: exportData
+                }, objectPath, ownerClusterId, chartOptions)
+            ));
             return;
         }
         case 'AtomisticExporter':

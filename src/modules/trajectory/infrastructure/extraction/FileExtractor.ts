@@ -104,7 +104,7 @@ export class FileExtractor {
             if (!resolvedOutput.startsWith(resolvedBase + path.sep) && resolvedOutput !== resolvedBase) {
                 logger.warn(
                     { entry: entry.path },
-                    'Skipping ZIP entry with path traversal during SSH import'
+                    'Skipping ZIP entry with path traversal'
                 );
                 continue;
             }

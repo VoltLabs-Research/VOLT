@@ -12,6 +12,11 @@ export class TrajectoryPluginCommands {
         return this.pluginPropertyStore.discoverPerAtomPropertyNames(payload);
     }
 
+    @Command('property-schema')
+    propertySchema(payload: Parameters<PluginPropertyStore['discoverPerAtomPropertySchemas']>[0]) {
+        return this.pluginPropertyStore.discoverPerAtomPropertySchemas(payload);
+    }
+
     @Command('atom-index')
     atomIndex(payload: Parameters<PluginPropertyStore['buildPluginIndexForAtomIds']>[0]) {
         return this.pluginPropertyStore.buildPluginIndexForAtomIds(payload);

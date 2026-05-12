@@ -25,7 +25,7 @@ export interface PreviewFilterInput {
     objectKey?: string;
     property: string;
     operator: ComparisonOperator;
-    value: number;
+    value: number | string;
     analysisId?: string;
     exposureId?: string;
     externalValues?: Uint8Array | Float32Array;
@@ -81,7 +81,8 @@ interface PerAtomValueSource {
 
 interface ResolvedTrajectoryValues {
     parsed: ParsedTrajectory;
-    values: Float32Array;
+    values: Float32Array | Array<string | null>;
+    valueType: 'number' | 'string';
 }
 
 enum GradientCode {
@@ -148,6 +149,36 @@ const evaluateComparison = (
 
     for (let index = 0; index < length; index++) {
         if (cmp(values[index], reference)) {
+            mask[index] = 1;
+            matchCount++;
+        }
+    }
+
+    return { mask, matchCount };
+};
+
+const evaluateStringComparison = (
+    values: Array<string | null>,
+    operator: ComparisonOperator,
+    reference: string
+): { mask: Uint8Array; matchCount: number } => {
+    if (operator !== '==' && operator !== '!=') {
+        throw ApplicationError.badRequest(
+            'FILTER_STRING_OPERATOR_UNSUPPORTED',
+            'String particle filters support only == and != operators.'
+        );
+    }
+
+    const length = values.length;
+    const mask = new Uint8Array(length);
+    let matchCount = 0;
+
+    for (let index = 0; index < length; index++) {
+        const current = values[index];
+        const matches = operator === '=='
+            ? current === reference
+            : current !== null && current !== reference;
+        if (matches) {
             mask[index] = 1;
             matchCount++;
         }
@@ -229,8 +260,10 @@ export class FilterEvaluator {
     ) {}
 
     async previewFilter(input: PreviewFilterInput): Promise<PreviewFilterResult> {
-        const { values } = await this.resolveTrajectoryValues(input);
-        const { mask, matchCount } = evaluateComparison(values, input.operator, input.value);
+        const { values, valueType } = await this.resolveTrajectoryValues(input);
+        const { mask, matchCount } = valueType === 'string'
+            ? evaluateStringComparison(values as Array<string | null>, input.operator, String(input.value))
+            : evaluateComparison(values as Float32Array, input.operator, Number(input.value));
         return {
             mask,
             matchCount,
@@ -239,14 +272,15 @@ export class FilterEvaluator {
     }
 
     async exportColoredModel(input: ExportColoredModelInput): Promise<ExportColoredModelResult> {
-        const { parsed, values } = await this.resolveTrajectoryValues(input);
-        const gradientCode = resolveGradientCode(input.gradient);
-        const colors: Float32Array = spatialAssembler.applyPropertyColors(
-            values,
-            input.startValue,
-            input.endValue,
-            gradientCode
-        );
+        const { parsed, values, valueType } = await this.resolveTrajectoryValues(input);
+        const colors: Float32Array = valueType === 'string'
+            ? this.buildCategoricalColors(values as Array<string | null>, parsed.positions.length / 3)
+            : spatialAssembler.applyPropertyColors(
+                values as Float32Array,
+                input.startValue,
+                input.endValue,
+                resolveGradientCode(input.gradient)
+            );
         const buffer: Buffer = spatialAssembler.generatePointCloudGLB(
             parsed.positions,
             colors,
@@ -336,20 +370,30 @@ export class FilterEvaluator {
         const externalValues = await this.resolveExternalValues(input);
 
         if (externalValues) {
-            const values = this.trajectoryParser.remapExternalValues(parsed, externalValues);
+            if (externalValues.type === 'string') {
+                const values = this.remapExternalStringValues(parsed, externalValues.values);
+                this.assertStringValuesAvailable(values, input);
+                return { parsed, values, valueType: 'string' };
+            }
+
+            const values = this.trajectoryParser.remapExternalValues(parsed, externalValues.values);
             this.assertValuesAvailable(values, input);
-            return { parsed, values };
+            return { parsed, values, valueType: 'number' };
         }
 
         const values = this.trajectoryParser.getPropertyValues(parsed, input.property);
         this.assertValuesAvailable(values, input);
-        return { parsed, values };
+        return { parsed, values, valueType: 'number' };
     }
 
-    private async resolveExternalValues(input: PerAtomValueSource): Promise<Float32Array | undefined> {
+    private async resolveExternalValues(input: PerAtomValueSource): Promise<
+        | { type: 'number'; values: Float32Array }
+        | { type: 'string'; values: Array<string | null> }
+        | undefined
+    > {
         if (input.externalValues) {
             if (input.externalValues instanceof Float32Array) {
-                return input.externalValues;
+                return { type: 'number', values: input.externalValues };
             }
             const bytes = input.externalValues instanceof Uint8Array
                 ? input.externalValues
@@ -359,21 +403,24 @@ export class FilterEvaluator {
             // only legal when the byte offset is a multiple of 4; copy once
             // when that precondition fails.
             if ((bytes.byteOffset % Float32Array.BYTES_PER_ELEMENT) === 0) {
-                return new Float32Array(
-                    bytes.buffer,
-                    bytes.byteOffset,
-                    bytes.byteLength / Float32Array.BYTES_PER_ELEMENT
-                );
+                return {
+                    type: 'number',
+                    values: new Float32Array(
+                        bytes.buffer,
+                        bytes.byteOffset,
+                        bytes.byteLength / Float32Array.BYTES_PER_ELEMENT
+                    )
+                };
             }
             const aligned = new Uint8Array(bytes);
-            return new Float32Array(aligned.buffer);
+            return { type: 'number', values: new Float32Array(aligned.buffer) };
         }
 
         if (!input.analysisId || !input.exposureId) {
             return undefined;
         }
 
-        const modifierValues = await this.pluginPropertyStore.getModifierValues({
+        const modifierValues = await this.pluginPropertyStore.getModifierScalarValues({
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
@@ -393,6 +440,17 @@ export class FilterEvaluator {
         return modifierValues;
     }
 
+    private remapExternalStringValues(parsed: ParsedTrajectory, externalValues: Array<string | null>): Array<string | null> {
+        if (!parsed.ids) {
+            throw new Error('Trajectory atom ids are required for external values');
+        }
+        const values = Array<string | null>(parsed.ids.length).fill(null);
+        for (let index = 0; index < parsed.ids.length; index++) {
+            values[index] = externalValues[parsed.ids[index]] ?? null;
+        }
+        return values;
+    }
+
     private assertValuesAvailable(values: Float32Array, input: PerAtomValueSource): void {
         if (values.length > 0) return;
 
@@ -400,6 +458,53 @@ export class FilterEvaluator {
             'PROPERTY_NOT_FOUND',
             `Property "${input.property}" is not present in the trajectory at timestep ${input.timestep}.`
         );
+    }
+
+    private assertStringValuesAvailable(values: Array<string | null>, input: PerAtomValueSource): void {
+        if (values.some((value) => value !== null)) return;
+
+        throw ApplicationError.unprocessableEntity(
+            'PROPERTY_NOT_FOUND',
+            `Property "${input.property}" is not present in the trajectory at timestep ${input.timestep}.`
+        );
+    }
+
+    private buildCategoricalColors(values: Array<string | null>, atomCount: number): Float32Array {
+        const palette: Array<readonly [number, number, number]> = [
+            [0.121, 0.466, 0.705],
+            [1.0, 0.498, 0.054],
+            [0.172, 0.627, 0.172],
+            [0.839, 0.152, 0.156],
+            [0.580, 0.404, 0.741],
+            [0.549, 0.337, 0.294],
+            [0.890, 0.466, 0.760],
+            [0.498, 0.498, 0.498],
+            [0.737, 0.741, 0.133],
+            [0.090, 0.745, 0.811]
+        ];
+        const categories = new Map<string, number>();
+        const colors = new Float32Array(atomCount * 3);
+
+        for (let index = 0; index < atomCount; index++) {
+            const category = values[index];
+            const offset = index * 3;
+            if (category === null) {
+                colors[offset] = DEFAULT_COLOR[0];
+                colors[offset + 1] = DEFAULT_COLOR[1];
+                colors[offset + 2] = DEFAULT_COLOR[2];
+                continue;
+            }
+
+            if (!categories.has(category)) {
+                categories.set(category, categories.size);
+            }
+            const color = palette[(categories.get(category) ?? 0) % palette.length];
+            colors[offset] = color[0];
+            colors[offset + 1] = color[1];
+            colors[offset + 2] = color[2];
+        }
+
+        return colors;
     }
 
     private uploadGlb(buffer: Buffer, objectKey: string, ownerClusterId: string): Promise<void> {

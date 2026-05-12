@@ -20,10 +20,7 @@ import {
     GlbStartedEvent,
     RasterCompletedEvent,
     RasterFailedEvent,
-    RasterStartedEvent,
-    SshImportCompletedEvent,
-    SshImportFailedEvent,
-    SshImportStartedEvent
+    RasterStartedEvent
 } from '@/modules/trajectory/domain/events';
 
 interface ReporterEntry<TEvent extends DomainEventClass<any>> {
@@ -55,9 +52,6 @@ const REPORT_MAP = {
     GlbStarted: GlbStartedEvent,
     GlbCompleted: GlbCompletedEvent,
     GlbFailed: GlbFailedEvent,
-    SshImportStarted: SshImportStartedEvent,
-    SshImportCompleted: SshImportCompletedEvent,
-    SshImportFailed: SshImportFailedEvent,
     ArtifactUploadStarted: ArtifactUploadStartedEvent,
     ArtifactUploadCompleted: ArtifactUploadCompletedEvent,
     ArtifactUploadFailed: ArtifactUploadFailedEvent

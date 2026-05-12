@@ -1,6 +1,6 @@
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { QueueService } from '@/core/queues/application/QueueService';
-import { ANALYSIS_QUEUE_NAME, SSH_IMPORT_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import { ANALYSIS_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 
 interface QueueDispatchRequest {
     queueName: string;
@@ -9,7 +9,6 @@ interface QueueDispatchRequest {
 
 const DISPATCHABLE_QUEUE_NAMES = new Set<string>([
     ANALYSIS_QUEUE_NAME,
-    SSH_IMPORT_QUEUE_NAME,
     TRAJECTORY_RASTER_QUEUE_NAME,
     TRAJECTORY_GLB_QUEUE_NAME
 ]);

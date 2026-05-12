@@ -4,9 +4,7 @@ import {
     createGlbJobStatusDedupeKey,
     createGlbJobStatusMessage,
     createRasterJobStatusDedupeKey,
-    createRasterJobStatusMessage,
-    createSshImportJobStatusDedupeKey,
-    createSshImportJobStatusMessage
+    createRasterJobStatusMessage
 } from '@/modules/trajectory/contracts/reverse-channel-trajectory';
 import {
     GlbCompletedEvent,
@@ -14,10 +12,7 @@ import {
     GlbStartedEvent,
     RasterCompletedEvent,
     RasterFailedEvent,
-    RasterStartedEvent,
-    SshImportCompletedEvent,
-    SshImportFailedEvent,
-    SshImportStartedEvent
+    RasterStartedEvent
 } from '@/modules/trajectory/domain/events';
 
 export const registerTrajectoryEventMappers = (bridge: DomainEventBridge): void => {
@@ -43,14 +38,4 @@ export const registerTrajectoryEventMappers = (bridge: DomainEventBridge): void 
         buildDedupeKey: createGlbJobStatusDedupeKey
     });
 
-    registerStatusTriple({
-        bridge,
-        events: {
-            running: SshImportStartedEvent,
-            completed: SshImportCompletedEvent,
-            failed: SshImportFailedEvent
-        },
-        buildMessage: createSshImportJobStatusMessage,
-        buildDedupeKey: createSshImportJobStatusDedupeKey
-    });
 };

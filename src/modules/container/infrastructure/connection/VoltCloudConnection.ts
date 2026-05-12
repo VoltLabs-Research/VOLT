@@ -396,7 +396,6 @@ export class VoltCloudConnection {
             && (
                 message.type.startsWith('analysis-')
                 || message.type.startsWith('trajectory-')
-                || message.type === 'ssh-import-job-status'
                 || message.type === 'artifact-upload-job-status'
             );
     }

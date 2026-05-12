@@ -24,6 +24,7 @@ import type {
     PluginModifierUniqueValuesRequest,
     PluginModifierValuesRequest,
     PluginPropertyNamesRequest,
+    PluginPropertySchema,
     PluginPropertyStore,
     PluginPropertyStoreWriteInput,
     PluginPropertyStoreWriteResult
@@ -104,6 +105,13 @@ const getColumnNames = (rows: Record<string, unknown>[]): string[] => {
     return Object.keys(rows[0]).filter((name) => !BASE_COLUMNS.has(name));
 };
 
+const normalizeDuckDbColumnType = (value: unknown): PluginPropertySchema['type'] => {
+    const type = String(value ?? '').toUpperCase();
+    return type.includes('CHAR') || type.includes('STRING') || type.includes('TEXT')
+        ? 'string'
+        : 'number';
+};
+
 @Service('pluginPropertyStore')
 export class ParquetPluginPropertyStore implements PluginPropertyStore {
     private readonly localParquetPromises = new Map<string, Promise<string>>();
@@ -177,6 +185,10 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 
     public async discoverPerAtomPropertyNames(request: PluginPropertyNamesRequest): Promise<string[]> {
+        return (await this.discoverPerAtomPropertySchemas(request)).map((schema) => schema.name);
+    }
+
+    public async discoverPerAtomPropertySchemas(request: PluginPropertyNamesRequest): Promise<PluginPropertySchema[]> {
         const objectKey = request.timestep === undefined
             ? await this.findFirstExposureObjectKey(request)
             : toPluginExposureParquetObjectKey(
@@ -195,8 +207,11 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 `DESCRIBE SELECT * FROM read_parquet(${sqlString(parquetPath)})`
             );
             return reader.getRowObjectsJS()
-                .map((row) => String(row.column_name ?? row.name ?? ''))
-                .filter((name) => name.length > 0 && !BASE_COLUMNS.has(name));
+                .map((row) => ({
+                    name: String(row.column_name ?? row.name ?? ''),
+                    type: normalizeDuckDbColumnType(row.column_type ?? row.type)
+                }))
+                .filter((schema) => schema.name.length > 0 && !BASE_COLUMNS.has(schema.name));
         } catch {
             return [];
         } finally {
@@ -253,7 +268,24 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
     }
 
+    public async getModifierScalarValues(request: PluginModifierValuesRequest) {
+        const schema = (await this.discoverPerAtomPropertySchemas(request))
+            .find((candidate) => candidate.name === request.property);
+        if (schema?.type === 'string') {
+            return this.getModifierStringValues(request);
+        }
+
+        const values = await this.getModifierValues(request);
+        return values ? { type: 'number' as const, values } : null;
+    }
+
     public async getModifierStats(request: PluginModifierValuesRequest): Promise<ModifierStats | null> {
+        const schema = (await this.discoverPerAtomPropertySchemas(request))
+            .find((candidate) => candidate.name === request.property);
+        if (schema?.type === 'string') {
+            return null;
+        }
+
         const objectKey = toPluginExposureParquetObjectKey(
             request.trajectoryId,
             request.analysisId,
@@ -281,7 +313,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
     }
 
-    public async getModifierUniqueValues(request: PluginModifierUniqueValuesRequest): Promise<number[]> {
+    public async getModifierUniqueValues(request: PluginModifierUniqueValuesRequest): Promise<Array<number | string>> {
         const objectKey = toPluginExposureParquetObjectKey(
             request.trajectoryId,
             request.analysisId,
@@ -289,11 +321,25 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             request.timestep
         );
         const maxValues = Math.max(1, Math.min(1000, request.maxValues ?? 100));
+        const schema = (await this.discoverPerAtomPropertySchemas(request))
+            .find((candidate) => candidate.name === request.property);
 
         let connection: DuckDBConnection | null = null;
         try {
             const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
             connection = await DuckDBConnection.create();
+            if (schema?.type === 'string') {
+                const reader = await connection.runAndReadAll(
+                    `SELECT DISTINCT ${quoteIdentifier(request.property)} AS value ` +
+                    `FROM read_parquet(${sqlString(parquetPath)}) ` +
+                    `WHERE ${quoteIdentifier(request.property)} IS NOT NULL ` +
+                    `ORDER BY value LIMIT ${maxValues}`
+                );
+                return reader.getRowObjectsJS()
+                    .map((row) => String(row.value ?? ''))
+                    .filter((value) => value.length > 0);
+            }
+
             const reader = await connection.runAndReadAll(
                 `SELECT DISTINCT TRY_CAST(${quoteIdentifier(request.property)} AS DOUBLE) AS value ` +
                 `FROM read_parquet(${sqlString(parquetPath)}) ` +
@@ -305,6 +351,33 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 .filter((value): value is number => value !== null);
         } catch {
             return [];
+        } finally {
+            connection?.closeSync();
+        }
+    }
+
+    private async getModifierStringValues(request: PluginModifierValuesRequest): Promise<{ type: 'string'; values: Array<string | null> } | null> {
+        const objectKey = toPluginExposureParquetObjectKey(
+            request.trajectoryId,
+            request.analysisId,
+            request.exposureId,
+            request.timestep
+        );
+
+        let connection: DuckDBConnection | null = null;
+        try {
+            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            connection = await DuckDBConnection.create();
+            const reader = await connection.runAndReadAll(
+                `SELECT id, ${quoteIdentifier(request.property)} AS value ` +
+                `FROM read_parquet(${sqlString(parquetPath)}) WHERE id IS NOT NULL ORDER BY id`
+            );
+            return {
+                type: 'string',
+                values: this.rowsToStringByAtomId(reader.getRowObjectsJS())
+            };
+        } catch {
+            return null;
         } finally {
             connection?.closeSync();
         }
@@ -470,6 +543,24 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             if (value !== null) {
                 values[id] = value;
             }
+        }
+
+        return values;
+    }
+
+    private rowsToStringByAtomId(rows: Record<string, unknown>[]): Array<string | null> {
+        let maxId = 0;
+        for (const row of rows) {
+            const id = normalizeAtomId(row.id as string | number | undefined);
+            if (id !== null && id > maxId) maxId = id;
+        }
+        if (maxId <= 0) return [];
+
+        const values = Array<string | null>(maxId + 1).fill(null);
+        for (const row of rows) {
+            const id = normalizeAtomId(row.id as string | number | undefined);
+            if (id === null || row.value === null || row.value === undefined) continue;
+            values[id] = String(row.value);
         }
 
         return values;
