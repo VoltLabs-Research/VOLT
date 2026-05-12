@@ -558,7 +558,7 @@ const CanvasPage = () => {
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={!isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
-                                    ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} />
+                                    ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} currentTimestep={currentTimestep} />
                                     : undefined
                                 }
                                 hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}

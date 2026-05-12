@@ -2,7 +2,7 @@ import { AlertCircle, CheckCircle2, Circle, LoaderCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
-import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
+import { buildAnalysisExecutionRows } from './execution-rows';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
@@ -12,6 +12,7 @@ import './AnalysisExecutionOverlay.css';
 interface AnalysisExecutionOverlayProps {
     trajectory?: Trajectory | null;
     analysisId?: string;
+    currentTimestep?: number;
 }
 
 const formatDuration = (durationMs?: number): string => {
@@ -26,22 +27,6 @@ const getStageIcon = (stage: Pick<AnalysisStage | AnalysisChildAnalysis, 'status
     if (stage.status === 'completed' || stage.status === 'cached') return <CheckCircle2 style={{ width: 11, height: 11 }} />;
     if (stage.status === 'running') return <LoaderCircle style={{ width: 11, height: 11 }} />;
     return <Circle style={{ width: 11, height: 11 }} />;
-};
-
-const normalizeStageForDisplay = (
-    stage: AnalysisStage,
-    analysisStatus: ReturnType<typeof normalizeCanvasAnalysisStatus>
-): AnalysisStage => {
-    if (analysisStatus !== CanvasAnalysisStatusEnum.Completed
-        || stage.status !== 'running'
-        || stage.type === 'artifact-upload') {
-        return stage;
-    }
-
-    return {
-        ...stage,
-        status: 'completed'
-    };
 };
 
 const resolveSelectedAnalysis = (
@@ -59,7 +44,7 @@ const resolveSelectedAnalysis = (
         ?? trajectoryAnalyses?.find((analysis) => analysis._id === analysisId);
 };
 
-const AnalysisExecutionOverlay = ({ trajectory, analysisId }: AnalysisExecutionOverlayProps) => {
+const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: AnalysisExecutionOverlayProps) => {
     const trajectoryId = trajectory?._id;
     const analysesQuery = useAnalysesByTrajectoryQuery(
         { trajectoryId: trajectoryId ?? '', page: 1, limit: 100 },
@@ -81,38 +66,8 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId }: AnalysisExecutionO
             return [];
         }
 
-        const resolvedStatus = normalizeCanvasAnalysisStatus(analysis.status);
-        const childRows = (analysis.childAnalyses ?? []).map((child) => {
-            if (resolvedStatus === CanvasAnalysisStatusEnum.Completed && child.status === 'running') {
-                return { ...child, status: 'completed' as const };
-            }
-            return child;
-        });
-        const stageRows = (analysis.stages ?? [])
-            .map((stage) => normalizeStageForDisplay(stage, resolvedStatus))
-            .filter((stage) => stage.type !== 'plugin-ref');
-
-        return [
-            ...childRows.map((child) => ({
-                key: child.id,
-                label: child.pluginDisplayName ?? child.pluginId,
-                status: child.status,
-                cacheHit: child.cacheHit,
-                durationMs: child.durationMs,
-                className: 'canvas-tree-execution-row canvas-tree-execution-row--child',
-                iconSource: child
-            })),
-            ...stageRows.map((stage) => ({
-                key: stage.stageKey,
-                label: stage.label,
-                status: stage.status,
-                cacheHit: stage.cacheHit,
-                durationMs: stage.durationMs,
-                className: `canvas-tree-execution-row canvas-tree-execution-row--${stage.status}`,
-                iconSource: stage
-            }))
-        ];
-    }, [analysis]);
+        return buildAnalysisExecutionRows({ analysis, trajectory, currentTimestep });
+    }, [analysis, currentTimestep, trajectory]);
 
     if (!analysis || rows.length === 0) {
         return null;

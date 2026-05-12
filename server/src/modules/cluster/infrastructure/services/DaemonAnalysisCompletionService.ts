@@ -447,7 +447,7 @@ export default class DaemonAnalysisCompletionService {
         const trajectoryId = resolved.trajectory.id;
         const stage = this.toAnalysisStage(input, resolved.trajectoryContext.timestep);
         const currentStages = analysis.props.stages ?? [];
-        const previousStage = currentStages.find((candidate) => candidate.stageKey === stage.stageKey);
+        const previousStage = currentStages.find((candidate) => this.isSameStageIdentity(candidate, stage));
         if (previousStage && this.shouldIgnoreStageUpdate(previousStage, stage)) {
             return;
         }
@@ -477,7 +477,8 @@ export default class DaemonAnalysisCompletionService {
         await this.publishAnalysisStageChanged(updatedAnalysis, resolved.teamId, trajectoryId)
             .catch(swallow('Failed to publish analysis.stage.changed', {
                 analysisId: analysis._id,
-                stageKey: stage.stageKey
+                stageKey: stage.stageKey,
+                timestep: stage.timestep
             }));
     }
 
@@ -694,7 +695,7 @@ export default class DaemonAnalysisCompletionService {
     }
 
     private upsertStage(stages: AnalysisStage[], stage: AnalysisStage): AnalysisStage[] {
-        const index = stages.findIndex((candidate) => candidate.stageKey === stage.stageKey);
+        const index = stages.findIndex((candidate) => this.isSameStageIdentity(candidate, stage));
         if (index < 0) {
             return [...stages, stage];
         }
@@ -713,6 +714,22 @@ export default class DaemonAnalysisCompletionService {
             durationMs: stage.durationMs ?? previous.durationMs
         };
         return next;
+    }
+
+    private isSameStageIdentity(left: AnalysisStage, right: AnalysisStage): boolean {
+        return left.stageKey === right.stageKey
+            && this.hasSameTimestepIdentity(left.timestep, right.timestep);
+    }
+
+    private hasSameTimestepIdentity(left?: number, right?: number): boolean {
+        const hasLeftTimestep = typeof left === 'number';
+        const hasRightTimestep = typeof right === 'number';
+
+        if (hasLeftTimestep || hasRightTimestep) {
+            return left === right;
+        }
+
+        return true;
     }
 
     private shouldIgnoreStageUpdate(previous: AnalysisStage, next: AnalysisStage): boolean {
@@ -781,7 +798,7 @@ export default class DaemonAnalysisCompletionService {
             finishedAt: stage.finishedAt,
             durationMs: stage.durationMs
         };
-        const index = childAnalyses.findIndex((candidate) => candidate.id === child.id);
+        const index = childAnalyses.findIndex((candidate) => this.isSameChildAnalysisIdentity(candidate, child));
         if (index < 0) {
             return [...childAnalyses, child];
         }
@@ -799,6 +816,11 @@ export default class DaemonAnalysisCompletionService {
             durationMs: child.durationMs ?? next[index].durationMs
         };
         return next;
+    }
+
+    private isSameChildAnalysisIdentity(left: AnalysisChildAnalysis, right: AnalysisChildAnalysis): boolean {
+        return left.id === right.id
+            && this.hasSameTimestepIdentity(left.timestep, right.timestep);
     }
 
     private shouldIgnoreChildAnalysisUpdate(previous: AnalysisChildAnalysis, next: AnalysisChildAnalysis): boolean {
