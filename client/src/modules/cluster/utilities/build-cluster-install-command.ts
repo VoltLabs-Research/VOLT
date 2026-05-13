@@ -5,6 +5,22 @@ export enum ClusterInstallPlatform {
     Unknown = 'unknown'
 }
 
+export type SupportedClusterInstallPlatform =
+    | ClusterInstallPlatform.Windows
+    | ClusterInstallPlatform.Linux
+    | ClusterInstallPlatform.MacOS;
+
+export interface ClusterInstallPlatformOption {
+    id: SupportedClusterInstallPlatform;
+    label: string;
+};
+
+export const CLUSTER_INSTALL_PLATFORM_OPTIONS: ReadonlyArray<ClusterInstallPlatformOption> = [
+    { id: ClusterInstallPlatform.Windows, label: 'Windows' },
+    { id: ClusterInstallPlatform.Linux, label: 'Linux' },
+    { id: ClusterInstallPlatform.MacOS, label: 'macOS' }
+];
+
 const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/clusterdaemon/main/scripts';
 
 const escapePowerShellSingleQuotedString = (value: string): string => {
@@ -32,6 +48,17 @@ const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
     return ClusterInstallPlatform.Unknown;
 };
 
+const isSupportedClusterInstallPlatform = (platform: ClusterInstallPlatform): platform is SupportedClusterInstallPlatform => {
+    return CLUSTER_INSTALL_PLATFORM_OPTIONS.some((option) => option.id === platform);
+};
+
+export const getDefaultClusterInstallPlatform = (): SupportedClusterInstallPlatform => {
+    const detectedPlatform = detectBrowserInstallPlatform();
+    return isSupportedClusterInstallPlatform(detectedPlatform)
+        ? detectedPlatform
+        : ClusterInstallPlatform.Linux;
+};
+
 const buildPosixInstallCommand = (teamClusterId: string, enrollmentToken: string, cloudUrl: string): string => {
     const scriptUrl = `${CLUSTER_DAEMON_SCRIPTS_BASE_URL}/install.sh`;
     return `curl -sSL ${scriptUrl} | VOLT_CLOUD_URL="${cloudUrl}" bash -s -- "${teamClusterId}" "${enrollmentToken}"`;
@@ -54,7 +81,7 @@ const buildWindowsInstallCommand = (teamClusterId: string, enrollmentToken: stri
 export const buildClusterInstallCommand = (
     teamClusterId: string,
     enrollmentToken: string,
-    platform: ClusterInstallPlatform = detectBrowserInstallPlatform()
+    platform: SupportedClusterInstallPlatform = getDefaultClusterInstallPlatform()
 ): string => {
     const cloudUrl = import.meta.env.VITE_API_URL;
     if (platform === ClusterInstallPlatform.Windows) {

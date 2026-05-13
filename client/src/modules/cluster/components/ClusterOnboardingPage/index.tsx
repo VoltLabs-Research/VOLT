@@ -1,10 +1,10 @@
 import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/ClusterListPanel';
+import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
-import { buildClusterInstallCommand } from '@/modules/cluster/utilities/build-cluster-install-command';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
@@ -18,7 +18,6 @@ import Stack from '@/shared/presentation/primitives/Stack';
 import StatusDot from '@/shared/presentation/primitives/StatusDot';
 import Text from '@/shared/presentation/primitives/Text';
 import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
-import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
@@ -147,9 +146,6 @@ const ClusterOnboardingPage = () => {
         return deleteCluster(deleteTarget._id, password);
     };
 
-    const installCommand = createdCluster && enrollmentToken
-        ? buildClusterInstallCommand(createdCluster._id, enrollmentToken)
-        : '';
     const statusVariant = liveCluster ? getTeamClusterStatusVariant(liveCluster.status) : 'inactive';
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
@@ -253,9 +249,9 @@ const ClusterOnboardingPage = () => {
                     description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
                 >
                     <Stack gap='1' p='1'>
-                        <CopyableField
-                            value={installCommand}
-                            successMessage='Install command copied'
+                        <ClusterInstallCommandPicker
+                            clusterId={createdCluster?._id ?? null}
+                            enrollmentToken={enrollmentToken}
                         />
 
                         <Row gap='075' className='cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
