@@ -89,6 +89,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 await uploadClusterObjectParts({
                     file: sourceFile,
                     parts: sessionFile.parts,
+                    scopeId: uploadId,
                     onProgress: (delta) => {
                         uploadedBytes = Math.min(totalBytes, uploadedBytes + delta);
                         updateUploadProgress(uploadId, totalBytes > 0 ? uploadedBytes / totalBytes : 1);

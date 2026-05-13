@@ -10,8 +10,86 @@ export interface UploadClusterObjectPartsOptions {
     file: File;
     parts: ClusterObjectUploadPart[];
     concurrency?: number;
+    scopeId?: string;
     onProgress?: (loadedBytes: number) => void;
 }
+
+type UploadTask = () => Promise<void>;
+
+interface QueuedUploadTask {
+    run: UploadTask;
+    resolve: () => void;
+    reject: (error: unknown) => void;
+}
+
+const BROWSER_OBJECT_UPLOAD_PIPELINE = 6;
+
+let uploadScopeCounter = 0;
+
+const createUploadScopeId = (): string => {
+    uploadScopeCounter += 1;
+    return `cluster-object-upload-${uploadScopeCounter}`;
+};
+
+class FairUploadScheduler {
+    private readonly queues = new Map<string, QueuedUploadTask[]>();
+    private readonly queuedScopes = new Set<string>();
+    private readonly scopeOrder: string[] = [];
+    private activeCount = 0;
+
+    constructor(private readonly maxActive: number) {}
+
+    schedule(scopeId: string, run: UploadTask): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const queue = this.queues.get(scopeId) ?? [];
+            queue.push({ run, resolve, reject });
+            this.queues.set(scopeId, queue);
+
+            if (!this.queuedScopes.has(scopeId)) {
+                this.scopeOrder.push(scopeId);
+                this.queuedScopes.add(scopeId);
+            }
+
+            this.drain();
+        });
+    }
+
+    private drain(): void {
+        while (this.activeCount < this.maxActive && this.scopeOrder.length > 0) {
+            const scopeId = this.scopeOrder.shift();
+            if (!scopeId) {
+                continue;
+            }
+
+            this.queuedScopes.delete(scopeId);
+            const queue = this.queues.get(scopeId);
+            const task = queue?.shift();
+
+            if (!queue || !task) {
+                this.queues.delete(scopeId);
+                continue;
+            }
+
+            if (queue.length > 0) {
+                this.scopeOrder.push(scopeId);
+                this.queuedScopes.add(scopeId);
+            } else {
+                this.queues.delete(scopeId);
+            }
+
+            this.activeCount += 1;
+            task.run()
+                .then(task.resolve)
+                .catch(task.reject)
+                .finally(() => {
+                    this.activeCount = Math.max(0, this.activeCount - 1);
+                    this.drain();
+                });
+        }
+    }
+}
+
+const uploadScheduler = new FairUploadScheduler(BROWSER_OBJECT_UPLOAD_PIPELINE);
 
 const resolveUploadUrl = (url: string): string => {
     if (/^https?:\/\//i.test(url)) {
@@ -65,6 +143,7 @@ export const uploadClusterObjectParts = async ({
     file,
     parts,
     concurrency = parts.length,
+    scopeId = createUploadScopeId(),
     onProgress
 }: UploadClusterObjectPartsOptions): Promise<void> => {
     let nextIndex = 0;
@@ -74,7 +153,7 @@ export const uploadClusterObjectParts = async ({
         while (nextIndex < parts.length) {
             const index = nextIndex;
             nextIndex += 1;
-            await uploadPart(file, parts[index], onProgress);
+            await uploadScheduler.schedule(scopeId, () => uploadPart(file, parts[index], onProgress));
         }
     }));
 };
