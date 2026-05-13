@@ -28,6 +28,13 @@ interface TrajectoryIngestStagedObject {
     objectKey: string;
     originalName: string;
     size: number;
+    parts?: TrajectoryIngestStagedPart[];
+}
+
+interface TrajectoryIngestStagedPart {
+    objectKey: string;
+    partNumber: number;
+    size: number;
 }
 
 interface TrajectoryIngestPayload {
@@ -78,12 +85,14 @@ export class TrajectoryIngestCommand {
         const ownerClusterId = this.config.teamClusterId;
         const bucket = ObjectBucketName.Dumps;
 
+        const materializedObjects = await this.materializeStagedObjects(stagedObjects, bucket);
+
         // Phase 1: Download and parse metadata only. ZIP uploads are expanded into normal staged frames.
         const parsedFrames = await withNativeProcessingTempDir(
             'trajectory-ingest',
             async (tempDirectory) => {
                 const frameGroups = await mapLimited(
-                    stagedObjects,
+                    materializedObjects,
                     INGEST_FRAME_CONCURRENCY,
                     async (staged, index) => {
                         return this.parseStagedObject(staged, index, trajectoryId, bucket, tempDirectory);
@@ -120,6 +129,63 @@ export class TrajectoryIngestCommand {
                 totalSize
             }
         };
+    }
+
+    private async materializeStagedObjects(
+        stagedObjects: TrajectoryIngestStagedObject[],
+        bucket: string
+    ): Promise<TrajectoryIngestStagedObject[]> {
+        return mapLimited(
+            stagedObjects,
+            INGEST_FRAME_CONCURRENCY,
+            async (staged) => {
+                await this.materializeStagedObject(staged, bucket);
+                return {
+                    objectKey: staged.objectKey,
+                    originalName: staged.originalName,
+                    size: staged.size
+                };
+            }
+        );
+    }
+
+    private async materializeStagedObject(staged: TrajectoryIngestStagedObject, bucket: string): Promise<void> {
+        const parts = (staged.parts ?? []).slice().sort((left, right) => left.partNumber - right.partNumber);
+
+        if (parts.length === 0) {
+            const stat = await this.minioService.statObject(bucket, staged.objectKey);
+            if (stat.size !== staged.size) {
+                throw new Error(`Uploaded object size mismatch for ${staged.originalName}`);
+            }
+            return;
+        }
+
+        let totalSize = 0;
+        await Promise.all(parts.map(async (part) => {
+            const stat = await this.minioService.statObject(bucket, part.objectKey);
+            if (stat.size !== part.size) {
+                throw new Error(`Uploaded part size mismatch for ${staged.originalName} part ${part.partNumber}`);
+            }
+            totalSize += part.size;
+        }));
+
+        if (totalSize !== staged.size) {
+            throw new Error(`Uploaded object size mismatch for ${staged.originalName}`);
+        }
+
+        if (parts.length > 1 || parts[0]?.objectKey !== staged.objectKey) {
+            await this.minioService.composeObject({
+                bucket,
+                objectKey: staged.objectKey,
+                sourceObjectKeys: parts.map((part) => part.objectKey)
+            });
+        }
+
+        await Promise.all(parts
+            .filter((part) => part.objectKey !== staged.objectKey)
+            .map((part) => this.minioService.removeObject(bucket, part.objectKey).catch((error) => {
+                logger.debug(`@trajectory-ingest: upload part cleanup failed ${part.objectKey}: ${String(error)}`);
+            })));
     }
 
     private async parseFrameMetadata(
