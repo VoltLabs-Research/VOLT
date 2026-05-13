@@ -48,6 +48,13 @@ export interface ClusterObjectPutStreamInput {
 export type ScopedClusterObjectPutInput = Omit<ClusterObjectPutInput, 'ownerClusterId'>;
 export type ScopedClusterObjectPutStreamInput = Omit<ClusterObjectPutStreamInput, 'ownerClusterId'>;
 
+export interface LocalClusterObjectComposeInput {
+    bucket: string;
+    objectKey: string;
+    sourceObjectKeys: string[];
+    metadata?: Record<string, string>;
+}
+
 export interface ScopedClusterObjectStore {
     putObject(input: ScopedClusterObjectPutInput): Promise<void>;
     putObjectStream(input: ScopedClusterObjectPutStreamInput): Promise<void>;
@@ -83,6 +90,7 @@ export interface LocalClusterObjectStoreGateway extends ScopedClusterObjectStore
     getObjectStream(bucket: string, objectKey: string): Promise<Readable>;
     getObjectRangeStream(bucket: string, objectKey: string, offset: number, length: number): Promise<Readable>;
     listObjectsPage(input: LocalClusterObjectListRequest): Promise<ClusterObjectListResponse>;
+    composeObject(input: LocalClusterObjectComposeInput): Promise<void>;
     removeObject(bucket: string, objectKey: string): Promise<void>;
     deleteByPrefix(bucket: string, prefix: string): Promise<number>;
 }

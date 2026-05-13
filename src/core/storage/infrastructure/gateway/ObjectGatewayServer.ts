@@ -20,7 +20,7 @@ import { verifyTeamClusterDirectAccessToken } from '@/modules/container/applicat
 import type { Readable } from 'node:stream';
 import express, { type NextFunction, type Request, type Response } from 'express';
 
-type ObjectGatewayCollectionOperation = 'list' | 'delete-prefix';
+type ObjectGatewayCollectionOperation = 'list' | 'delete-prefix' | 'compose';
 type ObjectGatewayObjectOperation = 'head' | 'get' | 'put' | 'delete';
 
 interface StatusCodeError extends Error {
@@ -48,6 +48,7 @@ const MINIO_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 const LOOPBACK_HOST = '127.0.0.1';
 
 const OBJECT_COLLECTION_ROUTE = `${OBJECT_GATEWAY_BUCKETS_PATH}:bucket/objects`;
+const OBJECT_COMPOSE_ROUTE = `${OBJECT_COLLECTION_ROUTE}/compose`;
 
 const parseRangeHeader = (value: string | undefined, objectSize: number): ObjectByteRange | null => {
     if (!value) {
@@ -206,6 +207,10 @@ export class ObjectGatewayServer {
             this.handleCollectionRequest('delete-prefix', request, response, next);
         });
 
+        this.app.post(OBJECT_COMPOSE_ROUTE, express.json({ limit: '1mb' }), (request, response, next) => {
+            this.handleCollectionRequest('compose', request, response, next);
+        });
+
         this.app.all(OBJECT_COLLECTION_ROUTE, (request, _response, next) => {
             next(new ApplicationError(
                 'ObjectGateway::UnsupportedCollectionMethod',
@@ -241,6 +246,11 @@ export class ObjectGatewayServer {
 
             if (operation === 'list') {
                 await this.handleListCollectionRequest(bucket, searchParams, response, tracker);
+                return;
+            }
+
+            if (operation === 'compose') {
+                await this.handleComposeCollectionRequest(bucket, request.body, response, tracker);
                 return;
             }
 
@@ -379,6 +389,50 @@ export class ObjectGatewayServer {
 
         tracker.complete({
             statusCode: 200,
+            bytesOut
+        });
+    }
+
+    private async handleComposeCollectionRequest(
+        bucket: string,
+        body: unknown,
+        response: Response,
+        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+    ): Promise<void> {
+        if (!body || typeof body !== 'object') {
+            throw new ApplicationError('ObjectGateway::InvalidComposePayload', 'Compose payload is required', 400);
+        }
+
+        const payload = body as Record<string, unknown>;
+        const objectKey = typeof payload.objectKey === 'string' ? payload.objectKey : '';
+        const sourceObjectKeys = Array.isArray(payload.sourceObjectKeys)
+            ? payload.sourceObjectKeys.filter((value): value is string => typeof value === 'string' && value.length > 0)
+            : [];
+        const metadata = payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+            ? Object.fromEntries(
+                Object.entries(payload.metadata as Record<string, unknown>)
+                    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+            )
+            : undefined;
+
+        if (!objectKey) {
+            throw new ApplicationError('ObjectGateway::MissingComposeObjectKey', 'objectKey is required', 400);
+        }
+
+        if (sourceObjectKeys.length === 0) {
+            throw new ApplicationError('ObjectGateway::MissingComposeSources', 'sourceObjectKeys must not be empty', 400);
+        }
+
+        await this.objectStore.composeObject({
+            bucket,
+            objectKey,
+            sourceObjectKeys,
+            metadata
+        });
+
+        const bytesOut = this.writeJson(response, 201, { composed: true });
+        tracker.complete({
+            statusCode: 201,
             bytesOut
         });
     }

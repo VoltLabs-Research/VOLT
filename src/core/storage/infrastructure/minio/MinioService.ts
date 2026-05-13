@@ -1,11 +1,12 @@
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { Client } from 'minio';
+import { Client, CopyDestinationOptions, CopySourceOptions } from 'minio';
 import type { DaemonConfig } from '@/core/config';
 import type { BucketItem } from 'minio';
 import type {
     ClusterObjectListEntry,
     ClusterObjectListResponse,
+    LocalClusterObjectComposeInput,
     LocalClusterObjectListRequest,
     LocalClusterObjectStat,
     LocalClusterObjectStoreGateway,
@@ -25,6 +26,7 @@ export class MinioService implements LocalClusterObjectStoreGateway {
     readonly statObject: (bucket: string, objectKey: string) => Promise<LocalClusterObjectStat>;
     readonly putObject: (input: ScopedClusterObjectPutInput) => Promise<void>;
     readonly putObjectStream: (input: ScopedClusterObjectPutStreamInput) => Promise<void>;
+    readonly composeObject: (input: LocalClusterObjectComposeInput) => Promise<void>;
     readonly removeObject: (bucket: string, objectKey: string) => Promise<void>;
 
     constructor(
@@ -62,6 +64,20 @@ export class MinioService implements LocalClusterObjectStoreGateway {
         };
         this.putObjectStream = async (input) => {
             await this.client.putObject(this.resolveBucket(input.bucket), input.objectKey, input.stream, input.size, input.metadata);
+        };
+        this.composeObject = async (input) => {
+            const resolvedBucket = this.resolveBucket(input.bucket);
+            const destination = new CopyDestinationOptions({
+                Bucket: resolvedBucket,
+                Object: input.objectKey,
+                ...(input.metadata ? { UserMetadata: input.metadata } : {})
+            });
+            const sources = input.sourceObjectKeys.map((objectKey) => new CopySourceOptions({
+                Bucket: resolvedBucket,
+                Object: objectKey
+            }));
+
+            await this.client.composeObject(destination, sources);
         };
         this.removeObject = async (bucket, objectKey) => {
             await this.client.removeObject(this.resolveBucket(bucket), objectKey);

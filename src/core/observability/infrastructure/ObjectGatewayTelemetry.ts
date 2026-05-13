@@ -3,6 +3,7 @@ type ObjectGatewayOperationName =
     | 'head'
     | 'get'
     | 'put'
+    | 'compose'
     | 'delete'
     | 'delete-prefix';
 
