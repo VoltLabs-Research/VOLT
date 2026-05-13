@@ -42,6 +42,7 @@ interface RightPanelProps extends CanvasPanelActionProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
+    canMutateCanvas?: boolean;
 }
 
 const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
@@ -65,6 +66,7 @@ const RightPanel = ({
     trajectoryId,
     analysisId,
     currentTimestep,
+    canMutateCanvas,
     onDownloadAnalysis,
     onDownloadExposureListing,
     rasterContainerSelections,
@@ -72,7 +74,8 @@ const RightPanel = ({
     onSetActiveRasterContainer,
     onUpdateRasterContainerSelection
 }: RightPanelProps) => {
-    const canMutate = useCanvasAccessStore((state) => state.canMutate);
+    const storeCanMutate = useCanvasAccessStore((state) => state.canMutate);
+    const canMutate = canMutateCanvas ?? storeCanMutate;
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { cloneAndRun } = useTrajectoryCloneFlow();

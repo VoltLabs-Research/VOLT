@@ -30,7 +30,7 @@ export default createHttpModule({
         router.patch('/documents/:documentId/folder', latexControllers.moveDocument.handle);
         router.get('/documents/:documentId/assets', latexControllers.listAssets.handle);
         router.get('/documents/:documentId/assets/content', latexControllers.getAssetContent.handle);
-        router.post('/documents/:documentId/assets', upload.array('files', 20), latexControllers.uploadAsset.handle);
+        router.post('/documents/:documentId/assets', latexControllers.uploadAsset.handle);
         router.delete('/documents/:documentId/assets/:assetId', latexControllers.deleteAsset.handle);
         router.patch('/documents/:documentId/assets/:assetId', latexControllers.updateAsset.handle);
         router.get('/documents/:documentId/export/tex', latexControllers.exportDocumentTex.handle);

@@ -2,7 +2,6 @@ import { Resource } from '@core/constants/resources';
 import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
 import { trajectoryValidation } from '@modules/trajectory/infrastructure/http/validation/trajectory';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
-import { uploadTrajectoryFiles } from '@shared/infrastructure/http/middleware/upload';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
@@ -25,8 +24,10 @@ export default createHttpModule({
         router.get('/samples', controllers.listSamples.handle);
         router.get('/samples/:filename', controllers.downloadSamples.handle);
         router.get('/scene-artifacts', trajectoryValidation.listTeamSceneArtifacts, controllers.listTeamSceneArtifacts.handle);
+        router.post('/upload-sessions', trajectoryValidation.createUploadSession, controllers.createUploadSession.handle);
+        router.post('/upload-sessions/:uploadSessionId/commit', trajectoryValidation.commitUploadSession, controllers.commitUploadSession.handle);
+        router.delete('/upload-sessions/:uploadSessionId', trajectoryValidation.cancelUploadSession, controllers.cancelUploadSession.handle);
         router.route('/')
-            .post(uploadTrajectoryFiles('trajectoryFiles'), controllers.create.handle)
             .get(trajectoryValidation.listByTeamId, controllers.getByTeamId.handle);
         router.post('/clones', trajectoryValidation.clone, controllers.cloneTrajectory.handle);
         router.get('/folders', trajectoryValidation.listFolders, folderHandlers.list);

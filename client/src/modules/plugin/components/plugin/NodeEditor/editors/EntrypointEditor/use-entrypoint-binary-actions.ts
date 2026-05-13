@@ -73,7 +73,8 @@ const useEntrypointBinaryActions = (
                 ...currentValues,
                 binary: file.name,
                 binaryObjectPath: result.objectPath,
-                binaryFileName: result.fileName
+                binaryFileName: result.fileName,
+                binaryHash: result.binaryHash
             });
             setUploadProgress(100);
             sileo.success({ title: 'Binary uploaded successfully' });
@@ -107,7 +108,8 @@ const useEntrypointBinaryActions = (
                 ...currentValues,
                 binary: '',
                 binaryObjectPath: undefined,
-                binaryFileName: undefined
+                binaryFileName: undefined,
+                binaryHash: undefined
             });
         } catch (error) {
             if (isAccessDeniedError(error)) {

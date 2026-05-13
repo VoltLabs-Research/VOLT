@@ -34,6 +34,7 @@ interface TopToolbarProps {
     canDownloadAnalyses?: boolean;
     onDownloadAnalyses?: () => void;
     localGlbMode?: boolean;
+    canMutateCanvas?: boolean;
     workspacePeers?: WorkspacePresenceUser[];
     workspaceActiveOwnerId?: string;
     onSelectWorkspacePeer?: (peerId: string) => void;
@@ -51,6 +52,7 @@ const TopToolbar = ({
     canDownloadAnalyses = false,
     onDownloadAnalyses,
     localGlbMode = false,
+    canMutateCanvas = true,
     workspacePeers,
     workspaceActiveOwnerId,
     onSelectWorkspacePeer,
@@ -77,6 +79,7 @@ const TopToolbar = ({
     }, []);
 
     const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
+    const handleBack = useCallback(() => navigate(-1), [navigate]);
     const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
 
     const handleToggleFullscreen = useCallback(() => {
@@ -136,7 +139,7 @@ const TopToolbar = ({
                     size='sm'
                     aria-label='Back to dashboard'
                     title='Back to dashboard'
-                    onClick={() => navigate('/dashboard')}
+                    onClick={handleBack}
                 >
                     <ChevronLeft size={16} aria-hidden='true' />
                 </IconButton>
@@ -164,11 +167,14 @@ const TopToolbar = ({
                     ))}
                 </nav>
 
-                <WorkspaceTabs disableAuxWorkspaces={localGlbMode} />
+                <WorkspaceTabs
+                    disableAuxWorkspaces={localGlbMode}
+                    showScriptingWorkspace={canMutateCanvas}
+                />
             </Row>
 
             <Row justify='center' flex='1' className="canvas-toolbar-center">
-                <CanvasPluginSearch />
+                {canMutateCanvas && <CanvasPluginSearch />}
             </Row>
 
             <Row gap='025' flex='1' justify='end' className="canvas-toolbar-info">

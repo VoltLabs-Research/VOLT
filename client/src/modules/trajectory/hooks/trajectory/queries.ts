@@ -32,6 +32,7 @@ import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationRes
 import type {
     CreateTrajectoryInputDTO,
     CreateTrajectoryOutputDTO,
+    CreateTrajectoryUploadSessionOutputDTO,
     DownloadTrajectoryAnalysesInputDTO,
     DownloadTrajectoryInputDTO,
     GetAtomsInputDTO,
@@ -86,7 +87,7 @@ export const trajectoryQuery = createPaginatedQuery<
     defaultLimit: 20,
     service: {
         list: trajectoryService.getAll,
-        create: trajectoryService.create,
+        create: async (params) => (await trajectoryService.createUploadSession(params)).trajectory,
         update: (id, params) => trajectoryService.update({ trajectoryId: id, ...params }),
         delete: (id) => trajectoryService.delete({ trajectoryId: id })
     },
@@ -111,6 +112,19 @@ export const trajectoryQuery = createPaginatedQuery<
             KEYS.simulationGrid()
         ]);
     }
+});
+
+export const createTrajectoryUploadSessionMutation = createMutation<
+    CreateTrajectoryUploadSessionOutputDTO,
+    CreateTrajectoryInputDTO
+>(trajectoryService.createUploadSession, (result) => {
+        queryClient.removeQueries({
+            queryKey: KEYS.detail(result.trajectory._id)
+        });
+        batchInvalidateQueries([
+            trajectoryQuery.QUERY_KEYS.lists(),
+            KEYS.simulationGrid()
+        ]);
 });
 
 const trajectoryDetailQuery = createQuery(KEYS.detail, (trajectoryId) => trajectoryService.getById({ trajectoryId }));

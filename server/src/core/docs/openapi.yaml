@@ -2200,52 +2200,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   /api/trajectories/{teamId}:
-    post:
-      operationId: createTrajectory
-      tags:
-        - Trajectories
-      summary: Upload trajectories
-      description: Uploads one or more trajectory files to the specified team. Accepts multipart form data with multiple trajectory files.
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - trajectoryFiles
-              properties:
-                trajectoryFiles:
-                  type: array
-                  items:
-                    type: string
-                    format: binary
-                  description: One or more trajectory files to upload
-                folderId:
-                  type: string
-                  description: Optional folder ID to place the uploaded trajectories into
-      responses:
-        '201':
-          description: Trajectories created successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Trajectory'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
     get:
       operationId: getTrajectoriesByTeamId
       tags:
@@ -2335,6 +2289,98 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/trajectories/{teamId}/upload-sessions:
+    post:
+      operationId: createTrajectoryUploadSession
+      tags:
+        - Trajectories
+      summary: Create trajectory upload session
+      description: Creates a trajectory record and returns signed object URLs for direct, parallel upload through the cluster object gateway.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTrajectoryUploadSessionRequest'
+      responses:
+        '201':
+          description: Upload session created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CreateTrajectoryUploadSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/trajectories/{teamId}/upload-sessions/{uploadSessionId}:
+    delete:
+      operationId: cancelTrajectoryUploadSession
+      tags:
+        - Trajectories
+      summary: Cancel trajectory upload session
+      description: Cancels a pending upload session and removes any uploaded staging objects.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: uploadSessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Upload session cancelled
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/trajectories/{teamId}/upload-sessions/{uploadSessionId}/commit:
+    post:
+      operationId: commitTrajectoryUploadSession
+      tags:
+        - Trajectories
+      summary: Commit trajectory upload session
+      description: Verifies uploaded objects, composes chunked uploads when needed, and starts trajectory ingestion on the cluster.
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: uploadSessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Upload session committed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CommitTrajectoryUploadSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/trajectories/{teamId}/folders:
     get:
       operationId: listTrajectoryFolders
@@ -3941,28 +3987,21 @@ paths:
     patch:
       tags:
         - Plugins
-      summary: Upload a plugin binary
-      description: Uploads or replaces the binary attachment for a plugin (max 200 MB).
-      operationId: uploadPluginBinary
+      summary: Create plugin binary upload target
+      description: Creates a signed upload target for a plugin binary. The client uploads the file directly through the cluster object gateway, then commits the upload.
+      operationId: createPluginBinaryUploadTarget
       parameters:
         - $ref: '#/components/parameters/TeamId'
         - $ref: '#/components/parameters/PluginId'
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              required:
-                - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Binary file to attach to the plugin
+              $ref: '#/components/schemas/CreatePluginBinaryUploadRequest'
       responses:
         '200':
-          description: Binary uploaded successfully
+          description: Signed upload target created
           content:
             application/json:
               schema:
@@ -3971,7 +4010,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Plugin'
+                        $ref: '#/components/schemas/PluginBinaryUploadTarget'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3990,12 +4029,44 @@ paths:
         - $ref: '#/components/parameters/TeamId'
         - $ref: '#/components/parameters/PluginId'
       responses:
-        '200':
+        '204':
           description: Binary deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/plugins/{teamId}/{pluginId}/binary/commit:
+    post:
+      tags:
+        - Plugins
+      summary: Commit plugin binary upload
+      description: Verifies the directly uploaded plugin binary object and updates the plugin workflow metadata.
+      operationId: commitPluginBinaryUpload
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/PluginId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitPluginBinaryUploadRequest'
+      responses:
+        '200':
+          description: Plugin binary committed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PluginBinaryUploadResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5545,7 +5616,7 @@ paths:
       tags:
         - LaTeX
       summary: Upload LaTeX document assets
-      description: Uploads up to 20 asset files to the specified LaTeX document.
+      description: Creates signed upload targets for up to 20 LaTeX assets. The client uploads each file directly through the cluster object gateway using the returned URLs.
       parameters:
         - name: teamId
           in: path
@@ -5560,22 +5631,39 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               required:
                 - files
               properties:
+                path:
+                  type: string
+                  description: Optional relative path prefix applied to uploaded files.
                 files:
                   type: array
-                  items:
-                    type: string
-                    format: binary
+                  minItems: 1
                   maxItems: 20
-                  description: Asset files to upload (maximum 20).
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - size
+                    properties:
+                      name:
+                        type: string
+                      size:
+                        type: integer
+                        format: int64
+                        minimum: 1
+                      type:
+                        type: string
+                    additionalProperties: false
+                  description: Asset file metadata. File bytes are uploaded directly to each returned upload URL.
+              additionalProperties: false
       responses:
         '201':
-          description: Successfully uploaded
+          description: Signed upload targets created
           content:
             application/json:
               schema:
@@ -5584,9 +5672,37 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/LatexAsset'
+                        type: object
+                        required:
+                          - uploaded
+                          - failedCount
+                          - total
+                        properties:
+                          uploaded:
+                            type: array
+                            items:
+                              allOf:
+                                - $ref: '#/components/schemas/LatexAsset'
+                                - type: object
+                                  required:
+                                    - uploadIndex
+                                    - uploadUrl
+                                    - expiresAt
+                                  properties:
+                                    uploadIndex:
+                                      type: integer
+                                      minimum: 0
+                                    uploadUrl:
+                                      type: string
+                                    expiresAt:
+                                      type: string
+                                      format: date-time
+                          failedCount:
+                            type: integer
+                            minimum: 0
+                          total:
+                            type: integer
+                            minimum: 0
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -6748,7 +6864,7 @@ paths:
       tags:
         - Whiteboards
       summary: Upload whiteboard asset
-      description: Uploads an asset file to the specified whiteboard.
+      description: Creates a signed upload target for a whiteboard asset. The client uploads the file directly through the cluster object gateway using the returned URL.
       parameters:
         - name: teamId
           in: path
@@ -6763,19 +6879,25 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               required:
-                - file
+                - fileName
+                - size
               properties:
-                file:
+                fileName:
                   type: string
-                  format: binary
-                  description: The asset file to upload.
+                size:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                type:
+                  type: string
+              additionalProperties: false
       responses:
         '201':
-          description: Successfully uploaded
+          description: Signed upload target created
           content:
             application/json:
               schema:
@@ -6785,18 +6907,18 @@ paths:
                     properties:
                       data:
                         type: object
+                        required:
+                          - assetId
+                          - uploadUrl
+                          - expiresAt
                         properties:
-                          _id:
+                          assetId:
                             type: string
-                          url:
+                          uploadUrl:
                             type: string
-                            format: uri
-                          name:
+                          expiresAt:
                             type: string
-                          size:
-                            type: integer
-                          mimeType:
-                            type: string
+                            format: date-time
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -10497,10 +10619,12 @@ components:
       required:
         - _id
         - documentId
-        - name
+        - originalName
+        - path
         - url
         - size
-        - mimeType
+        - mimetype
+        - createdAt
       properties:
         _id:
           type: string
@@ -10508,9 +10632,12 @@ components:
         documentId:
           type: string
           description: ID of the parent LaTeX document.
-        name:
+        originalName:
           type: string
           description: Original file name of the asset.
+        path:
+          type: string
+          description: Relative path of the asset inside the document.
         url:
           type: string
           format: uri
@@ -10519,9 +10646,12 @@ components:
           type: integer
           format: int64
           description: Size of the asset in bytes.
-        mimeType:
+        mimetype:
           type: string
           description: MIME type of the asset.
+        createdAt:
+          type: string
+          format: date-time
     Whiteboard:
       type: object
       required:
@@ -11918,6 +12048,202 @@ components:
             - string
             - 'null'
         data: {}
+    TrajectoryUploadFileRequest:
+      type: object
+      required:
+        - name
+        - size
+      properties:
+        name:
+          type: string
+          description: Original file name.
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+          description: File size in bytes.
+        type:
+          type: string
+          description: Browser-reported MIME type.
+      additionalProperties: false
+    CreateTrajectoryUploadSessionRequest:
+      type: object
+      required:
+        - name
+        - files
+      properties:
+        name:
+          type: string
+        folderId:
+          type:
+            - string
+            - 'null'
+        files:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TrajectoryUploadFileRequest'
+      additionalProperties: false
+    TrajectoryUploadPart:
+      type: object
+      required:
+        - partNumber
+        - offset
+        - size
+        - url
+        - expiresAt
+      properties:
+        partNumber:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          format: int64
+          minimum: 0
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+        url:
+          type: string
+          description: Signed URL for direct upload through the cluster object gateway.
+        expiresAt:
+          type: string
+          format: date-time
+    TrajectoryUploadSessionFile:
+      type: object
+      required:
+        - index
+        - originalName
+        - size
+        - finalObjectKey
+        - parts
+      properties:
+        index:
+          type: integer
+          minimum: 0
+        originalName:
+          type: string
+        size:
+          type: integer
+          format: int64
+        contentType:
+          type: string
+        finalObjectKey:
+          type: string
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrajectoryUploadPart'
+    CreateTrajectoryUploadSessionResponse:
+      type: object
+      required:
+        - trajectory
+        - uploadSession
+      properties:
+        trajectory:
+          $ref: '#/components/schemas/Trajectory'
+        uploadSession:
+          type: object
+          required:
+            - id
+            - chunkSize
+            - expiresAt
+            - files
+          properties:
+            id:
+              type: string
+            chunkSize:
+              type: integer
+              format: int64
+            expiresAt:
+              type: string
+              format: date-time
+            files:
+              type: array
+              items:
+                $ref: '#/components/schemas/TrajectoryUploadSessionFile'
+    CommitTrajectoryUploadSessionResponse:
+      type: object
+      required:
+        - trajectoryId
+      properties:
+        trajectoryId:
+          type: string
+    CreatePluginBinaryUploadRequest:
+      type: object
+      required:
+        - fileName
+        - size
+        - sha256
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+        type:
+          type: string
+          maxLength: 255
+        sha256:
+          type: string
+          pattern: ^[A-Fa-f0-9]{64}$
+      additionalProperties: false
+    PluginBinaryUploadResult:
+      type: object
+      required:
+        - objectPath
+        - fileName
+        - size
+        - binaryHash
+      properties:
+        objectPath:
+          type: string
+        fileName:
+          type: string
+        size:
+          type: integer
+          format: int64
+        binaryHash:
+          type: string
+          pattern: ^[A-Fa-f0-9]{64}$
+    PluginBinaryUploadTarget:
+      allOf:
+        - $ref: '#/components/schemas/PluginBinaryUploadResult'
+        - type: object
+          required:
+            - uploadUrl
+            - expiresAt
+          properties:
+            uploadUrl:
+              type: string
+              description: Signed URL for direct upload through the cluster object gateway.
+            expiresAt:
+              type: string
+              format: date-time
+    CommitPluginBinaryUploadRequest:
+      type: object
+      required:
+        - objectPath
+        - fileName
+        - size
+        - sha256
+      properties:
+        objectPath:
+          type: string
+        fileName:
+          type: string
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+        sha256:
+          type: string
+          pattern: ^[A-Fa-f0-9]{64}$
+      additionalProperties: false
     RasterMetadataStatus:
       type: string
       enum:

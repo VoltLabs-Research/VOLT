@@ -152,6 +152,80 @@ ExecutePluginRequest:
       additionalProperties: true
       description: Plugin execution configuration
   additionalProperties: false
+CreatePluginBinaryUploadRequest:
+  type: object
+  required:
+  - fileName
+  - size
+  - sha256
+  properties:
+    fileName:
+      type: string
+      minLength: 1
+      maxLength: 255
+    size:
+      type: integer
+      format: int64
+      minimum: 1
+    type:
+      type: string
+      maxLength: 255
+    sha256:
+      type: string
+      pattern: ^[A-Fa-f0-9]{64}$
+  additionalProperties: false
+CommitPluginBinaryUploadRequest:
+  type: object
+  required:
+  - objectPath
+  - fileName
+  - size
+  - sha256
+  properties:
+    objectPath:
+      type: string
+    fileName:
+      type: string
+    size:
+      type: integer
+      format: int64
+      minimum: 1
+    sha256:
+      type: string
+      pattern: ^[A-Fa-f0-9]{64}$
+  additionalProperties: false
+PluginBinaryUploadResult:
+  type: object
+  required:
+  - objectPath
+  - fileName
+  - size
+  - binaryHash
+  properties:
+    objectPath:
+      type: string
+    fileName:
+      type: string
+    size:
+      type: integer
+      format: int64
+    binaryHash:
+      type: string
+      pattern: ^[A-Fa-f0-9]{64}$
+PluginBinaryUploadTarget:
+  allOf:
+  - $ref: plugins.yaml#/PluginBinaryUploadResult
+  - type: object
+    required:
+    - uploadUrl
+    - expiresAt
+    properties:
+      uploadUrl:
+        type: string
+        description: Signed URL for direct upload through the cluster object gateway.
+      expiresAt:
+        type: string
+        format: date-time
 Plugin:
   type: object
   description: A plugin resource

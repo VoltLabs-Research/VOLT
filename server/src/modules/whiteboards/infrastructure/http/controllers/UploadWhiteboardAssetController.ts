@@ -9,8 +9,6 @@ export default createController(UploadWhiteboardAssetUseCase, {
     statusCode: HttpStatus.Created,
     extendParams: (req: AuthenticatedRequest, params: Record<string, unknown>) => ({
         ...params,
-        buffer: req.file?.buffer ?? Buffer.alloc(0),
-        mimetype: req.file?.mimetype ?? 'application/octet-stream',
-        originalname: req.file?.originalname ?? 'asset'
+        userId: req.userId
     })
 });

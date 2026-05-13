@@ -1,25 +1,17 @@
-import { trajectoryQuery, TRAJECTORY_QUERY_KEYS } from './queries';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { createTrajectoryUploadSessionMutation } from './queries';
 import { useCallback } from 'react';
-import type { Trajectory } from '../../api/entities/trajectory/trajectory';
+import type {
+    CreateTrajectoryInputDTO,
+    CreateTrajectoryUploadSessionOutputDTO
+} from '../../api/services/trajectory-service';
 
 export default function useCreateTrajectory() {
-    const mutation = trajectoryQuery.useCreateMutation({
-        onSuccess: (trajectory) => {
-            queryClient.removeQueries({
-                queryKey: TRAJECTORY_QUERY_KEYS.trajectory(trajectory._id)
-            });
-        }
-    });
+    const mutation = createTrajectoryUploadSessionMutation();
 
     const createTrajectory = useCallback(async (
-        formData: FormData,
-        onProgress?: (progress: number) => void
-    ): Promise<Trajectory> => {
-        return mutation.mutateAsync({
-            formData,
-            onProgress
-        });
+        input: CreateTrajectoryInputDTO
+    ): Promise<CreateTrajectoryUploadSessionOutputDTO> => {
+        return mutation.mutateAsync(input);
     }, [mutation]);
 
     return createTrajectory;

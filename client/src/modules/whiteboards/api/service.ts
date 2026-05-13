@@ -1,4 +1,4 @@
-import { buildFileFormData } from '@/shared/utils/file';
+import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
 import {
     createFolderCrudEndpoints,
     type FolderCreateParams,
@@ -8,7 +8,7 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 
-import { createService, del, download, get, paginated, patch, post, request } from '@/app/core/http/utilities/create-service';
+import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Whiteboard } from './entities/whiteboard';
 import type { WhiteboardFolder } from './entities/whiteboard-folder';
@@ -59,6 +59,16 @@ export interface UploadAssetResult {
     assetId: string;
 }
 
+interface CreateAssetUploadResult extends UploadAssetResult {
+    uploadUrl: string;
+    expiresAt: string;
+}
+
+interface CreateAssetUploadApiResponse {
+    status: 'success';
+    data: CreateAssetUploadResult;
+}
+
 const folderEndpoints = createFolderCrudEndpoints<
     FolderListParams,
     FolderGetParams,
@@ -85,9 +95,31 @@ const endpoints = {
     saveWhiteboardState: patch<SaveStateParams, void>('/:whiteboardId/state', {
         body: ({ state }) => state as Record<string, unknown>
     }),
-    uploadWhiteboardAsset: request<UploadAssetParams, UploadAssetResult>('POST', '/:whiteboardId/assets', {
-        body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
-        headers: { 'Content-Type': 'multipart/form-data' }
+    uploadWhiteboardAsset: custom<UploadAssetParams, UploadAssetResult>(async ({ getClient }, params) => {
+        const response = await getClient().request<CreateAssetUploadApiResponse>(
+            'POST',
+            `/${params.whiteboardId}/assets`,
+            {
+                body: {
+                    fileName: params.file.name,
+                    size: params.file.size,
+                    ...(params.file.type ? { type: params.file.type } : {})
+                }
+            }
+        );
+        const result = response.data;
+
+        await uploadClusterObjectParts({
+            file: params.file,
+            parts: [{
+                url: result.uploadUrl,
+                offset: 0,
+                size: params.file.size
+            }],
+            concurrency: 1
+        });
+
+        return { assetId: result.assetId };
     }),
     getWhiteboardAsset: download<GetAssetParams>('GET', '/:whiteboardId/assets/:assetId'),
     listWhiteboardFolders: folderEndpoints.listFolders,
