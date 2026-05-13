@@ -5,6 +5,7 @@ import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
@@ -303,6 +304,28 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable> {
+        return (await this.getModelStreamResponse(
+            trajectoryId,
+            timestep,
+            property,
+            startValue,
+            endValue,
+            gradient,
+            analysisId,
+            exposureId
+        )).stream;
+    }
+
+    async getModelStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        property: string,
+        startValue: number,
+        endValue: number,
+        gradient: string,
+        analysisId?: string,
+        exposureId?: string
+    ): Promise<TrajectoryNativeObjectStreamResponse> {
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
         const storageClusterId = trajectory
             ? resolveTrajectoryStorageClusterId(trajectory.props)
@@ -319,7 +342,7 @@ export default class ColorCodingService implements IColorCodingService {
         );
 
         if (storageClusterId) {
-            return this.trajectoryNativeDaemonService.getObjectStream(
+            return this.trajectoryNativeDaemonService.getObjectStreamResponse(
                 storageClusterId,
                 TEAM_CLUSTER_BUCKETS.MODELS,
                 objectName

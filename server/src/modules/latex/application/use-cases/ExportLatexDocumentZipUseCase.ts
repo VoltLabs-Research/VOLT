@@ -1,6 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
@@ -11,10 +11,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import {
-    createZipDownloadResponse,
-    sanitizeDownloadName
-} from '@shared/infrastructure/http/responses/download-response';
+import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
+import { v4 } from 'uuid';
 
 /**
  * Exports a LaTeX document as a `.zip` archive.
@@ -28,7 +26,7 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
         private readonly latexFileRepository: LatexFileRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        private readonly archiveService: ClusterObjectArchiveService
     ) {}
 
     async execute(input: ExportLatexDocumentInputDTO): Promise<Result<ExportLatexDocumentOutputDTO, ApplicationError>> {
@@ -61,29 +59,27 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
                 ));
             }
 
-            const output = createZipDownloadResponse({
-                filename: safeName,
+            const output = await this.archiveService.createArchiveDownload({
+                teamClusterId: storageClusterId,
+                outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+                outputObjectKey: `exports/latex/${input.documentId}/${v4()}.zip`,
+                filename: `${safeName}.zip`,
                 cacheControl: 'no-cache',
-                appendEntries: async (archive) => {
-                    for (const file of latexFiles) {
-                        archive.append(file.props.content, { name: file.fullPath });
-                    }
-
-                    for (const asset of assets) {
-                        try {
-                            const stream = (await this.objectGatewayClient.getStream(
-                                storageClusterId,
-                                TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
-                                asset.props.storageKey
-                            )).stream;
-                            const entryName = sanitizeAssetPath(asset.props.path, asset.props.originalName);
-
-                            archive.append(stream, { name: entryName });
-                        } catch {
-                            // Skip assets that cannot be retrieved from storage.
-                        }
-                    }
-                }
+                entries: [
+                    ...latexFiles.map((file) => ({
+                        type: 'inline' as const,
+                        name: file.fullPath,
+                        content: file.props.content
+                    })),
+                    ...assets.map((asset) => ({
+                        type: 'object' as const,
+                        ownerClusterId: storageClusterId,
+                        bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+                        objectKey: asset.props.storageKey,
+                        name: sanitizeAssetPath(asset.props.path, asset.props.originalName),
+                        optional: true
+                    }))
+                ]
             });
 
             return Result.ok(output);

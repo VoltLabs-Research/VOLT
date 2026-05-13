@@ -17,7 +17,7 @@ export class GetFilteredModelStreamUseCase implements IUseCase<GetFilteredModelS
     ) { }
 
     async execute(input: GetFilteredModelStreamInputDTO): Promise<Result<StreamableOutput, ApplicationError>> {
-        const stream = await this.particleFilterService.getModelStream(
+        const response = await this.particleFilterService.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
             buildParticleFilterRequest(input),
@@ -25,6 +25,6 @@ export class GetFilteredModelStreamUseCase implements IUseCase<GetFilteredModelS
             input.analysisId
         );
 
-        return Result.ok({ stream } satisfies GetFilteredModelStreamOutputDTO & StreamableOutput);
+        return Result.ok(response satisfies GetFilteredModelStreamOutputDTO & StreamableOutput);
     }
 };

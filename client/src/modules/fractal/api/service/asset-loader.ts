@@ -6,6 +6,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { geometryPool } from '@/modules/fractal/services/geometry-pool';
+import { decompress } from 'fzstd';
 import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -26,6 +27,18 @@ const summarizeRenderableContent = (root: THREE.Object3D) => {
     });
     return { points, meshes, vertices };
 };
+
+const ZSTD_MAGIC = [0x28, 0xb5, 0x2f, 0xfd] as const;
+
+const isZstdFrame = (arrayBuffer: ArrayBuffer): boolean => {
+    if (arrayBuffer.byteLength < ZSTD_MAGIC.length) return false;
+    const bytes = new Uint8Array(arrayBuffer, 0, ZSTD_MAGIC.length);
+    return ZSTD_MAGIC.every((value, index) => bytes[index] === value);
+};
+
+const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => (
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+);
 
 // FractalAssetLoader: downloads the GLB bytes, parses, and caches both the
 // raw ArrayBuffer (for fast re-parse) and the parsed BufferGeometry (via the
@@ -60,6 +73,15 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         });
     }
 
+    private static normalizeGlbArrayBuffer(arrayBuffer: ArrayBuffer): ArrayBuffer {
+        if (!isZstdFrame(arrayBuffer)) {
+            return arrayBuffer;
+        }
+
+        const decompressed = decompress(new Uint8Array(arrayBuffer));
+        return toExactArrayBuffer(decompressed);
+    }
+
     private static getDracoLoader(): DRACOLoader {
         if (!FractalAssetLoader.sharedDracoLoader) {
             FractalAssetLoader.sharedDracoLoader = new DRACOLoader();
@@ -89,7 +111,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         if (existing) return;
         const blob = await FractalAssetLoader.requestBlob(url, signal);
         if (signal?.aborted) return;
-        const arrayBuffer = await blob.arrayBuffer();
+        const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
         if (signal?.aborted) return;
         await geometryPool.writeToOpfs(url, arrayBuffer);
     }
@@ -112,7 +134,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         if (!arrayBuffer) {
             const blob = await FractalAssetLoader.requestBlob(url, signal);
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
-            arrayBuffer = await blob.arrayBuffer();
+            arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
             debugFractal('asset-loader.fetch-complete', { url, bytes: arrayBuffer.byteLength });
             void geometryPool.writeToOpfs(url, arrayBuffer);
