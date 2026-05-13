@@ -65,9 +65,27 @@ const executePluginSchema = z.object({
     config: z.record(z.string(), z.unknown())
 }).strict();
 
+const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/i);
+
+const uploadBinarySchema = z.object({
+    fileName: z.string().min(1).max(255),
+    size: z.number().int().positive().max(512 * 1024 * 1024),
+    type: z.string().min(1).max(255).optional(),
+    sha256: sha256Schema
+}).strict();
+
+const commitBinaryUploadSchema = z.object({
+    objectPath: z.string().min(1).max(1024),
+    fileName: z.string().min(1).max(255),
+    size: z.number().int().positive().max(512 * 1024 * 1024),
+    sha256: sha256Schema
+}).strict();
+
 export const pluginValidation = createResourceValidation({
     create: createPluginSchema,
     update: updatePluginSchema,
     validateWorkflow: validateWorkflowSchema,
-    execute: executePluginSchema
+    execute: executePluginSchema,
+    uploadBinary: uploadBinarySchema,
+    commitBinaryUpload: commitBinaryUploadSchema
 });

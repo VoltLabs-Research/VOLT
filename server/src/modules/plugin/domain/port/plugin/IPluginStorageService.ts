@@ -2,18 +2,16 @@ import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plu
 
 import { Readable } from 'node:stream';
 
-export interface PluginBinaryFile {
-    buffer: Buffer;
-    originalname?: string;
-    originalName?: string;
-    mimetype?: string;
-    size: number;
-}
-
 export interface BinaryUploadResult {
     objectPath: string;
     fileName: string;
     size: number;
+    binaryHash: string;
+}
+
+export interface BinaryUploadTarget extends BinaryUploadResult {
+    uploadUrl: string;
+    expiresAt: string;
 }
 
 export interface PluginImportResult {
@@ -22,10 +20,27 @@ export interface PluginImportResult {
 }
 
 export interface IPluginStorageService {
-    uploadBinary(
+    createBinaryUploadTarget(
         pluginId: string,
         teamId: string,
-        file: PluginBinaryFile
+        input: {
+            userId: string;
+            fileName: string;
+            size: number;
+            contentType?: string;
+            sha256: string;
+        }
+    ): Promise<BinaryUploadTarget>;
+
+    commitBinaryUpload(
+        pluginId: string,
+        teamId: string,
+        input: {
+            objectPath: string;
+            fileName: string;
+            size: number;
+            sha256: string;
+        }
     ): Promise<BinaryUploadResult>;
 
     deleteBinary(

@@ -78,6 +78,19 @@ const cloneTrajectoryBodySchema = z.object({
     targetClusterId: objectIdSchema.optional()
 }).strict();
 
+const createTrajectoryUploadSessionBodySchema = z.object({
+    name: z.string().trim().min(1).max(255),
+    folderId: objectIdSchema.nullable().optional(),
+    teamClusterId: objectIdSchema.optional(),
+    files: z.array(z.object({
+        name: z.string().trim().min(1).max(1024),
+        size: z.coerce.number().int().positive(),
+        type: z.string().trim().min(1).max(255).optional()
+    }).strict()).min(1)
+}).strict();
+
+const uploadSessionParamsSchema = createTeamScopedParamsSchema('uploadSessionId');
+
 export const trajectoryValidation = createResourceValidation({
     listByTeamId: {
         params: teamParamsSchema,
@@ -141,5 +154,15 @@ export const trajectoryValidation = createResourceValidation({
     clone: {
         params: teamParamsSchema,
         body: cloneTrajectoryBodySchema
+    },
+    createUploadSession: {
+        params: teamParamsSchema,
+        body: createTrajectoryUploadSessionBodySchema
+    },
+    commitUploadSession: {
+        params: uploadSessionParamsSchema
+    },
+    cancelUploadSession: {
+        params: uploadSessionParamsSchema
     }
 });

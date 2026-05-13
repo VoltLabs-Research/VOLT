@@ -1,11 +1,12 @@
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
+import { BinaryUploadResult, BinaryUploadTarget, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -42,13 +43,19 @@ const computeSha256 = (buffer: Buffer): string => {
     return createHash('sha256').update(buffer).digest('hex');
 };
 
+const normalizeBinaryFileName = (fileName: string): string => {
+    const normalized = path.basename(fileName.trim());
+    return normalized.length > 0 ? normalized : 'binary';
+};
+
 @Singleton()
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,
         private readonly storagePlacementService: StoragePlacementService,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        private readonly workflowValidator: WorkflowValidatorService
+        private readonly workflowValidator: WorkflowValidatorService,
+        private readonly signedUrlService: ClusterObjectSignedUrlService
     ) {}
 
     private async resolveOwnerClusterId(pluginId: string): Promise<string> {
@@ -113,7 +120,17 @@ export default class PluginStorageService implements IPluginStorageService {
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
 
-    async uploadBinary(pluginId: string, _teamId: string, file: any): Promise<BinaryUploadResult> {
+    async createBinaryUploadTarget(
+        pluginId: string,
+        teamId: string,
+        input: {
+            userId: string;
+            fileName: string;
+            size: number;
+            contentType?: string;
+            sha256: string;
+        }
+    ): Promise<BinaryUploadTarget> {
         const plugin = await this.pluginRepo.findById(pluginId);
         if (!plugin) {
             throw ApplicationError.notFound(
@@ -122,47 +139,103 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
-        const originalName = file.originalname || file.originalName || 'binary';
+        const originalName = normalizeBinaryFileName(input.fileName);
         const fileExtension = path.extname(originalName) || '';
         const uniqueName = `${v4()}${fileExtension}`;
         const objectPath = `plugin-binaries/${pluginId}/${uniqueName}`;
+        const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
+        const signed = this.signedUrlService.createToken({
+            kind: 'cluster-object',
+            operation: 'write',
+            teamId,
+            userId: input.userId,
+            ownerClusterId,
+            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            objectKey: objectPath,
+            resourceKind: 'plugin-binary',
+            resourceId: pluginId,
+            contentLength: input.size,
+            contentType: input.contentType || 'application/octet-stream',
+            metadata: {
+                'original-name': originalName,
+                sha256: input.sha256
+            }
+        });
+
+        return {
+            objectPath,
+            fileName: originalName,
+            size: input.size,
+            binaryHash: input.sha256,
+            uploadUrl: signed.url,
+            expiresAt: signed.expiresAt
+        };
+    }
+
+    async commitBinaryUpload(
+        pluginId: string,
+        _teamId: string,
+        input: {
+            objectPath: string;
+            fileName: string;
+            size: number;
+            sha256: string;
+        }
+    ): Promise<BinaryUploadResult> {
+        const plugin = await this.pluginRepo.findById(pluginId);
+        if (!plugin) {
+            throw ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            );
+        }
+
+        if (!input.objectPath.startsWith(`plugin-binaries/${pluginId}/`)) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Invalid plugin binary object path'
+            );
+        }
 
         const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
+        const head = await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
+        if (head.contentLength !== input.size) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Uploaded plugin binary size does not match the requested upload'
+            );
+        }
+
+        if (head.metadata.sha256 && head.metadata.sha256 !== input.sha256) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Uploaded plugin binary hash metadata does not match the requested upload'
+            );
+        }
+
+        const originalName = normalizeBinaryFileName(input.fileName);
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const oldBinaryPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
-        if (oldBinaryPath) {
+        if (oldBinaryPath && oldBinaryPath !== input.objectPath) {
             await this.objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
                 logger.warn(`@plugin-storage-service: failed to delete old binary ${oldBinaryPath}: ${err}`);
             });
         }
 
-        const binaryHash = computeSha256(file.buffer);
-
-        await this.objectGatewayClient.putBuffer(ownerClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
-            objectKey: objectPath,
-            buffer: file.buffer,
-            contentLength: file.buffer.length,
-            contentType: file.mimetype || 'application/octet-stream',
-            metadata: {
-                'original-name': originalName,
-                sha256: binaryHash
-            }
-        });
-
         plugin.props.workflow.updateEntrypoint({
             binary: originalName,
-            binaryObjectPath: objectPath,
+            binaryObjectPath: input.objectPath,
             binaryFileName: originalName,
-            binaryHash
+            binaryHash: input.sha256
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
-        logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
+        logger.info(`@plugin-storage-service: binary uploaded: ${input.objectPath} (${input.size} bytes)`);
         return {
-            objectPath,
+            objectPath: input.objectPath,
             fileName: originalName,
-            size: file.size
+            size: input.size,
+            binaryHash: input.sha256
         };
     }
 

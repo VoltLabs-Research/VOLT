@@ -87,10 +87,16 @@ export const buildControllerParams = (
         ip: req.ip || req.socket.remoteAddress || '',
         userAgent: readUserAgent(req),
         traceId: req.requestContext?.traceId,
-        requestContext: req.requestContext,
-        file: req.file,
-        files: req.files
+        requestContext: req.requestContext
     };
+
+    if (req.file !== undefined) {
+        baseParams.file = req.file;
+    }
+
+    if (req.files !== undefined) {
+        baseParams.files = req.files;
+    }
 
     if (baseParams.secretKeyId === undefined) baseParams.secretKeyId = req.secretKeyId;
     if (baseParams.secretKeyTeamId === undefined) baseParams.secretKeyTeamId = req.secretKeyTeamId;

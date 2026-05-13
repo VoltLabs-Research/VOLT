@@ -455,14 +455,6 @@
     }
 }
 @media (pointer: coarse) and (max-width: 1024px) {
-    .button.size-sm {
-        min-height: 2.75rem;
-    }
-
-    .button.size-md {
-        min-height: 2.75rem;
-    }
-
     .button.size-sm.shape-circle {
         width: 2.75rem;
         height: 2.75rem;

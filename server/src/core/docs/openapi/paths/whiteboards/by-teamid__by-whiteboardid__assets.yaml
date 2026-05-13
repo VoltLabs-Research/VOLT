@@ -3,7 +3,7 @@ post:
   tags:
   - Whiteboards
   summary: Upload whiteboard asset
-  description: Uploads an asset file to the specified whiteboard.
+  description: Creates a signed upload target for a whiteboard asset. The client uploads the file directly through the cluster object gateway using the returned URL.
   parameters:
   - name: teamId
     in: path
@@ -18,19 +18,25 @@ post:
   requestBody:
     required: true
     content:
-      multipart/form-data:
+      application/json:
         schema:
           type: object
           required:
-          - file
+          - fileName
+          - size
           properties:
-            file:
+            fileName:
               type: string
-              format: binary
-              description: The asset file to upload.
+            size:
+              type: integer
+              format: int64
+              minimum: 1
+            type:
+              type: string
+          additionalProperties: false
   responses:
     '201':
-      description: Successfully uploaded
+      description: Signed upload target created
       content:
         application/json:
           schema:
@@ -40,18 +46,18 @@ post:
               properties:
                 data:
                   type: object
+                  required:
+                  - assetId
+                  - uploadUrl
+                  - expiresAt
                   properties:
-                    _id:
+                    assetId:
                       type: string
-                    url:
+                    uploadUrl:
                       type: string
-                      format: uri
-                    name:
+                    expiresAt:
                       type: string
-                    size:
-                      type: integer
-                    mimeType:
-                      type: string
+                      format: date-time
     '400':
       $ref: ../../components/responses/common.yaml#/BadRequest
     '401':

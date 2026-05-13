@@ -3,7 +3,6 @@ import type { DeleteWhiteboardFolderInputDTO } from '@modules/whiteboards/applic
 import { DeleteWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardFolderUseCase';
 import { whiteboardValidation } from '@modules/whiteboards/infrastructure/http/validation/whiteboard-schemas';
 import WhiteboardFolderRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardFolderRepository';
-import { upload } from '@shared/infrastructure/http/middleware/upload';
 import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
 import whiteboardControllers from '@modules/whiteboards/infrastructure/http/controllers';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
@@ -45,7 +44,7 @@ export default createHttpModule({
         router.patch('/:whiteboardId/folder', whiteboardControllers.moveWhiteboard.handle);
         router.get('/:whiteboardId/state', whiteboardControllers.getWhiteboardState.handle);
         router.patch('/:whiteboardId/state', stateBodyParser, whiteboardControllers.saveWhiteboardState.handle);
-        router.post('/:whiteboardId/assets', upload.single('file'), whiteboardControllers.uploadWhiteboardAsset.handle);
+        router.post('/:whiteboardId/assets', whiteboardControllers.uploadWhiteboardAsset.handle);
         router.get('/:whiteboardId/assets/:assetId', whiteboardControllers.getWhiteboardAsset.handle);
     }
 });

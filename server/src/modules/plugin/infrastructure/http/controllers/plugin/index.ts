@@ -1,4 +1,5 @@
 import { ClonePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ClonePluginUseCase';
+import { CommitBinaryUploadUseCase } from '@modules/plugin/application/use-cases/plugin/CommitBinaryUploadUseCase';
 import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugin/CreatePluginUseCase';
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
@@ -30,6 +31,7 @@ const withAuthenticatedUserId = (
 });
 
 const ClonePluginController = createController(ClonePluginUseCase, HttpStatus.Created);
+const CommitBinaryUploadController = createController(CommitBinaryUploadUseCase);
 const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.Created);
 const DeleteBinaryController = createController(DeleteBinaryUseCase, HttpStatus.NoContent);
 const DeletePluginByIdController = createController(DeletePluginByIdUseCase, HttpStatus.NoContent);
@@ -47,6 +49,7 @@ const ValidateWorkflowController = createController(ValidateWorkflowUseCase);
 
 export default createControllerRegistry({
     clone: ClonePluginController,
+    commitBinaryUpload: CommitBinaryUploadController,
     create: CreatePluginController,
     deleteBinary: DeleteBinaryController,
     deleteById: DeletePluginByIdController,

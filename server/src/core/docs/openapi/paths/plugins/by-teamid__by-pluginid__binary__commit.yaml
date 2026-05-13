@@ -1,0 +1,35 @@
+post:
+  tags:
+  - Plugins
+  summary: Commit plugin binary upload
+  description: Verifies the directly uploaded plugin binary object and updates the plugin workflow metadata.
+  operationId: commitPluginBinaryUpload
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - $ref: ../../components/parameters/common.yaml#/PluginId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/plugins.yaml#/CommitPluginBinaryUploadRequest
+  responses:
+    '200':
+      description: Plugin binary committed
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/PluginBinaryUploadResult
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound

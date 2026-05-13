@@ -1,0 +1,32 @@
+post:
+  operationId: createTrajectoryUploadSession
+  tags:
+  - Trajectories
+  summary: Create trajectory upload session
+  description: Creates a trajectory record and returns signed object URLs for direct, parallel upload through the cluster object gateway.
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../../components/schemas/trajectories.yaml#/CreateTrajectoryUploadSessionRequest
+  responses:
+    '201':
+      description: Upload session created
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/trajectories.yaml#/CreateTrajectoryUploadSessionResponse
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

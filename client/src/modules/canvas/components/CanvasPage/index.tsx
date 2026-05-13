@@ -185,8 +185,11 @@ const CanvasPage = () => {
     const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
     const forcedGlbUrl = isLocalGlbViewer ? localGlbUrl : null;
     const showStatusBar = searchParams.get('statusBar') !== 'false';
+    const hasResolvedCanvasAccess = isLocalGlbViewer || Boolean(canvasAccess);
+    const canMutateCanvas = isLocalGlbViewer || Boolean(canvasAccess?.hasTeamMembership);
+    const isReadOnlyCanvas = !isLocalGlbViewer && hasResolvedCanvasAccess && !canMutateCanvas;
     const isRasterWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Raster;
-    const isScriptingWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Scripting;
+    const isScriptingWorkspace = !isLocalGlbViewer && canMutateCanvas && activeWorkspace === CanvasWorkspace.Scripting;
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const {
         downloadTrajectoryAnalyses,
@@ -221,6 +224,14 @@ const CanvasPage = () => {
 
         setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
     }, [isLocalGlbViewer, setActiveWorkspace]);
+
+    useEffect(() => {
+        if (!hasResolvedCanvasAccess || canMutateCanvas || activeWorkspace !== CanvasWorkspace.Scripting) {
+            return;
+        }
+
+        setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
+    }, [activeWorkspace, canMutateCanvas, hasResolvedCanvasAccess, setActiveWorkspace]);
 
     const wasLocalGlbViewerRef = useRef(isLocalGlbViewer);
     useEffect(() => {
@@ -499,7 +510,7 @@ const CanvasPage = () => {
             width='vw-max'
             overflow='hidden'
             position='relative'
-            className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}`}
+            className={`canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`}
             style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as React.CSSProperties}
         >
             <PreloadingOverlay
@@ -523,6 +534,7 @@ const CanvasPage = () => {
                     canDownloadAnalyses={canDownloadTrajectoryAnalyses}
                     onDownloadAnalyses={handleDownloadTrajectoryAnalyses}
                     localGlbMode={isLocalGlbViewer}
+                    canMutateCanvas={canMutateCanvas}
                     workspacePeers={peersInLobby}
                     workspaceActiveOwnerId={workspaceOwnerId}
                     onSelectWorkspacePeer={navigateToWorkspace}
@@ -658,6 +670,7 @@ const CanvasPage = () => {
                             trajectoryId={trajectoryId}
                             analysisId={analysisId}
                             currentTimestep={currentTimestep}
+                            canMutateCanvas={canMutateCanvas}
                             onDownloadAnalysis={handleDownloadAnalysisListing}
                             onDownloadExposureListing={handleDownloadExposureListing}
                             rasterContainerSelections={rasterContainerSelections}

@@ -4,12 +4,22 @@ import type { TeamUserScopedEntityIdInputDTO } from '@modules/team/application/d
 export type UploadLatexAssetInputDTO = TeamUserScopedEntityIdInputDTO<'documentId'> & {
     /** Optional relative path prefix applied to all uploaded files (e.g. `images/`). */
     path?: string;
-    files: Express.Multer.File[];
+    files: Array<{
+        name: string;
+        size: number;
+        type?: string;
+    }>;
 };
 
-/** Result of a batch asset upload. Includes only the assets that were successfully persisted. */
+export interface LatexAssetUploadTargetDTO extends LatexAssetDTO {
+    uploadIndex: number;
+    uploadUrl: string;
+    expiresAt: string;
+}
+
+/** Result of a batch asset upload target request. */
 export interface UploadLatexAssetOutputDTO {
-    uploaded: LatexAssetDTO[];
+    uploaded: LatexAssetUploadTargetDTO[];
     /** Number of files that could not be processed. */
     failedCount: number;
     total: number;

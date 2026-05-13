@@ -6,7 +6,7 @@ import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpMod
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import multer from 'multer';
 
-const upload = multer({
+const importUpload = multer({
     storage: multer.memoryStorage()
 });
 
@@ -17,13 +17,18 @@ export default createHttpModule({
     routes: (router) => {
         router.post('/workflow-validation', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
         router.get('/:pluginId/export', controllers.exportPlugin.handle);
-        router.post('/import', upload.single('file'), controllers.importPlugin.handle);
+        router.post('/import', importUpload.single('file'), controllers.importPlugin.handle);
         router.route('/')
             .get(controllers.listPlugins.handle)
             .post(pluginValidation.create, controllers.create.handle);
+        router.post(
+            '/:pluginId/binary/commit',
+            pluginValidation.commitBinaryUpload,
+            controllers.commitBinaryUpload.handle
+        );
         router.route('/:pluginId/binary')
             .get(controllers.downloadBinary.handle)
-            .patch(upload.single('file'), controllers.uploadBinary.handle)
+            .patch(pluginValidation.uploadBinary, controllers.uploadBinary.handle)
             .delete(controllers.deleteBinary.handle);
         router.post('/:pluginId/clones', controllers.clone.handle);
         router.route('/:pluginId')

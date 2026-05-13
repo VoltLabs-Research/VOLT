@@ -63,6 +63,128 @@ Trajectory:
       type: string
       format: date-time
       description: Timestamp when the trajectory was last updated
+TrajectoryUploadFileRequest:
+  type: object
+  required:
+  - name
+  - size
+  properties:
+    name:
+      type: string
+      description: Original file name.
+    size:
+      type: integer
+      format: int64
+      minimum: 1
+      description: File size in bytes.
+    type:
+      type: string
+      description: Browser-reported MIME type.
+  additionalProperties: false
+TrajectoryUploadPart:
+  type: object
+  required:
+  - partNumber
+  - offset
+  - size
+  - url
+  - expiresAt
+  properties:
+    partNumber:
+      type: integer
+      minimum: 1
+    offset:
+      type: integer
+      format: int64
+      minimum: 0
+    size:
+      type: integer
+      format: int64
+      minimum: 1
+    url:
+      type: string
+      description: Signed URL for direct upload through the cluster object gateway.
+    expiresAt:
+      type: string
+      format: date-time
+TrajectoryUploadSessionFile:
+  type: object
+  required:
+  - index
+  - originalName
+  - size
+  - finalObjectKey
+  - parts
+  properties:
+    index:
+      type: integer
+      minimum: 0
+    originalName:
+      type: string
+    size:
+      type: integer
+      format: int64
+    contentType:
+      type: string
+    finalObjectKey:
+      type: string
+    parts:
+      type: array
+      items:
+        $ref: trajectories.yaml#/TrajectoryUploadPart
+CreateTrajectoryUploadSessionRequest:
+  type: object
+  required:
+  - name
+  - files
+  properties:
+    name:
+      type: string
+    folderId:
+      type:
+      - string
+      - 'null'
+    files:
+      type: array
+      minItems: 1
+      items:
+        $ref: trajectories.yaml#/TrajectoryUploadFileRequest
+  additionalProperties: false
+CreateTrajectoryUploadSessionResponse:
+  type: object
+  required:
+  - trajectory
+  - uploadSession
+  properties:
+    trajectory:
+      $ref: trajectories.yaml#/Trajectory
+    uploadSession:
+      type: object
+      required:
+      - id
+      - chunkSize
+      - expiresAt
+      - files
+      properties:
+        id:
+          type: string
+        chunkSize:
+          type: integer
+          format: int64
+        expiresAt:
+          type: string
+          format: date-time
+        files:
+          type: array
+          items:
+            $ref: trajectories.yaml#/TrajectoryUploadSessionFile
+CommitTrajectoryUploadSessionResponse:
+  type: object
+  required:
+  - trajectoryId
+  properties:
+    trajectoryId:
+      type: string
 TrajectoryPreview:
   type: object
   required:

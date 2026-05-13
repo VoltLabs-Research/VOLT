@@ -25,6 +25,12 @@ const updateWhiteboardBodySchema = z.object({
     title: z.string().trim().min(1).max(255).optional()
 }).strict();
 
+const uploadWhiteboardAssetBodySchema = z.object({
+    fileName: z.string().trim().min(1).max(1024),
+    size: z.coerce.number().int().positive(),
+    type: z.string().trim().min(1).max(255).optional()
+}).strict();
+
 const listWhiteboardsParamsSchema = z.object({
     teamId: objectIdSchema
 }).strict();
@@ -59,7 +65,8 @@ export const whiteboardValidation = {
         params: whiteboardParamsSchema
     },
     uploadWhiteboardAsset: {
-        params: whiteboardParamsSchema
+        params: whiteboardParamsSchema,
+        body: uploadWhiteboardAssetBodySchema
     },
     getWhiteboardAsset: {
         params: assetParamsSchema
