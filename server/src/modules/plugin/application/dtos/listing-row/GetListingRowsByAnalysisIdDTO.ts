@@ -49,6 +49,7 @@ export interface AnalysisSubListingExportData {
 
 export interface ExportListingRowsByAnalysisIdOutputDTO {
     analysisId: string;
+    teamClusterId?: string;
     format: ExportType;
     config?: Record<string, unknown>;
     listings: AnalysisListingExportData[];

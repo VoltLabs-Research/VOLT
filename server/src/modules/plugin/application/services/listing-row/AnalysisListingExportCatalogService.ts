@@ -152,6 +152,7 @@ export class AnalysisListingExportCatalogService {
         if (!teamClusterId) {
             return {
                 analysisId: input.analysisId,
+                teamClusterId,
                 format,
                 config: this.hasConfig(config) ? config : undefined,
                 listings: [],
@@ -178,6 +179,7 @@ export class AnalysisListingExportCatalogService {
 
         return {
             analysisId: input.analysisId,
+            teamClusterId,
             format,
             config: this.hasConfig(config) ? config : undefined,
             listings,

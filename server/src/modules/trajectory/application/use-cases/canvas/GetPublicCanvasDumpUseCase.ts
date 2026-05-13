@@ -34,16 +34,26 @@ export class GetPublicCanvasDumpUseCase implements IUseCase<
         try {
             await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
 
-            const stream = await this.trajectoryDumpStorageService.getDumpStream(
+            const response = await this.trajectoryDumpStorageService.getDumpResponse(
                 input.trajectoryId,
                 input.timestep
             );
 
+            const extraHeaders: Record<string, string> = {};
+
+            if (response.contentEncoding) {
+                extraHeaders['X-Volt-Resource-Encoding'] = response.contentEncoding;
+            }
+
             return Result.ok(createDownloadStreamResponse({
-                stream,
+                stream: response.stream,
                 contentType: 'application/octet-stream',
-                filename: `timestep-${input.timestep}.dump`,
+                filename: response.contentEncoding === 'zstd'
+                    ? `timestep-${input.timestep}.dump.zst`
+                    : `timestep-${input.timestep}.dump`,
                 disposition: 'inline',
+                contentLength: response.contentLength,
+                extraHeaders,
                 cacheControl: 'public, max-age=31536000, immutable'
             }));
         } catch (error) {

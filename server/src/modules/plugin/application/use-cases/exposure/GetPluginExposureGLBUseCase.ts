@@ -85,18 +85,16 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
             filename: string,
             contentEncoding: string
         ) => {
-            const extraHeaders: Record<string, string> = {
-                'Vary': 'Accept-Encoding'
-            };
+            const extraHeaders: Record<string, string> = {};
 
             if (contentEncoding !== 'identity') {
-                extraHeaders['Content-Encoding'] = contentEncoding;
+                extraHeaders['X-Volt-Resource-Encoding'] = contentEncoding;
             }
 
             return createDownloadStreamResponse({
                 stream,
                 contentType: 'model/gltf-binary',
-                contentLength: contentEncoding === 'zstd' ? size : undefined,
+                contentLength: size,
                 disposition: 'inline',
                 filename,
                 cacheControl: 'public, max-age=31536000, immutable',

@@ -5,5 +5,6 @@ export const TEAM_CLUSTER_BUCKETS = {
     ANALYSIS_LOGS: 'volt-analysis-logs',
     DUMPS: 'volt-dumps',
     WHITEBOARDS: 'volt-whiteboards',
-    LATEX_ASSETS: 'volt-latex-assets'
+    LATEX_ASSETS: 'volt-latex-assets',
+    TRAJECTORIES: 'volt-trajectories'
 } as const;
