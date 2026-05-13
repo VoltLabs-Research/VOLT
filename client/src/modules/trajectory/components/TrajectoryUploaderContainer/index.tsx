@@ -1,9 +1,9 @@
 import useTrajectoryUpload from '@/modules/trajectory/hooks/trajectory/use-trajectory-upload';
 import { useCallback } from 'react';
-import FileUploaderContainer from '@/shared/presentation/components/FileUploaderContainer';
+import FileUploaderContainer, { type FileDropUpload } from '@/shared/presentation/components/FileUploaderContainer';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
-import type { FileWithPath } from '@/shared/utils/file';
 import { useNavigate } from 'react-router-dom';
+
 interface TrajectoryUploaderContainerProps {
     children?: React.ReactNode;
 }
@@ -13,11 +13,13 @@ export default function TrajectoryUploaderContainer({ children }: TrajectoryUplo
     const navigate = useNavigate();
     const setLocalGlbFile = useLocalGlbStore((s) => s.setLocalGlbFile);
 
-    const handleFilesDropped = useCallback((files: FileWithPath[], folderName: string) => {
-        const droppedGlb = files.find(({ file }) => {
-            const name = file.name.toLowerCase();
-            return name.endsWith('.glb') || file.type === 'model/gltf-binary';
-        });
+    const handleFilesDropped = useCallback((uploads: FileDropUpload[]) => {
+        const droppedGlb = uploads
+            .flatMap(({ files }) => files)
+            .find(({ file }) => {
+                const name = file.name.toLowerCase();
+                return name.endsWith('.glb') || file.type === 'model/gltf-binary';
+            });
 
         if (droppedGlb) {
             setLocalGlbFile(droppedGlb.file);
@@ -25,7 +27,9 @@ export default function TrajectoryUploaderContainer({ children }: TrajectoryUplo
             return;
         }
 
-        uploadTrajectory(files, folderName);
+        void Promise.allSettled(
+            uploads.map(({ files, folderName }) => uploadTrajectory(files, folderName))
+        );
     }, [navigate, setLocalGlbFile, uploadTrajectory]);
 
     return (
