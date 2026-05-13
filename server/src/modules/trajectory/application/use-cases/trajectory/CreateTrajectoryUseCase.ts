@@ -17,7 +17,6 @@ import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -27,7 +26,6 @@ import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import pLimit from 'p-limit';
 import { inject, injectable } from 'tsyringe';
 
 interface TrajectoryIngestResult {
@@ -59,11 +57,8 @@ interface StagedTrajectoryObject {
     size: number;
 }
 
-const STAGING_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_STAGING_UPLOAD_CONCURRENCY', 1);
-const BACKGROUND_TRAJECTORY_INGEST_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_BACKGROUND_INGEST_CONCURRENCY', 1);
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const GLB_JOB_NAME = 'Preprocess trajectory frame';
-const backgroundTrajectoryIngestLimit = pLimit(BACKGROUND_TRAJECTORY_INGEST_CONCURRENCY);
 
 const resolveTrajectoryName = (
     requestedName: string | undefined,
@@ -170,9 +165,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         await this.storagePlacementService.ensurePlacement('trajectory', trajectory.id);
 
         // Fire-and-forget: stream files to daemon object gateway, then dispatch ingest command
-        backgroundTrajectoryIngestLimit(() =>
-            this.processAsync(trajectory._id, cleanName, storageClusterId, teamId, files)
-        ).catch(async (err) => {
+        void this.processAsync(trajectory._id, cleanName, storageClusterId, teamId, files).catch(async (err) => {
             logger.error(err, `[CreateTrajectoryUseCase] Background processing failed for ${trajectory._id}`);
             await this.trajectoryRepo.updateById(trajectory._id, { status: TrajectoryStatus.Failed }).catch(() => {});
             await this.eventBus.publish(new TrajectoryUpdatedEvent({
@@ -200,11 +193,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         teamId: string,
         files: CreateTrajectoryInputDTO['files']
     ): Promise<void> {
-        const limit = pLimit(STAGING_UPLOAD_CONCURRENCY);
         const stagedObjects: StagedTrajectoryObject[] = new Array(files.length);
 
         try {
-            const uploadResults = await Promise.allSettled(files.map((file, index) => limit(async () => {
+            const uploadResults = await Promise.allSettled(files.map(async (file, index) => {
                 const originalName = file.originalname || 'upload';
                 const objectKey = `trajectory-staging/${trajectoryId}/${index}-${path.basename(originalName)}`;
                 const stat = await fs.stat(file.path);
@@ -217,7 +209,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
                 });
 
                 stagedObjects[index] = { objectKey, originalName, size: stat.size };
-            })));
+            }));
 
             const rejectedUpload = uploadResults.find((result) => result.status === 'rejected');
             if (rejectedUpload?.status === 'rejected') {
