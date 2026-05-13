@@ -59,6 +59,25 @@ const extractFolderName = (fullPath: string): string | null => {
     return pathParts.length > 0 ? pathParts[0] : null;
 };
 
+const readDirectoryEntries = async (dirEntry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
+    const dirReader = dirEntry.createReader();
+    const entries: FileSystemEntry[] = [];
+
+    while (true) {
+        const batch = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+            dirReader.readEntries(resolve, reject);
+        });
+
+        if (batch.length === 0) {
+            break;
+        }
+
+        entries.push(...batch);
+    }
+
+    return entries;
+};
+
 export const processFileSystemEntry = async (
     entry: FileSystemEntry
 ): Promise<{ files: FileWithPath[]; folderName: string | null }> => {
@@ -91,10 +110,7 @@ export const processFileSystemEntry = async (
             }
 
             try {
-                const dirReader = dirEntry.createReader();
-                const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
-                    dirReader.readEntries(resolve, reject);
-                });
+                const entries = await readDirectoryEntries(dirEntry);
 
                 await Promise.all(entries.map((subEntry) => processEntry(subEntry)));
             } catch {

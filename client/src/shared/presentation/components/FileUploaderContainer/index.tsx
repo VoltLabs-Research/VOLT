@@ -5,9 +5,59 @@ import { createPortal } from 'react-dom';
 import { sileo } from 'sileo';
 import type { FileWithPath } from '@/shared/utils/file';
 
+export interface FileDropUpload {
+    files: FileWithPath[];
+    folderName: string;
+};
+
 interface FileUploaderContainerProps {
     children?: React.ReactNode;
-    onFilesDropped: (files: FileWithPath[], folderName: string) => void;
+    onFilesDropped: (uploads: FileDropUpload[]) => void;
+};
+
+interface ProcessedDropEntry {
+    files: FileWithPath[];
+    folderName: string | null;
+    isDirectory: boolean;
+};
+
+const createFallbackUploadName = (timestamp: number, index: number): string => {
+    return index === 0 ? `upload_${timestamp}` : `upload_${timestamp}_${index}`;
+};
+
+const buildDropUploads = (entries: ProcessedDropEntry[]): FileDropUpload[] => {
+    const timestamp = Date.now();
+    const uploads: FileDropUpload[] = [];
+    const looseFiles: FileWithPath[] = [];
+    let looseFolderName: string | null = null;
+
+    entries.forEach(({ files, folderName, isDirectory }) => {
+        if (files.length === 0) {
+            return;
+        }
+
+        if (isDirectory) {
+            uploads.push({
+                files,
+                folderName: folderName || createFallbackUploadName(timestamp, uploads.length)
+            });
+            return;
+        }
+
+        looseFiles.push(...files);
+        if (!looseFolderName && folderName) {
+            looseFolderName = folderName;
+        }
+    });
+
+    if (looseFiles.length > 0) {
+        uploads.push({
+            files: looseFiles,
+            folderName: looseFolderName || createFallbackUploadName(timestamp, uploads.length)
+        });
+    }
+
+    return uploads;
 };
 
 const FileUploaderContainer = ({
@@ -51,29 +101,26 @@ const FileUploaderContainer = ({
         }
 
         try {
-            const allFiles: FileWithPath[] = [];
-            let commonFolderName: string | null = null;
-
             const processPromises = Array.from(items).map(async (item) => {
                 const entry = item.webkitGetAsEntry();
-                if (!entry) return { files: [], folderName: null };
-                return processFileSystemEntry(entry);
+                if (!entry) return null;
+                const result = await processFileSystemEntry(entry);
+                return {
+                    ...result,
+                    isDirectory: entry.isDirectory
+                };
             });
 
-            const results = await Promise.all(processPromises);
-            results.forEach(({ files, folderName }) => {
-                allFiles.push(...files);
-                if (!commonFolderName && folderName) {
-                    commonFolderName = folderName;
-                }
-            });
+            const results = (await Promise.all(processPromises)).filter(
+                (result): result is ProcessedDropEntry => result !== null
+            );
+            const uploads = buildDropUploads(results);
 
-            if (allFiles.length === 0) {
+            if (uploads.length === 0) {
                 return;
             }
 
-            const finalFolderName = commonFolderName || `upload_${Date.now()}`;
-            onFilesDropped(allFiles, finalFolderName);
+            onFilesDropped(uploads);
         } catch {
             sileo.error({ title: 'Failed to process dropped files' });
         }
