@@ -10,6 +10,7 @@ import {
     ParticleFilterRequest
 } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
@@ -284,6 +285,22 @@ export default class ParticleFilterService implements IParticleFilterService {
         action?: string,
         analysisId?: string
     ): Promise<Readable> {
+        return (await this.getModelStreamResponse(
+            trajectoryId,
+            timestep,
+            request,
+            action,
+            analysisId
+        )).stream;
+    }
+
+    async getModelStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        request: ParticleFilterRequest,
+        action?: string,
+        analysisId?: string
+    ): Promise<TrajectoryNativeObjectStreamResponse> {
         const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
         const storageClusterId = trajectory
             ? resolveTrajectoryStorageClusterId(trajectory.props)
@@ -298,7 +315,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         );
 
         if (storageClusterId) {
-            return this.trajectoryNativeDaemonService.getObjectStream(
+            return this.trajectoryNativeDaemonService.getObjectStreamResponse(
                 storageClusterId,
                 TEAM_CLUSTER_BUCKETS.MODELS,
                 objectName

@@ -4,21 +4,16 @@ import {
     type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import {
-    createZipArchiveStream,
-    createZipDownloadResponse,
-    sanitizeDownloadName
-} from '@shared/infrastructure/http/responses/download-response';
+import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { finished } from 'node:stream/promises';
-
-import type { Archiver } from 'archiver';
-import type { PassThrough } from 'node:stream';
+import path from 'node:path';
+import { v4 } from 'uuid';
 
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type {
@@ -43,7 +38,8 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
 export class PluginExposureExportService implements IPluginExposureExportService {
     constructor(
         private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        private readonly archiveService: ClusterObjectArchiveService
     ) {}
 
     private async collectFilesByTimestep(
@@ -59,38 +55,6 @@ export class PluginExposureExportService implements IPluginExposureExportService
         }
 
         return groupedFiles;
-    }
-
-    private appendTimestepArchive(
-        archive: Archiver,
-        teamClusterId: string,
-        analysisId: string,
-        pluginName: string,
-        timestep: number,
-        files: AnalysisFileRef[]
-    ): PassThrough {
-        const timestepZipName = `timestep-${timestep}-analysis-${analysisId}-plugin-${pluginName}.zip`;
-        const timestepZipStream = createZipArchiveStream(async (timestepArchive) => {
-            for (const fileReference of files) {
-                const fileStream = (await this.objectGatewayClient.getStream(
-                    teamClusterId,
-                    fileReference.bucket,
-                    fileReference.objectName
-                )).stream;
-
-                timestepArchive.append(fileStream, {
-                    name: fileReference.objectName
-                });
-
-                await finished(fileStream);
-            }
-        });
-
-        archive.append(timestepZipStream, {
-            name: timestepZipName
-        });
-
-        return timestepZipStream;
     }
 
     private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
@@ -196,29 +160,22 @@ export class PluginExposureExportService implements IPluginExposureExportService
             );
         }
 
-        return createZipDownloadResponse({
-            filename: `analysis-${params.analysisId}-plugin-${pluginName}`,
+        return this.archiveService.createArchiveDownload({
+            teamClusterId,
+            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputObjectKey: `exports/plugin-exposures/${params.analysisId}/${v4()}.zip`,
+            filename: `analysis-${params.analysisId}-plugin-${pluginName}.zip`,
             cacheControl: 'public, max-age=31536000, immutable',
-            appendEntries: async (bundleArchive) => {
-                for (const timestep of timesteps) {
-                    const timestepFiles = groupedFiles.get(timestep) || [];
-
-                    if (timestepFiles.length === 0) {
-                        continue;
-                    }
-
-                    const timestepArchiveStream = this.appendTimestepArchive(
-                        bundleArchive,
-                        teamClusterId,
-                        params.analysisId,
-                        pluginName,
-                        timestep,
-                        timestepFiles
-                    );
-
-                    await finished(timestepArchiveStream);
-                }
-            }
+            entries: timesteps.flatMap((timestep) => {
+                const timestepFiles = groupedFiles.get(timestep) || [];
+                return timestepFiles.map((fileReference) => ({
+                    type: 'object' as const,
+                    ownerClusterId: teamClusterId,
+                    bucket: fileReference.bucket,
+                    objectKey: fileReference.objectName,
+                    name: `timestep-${timestep}/${fileReference.type}/${path.basename(fileReference.objectName)}`
+                }));
+            })
         });
     }
 }

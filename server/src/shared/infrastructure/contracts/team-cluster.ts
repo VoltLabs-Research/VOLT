@@ -67,7 +67,10 @@ export const ChannelCommands = Object.freeze({
     RemoteExplorerNode: 'remote.explorer.node',
     RemoteExplorerDownload: 'remote.explorer.download',
 
+    ObjectStoreArchiveCreate: 'object-store.archive.create',
+
     TrajectoryIngest: 'trajectory.ingest',
+    TrajectoryClone: 'trajectory.clone',
     TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
     TrajectoryParquetIngest: 'trajectory.parquet.ingest',

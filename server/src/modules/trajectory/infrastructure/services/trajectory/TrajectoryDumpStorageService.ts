@@ -1,15 +1,21 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import TeamClusterObjectGatewayClient, {
+    type TeamClusterObjectGatewayStreamResponse
+} from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import {
-    buildTrajectoryDumpObjectName,
-    createZstdDecompressionStream
-} from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
+import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Readable } from 'node:stream';
+
+export interface TrajectoryDumpStreamResponse {
+    stream: Readable;
+    objectName: string;
+    contentLength?: number;
+    contentEncoding?: string;
+}
 
 @Singleton()
 export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
@@ -42,13 +48,17 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         return `trajectory-${trajectoryId}/`;
     }
 
-    async getDumpStream(trajectoryId: string, timestep: string): Promise<Readable> {
+    async getDumpResponse(trajectoryId: string, timestep: string): Promise<TrajectoryDumpStreamResponse> {
         const storageClusterId = await this.requireStorageClusterId(trajectoryId);
 
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
         const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
-        const decompressed = createZstdDecompressionStream(response.stream);
-        return decompressed.stream;
+        return this.toDumpStreamResponse(objectName, response);
+    }
+
+    async getDumpStream(trajectoryId: string, timestep: string): Promise<Readable> {
+        const response = await this.getDumpResponse(trajectoryId, timestep);
+        return response.stream;
     }
 
     async existsDump(trajectoryId: string, timestep: string): Promise<boolean> {
@@ -74,5 +84,21 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         }
 
         return Array.from(timesteps).sort((a, b) => Number(a) - Number(b));
+    }
+
+    private toDumpStreamResponse(
+        objectName: string,
+        response: TeamClusterObjectGatewayStreamResponse
+    ): TrajectoryDumpStreamResponse {
+        return {
+            stream: response.stream,
+            objectName,
+            contentLength: response.contentLength,
+            contentEncoding: response.contentEncoding || (
+                objectName.endsWith('.zst')
+                    ? 'zstd'
+                    : undefined
+            )
+        };
     }
 }

@@ -1,6 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryDTO';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -11,10 +12,10 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import {
     createDownloadStreamResponse,
-    createZipDownloadResponse,
     sanitizeDownloadName
 } from '@shared/infrastructure/http/responses/download-response';
 import { injectable } from 'tsyringe';
+import { v4 } from 'uuid';
 
 @injectable()
 export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO, ApplicationError> {
@@ -24,7 +25,8 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
 
 
         private readonly dumpStorage: TrajectoryDumpStorageService,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        private readonly archiveService: ClusterObjectArchiveService
     ) {}
 
     async execute(input: DownloadTrajectoryInputDTO): Promise<Result<DownloadTrajectoryOutputDTO, ApplicationError>> {
@@ -56,7 +58,7 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         const filenameBase = sanitizeDownloadName(input.name || trajectory.props.name || trajectoryId, 'trajectory');
 
         if (archive) {
-            return Result.ok(this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps));
+            return Result.ok(await this.createArchiveDownloadResponse(input, trajectory.props.name, storageClusterId, timesteps));
         }
 
         const firstTimestep = timesteps[0];
@@ -71,27 +73,30 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
         }));
     }
 
-    private createArchiveDownloadResponse(
+    private async createArchiveDownloadResponse(
         input: DownloadTrajectoryInputDTO,
         trajectoryName: string | undefined,
         teamClusterId: string,
         timesteps: string[]
-    ): DownloadTrajectoryOutputDTO {
+    ): Promise<DownloadTrajectoryOutputDTO> {
         const filenameBase = sanitizeDownloadName(input.name || trajectoryName || input.trajectoryId, 'trajectory');
 
-        return createZipDownloadResponse({
-            filename: `${filenameBase}-dumps`,
+        return this.archiveService.createArchiveDownload({
+            teamClusterId,
+            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputObjectKey: `exports/trajectory-downloads/${input.trajectoryId}/${v4()}.zip`,
+            filename: `${filenameBase}-dumps.zip`,
             cacheControl: 'no-cache',
-            appendEntries: async (archive) => {
-                for (const timestep of timesteps) {
-                    const objectName = buildTrajectoryDumpObjectName(input.trajectoryId, timestep);
-                    const stream = (await this.objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName)).stream;
-
-                    archive.append(stream, {
-                        name: objectName.split('/').pop() || objectName
-                    });
-                }
-            }
+            entries: timesteps.map((timestep) => {
+                const objectName = buildTrajectoryDumpObjectName(input.trajectoryId, timestep);
+                return {
+                    type: 'object' as const,
+                    ownerClusterId: teamClusterId,
+                    bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+                    objectKey: objectName,
+                    name: objectName.split('/').pop() || objectName
+                };
+            })
         });
     }
 }

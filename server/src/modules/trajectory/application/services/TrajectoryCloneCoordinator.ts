@@ -1,26 +1,21 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import {
-    buildTrajectoryDumpObjectName
-} from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import type { Readable } from 'node:stream';
+import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject } from 'tsyringe';
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
-const PROGRESS_FLUSH_EVERY_FRAMES = 3;
 const CLAIM_TTL_MS = 5 * 60 * 1000;
 const CLAIM_RENEW_INTERVAL_MS = 60 * 1000;
 const CLONE_WORKER_ID = `${process.pid}:${Math.random().toString(36).slice(2, 10)}`;
@@ -71,7 +66,7 @@ export default class TrajectoryCloneCoordinator {
         private readonly trajectoryRepository: TrajectoryRepository,
         private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
         private readonly storagePlacementService: StoragePlacementService,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -183,92 +178,33 @@ export default class TrajectoryCloneCoordinator {
         const destinationClusterId = this.requireStorageClusterId(initialJob.props.destinationClusterId, 'destination');
         const sortedFrames = [...sourceFrames].sort((a, b) => a.timestep - b.timestep);
 
-        let pendingFrames = 0;
-        let pendingBytes = 0;
-
-        const flushProgress = async () => {
-            if (pendingFrames === 0) {
-                return;
-            }
-
-            currentJob = await this.setJobState(currentJob.id, 'copying', {
-                stats: {
-                    ...currentJob.props.stats,
-                    copiedFrames: currentJob.props.stats.copiedFrames + pendingFrames,
-                    copiedBytes: currentJob.props.stats.copiedBytes + pendingBytes
-                }
-            }, { publishUpdate: true });
-
-            pendingFrames = 0;
-            pendingBytes = 0;
-        };
-
-        for (const frame of sortedFrames) {
-            const objectName = buildTrajectoryDumpObjectName(initialJob.props.sourceTrajectoryId, frame.timestep);
-            const destinationObjectName = buildTrajectoryDumpObjectName(initialJob.props.destinationTrajectoryId, frame.timestep);
-
-            const bytesTransferred = await this.copyDumpObject(
+        const cloneResult = await this.teamClusterDaemonClient.command<{
+            copiedFrames: number;
+            copiedBytes: number;
+        }>(
+            destinationClusterId,
+            ChannelCommands.TrajectoryClone,
+            {
+                sourceTrajectoryId: initialJob.props.sourceTrajectoryId,
+                destinationTrajectoryId: initialJob.props.destinationTrajectoryId,
                 sourceClusterId,
                 destinationClusterId,
-                objectName,
-                destinationObjectName
-            );
-
-            pendingFrames += 1;
-            pendingBytes += bytesTransferred;
-
-            if (pendingFrames >= PROGRESS_FLUSH_EVERY_FRAMES) {
-                await flushProgress();
-            }
-        }
-
-        await flushProgress();
-        return currentJob;
-    }
-
-    private async copyDumpObject(
-        sourceClusterId: string,
-        destinationClusterId: string,
-        sourceObjectName: string,
-        destinationObjectName: string
-    ): Promise<number> {
-        const sourceSnapshot = await this.readSourceObject(sourceClusterId, sourceObjectName);
-
-        await this.objectGatewayClient.putStream(destinationClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
-            objectKey: destinationObjectName,
-            stream: sourceSnapshot.stream,
-            contentLength: sourceSnapshot.contentLength ?? 0,
-            contentType: sourceSnapshot.contentType,
-            contentEncoding: sourceSnapshot.contentEncoding,
-            metadata: sourceSnapshot.metadata ?? {}
-        });
-
-        return sourceSnapshot.contentLength ?? 0;
-    }
-
-    private async readSourceObject(
-        sourceClusterId: string,
-        sourceObjectName: string
-    ): Promise<{
-        stream: Readable;
-        contentLength?: number;
-        contentType?: string;
-        contentEncoding?: string;
-        metadata?: Record<string, string>;
-    }> {
-        const response = await this.objectGatewayClient.getStream(
-            sourceClusterId,
-            TEAM_CLUSTER_BUCKETS.DUMPS,
-            sourceObjectName
+                frames: sortedFrames.map((frame) => ({
+                    timestep: frame.timestep
+                }))
+            },
+            { timeoutClass: 'long-running-control-plane' }
         );
-        return {
-            stream: response.stream,
-            contentLength: response.contentLength,
-            contentType: response.contentType,
-            contentEncoding: response.contentEncoding,
-            metadata: response.metadata
-        };
+
+        currentJob = await this.setJobState(currentJob.id, 'copying', {
+            stats: {
+                ...currentJob.props.stats,
+                copiedFrames: cloneResult.copiedFrames,
+                copiedBytes: cloneResult.copiedBytes
+            }
+        }, { publishUpdate: true });
+
+        return currentJob;
     }
 
     private requireStorageClusterId(clusterId: string | null | undefined, role: 'source' | 'destination'): string {

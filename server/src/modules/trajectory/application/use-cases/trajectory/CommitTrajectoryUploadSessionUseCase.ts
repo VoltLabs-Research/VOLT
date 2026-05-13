@@ -1,10 +1,8 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import ClusterObjectUploadSessionRepository from '@modules/cluster-object/infrastructure/persistence/mongo/repositories/ClusterObjectUploadSessionRepository';
 import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -58,7 +56,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
 > {
     constructor(
         private readonly uploadSessionRepository: ClusterObjectUploadSessionRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly trajectoryRepo: TrajectoryRepository,
         private readonly simulationCellRepo: SimulationCellRepository,
@@ -88,12 +85,15 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         }
 
         try {
-            await this.materializeSessionFiles(session);
-
             const stagedObjects = session.files.map((file) => ({
                 objectKey: file.finalObjectKey,
                 originalName: file.originalName,
-                size: file.size
+                size: file.size,
+                parts: file.parts.map((part) => ({
+                    objectKey: part.objectKey,
+                    partNumber: part.partNumber,
+                    size: part.size
+                }))
             }));
 
             const result = await this.teamClusterDaemonClient.command<TrajectoryIngestResult>(
@@ -193,42 +193,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         }
 
         return null;
-    }
-
-    private async materializeSessionFiles(session: ClusterObjectUploadSessionDocument): Promise<void> {
-        const ownerClusterId = session.ownerClusterId.toString();
-        const bucket = session.bucket || TEAM_CLUSTER_BUCKETS.DUMPS;
-
-        await Promise.all(session.files.map(async (file) => {
-            await Promise.all(file.parts.map(async (part) => {
-                const head = await this.objectGatewayClient.head(ownerClusterId, bucket, part.objectKey);
-                if (head.contentLength !== part.size) {
-                    throw ApplicationError.badRequest(
-                        'ClusterObjectUploadSession::PartSizeMismatch',
-                        `Uploaded part size mismatch for ${file.originalName} part ${part.partNumber}`
-                    );
-                }
-            }));
-
-            if (file.parts.length <= 1) {
-                return;
-            }
-
-            await this.objectGatewayClient.composeObject(ownerClusterId, {
-                bucket,
-                objectKey: file.finalObjectKey,
-                sourceObjectKeys: file.parts
-                    .slice()
-                    .sort((left, right) => left.partNumber - right.partNumber)
-                    .map((part) => part.objectKey)
-            });
-
-            await Promise.all(file.parts.map((part) =>
-                this.objectGatewayClient.deleteObject(ownerClusterId, bucket, part.objectKey).catch((error) => {
-                    logger.debug(error, `[CommitTrajectoryUploadSessionUseCase] Failed to clean upload part ${part.objectKey}`);
-                })
-            ));
-        }));
     }
 
     private async buildPersistableFrames(

@@ -1,8 +1,6 @@
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
-import archiver from 'archiver';
-import type { Archiver } from 'archiver';
-import { PassThrough, Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 
 interface DownloadStreamOutput {
     stream: Readable;
@@ -31,13 +29,6 @@ interface SerializedDownloadResponseParams {
     format: ExportType;
     rows: Record<string, unknown>[];
     columns?: string[];
-}
-
-interface ZipDownloadResponseParams {
-    filename: string;
-    cacheControl?: string;
-    prepare?: () => Promise<void>;
-    appendEntries: (archive: Archiver) => Promise<void>;
 }
 
 export const sanitizeDownloadName = (value: string, fallback = 'export'): string => {
@@ -115,41 +106,5 @@ export const createSerializedDownloadResponse = ({
         stream: Readable.from([content]),
         contentType,
         filename: `${filename}.${extension}`
-    });
-};
-
-export const createZipArchiveStream = (
-    appendEntries: (archive: Archiver) => Promise<void>
-): PassThrough => {
-    const output = new PassThrough();
-    const archive = archiver('zip', {
-        zlib: {
-            level: 5
-        }
-    });
-
-    archive.on('error', (error) => output.destroy(error));
-    archive.pipe(output);
-
-    void (async () => {
-        await appendEntries(archive);
-        await archive.finalize();
-    })().catch((error) => output.destroy(error));
-
-    return output;
-};
-
-export const createZipDownloadResponse = ({
-    filename,
-    cacheControl,
-    prepare,
-    appendEntries
-}: ZipDownloadResponseParams): DownloadStreamOutput => {
-    return createDownloadStreamResponse({
-        stream: createZipArchiveStream(appendEntries),
-        contentType: 'application/zip',
-        filename: `${filename}.zip`,
-        cacheControl,
-        prepare
     });
 };

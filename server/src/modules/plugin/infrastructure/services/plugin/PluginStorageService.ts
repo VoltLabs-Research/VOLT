@@ -5,6 +5,7 @@ import { BinaryUploadResult, BinaryUploadTarget, IPluginStorageService, PluginIm
 import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -16,10 +17,9 @@ import { WorkflowValidatorService } from '@modules/plugin/infrastructure/service
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import archiver from 'archiver';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { PassThrough, Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
@@ -55,7 +55,8 @@ export default class PluginStorageService implements IPluginStorageService {
         private readonly storagePlacementService: StoragePlacementService,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         private readonly workflowValidator: WorkflowValidatorService,
-        private readonly signedUrlService: ClusterObjectSignedUrlService
+        private readonly signedUrlService: ClusterObjectSignedUrlService,
+        private readonly archiveService: ClusterObjectArchiveService
     ) {}
 
     private async resolveOwnerClusterId(pluginId: string): Promise<string> {
@@ -259,24 +260,29 @@ export default class PluginStorageService implements IPluginStorageService {
         const binaryFileName = entrypointNode?.data.entrypoint?.binaryFileName;
 
         const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
-        const outputStream = new PassThrough();
-        const archive = archiver('zip', { zlib: { level: 5 } });
+        const archive = await this.archiveService.createArchiveDownload({
+            teamClusterId: ownerClusterId,
+            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputObjectKey: `exports/plugins/${pluginId}/${v4()}.zip`,
+            filename: `${pluginId}.zip`,
+            entries: [
+                {
+                    type: 'inline',
+                    name: 'plugin.json',
+                    content: JSON.stringify(exportData, null, 2)
+                },
+                ...(binaryObjectPath ? [{
+                    type: 'object' as const,
+                    ownerClusterId,
+                    bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+                    objectKey: binaryObjectPath,
+                    name: `binary/${binaryFileName || path.basename(binaryObjectPath)}`,
+                    optional: true
+                }] : [])
+            ]
+        });
 
-        archive.on('error', (error) => outputStream.emit('error', error));
-        archive.pipe(outputStream);
-        archive.append(JSON.stringify(exportData, null, 2), { name: 'plugin.json' });
-
-        if (binaryObjectPath) {
-            const binaryStream = await this.objectGatewayClient.getStream(
-                ownerClusterId,
-                TEAM_CLUSTER_BUCKETS.PLUGINS,
-                binaryObjectPath
-            );
-            archive.append(binaryStream.stream, { name: `binary/${binaryFileName}` });
-        }
-        archive.finalize();
-
-        return outputStream;
+        return archive.stream;
     }
 
     async importPlugin(fileBuffer: Buffer, teamId: string, status?: PluginStatus): Promise<PluginImportResult> {

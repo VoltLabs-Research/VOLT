@@ -16,7 +16,7 @@ export class GetColoredModelStreamUseCase implements IUseCase<GetColoredModelStr
     ) { }
 
     async execute(input: GetColoredModelStreamInputDTO): Promise<Result<StreamableOutput, ApplicationError>> {
-        const stream = await this.colorCodingService.getModelStream(
+        const response = await this.colorCodingService.getModelStreamResponse(
             input.trajectoryId,
             input.timestep,
             input.property,
@@ -27,6 +27,6 @@ export class GetColoredModelStreamUseCase implements IUseCase<GetColoredModelStr
             input.exposureId
         );
 
-        return Result.ok({ stream } satisfies GetColoredModelStreamOutputDTO & StreamableOutput);
+        return Result.ok(response satisfies GetColoredModelStreamOutputDTO & StreamableOutput);
     }
 };

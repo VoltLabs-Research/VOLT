@@ -65,6 +65,27 @@ const withGlbRequestContext = (
     acceptEncoding: readAcceptEncoding(req)
 });
 
+const getPassthroughModelHeaders = (resultValue: {
+    stream?: unknown;
+    contentEncoding?: string;
+    contentLength?: number;
+}): Record<string, string> => {
+    const headers: Record<string, string> = {
+        'Content-Type': 'model/gltf-binary',
+        'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+
+    if (resultValue.contentEncoding && resultValue.contentEncoding !== 'identity') {
+        headers['X-Volt-Resource-Encoding'] = resultValue.contentEncoding;
+    }
+
+    if (typeof resultValue.contentLength === 'number' && resultValue.contentLength > 0) {
+        headers['Content-Length'] = String(resultValue.contentLength);
+    }
+
+    return headers;
+};
+
 const GetPublicCanvasBootstrapController = createController(GetPublicCanvasBootstrapUseCase, {
     validationSchema: canvasValidationSchemas.getBootstrap,
     extendParams: withOptionalUserId
@@ -108,15 +129,14 @@ const GetPublicCanvasGLBController = createStreamController(GetPublicCanvasGLBUs
         const headers: Record<string, string> = {
             'Content-Type': 'model/gltf-binary',
             'Content-Disposition': `attachment; filename="${resultValue.objectName}"`,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'Vary': 'Accept-Encoding'
+            'Cache-Control': 'public, max-age=31536000, immutable'
         };
 
         if (resultValue.contentEncoding && resultValue.contentEncoding !== 'identity') {
-            headers['Content-Encoding'] = resultValue.contentEncoding;
+            headers['X-Volt-Resource-Encoding'] = resultValue.contentEncoding;
         }
 
-        if (resultValue.contentEncoding === 'zstd' && typeof resultValue.size === 'number' && resultValue.size > 0) {
+        if (typeof resultValue.size === 'number' && resultValue.size > 0) {
             headers['Content-Length'] = String(resultValue.size);
         }
 
@@ -162,12 +182,14 @@ const GetPublicCanvasColorCodingStatsByAnalysisController = createController(Get
 
 const GetPublicCanvasColoredModelStreamController = createStreamController(GetPublicCanvasColoredModelStreamUseCase, {
     validationSchema: canvasValidationSchemas.getColorCodingModel,
-    extendParams: withOptionalUserId
+    extendParams: withOptionalUserId,
+    getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasColoredModelStreamByAnalysisController = createStreamController(GetPublicCanvasColoredModelStreamUseCase, {
     validationSchema: canvasValidationSchemas.getColorCodingModelByAnalysis,
-    extendParams: withOptionalUserId
+    extendParams: withOptionalUserId,
+    getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasParticleFilterPropertiesController = createController(GetPublicCanvasParticleFilterPropertiesUseCase, {
@@ -202,12 +224,14 @@ const GetPublicCanvasParticleFilterPreviewByAnalysisController = createControlle
 
 const GetPublicCanvasFilteredModelStreamController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
     validationSchema: canvasValidationSchemas.getParticleFilterModel,
-    extendParams: withOptionalUserId
+    extendParams: withOptionalUserId,
+    getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasFilteredModelStreamByAnalysisController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
     validationSchema: canvasValidationSchemas.getParticleFilterModelByAnalysis,
-    extendParams: withOptionalUserId
+    extendParams: withOptionalUserId,
+    getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasPluginController = createController(GetPublicCanvasPluginUseCase, {

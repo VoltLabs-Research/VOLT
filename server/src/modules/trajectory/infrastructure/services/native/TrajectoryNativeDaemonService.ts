@@ -1,12 +1,17 @@
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
-import { createZstdDecompressionStream } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
+
+export interface TrajectoryNativeObjectStreamResponse {
+    stream: Readable;
+    contentEncoding?: string;
+    contentLength?: number;
+}
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -191,14 +196,16 @@ export default class TrajectoryNativeDaemonService {
     }
 
     async getObjectStream(teamClusterId: string, bucket: string, objectKey: string): Promise<Readable> {
-        const response = await this.objectGatewayClient.getStream(teamClusterId, bucket, objectKey);
-        if (objectKey.endsWith('.zst') || response.contentEncoding === 'zstd') {
-            const decompressed = createZstdDecompressionStream(response.stream);
-            void decompressed.completion;
-            return decompressed.stream;
-        }
+        return (await this.getObjectStreamResponse(teamClusterId, bucket, objectKey)).stream;
+    }
 
-        return response.stream;
+    async getObjectStreamResponse(teamClusterId: string, bucket: string, objectKey: string): Promise<TrajectoryNativeObjectStreamResponse> {
+        const response = await this.objectGatewayClient.getStream(teamClusterId, bucket, objectKey);
+        return {
+            stream: response.stream,
+            contentEncoding: response.contentEncoding || (objectKey.endsWith('.zst') ? 'zstd' : undefined),
+            contentLength: response.contentLength
+        };
     }
 
     private toBaseBody(input: TrajectoryNativeRequest): Record<string, unknown> {

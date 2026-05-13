@@ -21,6 +21,6 @@ export class ExportListingRowsByAnalysisIdUseCase implements IUseCase<
     async execute(input: ExportListingRowsByAnalysisIdInputDTO): Promise<Result<DownloadStreamOutputDTO>> {
         const payload = await this.analysisListingExportCatalogService.buildExportPayload(input);
 
-        return Result.ok(this.listingRowsExportPresenter.present(payload));
+        return Result.ok(await this.listingRowsExportPresenter.present(payload));
     }
 }
