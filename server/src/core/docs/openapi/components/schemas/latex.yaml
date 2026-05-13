@@ -69,10 +69,12 @@ LatexAsset:
   required:
   - _id
   - documentId
-  - name
+  - originalName
+  - path
   - url
   - size
-  - mimeType
+  - mimetype
+  - createdAt
   properties:
     _id:
       type: string
@@ -80,9 +82,12 @@ LatexAsset:
     documentId:
       type: string
       description: ID of the parent LaTeX document.
-    name:
+    originalName:
       type: string
       description: Original file name of the asset.
+    path:
+      type: string
+      description: Relative path of the asset inside the document.
     url:
       type: string
       format: uri
@@ -91,6 +96,9 @@ LatexAsset:
       type: integer
       format: int64
       description: Size of the asset in bytes.
-    mimeType:
+    mimetype:
       type: string
       description: MIME type of the asset.
+    createdAt:
+      type: string
+      format: date-time

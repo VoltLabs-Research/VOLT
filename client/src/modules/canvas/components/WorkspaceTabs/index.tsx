@@ -4,6 +4,7 @@ import './WorkspaceTabs.css';
 
 interface WorkspaceTabsProps {
     disableAuxWorkspaces?: boolean;
+    showScriptingWorkspace?: boolean;
 }
 
 interface TabDef {
@@ -18,7 +19,7 @@ const TABS: TabDef[] = [
     { id: CanvasWorkspace.Scripting, label: 'Scripting', auxOnly: true }
 ];
 
-const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => {
+const WorkspaceTabs = ({ disableAuxWorkspaces = false, showScriptingWorkspace = true }: WorkspaceTabsProps) => {
     const { activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
 
     return (
@@ -28,6 +29,10 @@ const WorkspaceTabs = ({ disableAuxWorkspaces = false }: WorkspaceTabsProps) => 
             className="canvas-workspace-tabs d-flex items-center"
         >
             {TABS.map((tab) => {
+                if (tab.id === CanvasWorkspace.Scripting && !showScriptingWorkspace) {
+                    return null;
+                }
+
                 const isActive = activeWorkspace === tab.id;
                 const isDisabled = tab.auxOnly && disableAuxWorkspaces;
 

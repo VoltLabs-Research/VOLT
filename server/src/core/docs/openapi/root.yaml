@@ -226,6 +226,12 @@ paths:
     $ref: paths/trajectories/by-teamid__scene-artifacts.yaml
   /api/trajectories/{teamId}:
     $ref: paths/trajectories/by-teamid.yaml
+  /api/trajectories/{teamId}/upload-sessions:
+    $ref: paths/trajectories/by-teamid__upload-sessions.yaml
+  /api/trajectories/{teamId}/upload-sessions/{uploadSessionId}:
+    $ref: paths/trajectories/by-teamid__upload-sessions__by-uploadsessionid.yaml
+  /api/trajectories/{teamId}/upload-sessions/{uploadSessionId}/commit:
+    $ref: paths/trajectories/by-teamid__upload-sessions__by-uploadsessionid__commit.yaml
   /api/trajectories/{teamId}/folders:
     $ref: paths/trajectories/by-teamid__folders.yaml
   /api/trajectories/{teamId}/folders/{folderId}:
@@ -282,6 +288,8 @@ paths:
     $ref: paths/plugins/by-teamid__import.yaml
   /api/plugins/{teamId}/{pluginId}/binary:
     $ref: paths/plugins/by-teamid__by-pluginid__binary.yaml
+  /api/plugins/{teamId}/{pluginId}/binary/commit:
+    $ref: paths/plugins/by-teamid__by-pluginid__binary__commit.yaml
   /api/plugins/{teamId}/{pluginId}/clones:
     $ref: paths/plugins/by-teamid__by-pluginid__clones.yaml
   /api/plugins/{teamId}/{pluginId}/trajectories/{trajectoryId}/executions:

@@ -81,7 +81,12 @@ export const latexValidation = {
     uploadAsset: {
         params: documentParamsSchema,
         body: z.object({
-            path: z.string().trim().min(1).max(512).optional()
+            path: z.string().trim().min(1).max(512).optional(),
+            files: z.array(z.object({
+                name: z.string().trim().min(1).max(1024),
+                size: z.coerce.number().int().positive(),
+                type: z.string().trim().min(1).max(255).optional()
+            }).strict()).min(1).max(20)
         }).strict()
     },
     deleteAsset: {

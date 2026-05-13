@@ -1,8 +1,8 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
 import { buildLatexAssetContentUrl, buildLatexAssetStorageKey, requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
-import type { LatexAssetDTO } from '@modules/latex/application/dtos/LatexAssetDTO';
+import type { LatexAssetUploadTargetDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
 import type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
@@ -17,23 +17,22 @@ import { v4 } from 'uuid';
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 
 /**
- * Uploads one or more file assets for a LaTeX document, stores them in MinIO,
- * and persists metadata. Returns the list of successfully uploaded assets along
- * with a count of any files that could not be processed.
+ * Creates direct object upload targets for one or more LaTeX assets and persists
+ * their metadata. The client uploads file bytes with the returned signed URLs.
  */
 @Singleton()
 export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO, ApplicationError> {
     constructor(
         private readonly latexDocumentRepository: LatexDocumentRepository,
         private readonly latexAssetRepository: LatexAssetRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        private readonly signedUrlService: ClusterObjectSignedUrlService
     ) {}
 
     async execute(input: UploadLatexAssetInputDTO): Promise<Result<UploadLatexAssetOutputDTO, ApplicationError>> {
         try {
-            const validFiles = (input.files ?? []).filter(
-                (f) => f && f.buffer?.length
-            );
+            const validFiles = (input.files ?? [])
+                .map((file, uploadIndex) => ({ file, uploadIndex }))
+                .filter(({ file }) => file && file.name && file.size > 0);
 
             if (validFiles.length === 0) {
                 return Result.fail(ApplicationError.badRequest(
@@ -55,36 +54,28 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
             }
             const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
 
-            const uploaded: LatexAssetDTO[] = [];
+            const uploaded: LatexAssetUploadTargetDTO[] = [];
             let failedCount = 0;
 
-            for (const file of validFiles) {
+            for (const { file, uploadIndex } of validFiles) {
                 if (file.size > MAX_ASSET_SIZE) {
                     failedCount++;
                     continue;
                 }
 
                 try {
-                    const ext = path.extname(file.originalname);
+                    const ext = path.extname(file.name);
                     const storageKey = buildLatexAssetStorageKey(input.teamId, input.documentId, v4(), ext);
-                    const mimetype = file.mimetype || 'application/octet-stream';
+                    const mimetype = file.type || 'application/octet-stream';
 
-                    const assetPath = sanitizeAssetPath(input.path ?? file.originalname, file.originalname);
-
-                    await this.objectGatewayClient.putBuffer(storageClusterId, {
-                        bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
-                        objectKey: storageKey,
-                        buffer: file.buffer,
-                        contentLength: file.buffer.byteLength,
-                        contentType: mimetype
-                    });
+                    const assetPath = sanitizeAssetPath(input.path ?? file.name, file.name);
 
                     const url = buildLatexAssetContentUrl(input.teamId, input.documentId, storageKey);
 
                     const asset = await this.latexAssetRepository.create({
                         team: input.teamId,
                         document: input.documentId,
-                        originalName: file.originalname,
+                        originalName: file.name,
                         path: assetPath,
                         storageKey,
                         url,
@@ -94,16 +85,32 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
                         createdAt: new Date(),
                         updatedAt: new Date()
                     });
+                    const signed = this.signedUrlService.createToken({
+                        kind: 'cluster-object',
+                        operation: 'write',
+                        teamId: input.teamId,
+                        userId: input.userId,
+                        ownerClusterId: storageClusterId,
+                        bucket: TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
+                        objectKey: storageKey,
+                        resourceKind: 'latex-asset',
+                        resourceId: asset._id,
+                        contentLength: file.size,
+                        contentType: mimetype
+                    });
 
                     uploaded.push({
                         _id: asset._id,
+                        uploadIndex,
                         documentId: asset.props.document,
                         originalName: asset.props.originalName,
                         path: asset.props.path,
                         url: buildLatexAssetContentUrl(input.teamId, input.documentId, asset.props.storageKey),
                         mimetype: asset.props.mimetype,
                         size: asset.props.size,
-                        createdAt: asset.props.createdAt
+                        createdAt: asset.props.createdAt,
+                        uploadUrl: signed.url,
+                        expiresAt: signed.expiresAt
                     });
                 } catch {
                     failedCount++;

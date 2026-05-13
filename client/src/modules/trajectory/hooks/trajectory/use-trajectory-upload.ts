@@ -1,9 +1,11 @@
 import useCreateTrajectory from './use-create-trajectory';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
-import { buildFileFormData } from '@/shared/utils/file';
+import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
+import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
 import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';
+import type { CreateTrajectoryUploadSessionOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
 import type { FileWithPath } from '@/shared/utils/file';
 
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';
@@ -64,20 +66,48 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
             totalBytes
         });
 
+        let session: CreateTrajectoryUploadSessionOutputDTO | null = null;
+
         try {
-            const formData = buildFileFormData(
-                files.map(({ file }) => ({ name: 'trajectoryFiles', file })),
-                { name: folderName }
-            );
+            session = await createTrajectory({
+                name: folderName,
+                ...(folderId ? { folderId } : {}),
+                files: files.map(({ file }) => ({
+                    name: file.name,
+                    size: file.size,
+                    ...(file.type ? { type: file.type } : {})
+                }))
+            });
+            let uploadedBytes = 0;
 
-            if (folderId) {
-                formData.append('folderId', folderId);
-            }
+            await Promise.all(session.uploadSession.files.map(async (sessionFile) => {
+                const sourceFile = files[sessionFile.index]?.file;
+                if (!sourceFile) {
+                    throw new Error(`Missing local file for upload index ${sessionFile.index}`);
+                }
 
-            await createTrajectory(formData, (progress) => updateUploadProgress(uploadId, progress));
+                await uploadClusterObjectParts({
+                    file: sourceFile,
+                    parts: sessionFile.parts,
+                    onProgress: (delta) => {
+                        uploadedBytes = Math.min(totalBytes, uploadedBytes + delta);
+                        updateUploadProgress(uploadId, totalBytes > 0 ? uploadedBytes / totalBytes : 1);
+                    }
+                });
+            }));
+
+            await trajectoryService.commitUploadSession({
+                uploadSessionId: session.uploadSession.id
+            });
             updateUploadProgress(uploadId, 1);
             sileo.success({ title: UPLOAD_SUCCESS_TITLE });
         } catch (error) {
+            if (session) {
+                await trajectoryService.cancelUploadSession({
+                    uploadSessionId: session.uploadSession.id
+                }).catch(() => undefined);
+            }
+
             reportError(error, {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: UPLOAD_ERROR_TITLE,

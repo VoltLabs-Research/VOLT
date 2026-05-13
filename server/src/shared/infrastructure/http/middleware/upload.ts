@@ -4,27 +4,9 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
-import fs from 'node:fs';
-import path from 'node:path';
 
 const storage = multer.memoryStorage();
-const DEFAULT_TRAJECTORY_UPLOAD_DIR = path.resolve(process.cwd(), 'storage/temp/trajectory-uploads');
-const trajectoryUploadDir = process.env.TRAJECTORY_UPLOAD_DIR || DEFAULT_TRAJECTORY_UPLOAD_DIR;
 const CHAT_MAX_FILE_SIZE = 25 * 1024 * 1024;
-
-// Ensure the upload directory exists once at startup (sync is acceptable here)
-fs.mkdirSync(trajectoryUploadDir, { recursive: true });
-
-const trajectoryUploadStorage = multer.diskStorage({
-    destination: (_req, _file, callback) => {
-        callback(null, trajectoryUploadDir);
-    },
-    filename: (_req, file, callback) => {
-        const safeName = path.basename(file.originalname || 'trajectory-upload');
-        const uniquePrefix = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        callback(null, `${uniquePrefix}-${safeName}`);
-    }
-});
 
 const resolveUploadErrorDetail = (error: unknown): string => {
     if (!(error instanceof Error)) {
@@ -86,28 +68,6 @@ export const upload = multer({
         fieldSize: 1024 * 1024
     }
 });
-
-export const uploadTrajectory = multer({
-    storage: trajectoryUploadStorage
-});
-
-export const uploadTrajectoryFiles = (fieldName: string) => (
-    req: Request,
-    response: Response,
-    next: NextFunction
-) => {
-    req.setTimeout(0);
-    response.setTimeout(0);
-    req.socket?.setTimeout(0);
-
-    uploadTrajectory.array(fieldName)(req, response, (error: unknown) => {
-        if (!error) {
-            return next();
-        }
-
-        return createUploadErrorResponse(response, error);
-    });
-};
 
 const chatUpload = multer({
     storage,

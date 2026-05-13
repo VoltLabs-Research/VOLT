@@ -1,28 +1,21 @@
 patch:
   tags:
   - Plugins
-  summary: Upload a plugin binary
-  description: Uploads or replaces the binary attachment for a plugin (max 200 MB).
-  operationId: uploadPluginBinary
+  summary: Create plugin binary upload target
+  description: Creates a signed upload target for a plugin binary. The client uploads the file directly through the cluster object gateway, then commits the upload.
+  operationId: createPluginBinaryUploadTarget
   parameters:
   - $ref: ../../components/parameters/common.yaml#/TeamId
   - $ref: ../../components/parameters/common.yaml#/PluginId
   requestBody:
     required: true
     content:
-      multipart/form-data:
+      application/json:
         schema:
-          type: object
-          required:
-          - file
-          properties:
-            file:
-              type: string
-              format: binary
-              description: Binary file to attach to the plugin
+          $ref: ../../components/schemas/plugins.yaml#/CreatePluginBinaryUploadRequest
   responses:
     '200':
-      description: Binary uploaded successfully
+      description: Signed upload target created
       content:
         application/json:
           schema:
@@ -31,7 +24,7 @@ patch:
             - type: object
               properties:
                 data:
-                  $ref: ../../components/schemas/plugins.yaml#/Plugin
+                  $ref: ../../components/schemas/plugins.yaml#/PluginBinaryUploadTarget
     '400':
       $ref: ../../components/responses/common.yaml#/BadRequest
     '401':
@@ -50,12 +43,8 @@ delete:
   - $ref: ../../components/parameters/common.yaml#/TeamId
   - $ref: ../../components/parameters/common.yaml#/PluginId
   responses:
-    '200':
+    '204':
       description: Binary deleted successfully
-      content:
-        application/json:
-          schema:
-            $ref: ../../components/schemas/common.yaml#/SuccessResponse
     '401':
       $ref: ../../components/responses/common.yaml#/Unauthorized
     '403':

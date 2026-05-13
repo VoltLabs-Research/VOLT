@@ -37,6 +37,7 @@ import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
 import TeamClusterHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-routes';
 import TeamClusterObjectStoreProxyHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
 import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
+import ClusterObjectHttpModule from '@modules/cluster-object/infrastructure/http/routes/cluster-object-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import DiscoverHttpModule from '@modules/trajectory/infrastructure/http/routes/discover';
@@ -76,6 +77,7 @@ const HTTP_MODULES: HttpModule[] = [
     TeamSecretKeySelfHttpModule,
     TeamAIIntegrationHttpModule,
     TeamClusterHttpModule,
+    ClusterObjectHttpModule,
     TeamClusterObjectStoreProxyHttpModule,
     TeamClusterLifecycleHttpModule,
     DashboardHttpModule,

@@ -6,7 +6,7 @@
     right: max(12px, var(--canvas-right-overlay-size, 0px));
     left: auto;
     top: 4rem !important;
-    z-index: 3;
+    z-index: 100;
     padding: 4px;
     border-radius: 12px;
     border: 0;
@@ -14,6 +14,10 @@
     background: var(--glass-bg-secondary);
     pointer-events: auto;
     margin-right: 0.5rem;
+}
+
+.canvas-editor-root--read-only .canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+    top: 1rem !important;
 }
 
 .canvas-viewport-floating-btn {

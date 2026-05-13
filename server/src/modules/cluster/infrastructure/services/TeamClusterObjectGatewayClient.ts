@@ -20,6 +20,7 @@ type ObjectGatewayOperationName =
     | 'head'
     | 'get'
     | 'put'
+    | 'compose'
     | 'delete'
     | 'delete-prefix';
 
@@ -72,6 +73,13 @@ interface TeamClusterObjectGatewayPutStreamRequest extends TeamClusterObjectGate
 
 interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGatewayPutRequest {
     buffer: Buffer;
+}
+
+interface TeamClusterObjectGatewayComposeRequest {
+    bucket: string;
+    objectKey: string;
+    sourceObjectKeys: string[];
+    metadata?: Record<string, string>;
 }
 
 interface TeamClusterObjectGatewayReadOptions {
@@ -130,7 +138,6 @@ const TOKEN_TTL_SECONDS = 5 * 60;
 const HTTP_PROXY_SESSION_TTL_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_SESSION_TTL_MS', 30_000);
 const HTTP_PROXY_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_REQUEST_TIMEOUT_MS', 10 * 60 * 1000);
 const HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_TUNNEL_ATTACH_TIMEOUT_MS', 120_000);
-const MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_MAX_SESSIONS_PER_CLUSTER', 16);
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -257,8 +264,6 @@ export default class TeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
-    private readonly pendingSessionWaiters = new Map<string, Array<() => void>>();
-    private readonly pendingSessionCreations = new Map<string, number>();
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
@@ -400,6 +405,24 @@ export default class TeamClusterObjectGatewayClient {
             headers: this.buildUploadHeaders(request),
             body: request.buffer
         }, 'put').then((response) => buffer(response.stream));
+    }
+
+    async composeObject(teamClusterId: string, request: TeamClusterObjectGatewayComposeRequest): Promise<void> {
+        const body = Buffer.from(JSON.stringify({
+            objectKey: request.objectKey,
+            sourceObjectKeys: request.sourceObjectKeys,
+            ...(request.metadata ? { metadata: request.metadata } : {})
+        }));
+
+        await this.fetch(teamClusterId, {
+            method: 'POST',
+            path: this.buildComposePath(request.bucket),
+            headers: {
+                'content-type': 'application/json',
+                'content-length': String(body.length)
+            },
+            body
+        }, 'compose').then((response) => buffer(response.stream));
     }
 
     async deleteObject(teamClusterId: string, bucket: string, objectKey: string): Promise<void> {
@@ -582,40 +605,21 @@ export default class TeamClusterObjectGatewayClient {
             return reusableSession;
         }
 
-        const inFlightSessionCreations = this.pendingSessionCreations.get(sessionKey) ?? 0;
-        if (existingSessions.length + inFlightSessionCreations >= MAX_HTTP_PROXY_SESSIONS_PER_CLUSTER) {
-            await this.waitForHttpSessionAvailability(sessionKey);
-            return this.acquireHttpSession(teamClusterId);
-        }
-
-        this.pendingSessionCreations.set(sessionKey, inFlightSessionCreations + 1);
-
-        try {
-            const tunnel = await this.teamClusterDaemonClient.openTunnel(
-                teamClusterId,
-                OBJECT_GATEWAY_EXPOSURE_ID,
-                TeamClusterServiceExposureAccessMode.Http,
-                {
-                    timeoutMs: HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
-                    timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS}ms`
-                }
-            );
-            const latestSessions = this.pruneHttpSessions(sessionKey);
-            const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex);
-
-            this.httpSessions.set(sessionKey, [...latestSessions, session]);
-
-            return session;
-        } finally {
-            const remainingCreations = Math.max(0, (this.pendingSessionCreations.get(sessionKey) ?? 1) - 1);
-            if (remainingCreations === 0) {
-                this.pendingSessionCreations.delete(sessionKey);
-            } else {
-                this.pendingSessionCreations.set(sessionKey, remainingCreations);
+        const tunnel = await this.teamClusterDaemonClient.openTunnel(
+            teamClusterId,
+            OBJECT_GATEWAY_EXPOSURE_ID,
+            TeamClusterServiceExposureAccessMode.Http,
+            {
+                timeoutMs: HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
+                timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS}ms`
             }
+        );
+        const latestSessions = this.pruneHttpSessions(sessionKey);
+        const session = this.createHttpSession(sessionKey, teamClusterId, tunnel as Duplex);
 
-            this.notifyHttpSessionWaiter(sessionKey);
-        }
+        this.httpSessions.set(sessionKey, [...latestSessions, session]);
+
+        return session;
     }
 
     private createHttpSession(
@@ -679,7 +683,6 @@ export default class TeamClusterObjectGatewayClient {
 
         session.inUse = false;
         session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
-        this.notifyHttpSessionWaiter(session.key);
     }
 
     private pruneHttpSessions(sessionKey: string): ObjectGatewayHttpSessionEntry[] {
@@ -721,35 +724,6 @@ export default class TeamClusterObjectGatewayClient {
             this.httpSessions.set(session.key, nextSessions);
         }
 
-        this.notifyHttpSessionWaiter(session.key);
-    }
-
-    private async waitForHttpSessionAvailability(sessionKey: string): Promise<void> {
-        await new Promise<void>((resolve) => {
-            const waiters = this.pendingSessionWaiters.get(sessionKey) ?? [];
-            waiters.push(resolve);
-            this.pendingSessionWaiters.set(sessionKey, waiters);
-        });
-    }
-
-    private notifyHttpSessionWaiter(sessionKey: string): void {
-        const waiters = this.pendingSessionWaiters.get(sessionKey);
-        if (!waiters || waiters.length === 0) {
-            return;
-        }
-
-        const nextWaiter = waiters.shift();
-        if (!nextWaiter) {
-            return;
-        }
-
-        if (waiters.length === 0) {
-            this.pendingSessionWaiters.delete(sessionKey);
-        } else {
-            this.pendingSessionWaiters.set(sessionKey, waiters);
-        }
-
-        nextWaiter();
     }
 
     private buildSessionKey(teamClusterId: string): string {
@@ -762,6 +736,10 @@ export default class TeamClusterObjectGatewayClient {
 
     private buildObjectPath(bucket: string, objectKey: string): string {
         return `${this.buildCollectionPath(bucket)}/${encodeObjectKeyPath(objectKey)}`;
+    }
+
+    private buildComposePath(bucket: string): string {
+        return `${this.buildCollectionPath(bucket)}/compose`;
     }
 
     private buildUploadHeaders(request: TeamClusterObjectGatewayPutRequest): Record<string, string> {
@@ -801,6 +779,7 @@ export default class TeamClusterObjectGatewayClient {
 
 export type {
     TeamClusterObjectGatewayListRequest,
+    TeamClusterObjectGatewayComposeRequest,
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayPutStreamRequest
 };

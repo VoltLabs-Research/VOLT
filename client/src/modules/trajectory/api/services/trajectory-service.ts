@@ -18,11 +18,47 @@ import type { Trajectory } from '../entities/trajectory/trajectory';
 import type { TrajectoryFolder } from '../entities/trajectory/trajectory-folder';
 
 export interface CreateTrajectoryInputDTO {
-    formData: FormData;
-    onProgress?: (progress: number) => void;
+    name: string;
+    folderId?: string | null;
+    files: Array<{
+        name: string;
+        size: number;
+        type?: string;
+    }>;
 }
 
 export type CreateTrajectoryOutputDTO = Trajectory;
+
+export interface TrajectoryUploadPartDTO {
+    partNumber: number;
+    offset: number;
+    size: number;
+    url: string;
+    expiresAt: string;
+}
+
+export interface TrajectoryUploadSessionFileDTO {
+    index: number;
+    originalName: string;
+    size: number;
+    contentType?: string;
+    finalObjectKey: string;
+    parts: TrajectoryUploadPartDTO[];
+}
+
+export interface CreateTrajectoryUploadSessionOutputDTO {
+    trajectory: Trajectory;
+    uploadSession: {
+        id: string;
+        chunkSize: number;
+        expiresAt: string;
+        files: TrajectoryUploadSessionFileDTO[];
+    };
+}
+
+export interface CommitTrajectoryUploadSessionInputDTO {
+    uploadSessionId: string;
+}
 
 export interface DeleteTrajectoryInputDTO {
     trajectoryId: string;
@@ -111,14 +147,10 @@ interface GetTrajectoryByIdParams {
     trajectoryId: string;
 }
 
-interface CreateTrajectoryApiResponse {
+interface CreateTrajectoryUploadSessionApiResponse {
     status: 'success';
-    data: Trajectory;
+    data: CreateTrajectoryUploadSessionOutputDTO;
 }
-
-const MULTIPART_FORM_HEADERS: Record<string, string> = {
-    'Content-Type': 'multipart/form-data'
-};
 
 type RequestArgsWithTimeout = NonNullable<Parameters<VoltClient['request']>[2]> & {
     timeoutMs: number;
@@ -136,22 +168,17 @@ const folderEndpoints = createFolderCrudEndpoints<
 const endpoints = {
     getAll: paginated<GetTrajectoriesInputDTO, PaginatedResponse<Trajectory>>('/'),
     getById: get<GetTrajectoryByIdParams, Trajectory>('/:trajectoryId'),
-    create: custom<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO>(async ({ getClient }, params) => {
-        const requestArgs: RequestArgsWithTimeout = {
-            body: params.formData,
-            headers: MULTIPART_FORM_HEADERS,
-            onUploadProgress: params.onProgress
-                ? (e) => {
-                    if (e.total) {
-                        params.onProgress?.(e.loaded / e.total);
-                    }
-                }
-                : undefined,
-            timeoutMs: 0
-        };
-
-        const response = await getClient().request<CreateTrajectoryApiResponse>('POST', '/', requestArgs);
+    createUploadSession: custom<CreateTrajectoryInputDTO, CreateTrajectoryUploadSessionOutputDTO>(async ({ getClient }, params) => {
+        const response = await getClient().request<CreateTrajectoryUploadSessionApiResponse>('POST', '/upload-sessions', {
+            body: params
+        });
         return response.data;
+    }),
+    commitUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, { trajectoryId: string }>(async ({ getClient }, params) => {
+        return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`);
+    }),
+    cancelUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, void>(async ({ getClient }, params) => {
+        return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`);
     }),
     update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
     delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId'),

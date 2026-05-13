@@ -1,4 +1,5 @@
-import { createService, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
+import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utilities/create-service';
+import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Plugin } from '../entities/plugin/plugin';
@@ -87,29 +88,40 @@ export interface UploadBinaryOutputDTO {
     objectPath: string;
     fileName: string;
     size: number;
+    binaryHash: string;
 }
 
 interface DeleteBinaryInputDTO {
     pluginId: string;
 }
 
-interface UploadProgressEvent {
-    loaded: number;
-    total?: number;
+interface UploadBinaryTarget extends UploadBinaryOutputDTO {
+    uploadUrl: string;
+    expiresAt: string;
 }
 
-const createUploadProgressHandler = ({ onProgress }: UploadBinaryInputDTO) => {
-    let handleProgress: ((event: UploadProgressEvent) => void) | undefined;
+interface UploadBinaryTargetApiResponse {
+    status: 'success';
+    data: UploadBinaryTarget;
+}
 
-    if (onProgress) {
-        handleProgress = (event) => {
-            if (event.total) {
-                onProgress(event.loaded / event.total);
-            }
-        };
+interface UploadBinaryCommitApiResponse {
+    status: 'success';
+    data: UploadBinaryOutputDTO;
+}
+
+const toHex = (buffer: ArrayBuffer): string => {
+    return Array.from(new Uint8Array(buffer))
+        .map((value) => value.toString(16).padStart(2, '0'))
+        .join('');
+};
+
+const computeFileSha256 = async (file: File): Promise<string> => {
+    if (!globalThis.crypto?.subtle) {
+        throw new Error('SHA-256 hashing is not available in this browser');
     }
 
-    return handleProgress;
+    return toHex(await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
 };
 
 const endpoints = {
@@ -123,14 +135,51 @@ const endpoints = {
         unwrap: { field: 'plugin' }
     }),
     delete: del<DeletePluginInputDTO>('/:_id'),
-    uploadBinary: request<UploadBinaryInputDTO, UploadBinaryOutputDTO>('PATCH', '/:pluginId/binary', {
-        body: ({ file, teamId }) => {
-            const formData = buildFileFormData([{ name: 'file', file }]);
-            formData.append('teamId', teamId);
-            return formData;
-        },
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: createUploadProgressHandler
+    uploadBinary: custom<UploadBinaryInputDTO, UploadBinaryOutputDTO>(async ({ getClient }, params) => {
+        const sha256 = await computeFileSha256(params.file);
+        const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
+            'PATCH',
+            `/${params.pluginId}/binary`,
+            {
+                body: {
+                    fileName: params.file.name,
+                    size: params.file.size,
+                    ...(params.file.type ? { type: params.file.type } : {}),
+                    sha256
+                }
+            }
+        );
+        const target = targetResponse.data;
+
+        let uploadedBytes = 0;
+        await uploadClusterObjectParts({
+            file: params.file,
+            parts: [{
+                url: target.uploadUrl,
+                offset: 0,
+                size: params.file.size
+            }],
+            concurrency: 1,
+            onProgress: (delta) => {
+                uploadedBytes += delta;
+                params.onProgress?.(Math.min(1, uploadedBytes / params.file.size));
+            }
+        });
+
+        const commitResponse = await getClient().request<UploadBinaryCommitApiResponse>(
+            'POST',
+            `/${params.pluginId}/binary/commit`,
+            {
+                body: {
+                    objectPath: target.objectPath,
+                    fileName: target.fileName,
+                    size: target.size,
+                    sha256
+                }
+            }
+        );
+
+        return commitResponse.data;
     }),
     deleteBinary: del<DeleteBinaryInputDTO>('/:pluginId/binary'),
     exportPlugin: download<ExportPluginInputDTO>('GET', '/:_id/export'),

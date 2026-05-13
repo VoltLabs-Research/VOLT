@@ -42,7 +42,7 @@ post:
   tags:
   - LaTeX
   summary: Upload LaTeX document assets
-  description: Uploads up to 20 asset files to the specified LaTeX document.
+  description: Creates signed upload targets for up to 20 LaTeX assets. The client uploads each file directly through the cluster object gateway using the returned URLs.
   parameters:
   - name: teamId
     in: path
@@ -57,22 +57,39 @@ post:
   requestBody:
     required: true
     content:
-      multipart/form-data:
+      application/json:
         schema:
           type: object
           required:
           - files
           properties:
+            path:
+              type: string
+              description: Optional relative path prefix applied to uploaded files.
             files:
               type: array
-              items:
-                type: string
-                format: binary
+              minItems: 1
               maxItems: 20
-              description: Asset files to upload (maximum 20).
+              items:
+                type: object
+                required:
+                - name
+                - size
+                properties:
+                  name:
+                    type: string
+                  size:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  type:
+                    type: string
+                additionalProperties: false
+              description: Asset file metadata. File bytes are uploaded directly to each returned upload URL.
+          additionalProperties: false
   responses:
     '201':
-      description: Successfully uploaded
+      description: Signed upload targets created
       content:
         application/json:
           schema:
@@ -81,9 +98,37 @@ post:
             - type: object
               properties:
                 data:
-                  type: array
-                  items:
-                    $ref: ../../components/schemas/latex.yaml#/LatexAsset
+                  type: object
+                  required:
+                  - uploaded
+                  - failedCount
+                  - total
+                  properties:
+                    uploaded:
+                      type: array
+                      items:
+                        allOf:
+                        - $ref: ../../components/schemas/latex.yaml#/LatexAsset
+                        - type: object
+                          required:
+                          - uploadIndex
+                          - uploadUrl
+                          - expiresAt
+                          properties:
+                            uploadIndex:
+                              type: integer
+                              minimum: 0
+                            uploadUrl:
+                              type: string
+                            expiresAt:
+                              type: string
+                              format: date-time
+                    failedCount:
+                      type: integer
+                      minimum: 0
+                    total:
+                      type: integer
+                      minimum: 0
     '400':
       $ref: ../../components/responses/common.yaml#/BadRequest
     '401':

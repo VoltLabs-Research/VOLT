@@ -2,7 +2,9 @@ import { createController, createPaginatedController } from '@shared/infrastruct
 import { GetTeamMetricsResultDTO } from '@modules/trajectory/application/dtos/trajectory/GetTeamMetricsDTO';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import CreateTrajectoryUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryUseCase';
+import CancelTrajectoryUploadSessionUseCase from '@modules/trajectory/application/use-cases/trajectory/CancelTrajectoryUploadSessionUseCase';
+import CommitTrajectoryUploadSessionUseCase from '@modules/trajectory/application/use-cases/trajectory/CommitTrajectoryUploadSessionUseCase';
+import CreateTrajectoryUploadSessionUseCase from '@modules/trajectory/application/use-cases/trajectory/CreateTrajectoryUploadSessionUseCase';
 import DeleteTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryByIdUseCase';
 import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
 import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoriesByTeamIdUseCase';
@@ -31,8 +33,15 @@ const withAuthenticatedUserId = (
     userId: req.userId
 });
 
-const CreateTrajectoryController = createController(CreateTrajectoryUseCase, {
+const CreateTrajectoryUploadSessionController = createController(CreateTrajectoryUploadSessionUseCase, {
     statusCode: HttpStatus.Created,
+    extendParams: withAuthenticatedUserId
+});
+const CommitTrajectoryUploadSessionController = createController(CommitTrajectoryUploadSessionUseCase, {
+    extendParams: withAuthenticatedUserId
+});
+const CancelTrajectoryUploadSessionController = createController(CancelTrajectoryUploadSessionUseCase, {
+    statusCode: HttpStatus.NoContent,
     extendParams: withAuthenticatedUserId
 });
 const DeleteTrajectoryByIdController = createController(DeleteTrajectoryByIdUseCase, HttpStatus.NoContent);
@@ -57,7 +66,9 @@ const resolvedControllers = createControllerRegistry({
 });
 
 export default {
-    create: new CreateTrajectoryController(),
+    createUploadSession: new CreateTrajectoryUploadSessionController(),
+    commitUploadSession: new CommitTrajectoryUploadSessionController(),
+    cancelUploadSession: new CancelTrajectoryUploadSessionController(),
     deleteById: new DeleteTrajectoryByIdController(),
     getByTeamId: new GetTrajectoriesByTeamIdController(),
     getById: new GetTrajectoryByIdController(),

@@ -1,4 +1,5 @@
-import { createService, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
+import { createService, custom, paginated, get, post, patch, del, download, request } from '@/app/core/http/utilities/create-service';
+import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import {
     createFolderCrudEndpoints,
@@ -117,6 +118,21 @@ export interface UploadLatexAssetsResult {
     total: number;
 }
 
+interface LatexAssetUploadTarget extends LatexAsset {
+    uploadIndex: number;
+    uploadUrl: string;
+    expiresAt: string;
+}
+
+interface UploadLatexAssetApiResponse {
+    status: 'success';
+    data: {
+        uploaded: LatexAssetUploadTarget[];
+        failedCount: number;
+        total: number;
+    };
+}
+
 interface LatexService {
     listDocuments: (params: ListLatexDocumentsParams) => Promise<PaginatedResponse<LatexDocument>>;
     createDocument: (params: CreateLatexDocumentParams) => Promise<LatexDocument>;
@@ -160,12 +176,47 @@ const endpoints = {
         body: ({ folderId }) => ({ folderId })
     }),
     listAssets: get<ListLatexAssetsParams, LatexAsset[]>('/documents/:documentId/assets'),
-    uploadAsset: request<UploadLatexAssetParams, UploadLatexAssetsResult>('POST', '/documents/:documentId/assets', {
-        body: ({ files, path: assetPath }) => buildFileFormData(
-            files.map((file) => ({ name: 'files', file })),
-            assetPath ? { path: assetPath } : undefined
-        ),
-        headers: { 'Content-Type': 'multipart/form-data' }
+    uploadAsset: custom<UploadLatexAssetParams, UploadLatexAssetsResult>(async ({ getClient }, params) => {
+        const response = await getClient().request<UploadLatexAssetApiResponse>(
+            'POST',
+            `/documents/${params.documentId}/assets`,
+            {
+                body: {
+                    ...(params.path ? { path: params.path } : {}),
+                    files: params.files.map((file) => ({
+                        name: file.name,
+                        size: file.size,
+                        ...(file.type ? { type: file.type } : {})
+                    }))
+                }
+            }
+        );
+
+        await Promise.all(response.data.uploaded.map(async (asset) => {
+            const file = params.files[asset.uploadIndex];
+            if (!file) return;
+
+            await uploadClusterObjectParts({
+                file,
+                parts: [{
+                    url: asset.uploadUrl,
+                    offset: 0,
+                    size: file.size
+                }],
+                concurrency: 1
+            });
+        }));
+
+        return {
+            uploaded: response.data.uploaded.map(({
+                uploadIndex: _uploadIndex,
+                uploadUrl: _uploadUrl,
+                expiresAt: _expiresAt,
+                ...asset
+            }) => asset),
+            failedCount: response.data.failedCount,
+            total: response.data.total
+        };
     }),
     deleteAsset: del<DeleteLatexAssetParams>('/documents/:documentId/assets/:assetId'),
     updateAsset: patch<UpdateLatexAssetParams, LatexAsset>(
