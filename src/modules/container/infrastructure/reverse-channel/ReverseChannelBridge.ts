@@ -102,6 +102,15 @@ type InboundBridgeMessage = InboundTeamClusterDaemonMessage | BinaryTunnelDrainP
 type InboundMessageHandler = (message: InboundBridgeMessage) => void;
 type SessionAttachHandler = (payload: TeamClusterDaemonSessionAttachPayload) => Promise<ReverseChannelCommandResult>;
 
+interface ReverseChannelMessageTransport {
+    emitMessage(message: OutboundBridgeMessage): void;
+}
+
+interface ReverseChannelInboundTransport extends ReverseChannelMessageTransport {
+    onMessage(listener: (message: unknown) => void): void;
+    onDisconnected?(listener: () => void): void;
+}
+
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
 const readPositiveIntegerEnv = (name: string, fallback: number): number => {
     const value = Number(process.env[name]);
@@ -153,11 +162,12 @@ export class ReverseChannelBridge {
 
     private readonly pendingCommands: RegisteredReverseChannelCommand[] = [];
     private voltCloudConnection: VoltCloudConnection | null = null;
+    private objectGatewayConnection: ReverseChannelInboundTransport | null = null;
+    private readonly tunnelTransports = new Map<string, ReverseChannelMessageTransport>();
     private readonly inboundMessageHandlers: Partial<Record<string, InboundMessageHandler>> = {
         'session-input': (message) => this.handleSessionInput(message as unknown as BinarySessionInputPayload),
         'session-resize': (message) => this.handleSessionResize(message as TeamClusterDaemonSessionResizePayload),
         'session-detach': (message) => this.handleSessionDetach(message as { sessionId: string }),
-        'tunnel-open': (message) => this.handleTunnelOpen(message as unknown as InboundTunnelOpenPayload),
         'tunnel-data': (message) => this.handleTunnelData(message as unknown as BinaryTunnelDataPayload),
         'tunnel-drain': (message) => this.handleTunnelDrain(message as unknown as BinaryTunnelDrainPayload),
         'tunnel-close': (message) => this.handleTunnelClose(message as { sessionId: string })
@@ -219,11 +229,28 @@ export class ReverseChannelBridge {
 
         voltCloudConnection.client
             .onMessage((message) => {
-                this.routeInboundMessage(message);
+                this.routeInboundMessage(
+                    message as unknown as InboundBridgeMessage,
+                    voltCloudConnection as unknown as ReverseChannelMessageTransport
+                );
             })
             .onDisconnected(() => {
                 this.cleanup();
             });
+    }
+
+    bindObjectGatewayConnection(connection: ReverseChannelInboundTransport): void {
+        this.objectGatewayConnection = connection;
+        connection.onMessage((message) => {
+            this.routeInboundMessage(message as InboundBridgeMessage, connection);
+        });
+        connection.onDisconnected?.(() => {
+            for (const [sessionId, transport] of this.tunnelTransports.entries()) {
+                if (transport === connection) {
+                    this.cleanupTunnelSession(sessionId);
+                }
+            }
+        });
     }
 
     private createCommandHandler(
@@ -361,10 +388,19 @@ export class ReverseChannelBridge {
         }
 
         this.sessionActivity.clear();
+        this.tunnelTransports.clear();
     }
 
-    private routeInboundMessage(message: InboundTeamClusterDaemonMessage): void {
+    private routeInboundMessage(
+        message: InboundBridgeMessage,
+        transport: ReverseChannelMessageTransport
+    ): void {
         const bridgeMessage = message as unknown as InboundBridgeMessage;
+        if (bridgeMessage.type === 'tunnel-open') {
+            this.handleTunnelOpen(bridgeMessage as unknown as InboundTunnelOpenPayload, transport);
+            return;
+        }
+
         this.inboundMessageHandlers[bridgeMessage.type]?.(bridgeMessage);
     }
 
@@ -403,7 +439,10 @@ export class ReverseChannelBridge {
         this.cleanupTunnelSession(message.sessionId);
     }
 
-    private handleTunnelOpen(payload: InboundTunnelOpenPayload): void {
+    private handleTunnelOpen(
+        payload: InboundTunnelOpenPayload,
+        transport: ReverseChannelMessageTransport
+    ): void {
         const sessionTransition = this.beginSessionTransition(payload.sessionId);
         if (!sessionTransition) {
             this.closeTunnelWithError(payload.sessionId, 'Tunnel session is already opening');
@@ -417,6 +456,7 @@ export class ReverseChannelBridge {
         const tunnelOpenStartedAt = Date.now();
 
         this.cleanupInteractiveSession(payload.sessionId);
+        this.tunnelTransports.set(payload.sessionId, transport);
 
         if ('targetHost' in payload) {
             targetHost = payload.targetHost;
@@ -486,7 +526,7 @@ export class ReverseChannelBridge {
                 type: 'tunnel-close',
                 sessionId: payload.sessionId
             };
-            this.emitMessage(closePayload);
+            this.emitTunnelMessage(payload.sessionId, closePayload);
             this.cleanupTunnelSession(payload.sessionId);
         };
 
@@ -595,6 +635,11 @@ export class ReverseChannelBridge {
         this.voltCloudConnection?.emitMessage(message as unknown as Parameters<VoltCloudConnection['emitMessage']>[0]);
     }
 
+    private emitTunnelMessage(sessionId: string, message: OutboundBridgeMessage): void {
+        const transport = this.tunnelTransports.get(sessionId);
+        transport?.emitMessage(message);
+    }
+
     private emitTunnelData(
         sessionId: string,
         tunnelState: ReverseChannelTunnelState,
@@ -640,7 +685,7 @@ export class ReverseChannelBridge {
             sequence,
             requiresAck: true
         };
-        this.emitMessage(dataPayload);
+        this.emitTunnelMessage(sessionId, dataPayload);
 
         if (
             tunnelState.pendingOutboundBytes > TUNNEL_FLOW_CONTROL_WINDOW_BYTES
@@ -653,7 +698,7 @@ export class ReverseChannelBridge {
     }
 
     private emitTunnelDrain(sessionId: string, sequence: number): void {
-        this.emitMessage({
+        this.emitTunnelMessage(sessionId, {
             type: 'tunnel-drain',
             sessionId,
             sequence
@@ -661,7 +706,7 @@ export class ReverseChannelBridge {
     }
 
     private emitTunnelState(payload: TeamClusterDaemonTunnelStatePayload): void {
-        this.emitMessage(payload);
+        this.emitTunnelMessage(payload.sessionId, payload);
     }
 
     private closeTunnelWithError(sessionId: string, error: string, transition?: SessionTransition): void {
@@ -706,6 +751,7 @@ export class ReverseChannelBridge {
         }
 
         this.tunnelStates.delete(sessionId);
+        this.tunnelTransports.delete(sessionId);
         this.clearSessionActivityIfUntracked(sessionId);
     }
 

@@ -11,6 +11,7 @@ import { DebugSessionManager } from '@/modules/analysis/application/workflow/deb
 import { DaemonExposureRegistry } from '@/modules/container/application/access/DaemonExposureRegistry';
 import { ObjectGatewayServer } from '@/core/storage/infrastructure/gateway/ObjectGatewayServer';
 import { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
+import { VoltObjectGatewayConnection } from '@/modules/container/infrastructure/connection/VoltObjectGatewayConnection';
 import { ReverseChannelBridge } from '@/modules/container/infrastructure/reverse-channel/ReverseChannelBridge';
 import { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
 import { RedisExplorer } from '@/modules/container/infrastructure/remote-access/RedisExplorer';
@@ -34,6 +35,7 @@ export class DaemonLifecycle {
         private readonly daemonExposureRegistry: DaemonExposureRegistry,
         private readonly objectGatewayServer: ObjectGatewayServer,
         private readonly voltCloudConnection: VoltCloudConnection,
+        private readonly voltObjectGatewayConnection: VoltObjectGatewayConnection,
         private readonly reverseChannelBridge: ReverseChannelBridge,
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
         private readonly pluginProcessPool: PluginProcessPool,
@@ -81,6 +83,7 @@ export class DaemonLifecycle {
         await this.commandRegistry.registerDecoratedGroups(this.container, this.reverseChannelBridge);
 
         this.reverseChannelBridge.bindToClient(this.voltCloudConnection);
+        this.reverseChannelBridge.bindObjectGatewayConnection(this.voltObjectGatewayConnection);
 
         await this.connectInfrastructure();
 
@@ -88,6 +91,7 @@ export class DaemonLifecycle {
 
         await Promise.all([
             this.voltCloudConnection.start(),
+            this.voltObjectGatewayConnection.start(),
             this.objectGatewayServer.start()
         ]);
 
@@ -121,6 +125,7 @@ export class DaemonLifecycle {
         await this.objectGatewayServer.stop();
 
         this.voltCloudConnection.stop();
+        this.voltObjectGatewayConnection.stop();
         await this.queueService.close();
         await this.pluginProcessPool.shutdown();
         await this.disconnectInfrastructure();
