@@ -33,6 +33,7 @@ import {
 } from '@modules/cluster/utilities/teamClusterMetricsSocket';
 import {
     ChannelCommands,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
     TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
@@ -41,7 +42,7 @@ import {
     getTeamClusterRoom,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonMessage,
-    type TeamClusterDaemonRegisterPayload,
+    type TeamClusterDaemonRegisterPayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Result } from '@shared/domain/port/Result';
@@ -71,7 +72,11 @@ const clusterMetricsHistorySocketPayloadSchema = z.object({
 
 const daemonRegisterPayloadSchema = z.object({
     teamClusterId: z.string().trim().min(1),
-    daemonPassword: z.string().trim().min(1)
+    daemonPassword: z.string().trim().min(1),
+    channel: z.enum([
+        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control,
+        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
+    ]).optional()
 }).strict();
 
 const daemonExecutionLogSegmentSchema = z.object({
@@ -280,10 +285,19 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     parsed.data.daemonPassword
                 );
 
-                await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
-                this.teamClusterReverseChannelService.registerDaemonConnection(conn.id, parsed.data.teamClusterId);
+                const channel = parsed.data.channel ?? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
+                if (channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
+                    await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
+                }
+
+                this.teamClusterReverseChannelService.registerDaemonConnection(
+                    conn.id,
+                    parsed.data.teamClusterId,
+                    channel
+                );
                 this.emitToSocket(conn.id, TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
-                    teamClusterId: parsed.data.teamClusterId
+                    teamClusterId: parsed.data.teamClusterId,
+                    channel
                 });
             }
         );
@@ -310,12 +324,12 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
-            const teamClusterId = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
-            if (teamClusterId) {
+            const registration = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
+            if (registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
                 try {
-                    await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
+                    await this.teamClusterLifecycleService.markDaemonDisconnected(registration.teamClusterId);
                 } catch {
-                    logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${teamClusterId}`);
+                    logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${registration.teamClusterId}`);
                 }
             }
         });
