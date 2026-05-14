@@ -13,6 +13,7 @@ import {
 import { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TeamClusterDaemonResponseType,
     TeamClusterDaemonSessionKind,
     TeamClusterServiceExposureAccessMode,
@@ -31,6 +32,7 @@ import {
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
     type TeamClusterDaemonSocketStreamStatePayload,
+    type TeamClusterDaemonSocketChannel,
     type TeamClusterDaemonTunnelClosePayload,
     type TeamClusterDaemonTunnelDataPayload,
     type TeamClusterDaemonTunnelDrainPayload,
@@ -70,6 +72,11 @@ interface TeamClusterDirectTunnelOpenRequest {
     targetHost: string;
     targetPort: number;
     accessMode: TeamClusterServiceExposureAccessMode;
+}
+
+interface TeamClusterDaemonSocketRegistration {
+    teamClusterId: string;
+    channel: TeamClusterDaemonSocketChannel;
 }
 
 export type TeamClusterTunnelOpenRequest = TeamClusterExposureTunnelOpenRequest | TeamClusterDirectTunnelOpenRequest;
@@ -215,14 +222,18 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
     120_000
 );
+const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
 @Singleton()
 export default class TeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
+    private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
+    private readonly socketChannelsBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();
     private readonly pendingEntries = new Map<string, PendingEntry>();
     private readonly inboundStreamConsumers = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
     private readonly connectionWaiters = new Map<string, Array<(socketId: string) => void>>();
+    private readonly objectGatewayConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly requestTimeoutMs = 30_000;
     private readonly terminalTimeoutMs = 15_000;
     private readonly daemonConnectionWaitTimeoutMs = 30_000;
@@ -306,33 +317,47 @@ export default class TeamClusterReverseChannelService {
         this.idleSweepTimer.unref();
     }
 
-    registerDaemonConnection(socketId: string, teamClusterId: string): void {
-        const previousSocketId = this.daemonSocketIdsByTeamClusterId.get(teamClusterId);
+    registerDaemonConnection(
+        socketId: string,
+        teamClusterId: string,
+        channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+    ): void {
+        const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
+        const previousSocketId = socketsByTeamClusterId.get(teamClusterId);
         if (previousSocketId && previousSocketId !== socketId) {
             this.unregisterDaemonConnection(previousSocketId);
         }
 
-        this.daemonSocketIdsByTeamClusterId.set(teamClusterId, socketId);
+        socketsByTeamClusterId.set(teamClusterId, socketId);
         this.teamClusterIdsBySocketId.set(socketId, teamClusterId);
+        this.socketChannelsBySocketId.set(socketId, channel);
 
-        const waiters = this.connectionWaiters.get(teamClusterId);
+        const waitersByTeamClusterId = this.getWaiterMapForChannel(channel);
+        const waiters = waitersByTeamClusterId.get(teamClusterId);
         if (waiters) {
             for (const resolve of waiters) {
                 resolve(socketId);
             }
-            this.connectionWaiters.delete(teamClusterId);
+            waitersByTeamClusterId.delete(teamClusterId);
         }
     }
 
-    unregisterDaemonConnection(socketId: string): string | null {
+    unregisterDaemonConnection(socketId: string): TeamClusterDaemonSocketRegistration | null {
         const teamClusterId = this.teamClusterIdsBySocketId.get(socketId);
-        if (teamClusterId && this.daemonSocketIdsByTeamClusterId.get(teamClusterId) === socketId) {
-            this.daemonSocketIdsByTeamClusterId.delete(teamClusterId);
-            this.exposureRegistryService.clearTeamCluster(teamClusterId);
-            logger.warn(`[ReverseChannel] Daemon connection unregistered socketId=${socketId} teamClusterId=${teamClusterId}`);
+        const channel = this.socketChannelsBySocketId.get(socketId);
+        if (teamClusterId && channel) {
+            const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
+            if (socketsByTeamClusterId.get(teamClusterId) === socketId) {
+                socketsByTeamClusterId.delete(teamClusterId);
+                if (channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
+                    this.exposureRegistryService.clearTeamCluster(teamClusterId);
+                }
+                logger.warn(`[ReverseChannel] Daemon ${channel} connection unregistered socketId=${socketId} teamClusterId=${teamClusterId}`);
+            }
         }
 
         this.teamClusterIdsBySocketId.delete(socketId);
+        this.socketChannelsBySocketId.delete(socketId);
 
         for (const [correlationId, entry] of this.pendingEntries.entries()) {
             if (entry.socketId !== socketId) {
@@ -342,7 +367,7 @@ export default class TeamClusterReverseChannelService {
             this.rejectPendingEntry(correlationId, entry, new Error('Team cluster daemon connection was lost'));
         }
 
-        return teamClusterId ?? null;
+        return teamClusterId && channel ? { teamClusterId, channel } : null;
     }
 
     isRegisteredDaemonSocket(socketId: string): boolean {
@@ -351,6 +376,22 @@ export default class TeamClusterReverseChannelService {
 
     getRegisteredTeamClusterId(socketId: string): string | null {
         return this.teamClusterIdsBySocketId.get(socketId) ?? null;
+    }
+
+    private getSocketMapForChannel(
+        channel: TeamClusterDaemonSocketChannel
+    ): Map<string, string> {
+        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
+            ? this.objectGatewaySocketIdsByTeamClusterId
+            : this.daemonSocketIdsByTeamClusterId;
+    }
+
+    private getWaiterMapForChannel(
+        channel: TeamClusterDaemonSocketChannel
+    ): Map<string, Array<(socketId: string) => void>> {
+        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
+            ? this.objectGatewayConnectionWaiters
+            : this.connectionWaiters;
     }
 
     registerInboundStreamConsumer(
@@ -505,7 +546,10 @@ export default class TeamClusterReverseChannelService {
         accessModeOrOptions?: TeamClusterServiceExposureAccessMode | TeamClusterTunnelOpenOptions,
         options?: TeamClusterTunnelOpenOptions
     ): Promise<TeamClusterTunnelStream> {
-        const socketId = await this.requireDaemonSocketId(teamClusterId);
+        const socketId = await this.requireDaemonSocketId(
+            teamClusterId,
+            this.resolveTunnelChannel(target)
+        );
         const sessionId = randomUUID();
         const tunnelOptions = typeof target === 'string'
             ? options
@@ -1311,6 +1355,20 @@ export default class TeamClusterReverseChannelService {
         return responseType;
     }
 
+    private resolveTunnelChannel(
+        target: string | TeamClusterTunnelOpenRequest
+    ): TeamClusterDaemonSocketChannel {
+        const exposureId = typeof target === 'string'
+            ? target
+            : 'exposureId' in target
+                ? target.exposureId
+                : null;
+
+        return exposureId === OBJECT_GATEWAY_EXPOSURE_ID
+            ? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
+            : TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
+    }
+
     private createTunnelOpenPayload(
         sessionId: string,
         target: string | TeamClusterTunnelOpenRequest,
@@ -1350,30 +1408,35 @@ export default class TeamClusterReverseChannelService {
         };
     }
 
-    private async requireDaemonSocketId(teamClusterId: string): Promise<string> {
-        const socketId = this.daemonSocketIdsByTeamClusterId.get(teamClusterId);
+    private async requireDaemonSocketId(
+        teamClusterId: string,
+        channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+    ): Promise<string> {
+        const socketsByTeamClusterId = this.getSocketMapForChannel(channel);
+        const socketId = socketsByTeamClusterId.get(teamClusterId);
         if (socketId) {
             return socketId;
         }
 
-        logger.info(`[ReverseChannel] Waiting for daemon reconnection: cluster=${teamClusterId}`);
+        logger.info(`[ReverseChannel] Waiting for daemon ${channel} reconnection: cluster=${teamClusterId}`);
+        const waitersByTeamClusterId = this.getWaiterMapForChannel(channel);
 
         return new Promise<string>((resolve, reject) => {
             const timeout = setTimeout(() => {
-                const waiters = this.connectionWaiters.get(teamClusterId);
+                const waiters = waitersByTeamClusterId.get(teamClusterId);
                 if (waiters) {
                     const idx = waiters.indexOf(onConnected);
                     if (idx >= 0) {
                         waiters.splice(idx, 1);
                     }
                     if (waiters.length === 0) {
-                        this.connectionWaiters.delete(teamClusterId);
+                        waitersByTeamClusterId.delete(teamClusterId);
                     }
                 }
 
                 reject(ApplicationError.conflict(
                     'TeamCluster::DaemonUnavailable',
-                    'Team cluster daemon reverse channel is not connected'
+                    `Team cluster daemon ${channel} reverse channel is not connected`
                 ));
             }, this.daemonConnectionWaitTimeoutMs);
 
@@ -1382,10 +1445,10 @@ export default class TeamClusterReverseChannelService {
                 resolve(nextSocketId);
             };
 
-            if (!this.connectionWaiters.has(teamClusterId)) {
-                this.connectionWaiters.set(teamClusterId, []);
+            if (!waitersByTeamClusterId.has(teamClusterId)) {
+                waitersByTeamClusterId.set(teamClusterId, []);
             }
-            this.connectionWaiters.get(teamClusterId)!.push(onConnected);
+            waitersByTeamClusterId.get(teamClusterId)!.push(onConnected);
         });
     }
 

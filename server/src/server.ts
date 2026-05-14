@@ -141,6 +141,11 @@ const startServer = async () => {
     });
 
     server.on('upgrade', (request, socket, head) => {
+        const requestUrl = request.url ?? '';
+        if (requestUrl.startsWith('/socket.io/') || requestUrl.startsWith('/socket.io?')) {
+            return;
+        }
+
         const proxyService = container.resolve(ScriptingJupyterProxyService);
         if (!proxyService.isJupyterUpgradeRequest(request)) {
             (socket as Duplex).destroy();
