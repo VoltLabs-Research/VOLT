@@ -32,9 +32,18 @@ export interface TeamClusterDaemonSocketHeaders {
     [key: string]: string;
 }
 
+export const TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL = {
+    Control: 'control',
+    ObjectGateway: 'object-gateway'
+} as const;
+
+export type TeamClusterDaemonSocketChannel =
+    typeof TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL[keyof typeof TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL];
+
 export interface TeamClusterDaemonRegisterPayload {
     teamClusterId: string;
     daemonPassword: string;
+    channel?: TeamClusterDaemonSocketChannel;
 }
 
 export interface TeamClusterDaemonSessionAttachPayload {
