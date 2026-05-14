@@ -19,6 +19,7 @@ RUN apt-get update \
         python3-pip \
         python3-venv \
         unzip \
+        zstd \
         make \
         g++ \
         pkg-config \
