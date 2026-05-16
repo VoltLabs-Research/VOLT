@@ -33,8 +33,10 @@ export interface TeamClusterDaemonSocketHeaders {
 }
 
 export const TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL = {
+    Heartbeat: 'heartbeat',
     Control: 'control',
-    ObjectGateway: 'object-gateway'
+    ObjectGateway: 'object-gateway',
+    Events: 'events'
 } as const;
 
 export type TeamClusterDaemonSocketChannel =
@@ -334,6 +336,15 @@ interface TeamClusterDaemonArtifactUploadJobStatusEventPayload {
     error?: string;
 }
 
+interface TeamClusterDaemonRuntimeHeartbeatEventPayload {
+    type: 'runtime-heartbeat';
+    teamClusterId: string;
+    daemonPassword: string;
+    installedVersion?: string;
+    runtime?: Record<string, unknown>;
+    metrics?: Record<string, unknown>;
+}
+
 export interface TeamClusterDaemonExecutionLogSegment {
     stream: 'stdout' | 'stderr' | 'system';
     text: string;
@@ -400,7 +411,8 @@ type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisStageStatusEventPayload
     | TeamClusterDaemonRasterJobStatusEventPayload
     | TeamClusterDaemonGlbJobStatusEventPayload
-    | TeamClusterDaemonArtifactUploadJobStatusEventPayload;
+    | TeamClusterDaemonArtifactUploadJobStatusEventPayload
+    | TeamClusterDaemonRuntimeHeartbeatEventPayload;
 
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage
