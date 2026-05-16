@@ -44,7 +44,7 @@ export const flattenAtomProperties = (row: AtomProperties): FlatAtomProperties =
     return flattened;
 };
 
-const isColumnarPerAtomData = (value: unknown): value is PerAtomColumnarData => {
+export const isColumnarPerAtomData = (value: unknown): value is PerAtomColumnarData => {
     if (!value || Array.isArray(value) || typeof value !== 'object') {
         return false;
     }

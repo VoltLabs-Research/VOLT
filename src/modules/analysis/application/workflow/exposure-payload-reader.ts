@@ -1,10 +1,6 @@
 import { Unpackr } from 'msgpackr';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
-import {
-    type FlatAtomProperties,
-    type PerAtomProperties,
-    normalizePerAtomProperties
-} from '@/modules/plugin/application/properties/PluginAtomProperties';
+import type { PerAtomProperties } from '@/modules/plugin/application/properties/PluginAtomProperties';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
 import { isPlainObject } from '@/support/type-guards/is-record';
 import { readFile } from 'node:fs/promises';
@@ -13,7 +9,7 @@ export interface WorkflowExposurePayloadReadResult {
     listing: MsgpackObject | null;
     subListingNames: string[];
     subListings: Record<string, MsgpackObject[]>;
-    perAtomProperties: FlatAtomProperties[];
+    perAtomProperties: PerAtomProperties | null;
     exportData: MsgpackObject | null;
 }
 
@@ -35,9 +31,6 @@ export const createWorkflowExposureOutputFilePath = (
 ): string => {
     return `${outputDir}_${resultsFileName}`;
 };
-
-const decodeExposureMessages = (buffer: Buffer): unknown[] =>
-    unpacker.unpackMultiple(buffer);
 
 const mergeSelectedKeys = (
     target: MsgpackObject | null,
@@ -77,9 +70,7 @@ export const readWorkflowExposurePayload = async (
     const subListingObjectRows = new Map<string, MsgpackObject | null>();
 
     const buffer = await readFile(filePath);
-    const messages = decodeExposureMessages(buffer);
-
-    for (const message of messages) {
+    unpacker.unpackMultiple(buffer, (message: unknown) => {
         listing = mergeSelectedKeys(listing, message, (key) => LISTING_KEYS.has(key));
         perAtomPayload = mergeSelectedKeys(perAtomPayload, message, (key) => key === PER_ATOM_KEY);
         exportData = mergeSelectedKeys(exportData, message, (key) => {
@@ -87,12 +78,12 @@ export const readWorkflowExposurePayload = async (
         });
 
         if (!isPlainObject(message)) {
-            continue;
+            return;
         }
 
         const subListings = message.sub_listings;
         if (!subListings || !isPlainObject(subListings)) {
-            continue;
+            return;
         }
 
         for (const [name, value] of Object.entries(subListings)) {
@@ -117,7 +108,7 @@ export const readWorkflowExposurePayload = async (
                 subListingObjectRows.set(name, isPlainObject(merged) ? (merged as MsgpackObject) : null);
             }
         }
-    }
+    });
 
     for (const [name, row] of subListingObjectRows.entries()) {
         if (!row) continue;
@@ -131,9 +122,7 @@ export const readWorkflowExposurePayload = async (
         listing,
         subListingNames: Array.from(subListingNames),
         subListings: Object.fromEntries(subListingRows),
-        perAtomProperties: normalizePerAtomProperties(
-            perAtomPayload?.[PER_ATOM_KEY] as PerAtomProperties | null | undefined
-        ) ?? [],
+        perAtomProperties: (perAtomPayload?.[PER_ATOM_KEY] as PerAtomProperties | null | undefined) ?? null,
         exportData
     };
 };

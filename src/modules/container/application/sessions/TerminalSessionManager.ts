@@ -4,7 +4,8 @@ import { SESSION_ATTACH_TIMEOUT_MS } from '@/core/reverse-channel/contracts/reve
 import {
     EnvelopeKind,
     decodeEnvelope,
-    encodeEnvelope
+    encodeEnvelope,
+    toUint8Array
 } from '@/core/reverse-channel/contracts/binary-envelope';
 import type { RuntimeTerminalAttachment } from '@/core/runtime/infrastructure/DockerRuntime';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload, TeamClusterDaemonSessionResizePayload } from '@/contracts';
@@ -154,11 +155,8 @@ export class TerminalSessionManager {
             return false;
         }
 
-        const envelopeBytes = payload.chunk instanceof Uint8Array
-            ? payload.chunk
-            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
-
         try {
+            const envelopeBytes = toUint8Array(payload.chunk);
             const decoded = decodeEnvelope(envelopeBytes);
             if (decoded.kind !== EnvelopeKind.StreamChunk) {
                 throw new Error(`Unexpected envelope kind: ${decoded.kind}`);

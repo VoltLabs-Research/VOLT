@@ -15,8 +15,33 @@ import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 const SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS = 60_000;
-const PROCESS_READY_GRACE_PERIOD_MS = 30_000;
+const PROCESS_READY_GRACE_PERIOD_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_READY_GRACE_MS') ?? 120_000;
 const MAX_STDERR_BYTES = 256 * 1024;
+const DEFAULT_NATIVE_THREAD_COUNT = readPositiveIntegerEnv('PLUGIN_PROCESS_DEFAULT_NATIVE_THREADS') ?? 1;
+const NATIVE_THREAD_ENV_KEYS = [
+    'OMP_NUM_THREADS',
+    'OPENBLAS_NUM_THREADS',
+    'MKL_NUM_THREADS',
+    'VECLIB_MAXIMUM_THREADS',
+    'NUMEXPR_NUM_THREADS',
+    'BLIS_NUM_THREADS'
+];
+
+export const buildPluginProcessEnv = (
+    inputEnv?: NodeJS.ProcessEnv,
+    extraEnv: NodeJS.ProcessEnv = {}
+): NodeJS.ProcessEnv => {
+    const env = { ...process.env, ...inputEnv, ...extraEnv };
+    const threadCount = String(DEFAULT_NATIVE_THREAD_COUNT);
+
+    for (const key of NATIVE_THREAD_ENV_KEYS) {
+        if (!env[key]) {
+            env[key] = threadCount;
+        }
+    }
+
+    return env;
+};
 
 export interface PooledProcessSpawnInput {
     pluginId: string;
@@ -118,7 +143,7 @@ export class PluginProcessPool {
             return new PooledProcess(idleInternals, this);
         }
 
-        if (group.active.size < this.config.maxConcurrent) {
+        if (this.canSpawnProcess()) {
             const internals = this.spawnInternals(input, group);
             await this.waitForProcessReady(internals);
             internals.busy = true;
@@ -138,7 +163,7 @@ export class PluginProcessPool {
                 return new PooledProcess(reused, this);
             }
 
-            if (group.active.size < this.config.maxConcurrent) {
+            if (this.canSpawnProcess()) {
                 const internals = this.spawnInternals(input, group);
                 await this.waitForProcessReady(internals);
                 internals.busy = true;
@@ -149,7 +174,7 @@ export class PluginProcessPool {
             const elapsed = Date.now() - waitStartAt;
             if (elapsed > SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS) {
                 throw new Error(
-                    `Timed out waiting for plugin process slot (pluginId=${input.pluginId}, active=${group.active.size})`
+                    `Timed out waiting for plugin process slot (pluginId=${input.pluginId}, active=${this.countActiveProcesses()})`
                 );
             }
 
@@ -162,18 +187,20 @@ export class PluginProcessPool {
         const group = this.pools.get(internals.poolKey);
         if (!group) return;
 
-        group.waiters.splice(0).forEach((resolve) => resolve());
+        this.notifyWaiters();
 
         if (this.shuttingDown || internals.closed || group.retired) {
             group.active.delete(internals);
             void this.destroyInternals(internals);
             this.deleteGroupIfDrained(group);
+            this.notifyWaiters();
             return;
         }
 
         if (group.idle.length >= this.config.minIdle && group.active.size > this.config.minIdle) {
             group.active.delete(internals);
             void this.destroyInternals(internals);
+            this.notifyWaiters();
             return;
         }
 
@@ -264,6 +291,28 @@ export class PluginProcessPool {
         return null;
     }
 
+    private countActiveProcesses(): number {
+        let count = 0;
+        for (const group of this.pools.values()) {
+            count += group.active.size;
+        }
+        return count;
+    }
+
+    private canSpawnProcess(): boolean {
+        return this.countActiveProcesses() < this.config.maxConcurrent;
+    }
+
+    private notifyWaiters(): void {
+        for (const group of this.pools.values()) {
+            group.waiters.splice(0).forEach((resolve) => resolve());
+        }
+    }
+
+    private buildProcessEnv(inputEnv?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+        return buildPluginProcessEnv(inputEnv, { PYTHONUNBUFFERED: '1' });
+    }
+
     private spawnInternals(
         input: PooledProcessSpawnInput,
         group: PluginProcessInternalsGroup
@@ -278,7 +327,7 @@ export class PluginProcessPool {
 
         const child = spawn(input.commandPath, args, {
             cwd: input.pluginRoot,
-            env: { ...process.env, ...input.env, PYTHONUNBUFFERED: '1' },
+            env: this.buildProcessEnv(input.env),
             stdio: ['pipe', 'pipe', 'pipe']
         }) as ChildProcessWithoutNullStreams;
 
@@ -500,9 +549,7 @@ export class PluginProcessPool {
         }
         this.deleteGroupIfDrained(group);
 
-        for (const resolve of group.waiters.splice(0)) {
-            resolve();
-        }
+        this.notifyWaiters();
     }
 
     private async destroyInternals(internals: PooledProcessInternals): Promise<void> {

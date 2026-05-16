@@ -28,6 +28,7 @@ import {
     EnvelopeKind,
     decodeEnvelope,
     encodeEnvelope,
+    toUint8Array,
     type DecodedEnvelope
 } from '@/core/reverse-channel/contracts/binary-envelope';
 import { TeamClusterServiceExposureAccessMode } from '@/core/runtime/contracts/service-exposure';
@@ -55,6 +56,7 @@ interface ReverseChannelTunnelState {
     pendingOutboundAcks: Map<number, PendingTunnelAck>;
     pendingOutboundBytes: number;
     isOutboundPaused: boolean;
+    isClosePending: boolean;
     onConnect: () => void;
     onData: (chunk: Buffer) => void;
     onError: (error: Error) => void;
@@ -521,13 +523,7 @@ export class ReverseChannelBridge {
             this.closeTunnelWithError(payload.sessionId, 'Tunnel session timed out while opening', sessionTransition);
         };
         const onClose = () => {
-            this.endSessionTransition(sessionTransition);
-            const closePayload: TeamClusterDaemonTunnelClosePayload = {
-                type: 'tunnel-close',
-                sessionId: payload.sessionId
-            };
-            this.emitTunnelMessage(payload.sessionId, closePayload);
-            this.cleanupTunnelSession(payload.sessionId);
+            this.completeTunnelClose(payload.sessionId, sessionTransition);
         };
 
         tunnelSocket.on('connect', onConnect);
@@ -545,6 +541,7 @@ export class ReverseChannelBridge {
             pendingOutboundAcks: new Map(),
             pendingOutboundBytes: 0,
             isOutboundPaused: false,
+            isClosePending: false,
             onConnect,
             onData,
             onError,
@@ -567,9 +564,16 @@ export class ReverseChannelBridge {
             return;
         }
 
-        const envelopeBytes = payload.chunk instanceof Uint8Array
-            ? payload.chunk
-            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
+        let envelopeBytes: Uint8Array;
+        try {
+            envelopeBytes = toUint8Array(payload.chunk);
+        } catch (error) {
+            this.closeTunnelWithError(
+                payload.sessionId,
+                `Malformed tunnel envelope: ${error instanceof Error ? error.message : String(error)}`
+            );
+            return;
+        }
 
         let decoded: DecodedEnvelope;
         try {
@@ -590,14 +594,29 @@ export class ReverseChannelBridge {
         this.touchSession(payload.sessionId);
         const chunk = Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
         if (payload.requiresAck && typeof payload.sequence === 'number') {
-            tunnelState.socket.write(chunk, (error?: Error | null) => {
+            let acknowledged = false;
+            const acknowledgeDrain = (): void => {
+                if (acknowledged) {
+                    return;
+                }
+
+                acknowledged = true;
+                this.emitTunnelDrain(payload.sessionId, payload.sequence!);
+            };
+            const isReadyForMore = tunnelState.socket.write(chunk, (error?: Error | null) => {
                 if (error) {
                     this.closeTunnelWithError(payload.sessionId, error.message);
                     return;
                 }
 
-                this.emitTunnelDrain(payload.sessionId, payload.sequence!);
+                acknowledgeDrain();
             });
+
+            if (isReadyForMore) {
+                acknowledgeDrain();
+            } else {
+                tunnelState.socket.once('drain', acknowledgeDrain);
+            }
             return;
         }
 
@@ -628,6 +647,10 @@ export class ReverseChannelBridge {
         ) {
             tunnelState.isOutboundPaused = false;
             tunnelState.socket.resume();
+        }
+
+        if (tunnelState.isClosePending && tunnelState.pendingOutboundAcks.size === 0) {
+            this.completeTunnelClose(payload.sessionId);
         }
     }
 
@@ -717,6 +740,27 @@ export class ReverseChannelBridge {
             status: REVERSE_CHANNEL.TunnelSessionStatus.Closed,
             error
         });
+        this.cleanupTunnelSession(sessionId);
+    }
+
+    private completeTunnelClose(sessionId: string, transition?: SessionTransition): void {
+        if (transition) this.endSessionTransition(transition);
+
+        const tunnelState = this.tunnelStates.get(sessionId);
+        if (!tunnelState) {
+            return;
+        }
+
+        if (tunnelState.pendingOutboundAcks.size > 0) {
+            tunnelState.isClosePending = true;
+            return;
+        }
+
+        const closePayload: TeamClusterDaemonTunnelClosePayload = {
+            type: 'tunnel-close',
+            sessionId
+        };
+        this.emitTunnelMessage(sessionId, closePayload);
         this.cleanupTunnelSession(sessionId);
     }
 

@@ -11,9 +11,11 @@ import { DebugSessionManager } from '@/modules/analysis/application/workflow/deb
 import { DaemonExposureRegistry } from '@/modules/container/application/access/DaemonExposureRegistry';
 import { ObjectGatewayServer } from '@/core/storage/infrastructure/gateway/ObjectGatewayServer';
 import { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
+import { VoltEventChannelConnection } from '@/modules/container/infrastructure/connection/VoltEventChannelConnection';
 import { VoltObjectGatewayConnection } from '@/modules/container/infrastructure/connection/VoltObjectGatewayConnection';
 import { ReverseChannelBridge } from '@/modules/container/infrastructure/reverse-channel/ReverseChannelBridge';
 import { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
+import { HeartbeatPlaneProcess } from '@/app/coordination/HeartbeatPlaneProcess';
 import { RedisExplorer } from '@/modules/container/infrastructure/remote-access/RedisExplorer';
 import { PluginProcessPool } from '@/modules/plugin/application/runtime/PluginProcessPool';
 import { logger } from '@/core/logger';
@@ -35,9 +37,11 @@ export class DaemonLifecycle {
         private readonly daemonExposureRegistry: DaemonExposureRegistry,
         private readonly objectGatewayServer: ObjectGatewayServer,
         private readonly voltCloudConnection: VoltCloudConnection,
+        private readonly voltEventChannelConnection: VoltEventChannelConnection,
         private readonly voltObjectGatewayConnection: VoltObjectGatewayConnection,
         private readonly reverseChannelBridge: ReverseChannelBridge,
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
+        private readonly heartbeatPlaneProcess: HeartbeatPlaneProcess,
         private readonly pluginProcessPool: PluginProcessPool,
         // Resolving `domainEventBridge` here instantiates the bridge and
         // subscribes all registered domain-event mappers to the dispatcher.
@@ -88,6 +92,10 @@ export class DaemonLifecycle {
         await this.connectInfrastructure();
 
         this.commandRegistry.markReady();
+        this.heartbeatPlaneProcess.start();
+        void this.voltEventChannelConnection.start().catch((error) => {
+            logger.warn(`Daemon event channel did not connect during startup: ${error instanceof Error ? error.message : String(error)}`);
+        });
 
         await Promise.all([
             this.voltCloudConnection.start(),
@@ -103,6 +111,7 @@ export class DaemonLifecycle {
 
         this.daemonExposureRegistry.start();
         await this.runtimeRoleCoordinator.initialize(runtimeConfig);
+        this.heartbeatPlaneProcess.publishRuntimeSnapshot();
 
         logger.info(`cluster-daemon started for team cluster ${this.config.teamClusterId}`);
     }
@@ -125,7 +134,9 @@ export class DaemonLifecycle {
         await this.objectGatewayServer.stop();
 
         this.voltCloudConnection.stop();
+        this.voltEventChannelConnection.stop();
         this.voltObjectGatewayConnection.stop();
+        this.heartbeatPlaneProcess.stop();
         await this.queueService.close();
         await this.pluginProcessPool.shutdown();
         await this.disconnectInfrastructure();

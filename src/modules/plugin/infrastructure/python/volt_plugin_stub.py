@@ -10,15 +10,15 @@ The stub imports a user-provided module (path passed via --plugin-root and
 --entrypoint) and invokes either `process(frame, config)` or
 `process_batch(frames, config)` depending on opcode.
 
-When a frame descriptor carries shared-memory bindings, the stub exposes the
-columns as zero-copy numpy arrays via mmap when numpy is available, or raw
-bytes otherwise. The caller may always fall back to inline payloads.
+When a frame descriptor carries mmap bindings, the stub exposes the columns as
+zero-copy numpy arrays when numpy is available, or raw bytes otherwise.
 """
 
 from __future__ import annotations
 
 import argparse
 import contextlib
+import gc
 import importlib
 import importlib.util
 import io
@@ -57,6 +57,37 @@ _DTYPE_TO_ITEMSIZE = {
     "float32": 4,
     "float64": 8,
 }
+
+
+class _MappedRegion:
+    def __init__(self, region: Any):
+        self.region = region
+        self.view = memoryview(region)
+
+    def close(self) -> None:
+        self.view.release()
+        self.region.close()
+
+
+def _close_mmap_cache(mmap_cache: Dict[str, _MappedRegion]) -> None:
+    if not mmap_cache:
+        return
+
+    gc.collect()
+    for path, region in list(mmap_cache.items()):
+        try:
+            region.close()
+        except BufferError:
+            gc.collect()
+            try:
+                region.close()
+            except Exception as exc:
+                sys.stderr.write(f"volt-plugin-stub: failed to close mmap '{path}': {exc}\n")
+                sys.stderr.flush()
+        except Exception as exc:
+            sys.stderr.write(f"volt-plugin-stub: failed to close mmap '{path}': {exc}\n")
+            sys.stderr.flush()
+    mmap_cache.clear()
 
 
 def _read_exact(stream: io.BufferedReader, length: int) -> Optional[bytes]:
@@ -137,17 +168,23 @@ def _dtype_itemsize(dtype: str) -> int:
     return _DTYPE_TO_ITEMSIZE[dtype]
 
 
-def _materialize_column(column: dict, mmap_cache: Dict[str, memoryview]) -> Any:
+def _materialize_column(column: dict, mmap_cache: Dict[str, _MappedRegion]) -> Any:
     name = column.get("name")
     dtype = column.get("dtype") or column.get("binding", {}).get("dtype")
     shape = column.get("shape") or []
     binding = column.get("binding") or {}
     kind = binding.get("kind")
 
-    if kind == "shm":
-        shm_path = binding.get("shm_path") or binding.get("shmPath") or binding.get("path")
+    if kind == "mmap" or kind == "shm":
+        shm_path = (
+            binding.get("mmap_path")
+            or binding.get("mmapPath")
+            or binding.get("shm_path")
+            or binding.get("shmPath")
+            or binding.get("path")
+        )
         if not shm_path:
-            raise ValueError(f"Column '{name}' missing shm path")
+            raise ValueError(f"Column '{name}' missing mmap path")
         offset = int(binding.get("offset", 0))
         length = int(binding.get("length", 0))
         backing = mmap_cache.get(shm_path)
@@ -159,9 +196,9 @@ def _materialize_column(column: dict, mmap_cache: Dict[str, memoryview]) -> Any:
                 region = _mmap.mmap(fd, size, prot=_mmap.PROT_READ)
             finally:
                 os.close(fd)
-            backing = memoryview(region)
+            backing = _MappedRegion(region)
             mmap_cache[shm_path] = backing
-        slice_view = backing[offset : offset + length]
+        slice_view = backing.view[offset : offset + length]
         if _np is not None and dtype:
             array = _np.frombuffer(slice_view, dtype=dtype)
             if shape:
@@ -183,7 +220,7 @@ def _materialize_column(column: dict, mmap_cache: Dict[str, memoryview]) -> Any:
     raise ValueError(f"Unsupported column binding kind: {kind}")
 
 
-def _materialize_frame(frame: Optional[dict], mmap_cache: Dict[str, memoryview]) -> Optional[dict]:
+def _materialize_frame(frame: Optional[dict], mmap_cache: Dict[str, _MappedRegion]) -> Optional[dict]:
     if frame is None:
         return None
 
@@ -262,7 +299,7 @@ def _invoke(
     callables: Dict[str, Callable[..., Any]],
     opcode: str,
     request: dict,
-    mmap_cache: Dict[str, memoryview]
+    mmap_cache: Dict[str, _MappedRegion]
 ) -> dict:
     if opcode == "warmup":
         warmup = callables.get("warmup")
@@ -327,8 +364,6 @@ def _main() -> int:
 
     stdin = sys.stdin.buffer
     stdout = sys.stdout.buffer
-    mmap_cache: Dict[str, memoryview] = {}
-
     try:
         while True:
             request = _read_request(stdin)
@@ -336,6 +371,7 @@ def _main() -> int:
                 break
             op_id, payload = request
             opcode = payload.get("opcode") or "process"
+            mmap_cache: Dict[str, _MappedRegion] = {}
             try:
                 response = _invoke(callables, opcode, payload, mmap_cache)
             except Exception as exc:
@@ -347,7 +383,10 @@ def _main() -> int:
                         "traceback": traceback.format_exc()
                     }
                 }
-            _write_response(stdout, op_id, response)
+            try:
+                _write_response(stdout, op_id, response)
+            finally:
+                _close_mmap_cache(mmap_cache)
     except (BrokenPipeError, KeyboardInterrupt):
         return 0
 

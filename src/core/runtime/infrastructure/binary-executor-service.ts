@@ -6,6 +6,7 @@ import type {
 } from '@/core/runtime/contracts/execution-log';
 import { registerProcess, unregisterProcess } from '@/core/runtime/infrastructure/process-tracker';
 import {
+    buildPluginProcessEnv,
     PluginProcessPool,
     resolvePythonStubPath,
     type PooledProcessSpawnInput
@@ -79,7 +80,7 @@ export class BinaryExecutorService {
             const child = spawn(commandPath, args, {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
-                env: { ...process.env, ...env }
+                env: buildPluginProcessEnv(env)
             });
             registerProcess(jobId, child);
 
@@ -231,14 +232,14 @@ export class BinaryExecutorService {
         const handle = await this.sharedMemoryBridge.publishFrame(publish);
         releaseables.push(() => handle.release());
 
-        if (handle.mode === 'shm') {
+        if (handle.mode === 'mmap') {
             return {
                 ...baseFrame,
                 columns: handle.bindings.map((binding) => ({
                     ...binding,
                     binding: {
                         ...binding.binding,
-                        shmPath: handle.path ?? undefined
+                        mmapPath: handle.path ?? undefined
                     }
                 }))
             };
@@ -259,7 +260,8 @@ export class BinaryExecutorService {
                     kind: 'inline',
                     dtype: column.dtype,
                     length: column.bytes.byteLength,
-                    offset: index
+                    offset: index,
+                    bytes: column.bytes
                 }
             }))
         };

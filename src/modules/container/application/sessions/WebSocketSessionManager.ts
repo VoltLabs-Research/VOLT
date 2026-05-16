@@ -2,7 +2,8 @@ import { SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCK
 import {
     EnvelopeKind,
     decodeEnvelope,
-    encodeEnvelope
+    encodeEnvelope,
+    toUint8Array
 } from '@/core/reverse-channel/contracts/binary-envelope';
 import { WebSocket } from 'ws';
 import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionEndPayload } from '@/contracts';
@@ -352,12 +353,9 @@ export class WebSocketSessionManager {
             return false;
         }
 
-        const envelopeBytes = payload.chunk instanceof Uint8Array
-            ? payload.chunk
-            : new Uint8Array(payload.chunk as unknown as ArrayBufferLike);
-
         let decoded;
         try {
+            const envelopeBytes = toUint8Array(payload.chunk);
             decoded = decodeEnvelope(envelopeBytes);
         } catch (error) {
             this.endSessionWithError(payload.sessionId, `Malformed websocket input envelope: ${error instanceof Error ? error.message : String(error)}`);

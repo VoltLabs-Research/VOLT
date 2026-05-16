@@ -1,6 +1,7 @@
 .opencode/
 dev-tools/
 server/storage/
+storage/
 
 .ai-workflow/
 

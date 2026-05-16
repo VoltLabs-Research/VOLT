@@ -30,6 +30,7 @@ export class QueueScopeLimitsRegistry {
     private queueScopeLimits: TeamClusterDaemonQueueScopeLimits = DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS;
 
     private readonly byTrajectory = new Map<string, number>();
+    private readonly byTrajectoryAnalysis = new Map<string, Map<string, number>>();
 
     readonly apply = (queueScopeLimits: TeamClusterDaemonQueueScopeLimits): void => {
         this.queueScopeLimits = normalizeQueueScopeLimits(queueScopeLimits);
@@ -37,27 +38,69 @@ export class QueueScopeLimitsRegistry {
 
     readonly getSnapshot = (): TeamClusterDaemonQueueScopeLimits => this.queueScopeLimits;
 
-    tryAcquire(scope: QueueScopeKey, trajectoryId: string | undefined): ScopeRelease | null {
+    tryAcquire(
+        scope: QueueScopeKey,
+        trajectoryId: string | undefined,
+        analysisId?: string
+    ): ScopeRelease | null {
         const limit = this.queueScopeLimits[scope];
         if (!limit) {
             return () => undefined;
         }
 
         const trajectoryKey = trajectoryId ? `${scope}:${trajectoryId}` : null;
+        if (!trajectoryKey || limit.maxRunningPerTrajectory <= 0) {
+            return () => undefined;
+        }
 
-        const trajectoryCount = trajectoryKey ? this.byTrajectory.get(trajectoryKey) ?? 0 : 0;
+        if (analysisId) {
+            return this.tryAcquireAnalysisScopedTrajectory(trajectoryKey, analysisId, limit.maxRunningPerTrajectory);
+        }
 
-        if (limit.maxRunningPerTrajectory > 0 && trajectoryKey && trajectoryCount >= limit.maxRunningPerTrajectory) {
+        const trajectoryCount = this.byTrajectory.get(trajectoryKey) ?? 0;
+
+        if (trajectoryCount >= limit.maxRunningPerTrajectory) {
             return null;
         }
 
-        if (trajectoryKey) this.byTrajectory.set(trajectoryKey, trajectoryCount + 1);
+        this.byTrajectory.set(trajectoryKey, trajectoryCount + 1);
 
         let released = false;
         return () => {
             if (released) return;
             released = true;
             this.decrement(this.byTrajectory, trajectoryKey);
+        };
+    }
+
+    private tryAcquireAnalysisScopedTrajectory(
+        trajectoryKey: string,
+        analysisId: string,
+        maxRunningPerTrajectory: number
+    ): ScopeRelease | null {
+        const analyses = this.byTrajectoryAnalysis.get(trajectoryKey) ?? new Map<string, number>();
+        const activeJobsForAnalysis = analyses.get(analysisId) ?? 0;
+
+        if (activeJobsForAnalysis === 0 && analyses.size >= maxRunningPerTrajectory) {
+            return null;
+        }
+
+        analyses.set(analysisId, activeJobsForAnalysis + 1);
+        this.byTrajectoryAnalysis.set(trajectoryKey, analyses);
+
+        let released = false;
+        return () => {
+            if (released) return;
+            released = true;
+            const current = analyses.get(analysisId) ?? 1;
+            if (current <= 1) {
+                analyses.delete(analysisId);
+            } else {
+                analyses.set(analysisId, current - 1);
+            }
+            if (analyses.size === 0) {
+                this.byTrajectoryAnalysis.delete(trajectoryKey);
+            }
         };
     }
 

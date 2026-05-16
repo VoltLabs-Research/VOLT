@@ -1,5 +1,3 @@
-import Bottleneck from 'bottleneck';
-
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import {
@@ -11,7 +9,6 @@ import { isPlainObject } from '@/support/type-guards/is-record';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
-import { getRecommendedResultProcessingConcurrency } from '@/support/policies/analysis-resource-policy';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@/modules/analysis/contracts/http-analysis';
 import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 import type { ResultProcessorService } from '@/modules/plugin/application/exports/result-processor-service-contract';
@@ -19,20 +16,12 @@ import type { PluginMongoRow, PluginMongoValue } from '@/modules/plugin/infrastr
 import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
 
-const EXPOSURE_RESULT_PROCESSING_CONCURRENCY = getRecommendedResultProcessingConcurrency();
-
 @Service('resultProcessor')
 export class DefaultResultProcessor implements ResultProcessorService {
-    private readonly exposureProcessingLimiter: Bottleneck;
-
     constructor(
         private readonly pluginListingRepository: PluginListingRepository,
         private readonly pluginPropertyStore: PluginPropertyStore
-    ) {
-        this.exposureProcessingLimiter = new Bottleneck({
-            maxConcurrent: EXPOSURE_RESULT_PROCESSING_CONCURRENCY
-        });
-    }
+    ) {}
 
     async processExposureResult(
         executionData: AnalysisJobExecutionData,
@@ -76,82 +65,73 @@ export class DefaultResultProcessor implements ResultProcessorService {
             exposureId: exposure.nodeId
         });
 
-        const queuedAt = Date.now();
         try {
-            await this.exposureProcessingLimiter.schedule(async () => {
-                const waitMs = Date.now() - queuedAt;
-                if (waitMs >= 250) {
-                    const counts = this.exposureProcessingLimiter.counts();
-                    logger.info(`Exposure result processing waited for capacity: analysisId=${analysisId}, exposure=${exposure.name}, timestep=${timestep}, waitMs=${waitMs}, activeCount=${counts.RUNNING + counts.EXECUTING}, pending=${counts.QUEUED}, concurrency=${EXPOSURE_RESULT_PROCESSING_CONCURRENCY}`);
+            let {
+                listing: listingPayload,
+                subListingNames,
+                subListings,
+                perAtomProperties,
+                exportData: exportPayload
+            } = await readWorkflowExposurePayload(outputFilePath);
+
+            const isChartOnlyExposure = exposure.export?.exporter === 'ChartExporter';
+            if (!isChartOnlyExposure) {
+                const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
+                    trajectoryId,
+                    analysisId,
+                    exposureId: exposure.nodeId,
+                    timestep,
+                    ownerClusterId: storageOwnerClusterId,
+                    rows: perAtomProperties
+                });
+                const propertyObjectKey = propertyStorage?.objectKey;
+                if (propertyStorage) {
+                    logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
                 }
 
-                let {
-                    listing: listingPayload,
+                await precomputeListingRows(
+                    this.pluginListingRepository,
+                    executionData,
+                    exposure,
+                    listingPayload,
                     subListingNames,
+                    propertyObjectKey,
+                    storageOwnerClusterId,
+                    timestep,
+                    teamId
+                );
+
+                await precomputeSubListingRows(
+                    this.pluginListingRepository,
+                    executionData,
+                    exposure,
                     subListings,
-                    perAtomProperties,
-                    exportData: exportPayload
-                } = await readWorkflowExposurePayload(outputFilePath);
+                    timestep
+                );
+            }
 
-                const isChartOnlyExposure = exposure.export?.exporter === 'ChartExporter';
-                if (!isChartOnlyExposure) {
-                    const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
-                        trajectoryId,
+            listingPayload = null;
+            subListingNames = [];
+            subListings = {};
+            perAtomProperties = null;
+
+            if (exposure.export && exportPayload) {
+                await processExportNode({
+                    executionData: {
                         analysisId,
-                        exposureId: exposure.nodeId,
-                        timestep,
-                        ownerClusterId: storageOwnerClusterId,
-                        rows: perAtomProperties
-                    });
-                    const propertyObjectKey = propertyStorage?.objectKey;
-                    if (propertyStorage) {
-                        logger.info(`Stored exposure per-atom properties as Parquet: objectKey=${propertyStorage.objectKey}, rows=${propertyStorage.rowCount}`);
-                    }
+                        trajectoryId,
+                        pluginId,
+                        storageClusterId: storageOwnerClusterId
+                    },
+                    exposure,
+                    decodedPayload: exportPayload,
+                    timestep,
+                    storageClusterId: storageOwnerClusterId,
+                    artifactUploadBatch
+                });
+            }
 
-                    await precomputeListingRows(
-                        this.pluginListingRepository,
-                        executionData,
-                        exposure,
-                        listingPayload,
-                        subListingNames,
-                        propertyObjectKey,
-                        storageOwnerClusterId,
-                        timestep,
-                        teamId
-                    );
-
-                    await precomputeSubListingRows(
-                        this.pluginListingRepository,
-                        executionData,
-                        exposure,
-                        subListings,
-                        timestep
-                    );
-                }
-
-                listingPayload = null;
-                subListingNames = [];
-                subListings = {};
-                perAtomProperties = [];
-
-                if (exposure.export && exportPayload) {
-                    await processExportNode({
-                        executionData: {
-                            analysisId,
-                            trajectoryId,
-                            pluginId,
-                            storageClusterId: storageOwnerClusterId
-                        },
-                        exposure,
-                        decodedPayload: exportPayload,
-                        timestep,
-                        storageClusterId: storageOwnerClusterId,
-                        artifactUploadBatch
-                    });
-                }
-
-                exportPayload = null;
-            });
+            exportPayload = null;
 
             await stageReporter?.report({
                 stageKey,

@@ -12,13 +12,10 @@ import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import http from 'node:http';
 import https from 'node:https';
-import {
-    ClusterDaemonClient,
-    DaemonClientError
-} from '@voltstack/daemon-cluster-client';
 import type { DaemonConfig } from '@/core/config';
 import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
 import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
+import { ControlPlaneProcessClient } from '@/modules/container/infrastructure/connection/ControlPlaneProcessClient';
 import { TeamClusterStatus } from '@/modules/container/contracts/container-types';
 import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
 
@@ -76,42 +73,14 @@ export class VoltCloudConnection {
     private readonly bufferedEventDedupeKeys = new Set<string>();
     private cloudLatencyProbeTimer: ReturnType<typeof setInterval> | null = null;
 
-    public readonly client: ClusterDaemonClient;
+    public readonly client: ControlPlaneProcessClient;
 
     constructor(
         private readonly config: DaemonConfig,
         private readonly metricsService: MetricsService,
         private readonly getRuntimeConfigSnapshot?: () => TeamClusterDaemonRuntimeConfig | null
     ) {
-        this.client = new ClusterDaemonClient({
-            serverUrl: config.voltCloudUrl,
-            controlSocketUrl: config.voltCloudUrl,
-            credentials: {
-                teamClusterId: config.teamClusterId,
-                daemonPassword: config.daemonPassword
-            },
-            enrollment: { enabled: false, url: '' },
-            heartbeat: {
-                interval: config.heartbeatIntervalMs,
-                payloadFactory: async () => ({
-                    teamClusterId: this.client.getTeamClusterId(),
-                    daemonPassword: this.client.getDaemonPassword(),
-                    runtime: this.getRuntimeConfigSnapshot?.(),
-                    metrics: await this.metricsService.collectSnapshot({
-                        cloudLatencyMs: this.lastCloudLatencyMs,
-                        connectedToCloud: this.connectedToCloud
-                    })
-                })
-            },
-            socket: {
-                reconnect: true,
-                maxReconnectAttempts: Infinity,
-                reconnectBaseDelayMs: 500,
-                reconnectMaxDelayMs: 30_000,
-                randomizationFactor: 0.3
-            },
-            commandTimeout: 180_000
-        });
+        this.client = new ControlPlaneProcessClient(config);
 
         this.backgroundCommandLimiter = new Bottleneck({
             maxConcurrent: this.backgroundCommandConcurrency,
@@ -135,7 +104,7 @@ export class VoltCloudConnection {
                 this.heartbeatFailureCount = 0;
                 logger.info(`Outbound cloud socket disconnected (${reason})`);
             })
-            .onError((err: DaemonClientError) => {
+            .onError((err: Error) => {
                 if (err.message.includes('heartbeat')) {
                     this.heartbeatFailureCount += 1;
                     logger.warn(`Heartbeat failed: ${err.message} (heartbeatFailureCount=${this.heartbeatFailureCount}, socketReady=${this.client.isReady()})`);

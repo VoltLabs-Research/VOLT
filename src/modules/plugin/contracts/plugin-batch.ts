@@ -5,12 +5,14 @@ export type PluginProtocolOpcode =
     | 'warmup';
 
 export interface PluginFrameBindingMetadata {
-    kind: 'shm' | 'inline';
+    kind: 'mmap' | 'shm' | 'inline';
+    mmapPath?: string;
     shmPath?: string;
     size?: number;
     offset?: number;
     length?: number;
     dtype?: string;
+    bytes?: Buffer;
 }
 
 export interface PluginFrameColumnBinding {

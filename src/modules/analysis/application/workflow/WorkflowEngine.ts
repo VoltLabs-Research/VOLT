@@ -93,7 +93,7 @@ export class WorkflowEngine {
         const executionOrder = session.context.workflow.topologicalSort();
         const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
-        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=${!hasForEachNode})`);
+        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=true)`);
         let contextNodeId: string | undefined;
 
         const results = await this.nodeExecutor.executeOrdered({
@@ -127,7 +127,10 @@ export class WorkflowEngine {
                 return {
                     items,
                     forEachNodeId: result.node.id,
-                    nodeOutputSnapshots: session.snapshotOutputs()
+                    nodeOutputSnapshots: session.snapshotOutputs(),
+                    batchMode: true,
+                    batchTrajectoryDumps: items as unknown as TrajectoryDumpDescriptor[],
+                    contextNodeId
                 };
             }
         }

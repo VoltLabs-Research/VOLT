@@ -1,13 +1,17 @@
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
-import { ClusterDaemonClient } from '@voltstack/daemon-cluster-client';
 
 export interface BufferedDaemonEventOptions {
     dedupeKey?: string;
 }
 
 export type ImmediateTransportMessage = ExposureSnapshotMessage | RuntimeProgressMessage | TeamClusterDaemonServerEventMessage;
+
+export interface ClusterDaemonEventPublisherClient {
+    getDaemonPassword(): string;
+    getTeamClusterId(): string;
+}
 
 export interface ClusterDaemonEventPublisher {
     emitBufferedMessage(
@@ -17,5 +21,5 @@ export interface ClusterDaemonEventPublisher {
 
     emitMessage(message: ImmediateTransportMessage): void;
 
-    client: ClusterDaemonClient;
+    client: ClusterDaemonEventPublisherClient;
 }

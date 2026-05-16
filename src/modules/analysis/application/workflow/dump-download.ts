@@ -1,5 +1,6 @@
 import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
@@ -16,7 +17,7 @@ export const downloadCompressedDump = async (
     const normalized = objectKey.startsWith('/') ? objectKey.slice(1) : objectKey;
     const fileName = basename(normalized);
     const localFileName = fileName.endsWith('.zst') ? fileName.slice(0, -4) : fileName;
-    const localPath = join(localDir, `${localFileName}-${Date.now()}`);
+    const localPath = join(localDir, `${localFileName}-${process.pid}-${randomUUID()}`);
     await mkdir(dirname(localPath), { recursive: true });
 
     const response = await objectStore.getStream(ownerClusterId, ObjectBucketName.Dumps, normalized, { skipMetadata: true });

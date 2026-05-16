@@ -1,4 +1,4 @@
-import type { FlatAtomProperties } from '@/modules/plugin/application/properties/PluginAtomProperties';
+import type { FlatAtomProperties, PerAtomProperties } from '@/modules/plugin/application/properties/PluginAtomProperties';
 
 export interface PluginExposureRequestBase {
     trajectoryId: string;
@@ -29,7 +29,7 @@ export interface PluginAnalysisAllAtomsResponse {
 }
 
 export interface PluginPropertyStoreWriteInput extends PluginModifierAnalysisRequest {
-    rows: FlatAtomProperties[];
+    rows: PerAtomProperties | null | undefined;
 }
 
 export interface PluginPropertyStoreWriteResult {

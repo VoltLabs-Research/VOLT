@@ -11,7 +11,7 @@ import type {
 } from '@/core/reverse-channel/infrastructure/events/cluster-daemon-event-publisher';
 import { registerRuntimeEventMappers } from '@/core/runtime/infrastructure/events/register-runtime-event-mappers';
 import { registerAnalysisEventMappers } from '@/modules/analysis/infrastructure/events/register-analysis-event-mappers';
-import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
+import type { VoltEventChannelConnection } from '@/modules/container/infrastructure/connection/VoltEventChannelConnection';
 import { registerContainerEventMappers } from '@/modules/container/infrastructure/events/register-container-event-mappers';
 import { registerPluginEventMappers } from '@/modules/plugin/infrastructure/events/register-plugin-event-mappers';
 import { registerTrajectoryEventMappers } from '@/modules/trajectory/infrastructure/events/register-trajectory-event-mappers';
@@ -101,10 +101,10 @@ export class DomainEventBridge {
 
 
 export const provideDomainEventBridge = Factory('domainEventBridge')((
-    voltCloudConnection: VoltCloudConnection,
+    voltEventChannelConnection: VoltEventChannelConnection,
     eventDispatcher: EventDispatcher
 ) => {
-    const bridge = new DomainEventBridge(voltCloudConnection);
+    const bridge = new DomainEventBridge(voltEventChannelConnection);
     registerRuntimeEventMappers(bridge);
     registerContainerEventMappers(bridge);
     registerAnalysisEventMappers(bridge);

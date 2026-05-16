@@ -11,7 +11,14 @@ import { logger } from '@/core/logger';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import {
+    type AtomId,
+    type AtomProperties,
+    type AtomPropertyValue,
     type FlatAtomProperties,
+    type PerAtomColumnarData,
+    type PerAtomProperties,
+    flattenAtomProperties,
+    isColumnarPerAtomData,
     normalizeAtomId
 } from '@/modules/plugin/application/properties/PluginAtomProperties';
 import type {
@@ -31,12 +38,15 @@ import type {
 } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
 import { toPluginExposureParquetObjectKey } from '@/support/serialization/storage-codec';
+import { isRecord } from '@/support/type-guards/is-record';
 
 type PropertyColumnType = 'double' | 'varchar';
 
 interface PropertyColumn {
     name: string;
     type: PropertyColumnType;
+    sourceName?: string;
+    vectorIndex?: number;
 }
 
 interface ExposureData {
@@ -73,31 +83,95 @@ const toFiniteNumber = (value: unknown): number | null => {
     return Number.isFinite(numeric) ? numeric : null;
 };
 
-const inferPropertyColumns = (rows: FlatAtomProperties[]): PropertyColumn[] => {
-    const names = new Set<string>();
+const toAtomId = (value: AtomPropertyValue | undefined): AtomId | undefined =>
+    typeof value === 'number' || typeof value === 'string' ? value : undefined;
+
+const updateColumnType = (
+    columns: Map<string, PropertyColumn>,
+    name: string,
+    value: unknown,
+    sourceName?: string,
+    vectorIndex?: number
+): void => {
+    if (value === undefined) return;
+
+    const current = columns.get(name);
+    const nextType: PropertyColumnType = current?.type === 'varchar' || (
+        value !== null && toFiniteNumber(value) === null
+    )
+        ? 'varchar'
+        : 'double';
+
+    columns.set(name, {
+        name,
+        type: nextType,
+        sourceName: current?.sourceName ?? sourceName,
+        vectorIndex: current?.vectorIndex ?? vectorIndex
+    });
+};
+
+function* validFlatRows(rows: AtomProperties[]): Iterable<AtomProperties> {
     for (const row of rows) {
-        for (const [key, value] of Object.entries(row)) {
-            if (key === 'id' || value === undefined) continue;
-            names.add(key);
+        if (isRecord(row)) {
+            yield row as AtomProperties;
+        }
+    }
+}
+
+const inferColumnsFromFlatRows = (rows: Iterable<AtomProperties>): PropertyColumn[] => {
+    const columns = new Map<string, PropertyColumn>();
+    for (const row of rows) {
+        const flattened = flattenAtomProperties(row);
+        for (const [key, value] of Object.entries(flattened)) {
+            if (key === 'id') continue;
+            updateColumnType(columns, key, value);
         }
     }
 
-    return Array.from(names).sort().map((name) => {
-        let isNumeric = true;
-        for (const row of rows) {
-            const value = row[name];
-            if (value === null || value === undefined) continue;
-            if (toFiniteNumber(value) === null) {
-                isNumeric = false;
-                break;
-            }
-        }
+    return Array.from(columns.values()).sort((left, right) => left.name.localeCompare(right.name));
+};
 
-        return {
-            name,
-            type: isNumeric ? 'double' : 'varchar'
-        };
-    });
+const inferColumnsFromColumnarRows = (rows: PerAtomColumnarData): PropertyColumn[] => {
+    const columns = new Map<string, PropertyColumn>();
+    for (const [sourceName, values] of Object.entries(rows)) {
+        if (sourceName === 'id') continue;
+        for (const value of values) {
+            if (Array.isArray(value)) {
+                for (let index = 0; index < value.length; index += 1) {
+                    updateColumnType(columns, `${sourceName}[${index}]`, value[index], sourceName, index);
+                }
+                continue;
+            }
+
+            updateColumnType(columns, sourceName, value, sourceName);
+        }
+    }
+
+    return Array.from(columns.values()).sort((left, right) => left.name.localeCompare(right.name));
+};
+
+const getColumnarRowCount = (rows: PerAtomColumnarData): number => {
+    const firstColumn = Object.values(rows)[0];
+    return firstColumn?.length ?? 0;
+};
+
+const getRowCount = (rows: PerAtomProperties | null | undefined): number => {
+    if (!rows) return 0;
+    if (Array.isArray(rows)) {
+        return rows.reduce((count, row) => count + (isRecord(row) ? 1 : 0), 0);
+    }
+    if (!isColumnarPerAtomData(rows)) return 0;
+    return getColumnarRowCount(rows);
+};
+
+const inferPropertyColumns = (rows: PerAtomProperties): PropertyColumn[] => {
+    if (Array.isArray(rows)) {
+        return inferColumnsFromFlatRows(validFlatRows(rows));
+    }
+    if (!isColumnarPerAtomData(rows)) {
+        return [];
+    }
+    return inferColumnsFromColumnarRows(rows);
 };
 
 const getColumnNames = (rows: Record<string, unknown>[]): string[] => {
@@ -121,11 +195,13 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     public async writeExposureProperties(
         input: PluginPropertyStoreWriteInput
     ): Promise<PluginPropertyStoreWriteResult | null> {
-        if (input.rows.length === 0) {
+        const rows = input.rows;
+        const rowCount = getRowCount(rows);
+        if (!rows || rowCount === 0) {
             return null;
         }
 
-        const columns = inferPropertyColumns(input.rows);
+        const columns = inferPropertyColumns(rows);
         if (columns.length === 0) {
             return null;
         }
@@ -144,9 +220,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 await this.createPropertiesTable(connection, columns);
                 const appender = await connection.createAppender('plugin_properties');
                 try {
-                    input.rows.forEach((row, atomIndex) => {
-                        this.appendPropertyRow(appender, input.timestep, atomIndex, row, columns);
-                    });
+                    this.appendProperties(appender, input.timestep, rows, columns);
                 } finally {
                     appender.closeSync();
                 }
@@ -170,7 +244,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                     'Content-Type': 'application/vnd.apache.parquet',
                     'x-plugin-result-format': 'parquet',
                     'x-plugin-result-schema-version': '1',
-                    'x-plugin-result-row-count': String(input.rows.length)
+                    'x-plugin-result-row-count': String(rowCount)
                 }
             });
 
@@ -178,7 +252,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
 
             return {
                 objectKey,
-                rowCount: input.rows.length,
+                rowCount,
                 propertyNames: columns.map((column) => column.name)
             };
         });
@@ -490,26 +564,98 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
 
         for (const column of columns) {
-            const value = row[column.name];
-            if (value === null || value === undefined) {
-                appender.appendNull();
-                continue;
-            }
-
-            if (column.type === 'double') {
-                const numeric = toFiniteNumber(value);
-                if (numeric === null) {
-                    appender.appendNull();
-                } else {
-                    appender.appendDouble(numeric);
-                }
-                continue;
-            }
-
-            appender.appendVarchar(String(value));
+            this.appendPropertyValue(appender, column, row[column.name]);
         }
 
         appender.endRow();
+    }
+
+    private appendColumnarPropertyRow(
+        appender: Awaited<ReturnType<DuckDBConnection['createAppender']>>,
+        timestep: number,
+        atomIndex: number,
+        rows: PerAtomColumnarData,
+        columns: PropertyColumn[]
+    ): void {
+        appender.appendBigInt(BigInt(timestep));
+        appender.appendUInteger(atomIndex);
+
+        const id = normalizeAtomId(toAtomId(rows.id?.[atomIndex]));
+        if (id === null) {
+            appender.appendNull();
+        } else {
+            appender.appendUBigInt(BigInt(id));
+        }
+
+        for (const column of columns) {
+            this.appendPropertyValue(
+                appender,
+                column,
+                this.readColumnarPropertyValue(rows, atomIndex, column)
+            );
+        }
+
+        appender.endRow();
+    }
+
+    private appendProperties(
+        appender: Awaited<ReturnType<DuckDBConnection['createAppender']>>,
+        timestep: number,
+        rows: PerAtomProperties,
+        columns: PropertyColumn[]
+    ): void {
+        if (Array.isArray(rows)) {
+            let atomIndex = 0;
+            for (const row of validFlatRows(rows)) {
+                this.appendPropertyRow(appender, timestep, atomIndex, flattenAtomProperties(row), columns);
+                atomIndex += 1;
+            }
+            return;
+        }
+
+        if (!isColumnarPerAtomData(rows)) return;
+        const rowCount = getColumnarRowCount(rows);
+        for (let atomIndex = 0; atomIndex < rowCount; atomIndex += 1) {
+            this.appendColumnarPropertyRow(appender, timestep, atomIndex, rows, columns);
+        }
+    }
+
+    private appendPropertyValue(
+        appender: Awaited<ReturnType<DuckDBConnection['createAppender']>>,
+        column: PropertyColumn,
+        value: unknown
+    ): void {
+        if (value === null || value === undefined) {
+            appender.appendNull();
+            return;
+        }
+
+        if (column.type === 'double') {
+            const numeric = toFiniteNumber(value);
+            if (numeric === null) {
+                appender.appendNull();
+            } else {
+                appender.appendDouble(numeric);
+            }
+            return;
+        }
+
+        appender.appendVarchar(String(value));
+    }
+
+    private readColumnarPropertyValue(
+        rows: PerAtomColumnarData,
+        atomIndex: number,
+        column: PropertyColumn
+    ): AtomPropertyValue | undefined {
+        if (!column.sourceName) return undefined;
+
+        const value = rows[column.sourceName]?.[atomIndex];
+        if (column.vectorIndex !== undefined) {
+            return Array.isArray(value) ? value[column.vectorIndex] : undefined;
+        }
+
+        return Array.isArray(value) ? undefined : value;
     }
 
     private rowsToAtomProperties(rows: Record<string, unknown>[]): FlatAtomProperties[] {

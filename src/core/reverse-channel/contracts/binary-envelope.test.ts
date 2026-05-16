@@ -4,7 +4,8 @@ import {
     BINARY_ENVELOPE_HEADER_BYTES,
     EnvelopeKind,
     decodeEnvelope,
-    encodeEnvelope
+    encodeEnvelope,
+    toUint8Array
 } from './binary-envelope';
 
 test('encodeEnvelope/decodeEnvelope roundtrip with empty payload', () => {
@@ -62,6 +63,34 @@ test('decodeEnvelope payload is a view (zero-copy) over the source buffer', () =
     const decoded = decodeEnvelope(encoded);
     assert.equal(decoded.payload.buffer, encoded.buffer);
     assert.equal(decoded.payload.byteOffset, encoded.byteOffset + BINARY_ENVELOPE_HEADER_BYTES);
+});
+
+test('toUint8Array restores Node serialized Buffer payloads', () => {
+    const encoded = encodeEnvelope(9, EnvelopeKind.StreamChunk, new Uint8Array([4, 5, 6]));
+    const restored = toUint8Array({
+        type: 'Buffer',
+        data: Array.from(encoded)
+    });
+
+    const decoded = decodeEnvelope(restored);
+    assert.equal(decoded.opId, 9);
+    assert.equal(decoded.kind, EnvelopeKind.StreamChunk);
+    assert.deepEqual(Array.from(decoded.payload), [4, 5, 6]);
+});
+
+test('toUint8Array restores numeric-key Socket.IO payloads', () => {
+    const encoded = encodeEnvelope(10, EnvelopeKind.StreamChunk, new Uint8Array([7, 8, 9]));
+    const serialized = Object.fromEntries(Array.from(encoded, (byte, index) => [String(index), byte]));
+    const restored = toUint8Array(serialized);
+
+    const decoded = decodeEnvelope(restored);
+    assert.equal(decoded.opId, 10);
+    assert.equal(decoded.kind, EnvelopeKind.StreamChunk);
+    assert.deepEqual(Array.from(decoded.payload), [7, 8, 9]);
+});
+
+test('toUint8Array rejects non-binary payloads', () => {
+    assert.throws(() => toUint8Array({}), TypeError);
 });
 
 test('bench: encode+decode 10M float payload in under 50 ms combined', () => {

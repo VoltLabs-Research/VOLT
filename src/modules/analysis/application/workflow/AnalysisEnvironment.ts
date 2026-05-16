@@ -26,6 +26,10 @@ export interface AnalysisEnvironmentState {
     dumpLocalPaths: string[];
 }
 
+export interface AnalysisEnvironmentPrepareOptions {
+    referenceDumpCache?: Map<number, string>;
+}
+
 @Service('analysisEnvironment')
 export class AnalysisEnvironment {
     constructor(private readonly objectStore: ClusterObjectStore) {}
@@ -33,7 +37,8 @@ export class AnalysisEnvironment {
     async prepare(
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
-        timestep: number | undefined
+        timestep: number | undefined,
+        options: AnalysisEnvironmentPrepareOptions = {}
     ): Promise<AnalysisEnvironmentState> {
         const runtime = await this.initialize(executionData, metadata);
 
@@ -41,14 +46,14 @@ export class AnalysisEnvironment {
             await this.downloadBatchDumps(runtime, executionData);
             runtime.dumpTargets = this.buildBatchDumpTargets(executionData, runtime.dumpLocalPaths);
             runtime.outputs = this.buildBatchOutputs(executionData, runtime.dumpTargets, runtime.outputDir);
-            await this.materializeFrameArgumentDumps(runtime, executionData);
+            await this.materializeFrameArgumentDumps(runtime, executionData, options);
             return runtime;
         }
 
         await this.downloadSingleDump(runtime, executionData, metadata);
         runtime.dumpTargets = this.buildSingleDumpTargets(executionData, runtime.dumpLocalPaths, timestep);
         runtime.outputs = this.buildSingleOutputs(executionData, metadata, runtime);
-        await this.materializeFrameArgumentDumps(runtime, executionData);
+        await this.materializeFrameArgumentDumps(runtime, executionData, options);
         return runtime;
     }
 
@@ -197,9 +202,13 @@ export class AnalysisEnvironment {
 
     private async materializeFrameArgumentDumps(
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
+        executionData: AnalysisJobExecutionData,
+        options: AnalysisEnvironmentPrepareOptions
     ): Promise<void> {
         const referenceDumpPaths = new Map<number, string>();
+        for (const [timestep, localPath] of options.referenceDumpCache ?? []) {
+            referenceDumpPaths.set(timestep, localPath);
+        }
 
         for (const target of runtime.dumpTargets) {
             referenceDumpPaths.set(target.timestep, target.localPath);
@@ -228,7 +237,8 @@ export class AnalysisEnvironment {
                     replacements,
                     referenceDumpPaths,
                     runtime,
-                    executionData
+                    executionData,
+                    options
                 );
             }
 
@@ -252,7 +262,8 @@ export class AnalysisEnvironment {
         replacements: Map<string, string>,
         referenceDumpPaths: Map<number, string>,
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
+        executionData: AnalysisJobExecutionData,
+        options: AnalysisEnvironmentPrepareOptions
     ): Promise<void> {
         const argumentKey = definition.argument;
         if (!argumentKey) {
@@ -269,7 +280,8 @@ export class AnalysisEnvironment {
                 timestep,
                 referenceDumpPaths,
                 runtime,
-                executionData
+                executionData,
+                options
             );
             values[argumentKey] = localPath;
             replacements.set(argumentKey, localPath);
@@ -297,7 +309,8 @@ export class AnalysisEnvironment {
                     replacements,
                     referenceDumpPaths,
                     runtime,
-                    executionData
+                    executionData,
+                    options
                 );
             }
         }
@@ -325,7 +338,8 @@ export class AnalysisEnvironment {
         timestep: number,
         referenceDumpPaths: Map<number, string>,
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData
+        executionData: AnalysisJobExecutionData,
+        options: AnalysisEnvironmentPrepareOptions
     ): Promise<string> {
         const existingPath = referenceDumpPaths.get(timestep);
         if (existingPath) {
@@ -350,7 +364,11 @@ export class AnalysisEnvironment {
             DAEMON_PATHS.analysisDumps
         );
         referenceDumpPaths.set(timestep, localPath);
-        runtime.dumpLocalPaths.push(localPath);
+        if (options.referenceDumpCache) {
+            options.referenceDumpCache.set(timestep, localPath);
+        } else {
+            runtime.dumpLocalPaths.push(localPath);
+        }
         return localPath;
     }
 
