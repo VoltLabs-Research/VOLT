@@ -5,8 +5,7 @@ import type { ClusterObjectStore, LocalClusterObjectStoreGateway } from '@/core/
 import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
-import archiver from 'archiver';
-import type { Archiver } from 'archiver';
+import archiver = require('archiver');
 import fs from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import path from 'node:path';
@@ -58,6 +57,15 @@ const normalizeZipEntryName = (value: string): string => {
     return normalized;
 };
 
+interface ArchiverRuntime {
+    ZipArchive?: new (options?: archiver.ArchiverOptions) => archiver.Archiver;
+}
+
+const createZipArchive = (options: archiver.ArchiverOptions): archiver.Archiver => {
+    const runtime = archiver as unknown as ArchiverRuntime;
+    return new runtime.ZipArchive!(options);
+};
+
 @CommandGroup('object-store')
 export class ObjectStoreArchiveCommands {
     constructor(
@@ -80,7 +88,7 @@ export class ObjectStoreArchiveCommands {
         return withNativeProcessingTempDir('object-store-archive', async (tempDirectory) => {
             const archivePath = path.join(tempDirectory, 'archive.zip');
             const output = createWriteStream(archivePath);
-            const archive = archiver('zip', { zlib: { level: 5 } });
+            const archive = createZipArchive({ zlib: { level: 5 } });
 
             archive.on('warning', (error) => {
                 logger.warn(`@object-store-archive: ${error instanceof Error ? error.message : String(error)}`);
@@ -116,7 +124,7 @@ export class ObjectStoreArchiveCommands {
         });
     }
 
-    private async appendEntry(archive: Archiver, entry: ArchiveEntryPayload): Promise<void> {
+    private async appendEntry(archive: archiver.Archiver, entry: ArchiveEntryPayload): Promise<void> {
         const name = normalizeZipEntryName(entry.name);
 
         if (entry.type === 'inline') {
