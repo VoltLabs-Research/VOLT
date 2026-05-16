@@ -1126,7 +1126,6 @@ export default class DaemonAnalysisCompletionService {
     private async finalizeAnalysis(analysisId: string, teamId: string, failedJobs: number): Promise<void> {
         const hasFailures = failedJobs > 0;
         const status: Analysis['props']['status'] = hasFailures ? 'failed' : 'completed';
-        const trajectoryStatus = hasFailures ? TrajectoryStatus.Failed : TrajectoryStatus.Completed;
 
         if (hasFailures) {
             logger.error(`[DaemonAnalysisCompletion] Analysis ${analysisId} completed with ${failedJobs} failed jobs`);
@@ -1159,9 +1158,6 @@ export default class DaemonAnalysisCompletionService {
             stages: analysis?.props.stages,
             childAnalyses: analysis?.props.childAnalyses
         });
-        if (analysis?.props.trajectory) {
-            await this.setTrajectoryStatus(analysis.props.trajectory, teamId, trajectoryStatus);
-        }
     }
 
     private async finalizeGlbSession(trajectoryId: string, teamId: string, failedJobs: number): Promise<void> {

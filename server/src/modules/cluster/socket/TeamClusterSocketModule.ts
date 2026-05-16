@@ -74,8 +74,10 @@ const daemonRegisterPayloadSchema = z.object({
     teamClusterId: z.string().trim().min(1),
     daemonPassword: z.string().trim().min(1),
     channel: z.enum([
+        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat,
         TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control,
-        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
+        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway,
+        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events
     ]).optional()
 }).strict();
 
@@ -286,7 +288,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 );
 
                 const channel = parsed.data.channel ?? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
-                if (channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
+                if (
+                    channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+                    || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
+                ) {
                     await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
                 }
 
@@ -325,7 +330,15 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
             const registration = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
-            if (registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
+            const shouldMarkDisconnected = registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
+                || (
+                    registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+                    && !this.teamClusterReverseChannelService.hasDaemonConnection(
+                        registration.teamClusterId,
+                        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
+                    )
+                );
+            if (registration && shouldMarkDisconnected) {
                 try {
                     await this.teamClusterLifecycleService.markDaemonDisconnected(registration.teamClusterId);
                 } catch {
@@ -570,6 +583,15 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             const result = await this.processDaemonJobCompletionUseCase.execute(payload as never);
             if (!result.success) {
                 logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${result.error.statusCode} message=${result.error.message}`);
+            }
+
+            return true;
+        }
+
+        if (payload.type === 'runtime-heartbeat') {
+            const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload as never);
+            if (!result.success) {
+                logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${result.error.statusCode} message=${result.error.message}`);
             }
 
             return true;
