@@ -25,6 +25,12 @@ export interface DecodedEnvelope {
     payload: Uint8Array;
 }
 
+interface SerializedBuffer {
+    type?: unknown;
+    data?: unknown;
+    length?: unknown;
+}
+
 const assertUint32 = (value: number, field: string): void => {
     if (!Number.isInteger(value) || value < 0 || value > 0xFFFFFFFF) {
         throw new RangeError(`binary-envelope: ${field} must be a u32 integer in [0, 2^32), got ${value}`);
@@ -80,14 +86,61 @@ export const decodeEnvelope = (buf: Uint8Array): DecodedEnvelope => {
 /**
  * Coerces arbitrary Node/browser buffer-shaped inputs into a `Uint8Array`
  * view (no copy when the source already is a typed array). Used at the
- * Socket.IO boundary where payloads arrive as `Buffer | ArrayBuffer | Uint8Array`.
+ * Socket.IO/IPC boundary where payloads may also arrive as Node's serialized
+ * Buffer shape (`{ type: 'Buffer', data: [...] }`).
  */
-export const toUint8Array = (value: Uint8Array | ArrayBuffer | Buffer): Uint8Array => {
+export const toUint8Array = (value: unknown): Uint8Array => {
     if (value instanceof Uint8Array) {
         return value;
     }
+
     if (value instanceof ArrayBuffer) {
         return new Uint8Array(value);
     }
-    throw new TypeError('binary-envelope: expected Uint8Array/Buffer/ArrayBuffer');
+
+    if (ArrayBuffer.isView(value)) {
+        const view = value as ArrayBufferView;
+        return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+    }
+
+    if (Array.isArray(value)) {
+        return Uint8Array.from(value);
+    }
+
+    if (value && typeof value === 'object') {
+        const serialized = value as SerializedBuffer;
+        if (Array.isArray(serialized.data)) {
+            return Uint8Array.from(serialized.data);
+        }
+
+        if (typeof serialized.length === 'number' && Number.isInteger(serialized.length) && serialized.length >= 0) {
+            const bytes = new Uint8Array(serialized.length);
+            for (let index = 0; index < serialized.length; index += 1) {
+                const byte = (value as Record<string, unknown>)[String(index)];
+                if (typeof byte !== 'number') {
+                    throw new TypeError('binary-envelope: numeric buffer object contains non-number byte');
+                }
+                bytes[index] = byte;
+            }
+            return bytes;
+        }
+
+        const numericKeys = Object.keys(serialized)
+            .filter((key) => /^(0|[1-9]\d*)$/.test(key))
+            .map((key) => Number(key))
+            .sort((left, right) => left - right);
+        if (numericKeys.length > 0 && numericKeys.every((key, index) => key === index)) {
+            const bytes = new Uint8Array(numericKeys.length);
+            for (const index of numericKeys) {
+                const byte = (value as Record<string, unknown>)[String(index)];
+                if (typeof byte !== 'number') {
+                    throw new TypeError('binary-envelope: numeric-key buffer object contains non-number byte');
+                }
+                bytes[index] = byte;
+            }
+            return bytes;
+        }
+    }
+
+    throw new TypeError('binary-envelope: expected binary chunk');
 };

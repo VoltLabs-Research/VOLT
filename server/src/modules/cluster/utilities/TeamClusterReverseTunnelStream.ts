@@ -23,6 +23,8 @@ export interface TeamClusterTunnelStream extends Duplex {
 
 export class TeamClusterReverseTunnelStream extends Duplex implements TeamClusterTunnelStream {
     private readonly pendingReadableCallbacks: Array<() => void> = [];
+    private remoteClosed = false;
+    private remoteCloseDestroyTimer: NodeJS.Timeout | null = null;
 
     constructor(private readonly options: TeamClusterReverseTunnelStreamOptions) {
         super();
@@ -43,7 +45,20 @@ export class TeamClusterReverseTunnelStream extends Duplex implements TeamCluste
     }
 
     closeRemote(): void {
+        if (this.remoteClosed) {
+            return;
+        }
+
+        this.remoteClosed = true;
         this.push(null);
+        this.once('end', () => {
+            this.destroyAfterRemoteEnd();
+        });
+
+        this.remoteCloseDestroyTimer = setTimeout(() => {
+            this.destroyAfterRemoteEnd();
+        }, 30_000);
+        this.remoteCloseDestroyTimer.unref();
     }
 
     fail(error: Error): void {
@@ -105,6 +120,11 @@ export class TeamClusterReverseTunnelStream extends Duplex implements TeamCluste
     }
 
     override _destroy(error: Error | null, callback: (error?: Error | null) => void): void {
+        if (this.remoteCloseDestroyTimer) {
+            clearTimeout(this.remoteCloseDestroyTimer);
+            this.remoteCloseDestroyTimer = null;
+        }
+
         const callbacks = this.pendingReadableCallbacks.splice(0);
         for (const pendingCallback of callbacks) {
             pendingCallback();
@@ -112,5 +132,16 @@ export class TeamClusterReverseTunnelStream extends Duplex implements TeamCluste
 
         this.options.onClose();
         callback(error);
+    }
+
+    private destroyAfterRemoteEnd(): void {
+        if (this.remoteCloseDestroyTimer) {
+            clearTimeout(this.remoteCloseDestroyTimer);
+            this.remoteCloseDestroyTimer = null;
+        }
+
+        if (!this.destroyed) {
+            this.destroy();
+        }
     }
 }

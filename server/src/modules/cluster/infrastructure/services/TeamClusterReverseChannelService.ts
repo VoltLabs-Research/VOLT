@@ -227,13 +227,17 @@ const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 @Singleton()
 export default class TeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
+    private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();
+    private readonly eventSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly teamClusterIdsBySocketId = new Map<string, string>();
     private readonly socketChannelsBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();
     private readonly pendingEntries = new Map<string, PendingEntry>();
     private readonly inboundStreamConsumers = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
     private readonly connectionWaiters = new Map<string, Array<(socketId: string) => void>>();
+    private readonly heartbeatConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly objectGatewayConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
+    private readonly eventConnectionWaiters = new Map<string, Array<(socketId: string) => void>>();
     private readonly requestTimeoutMs = 30_000;
     private readonly terminalTimeoutMs = 15_000;
     private readonly daemonConnectionWaitTimeoutMs = 30_000;
@@ -378,20 +382,40 @@ export default class TeamClusterReverseChannelService {
         return this.teamClusterIdsBySocketId.get(socketId) ?? null;
     }
 
+    hasDaemonConnection(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): boolean {
+        return this.getSocketMapForChannel(channel).has(teamClusterId);
+    }
+
     private getSocketMapForChannel(
         channel: TeamClusterDaemonSocketChannel
     ): Map<string, string> {
-        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
-            ? this.objectGatewaySocketIdsByTeamClusterId
-            : this.daemonSocketIdsByTeamClusterId;
+        switch (channel) {
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat:
+                return this.heartbeatSocketIdsByTeamClusterId;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway:
+                return this.objectGatewaySocketIdsByTeamClusterId;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events:
+                return this.eventSocketIdsByTeamClusterId;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control:
+            default:
+                return this.daemonSocketIdsByTeamClusterId;
+        }
     }
 
     private getWaiterMapForChannel(
         channel: TeamClusterDaemonSocketChannel
     ): Map<string, Array<(socketId: string) => void>> {
-        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway
-            ? this.objectGatewayConnectionWaiters
-            : this.connectionWaiters;
+        switch (channel) {
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat:
+                return this.heartbeatConnectionWaiters;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway:
+                return this.objectGatewayConnectionWaiters;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events:
+                return this.eventConnectionWaiters;
+            case TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control:
+            default:
+                return this.connectionWaiters;
+        }
     }
 
     registerInboundStreamConsumer(
@@ -1100,7 +1124,18 @@ export default class TeamClusterReverseChannelService {
         }
 
         this.touchSession(payload.sessionId);
-        const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        let chunk: Buffer;
+        try {
+            chunk = this.unwrapEnvelopeBuffer(payload.chunk);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.warn(`[ReverseChannel] tunnel-data decode failed sessionId=${payload.sessionId} chunkShape=${this.describeBinaryCarrier(payload.chunk)} error=${message}`);
+            this.failPendingTunnelWrites(entry, error instanceof Error ? error : new Error(message));
+            entry.stream.fail(error instanceof Error ? error : new Error(message));
+            this.pendingEntries.delete(payload.sessionId);
+            this.untouchSession(payload.sessionId);
+            return;
+        }
         if (payload.requiresAck && typeof payload.sequence === 'number') {
             entry.stream.pushChunk(chunk, () => {
                 this.emitTunnelDrain(entry.socketId, payload.sessionId, payload.sequence!);
@@ -1140,10 +1175,8 @@ export default class TeamClusterReverseChannelService {
             return;
         }
 
-        // destroy() after closeRemote() so http.Agent evicts the dead socket from its pool.
         this.failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
         entry.stream.closeRemote();
-        entry.stream.destroy();
         this.pendingEntries.delete(payload.sessionId);
         this.untouchSession(payload.sessionId);
     }
@@ -1330,6 +1363,23 @@ export default class TeamClusterReverseChannelService {
             );
         }
         return Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
+    }
+
+    private describeBinaryCarrier(value: unknown): string {
+        if (value === null) return 'null';
+        if (value === undefined) return 'undefined';
+        if (value instanceof Uint8Array) return `${value.constructor.name}(byteLength=${value.byteLength})`;
+        if (value instanceof ArrayBuffer) return `ArrayBuffer(byteLength=${value.byteLength})`;
+        if (ArrayBuffer.isView(value)) {
+            const view = value as ArrayBufferView;
+            return `${value.constructor.name}(byteLength=${view.byteLength})`;
+        }
+        if (Array.isArray(value)) return `Array(length=${value.length})`;
+        if (typeof value === 'object') {
+            const record = value as Record<string, unknown>;
+            return `Object(keys=${Object.keys(record).slice(0, 8).join(',')}; type=${String(record.type)}; data=${Array.isArray(record.data) ? `array:${record.data.length}` : typeof record.data}; length=${String(record.length)})`;
+        }
+        return typeof value;
     }
 
     private createCommandMessage(
