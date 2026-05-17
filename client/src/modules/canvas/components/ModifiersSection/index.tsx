@@ -47,18 +47,28 @@ interface ModifierPopoverItemProps {
     hasContent: boolean;
     isForeignTrajectory?: boolean;
     onAction: () => boolean | void | Promise<boolean | void>;
+    onOpenConfig?: (option: ModifierOption) => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 }
 
-const ModifierPopoverItem = ({
+type ModifierConfigContentProps = Pick<
+    ModifierPopoverItemProps,
+    'option' | 'execState' | 'showAction' | 'isForeignTrajectory' | 'onAction' | 'renderModifierConfig'
+> & {
+    onClose: () => void;
+    className?: string;
+};
+
+const ModifierConfigContent = ({
     option,
     execState,
     showAction,
-    hasContent,
     isForeignTrajectory,
     onAction,
-    renderModifierConfig
-}: ModifierPopoverItemProps) => {
+    onClose,
+    renderModifierConfig,
+    className = ''
+}: ModifierConfigContentProps) => {
     const [isClosing, setIsClosing] = useState(false);
     const closeDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const closeAnimationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,7 +89,7 @@ const ModifierPopoverItem = ({
         return clearCloseTimers;
     }, [clearCloseTimers]);
 
-    const handleActionAndClose = useCallback(async (close: () => void) => {
+    const handleActionAndClose = useCallback(async () => {
         if (execState === ExecState.Loading) {
             return;
         }
@@ -95,14 +105,51 @@ const ModifierPopoverItem = ({
         closeDelayRef.current = setTimeout(() => {
             setIsClosing(true);
             closeAnimationRef.current = setTimeout(() => {
-                close();
+                onClose();
                 setIsClosing(false);
                 closeAnimationRef.current = null;
             }, CLOSE_ANIMATION_MS);
             closeDelayRef.current = null;
         }, CLOSE_AFTER_RESPONSE_DELAY_MS);
-    }, [clearCloseTimers, execState, onAction]);
+    }, [clearCloseTimers, execState, onAction, onClose]);
 
+    return (
+        <Stack gap='075' className={`canvas-plugin-popover-content ${className} ${isClosing ? 'canvas-plugin-popover-content--closing' : ''}`.trim()}>
+            {renderModifierConfig(option)}
+            {option.isPlugin && showAction && (
+                <Stack className='canvas-plugin-popover-footer'>
+                    <Button
+                        variant='solid'
+                        intent={pluginAction.intent}
+                        size='sm'
+                        shape='rounded'
+                        block
+                        isLoading={execState === ExecState.Loading}
+                        leftIcon={execState === ExecState.Loading ? undefined : pluginAction.icon}
+                        onClick={() => { void handleActionAndClose(); }}
+                    >
+                        {execState === ExecState.Loading ? 'Executing...' : pluginAction.label}
+                    </Button>
+                </Stack>
+            )}
+        </Stack>
+    );
+};
+
+export { ModifierConfigContent };
+
+const ModifierPopoverItem = ({
+    option,
+    execState,
+    showAction,
+    hasContent,
+    isForeignTrajectory,
+    onAction,
+    onOpenConfig,
+    renderModifierConfig
+}: ModifierPopoverItemProps) => {
+    const externalConfigId = `plugin-config-${option.modifierId}-panel`;
+    const opensExternalConfig = Boolean(hasContent && onOpenConfig);
     const trigger = (
         <button
             type='button'
@@ -110,6 +157,8 @@ const ModifierPopoverItem = ({
             aria-label={`${option.title} settings`}
             title={option.title}
             data-modifier-id={option.modifierId}
+            onClick={opensExternalConfig ? () => onOpenConfig?.(option) : undefined}
+            aria-controls={opensExternalConfig ? externalConfigId : undefined}
         >
             <Row gap='05' className='collapsible-section-trigger-content canvas-plugin-popover-title-row'>
                 <Text size='sm' tone='secondary' truncate>{option.title}</Text>
@@ -122,6 +171,14 @@ const ModifierPopoverItem = ({
         </button>
     );
 
+    if (opensExternalConfig) {
+        return (
+            <Row gap='025' className='canvas-section canvas-plugin-popover-item'>
+                {trigger}
+            </Row>
+        );
+    }
+
     return (
         <Row gap='025' className='canvas-section canvas-plugin-popover-item'>
             {hasContent ? (
@@ -129,30 +186,20 @@ const ModifierPopoverItem = ({
                     id={`plugin-config-${option.modifierId}`}
                     trigger={trigger}
                     content={(close) => (
-                        <Stack gap='075' className={`canvas-plugin-popover-content ${isClosing ? 'canvas-plugin-popover-content--closing' : ''}`.trim()}>
-                            {renderModifierConfig(option)}
-                            {option.isPlugin && showAction && (
-                                <Stack className='canvas-plugin-popover-footer'>
-                                    <Button
-                                        variant='solid'
-                                        intent={pluginAction.intent}
-                                        size='sm'
-                                        shape='rounded'
-                                        block
-                                        isLoading={execState === ExecState.Loading}
-                                        leftIcon={execState === ExecState.Loading ? undefined : pluginAction.icon}
-                                        onClick={() => { void handleActionAndClose(close); }}
-                                    >
-                                        {execState === ExecState.Loading ? 'Executing...' : pluginAction.label}
-                                    </Button>
-                                </Stack>
-                            )}
-                        </Stack>
+                        <ModifierConfigContent
+                            option={option}
+                            execState={execState}
+                            showAction={showAction}
+                            isForeignTrajectory={isForeignTrajectory}
+                            onAction={onAction}
+                            onClose={close}
+                            renderModifierConfig={renderModifierConfig}
+                        />
                     )}
                     triggerAction='click'
                     placement='left-start'
                     ariaLabel={`${option.title} settings`}
-                    className={`context-menu-popover--plugin-config ${isClosing ? 'context-menu-popover--plugin-config-closing' : ''}`.trim()}
+                    className='context-menu-popover--plugin-config'
                 />
             ) : trigger}
         </Row>
@@ -167,6 +214,7 @@ interface ModifiersSectionProps {
     hasContent: (option: ModifierOption) => boolean;
     isForeignTrajectory?: boolean;
     onAction: (option: ModifierOption) => boolean | void | Promise<boolean | void>;
+    onOpenConfig?: (option: ModifierOption) => void;
     renderModifierConfig: (option: ModifierOption) => React.ReactNode;
 }
 
@@ -178,6 +226,7 @@ const ModifiersSection = ({
     hasContent,
     isForeignTrajectory,
     onAction,
+    onOpenConfig,
     renderModifierConfig
 }: ModifiersSectionProps) => {
     if (pluginLoading && modifiers.length === 0) {
@@ -215,6 +264,7 @@ const ModifiersSection = ({
                         hasContent={hasContent(option)}
                         isForeignTrajectory={isForeignTrajectory}
                         onAction={() => onAction(option)}
+                        onOpenConfig={onOpenConfig}
                         renderModifierConfig={renderModifierConfig}
                     />
                 );

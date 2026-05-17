@@ -5,7 +5,7 @@ import { useTrajectoryCloneFlowStore } from '../../stores/use-trajectory-clone-f
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
 import { useCanvasAccessStore } from '../../api/access/use-canvas-access-store';
 import ModifierConfig from '../ModifierConfig';
-import ModifiersSection from '../ModifiersSection';
+import ModifiersSection, { ModifierConfigContent } from '../ModifiersSection';
 import ObjectsPanel from '../ObjectsPanel';
 
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
@@ -18,8 +18,13 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import Box from '@/shared/presentation/primitives/Box';
+import IconButton from '@/shared/presentation/primitives/IconButton';
 import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
+import { ArrowLeft } from 'lucide-react';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
@@ -76,6 +81,7 @@ const RightPanel = ({
 }: RightPanelProps) => {
     const storeCanMutate = useCanvasAccessStore((state) => state.canMutate);
     const canMutate = canMutateCanvas ?? storeCanMutate;
+    const usePanelConfigView = useMedia('(max-width: 768px)');
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { cloneAndRun } = useTrajectoryCloneFlow();
@@ -116,6 +122,7 @@ const RightPanel = ({
     const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, unknown>>>({});
     const [pluginExecutionClusters, setPluginExecutionClusters] = useState<Record<string, PluginExecutionClusterConfig>>({});
     const [pluginSelectedTimesteps, setPluginSelectedTimesteps] = useState<Record<string, number[] | undefined>>({});
+    const [activeModifierId, setActiveModifierId] = useState<string | null>(null);
 
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const {
@@ -271,6 +278,24 @@ const RightPanel = ({
     });
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
+    const activeModifier = useMemo(() => {
+        if (!activeModifierId) {
+            return null;
+        }
+
+        return allModifiers.find((option) => option.modifierId === activeModifierId) ?? null;
+    }, [activeModifierId, allModifiers]);
+
+    useEffect(() => {
+        if (!usePanelConfigView && activeModifierId) {
+            setActiveModifierId(null);
+            return;
+        }
+
+        if (activeModifierId && !activeModifier) {
+            setActiveModifierId(null);
+        }
+    }, [activeModifier, activeModifierId, usePanelConfigView]);
 
     const getExecState = useCallback((option: ModifierOption): ExecState => {
         return execStates.get(option.modifierId) ?? ExecState.Idle;
@@ -297,6 +322,14 @@ const RightPanel = ({
         }
         return handleExecutePlugin(option);
     }, [handleExecutePlugin]);
+
+    const handleOpenModifierConfig = useCallback((option: ModifierOption) => {
+        setActiveModifierId(option.modifierId);
+    }, []);
+
+    const handleCloseModifierConfig = useCallback(() => {
+        setActiveModifierId(null);
+    }, []);
 
     const renderModifierConfig = useCallback((option: ModifierOption) => {
         let content: ReactNode = null;
@@ -364,23 +397,64 @@ const RightPanel = ({
             hasContent={modifierHasContent}
             isForeignTrajectory={isForeignTrajectory}
             onAction={handleAction}
+            onOpenConfig={usePanelConfigView ? handleOpenModifierConfig : undefined}
             renderModifierConfig={renderModifierConfig}
         />
     ) : undefined;
 
+    const activeModifierConfigView = usePanelConfigView && activeModifier ? (
+        <Stack
+            id={`plugin-config-${activeModifier.modifierId}-panel`}
+            height='max'
+            minH='0'
+            overflow='hidden'
+            className='canvas-plugin-config-view'
+        >
+            <Row shrink='0' className='canvas-plugin-config-view__header'>
+                <IconButton
+                    variant='ghost'
+                    size='sm'
+                    className='canvas-plugin-config-view__back'
+                    aria-label='Back to canvas panel'
+                    title='Back to canvas panel'
+                    onClick={handleCloseModifierConfig}
+                >
+                    <ArrowLeft size={14} aria-hidden='true' />
+                </IconButton>
+                <Text as='span' size='sm' tone='secondary' truncate className='canvas-plugin-config-view__title'>
+                    {activeModifier.title}
+                </Text>
+            </Row>
+            <div className='canvas-plugin-config-view__body'>
+                <ModifierConfigContent
+                    option={activeModifier}
+                    execState={getExecState(activeModifier)}
+                    showAction={shouldShowAction(activeModifier)}
+                    isForeignTrajectory={isForeignTrajectory}
+                    onAction={() => handleAction(activeModifier)}
+                    onClose={handleCloseModifierConfig}
+                    renderModifierConfig={renderModifierConfig}
+                    className='canvas-plugin-panel-config'
+                />
+            </div>
+        </Stack>
+    ) : null;
+
     return (
         <Row height='max' overflow='hidden'>
             <Box width='max' height='max' overflow='hidden'>
-                <ObjectsPanel
-                    trajectory={trajectory}
-                    onDownloadAnalysis={onDownloadAnalysis}
-                    onDownloadExposureListing={onDownloadExposureListing}
-                    rasterContainerSelections={rasterContainerSelections}
-                    activeRasterContainerId={activeRasterContainerId}
-                    onSetActiveRasterContainer={onSetActiveRasterContainer}
-                    onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
-                    pluginsContent={pluginsContent}
-                />
+                {activeModifierConfigView ?? (
+                    <ObjectsPanel
+                        trajectory={trajectory}
+                        onDownloadAnalysis={onDownloadAnalysis}
+                        onDownloadExposureListing={onDownloadExposureListing}
+                        rasterContainerSelections={rasterContainerSelections}
+                        activeRasterContainerId={activeRasterContainerId}
+                        onSetActiveRasterContainer={onSetActiveRasterContainer}
+                        onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
+                        pluginsContent={pluginsContent}
+                    />
+                )}
             </Box>
         </Row>
     );
