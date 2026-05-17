@@ -257,17 +257,16 @@
 
     .canvas-timeline-tab-select-region {
         display: block;
+        overflow: hidden;
     }
 
     .canvas-timeline-tab-select {
         width: 100%;
         min-height: 1.875rem;
         padding: 0.25rem 0.5rem;
-        border-radius: var(--radius-lg);
+        border-radius: inherit;
         border-color: transparent;
-        background: var(--glass-bg-secondary);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
+        background: inherit;
         font-size: 0.6875rem;
     }
 
@@ -294,11 +293,6 @@
         justify-content: flex-start;
         padding: 0;
         border: 0;
-        border-radius: var(--radius-lg);
-        background: var(--glass-bg-secondary);
-        box-shadow: var(--shadow-glass);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
         pointer-events: auto;
     }
 
@@ -330,7 +324,6 @@
         width: clamp(3.25rem, 17vw, 4.5rem);
         height: 1.875rem;
         min-height: 1.875rem;
-        border-radius: var(--radius-lg);
         font-size: 0.625rem;
     }
 
@@ -338,7 +331,6 @@
         height: 1.875rem;
         min-height: 1.875rem;
         padding: 0 0.5rem;
-        border-radius: var(--radius-lg);
         font-size: 0.6875rem;
     }
 
@@ -364,11 +356,6 @@
         overflow-x: auto;
         overflow-y: auto;
         border: 0;
-        border-radius: var(--radius-lg);
-        background: var(--glass-bg-secondary);
-        box-shadow: var(--shadow-glass);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
         pointer-events: auto;
     }
 
