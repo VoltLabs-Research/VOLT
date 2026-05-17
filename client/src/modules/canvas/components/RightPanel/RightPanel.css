@@ -80,11 +80,6 @@
     max-width: min(24rem, calc(100vw - 2rem));
 }
 
-.context-menu-popover--plugin-config-closing {
-    pointer-events: none;
-    animation: canvas-plugin-popover-close 160ms ease-in forwards;
-}
-
 .canvas-plugin-popover-content {
     min-width: min(21rem, calc(100vw - 3rem));
     transform-origin: right top;
@@ -119,18 +114,82 @@
 
     .canvas-plugin-popover-trigger {
         min-height: 34px;
-    }
-}
-
-@keyframes canvas-plugin-popover-close {
-    from {
-        opacity: 1;
-        filter: blur(0);
+        width: 100%;
+        margin-right: 0;
     }
 
-    to {
-        opacity: 0;
-        filter: blur(2px);
+    .canvas-plugin-config-view {
+        height: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .canvas-plugin-config-view__header {
+        align-items: center;
+        gap: 0.375rem;
+        min-height: 2.5rem;
+        padding: 0.25rem 0.5rem;
+        border-bottom: 1px solid var(--color-border-soft);
+    }
+
+    .canvas-plugin-config-view__back.volt-icon-button {
+        width: 2rem;
+        height: 2rem;
+        min-width: 2rem;
+        min-height: 2rem;
+        padding: 0.4375rem;
+        border-radius: var(--radius-full);
+    }
+
+    .canvas-plugin-config-view__title {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .canvas-plugin-config-view__body {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 0.75rem;
+        overflow: auto;
+        overscroll-behavior: contain;
+    }
+
+    .canvas-plugin-panel-config.canvas-plugin-popover-content {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .canvas-plugin-config-view *,
+    .canvas-plugin-panel-config > *,
+    .canvas-plugin-panel-config .d-flex {
+        min-width: 0;
+    }
+
+    .canvas-plugin-config-view .form-field-canvas {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+    }
+
+    .canvas-plugin-config-view .canvas-form-label {
+        min-width: 0;
+        width: 100%;
+        line-height: 1.25;
+        white-space: normal;
+    }
+
+    .canvas-plugin-config-view .form-field-canvas .render-input-container {
+        width: 100%;
+        max-width: none;
+        justify-content: stretch;
+    }
+
+    .canvas-plugin-config-view .form-field-canvas-input,
+    .canvas-plugin-config-view .form-field-canvas-select,
+    .canvas-plugin-config-view .form-field-canvas .select-trigger {
+        width: 100%;
+        min-width: 0;
     }
 }
 
@@ -145,7 +204,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .context-menu-popover--plugin-config-closing,
     .canvas-plugin-popover-content--closing {
         animation-duration: 1ms;
         filter: none;

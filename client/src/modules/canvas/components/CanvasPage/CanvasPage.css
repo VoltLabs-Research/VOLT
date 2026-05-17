@@ -148,6 +148,13 @@
 @media (max-width: 768px) {
     .canvas-editor-root {
         --canvas-header-height: 84px;
+        --canvas-mobile-panel-edge: 0.75rem;
+        --canvas-mobile-panel-top: calc(var(--canvas-header-height, 84px) + 8.75rem);
+        --canvas-mobile-controls-gutter: 5rem;
+        --canvas-mobile-control-column-size: 2.625rem;
+        --canvas-mobile-control-column-right: calc(0.5rem + env(safe-area-inset-right, 0px));
+        --canvas-mobile-drawer-trigger-top: calc(var(--canvas-header-height, 84px) + 0.25rem);
+        --canvas-mobile-viewport-controls-top: calc(var(--canvas-mobile-drawer-trigger-top) + var(--canvas-mobile-control-column-size) + 0.5rem);
     }
 
     .canvas-resize-rail--timeline {
@@ -277,6 +284,66 @@
         -webkit-backdrop-filter: none;
         pointer-events: none;
     }
+
+    .canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+        top: var(--canvas-mobile-viewport-controls-top) !important;
+        right: var(--canvas-mobile-control-column-right) !important;
+        width: var(--canvas-mobile-control-column-size);
+        margin-right: 0 !important;
+        box-sizing: border-box;
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container {
+        top: var(--canvas-mobile-panel-top);
+        left: calc(var(--canvas-mobile-panel-edge) + env(safe-area-inset-left, 0px));
+        right: auto;
+        bottom: auto;
+        z-index: 140;
+        width: min(22rem, calc(100vw - var(--canvas-mobile-controls-gutter) - var(--canvas-mobile-panel-edge) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))) !important;
+        max-width: calc(100vw - var(--canvas-mobile-controls-gutter) - var(--canvas-mobile-panel-edge) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+        height: min(24rem, calc(100dvh - var(--canvas-mobile-panel-top) - 1rem - env(safe-area-inset-bottom, 0px)));
+        max-height: calc(100dvh - var(--canvas-mobile-panel-top) - 1rem - env(safe-area-inset-bottom, 0px));
+        padding-right: 0;
+        border: var(--canvas-floating-surface-border, 0);
+        border-radius: var(--canvas-floating-surface-radius, 12px);
+        background: var(--canvas-floating-surface-bg, var(--glass-bg-secondary));
+        box-shadow: var(--shadow-card);
+        transform: translateY(0) scale(1);
+        transform-origin: top left;
+        transition:
+            opacity 180ms var(--ease-standard),
+            transform 180ms var(--ease-standard),
+            visibility 180ms var(--ease-standard);
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container[data-drawer-open='false'] {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-8px) scale(0.98);
+    }
+
+    .canvas-panel-drawer-toggle {
+        top: var(--canvas-mobile-drawer-trigger-top);
+        left: auto;
+        right: var(--canvas-mobile-control-column-right);
+        z-index: 125;
+        width: var(--canvas-mobile-control-column-size);
+        height: var(--canvas-mobile-control-column-size);
+        border-radius: var(--radius-full);
+        border: var(--canvas-floating-surface-border, 0);
+        background: var(--canvas-floating-surface-bg, var(--glass-bg-secondary));
+        box-shadow: var(--shadow-card);
+        backdrop-filter: var(--canvas-floating-surface-backdrop, var(--glass-blur));
+        -webkit-backdrop-filter: var(--canvas-floating-surface-backdrop, var(--glass-blur));
+        transform: none;
+    }
+
+    .canvas-panel-drawer-toggle--right {
+        border-radius: var(--radius-full);
+        border-right: var(--canvas-floating-surface-border, 0);
+    }
+
 }
 @media (pointer: coarse) and (max-width: 1199px) {
     .canvas-resize-handle[aria-controls="canvas-center-timeline"] {
@@ -320,7 +387,16 @@
         animation: none;
     }
 }
-@media (pointer: coarse) and (max-width: 1199px) {
+@media (max-width: 768px) {
+    .canvas-panel-drawer-backdrop {
+        z-index: 130;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+@media (pointer: coarse) and (min-width: 769px) and (max-width: 1199px) {
     .canvas-panel-drawer-toggle {
         width: 32px;
         height: 64px;

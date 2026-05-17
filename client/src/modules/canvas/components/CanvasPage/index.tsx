@@ -637,7 +637,8 @@ const CanvasPage = () => {
                             type='button'
                             className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
                             onClick={() => setRightDrawerOpen(true)}
-                            aria-label='Open plugins panel'
+                            aria-label='Open canvas panel'
+                            title='Open canvas panel'
                             aria-expanded={rightDrawerOpen}
                             aria-controls='canvas-right-panel'
                         >
