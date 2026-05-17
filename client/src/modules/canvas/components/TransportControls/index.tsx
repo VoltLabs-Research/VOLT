@@ -75,34 +75,52 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     };
 
     const buttons = useMemo(() => ([
-        { Icon: SkipBack, label: 'Jump to start', onClick: jumpToStart },
-        { Icon: Rewind, label: 'Back 10 timesteps', onClick: jumpBack10 },
-        { Icon: ChevronLeft, label: 'Previous timestep', onClick: prevTimestep },
-        { Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: handleTogglePlay },
-        { Icon: ChevronRight, label: 'Next timestep', onClick: nextTimestep },
-        { Icon: FastForward, label: 'Forward 10 timesteps', onClick: jumpForward10 },
-        { Icon: SkipForward, label: 'Jump to end', onClick: jumpToEnd }
+        { action: 'start', Icon: SkipBack, label: 'Jump to start', onClick: jumpToStart },
+        { action: 'back-10', Icon: Rewind, label: 'Back 10 timesteps', onClick: jumpBack10 },
+        { action: 'previous', Icon: ChevronLeft, label: 'Previous timestep', onClick: prevTimestep },
+        { action: 'play', Icon: isPlaying ? Pause : Play, label: isPlaying ? 'Pause' : 'Play', onClick: handleTogglePlay },
+        { action: 'next', Icon: ChevronRight, label: 'Next timestep', onClick: nextTimestep },
+        { action: 'forward-10', Icon: FastForward, label: 'Forward 10 timesteps', onClick: jumpForward10 },
+        { action: 'end', Icon: SkipForward, label: 'Jump to end', onClick: jumpToEnd }
     ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
+    const renderButton = (btn: typeof buttons[number]) => (
+        <Button
+            key={btn.action}
+            variant="ghost"
+            intent="canvas"
+            size="sm"
+            shape="circle"
+            className="canvas-btn-compact"
+            iconOnly
+            aria-label={btn.label}
+            title={btn.label}
+            data-transport-action={btn.action}
+            onClick={btn.onClick}
+        >
+            <btn.Icon style={{ width: 13, height: 13 }} />
+        </Button>
+    );
+
+    const previousButton = buttons[2];
+    const playButton = buttons[3];
+    const nextButton = buttons[4];
+
     return (
-        <Row className="canvas-transport-controls">
-            {buttons.map((btn) => (
-                <Button
-                    key={btn.label}
-                    variant="ghost"
-                    intent="canvas"
-                    size="sm"
-                    shape="circle"
-                    className="canvas-btn-compact"
-                    iconOnly
-                    aria-label={btn.label}
-                    title={btn.label}
-                    onClick={btn.onClick}
-                >
-                    <btn.Icon style={{ width: 13, height: 13 }} />
-                </Button>
-            ))}
-        </Row>
+        <>
+            <Row className="canvas-transport-controls canvas-transport-controls--full">
+                {buttons.map(renderButton)}
+            </Row>
+            <Row className="canvas-transport-controls-mobile">
+                <Row className="canvas-transport-mobile-step-controls">
+                    {renderButton(previousButton)}
+                    {renderButton(nextButton)}
+                </Row>
+                <Row className="canvas-transport-mobile-play-control">
+                    {renderButton(playButton)}
+                </Row>
+            </Row>
+        </>
     );
 };
 

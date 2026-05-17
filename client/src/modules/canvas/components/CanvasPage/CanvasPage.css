@@ -91,7 +91,11 @@
 
 @media (max-width: 768px) {
     .canvas-editor-root {
-        --canvas-header-height: 48px;
+        --canvas-header-height: 84px;
+    }
+
+    .canvas-resize-rail--timeline {
+        display: none;
     }
 }
 
@@ -200,6 +204,22 @@
 
     .canvas-editor-root.canvas-editor-root--narrow .canvas-resize-handle:not([aria-controls="canvas-center-timeline"]) {
         display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .canvas-center-timeline.canvas-overlay-glass {
+        left: calc(1rem + env(safe-area-inset-left, 0px));
+        right: calc(1rem + env(safe-area-inset-right, 0px));
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        z-index: 120;
+        min-height: 132px;
+        overflow: visible;
+        border-radius: 0;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        pointer-events: none;
     }
 }
 @media (pointer: coarse) and (max-width: 1199px) {

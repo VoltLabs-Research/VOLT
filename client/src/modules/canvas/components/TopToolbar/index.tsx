@@ -123,78 +123,89 @@ const TopToolbar = ({
     });
 
     const canShowPeers = Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
+    const renderToolbarOptions = (className: string, menuIdPrefix = 'menu') => (
+        <div className={`canvas-toolbar-options ${className}`}>
+            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
+                {menus.map((menu) => (
+                    <MenuPopover
+                        key={`${menuIdPrefix}-${menu.label}`}
+                        menu={menu}
+                        openMenu={openMenu}
+                        onOpenChange={setOpenMenu}
+                        idPrefix={menuIdPrefix}
+                    />
+                ))}
+            </nav>
+
+            <WorkspaceTabs
+                disableAuxWorkspaces={localGlbMode}
+                showScriptingWorkspace={canMutateCanvas}
+            />
+        </div>
+    );
 
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
-            <input
-                ref={fileInputRef}
-                type='file'
-                multiple
-                hidden
-                onChange={handlePickerChange}
-            />
-            <Row flex='1' className="canvas-toolbar-left">
-                <IconButton
-                    variant='ghost'
-                    size='sm'
-                    aria-label='Back to dashboard'
-                    title='Back to dashboard'
-                    onClick={handleBack}
-                >
-                    <ChevronLeft size={16} aria-hidden='true' />
-                </IconButton>
-                {trajectory && (
-                    <div
-                        className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
-                        title={trajectory.name}
-                    >
-                        <EditableTrajectoryName
-                            trajectoryId={trajectory._id}
-                            name={trajectory.name}
-                            className="canvas-toolbar-trajectory-name"
-                        />
-                    </div>
-                )}
+            {renderToolbarOptions('canvas-toolbar-options--mobile', 'mobile-menu')}
 
-                <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
-                    {menus.map((menu) => (
-                        <MenuPopover
-                            key={menu.label}
-                            menu={menu}
-                            openMenu={openMenu}
-                            onOpenChange={setOpenMenu}
-                        />
-                    ))}
-                </nav>
-
-                <WorkspaceTabs
-                    disableAuxWorkspaces={localGlbMode}
-                    showScriptingWorkspace={canMutateCanvas}
+            <div className="canvas-toolbar-main">
+                <input
+                    ref={fileInputRef}
+                    type='file'
+                    multiple
+                    hidden
+                    onChange={handlePickerChange}
                 />
-            </Row>
+                <Row flex='1' className="canvas-toolbar-left">
+                    <IconButton
+                        variant='ghost'
+                        size='sm'
+                        aria-label='Back to dashboard'
+                        title='Back to dashboard'
+                        onClick={handleBack}
+                    >
+                        <ChevronLeft size={16} aria-hidden='true' />
+                    </IconButton>
+                    {trajectory && (
+                        <div
+                            className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
+                            title={trajectory.name}
+                        >
+                            <EditableTrajectoryName
+                                trajectoryId={trajectory._id}
+                                name={trajectory.name}
+                                className="canvas-toolbar-trajectory-name"
+                            />
+                        </div>
+                    )}
 
-            <Row justify='center' flex='1' className="canvas-toolbar-center">
-                {canMutateCanvas && <CanvasPluginSearch />}
-            </Row>
+                    {renderToolbarOptions('canvas-toolbar-options--desktop')}
+                </Row>
 
-            <Row gap='025' flex='1' justify='end' className="canvas-toolbar-info">
-                {contextualActions}
-                {canShowPeers && onSelectWorkspacePeer && (
-                    <WorkspacePeerAvatars
-                        peers={workspacePeers ?? []}
-                        self={localGlbMode ? undefined : selfPresence}
-                        activeOwnerId={workspaceActiveOwnerId}
-                        onSelectPeer={onSelectWorkspacePeer}
-                    />
-                )}
-                {share && user && (
-                    <TrajectorySharePanelPopover
-                        trajectoryId={share.trajectoryId}
-                        isPublic={share.isPublic}
-                        canManageVisibility={share.canManageVisibility}
-                    />
-                )}
-            </Row>
+                <Row justify='center' flex='1' className="canvas-toolbar-center">
+                    {canMutateCanvas && <CanvasPluginSearch />}
+                </Row>
+
+                <Row gap='025' flex='1' justify='end' className="canvas-toolbar-info">
+                    {contextualActions}
+                    {canShowPeers && onSelectWorkspacePeer && (
+                        <WorkspacePeerAvatars
+                            peers={workspacePeers ?? []}
+                            self={localGlbMode ? undefined : selfPresence}
+                            activeOwnerId={workspaceActiveOwnerId}
+                            onSelectPeer={onSelectWorkspacePeer}
+                        />
+                    )}
+                    {share && user && (
+                        <TrajectorySharePanelPopover
+                            trajectoryId={share.trajectoryId}
+                            isPublic={share.isPublic}
+                            canManageVisibility={share.canManageVisibility}
+                        />
+                    )}
+                </Row>
+            </div>
+
         </header>
     );
 };
