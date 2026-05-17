@@ -47,3 +47,15 @@
     align-items: center;
     box-sizing: border-box;
 }
+
+@media (max-width: 768px) {
+    .plugin-compact-table-header-cell {
+        padding-inline: 0.25rem;
+        font-size: 0.625rem;
+    }
+
+    .plugin-compact-table-cell {
+        padding-inline: 0.25rem;
+        font-size: 0.625rem;
+    }
+}

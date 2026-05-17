@@ -8,6 +8,7 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';
@@ -24,6 +25,16 @@ export interface ColumnConfig {
 const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
 const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 const getColumnMinWidth = (col: ColumnConfig): number => Number(col.width ?? 120);
+const MOBILE_COLUMN_WIDTH_SCALE = 0.62;
+const MIN_MOBILE_COLUMN_WIDTH = 44;
+const getResolvedColumnWidth = (col: ColumnConfig, widthScale = 1): number => {
+    const width = getColumnMinWidth(col);
+    if (widthScale === 1) return width;
+    return Math.max(MIN_MOBILE_COLUMN_WIDTH, Math.round(width * widthScale));
+};
+const getColumnFlex = (width: number, widthScale = 1): string => {
+    return widthScale === 1 ? `1 1 ${width}px` : `0 0 ${width}px`;
+};
 
 interface TableRowProps {
     index: number;
@@ -35,6 +46,7 @@ interface TableRowProps {
     inferredColumnTypes?: Record<string, InferredColumnType>;
     onRowClick?: (row: Record<string, unknown>) => void;
     isSelected?: boolean;
+    columnWidthScale?: number;
 }
 
 const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): string => {
@@ -45,7 +57,7 @@ const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): s
     return String(fallback);
 };
 
-const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, inferredColumnTypes, onRowClick, isSelected }: TableRowProps) => {
+const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, inferredColumnTypes, onRowClick, isSelected, columnWidthScale = 1 }: TableRowProps) => {
     const row = rows[index];
     if (!row) return null;
 
@@ -103,13 +115,15 @@ const TableRow = ({ index, style, data: rows, columns, getMenuOptions, rowId, in
                     titleAttribute = fallbackValue;
                 }
 
+                const columnWidth = getResolvedColumnWidth(col, columnWidthScale);
+
                 return (
                     <div
                         key={columnKey}
                         className='plugin-compact-table-cell overflow-hidden font-size-1'
                         style={{
-                            minWidth: `${getColumnMinWidth(col)}px`,
-                            flex: `1 1 ${getColumnMinWidth(col)}px`
+                            minWidth: `${columnWidth}px`,
+                            flex: getColumnFlex(columnWidth, columnWidthScale)
                         }}
                         title={titleAttribute}
                     >
@@ -138,9 +152,10 @@ interface VirtualizedRowExtraProps {
     inferredColumnTypes?: Record<string, InferredColumnType>;
     onRowClick?: (row: Record<string, unknown>) => void;
     selectedRowId?: string | null;
+    columnWidthScale?: number;
 }
 
-const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredColumnTypes, onRowClick, selectedRowId }: VirtualizedRowExtraProps & { index: number; style: CSSProperties }) => {
+const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredColumnTypes, onRowClick, selectedRowId, columnWidthScale }: VirtualizedRowExtraProps & { index: number; style: CSSProperties }) => {
     const row = data[index];
     const rowId = row ? resolveRowIdentifier(row, index) : undefined;
     const isSelected = Boolean(selectedRowId && rowId === selectedRowId);
@@ -155,6 +170,7 @@ const VirtualizedRow = ({ index, style, data, columns, getMenuOptions, inferredC
             onRowClick={onRowClick}
             rowId={rowId}
             isSelected={isSelected}
+            columnWidthScale={columnWidthScale}
         />
     );
 };
@@ -207,20 +223,24 @@ const loadingMoreStyle: CSSProperties = {
     borderTop: '1px solid var(--color-border-soft)'
 };
 
-const CompactTableHeader = ({ columns }: { columns: ColumnConfig[] }) => (
+const CompactTableHeader = ({ columns, columnWidthScale = 1 }: { columns: ColumnConfig[]; columnWidthScale?: number }) => (
     <div className='plugin-compact-table-header p-sticky'>
-        {columns.map((col) => (
-            <div
-                key={getColumnKey(col)}
-                className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
-                style={{
-                    minWidth: `${getColumnMinWidth(col)}px`,
-                    flex: `1 1 ${getColumnMinWidth(col)}px`
-                }}
-            >
-                {getColumnTitle(col)}
-            </div>
-        ))}
+        {columns.map((col) => {
+            const columnWidth = getResolvedColumnWidth(col, columnWidthScale);
+
+            return (
+                <div
+                    key={getColumnKey(col)}
+                    className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
+                    style={{
+                        minWidth: `${columnWidth}px`,
+                        flex: getColumnFlex(columnWidth, columnWidthScale)
+                    }}
+                >
+                    {getColumnTitle(col)}
+                </div>
+            );
+        })}
     </div>
 );
 
@@ -312,6 +332,8 @@ const PluginCompactTable = ({
     const [containerWidth, setContainerWidth] = useState(0);
     const [isMeasured, setIsMeasured] = useState(false);
     const lastScrollOffset = useRef(0);
+    const isMobile = useMedia('(max-width: 768px)');
+    const columnWidthScale = isMobile ? MOBILE_COLUMN_WIDTH_SCALE : 1;
 
     const inferredColumnTypes = useMemo(() => {
         const result: Record<string, InferredColumnType> = {};
@@ -327,7 +349,7 @@ const PluginCompactTable = ({
         return result;
     }, [columns, data]);
 
-    const minimumColumnsWidth = columns.reduce((sum, col) => sum + getColumnMinWidth(col), 0);
+    const minimumColumnsWidth = columns.reduce((sum, col) => sum + getResolvedColumnWidth(col, columnWidthScale), 0);
     const effectiveWidth = Math.max(minimumColumnsWidth, containerWidth);
     const fallbackHeight = useMemo(() => {
         const visibleRows = Math.min(Math.max(data.length, 1), 6);
@@ -442,7 +464,7 @@ const PluginCompactTable = ({
                 effectiveWidth={effectiveWidth}
                 isFetchingMore={isFetchingMore}
             >
-                <CompactTableHeader columns={columns} />
+                <CompactTableHeader columns={columns} columnWidthScale={columnWidthScale} />
                 <div
                     ref={listContainerRef}
                     className='plugin-compact-table-list-container y-auto'
@@ -468,6 +490,7 @@ const PluginCompactTable = ({
                                 inferredColumnTypes={inferredColumnTypes}
                                 onRowClick={onRowClick}
                                 isSelected={Boolean(selectedRowId && rowId === selectedRowId)}
+                                columnWidthScale={columnWidthScale}
                                 style={{
                                     position: 'relative',
                                     height: rowHeight,
@@ -487,7 +510,7 @@ const PluginCompactTable = ({
             effectiveWidth={effectiveWidth}
             isFetchingMore={isFetchingMore}
         >
-            <CompactTableHeader columns={columns} />
+            <CompactTableHeader columns={columns} columnWidthScale={columnWidthScale} />
             <div
                 ref={listContainerRef}
                 className='plugin-compact-table-list-container'
@@ -504,7 +527,8 @@ const PluginCompactTable = ({
                         getMenuOptions,
                         inferredColumnTypes,
                         onRowClick,
-                        selectedRowId: selectedRowId ?? null
+                        selectedRowId: selectedRowId ?? null,
+                        columnWidthScale
                     }}
                     style={{ height: resolvedHeight, width: '100%', overflowX: 'hidden' }}
                 />

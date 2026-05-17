@@ -11,7 +11,10 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { inject } from 'tsyringe';
 
-const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
+const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
+    'trajectory_glb_conversion',
+    'trajectory_clone'
+]);
 
 @Singleton()
 @Subscribe('job.status.changed')
@@ -26,11 +29,11 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
         const { status, queueType, teamId, trajectoryId } = event.payload;
 
         if (!trajectoryId) return;
-        if (queueType === RASTER_QUEUE_TYPE) return;
+        if (!TRAJECTORY_LIFECYCLE_QUEUE_TYPES.has(queueType)) return;
 
-        // When any job starts running, ensure trajectory is in 'processing' state.
-        // Only transition from pre-processing states to avoid overwriting terminal
-        // states (Completed, Failed) when Redis events arrive out of order.
+        // Only trajectory-owned queues control trajectory ingestion state.
+        // Analysis jobs have their own status and must not move a trajectory
+        // back out of Completed.
         if (status === JobStatus.Running) {
             const trajectory = await this.trajectoryRepo.findById(trajectoryId);
             const currentStatus = trajectory?.props.status;

@@ -52,6 +52,14 @@
     flex-shrink: 0;
 }
 
+.canvas-timeline-tab-select-region {
+    display: none;
+}
+
+.canvas-timeline-mobile-actions {
+    display: contents;
+}
+
 .canvas-timeline-frame-info {
     flex: 0 1 auto;
     min-width: 0;
@@ -86,6 +94,7 @@
     user-select: none;
     overflow-y: hidden;
     outline: none;
+    touch-action: pan-y;
 }
 
 .canvas-timeline-ruler:focus-visible {
@@ -214,6 +223,177 @@
     .canvas-timeline-frame-info {
         flex-wrap: wrap;
         justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .canvas-timeline {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        overflow: visible;
+        pointer-events: none;
+    }
+
+    .canvas-timeline-header {
+        display: contents;
+        height: auto;
+        min-height: 0;
+        padding: 0;
+    }
+
+    .canvas-timeline-tabs-region {
+        order: 1;
+        flex: 0 0 auto;
+        align-self: stretch;
+        width: 100%;
+        min-width: 0;
+        pointer-events: auto;
+    }
+
+    .canvas-timeline-tabs {
+        display: none;
+    }
+
+    .canvas-timeline-tab-select-region {
+        display: block;
+    }
+
+    .canvas-timeline-tab-select {
+        width: 100%;
+        min-height: 1.875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-lg);
+        border-color: transparent;
+        background: var(--glass-bg-secondary);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        font-size: 0.6875rem;
+    }
+
+    .canvas-timeline-mobile-actions {
+        order: 3;
+        flex: 0 0 auto;
+        align-self: stretch;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        pointer-events: auto;
+    }
+
+    .canvas-timeline-controls-region.glass-bg,
+    .canvas-timeline-controls-region {
+        position: static;
+        left: auto;
+        top: auto;
+        transform: none;
+        flex: 0 0 auto;
+        width: auto;
+        justify-content: flex-start;
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-lg);
+        background: var(--glass-bg-secondary);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        pointer-events: auto;
+    }
+
+    .canvas-timeline-controls-center {
+        display: contents;
+        width: auto;
+    }
+
+    .canvas-timeline-frame-region {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 0;
+        justify-content: flex-start;
+    }
+
+    .canvas-timeline-frame-info {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .canvas-timeline-frame-info .volt-divider,
+    .canvas-timeline-frame-info [data-popover-trigger="timeline-zoom"] {
+        display: none;
+    }
+
+    .canvas-timeline-frame-info .form-field-canvas-input--compact {
+        width: clamp(3.25rem, 17vw, 4.5rem);
+        height: 1.875rem;
+        min-height: 1.875rem;
+        border-radius: var(--radius-lg);
+        font-size: 0.625rem;
+    }
+
+    .canvas-timeline-frame-info .button.size-sm {
+        height: 1.875rem;
+        min-height: 1.875rem;
+        padding: 0 0.5rem;
+        border-radius: var(--radius-lg);
+        font-size: 0.6875rem;
+    }
+
+    .canvas-timeline > .canvas-timeline-ruler-region {
+        order: 2;
+        align-self: stretch;
+        min-width: 0;
+        height: auto;
+        overflow-x: auto;
+        overflow-y: auto;
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        pointer-events: auto;
+    }
+
+    .canvas-timeline > .canvas-timeline-body {
+        order: 2;
+        align-self: stretch;
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+        overflow-x: auto;
+        overflow-y: auto;
+        border: 0;
+        border-radius: var(--radius-lg);
+        background: var(--glass-bg-secondary);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        pointer-events: auto;
+    }
+
+    .canvas-timeline-ruler-region .canvas-timeline-ruler {
+        border-bottom-color: var(--glass-border);
+    }
+
+    .canvas-timeline-helper {
+        display: none;
+    }
+
+    .canvas-ruler-tick {
+        padding-inline: 8px;
+    }
+
+    .canvas-ruler-tick-label {
+        font-size: 0.625rem;
+    }
+
+    .canvas-ruler-tick-mark {
+        height: 4px;
+    }
+
+    .canvas-ruler-tick-mark.major {
+        height: 7px;
     }
 }
 

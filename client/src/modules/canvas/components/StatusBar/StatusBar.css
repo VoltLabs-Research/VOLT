@@ -21,12 +21,6 @@
     background: var(--color-border-soft);
 }
 
-.canvas-live-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--accent-green);
-}
-
 .canvas-status-activity {
     font-weight: 500;
 }

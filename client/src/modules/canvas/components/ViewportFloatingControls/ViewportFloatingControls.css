@@ -39,8 +39,8 @@
 }
 
 @media (max-width: 768px) {
-    .canvas-viewport-floating-controls {
-        top: 8px;
+    .canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+        top: 6rem !important;
         right: 8px;
     }
 

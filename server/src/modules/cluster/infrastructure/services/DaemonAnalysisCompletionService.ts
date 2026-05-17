@@ -923,16 +923,21 @@ export default class DaemonAnalysisCompletionService {
             return expectedArtifacts;
         }
 
-        return expectedArtifacts.map((artifact) => {
+        let changed = false;
+        const nextArtifacts = expectedArtifacts.map((artifact) => {
             if (artifact.status !== 'generating') {
                 return artifact;
             }
 
+            changed = true;
+            const nextStatus: AnalysisExpectedArtifact['status'] = finalStatus === 'failed' ? 'failed' : 'uploading';
             return {
                 ...artifact,
-                status: finalStatus === 'failed' ? 'failed' : 'uploading'
+                status: nextStatus
             };
         });
+
+        return changed ? nextArtifacts : expectedArtifacts;
     }
 
     private async publishJobStatusChanged(input: ProjectedJobStatusInput): Promise<void> {
@@ -1138,14 +1143,18 @@ export default class DaemonAnalysisCompletionService {
         const closedStages = this.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
         const closedChildAnalyses = this.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
         const closedExpectedArtifacts = this.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
-
-        const analysis = (await this.analysisRepo.updateById(analysisId, {
+        const analysisUpdates: Partial<Analysis['props']> = {
             status,
             finishedAt,
             stages: closedStages,
-            childAnalyses: closedChildAnalyses,
-            expectedArtifacts: closedExpectedArtifacts
-        })
+            childAnalyses: closedChildAnalyses
+        };
+
+        if (closedExpectedArtifacts !== currentAnalysis?.props.expectedArtifacts) {
+            analysisUpdates.expectedArtifacts = closedExpectedArtifacts;
+        }
+
+        const analysis = (await this.analysisRepo.updateById(analysisId, analysisUpdates)
             .catch(swallow('Failed to finalize analysis status', { analysisId, status }))) ?? currentAnalysis;
 
         await this.publishAnalysisStatus(analysisId, teamId, status, {

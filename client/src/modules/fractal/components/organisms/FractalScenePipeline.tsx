@@ -9,6 +9,7 @@ import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights'
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import { LightingPreset } from '@/shared/domain/rendering/lights';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import { DprMode } from '@/shared/domain/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';
@@ -60,6 +61,7 @@ const FractalScenePipeline = ({
     const isDefectScene = config.activeScene?.sceneType === 'defect';
     const gridEnabled = showGrid ?? config.grid.enabled;
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
+    const isMobile = useMedia('(max-width: 768px)');
 
     useEffect(() => {
         return subscribeToAppTheme(setTheme);
@@ -105,7 +107,7 @@ const FractalScenePipeline = ({
             />
             <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
             {showGizmo && (
-                <GizmoHelper alignment='top-left' renderPriority={1} margin={[80, 110]}>
+                <GizmoHelper alignment='top-left' renderPriority={1} margin={isMobile ? [48, 132] : [80, 110]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <ambientLight intensity={0.7} />
                     <GizmoViewport
