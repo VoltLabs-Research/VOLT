@@ -23,6 +23,15 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/tr
 
 import './Timeline.css';
 
+const MOBILE_SWIPE_THRESHOLD_PX = 44;
+const MOBILE_TAP_SLOP_PX = 10;
+
+interface RulerPointerGesture {
+    pointerId: number;
+    startX: number;
+    startY: number;
+}
+
 interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
     trajectory: Trajectory | null | undefined;
@@ -204,6 +213,8 @@ const Timeline = ({
     const isDraggingRef = useRef(false);
     const pendingScrubRafRef = useRef<number | null>(null);
     const pendingScrubClientXRef = useRef<number | null>(null);
+    const rulerPointerGestureRef = useRef<RulerPointerGesture | null>(null);
+    const ignoreNextRulerClickRef = useRef(false);
 
     const [zoomPercent, setZoomPercent] = useState(100);
 
@@ -358,12 +369,45 @@ const Timeline = ({
         };
     }, []);
 
+    const moveByTimestepOffset = useCallback((offset: number) => {
+        if (!rangedTimesteps.length) return;
+
+        const currentIndex = rangedTimesteps.indexOf(currentFrame);
+        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+        const nextIndex = Math.min(
+            rangedTimesteps.length - 1,
+            Math.max(0, baseIndex + offset)
+        );
+
+        if (nextIndex !== currentIndex) {
+            setCurrentTimestep(rangedTimesteps[nextIndex]);
+        }
+    }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
+
     const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        if (ignoreNextRulerClickRef.current) {
+            ignoreNextRulerClickRef.current = false;
+            event.preventDefault();
+            return;
+        }
+
         applyScrubAtClientX(event.clientX);
     }, [applyScrubAtClientX]);
 
     const handleRulerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (event.button !== 0) return;
+
+        if (event.pointerType === 'touch') {
+            rulerPointerGestureRef.current = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY
+            };
+            event.currentTarget.setPointerCapture(event.pointerId);
+            return;
+        }
+
+        rulerPointerGestureRef.current = null;
         setIsDragging(true);
         isDraggingRef.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -371,16 +415,54 @@ const Timeline = ({
     }, [applyScrubAtClientX]);
 
     const handleRulerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const gesture = rulerPointerGestureRef.current;
+        if (gesture?.pointerId === event.pointerId) {
+            return;
+        }
+
         if (!isDragging) return;
         scheduleScrub(event.clientX);
     }, [isDragging, scheduleScrub]);
 
     const handleRulerPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const gesture = rulerPointerGestureRef.current;
+        if (gesture?.pointerId === event.pointerId) {
+            if (event.type === 'pointerleave') {
+                return;
+            }
+
+            rulerPointerGestureRef.current = null;
+
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+
+            const deltaX = event.clientX - gesture.startX;
+            const deltaY = event.clientY - gesture.startY;
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+
+            if (absX >= MOBILE_SWIPE_THRESHOLD_PX && absX > absY * 1.2) {
+                ignoreNextRulerClickRef.current = true;
+                moveByTimestepOffset(deltaX < 0 ? 1 : -1);
+                return;
+            }
+
+            if (absX <= MOBILE_TAP_SLOP_PX && absY <= MOBILE_TAP_SLOP_PX) {
+                ignoreNextRulerClickRef.current = true;
+                applyScrubAtClientX(event.clientX);
+            }
+
+            return;
+        }
+
         if (!isDragging) return;
         setIsDragging(false);
         isDraggingRef.current = false;
-        event.currentTarget.releasePointerCapture(event.pointerId);
-    }, [isDragging]);
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    }, [applyScrubAtClientX, isDragging, moveByTimestepOffset]);
 
     const handleRulerWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
         const ruler = rulerRef.current;
@@ -422,50 +504,25 @@ const Timeline = ({
         setCurrentTimestep(rangedTimesteps[nextIndex]);
     }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
 
-    return (
-        <Stack overflow='hidden' minH='0' className="canvas-timeline">
-            <TimelineHeader
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                tabs={tabs}
-                trajectoryId={trajectoryId}
-                currentTimestep={currentTimestep}
-                startFrame={startFrame}
-                endFrame={endFrame}
-                availableTimesteps={availableTimesteps}
-                zoomPercent={zoomPercent}
-                onZoomPreset={handleZoomPreset}
-                onRangeStartChange={setRangeStart}
-                onRangeEndChange={setRangeEnd}
-                playSpeed={playSpeed}
-                onPlaySpeedChange={setPlaySpeed}
-                onDownloadExposureListing={onDownloadExposureListing}
-                downloadContext={{
-                    pluginId,
-                    analysisId,
-                    trajectoryId: trajectory?._id
-                }}
-            />
+    const renderTimelineRuler = () => (
+        <TimelineRuler
+            rulerRef={rulerRef}
+            ticks={ticks}
+            playheadLeft={playheadLeft}
+            startFrame={startFrame}
+            endFrame={endFrame}
+            currentFrame={currentFrame}
+            onClick={handleRulerClick}
+            onPointerDown={handleRulerPointerDown}
+            onPointerMove={handleRulerPointerMove}
+            onPointerUp={handleRulerPointerUp}
+            onWheel={handleRulerWheel}
+            onKeyDown={handleRulerKeyDown}
+        />
+    );
 
-            {activeTab === 'timeline' && (
-                <Box position='relative'>
-                    <TimelineRuler
-                        rulerRef={rulerRef}
-                        ticks={ticks}
-                        playheadLeft={playheadLeft}
-                        startFrame={startFrame}
-                        endFrame={endFrame}
-                        currentFrame={currentFrame}
-                        onClick={handleRulerClick}
-                        onPointerDown={handleRulerPointerDown}
-                        onPointerMove={handleRulerPointerMove}
-                        onPointerUp={handleRulerPointerUp}
-                        onWheel={handleRulerWheel}
-                        onKeyDown={handleRulerKeyDown}
-                    />
-                </Box>
-            )}
-
+    const renderActiveTabContent = () => (
+        <>
             {activeTab === 'particles' && trajectory?._id && (
                 <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     <PluginAtomsTable
@@ -509,6 +566,41 @@ const Timeline = ({
                     />
                 </Box>
             )}
+        </>
+    );
+
+    return (
+        <Stack overflow='hidden' minH='0' className="canvas-timeline">
+            <TimelineHeader
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                tabs={tabs}
+                trajectoryId={trajectoryId}
+                currentTimestep={currentTimestep}
+                startFrame={startFrame}
+                endFrame={endFrame}
+                availableTimesteps={availableTimesteps}
+                zoomPercent={zoomPercent}
+                onZoomPreset={handleZoomPreset}
+                onRangeStartChange={setRangeStart}
+                onRangeEndChange={setRangeEnd}
+                playSpeed={playSpeed}
+                onPlaySpeedChange={setPlaySpeed}
+                onDownloadExposureListing={onDownloadExposureListing}
+                downloadContext={{
+                    pluginId,
+                    analysisId,
+                    trajectoryId: trajectory?._id
+                }}
+            />
+
+            {activeTab === 'timeline' && (
+                <Box position='relative' className="canvas-timeline-ruler-region">
+                    {renderTimelineRuler()}
+                </Box>
+            )}
+
+            {renderActiveTabContent()}
         </Stack>
     );
 };

@@ -1,3 +1,30 @@
 .canvas-transport-controls {
     gap: 2px;
 }
+
+.canvas-transport-controls-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .canvas-transport-controls--full {
+        display: none;
+    }
+
+    .canvas-transport-controls-mobile {
+        display: contents;
+    }
+
+    .canvas-transport-mobile-step-controls,
+    .canvas-transport-mobile-play-control {
+        flex: 0 0 auto;
+        gap: 0.125rem;
+    }
+
+    .canvas-transport-mobile-step-controls .button.icon-only.size-sm,
+    .canvas-transport-mobile-play-control .button.icon-only.size-sm {
+        width: 1.875rem;
+        height: 1.875rem;
+        min-height: 1.875rem;
+    }
+}

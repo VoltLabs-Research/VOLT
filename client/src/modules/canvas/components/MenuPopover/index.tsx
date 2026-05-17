@@ -10,6 +10,7 @@ interface MenuPopoverProps {
     menu: MenuConfig;
     openMenu: string | null;
     onOpenChange: (menu: string | null) => void;
+    idPrefix?: string;
 }
 
 const renderMenuItemIcon = (item: MenuItem) => {
@@ -74,9 +75,9 @@ const renderMenuItems = (items: MenuItem[], close: () => void) => {
     );
 };
 
-const MenuPopover = ({ menu, openMenu, onOpenChange }: MenuPopoverProps) => (
+const MenuPopover = ({ menu, openMenu, onOpenChange, idPrefix = 'menu' }: MenuPopoverProps) => (
     <Popover
-        id={`menu-${menu.label.toLowerCase()}`}
+        id={`${idPrefix}-${menu.label.toLowerCase()}`}
         noPadding
         onOpenChange={(isOpen) => onOpenChange(isOpen ? menu.label : null)}
         trigger={(

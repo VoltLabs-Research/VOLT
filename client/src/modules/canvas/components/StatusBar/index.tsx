@@ -3,7 +3,6 @@ import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { formatSize } from '@/shared/utils/format';
-import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import { useMemo } from 'react';
 import type { Analysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
@@ -208,7 +207,6 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
     return (
         <Row justify='between' className="canvas-status-bar">
             <Row gap='05' className="canvas-status-main">
-                <Box radius='full' shrink='0' className="canvas-live-dot" />
                 <StatusGroup items={left} />
             </Row>
             <StatusGroup items={right} />

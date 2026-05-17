@@ -6,10 +6,12 @@ import Button from '@/shared/presentation/primitives/Button';
 import Divider from '@/shared/presentation/primitives/Divider';
 import Popover from '@/shared/presentation/primitives/Popover';
 import Row from '@/shared/presentation/primitives/Row';
+import Select from '@/shared/presentation/primitives/Select';
 import Text from '@/shared/presentation/primitives/Text';
 import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
+import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ReactNode } from 'react';
 
 export enum TimelineTab {
@@ -105,6 +107,10 @@ const TimelineHeader = ({
     downloadContext
 }: TimelineHeaderProps) => {
     const resolvedTabs = tabs?.length ? tabs : CORE_TABS;
+    const tabSelectOptions: SelectOption[] = resolvedTabs.map((tab) => ({
+        value: tab.id,
+        title: tab.label
+    }));
     const frameOptions: TimelineFrameOption[] = [
         {
             value: startFrame,
@@ -222,12 +228,59 @@ const TimelineHeader = ({
         );
     };
 
+    const renderFrameComboboxes = () => frameOptions.map((frame) => (
+        <FrameCombobox
+            key={frame.title}
+            value={frame.value}
+            options={availableTimesteps}
+            onChange={frame.onChange}
+            title={frame.title}
+        />
+    ));
+
+    const renderSpeedControl = (id: string) => (
+        <Popover
+            id={id}
+            noPadding
+            trigger={(
+                <Button
+                    variant="ghost"
+                    intent="canvas"
+                    shape="rounded"
+                    size="sm"
+                    className="font-size-05 canvas-btn-compact"
+                    leftIcon={<Gauge size={12} />}
+                >
+                    {playSpeed}x
+                </Button>
+            )}
+        >
+            {(close) => (
+                <PopoverMenu>
+                    {SPEED_PRESETS.map(renderSpeedPreset(close))}
+                </PopoverMenu>
+            )}
+        </Popover>
+    );
+
     return (
         <Row width='max' className="canvas-timeline-header">
             <Row className="canvas-timeline-tabs-region">
                 <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs">
                     {resolvedTabs.map(renderResolvedTab)}
                 </Row>
+                <div className="canvas-timeline-tab-select-region">
+                    <Select
+                        options={tabSelectOptions}
+                        value={activeTab}
+                        onChange={onTabChange}
+                        placeholder="Tab"
+                        className="canvas-timeline-tab-select"
+                        showSelectionIcon
+                        title="Timeline tab"
+                        aria-label="Timeline tab"
+                    />
+                </div>
                 {helperText ? (
                     <Text size='sm' tone='secondary' className="canvas-timeline-helper" aria-live="polite">
                         {helperText}
@@ -235,75 +288,48 @@ const TimelineHeader = ({
                 ) : null}
             </Row>
 
-            <Row justify='center' className="canvas-timeline-controls-region">
-                <Row justify='center' className="canvas-timeline-controls-center">
-                    <TransportControls
-                        trajectoryId={trajectoryId}
-                        currentTimestep={currentTimestep}
-                        availableTimesteps={availableTimesteps}
-                    />
-                </Row>
-            </Row>
-
-            <Row justify='end' className="canvas-timeline-frame-region">
-                <Row gap='05' justify='end' className="canvas-timeline-frame-info">
-                    {frameOptions.map((frame) => (
-                        <FrameCombobox
-                            key={frame.title}
-                            value={frame.value}
-                            options={availableTimesteps}
-                            onChange={frame.onChange}
-                            title={frame.title}
+            <Row className="canvas-timeline-mobile-actions">
+                <Row justify='center' className="canvas-timeline-controls-region">
+                    <Row justify='center' className="canvas-timeline-controls-center">
+                        <TransportControls
+                            trajectoryId={trajectoryId}
+                            currentTimestep={currentTimestep}
+                            availableTimesteps={availableTimesteps}
                         />
-                    ))}
+                    </Row>
+                </Row>
 
-                    <Divider orientation='vertical' className='f-shrink-0' />
+                <Row justify='end' className="canvas-timeline-frame-region">
+                    <Row gap='05' justify='end' className="canvas-timeline-frame-info">
+                        {renderFrameComboboxes()}
 
-                    <Popover
-                        id="timeline-speed"
-                        noPadding
-                        trigger={(
-                            <Button
-                                variant="ghost"
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="font-size-05 canvas-btn-compact"
-                                leftIcon={<Gauge size={12} />}
-                            >
-                                {playSpeed}x
-                            </Button>
-                        )}
-                    >
-                        {(close) => (
-                            <PopoverMenu>
-                                {SPEED_PRESETS.map(renderSpeedPreset(close))}
-                            </PopoverMenu>
-                        )}
-                    </Popover>
+                        <Divider orientation='vertical' className='f-shrink-0' />
 
-                    <Popover
-                        id="timeline-zoom"
-                        noPadding
-                        trigger={(
-                            <Button
-                                variant="ghost"
-                                intent="canvas"
-                                shape="rounded"
-                                size="sm"
-                                className="font-size-05 canvas-btn-compact"
-                                leftIcon={<ZoomIn size={12} />}
-                            >
-                                {zoomPercent}%
-                            </Button>
-                        )}
-                    >
-                        {(close) => (
-                            <PopoverMenu>
-                                {ZOOM_PRESETS.map(renderZoomPreset(close))}
-                            </PopoverMenu>
-                        )}
-                    </Popover>
+                        {renderSpeedControl('timeline-speed')}
+
+                        <Popover
+                            id="timeline-zoom"
+                            noPadding
+                            trigger={(
+                                <Button
+                                    variant="ghost"
+                                    intent="canvas"
+                                    shape="rounded"
+                                    size="sm"
+                                    className="font-size-05 canvas-btn-compact"
+                                    leftIcon={<ZoomIn size={12} />}
+                                >
+                                    {zoomPercent}%
+                                </Button>
+                            )}
+                        >
+                            {(close) => (
+                                <PopoverMenu>
+                                    {ZOOM_PRESETS.map(renderZoomPreset(close))}
+                                </PopoverMenu>
+                            )}
+                        </Popover>
+                    </Row>
                 </Row>
             </Row>
         </Row>
