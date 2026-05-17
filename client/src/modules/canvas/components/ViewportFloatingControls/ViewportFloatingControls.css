@@ -8,10 +8,6 @@
     top: 4rem !important;
     z-index: 100;
     padding: 4px;
-    border-radius: 12px;
-    border: 0;
-    box-shadow: 0;
-    background: var(--glass-bg-secondary);
     pointer-events: auto;
     margin-right: 0.5rem;
 }
