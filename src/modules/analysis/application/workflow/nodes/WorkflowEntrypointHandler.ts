@@ -182,13 +182,9 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         executionRuntime: Awaited<ReturnType<PluginBinaryCache['getExecutionRuntime']>>,
         execution: WorkflowEntrypointExecutionOptions
     ): boolean {
-        // Why: the pool only speaks the msgpack protocol to the Python stub,
-        // and only plugins packaged as python-script or packaged-executable
-        // can expose the `process(frame, config)` entrypoint. Raw executables
-        // still need direct process execution. Also require a projectPath (the
-        // extracted plugin root where the user module lives).
-        if (entrypointType !== EntrypointTypeEnum.PythonScript
-            && entrypointType !== EntrypointTypeEnum.PackagedExecutable) {
+        // Why: the pool only speaks the msgpack protocol to the Python stub.
+        // Packaged native executables are extracted and invoked directly.
+        if (entrypointType !== EntrypointTypeEnum.PythonScript) {
             return false;
         }
         if (!executionRuntime.projectPath) return false;

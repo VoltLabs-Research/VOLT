@@ -233,7 +233,15 @@ export class TrajectoryIngestCommand {
             return this.expandZipAndParseFrames(staged, index, trajectoryId, bucket, tempDirectory);
         }
 
-        return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
+        try {
+            return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
+        } catch (error) {
+            if (this.isUnsupportedTrajectoryFormatError(error)) {
+                await this.removeIgnoredStagedObject(bucket, staged.objectKey);
+                return [];
+            }
+            throw error;
+        }
     }
 
     private async expandZipAndParseFrames(
@@ -287,9 +295,6 @@ export class TrajectoryIngestCommand {
                 metadata = await parseTrajectoryMetadata(resolvedOutputPath);
             } catch (error) {
                 if (this.isUnsupportedTrajectoryFormatError(error)) {
-                    logger.debug(
-                        `@trajectory-ingest: skipping unsupported ZIP entry trajectoryId=${trajectoryId} entry=${entry.path}`
-                    );
                     continue;
                 }
                 throw error;
@@ -314,7 +319,8 @@ export class TrajectoryIngestCommand {
         }
 
         if (frames.length === 0) {
-            throw new Error(`Unsupported trajectory archive: no LAMMPS dump/data frames found in ${staged.originalName}`);
+            await this.removeIgnoredStagedObject(bucket, staged.objectKey);
+            return [];
         }
 
         await this.minioService.removeObject(bucket, staged.objectKey).catch((error) => {
@@ -340,6 +346,10 @@ export class TrajectoryIngestCommand {
 
     private isUnsupportedTrajectoryFormatError(error: unknown): boolean {
         return error instanceof Error && error.message === 'Unsupported trajectory format';
+    }
+
+    private async removeIgnoredStagedObject(bucket: string, objectKey: string): Promise<void> {
+        await this.minioService.removeObject(bucket, objectKey).catch(() => undefined);
     }
 
     private async enqueueFrameProcessingJobs(
