@@ -1,7 +1,63 @@
 .canvas-editor-root {
     --canvas-header-height: 55px;
+    --canvas-floating-surface-bg: var(--glass-bg-secondary);
+    --canvas-floating-surface-border: 0;
+    --canvas-floating-surface-shadow: 0;
+    --canvas-floating-surface-radius: 12px;
+    --canvas-floating-surface-backdrop: var(--glass-blur);
     background: var(--color-bg);
     color: var(--color-text-primary);
+}
+
+.canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+    --canvas-floating-surface-active-bg: var(--canvas-floating-surface-bg, var(--glass-bg-secondary));
+    --canvas-floating-surface-active-border: var(--canvas-floating-surface-border, 0);
+    --canvas-floating-surface-active-shadow: var(--canvas-floating-surface-shadow, 0);
+    --canvas-floating-surface-active-radius: var(--canvas-floating-surface-radius, 12px);
+    --canvas-floating-surface-active-backdrop: var(--canvas-floating-surface-backdrop, var(--glass-blur));
+}
+
+/* Active variables are defined for the viewport toolbar and, below, for mobile timeline surfaces. */
+.canvas-viewport-floating-controls.canvas-viewport-floating-controls,
+.canvas-timeline-controls-region.glass-bg,
+.canvas-timeline-controls-region,
+.canvas-timeline-tab-select-region,
+.canvas-timeline-body,
+.canvas-timeline-frame-info .form-field-canvas-input--compact,
+.canvas-timeline-frame-info .button.size-sm,
+.canvas-transport-mobile-step-controls {
+    border-radius: var(--canvas-floating-surface-active-radius);
+    background: var(--canvas-floating-surface-active-bg);
+    backdrop-filter: var(--canvas-floating-surface-active-backdrop);
+    -webkit-backdrop-filter: var(--canvas-floating-surface-active-backdrop);
+}
+
+.canvas-viewport-floating-controls.canvas-viewport-floating-controls,
+.canvas-timeline-controls-region.glass-bg,
+.canvas-timeline-controls-region,
+.canvas-timeline-tab-select-region,
+.canvas-timeline-body,
+.canvas-transport-mobile-step-controls,
+.canvas-timeline-frame-info .form-field-canvas-input--compact:not(:focus-visible),
+.canvas-timeline-frame-info .button.size-sm:not(:focus-visible) {
+    border: var(--canvas-floating-surface-active-border);
+    box-shadow: var(--canvas-floating-surface-active-shadow);
+}
+
+@media (max-width: 768px) {
+    .canvas-timeline-controls-region.glass-bg,
+    .canvas-timeline-controls-region,
+    .canvas-timeline-tab-select-region,
+    .canvas-timeline-body,
+    .canvas-timeline-frame-info .form-field-canvas-input--compact,
+    .canvas-timeline-frame-info .button.size-sm,
+    .canvas-transport-mobile-step-controls {
+        --canvas-floating-surface-active-bg: var(--canvas-floating-surface-bg, var(--glass-bg-secondary));
+        --canvas-floating-surface-active-border: var(--canvas-floating-surface-border, 0);
+        --canvas-floating-surface-active-shadow: var(--canvas-floating-surface-shadow, 0);
+        --canvas-floating-surface-active-radius: var(--canvas-floating-surface-radius, 12px);
+        --canvas-floating-surface-active-backdrop: var(--canvas-floating-surface-backdrop, var(--glass-blur));
+    }
 }
 
 .canvas-banner-stack {
