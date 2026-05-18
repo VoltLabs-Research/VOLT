@@ -23,13 +23,10 @@ import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/tr
 
 import './Timeline.css';
 
-const MOBILE_SWIPE_THRESHOLD_PX = 44;
-const MOBILE_TAP_SLOP_PX = 10;
+const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 
 interface RulerPointerGesture {
     pointerId: number;
-    startX: number;
-    startY: number;
 }
 
 interface TimelineProps {
@@ -104,6 +101,17 @@ const Timeline = ({
             setTimelineExposureId(undefined, { replace: true });
         }
     }, [setTimelineExposureId, timelineExposureId]);
+
+    useEffect(() => {
+        const handleTimelineTourTabSelection = () => {
+            handleTabChange(TimelineTab.Timeline);
+        };
+
+        window.addEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, handleTimelineTourTabSelection);
+        return () => {
+            window.removeEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, handleTimelineTourTabSelection);
+        };
+    }, [handleTabChange]);
 
     useEffect(() => {
         if (timelineExposureId && hasExposure(timelineExposureId)) {
@@ -370,21 +378,6 @@ const Timeline = ({
         };
     }, []);
 
-    const moveByTimestepOffset = useCallback((offset: number) => {
-        if (!rangedTimesteps.length) return;
-
-        const currentIndex = rangedTimesteps.indexOf(currentFrame);
-        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const nextIndex = Math.min(
-            rangedTimesteps.length - 1,
-            Math.max(0, baseIndex + offset)
-        );
-
-        if (nextIndex !== currentIndex) {
-            setCurrentTimestep(rangedTimesteps[nextIndex]);
-        }
-    }, [currentFrame, rangedTimesteps, setCurrentTimestep]);
-
     const handleRulerClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
         if (ignoreNextRulerClickRef.current) {
             ignoreNextRulerClickRef.current = false;
@@ -400,11 +393,13 @@ const Timeline = ({
 
         if (event.pointerType === 'touch') {
             rulerPointerGestureRef.current = {
-                pointerId: event.pointerId,
-                startX: event.clientX,
-                startY: event.clientY
+                pointerId: event.pointerId
             };
+            setIsDragging(true);
+            isDraggingRef.current = true;
             event.currentTarget.setPointerCapture(event.pointerId);
+            applyScrubAtClientX(event.clientX);
+            event.preventDefault();
             return;
         }
 
@@ -418,6 +413,8 @@ const Timeline = ({
     const handleRulerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         const gesture = rulerPointerGestureRef.current;
         if (gesture?.pointerId === event.pointerId) {
+            event.preventDefault();
+            scheduleScrub(event.clientX);
             return;
         }
 
@@ -433,27 +430,16 @@ const Timeline = ({
             }
 
             rulerPointerGestureRef.current = null;
+            setIsDragging(false);
+            isDraggingRef.current = false;
 
             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                 event.currentTarget.releasePointerCapture(event.pointerId);
             }
 
-            const deltaX = event.clientX - gesture.startX;
-            const deltaY = event.clientY - gesture.startY;
-            const absX = Math.abs(deltaX);
-            const absY = Math.abs(deltaY);
-
-            if (absX >= MOBILE_SWIPE_THRESHOLD_PX && absX > absY * 1.2) {
-                ignoreNextRulerClickRef.current = true;
-                moveByTimestepOffset(deltaX < 0 ? 1 : -1);
-                return;
-            }
-
-            if (absX <= MOBILE_TAP_SLOP_PX && absY <= MOBILE_TAP_SLOP_PX) {
-                ignoreNextRulerClickRef.current = true;
-                applyScrubAtClientX(event.clientX);
-            }
-
+            ignoreNextRulerClickRef.current = true;
+            applyScrubAtClientX(event.clientX);
+            event.preventDefault();
             return;
         }
 
@@ -463,7 +449,7 @@ const Timeline = ({
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
-    }, [applyScrubAtClientX, isDragging, moveByTimestepOffset]);
+    }, [applyScrubAtClientX, isDragging]);
 
     const handleRulerWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
         const ruler = rulerRef.current;
@@ -600,7 +586,7 @@ const Timeline = ({
             />
 
             {activeTab === 'timeline' && (
-                <Box position='relative' className="canvas-timeline-ruler-region">
+                <Box position='relative' className="canvas-timeline-ruler-region" data-tour-id="canvas-timeline-ruler">
                     {renderTimelineRuler()}
                 </Box>
             )}
