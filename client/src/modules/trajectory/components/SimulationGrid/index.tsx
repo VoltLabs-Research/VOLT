@@ -205,8 +205,9 @@ function PublicSimulationGrid({
             trajectory={trajectory}
             isSelected={false}
             readOnly
+            discoverTeamId={teamId}
         />
-    ), []);
+    ), [teamId]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard n={8} />

@@ -122,6 +122,8 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         availableTimesteps,
         currentTimestep: resolvedCurrentTimestep,
         isLoading,
+        analyses,
+        isAnalysesLoading: analysesQuery.isLoading,
         error: trajectoryQuery.error?.message ?? null,
         bootstrap: bootstrapQuery.data ?? null,
         access: bootstrapQuery.data?.access ?? null,

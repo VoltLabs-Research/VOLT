@@ -1,9 +1,10 @@
-import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import { isArtifactSceneActive, isSameScene, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
+import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../../utilities/plugin-exposure-export';
 import SceneCollection from '../SceneCollection';
 import {
     CanvasTreeEmptyRow,
@@ -24,6 +25,7 @@ import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSect
 import Stack from '@/shared/presentation/primitives/Stack';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -44,6 +46,8 @@ const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
 const TREE_MODIFIER_ICON_SIZE = 12;
 const TREE_MODIFIER_ICON_COLOR = 'var(--accent-blue)';
 const TIMESTEP_PAGE_SIZE = 50;
+const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
+const TOUR_SELECT_EXPOSURE_EVENT = 'canvas-analysis-tour:select-first-exposure';
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',
@@ -145,21 +149,24 @@ interface RightCollapsibleProps {
     children: ReactNode;
     extraClassName?: string;
     collapsible?: boolean;
+    tourId?: string;
 }
 
-const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerAction, children, extraClassName, collapsible = true }: RightCollapsibleProps) => (
-    <CollapsibleSection
-        {...COLLAPSIBLE_PRESET}
-        className={`${COLLAPSIBLE_PRESET.className} ${extraClassName ?? ''}`}
-        title={title}
-        icon={icon}
-        expanded={expanded}
-        onExpandedChange={onExpandedChange}
-        headerAction={headerAction}
-        collapsible={collapsible}
-    >
-        {children}
-    </CollapsibleSection>
+const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerAction, children, extraClassName, collapsible = true, tourId }: RightCollapsibleProps) => (
+    <div data-tour-id={tourId}>
+        <CollapsibleSection
+            {...COLLAPSIBLE_PRESET}
+            className={`${COLLAPSIBLE_PRESET.className} ${extraClassName ?? ''}`}
+            title={title}
+            icon={icon}
+            expanded={expanded}
+            onExpandedChange={onExpandedChange}
+            headerAction={headerAction}
+            collapsible={collapsible}
+        >
+            {children}
+        </CollapsibleSection>
+    </div>
 );
 
 const ObjectsPanel = ({
@@ -206,6 +213,7 @@ const ObjectsPanel = ({
 
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const { toneByAnalysisId } = useAnalysisActivityTone(statusMap);
+    const { pluginsById } = usePluginSelectors();
 
     const {
         isLoading: sceneArtifactsLoading,
@@ -242,6 +250,94 @@ const ObjectsPanel = ({
     const syncArtifactTimestep = useCallback((artifact: SceneArtifact) => {
         setCurrentTimestep(artifact.timestep);
     }, [setCurrentTimestep]);
+
+    const getFirstTourSection = useCallback(() => {
+        return sceneCollectionSections[0] ?? selectedTimestepSections[0];
+    }, [sceneCollectionSections, selectedTimestepSections]);
+
+    const selectFirstTourAnalysis = useCallback(() => {
+        const section = getFirstTourSection();
+        if (!section) {
+            return;
+        }
+
+        if (!expandedSections.has(section.analysis._id)) {
+            toggleSection(section.analysis._id);
+        }
+
+        onRetryLoadExposures?.(section.analysis._id);
+
+        if (activeScene?.source === 'plugin' && activeScene.analysisId === section.analysis._id) {
+            return;
+        }
+
+        if (section.isCurrentAnalysis) {
+            return;
+        }
+
+        onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, section.analysis);
+    }, [activeScene, expandedSections, getFirstTourSection, onRetryLoadExposures, onSelectScene, toggleSection]);
+
+    const selectFirstTourExposure = useCallback(() => {
+        const sections = [...sceneCollectionSections, ...selectedTimestepSections];
+        const section = sections.find((candidate) => candidate.isCurrentAnalysis) ?? getFirstTourSection();
+        if (!section) {
+            return;
+        }
+
+        if (!expandedSections.has(section.analysis._id)) {
+            toggleSection(section.analysis._id);
+        }
+
+        if (section.entry.state !== 'loaded') {
+            onRetryLoadExposures?.(section.analysis._id);
+            return;
+        }
+
+        const primaryExposureId = section.analysis.expectedArtifacts?.find((artifact) => artifact.isPrimary)?.exposureId;
+        const exposure = section.entry.exposures.find((candidate) => candidate.exposureId === primaryExposureId)
+            ?? section.entry.exposures[0];
+
+        if (!exposure) {
+            return;
+        }
+
+        const scene = buildPluginScene({
+            analysisId: exposure.analysisId,
+            exposureId: exposure.exposureId,
+            sceneRenderMetadata: resolveExposureSceneRenderMetadata({
+                exposureId: exposure.exposureId,
+                exposureExport: exposure.export,
+                plugin: pluginsById[section.pluginId]
+            })
+        });
+
+        if (isSameScene(activeScene, scene)) {
+            return;
+        }
+
+        onSelectScene(scene, section.analysis);
+    }, [
+        activeScene,
+        expandedSections,
+        getFirstTourSection,
+        onRetryLoadExposures,
+        onSelectScene,
+        pluginsById,
+        sceneCollectionSections,
+        selectedTimestepSections,
+        toggleSection
+    ]);
+
+    useEffect(() => {
+        window.addEventListener(TOUR_SELECT_ANALYSIS_EVENT, selectFirstTourAnalysis);
+        window.addEventListener(TOUR_SELECT_EXPOSURE_EVENT, selectFirstTourExposure);
+
+        return () => {
+            window.removeEventListener(TOUR_SELECT_ANALYSIS_EVENT, selectFirstTourAnalysis);
+            window.removeEventListener(TOUR_SELECT_EXPOSURE_EVENT, selectFirstTourExposure);
+        };
+    }, [selectFirstTourAnalysis, selectFirstTourExposure]);
 
     useEffect(() => {
         setExpandedParticleFilterTimesteps((current) => pruneExpandedTimesteps(current, particleFilterTimesteps));
@@ -523,6 +619,7 @@ const ObjectsPanel = ({
                             expanded={sceneCollectionOpen}
                             onExpandedChange={setSceneCollectionOpen}
                             collapsible={compactSectionCount > 1}
+                            tourId="canvas-analyses-section"
                         >
                             <SceneCollection
                                 {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
@@ -530,6 +627,8 @@ const ObjectsPanel = ({
                                 totalAnalyses={sceneCollectionTotalAnalyses}
                                 showDefaultScene={false}
                                 showSimulationCell={false}
+                                firstAnalysisTourTargetId="canvas-first-analysis-row"
+                                firstExposureTourTargetId="canvas-first-exposure-row"
                             />
                         </RightCollapsible>
                     )}
@@ -540,12 +639,14 @@ const ObjectsPanel = ({
                             icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                             expanded={selectedTimestepAnalysisOpen}
                             onExpandedChange={setSelectedTimestepAnalysisOpen}
+                            tourId="canvas-per-timestep-analyses-section"
                         >
                             <SceneCollection
                                 {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
                                 filteredSections={selectedTimestepSections}
                                 totalAnalyses={selectedTimestepTotalAnalyses}
                                 showDefaultScene={false}
+                                firstAnalysisTourTargetId="canvas-first-per-timestep-analysis-row"
                             />
                         </RightCollapsible>
                     )}
@@ -604,6 +705,7 @@ const ObjectsPanel = ({
                     icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                     expanded={sceneCollectionOpen}
                     onExpandedChange={setSceneCollectionOpen}
+                    tourId="canvas-analyses-section"
                 >
                     {isRasterWorkspace ? (
                         <Stack gap='05' className="canvas-raster-container-panels">
@@ -616,6 +718,8 @@ const ObjectsPanel = ({
                             totalAnalyses={sceneCollectionTotalAnalyses}
                             showSimulationCell={showSimulationCell}
                             onToggleSimulationCell={handleToggleSimulationCell}
+                            firstAnalysisTourTargetId="canvas-first-analysis-row"
+                            firstExposureTourTargetId="canvas-first-exposure-row"
                         />
                     )}
                 </RightCollapsible>
@@ -626,12 +730,14 @@ const ObjectsPanel = ({
                         icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                         expanded={selectedTimestepAnalysisOpen}
                         onExpandedChange={setSelectedTimestepAnalysisOpen}
+                        tourId="canvas-per-timestep-analyses-section"
                     >
                         <SceneCollection
                             {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
                             filteredSections={selectedTimestepSections}
                             totalAnalyses={selectedTimestepTotalAnalyses}
                             showDefaultScene={false}
+                            firstAnalysisTourTargetId="canvas-first-per-timestep-analysis-row"
                         />
                     </RightCollapsible>
                 )}

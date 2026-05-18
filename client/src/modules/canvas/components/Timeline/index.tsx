@@ -39,6 +39,7 @@ interface TimelineProps {
     currentTimestep: number | undefined;
     availableTimesteps: number[];
     analysisId: string | undefined;
+    disableContextualTips?: boolean;
     onDownloadExposureListing?: (params: {
         pluginId: string;
         exposureId: string;
@@ -56,9 +57,12 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     analysisId,
+    disableContextualTips = false,
     onDownloadExposureListing
 }: TimelineProps) => {
-    useTip('canvas-timeline-scrub');
+    useTip('canvas-timeline-scrub', {
+        enabled: !disableContextualTips
+    });
 
     const [activeTab, setActiveTab] = useState('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
