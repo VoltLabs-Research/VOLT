@@ -123,7 +123,7 @@ export const buildAnalysisExecutionRows = ({
             status: child.status,
             cacheHit: child.cacheHit,
             durationMs: child.durationMs,
-            className: 'canvas-tree-execution-row canvas-tree-execution-row--child',
+            className: `canvas-tree-execution-row canvas-tree-execution-row--child canvas-tree-execution-row--${child.status}`,
             iconSource: child
         })),
         ...stageRows.map((stage) => ({

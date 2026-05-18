@@ -55,6 +55,7 @@ import { openModal } from '@/shared/presentation/primitives/Modal';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -349,6 +350,7 @@ const CanvasPage = () => {
         trajectory?._id
         && !isDownloadingTrajectoryAnalyses
     );
+    const isMobileViewport = useMedia('(max-width: 768px)');
 
     const handleDownloadAnalysisListing = useCallback((targetAnalysisId?: string) => {
         const resolvedAnalysisId = targetAnalysisId ?? analysisId;
@@ -598,13 +600,13 @@ const CanvasPage = () => {
 
             {!isLocalGlbViewer && !isScriptingWorkspace && (
                 <>
-                    {isNarrowViewport && !rightDrawerOpen && (
+                    {isNarrowViewport && (
                         <button
                             type='button'
                             className='canvas-panel-drawer-toggle canvas-panel-drawer-toggle--right'
-                            onClick={() => setRightDrawerOpen(true)}
-                            aria-label='Open canvas panel'
-                            title='Open canvas panel'
+                            onClick={() => setRightDrawerOpen((open) => !open)}
+                            aria-label={rightDrawerOpen ? 'Close canvas panel' : 'Open canvas panel'}
+                            title={rightDrawerOpen ? 'Close canvas panel' : 'Open canvas panel'}
                             aria-expanded={rightDrawerOpen}
                             aria-controls='canvas-right-panel'
                         >
@@ -631,6 +633,7 @@ const CanvasPage = () => {
                         className="canvas-right-panel-container canvas-overlay-glass"
                         style={{ width: rightPanel.size }}
                         data-drawer-open={isNarrowViewport ? (rightDrawerOpen ? 'true' : 'false') : undefined}
+                        data-analysis-compact={isMobileViewport ? 'true' : undefined}
                     >
                         <RightPanel
                             trajectory={trajectory}
@@ -638,6 +641,7 @@ const CanvasPage = () => {
                             analysisId={analysisId}
                             currentTimestep={currentTimestep}
                             canMutateCanvas={canMutateCanvas}
+                            compactAnalysisOnly={isMobileViewport}
                             onDownloadAnalysis={handleDownloadAnalysisListing}
                             onDownloadExposureListing={handleDownloadExposureListing}
                             rasterContainerSelections={rasterContainerSelections}

@@ -48,6 +48,7 @@ interface RightPanelProps extends CanvasPanelActionProps {
     analysisId?: string;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
+    compactAnalysisOnly?: boolean;
 }
 
 const resolveTrajectoryTeamId = (trajectory?: Trajectory | null): string | undefined => {
@@ -72,6 +73,7 @@ const RightPanel = ({
     analysisId,
     currentTimestep,
     canMutateCanvas,
+    compactAnalysisOnly = false,
     onDownloadAnalysis,
     onDownloadExposureListing,
     rasterContainerSelections,
@@ -453,6 +455,7 @@ const RightPanel = ({
                         onSetActiveRasterContainer={onSetActiveRasterContainer}
                         onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
                         pluginsContent={pluginsContent}
+                        mode={compactAnalysisOnly ? 'analysis-compact' : 'default'}
                     />
                 )}
             </Box>

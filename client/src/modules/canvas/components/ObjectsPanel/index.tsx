@@ -37,6 +37,7 @@ import './ObjectsPanel.css';
 interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
     pluginsContent?: ReactNode;
+    mode?: 'default' | 'analysis-compact';
 }
 
 const PANEL_ICON_COLOR = 'var(--color-text-secondary)';
@@ -143,9 +144,10 @@ interface RightCollapsibleProps {
     headerAction?: ReactNode;
     children: ReactNode;
     extraClassName?: string;
+    collapsible?: boolean;
 }
 
-const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerAction, children, extraClassName }: RightCollapsibleProps) => (
+const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerAction, children, extraClassName, collapsible = true }: RightCollapsibleProps) => (
     <CollapsibleSection
         {...COLLAPSIBLE_PRESET}
         className={`${COLLAPSIBLE_PRESET.className} ${extraClassName ?? ''}`}
@@ -154,6 +156,7 @@ const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerActio
         expanded={expanded}
         onExpandedChange={onExpandedChange}
         headerAction={headerAction}
+        collapsible={collapsible}
     >
         {children}
     </CollapsibleSection>
@@ -167,7 +170,8 @@ const ObjectsPanel = ({
     activeRasterContainerId = 'container-1',
     onSetActiveRasterContainer,
     onUpdateRasterContainerSelection,
-    pluginsContent
+    pluginsContent,
+    mode = 'default'
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
     const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
@@ -180,6 +184,7 @@ const ObjectsPanel = ({
     const [particleFilterVisibleCount, setParticleFilterVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
     const { activeWorkspace } = useCanvasUrlState();
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
+    const isAnalysisCompact = mode === 'analysis-compact';
 
     const {
         sceneCollectionSections,
@@ -498,6 +503,98 @@ const ObjectsPanel = ({
             </Stack>
         );
     }, [renderArtifactTreeItem, sceneArtifactsLoading]);
+
+    if (isAnalysisCompact) {
+        const hasAnalyses = sceneCollectionSections.length > 0;
+        const hasColorCodingArtifacts = colorCodingArtifacts.length > 0;
+        const hasParticleFilterArtifacts = particleFilterArtifacts.length > 0;
+        const compactSectionCount = (hasAnalyses ? 1 : 0)
+            + (hasSelectedTimestepAnalyses ? 1 : 0)
+            + (hasColorCodingArtifacts ? 1 : 0)
+            + (hasParticleFilterArtifacts ? 1 : 0);
+
+        return (
+            <Stack minH='0' className="canvas-objects-panel canvas-objects-panel--analysis-compact">
+                <div className="canvas-objects-panel__top">
+                    {hasAnalyses && (
+                        <RightCollapsible
+                            title="Analyses"
+                            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            expanded={sceneCollectionOpen}
+                            onExpandedChange={setSceneCollectionOpen}
+                            collapsible={compactSectionCount > 1}
+                        >
+                            <SceneCollection
+                                {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
+                                filteredSections={sceneCollectionSections}
+                                totalAnalyses={sceneCollectionTotalAnalyses}
+                                showDefaultScene={false}
+                                showSimulationCell={false}
+                            />
+                        </RightCollapsible>
+                    )}
+
+                    {hasSelectedTimestepAnalyses && (
+                        <RightCollapsible
+                            title="Per-timestep analyses"
+                            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            expanded={selectedTimestepAnalysisOpen}
+                            onExpandedChange={setSelectedTimestepAnalysisOpen}
+                        >
+                            <SceneCollection
+                                {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
+                                filteredSections={selectedTimestepSections}
+                                totalAnalyses={selectedTimestepTotalAnalyses}
+                                showDefaultScene={false}
+                            />
+                        </RightCollapsible>
+                    )}
+
+                    {hasColorCodingArtifacts && (
+                        <RightCollapsible
+                            title="Color Coding"
+                            icon={<Palette style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            expanded={colorCodingOpen}
+                            onExpandedChange={setColorCodingOpen}
+                        >
+                            {renderArtifactTreeSection({
+                                artifactsByTimestep: artifactsByTimestep.colorIndex,
+                                timesteps: colorCodingTimesteps,
+                                expandedSet: expandedColorCodingTimesteps,
+                                toggleTimestep: toggleColorCodingTimestep,
+                                icon: Palette,
+                                menuIdPrefix: CONTEXT_MENU_ID_PREFIX.colorCoding,
+                                ariaLabel: 'Color Coding hierarchy',
+                                visibleCount: colorCodingVisibleCount,
+                                onShowMore: () => setColorCodingVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
+                            })}
+                        </RightCollapsible>
+                    )}
+
+                    {hasParticleFilterArtifacts && (
+                        <RightCollapsible
+                            title="Particle Filter"
+                            icon={<Filter style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+                            expanded={particleFilterOpen}
+                            onExpandedChange={setParticleFilterOpen}
+                        >
+                            {renderArtifactTreeSection({
+                                artifactsByTimestep: artifactsByTimestep.particleIndex,
+                                timesteps: particleFilterTimesteps,
+                                expandedSet: expandedParticleFilterTimesteps,
+                                toggleTimestep: toggleParticleFilterTimestep,
+                                icon: Filter,
+                                menuIdPrefix: CONTEXT_MENU_ID_PREFIX.particleFilter,
+                                ariaLabel: 'Particle Filter hierarchy',
+                                visibleCount: particleFilterVisibleCount,
+                                onShowMore: () => setParticleFilterVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
+                            })}
+                        </RightCollapsible>
+                    )}
+                </div>
+            </Stack>
+        );
+    }
 
     return (
         <Stack minH='0' className="canvas-objects-panel">
