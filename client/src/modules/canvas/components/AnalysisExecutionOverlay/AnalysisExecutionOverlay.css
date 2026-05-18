@@ -95,7 +95,31 @@
 
 @media (max-width: 768px) {
     .canvas-analysis-execution-overlay {
-        width: min(280px, calc(100% - 2rem));
-        max-height: 34vh;
+        left: 0rem;
+        z-index: 150;
+        width: min(240px, calc(100% - 1rem));
+        max-height: 7.5rem;
+        padding: 6px 8px;
+        border-radius: var(--radius-lg);
+    }
+
+    .canvas-analysis-execution-overlay--completed {
+        display: none;
+    }
+
+    .canvas-analysis-execution-overlay .canvas-tree-execution-row {
+        min-height: 18px;
+        gap: 4px;
+        font-size: 0.625rem;
+    }
+
+    .canvas-analysis-execution-overlay .canvas-tree-execution-row--completed,
+    .canvas-analysis-execution-overlay .canvas-tree-execution-row--cached {
+        display: none;
+    }
+
+    .canvas-analysis-execution-overlay .canvas-tree-execution-chip,
+    .canvas-analysis-execution-overlay .canvas-tree-execution-duration {
+        display: none;
     }
 }

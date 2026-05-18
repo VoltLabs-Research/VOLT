@@ -138,16 +138,17 @@
 
 .canvas-center-timeline {
     position: absolute;
-    left: 1rem;
-    right: calc(var(--canvas-right-overlay-size, 0px) + 1rem);
-    bottom: 1rem;
+    left: 0;
+    right: auto;
+    bottom: 0;
     z-index: 20;
+    width: calc(100% - max(12px, var(--canvas-right-overlay-size, 0px)));
     height: auto;
     max-height: calc(100% - 2rem);
     min-height: 0;
     overflow: visible;
     border: var(--canvas-floating-surface-border, 0);
-    border-radius: var(--canvas-floating-surface-radius, 12px);
+    border-radius: unset;
     background: var(--canvas-floating-surface-bg, var(--glass-bg-secondary));
     box-shadow: var(--canvas-floating-surface-shadow, 0);
     backdrop-filter: var(--canvas-floating-surface-backdrop, var(--glass-blur));
@@ -272,7 +273,12 @@
 
 @media (max-width: 768px) {
     .canvas-center-timeline {
+        left: 1rem;
+        right: calc(var(--canvas-right-overlay-size, 0px) + 1rem);
+        bottom: 1rem;
+        width: auto;
         z-index: 120;
+        border-radius: var(--canvas-floating-surface-radius, 12px);
         background: transparent;
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
@@ -314,6 +320,13 @@
         opacity: 0;
         pointer-events: none;
         transform: translateY(-8px) scale(0.98);
+    }
+
+    .canvas-editor-root.canvas-editor-root--narrow .canvas-right-panel-container[data-analysis-compact='true'] {
+        width: min(18rem, calc(100vw - var(--canvas-mobile-controls-gutter) - var(--canvas-mobile-panel-edge) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))) !important;
+        max-width: calc(100vw - var(--canvas-mobile-controls-gutter) - var(--canvas-mobile-panel-edge) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+        height: min(18rem, calc(100dvh - var(--canvas-mobile-panel-top) - 1rem - env(safe-area-inset-bottom, 0px)));
+        max-height: calc(100dvh - var(--canvas-mobile-panel-top) - 1rem - env(safe-area-inset-bottom, 0px));
     }
 
     .canvas-panel-drawer-toggle {
