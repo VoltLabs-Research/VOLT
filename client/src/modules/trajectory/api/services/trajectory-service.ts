@@ -58,6 +58,7 @@ export interface CreateTrajectoryUploadSessionOutputDTO {
 
 export interface CommitTrajectoryUploadSessionInputDTO {
     uploadSessionId: string;
+    authToken?: string;
 }
 
 export interface DeleteTrajectoryInputDTO {
@@ -176,13 +177,18 @@ const endpoints = {
     }),
     commitUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, { trajectoryId: string }>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
-            timeoutMs: 0
+            timeoutMs: 0,
+            ...(params.authToken ? { headers: { Authorization: `Bearer ${params.authToken}` } } : {})
         };
 
         return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`, requestArgs);
     }),
     cancelUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, void>(async ({ getClient }, params) => {
-        return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`);
+        const requestArgs = params.authToken
+            ? { headers: { Authorization: `Bearer ${params.authToken}` } }
+            : undefined;
+
+        return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`, requestArgs);
     }),
     update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
     delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId'),

@@ -1,8 +1,9 @@
 import useCreateTrajectory from './use-create-trajectory';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
+import { tokenStorage } from '@/shared/auth/token-storage';
 import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';
 import type { CreateTrajectoryUploadSessionOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
@@ -11,6 +12,14 @@ import type { FileWithPath } from '@/shared/utils/file';
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';
 const UPLOAD_ERROR_TITLE = 'Failed to upload trajectory';
 const UPLOAD_ERROR_DESCRIPTION = 'Please check your files and try again.';
+const COMMIT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000];
+const RETRIABLE_COMMIT_ERROR_CODES = new Set([
+    'Network::Timeout',
+    'Network::ConnectionError',
+    'Http::401',
+    'Authentication::Required',
+    'Authentication::Unauthorized'
+]);
 
 interface UseTrajectoryUploadResult {
     uploadTrajectory: (files: FileWithPath[], folderName: string) => Promise<void>;
@@ -42,6 +51,18 @@ const getUploadDisplayName = (files: FileWithPath[], folderName: string): string
     return `${firstFileName} + ${files.length - 1} more`;
 };
 
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+});
+
+const isRetriableCommitError = (error: unknown): boolean => {
+    if (!isApiError(error)) {
+        return false;
+    }
+
+    return RETRIABLE_COMMIT_ERROR_CODES.has(error.code);
+};
+
 export default function useTrajectoryUpload(folderId?: string | null): UseTrajectoryUploadResult {
     const [isUploading, setIsUploading] = useState(false);
     const activeUploadsRef = useRef(0);
@@ -67,6 +88,8 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
         });
 
         let session: CreateTrajectoryUploadSessionOutputDTO | null = null;
+        const authTokenSnapshot = tokenStorage.getToken();
+        let commitStarted = false;
 
         try {
             session = await createTrajectory({
@@ -97,15 +120,39 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 });
             }));
 
-            await trajectoryService.commitUploadSession({
-                uploadSessionId: session.uploadSession.id
-            });
+            commitStarted = true;
+            let commitError: unknown;
+
+            for (let attempt = 0; attempt <= COMMIT_RETRY_DELAYS_MS.length; attempt += 1) {
+                try {
+                    await trajectoryService.commitUploadSession({
+                        uploadSessionId: session.uploadSession.id,
+                        ...(authTokenSnapshot ? { authToken: authTokenSnapshot } : {})
+                    });
+                    commitError = undefined;
+                    break;
+                } catch (error) {
+                    commitError = error;
+                    const hasMoreAttempts = attempt < COMMIT_RETRY_DELAYS_MS.length;
+                    if (!hasMoreAttempts || !isRetriableCommitError(error)) {
+                        break;
+                    }
+
+                    await sleep(COMMIT_RETRY_DELAYS_MS[attempt]);
+                }
+            }
+
+            if (commitError) {
+                throw commitError;
+            }
+
             updateUploadProgress(uploadId, 1);
             sileo.success({ title: UPLOAD_SUCCESS_TITLE });
         } catch (error) {
-            if (session) {
+            if (session && !commitStarted) {
                 await trajectoryService.cancelUploadSession({
-                    uploadSessionId: session.uploadSession.id
+                    uploadSessionId: session.uploadSession.id,
+                    ...(authTokenSnapshot ? { authToken: authTokenSnapshot } : {})
                 }).catch(() => undefined);
             }
 
