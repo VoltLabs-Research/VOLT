@@ -43,6 +43,10 @@ export const ValidationCodes = {
     TEAM_INVITATION_TOKEN_REQUIRED: 'TeamInvitation::Token::Required',
     TEAM_INVITATION_EXPIRES_AT_REQUIRED: 'TeamInvitation::ExpiresAt::Required',
     TEAM_INVITATION_STATUS_INVALID: 'TeamInvitation::Status::Invalid',
+    EARLY_ACCESS_SUBSCRIPTION_TEAM_REQUIRED: 'EarlyAccessSubscription::Team::Required',
+    EARLY_ACCESS_SUBSCRIPTION_EMAIL_REQUIRED: 'EarlyAccessSubscription::Email::Required',
+    EARLY_ACCESS_SUBSCRIPTION_EMAIL_INVALID: 'EarlyAccessSubscription::Email::Invalid',
+    EARLY_ACCESS_SUBSCRIPTION_SOURCE_INVALID: 'EarlyAccessSubscription::Source::Invalid',
 
     TEAM_NAME_REQUIRED: 'Team::Name::Required',
     TEAM_NAME_MINLEN: 'Team::Name::MinLength',

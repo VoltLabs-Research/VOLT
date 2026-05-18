@@ -160,7 +160,7 @@ interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
     entryType: PendingEntry['type'];
     timeoutMs: number;
     timeoutMessage: string;
-    createEntry: (resolve: (value: TResult) => void, reject: (error: Error) => void, timeout: NodeJS.Timeout) => TEntry;
+    createEntry: (resolve: (value: TResult) => void, reject: (error: Error) => void, timeout: NodeJS.Timeout | null) => TEntry;
     emitMessage: () => void;
 }
 
@@ -1214,7 +1214,11 @@ export default class TeamClusterReverseChannelService {
         entryType: PendingEntry['type'],
         timeoutMs: number,
         timeoutMessage: string
-    ): NodeJS.Timeout {
+    ): NodeJS.Timeout | null {
+        if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+            return null;
+        }
+
         return setTimeout(() => {
             const entry = this.pendingEntries.get(correlationId);
             if (!entry || entry.type !== entryType) {

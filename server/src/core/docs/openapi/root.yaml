@@ -125,6 +125,8 @@ tags:
   description: Team cluster management, remote access and update requests.
 - name: Cluster Lifecycle
   description: Cluster daemon enrollment, lifecycle reporting and install manifests.
+- name: Early Access
+  description: Public lead capture for VOLT early access.
 security:
 - BearerAuth: []
 paths:
@@ -218,6 +220,8 @@ paths:
     $ref: paths/containers/by-teamid__by-containerid__files__content.yaml
   /api/discover/teams/{teamId}/trajectories:
     $ref: paths/discover/teams__by-teamid__trajectories.yaml
+  /api/early-access/teams/{teamId}/subscriptions:
+    $ref: paths/early-access/teams__by-teamid__subscriptions.yaml
   /api/trajectories/{teamId}/samples:
     $ref: paths/trajectories/by-teamid__samples.yaml
   /api/trajectories/{teamId}/samples/{filename}:
