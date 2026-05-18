@@ -374,6 +374,7 @@
 
     .canvas-timeline-ruler-region .canvas-timeline-ruler {
         border-bottom-color: var(--glass-border);
+        touch-action: none;
     }
 
     .canvas-timeline-helper {

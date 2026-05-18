@@ -39,7 +39,7 @@ const TimelineRuler = ({
     onKeyDown
 }: TimelineRulerProps) => (
     <div className="canvas-timeline-body flex-1 p-relative min-h-0">
-        <div className="canvas-timeline-ruler scrollbar-none d-flex items-end" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-describedby={helperTextId} aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
+        <div className="canvas-timeline-ruler scrollbar-none d-flex items-end" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-describedby={helperTextId} aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
             {ticks.map((tick) => (
                 <div key={tick.frame} className={`canvas-ruler-tick d-flex column items-center${tick.tone ? ` is-${tick.tone}` : ''}`}>
                     {tick.major && (

@@ -266,10 +266,10 @@ const TimelineHeader = ({
     return (
         <Row width='max' className="canvas-timeline-header">
             <Row className="canvas-timeline-tabs-region">
-                <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs">
+                <Row className="canvas-timeline-tabs scrollbar-none" role="tablist" aria-label="Timeline tabs" data-tour-id="canvas-timeline-tabs">
                     {resolvedTabs.map(renderResolvedTab)}
                 </Row>
-                <div className="canvas-timeline-tab-select-region">
+                <div className="canvas-timeline-tab-select-region" data-tour-id="canvas-timeline-tab-selector">
                     <Select
                         options={tabSelectOptions}
                         value={activeTab}
