@@ -76,6 +76,8 @@ interface AnalysisTreeNodeProps {
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
+    tourTargetId?: string;
+    firstExposureTourTargetId?: string;
 }
 
 const SCENE_ICON_COLOR = 'var(--accent-blue)';
@@ -151,13 +153,16 @@ const AnalysisTreeNode = ({
     resolveSceneRenderMetadata,
     selectionMode = 'default',
     selectedScene,
-    onSelectRasterScene
+    onSelectRasterScene,
+    tourTargetId,
+    firstExposureTourTargetId
 }: AnalysisTreeNodeProps) => {
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
     const expectedArtifacts = analysis.expectedArtifacts ?? [];
     const artifactRows = buildArtifactRows(expectedArtifacts, entry.exposures);
     const hasArtifactRows = artifactRows.length > 0;
+    const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
     const [recentReadyArtifactIds, setRecentReadyArtifactIds] = useState<Set<string>>(() => new Set());
     const previousArtifactStatusesRef = useRef<Map<string, AnalysisExpectedArtifact['status']>>(new Map());
     const readyArtifactTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -300,7 +305,7 @@ const AnalysisTreeNode = ({
     ].filter(Boolean).join(' ');
 
     const analysisRow = (
-        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0}>
+        <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
             <span className={nameClassName} title={pluginDisplayName}>
                 {pluginDisplayName}
             </span>
@@ -429,6 +434,7 @@ const AnalysisTreeNode = ({
                             }
                             onSelectScene(scene, analysis);
                         }}
+                        tourTargetId={key === firstExposureRowKey ? firstExposureTourTargetId : undefined}
                     />
                 );
 
