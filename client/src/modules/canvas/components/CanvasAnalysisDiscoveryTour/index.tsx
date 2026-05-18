@@ -18,6 +18,7 @@ interface CanvasAnalysisDiscoveryTourProps {
     rightDrawerOpen: boolean;
     onRightDrawerOpenChange: (open: boolean) => void;
     onActiveChange?: (active: boolean) => void;
+    onComplete?: () => void;
 }
 
 interface TourStep {
@@ -159,7 +160,8 @@ const CanvasAnalysisDiscoveryTour = ({
     isMobile,
     rightDrawerOpen,
     onRightDrawerOpenChange,
-    onActiveChange
+    onActiveChange,
+    onComplete
 }: CanvasAnalysisDiscoveryTourProps) => {
     const steps = useMemo(() => buildSteps(isMobile), [isMobile]);
     const [isActive, setIsActive] = useState(false);
@@ -172,7 +174,8 @@ const CanvasAnalysisDiscoveryTour = ({
     const completeTour = useCallback(() => {
         markTourCompleted(storageScopeId);
         setIsActive(false);
-    }, [storageScopeId]);
+        onComplete?.();
+    }, [onComplete, storageScopeId]);
 
     useEffect(() => {
         onActiveChange?.(isActive);

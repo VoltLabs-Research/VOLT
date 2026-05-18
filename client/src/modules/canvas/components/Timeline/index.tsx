@@ -551,7 +551,7 @@ const Timeline = ({
                 </Box>
             )}
 
-            {activeExposureId && trajectory?._id && pluginId && selectedTeamId && (
+            {activeExposureId && trajectory?._id && pluginId && (
                 <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     {/* Reuse the dashboard listing flow so row actions keep the exact analysis/exposure/timestep context. */}
                     <PluginExposureListingPanel
@@ -560,7 +560,7 @@ const Timeline = ({
                         exposureId={activeExposureId}
                         trajectoryId={trajectory._id}
                         analysisId={analysisId}
-                        teamId={selectedTeamId}
+                        teamId={selectedTeamId ?? undefined}
                         showTrajectoryColumn={false}
                         compact
                         inlineSubListings

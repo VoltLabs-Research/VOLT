@@ -166,9 +166,9 @@
 
 @media (max-width: 768px) {
     .canvas-editor-root {
-        --canvas-header-height: 84px;
+        --canvas-header-height: 40px;
         --canvas-mobile-panel-edge: 0.75rem;
-        --canvas-mobile-panel-top: calc(var(--canvas-header-height, 84px) + 8.75rem);
+        --canvas-mobile-panel-top: calc(var(--canvas-header-height, 40px) + 8.75rem);
         --canvas-mobile-controls-gutter: 5rem;
         --canvas-mobile-control-column-size: 2.625rem;
         --canvas-mobile-control-column-right: calc(0.5rem + env(safe-area-inset-right, 0px));
@@ -278,6 +278,7 @@
         bottom: 1rem;
         width: auto;
         z-index: 120;
+        pointer-events: none;
         border-radius: var(--canvas-floating-surface-radius, 12px);
         background: transparent;
         backdrop-filter: none;
