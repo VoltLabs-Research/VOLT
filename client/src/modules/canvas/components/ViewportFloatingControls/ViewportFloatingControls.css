@@ -36,8 +36,15 @@
 
 @media (max-width: 768px) {
     .canvas-viewport-floating-controls.canvas-viewport-floating-controls {
-        top: 6rem !important;
-        right: 8px;
+        top: var(--canvas-mobile-viewport-controls-top, 4.125rem) !important;
+        right: var(--canvas-mobile-control-column-right, 8px) !important;
+        width: var(--canvas-mobile-control-column-size, 2.625rem);
+        margin-right: 0 !important;
+        box-sizing: border-box;
+    }
+
+    .canvas-editor-root--read-only .canvas-viewport-floating-controls.canvas-viewport-floating-controls {
+        top: var(--canvas-mobile-viewport-controls-top, 4.125rem) !important;
     }
 
     .canvas-viewport-floating-btn {

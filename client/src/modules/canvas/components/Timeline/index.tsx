@@ -39,7 +39,6 @@ interface TimelineProps {
     currentTimestep: number | undefined;
     availableTimesteps: number[];
     analysisId: string | undefined;
-    onTabChange?: (tab: string) => void;
     onDownloadExposureListing?: (params: {
         pluginId: string;
         exposureId: string;
@@ -57,7 +56,6 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     analysisId,
-    onTabChange,
     onDownloadExposureListing
 }: TimelineProps) => {
     useTip('canvas-timeline-scrub');
@@ -101,8 +99,7 @@ const Timeline = ({
         } else if (timelineExposureId) {
             setTimelineExposureId(undefined, { replace: true });
         }
-        onTabChange?.(tab);
-    }, [onTabChange, setTimelineExposureId, timelineExposureId]);
+    }, [setTimelineExposureId, timelineExposureId]);
 
     useEffect(() => {
         if (timelineExposureId && hasExposure(timelineExposureId)) {
@@ -570,7 +567,11 @@ const Timeline = ({
     );
 
     return (
-        <Stack overflow='hidden' minH='0' className="canvas-timeline">
+        <Stack
+            overflow='hidden'
+            minH='0'
+            className={activeTab === TimelineTab.Timeline ? 'canvas-timeline canvas-timeline--timeline-active' : 'canvas-timeline'}
+        >
             <TimelineHeader
                 activeTab={activeTab}
                 onTabChange={handleTabChange}

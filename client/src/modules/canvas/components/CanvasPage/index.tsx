@@ -277,18 +277,6 @@ const CanvasPage = () => {
         storageKey: 'volt:canvas:right-panel-size'
     });
 
-    const timeline = useResizable({
-        direction: ResizeDirection.Vertical,
-        initialSize: 65,
-        minSize: 60,
-        maxSize: 360,
-        growPositive: false
-    });
-
-    const handleTimelineTabChange = useCallback((tab: string) => {
-        timeline.setSize(tab === 'timeline' ? 65 : 280);
-    }, [timeline.setSize]);
-
     const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
         downloadListing(params);
     }, [downloadListing]);
@@ -585,39 +573,17 @@ const CanvasPage = () => {
                     </Box>
 
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
-                        <>
-                            <div
-                                className="canvas-resize-rail canvas-resize-rail--timeline p-absolute"
-                                style={{ left: 0, right: rightOverlaySize, bottom: timeline.size }}
-                            >
-                                <ResizeHandle
-                                    direction={ResizeDirection.Vertical}
-                                    isDragging={timeline.isDragging}
-                                    label="Resize timeline"
-                                    controls="canvas-center-timeline"
-                                    {...timeline.handleProps}
-                                />
-                            </div>
-                            <Stack
-                                id="canvas-center-timeline"
-                                position='absolute'
-                                shrink='0'
-                                minH='0'
-                                className="canvas-center-timeline canvas-overlay-glass"
-                                style={{ height: timeline.size }}
-                            >
-                                <Timeline
-                                    sceneRef={sceneRef}
-                                    trajectory={trajectory}
-                                    trajectoryId={trajectoryId}
-                                    currentTimestep={currentTimestep}
-                                    availableTimesteps={availableTimesteps}
-                                    analysisId={analysisId}
-                                    onTabChange={handleTimelineTabChange}
-                                    onDownloadExposureListing={handleDownloadExposureListing}
-                                />
-                            </Stack>
-                        </>
+                        <Stack id="canvas-center-timeline" className="canvas-center-timeline">
+                            <Timeline
+                                sceneRef={sceneRef}
+                                trajectory={trajectory}
+                                trajectoryId={trajectoryId}
+                                currentTimestep={currentTimestep}
+                                availableTimesteps={availableTimesteps}
+                                analysisId={analysisId}
+                                onDownloadExposureListing={handleDownloadExposureListing}
+                            />
+                        </Stack>
                     )}
                 </Stack>
 

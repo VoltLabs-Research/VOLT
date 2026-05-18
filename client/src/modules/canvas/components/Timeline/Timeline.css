@@ -107,6 +107,12 @@
     height: 100%;
 }
 
+.canvas-timeline--timeline-active .canvas-timeline-ruler-region {
+    flex: 0 0 25px;
+    height: 25px;
+    min-height: 25px;
+}
+
 .canvas-ruler-tick {
     padding: 0 12px;
     height: 100%;
@@ -338,7 +344,8 @@
         order: 2;
         align-self: stretch;
         min-width: 0;
-        height: auto;
+        height: 2rem;
+        min-height: 2rem;
         overflow-x: auto;
         overflow-y: auto;
         backdrop-filter: var(--glass-blur);
@@ -357,6 +364,12 @@
         overflow-y: auto;
         border: 0;
         pointer-events: auto;
+    }
+
+    .canvas-timeline.canvas-timeline--timeline-active .canvas-timeline-body {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .canvas-timeline-ruler-region .canvas-timeline-ruler {
