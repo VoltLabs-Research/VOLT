@@ -254,7 +254,7 @@
         align-self: stretch;
         width: 100%;
         min-width: 0;
-        pointer-events: auto;
+        pointer-events: none;
     }
 
     .canvas-timeline-tabs {
@@ -264,6 +264,7 @@
     .canvas-timeline-tab-select-region {
         display: block;
         overflow: hidden;
+        pointer-events: auto;
     }
 
     .canvas-timeline-tab-select {
@@ -274,6 +275,7 @@
         border-color: transparent;
         background: inherit;
         font-size: 0.6875rem;
+        pointer-events: auto;
     }
 
     .canvas-timeline-mobile-actions {
@@ -285,7 +287,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 0.5rem;
-        pointer-events: auto;
+        pointer-events: none;
     }
 
     .canvas-timeline-controls-region.glass-bg,
@@ -299,7 +301,7 @@
         justify-content: flex-start;
         padding: 0;
         border: 0;
-        pointer-events: auto;
+        pointer-events: none;
     }
 
     .canvas-timeline-controls-center {
@@ -312,6 +314,7 @@
         width: auto;
         min-width: 0;
         justify-content: flex-start;
+        pointer-events: none;
     }
 
     .canvas-timeline-frame-info {
@@ -319,6 +322,16 @@
         gap: 0.25rem;
         min-width: 0;
         overflow: hidden;
+        pointer-events: none;
+    }
+
+    .canvas-timeline-mobile-actions button,
+    .canvas-timeline-mobile-actions input,
+    .canvas-timeline-mobile-actions select,
+    .canvas-timeline-mobile-actions [role='button'],
+    .canvas-timeline-mobile-actions [data-popover-trigger],
+    .canvas-timeline-frame-info .form-field-canvas-input--compact {
+        pointer-events: auto;
     }
 
     .canvas-timeline-frame-info .volt-divider,
@@ -363,6 +376,10 @@
         overflow-x: auto;
         overflow-y: auto;
         border: 0;
+        pointer-events: none;
+    }
+
+    .canvas-timeline:not(.canvas-timeline--timeline-active) > .canvas-timeline-body {
         pointer-events: auto;
     }
 

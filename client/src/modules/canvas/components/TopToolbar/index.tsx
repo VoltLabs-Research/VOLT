@@ -83,7 +83,7 @@ const TopToolbar = ({
     }, []);
 
     const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
-    const handleBack = useCallback(() => navigate(-1), [navigate]);
+    const handleBack = navigateToDashboard;
     const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
 
     const handleToggleFullscreen = useCallback(() => {
