@@ -42,6 +42,10 @@ interface TopToolbarProps {
     contextualActions?: ReactNode;
 }
 
+interface ToolbarOptionsRenderOptions {
+    includeBackButton?: boolean;
+}
+
 const temporalStore = useEditorStore.temporal;
 
 const subscribeTemporal = (onStoreChange: () => void) => temporalStore.subscribe(onStoreChange);
@@ -123,9 +127,27 @@ const TopToolbar = ({
     });
 
     const canShowPeers = Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
-    const renderToolbarOptions = (className: string, menuIdPrefix = 'menu') => (
+    const useGuestMobileNavigation = !user && !canMutateCanvas;
+    const renderBackButton = (className = '') => (
+        <IconButton
+            variant='ghost'
+            size='sm'
+            className={className}
+            aria-label='Back to dashboard'
+            title='Back to dashboard'
+            onClick={handleBack}
+        >
+            <ChevronLeft size={16} aria-hidden='true' />
+        </IconButton>
+    );
+    const renderToolbarOptions = (
+        className: string,
+        menuIdPrefix = 'menu',
+        options: ToolbarOptionsRenderOptions = {}
+    ) => (
         <div className={`canvas-toolbar-options ${className}`}>
             <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
+                {options.includeBackButton && renderBackButton('canvas-toolbar-mobile-back')}
                 {menus.map((menu) => (
                     <MenuPopover
                         key={`${menuIdPrefix}-${menu.label}`}
@@ -145,8 +167,8 @@ const TopToolbar = ({
     );
 
     return (
-        <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
-            {renderToolbarOptions('canvas-toolbar-options--mobile', 'mobile-menu')}
+        <header className={`canvas-top-toolbar d-flex items-stretch u-select-none${useGuestMobileNavigation ? ' canvas-top-toolbar--guest-mobile-nav' : ''}`}>
+            {renderToolbarOptions('canvas-toolbar-options--mobile', 'mobile-menu', { includeBackButton: useGuestMobileNavigation })}
 
             <div className="canvas-toolbar-main">
                 <input
@@ -157,15 +179,7 @@ const TopToolbar = ({
                     onChange={handlePickerChange}
                 />
                 <Row flex='1' className="canvas-toolbar-left">
-                    <IconButton
-                        variant='ghost'
-                        size='sm'
-                        aria-label='Back to dashboard'
-                        title='Back to dashboard'
-                        onClick={handleBack}
-                    >
-                        <ChevronLeft size={16} aria-hidden='true' />
-                    </IconButton>
+                    {renderBackButton('canvas-toolbar-back')}
                     {trajectory && (
                         <div
                             className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
