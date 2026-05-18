@@ -7,6 +7,7 @@ import './CanvasAnalysisDiscoveryTour.css';
 const TOUR_STORAGE_KEY_PREFIX = 'volt:tutorial:canvas-analysis-discovery:v1';
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 const TOUR_SELECT_EXPOSURE_EVENT = 'canvas-analysis-tour:select-first-exposure';
+const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 const TARGET_GAP = 12;
 const VIEWPORT_MARGIN = 12;
 const CARD_ESTIMATED_HEIGHT = 146;
@@ -27,6 +28,7 @@ interface TourStep {
     description: string;
     targetSelector: string;
     requiresAnalysisPanel?: boolean;
+    requiresTimelineTab?: boolean;
     optional?: boolean;
     missingTargetSkipDelay?: number;
 }
@@ -94,6 +96,14 @@ const dispatchAutoAction = (action: 'select-analysis' | 'select-exposure'): void
     }
 };
 
+const dispatchTimelineTabSelection = (): void => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
+};
+
 const buildSteps = (isMobile: boolean): TourStep[] => {
     const sharedSteps: TourStep[] = [{
         id: 'analysis-section',
@@ -109,10 +119,22 @@ const buildSteps = (isMobile: boolean): TourStep[] => {
         requiresAnalysisPanel: true,
         optional: true
     }, {
-        id: 'timeline',
-        title: 'Inspect frames',
-        description: 'Use the timeline to move across frames and compare analysis results over time.',
-        targetSelector: '[data-tour-id="canvas-timeline"]'
+        id: 'timeline-tabs',
+        title: 'Timeline tabs',
+        description: isMobile
+            ? 'Use this selector to switch between the timeline, particles, simulation cell, logs, and analysis result tables.'
+            : 'Use these tabs to switch between the timeline, particles, simulation cell, logs, and analysis result tables.',
+        targetSelector: isMobile
+            ? '[data-tour-id="canvas-timeline-tab-selector"]'
+            : '[data-tour-id="canvas-timeline-tabs"]'
+    }, {
+        id: 'timeline-ruler',
+        title: 'Scrub timesteps',
+        description: isMobile
+            ? 'Tap a timestep directly, or drag across the ruler to scrub through frames.'
+            : 'Click or drag across the ruler to scrub through frames.',
+        targetSelector: '[data-tour-id="canvas-timeline-ruler"]',
+        requiresTimelineTab: true
     }];
 
     if (!isMobile) {
@@ -256,6 +278,27 @@ const CanvasAnalysisDiscoveryTour = ({
                 window.clearInterval(timer);
             }
         }, 160);
+
+        return () => window.clearInterval(timer);
+    }, [activeStep, isActive]);
+
+    useEffect(() => {
+        if (!isActive || !activeStep?.requiresTimelineTab) {
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 16;
+        const timer = window.setInterval(() => {
+            dispatchTimelineTabSelection();
+            attempts += 1;
+
+            if (getTargetElement(activeStep.targetSelector) || attempts >= maxAttempts) {
+                window.clearInterval(timer);
+            }
+        }, 120);
+
+        dispatchTimelineTabSelection();
 
         return () => window.clearInterval(timer);
     }, [activeStep, isActive]);
