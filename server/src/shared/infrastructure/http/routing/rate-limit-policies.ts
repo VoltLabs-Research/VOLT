@@ -4,6 +4,7 @@ import {
 
 export const RATE_LIMIT_POLICIES = {
     authPublic: createStandardRateLimiter(15),
+    earlyAccessPublic: createStandardRateLimiter(25),
     passwordUpdate: createStandardRateLimiter(5, 'Too many password attempts, please try again later'),
     passwordConfirmedClusterAction: createStandardRateLimiter(
         5,

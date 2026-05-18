@@ -104,7 +104,9 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
                     teamId: input.teamId,
                     stagedObjects
                 },
-                { timeoutClass: 'long-running-control-plane' }
+                // Disable command timeout: large ingest/materialization can
+                // exceed 60s and should not fail the trajectory commit.
+                { timeoutMs: 0 }
             );
 
             const trajectory = await this.trajectoryRepo.findById(trajectoryId);

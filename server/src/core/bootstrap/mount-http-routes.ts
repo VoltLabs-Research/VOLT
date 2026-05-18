@@ -14,6 +14,7 @@ import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat/chat-r
 import ContainerHttpModule from '@modules/container/infrastructure/http/routes/container-routes';
 import DashboardHttpModule from '@modules/dashboard/infrastructure/http/routes/dashboard-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
+import EarlyAccessHttpModule from '@modules/early-access/infrastructure/http/routes/early-access-routes';
 import NotificationHttpModule from '@modules/notification/infrastructure/http/routes/notification-routes';
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure';
 import PluginListingRowHttpModule from '@modules/plugin/infrastructure/http/routes/listing-row';
@@ -84,6 +85,7 @@ const HTTP_MODULES: HttpModule[] = [
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,
+    EarlyAccessHttpModule,
     PluginListingRowHttpModule,
     PluginExposureHttpModule,
     ScriptingHttpModule,

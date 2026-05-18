@@ -1,0 +1,71 @@
+post:
+  operationId: createEarlyAccessSubscription
+  tags:
+  - Early Access
+  summary: Register early access interest
+  description: Captures an email address from a public team discovery page without requiring authentication.
+  security: []
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+          - email
+          properties:
+            email:
+              type: string
+              format: email
+              maxLength: 254
+            source:
+              type: string
+              enum:
+              - discover_team
+            referrer:
+              type: string
+              maxLength: 2048
+          additionalProperties: false
+        example:
+          email: user@example.com
+          source: discover_team
+          referrer: https://voltlabs.io/discover/teams/507f1f77bcf86cd799439011
+  responses:
+    '201':
+      description: Early access interest saved.
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  required:
+                  - email
+                  - teamId
+                  - teamName
+                  - alreadySubscribed
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    teamId:
+                      $ref: ../../components/schemas/common.yaml#/ObjectId
+                    teamName:
+                      type: string
+                    alreadySubscribed:
+                      type: boolean
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '404':
+      $ref: ../../components/responses/common.yaml#/NotFound
+    '429':
+      description: Too many requests.
+      content:
+        application/json:
+          schema:
+            $ref: ../../components/schemas/common.yaml#/ErrorResponse
