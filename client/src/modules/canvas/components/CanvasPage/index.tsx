@@ -33,16 +33,19 @@ import Timeline from '../Timeline';
 import TopToolbar from '../TopToolbar';
 import Viewport from '../Viewport';
 import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
+import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCanvasAccessStore, useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import { Download, ExternalLink, PanelRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
@@ -73,9 +76,18 @@ interface DownloadExposureListingParams {
     exposureName?: string;
 }
 
+interface CanvasLocationState {
+    entry?: string;
+    teamId?: string;
+}
+
 const CanvasPage = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
+    const location = useLocation();
+    const currentUser = useCurrentUser();
+    const isAuthInitialized = useAuthStore((state) => state.isInitialized);
+    const hasAuthToken = useAuthStore((state) => state.hasToken);
     const effectiveTrajectoryId = rawTrajectoryId;
     const trajectoryId = effectiveTrajectoryId ?? '';
     const isLocalGlbViewer = !effectiveTrajectoryId;
@@ -86,6 +98,8 @@ const CanvasPage = () => {
         availableTimesteps,
         currentTimestep,
         isLoading: trajectoryLoading,
+        analyses,
+        isAnalysesLoading,
         error: trajectoryError,
         access: canvasAccess,
         accessDenied,
@@ -121,6 +135,7 @@ const CanvasPage = () => {
     }, [resetCanvasAccess]);
     const viewportContainerRef = useRef<HTMLDivElement | null>(null);
     const canCollaborate = useCanvasCanCollaborate();
+    const isNarrowViewport = useViewportNarrow();
     const {
         peersInLobby,
         collaborationOwner,
@@ -150,7 +165,7 @@ const CanvasPage = () => {
         enabled: !!trajectoryId && !!workspaceOwnerId && canCollaborate
     });
     useTip('canvas-shortcuts', {
-        enabled: Boolean(trajectoryId) && !trajectoryLoading
+        enabled: Boolean(trajectoryId) && !trajectoryLoading && !isNarrowViewport
     });
 
     useKeyboardShortcuts({ trajectoryId, availableTimesteps, currentTimestep });
@@ -201,8 +216,8 @@ const CanvasPage = () => {
     const [rasterContainerSelections, setRasterContainerSelections] = useState<RasterContainerSelection[]>(() => createInitialRasterContainerSelections());
     const [activeRasterContainerId, setActiveRasterContainerId] = useState<RasterContainerId>('container-1');
     const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
-    const isNarrowViewport = useViewportNarrow();
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
+    const [analysisDiscoveryTourActive, setAnalysisDiscoveryTourActive] = useState(false);
 
     const handleScriptingNotebookIdChange = useCallback((resolvedNotebookId: string) => {
         if (!resolvedNotebookId || selectedNotebookId === resolvedNotebookId) {
@@ -265,7 +280,8 @@ const CanvasPage = () => {
             : trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
         [isLocalGlbViewer, isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
     );
-    const overlayActive = !isLocalGlbViewer && !showNoFramesState && (showLoading || isPreloading);
+    const rawOverlayActive = !isLocalGlbViewer && !showNoFramesState && (showLoading || isPreloading);
+    const overlayActive = rawOverlayActive && !analysisDiscoveryTourActive;
     const overlayTitle = isPreloading ? 'Setting up your scene…' : 'Loading trajectory…';
     const overlayProgress = isPreloading ? preloadProgress : undefined;
 
@@ -344,6 +360,25 @@ const CanvasPage = () => {
             canManageVisibility
         };
     }, [canAccessTeamPermissions, isLocalGlbViewer, selectedTeamId, trajectory?._id, trajectory?.isPublic, trajectoryTeamId]);
+
+    const cameFromDiscoverTeam = useMemo(() => {
+        const state = location.state as CanvasLocationState | null;
+        return state?.entry === 'discover-team';
+    }, [location.state]);
+    const hasDiscoverableAnalyses = !isAnalysesLoading && analyses.length > 0;
+    const isAnalysisDiscoveryTourIdentityReady = isAuthInitialized && (!hasAuthToken || Boolean(currentUser?._id));
+    const shouldShowAnalysisDiscoveryTour = Boolean(
+        cameFromDiscoverTeam
+        && hasDiscoverableAnalyses
+        && isAnalysisDiscoveryTourIdentityReady
+        && !isLocalGlbViewer
+        && !isScriptingWorkspace
+        && !isRasterWorkspace
+        && !showNoFramesState
+        && !overlayActive
+        && trajectory?._id
+    );
+    const analysisDiscoveryTourStorageScopeId = currentUser?._id ?? 'anonymous';
 
     const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === CanvasAnalysisStatusEnum.Completed);
     const canDownloadTrajectoryAnalyses = Boolean(
@@ -575,7 +610,7 @@ const CanvasPage = () => {
                     </Box>
 
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
-                        <Stack id="canvas-center-timeline" className="canvas-center-timeline">
+                        <Stack id="canvas-center-timeline" className="canvas-center-timeline" data-tour-id="canvas-timeline">
                             <Timeline
                                 sceneRef={sceneRef}
                                 trajectory={trajectory}
@@ -583,6 +618,7 @@ const CanvasPage = () => {
                                 currentTimestep={currentTimestep}
                                 availableTimesteps={availableTimesteps}
                                 analysisId={analysisId}
+                                disableContextualTips={isNarrowViewport}
                                 onDownloadExposureListing={handleDownloadExposureListing}
                             />
                         </Stack>
@@ -609,6 +645,7 @@ const CanvasPage = () => {
                             title={rightDrawerOpen ? 'Close canvas panel' : 'Open canvas panel'}
                             aria-expanded={rightDrawerOpen}
                             aria-controls='canvas-right-panel'
+                            data-tour-id='canvas-analysis-panel-toggle'
                         >
                             <PanelRight size={14} aria-hidden='true' />
                         </button>
@@ -668,6 +705,14 @@ const CanvasPage = () => {
             <CommandPalette />
             <ShortcutFeedback />
             <ExposureSettingsWidget />
+            <CanvasAnalysisDiscoveryTour
+                enabled={shouldShowAnalysisDiscoveryTour}
+                storageScopeId={analysisDiscoveryTourStorageScopeId}
+                isMobile={isNarrowViewport}
+                rightDrawerOpen={rightDrawerOpen}
+                onRightDrawerOpenChange={setRightDrawerOpen}
+                onActiveChange={setAnalysisDiscoveryTourActive}
+            />
 
         </Box>
     );

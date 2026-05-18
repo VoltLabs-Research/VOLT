@@ -33,6 +33,7 @@ interface SimulationCardProps {
     onDelete?: (_id: string) => void;
     disablePrimaryInteraction?: boolean;
     readOnly?: boolean;
+    discoverTeamId?: string;
 }
 
 export default function SimulationCard({
@@ -41,7 +42,8 @@ export default function SimulationCard({
     onMoveToFolder,
     onDelete,
     disablePrimaryInteraction = false,
-    readOnly = false
+    readOnly = false,
+    discoverTeamId
 }: SimulationCardProps) {
     const navigate = useNavigate();
     const { data: jobGroups = [] } = teamJobsGroups();
@@ -79,6 +81,9 @@ export default function SimulationCard({
         ? `Open selected trajectory ${trajectory.name}`
         : `Open trajectory ${trajectory.name}`;
     const canvasPath = `/canvas/${trajectory._id}`;
+    const canvasNavigationOptions = discoverTeamId
+        ? { state: { entry: 'discover-team', teamId: discoverTeamId } }
+        : undefined;
 
     const containerClass = cn(
         'simulation-card radius-md b-soft p-relative',
@@ -94,7 +99,7 @@ export default function SimulationCard({
             return;
         }
 
-        navigate(canvasPath);
+        navigate(canvasPath, canvasNavigationOptions);
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
@@ -107,7 +112,7 @@ export default function SimulationCard({
         }
 
         event.preventDefault();
-        navigate(canvasPath);
+        navigate(canvasPath, canvasNavigationOptions);
     };
 
     return (

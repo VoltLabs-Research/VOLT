@@ -24,6 +24,7 @@ interface CanvasTreeRowProps {
     disabled?: boolean;
     className?: string;
     ariaLabel?: string;
+    tourTargetId?: string;
 }
 
 export const CanvasTreeRow = ({
@@ -35,7 +36,8 @@ export const CanvasTreeRow = ({
     trailing,
     disabled,
     className = '',
-    ariaLabel
+    ariaLabel,
+    tourTargetId
 }: CanvasTreeRowProps) => {
     const cursor = disabled ? 'is-disabled' : (onClick ? 'cursor-pointer' : '');
     return (
@@ -47,6 +49,7 @@ export const CanvasTreeRow = ({
             aria-label={ariaLabel}
             tabIndex={disabled ? -1 : 0}
             onClick={disabled ? undefined : onClick}
+            data-tour-id={tourTargetId}
             className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none ${INDENT_CLASSES[indent]} ${isActive ? 'selected' : ''} ${cursor} ${className}`}
         >
             {icon ?? <span className="canvas-tree-spacer" />}

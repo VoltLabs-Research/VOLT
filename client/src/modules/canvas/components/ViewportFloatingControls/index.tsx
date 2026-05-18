@@ -4,12 +4,17 @@ import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import FloatingToolbar from '@/shared/presentation/primitives/FloatingToolbar';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import useTip from '@/shared/tips/use-tip';
 
 import './ViewportFloatingControls.css';
 
 const ViewportFloatingControls = () => {
-    useTip('canvas-render-settings');
+    const isMobileViewport = useMedia('(max-width: 768px)');
+
+    useTip('canvas-render-settings', {
+        enabled: !isMobileViewport
+    });
 
     return (
         <FloatingToolbar

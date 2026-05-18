@@ -56,6 +56,8 @@ interface SceneCollectionProps {
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
+    firstAnalysisTourTargetId?: string;
+    firstExposureTourTargetId?: string;
 }
 
 const TREE_SCENE_ICON_COLOR = 'var(--accent-blue)';
@@ -85,7 +87,9 @@ const SceneCollection = ({
     setSceneLineWidth,
     selectionMode = 'default',
     selectedScene,
-    onSelectRasterScene
+    onSelectRasterScene,
+    firstAnalysisTourTargetId,
+    firstExposureTourTargetId
 }: SceneCollectionProps) => {
     const { pluginsById } = usePluginSelectors();
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
@@ -159,7 +163,7 @@ const SceneCollection = ({
                 <CanvasTreeSkeletonRows count={Math.min(Math.max(totalAnalyses, 1), 3)} />
             )}
 
-            {!showSectionsSkeleton && filteredSections.map((section: AnalysisSectionData) => (
+            {!showSectionsSkeleton && filteredSections.map((section: AnalysisSectionData, index) => (
                 <AnalysisTreeNode
                     key={section.analysis._id}
                     section={section}
@@ -184,6 +188,8 @@ const SceneCollection = ({
                     selectionMode={selectionMode}
                     selectedScene={selectedScene}
                     onSelectRasterScene={onSelectRasterScene}
+                    tourTargetId={index === 0 ? firstAnalysisTourTargetId : undefined}
+                    firstExposureTourTargetId={index === 0 ? firstExposureTourTargetId : undefined}
                 />
             ))}
         </Stack>
