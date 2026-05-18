@@ -7,7 +7,7 @@ interface PluginExposureListingPanelProps {
     exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
-    teamId: string;
+    teamId?: string;
     compact?: boolean;
     inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;

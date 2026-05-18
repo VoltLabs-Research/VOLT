@@ -234,6 +234,51 @@ const CanvasPage = () => {
     }, [isNarrowViewport, isScriptingWorkspace]);
 
     useEffect(() => {
+        if (!isNarrowViewport || isLocalGlbViewer || !trajectoryId) {
+            return;
+        }
+
+        const { body, documentElement } = document;
+        const scrollY = window.scrollY;
+        const previousBodyStyle = {
+            position: body.style.position,
+            top: body.style.top,
+            left: body.style.left,
+            right: body.style.right,
+            width: body.style.width,
+            overflow: body.style.overflow,
+            overscrollBehavior: body.style.overscrollBehavior
+        };
+        const previousDocumentStyle = {
+            overflow: documentElement.style.overflow,
+            overscrollBehavior: documentElement.style.overscrollBehavior
+        };
+
+        body.style.position = 'fixed';
+        body.style.top = `-${scrollY}px`;
+        body.style.left = '0';
+        body.style.right = '0';
+        body.style.width = '100%';
+        body.style.overflow = 'hidden';
+        body.style.overscrollBehavior = 'none';
+        documentElement.style.overflow = 'hidden';
+        documentElement.style.overscrollBehavior = 'none';
+
+        return () => {
+            body.style.position = previousBodyStyle.position;
+            body.style.top = previousBodyStyle.top;
+            body.style.left = previousBodyStyle.left;
+            body.style.right = previousBodyStyle.right;
+            body.style.width = previousBodyStyle.width;
+            body.style.overflow = previousBodyStyle.overflow;
+            body.style.overscrollBehavior = previousBodyStyle.overscrollBehavior;
+            documentElement.style.overflow = previousDocumentStyle.overflow;
+            documentElement.style.overscrollBehavior = previousDocumentStyle.overscrollBehavior;
+            window.scrollTo(0, scrollY);
+        };
+    }, [isLocalGlbViewer, isNarrowViewport, trajectoryId]);
+
+    useEffect(() => {
         if (!isLocalGlbViewer) {
             return;
         }
@@ -297,6 +342,10 @@ const CanvasPage = () => {
     const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
         downloadListing(params);
     }, [downloadListing]);
+
+    const handleAnalysisDiscoveryTourComplete = useCallback(() => {
+        setRightDrawerOpen(false);
+    }, []);
 
     const handleUpdateRasterContainerSelection = useCallback((containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => {
         setRasterContainerSelections((currentSelections) => currentSelections.map((selection) => {
@@ -712,6 +761,7 @@ const CanvasPage = () => {
                 rightDrawerOpen={rightDrawerOpen}
                 onRightDrawerOpenChange={setRightDrawerOpen}
                 onActiveChange={setAnalysisDiscoveryTourActive}
+                onComplete={handleAnalysisDiscoveryTourComplete}
             />
 
         </Box>

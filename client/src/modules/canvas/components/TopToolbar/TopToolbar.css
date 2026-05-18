@@ -61,14 +61,14 @@
 
 @media (max-width: 768px) {
     .canvas-top-toolbar {
-        --canvas-toolbar-main-height: 48px;
-        min-height: var(--canvas-header-height, 84px);
-        height: var(--canvas-header-height, 84px);
+        --canvas-toolbar-main-height: 0px;
+        min-height: var(--canvas-header-height, 40px);
+        height: var(--canvas-header-height, 40px);
         overflow: hidden;
     }
 
     .canvas-toolbar-main {
-        height: var(--canvas-toolbar-main-height);
+        display: none;
     }
 
     .canvas-toolbar-options--desktop {
@@ -80,7 +80,7 @@
         align-items: center;
         justify-content: center;
         gap: 0.125rem;
-        height: calc(var(--canvas-header-height, 84px) - var(--canvas-toolbar-main-height));
+        height: calc(var(--canvas-header-height, 40px) - var(--canvas-toolbar-main-height));
         width: 100%;
         min-width: 0;
         padding: 0 0.375rem;
