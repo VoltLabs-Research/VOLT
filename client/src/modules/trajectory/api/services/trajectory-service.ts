@@ -175,7 +175,11 @@ const endpoints = {
         return response.data;
     }),
     commitUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, { trajectoryId: string }>(async ({ getClient }, params) => {
-        return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`);
+        const requestArgs: RequestArgsWithTimeout = {
+            timeoutMs: 0
+        };
+
+        return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`, requestArgs);
     }),
     cancelUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, void>(async ({ getClient }, params) => {
         return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`);
