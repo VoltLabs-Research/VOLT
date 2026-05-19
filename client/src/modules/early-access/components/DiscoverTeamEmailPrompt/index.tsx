@@ -48,7 +48,7 @@ const DiscoverTeamEmailPrompt = ({
 
     const normalizedTeamName = teamName.trim() || 'your team';
     const description = useMemo(() => (
-        `Be among the first teams to use VOLT with ${normalizedTeamName}. We will notify you about launches and give your team priority access.`
+        "Be among the first users to use VOLT with your device. We'll notify you and give you access."
     ), [normalizedTeamName]);
 
     useEffect(() => {

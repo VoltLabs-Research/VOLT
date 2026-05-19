@@ -127,6 +127,13 @@
         grid-template-columns: auto minmax(0, 1fr) auto;
     }
 
+    .discover-team-email-prompt__close {
+        grid-column: 3;
+        grid-row: 1;
+        justify-self: end;
+        align-self: start;
+    }
+
     .discover-team-email-prompt__form,
     .discover-team-email-prompt__done {
         grid-column: 1 / -1;
