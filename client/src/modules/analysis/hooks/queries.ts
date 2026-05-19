@@ -1,5 +1,6 @@
 import service from '../api/service';
 import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
+import queryClient from '@/shared/infrastructure/query/query-client';
 import {
     buildKeys,
     createInvalidatingMutation,
@@ -32,6 +33,26 @@ const BASE_KEY = 'analysis';
 
 export const KEYS = buildKeys<AnalysisQueryKeys>(BASE_KEY);
 
+const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return queryKey.some((entry) => entry === BASE_KEY)
+        && queryKey.some((entry) => entry === 'byTrajectory');
+};
+
+const patchAnalysisByTrajectoryQueries = (
+    updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
+): void => {
+    queryClient.setQueriesData<PaginatedResponse<Analysis>>(
+        {
+            predicate: (query) => Array.isArray(query.queryKey)
+                && isAnalysisByTrajectoryQueryKey(query.queryKey)
+        },
+        (current) => {
+            if (!current || !Array.isArray(current.data)) return current;
+            return updater(current);
+        }
+    );
+};
+
 export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
     baseKey: BASE_KEY,
     detailKey: KEYS.detail,
@@ -40,7 +61,9 @@ export const analysisQuery = createPaginatedQuery<Analysis, GetAnalysesParams>({
         delete: (id) => service.delete({ analysisId: id })
     },
     onRemove: (id) => {
-        patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => removeEntityFromList(page, id));
+        const removeFromPage = (page: PaginatedResponse<Analysis>) => removeEntityFromList(page, id);
+        patchPaginatedPage<Analysis>(KEYS.byTrajectory(), removeFromPage);
+        patchAnalysisByTrajectoryQueries(removeFromPage);
     }
 });
 

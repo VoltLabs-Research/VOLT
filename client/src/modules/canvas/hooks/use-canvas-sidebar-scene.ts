@@ -12,14 +12,22 @@ import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utiliti
 
 import { useAnalysesByTrajectoryQuery, analysisQuery } from '@/modules/analysis/hooks/queries';
 import {
+    cancelAnalysisCacheQueries,
     findCachedAnalysisById,
+    removeAnalysisCaches,
+    snapshotAnalysisCaches,
     updateAnalysisExecutionCaches,
     updateAnalysisStatusCaches,
     upsertAnalysisFromSocketPayload
 } from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import queryClient from '@/shared/infrastructure/query/query-client';
-import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
+import {
+    cancelSceneArtifactCacheQueries,
+    invalidateSceneArtifacts,
+    removeSceneArtifactsForAnalysisFromCache,
+    snapshotSceneArtifactCaches
+} from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/events/trajectory';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
@@ -32,11 +40,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
+import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
+import { restoreQueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
 
 import type { ExposureEntry } from './use-exposure-manager';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
 
 export interface AnalysisSectionData {
     analysis: Analysis;
@@ -51,6 +62,26 @@ interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
 }
+
+interface DeleteAnalysisOptimisticContext {
+    analysisSnapshot: QueryDataSnapshot;
+    sceneArtifactSnapshot: QueryDataSnapshot;
+    expandedSectionsSnapshot: Set<string>;
+    headerPopoverStatesSnapshot: Map<string, boolean>;
+    selectedAnalysisIdSnapshot?: string;
+    clearedSelectedAnalysis: boolean;
+    editorSnapshot: {
+        activeScene: SceneObjectType;
+        activeScenes: SceneObjectType[];
+    };
+}
+
+const sceneBelongsToAnalysis = (scene: SceneObjectType | null | undefined, analysisId: string): boolean => {
+    return !!scene
+        && scene.source !== 'default'
+        && 'analysisId' in scene
+        && scene.analysisId === analysisId;
+};
 
 const scrollRightPanelToTop = (): (() => void) | undefined => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -180,7 +211,88 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         };
     }, [trajectoryId]);
 
-    const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
+    const removeAnalysisScenes = useCallback((analysisId: string) => {
+        const editorState = useEditorStore.getState();
+        const nextActiveScenes = editorState.activeScenes.filter((scene) => !sceneBelongsToAnalysis(scene, analysisId));
+        const safeActiveScenes = nextActiveScenes.length > 0 ? nextActiveScenes : [DEFAULT_SCENE];
+        const nextActiveScene = sceneBelongsToAnalysis(editorState.activeScene, analysisId)
+            ? safeActiveScenes[0] ?? DEFAULT_SCENE
+            : editorState.activeScene;
+
+        useEditorStore.setState({
+            activeScene: nextActiveScene,
+            activeScenes: safeActiveScenes
+        });
+    }, []);
+
+    const applyDeletedAnalysisLocally = useCallback((analysisId: string) => {
+        removeAnalysisCaches(analysisId);
+        removeSceneArtifactsForAnalysisFromCache(analysisId);
+        removeAnalysisScenes(analysisId);
+        setExpandedSections((current) => {
+            if (!current.has(analysisId)) return current;
+            const next = new Set(current);
+            next.delete(analysisId);
+            return next;
+        });
+        setHeaderPopoverStates((current) => {
+            if (!current.has(analysisId)) return current;
+            const next = new Map(current);
+            next.delete(analysisId);
+            return next;
+        });
+
+        if (analysisConfigIdRef.current === analysisId) {
+            setAnalysisId(undefined, { replace: true });
+        }
+    }, [removeAnalysisScenes, setAnalysisId]);
+
+    const deleteAnalysisMutation = analysisQuery.useDeleteMutation({
+        onMutate: async (analysisId): Promise<DeleteAnalysisOptimisticContext> => {
+            await Promise.all([
+                cancelAnalysisCacheQueries(),
+                cancelSceneArtifactCacheQueries()
+            ]);
+
+            const editorState = useEditorStore.getState();
+            const context: DeleteAnalysisOptimisticContext = {
+                analysisSnapshot: snapshotAnalysisCaches(),
+                sceneArtifactSnapshot: snapshotSceneArtifactCaches(),
+                expandedSectionsSnapshot: new Set(expandedSections),
+                headerPopoverStatesSnapshot: new Map(headerPopoverStates),
+                selectedAnalysisIdSnapshot: analysisConfigIdRef.current,
+                clearedSelectedAnalysis: analysisConfigIdRef.current === analysisId,
+                editorSnapshot: {
+                    activeScene: editorState.activeScene,
+                    activeScenes: editorState.activeScenes
+                }
+            };
+
+            applyDeletedAnalysisLocally(analysisId);
+
+            return context;
+        },
+        onError: (_error, _analysisId, context) => {
+            const rollback = context as DeleteAnalysisOptimisticContext | undefined;
+            if (!rollback) return;
+
+            restoreQueryDataSnapshot(rollback.analysisSnapshot);
+            restoreQueryDataSnapshot(rollback.sceneArtifactSnapshot);
+            setExpandedSections(new Set(rollback.expandedSectionsSnapshot));
+            setHeaderPopoverStates(new Map(rollback.headerPopoverStatesSnapshot));
+            useEditorStore.setState({
+                activeScene: rollback.editorSnapshot.activeScene,
+                activeScenes: rollback.editorSnapshot.activeScenes
+            });
+            if (rollback.clearedSelectedAnalysis) {
+                setAnalysisId(rollback.selectedAnalysisIdSnapshot, { replace: true });
+            }
+        },
+        onSettled: () => {
+            void analysisQuery.cache.invalidate();
+            void invalidateSceneArtifacts();
+        }
+    });
 
     const handleAnalysisCreated = useCallback((data: Record<string, unknown>) => {
         if (!trajectoryId || data.trajectoryId !== trajectoryId) {
@@ -188,6 +300,16 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
         upsertAnalysisFromSocketPayload(data, trajectory?.name ?? '');
     }, [trajectory?.name, trajectoryId]);
+
+    const handleAnalysisDeleted = useCallback((data: Record<string, unknown>) => {
+        if (!trajectoryId || data.trajectoryId !== trajectoryId || !data.analysisId) {
+            return;
+        }
+
+        applyDeletedAnalysisLocally(String(data.analysisId));
+        void analysisQuery.cache.invalidate();
+        void invalidateSceneArtifacts();
+    }, [applyDeletedAnalysisLocally, trajectoryId]);
 
     const patchStatusFromSocket = useCallback((update: Record<string, unknown>) => {
         if (!trajectoryId || update.trajectoryId !== trajectoryId || !update.analysisId) {
@@ -365,6 +487,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const canCollaborate = useCanvasCanCollaborate();
     const socketEnabled = !!trajectoryId && canCollaborate;
     useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.CREATED, handleAnalysisCreated, { enabled: socketEnabled });
+    useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.DELETED, handleAnalysisDeleted, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_TEAM_EVENTS.JOB_UPDATED, patchStatusFromSocket, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STATUS_CHANGED, handleAnalysisStatusChanged, { enabled: socketEnabled });
     useSocketEvent<Record<string, unknown>>(SOCKET_ANALYSIS_EVENTS.STAGE_CHANGED, handleAnalysisStageChanged, { enabled: socketEnabled });

@@ -1,10 +1,12 @@
 import queryClient from './query-client';
 import type { PaginatedResponse, PaginationMeta } from '@/shared/domain/pagination/PaginationResponse';
-import type { InfiniteData, QueryKey } from '@tanstack/react-query';
+import type { InfiniteData, Query, QueryKey } from '@tanstack/react-query';
 
 interface WithId {
     _id: string;
 };
+
+export type QueryDataSnapshot = Array<[QueryKey, unknown]>;
 
 /**
  * Upsert an entity into a flat PaginatedResponse.
@@ -30,11 +32,20 @@ export const upsertEntityInList = <T extends WithId>(
 export const removeEntityFromList = <T extends WithId>(
     page: PaginatedResponse<T>,
     id: string
-): PaginatedResponse<T> => ({
-    ...page,
-    data: page.data.filter((e) => e._id !== id),
-    pagination: adjustPagination(page.pagination, -1)
-});
+): PaginatedResponse<T> => {
+    const data = page.data.filter((e) => e._id !== id);
+    const removedCount = page.data.length - data.length;
+
+    if (removedCount === 0) {
+        return page;
+    }
+
+    return {
+        ...page,
+        data,
+        pagination: adjustPagination(page.pagination, -removedCount)
+    };
+};
 
 /**
  * Apply an updater to every flat PaginatedResponse matching a key prefix.
@@ -81,6 +92,16 @@ export const batchInvalidateQueries = (keys: QueryKey[]): Promise<void[]> => {
     return Promise.all(
         keys.map((key) => queryClient.invalidateQueries({ queryKey: key }))
     );
+};
+
+export const snapshotQueries = (predicate: (query: Query) => boolean): QueryDataSnapshot => {
+    return queryClient.getQueriesData<unknown>({ predicate });
+};
+
+export const restoreQueryDataSnapshot = (snapshot: QueryDataSnapshot): void => {
+    snapshot.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+    });
 };
 
 /** Internal pagination helpers. */
