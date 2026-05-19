@@ -11,7 +11,7 @@ import Heading from '@/shared/presentation/primitives/Heading';
 import Text from '@/shared/presentation/primitives/Text';
 import { Bell, CheckCircle2, Mail, X } from 'lucide-react';
 import { sileo } from 'sileo';
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import './DiscoverTeamEmailPrompt.css';
 
@@ -34,7 +34,7 @@ const getReferrer = (): string | undefined => {
 
 const DiscoverTeamEmailPrompt = ({
     teamId,
-    teamName
+    teamName: _teamName
 }: DiscoverTeamEmailPromptProps) => {
     const currentUser = useCurrentUser();
     const createSubscription = useCreateEarlyAccessSubscriptionMutation();
@@ -46,10 +46,7 @@ const DiscoverTeamEmailPrompt = ({
     const [isVisible, setIsVisible] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
 
-    const normalizedTeamName = teamName.trim() || 'your team';
-    const description = useMemo(() => (
-        "Be among the first users to use VOLT with your device. We'll notify you and give you access."
-    ), [normalizedTeamName]);
+    const description = "Be among the first users to use VOLT with your device. We'll notify you and give you access.";
 
     useEffect(() => {
         const state = getDiscoverTeamEmailPromptState(teamId);
@@ -92,6 +89,7 @@ const DiscoverTeamEmailPrompt = ({
 
             setEmail(result.email);
             setIsSubmitted(true);
+            setIsVisible(false);
             setError(null);
             setDiscoverTeamEmailPromptState(teamId, 'subscribed');
             sileo.success({
@@ -140,6 +138,27 @@ const DiscoverTeamEmailPrompt = ({
                     >
                         {isSubmitted ? 'We will notify you when access opens for your team.' : description}
                     </Text>
+                    <div className='discover-team-email-prompt__links'>
+                        <a
+                            className='discover-team-email-prompt__link'
+                            href='      '
+                            target='_blank'
+                            rel='noopener noreferrer'
+                        >
+                            GitHub
+                        </a>
+                        <span className='discover-team-email-prompt__links-separator' aria-hidden='true'>
+                            •
+                        </span>
+                        <a
+                            className='discover-team-email-prompt__link'
+                            href='https://docs.voltcloud.dev'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                        >
+                            Documentation
+                        </a>
+                    </div>
                 </div>
                 {isSubmitted ? (
                     <Button
