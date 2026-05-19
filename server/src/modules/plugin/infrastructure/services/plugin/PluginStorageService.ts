@@ -6,8 +6,8 @@ import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWork
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
+import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';

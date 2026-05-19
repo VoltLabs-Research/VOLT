@@ -1,13 +1,17 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
-import ClusterObjectUploadSessionRepository from '@modules/cluster-object/infrastructure/persistence/mongo/repositories/ClusterObjectUploadSessionRepository';
+import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
+import type {
+    TrajectoryUploadSessionFileProps,
+    TrajectoryUploadSessionPartProps
+} from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -24,10 +28,6 @@ import type {
     TrajectoryUploadSessionFileDTO,
     TrajectoryUploadSessionFileInput
 } from '@modules/trajectory/application/dtos/trajectory/TrajectoryUploadSessionDTO';
-import type {
-    ClusterObjectUploadSessionFileProps,
-    ClusterObjectUploadSessionPartProps
-} from '@modules/cluster-object/infrastructure/persistence/mongo/models/ClusterObjectUploadSessionModel';
 
 const DEFAULT_UPLOAD_CHUNK_SIZE = 64 * 1024 * 1024;
 const DEFAULT_UPLOAD_SESSION_TTL_SECONDS = 6 * 60 * 60;
@@ -55,7 +55,7 @@ const buildParts = (
     fileIndex: number,
     finalObjectKey: string,
     size: number
-): ClusterObjectUploadSessionPartProps[] => {
+): TrajectoryUploadSessionPartProps[] => {
     if (size <= TRAJECTORY_UPLOAD_CHUNK_SIZE) {
         return [{
             partNumber: 1,
@@ -65,7 +65,7 @@ const buildParts = (
         }];
     }
 
-    const parts: ClusterObjectUploadSessionPartProps[] = [];
+    const parts: TrajectoryUploadSessionPartProps[] = [];
     let offset = 0;
     let partNumber = 1;
 
@@ -95,7 +95,7 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
         private readonly trajectoryFolderRepository: TrajectoryFolderRepository,
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
         private readonly storagePlacementService: StoragePlacementService,
-        private readonly uploadSessionRepository: ClusterObjectUploadSessionRepository,
+        private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
         private readonly signedUrlService: ClusterObjectSignedUrlService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -156,7 +156,7 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
         await this.storagePlacementService.ensurePlacement('trajectory', trajectory.id);
 
         const expiresAt = new Date(Date.now() + TRAJECTORY_UPLOAD_SESSION_TTL_SECONDS * 1000);
-        const sessionFiles: ClusterObjectUploadSessionFileProps[] = files.map((file, index) => {
+        const sessionFiles: TrajectoryUploadSessionFileProps[] = files.map((file, index) => {
             const finalObjectKey = `trajectory-staging/${trajectory.id}/${index}-${safeObjectName(file.name)}`;
             return {
                 index,

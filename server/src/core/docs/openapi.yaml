@@ -7250,6 +7250,55 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /plugin-registry/index.json:
+    get:
+      operationId: getPluginRegistryIndex
+      tags:
+        - Plugin Registry
+      summary: Get plugin registry index
+      description: Returns the public native plugin registry consumed by VoltSDK PluginHub.
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            ETag:
+              schema:
+                type: string
+            Last-Modified:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        latest:
+                          type: string
+                        versions:
+                          type: object
+                          additionalProperties:
+                            type: object
+                            additionalProperties:
+                              type: object
+                              properties:
+                                url:
+                                  type: string
+                                sha256:
+                                  type: string
+                              required:
+                                - url
+                      required:
+                        - latest
+                        - versions
   /api/teams/{teamId}/members:
     get:
       operationId: listTeamMembers
