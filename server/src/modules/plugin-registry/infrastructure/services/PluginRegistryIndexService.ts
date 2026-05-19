@@ -80,7 +80,26 @@ interface ResolvedReleaseEntry {
     version: string;
 }
 
+interface ManualPluginEntry {
+    key: string;
+    repository: string;
+    version: string;
+    platforms: string[];
+}
+
 const BUNDLE_ASSET_REGEX = /^(.+)-(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)-(linux|darwin|windows)-([0-9A-Za-z_]+)\.tar\.zst$/;
+const DEFAULT_MANUAL_PLUGIN_ENTRIES: ManualPluginEntry[] = [
+    {
+        key: 'centrosymmetry-parameter',
+        repository: 'CentroSymmetryParameter',
+        version: '1.0.0',
+        platforms: [
+            'linux-x86_64',
+            'darwin-arm64',
+            'windows-x86_64'
+        ]
+    }
+];
 
 const parseRepositories = (rawValue: string | undefined): string[] => {
     if (!rawValue?.trim()) {
@@ -133,6 +152,30 @@ const sortPlatforms = (platforms: PluginRegistryVersionEntry): PluginRegistryVer
     );
 };
 
+const createManualPluginEntries = (
+    githubOwner: string,
+    entries: ManualPluginEntry[]
+): Record<string, PluginRegistryPluginEntry> => {
+    return Object.fromEntries(entries.map((entry) => {
+        const platforms: PluginRegistryVersionEntry = Object.fromEntries(entry.platforms.map((platform) => [
+            platform,
+            {
+                url: `https://github.com/${githubOwner}/${entry.repository}/releases/download/v${entry.version}/${entry.key}-${entry.version}-${platform}.tar.zst`
+            }
+        ]));
+
+        return [
+            entry.key,
+            {
+                latest: entry.version,
+                versions: {
+                    [entry.version]: sortPlatforms(platforms)
+                }
+            }
+        ];
+    }));
+};
+
 export class PluginRegistryIndexService {
     private readonly cacheTtlMs = readPositiveIntegerEnv('PLUGIN_REGISTRY_CACHE_TTL_MS', DEFAULT_CACHE_TTL_MS);
     private readonly githubOwner = process.env.PLUGIN_REGISTRY_GITHUB_OWNER?.trim() || DEFAULT_GITHUB_OWNER;
@@ -179,7 +222,10 @@ export class PluginRegistryIndexService {
             this.repositories.map((repository) => this.fetchPluginEntry(repository))
         );
 
-        const plugins: Record<string, PluginRegistryPluginEntry> = {};
+        const plugins: Record<string, PluginRegistryPluginEntry> = createManualPluginEntries(
+            this.githubOwner,
+            DEFAULT_MANUAL_PLUGIN_ENTRIES
+        );
         let resolvedPluginCount = 0;
 
         for (let index = 0; index < results.length; index += 1) {
