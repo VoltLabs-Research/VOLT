@@ -19,7 +19,6 @@ import NotificationHttpModule from '@modules/notification/infrastructure/http/ro
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure';
 import PluginListingRowHttpModule from '@modules/plugin/infrastructure/http/routes/listing-row';
 import PluginHttpModule from '@modules/plugin/infrastructure/http/routes/plugin';
-import PluginRegistryHttpModule from '@modules/plugin-registry/infrastructure/http/routes/plugin-registry-routes';
 import RasterHttpModule from '@modules/raster/infrastructure/http/routes/raster-routes';
 import SessionHttpModule from '@modules/session/infrastructure/http/routes/session-routes';
 import ScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-routes';
@@ -96,7 +95,6 @@ const HTTP_MODULES: HttpModule[] = [
     JobsHttpModule,
     AnalysisHttpModule,
     PluginHttpModule,
-    PluginRegistryHttpModule,
     RasterHttpModule,
     SimulationCellHttpModule,
     DailyActivityHttpModule,
