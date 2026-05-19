@@ -18,8 +18,8 @@ export const CONTEXTUAL_TIPS = {
     'canvas-shortcuts': {
         surface: 'page',
         dismissMode: 'manual',
-        title: 'Canvas shortcuts',
-        description: 'Press ? or Ctrl+K any time to open the full shortcuts reference while you explore the canvas.',
+        title: 'Canvas commands',
+        description: 'Press Ctrl+K any time to search canvas commands while you explore the canvas.',
         buttonLabel: 'Got it',
         delay: 1800,
         position: 'top-center'
