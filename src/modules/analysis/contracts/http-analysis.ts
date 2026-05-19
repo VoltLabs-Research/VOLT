@@ -1,5 +1,5 @@
 import type { EntrypointType } from '@/core/runtime/contracts/http-runtime';
-import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/modules/analysis/contracts/http-workflow';
+import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryFrame, WorkflowDefinition } from '@/modules/analysis/contracts/http-workflow';
 import type { WorkflowValueMap } from '@/modules/analysis/contracts/workflow.types';
 import type { DaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import type { JobIdentity } from '@/support/contracts/job-identity';
@@ -117,17 +117,11 @@ export interface AnalysisWorkflowSnapshot {
     nodeOutputSnapshots: AnalysisNodeOutputSnapshots;
 }
 
-export interface AnalysisBatchSnapshot {
-    trajectoryDumps: TrajectoryDumpDescriptor[];
-    contextNodeId?: string;
-}
-
 export interface AnalysisJobExecutionData {
     entrypoint: AnalysisEntrypointSnapshot;
     identity: AnalysisExecutionIdentity;
     workflow: AnalysisWorkflowSnapshot;
     trajectoryFrames: TrajectoryFrame[];
-    batch?: AnalysisBatchSnapshot;
     traceContext?: Record<string, string>;
 }
 
@@ -145,7 +139,6 @@ export interface AnalysisJobMetadata {
     plugin: string;
     totalItems: number;
     traceContext?: Record<string, string>;
-    batchMode?: true;
     inputFile?: string;
     timestep?: number;
     itemIndex?: number;

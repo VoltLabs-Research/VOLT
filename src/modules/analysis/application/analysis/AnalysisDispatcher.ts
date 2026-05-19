@@ -3,12 +3,12 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
-import { QueueService } from '@/core/queues/application/QueueService';
 import { serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
 import { WorkflowEngine, type WorkflowExecutionRequest } from '@/modules/analysis/application/workflow/WorkflowEngine';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
+import type { AnalysisQueueAdmissionController } from '@/modules/analysis/application/analysis/AnalysisQueueAdmissionController';
 import { planAnalysisWorkflow } from '@/modules/analysis/application/analysis/plan-analysis-workflow';
 import { createHash } from 'node:crypto';
 import type {
@@ -26,10 +26,10 @@ type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExe
 export class AnalysisDispatcher {
     constructor(
         private readonly workflowEngine: WorkflowEngine,
-        private readonly queueService: QueueService,
         private readonly analysisDataStore: AnalysisDataStore,
         private readonly eventBroker: RuntimeEventBroker,
-        private readonly redisConnection: RedisConnection
+        private readonly redisConnection: RedisConnection,
+        private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController
     ) {}
 
     private buildPlanCacheKey(request: WorkflowExecutionRequest): string {
@@ -114,7 +114,7 @@ export class AnalysisDispatcher {
             executionDataReference
         }));
 
-        await this.queueService.enqueueBulk(ANALYSIS_QUEUE_NAME, queuedPayloads);
+        const admission = await this.analysisQueueAdmissionController.enqueueInitialJobs(queuedPayloads);
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.AnalysisStart,
@@ -123,6 +123,8 @@ export class AnalysisDispatcher {
             payload: {
                 analysisId: input.analysisId,
                 totalJobs: jobs.length,
+                queuedNow: admission.queuedJobs.length,
+                deferredJobs: admission.deferredJobs,
                 traceContext: serializedTraceContext
             }
         });
@@ -130,7 +132,7 @@ export class AnalysisDispatcher {
         return {
             queued: true,
             totalJobs: jobs.length,
-            jobs: jobs.map((job): QueuedJobNotification => ({
+            jobs: admission.queuedJobs.map((job): QueuedJobNotification => ({
                 jobId: job.jobId,
                 name: job.name,
                 teamId: job.teamId,

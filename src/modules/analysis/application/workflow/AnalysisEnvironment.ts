@@ -12,11 +12,8 @@ import type {
 } from '@/modules/analysis/contracts/http-analysis';
 import type { WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowArgumentDefinition } from '@/modules/analysis/contracts/http-workflow';
-import { mapLimited } from '@/support/concurrency/map-limited';
 import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import { decodeCliArgumentsToken, encodeCliArgumentsToken } from '@/support/serialization/serialization';
-
-const BATCH_DUMP_DOWNLOAD_CONCURRENCY = 8;
 
 
 export interface AnalysisEnvironmentState {
@@ -26,10 +23,6 @@ export interface AnalysisEnvironmentState {
     dumpLocalPaths: string[];
 }
 
-export interface AnalysisEnvironmentPrepareOptions {
-    referenceDumpCache?: Map<number, string>;
-}
-
 @Service('analysisEnvironment')
 export class AnalysisEnvironment {
     constructor(private readonly objectStore: ClusterObjectStore) {}
@@ -37,23 +30,14 @@ export class AnalysisEnvironment {
     async prepare(
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
-        timestep: number | undefined,
-        options: AnalysisEnvironmentPrepareOptions = {}
+        timestep: number | undefined
     ): Promise<AnalysisEnvironmentState> {
         const runtime = await this.initialize(executionData, metadata);
-
-        if (executionData.batch) {
-            await this.downloadBatchDumps(runtime, executionData);
-            runtime.dumpTargets = this.buildBatchDumpTargets(executionData, runtime.dumpLocalPaths);
-            runtime.outputs = this.buildBatchOutputs(executionData, runtime.dumpTargets, runtime.outputDir);
-            await this.materializeFrameArgumentDumps(runtime, executionData, options);
-            return runtime;
-        }
 
         await this.downloadSingleDump(runtime, executionData, metadata);
         runtime.dumpTargets = this.buildSingleDumpTargets(executionData, runtime.dumpLocalPaths, timestep);
         runtime.outputs = this.buildSingleOutputs(executionData, metadata, runtime);
-        await this.materializeFrameArgumentDumps(runtime, executionData, options);
+        await this.materializeFrameArgumentDumps(runtime, executionData);
         return runtime;
     }
 
@@ -80,19 +64,6 @@ export class AnalysisEnvironment {
         return { outputDir, outputs: new Map(), dumpTargets: [], dumpLocalPaths: [] };
     }
 
-    private async downloadBatchDumps(runtime: AnalysisEnvironmentState, executionData: AnalysisJobExecutionData): Promise<void> {
-        const { storageClusterId } = executionData.identity;
-        const dumps = executionData.batch!.trajectoryDumps;
-
-        const localPaths = await mapLimited(
-            dumps,
-            BATCH_DUMP_DOWNLOAD_CONCURRENCY,
-            (dump) => downloadCompressedDump(this.objectStore, dump.path, storageClusterId!, DAEMON_PATHS.analysisDumps)
-        );
-
-        runtime.dumpLocalPaths.push(...localPaths);
-    }
-
     private async downloadSingleDump(
         runtime: AnalysisEnvironmentState,
         executionData: AnalysisJobExecutionData,
@@ -100,19 +71,6 @@ export class AnalysisEnvironment {
     ): Promise<void> {
         const { storageClusterId } = executionData.identity;
         runtime.dumpLocalPaths.push(await downloadCompressedDump(this.objectStore, metadata.inputFile!, storageClusterId!, DAEMON_PATHS.analysisDumps));
-    }
-
-    private buildBatchDumpTargets(
-        executionData: AnalysisJobExecutionData,
-        dumpLocalPaths: string[]
-    ): WorkflowDumpTarget[] {
-        return executionData.batch!.trajectoryDumps.map((dump, index) => ({
-            localPath: dumpLocalPaths[index]!,
-            originalPath: dump.originalPath ?? dump.path,
-            timestep: dump.timestep,
-            natoms: dump.natoms,
-            simulationCell: dump.simulationCell
-        }));
     }
 
     private buildSingleDumpTargets(
@@ -165,51 +123,15 @@ export class AnalysisEnvironment {
         return outputs;
     }
 
-    private buildBatchOutputs(
-        executionData: AnalysisJobExecutionData,
-        dumpTargets: WorkflowDumpTarget[],
-        outputDir: string
-    ): Map<string, WorkflowNodeOutput> {
-        const outputs = this.snapshotToOutputs(executionData);
-        const contextNodeId = executionData.batch?.contextNodeId;
-        if (!contextNodeId) {
-            return outputs;
-        }
-
-        const trajectoryDumps = dumpTargets.map((target): WorkflowNodeOutput => ({
-            timestep: target.timestep,
-            natoms: target.natoms,
-            simulationCell: target.simulationCell,
-            path: target.localPath,
-            originalPath: target.originalPath
-        }));
-        const previous = outputs.get(contextNodeId);
-
-        outputs.set(contextNodeId, {
-            ...previous,
-            trajectory_dumps: trajectoryDumps,
-            trajectory: Object.assign({}, previous?.trajectory, { frames: trajectoryDumps }),
-            allDumpLocalPaths: JSON.stringify(dumpTargets.map((target) => target.localPath)),
-            outputPath: outputDir
-        });
-
-        return outputs;
-    }
-
     private snapshotToOutputs(executionData: AnalysisJobExecutionData): Map<string, WorkflowNodeOutput> {
         return new Map(Object.entries(executionData.workflow.nodeOutputSnapshots)) as Map<string, WorkflowNodeOutput>;
     }
 
     private async materializeFrameArgumentDumps(
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData,
-        options: AnalysisEnvironmentPrepareOptions
+        executionData: AnalysisJobExecutionData
     ): Promise<void> {
         const referenceDumpPaths = new Map<number, string>();
-        for (const [timestep, localPath] of options.referenceDumpCache ?? []) {
-            referenceDumpPaths.set(timestep, localPath);
-        }
-
         for (const target of runtime.dumpTargets) {
             referenceDumpPaths.set(target.timestep, target.localPath);
         }
@@ -237,8 +159,7 @@ export class AnalysisEnvironment {
                     replacements,
                     referenceDumpPaths,
                     runtime,
-                    executionData,
-                    options
+                    executionData
                 );
             }
 
@@ -262,8 +183,7 @@ export class AnalysisEnvironment {
         replacements: Map<string, string>,
         referenceDumpPaths: Map<number, string>,
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData,
-        options: AnalysisEnvironmentPrepareOptions
+        executionData: AnalysisJobExecutionData
     ): Promise<void> {
         const argumentKey = definition.argument;
         if (!argumentKey) {
@@ -280,8 +200,7 @@ export class AnalysisEnvironment {
                 timestep,
                 referenceDumpPaths,
                 runtime,
-                executionData,
-                options
+                executionData
             );
             values[argumentKey] = localPath;
             replacements.set(argumentKey, localPath);
@@ -309,8 +228,7 @@ export class AnalysisEnvironment {
                     replacements,
                     referenceDumpPaths,
                     runtime,
-                    executionData,
-                    options
+                    executionData
                 );
             }
         }
@@ -338,8 +256,7 @@ export class AnalysisEnvironment {
         timestep: number,
         referenceDumpPaths: Map<number, string>,
         runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData,
-        options: AnalysisEnvironmentPrepareOptions
+        executionData: AnalysisJobExecutionData
     ): Promise<string> {
         const existingPath = referenceDumpPaths.get(timestep);
         if (existingPath) {
@@ -364,11 +281,7 @@ export class AnalysisEnvironment {
             DAEMON_PATHS.analysisDumps
         );
         referenceDumpPaths.set(timestep, localPath);
-        if (options.referenceDumpCache) {
-            options.referenceDumpCache.set(timestep, localPath);
-        } else {
-            runtime.dumpLocalPaths.push(localPath);
-        }
+        runtime.dumpLocalPaths.push(localPath);
         return localPath;
     }
 

@@ -34,19 +34,6 @@ const buildCommonMetadata = (context: AnalysisJobFactoryContext): AnalysisJobMet
     traceContext: context.serializedTraceContext
 });
 
-export const buildBatchAnalysisJob = (context: AnalysisJobFactoryContext): AnalysisQueueJobPayload => {
-    const timestamp = new Date().toISOString();
-
-    return {
-        ...buildCommonJobFields(context, timestamp),
-        jobId: `${context.input.analysisId}-batch-0`,
-        metadata: {
-            ...buildCommonMetadata(context),
-            batchMode: true
-        }
-    };
-};
-
 export const buildItemAnalysisJob = (
     context: AnalysisJobFactoryContext,
     item: PlannedExecutionItem,

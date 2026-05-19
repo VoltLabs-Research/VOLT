@@ -14,6 +14,7 @@ interface TeamJobRecord {
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const STATUS_TTL_SECONDS = 86_400;
+const LIST_APPEND_CHUNK_SIZE = 256;
 
 const ACQUIRE_EXPIRING_SLOT_SCRIPT = `
 redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
@@ -168,6 +169,27 @@ export class RedisConnection {
         await this.connect();
 
         await this.client.setex(key, ttlSeconds, value);
+    };
+
+    readonly appendListWithTtl = async (key: string, values: string[], ttlSeconds: number): Promise<void> => {
+        await this.connect();
+
+        const pipeline = this.client.pipeline();
+        pipeline.del(key);
+        if (values.length > 0) {
+            for (let index = 0; index < values.length; index += LIST_APPEND_CHUNK_SIZE) {
+                pipeline.rpush(key, ...values.slice(index, index + LIST_APPEND_CHUNK_SIZE));
+            }
+            pipeline.expire(key, ttlSeconds);
+        }
+
+        await pipeline.exec();
+    };
+
+    readonly popListHead = async (key: string): Promise<string | null> => {
+        await this.connect();
+
+        return this.client.lpop(key);
     };
 
     async projectJobStatuses(payloads: TeamJobRecord[]): Promise<void> {

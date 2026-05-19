@@ -5,6 +5,7 @@ import { BaseWorker } from '@/core/queues/application/BaseWorker';
 import { QueueService } from '@/core/queues/application/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@/core/queues/application/QueueScopeLimitsRegistry';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import type { AnalysisQueueAdmissionController } from '@/modules/analysis/application/analysis/AnalysisQueueAdmissionController';
 import { AnalysisEnvironment } from '@/modules/analysis/application/workflow/AnalysisEnvironment';
 import type { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import type { AnalysisQueueJobPayload } from '@/modules/analysis/contracts/http-analysis';
@@ -25,7 +26,8 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         private readonly analysisEnvironment: AnalysisEnvironment,
         private readonly artifactUploadQueue: ArtifactUploadQueue,
         private readonly daemonJobReporter: DaemonJobReporter,
-        private readonly workflowRuntime: WorkflowRuntime
+        private readonly workflowRuntime: WorkflowRuntime,
+        private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController
     ) {
         super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
     }
@@ -36,7 +38,8 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
             analysisEnvironment: this.analysisEnvironment,
             artifactUploadQueue: this.artifactUploadQueue,
             daemonJobReporter: this.daemonJobReporter,
-            workflowRuntime: this.workflowRuntime
+            workflowRuntime: this.workflowRuntime,
+            analysisQueueAdmissionController: this.analysisQueueAdmissionController
         }, {
             updateProgress: (value) => bullJob.updateProgress(value)
         });

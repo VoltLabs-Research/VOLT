@@ -35,8 +35,6 @@ import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
-import { mapLimited } from '@/support/concurrency/map-limited';
 
 interface WorkflowTraceContext {
     currentPluginId: string;
@@ -190,7 +188,6 @@ export interface WorkflowExecuteInput {
     dumpTargets: WorkflowDumpTarget[];
     outputDir: string;
     timestep: number;
-    isBatchMode: boolean;
     artifactUploadBatch: ArtifactUploadBatch;
     logSinkFactory: WorkflowLogSinkFactory;
     stageReporter?: AnalysisStageReporter;
@@ -228,8 +225,6 @@ const readWorkflowTrace = (error: unknown): InlineWorkflowTraceNode[] | undefine
     const details = error.details as WorkflowTraceDetails | undefined;
     return Array.isArray(details?.trace) ? details.trace : undefined;
 };
-
-const MAX_BATCH_PLUGIN_CONCURRENCY = readPositiveIntegerEnv('PLUGIN_CONCURRENCY') ?? Math.max(1, getAvailableCpuCount() - 1);
 
 @Service('workflowRuntime')
 export class WorkflowRuntime {
@@ -461,31 +456,10 @@ export class WorkflowRuntime {
             return this.createNestedExecutionResult([]);
         }
 
-        const shouldBatch = input.isBatchMode && input.dumpTargets.length > 1;
-        if (!shouldBatch) {
-            const execution = await this.executePluginNode(
-                this.buildPluginExecutionInput(ctx, input.dumpTargets[0]!, ctx.session.outputs, input.outputDir)
-            );
-            return execution.output;
-        }
-
-        const groups = await mapLimited(
-            input.dumpTargets,
-            Math.min(MAX_BATCH_PLUGIN_CONCURRENCY, input.dumpTargets.length),
-            async (dumpTarget, index) => {
-                const execution = await this.executePluginNode(
-                    this.buildPluginExecutionInput(
-                        ctx,
-                        dumpTarget,
-                        WorkflowSession.cloneOutputs(ctx.session.outputs),
-                        `${input.outputDir}/batch-${index}`
-                    )
-                );
-                return (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items;
-            }
+        const execution = await this.executePluginNode(
+            this.buildPluginExecutionInput(ctx, input.dumpTargets[0]!, ctx.session.outputs, input.outputDir)
         );
-
-        return this.createNestedExecutionResult(groups.flat());
+        return execution.output;
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {

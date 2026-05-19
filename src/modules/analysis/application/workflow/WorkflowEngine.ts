@@ -38,9 +38,6 @@ interface WorkflowPlanResult {
     items: Array<WorkflowNodeOutput | TrajectoryDumpDescriptor>;
     forEachNodeId?: string;
     nodeOutputSnapshots: Record<string, WorkflowNodeOutput>;
-    batchMode?: boolean;
-    batchTrajectoryDumps?: TrajectoryDumpDescriptor[];
-    contextNodeId?: string;
 };
 
 const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
@@ -62,7 +59,7 @@ const createPlanningSession = (request: WorkflowExecutionRequest): WorkflowSessi
     });
 };
 
-const createBatchPlan = (
+const createContextItemsPlan = (
     session: WorkflowSession,
     contextNodeId: string
 ): WorkflowPlanResult | null => {
@@ -73,10 +70,7 @@ const createBatchPlan = (
 
     return {
         items: dumps,
-        nodeOutputSnapshots: session.snapshotOutputs(),
-        batchMode: true,
-        batchTrajectoryDumps: dumps,
-        contextNodeId
+        nodeOutputSnapshots: session.snapshotOutputs()
     };
 };
 
@@ -93,7 +87,7 @@ export class WorkflowEngine {
         const executionOrder = session.context.workflow.topologicalSort();
         const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
-        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (batchMode=true)`);
+        logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (itemized=true)`);
         let contextNodeId: string | undefined;
 
         const results = await this.nodeExecutor.executeOrdered({
@@ -127,16 +121,13 @@ export class WorkflowEngine {
                 return {
                     items,
                     forEachNodeId: result.node.id,
-                    nodeOutputSnapshots: session.snapshotOutputs(),
-                    batchMode: true,
-                    batchTrajectoryDumps: items as unknown as TrajectoryDumpDescriptor[],
-                    contextNodeId
+                    nodeOutputSnapshots: session.snapshotOutputs()
                 };
             }
         }
 
         if (!hasForEachNode && contextNodeId) {
-            return createBatchPlan(session, contextNodeId);
+            return createContextItemsPlan(session, contextNodeId);
         }
 
         return null;

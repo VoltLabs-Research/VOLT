@@ -2,7 +2,7 @@ import ApplicationError from '@/app/coordination/ApplicationError';
 import { EntrypointType } from '@/core/runtime/contracts/http-runtime';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
-import { buildBatchAnalysisJob, buildItemAnalysisJob } from '@/modules/analysis/domain/jobs/analysis-job-factory';
+import { buildItemAnalysisJob } from '@/modules/analysis/domain/jobs/analysis-job-factory';
 import type {
     WorkflowEngine,
     WorkflowExecutionRequest
@@ -31,8 +31,8 @@ export interface PlanAnalysisWorkflowResult {
 
 // Pure planning pipeline used by AnalysisDispatcher. Validates the entrypoint,
 // runs the workflow engine planner (unless a cached plan is supplied),
-// materializes the AnalysisJobExecutionData snapshot and the per-item or
-// batch queue payloads.
+// materializes the AnalysisJobExecutionData snapshot and per-item queue
+// payloads.
 export const planAnalysisWorkflow = async (
     params: PlanAnalysisWorkflowInput
 ): Promise<PlanAnalysisWorkflowResult> => {
@@ -61,7 +61,6 @@ export const planAnalysisWorkflow = async (
         );
     }
 
-    const isBatchMode = plan.batchMode === true;
     const plannedItems = plan.items as PlannedExecutionItem[];
 
     const factoryContext = {
@@ -70,19 +69,17 @@ export const planAnalysisWorkflow = async (
         totalItems: plannedItems.length
     };
 
-    const jobs: AnalysisQueueJobPayload[] = isBatchMode
-        ? [buildBatchAnalysisJob(factoryContext)]
-        : plannedItems.map((item, index) => {
-            const timestep = item.timestep ?? item.frame;
-            if (typeof timestep !== 'number') {
-                throw ApplicationError.unprocessableEntity(
-                    'Analysis::Start::MissingTimestep',
-                    `Missing timestep for analysis job ${input.analysisId}-${index}`
-                );
-            }
+    const jobs: AnalysisQueueJobPayload[] = plannedItems.map((item, index) => {
+        const timestep = item.timestep ?? item.frame;
+        if (typeof timestep !== 'number') {
+            throw ApplicationError.unprocessableEntity(
+                'Analysis::Start::MissingTimestep',
+                `Missing timestep for analysis job ${input.analysisId}-${index}`
+            );
+        }
 
-            return buildItemAnalysisJob(factoryContext, item, index, timestep);
-        });
+        return buildItemAnalysisJob(factoryContext, item, index, timestep);
+    });
 
     const executionData: AnalysisJobExecutionData = {
         entrypoint: {
@@ -110,12 +107,6 @@ export const planAnalysisWorkflow = async (
             nodeOutputSnapshots: plan.nodeOutputSnapshots
         },
         trajectoryFrames: input.trajectoryFrames,
-        batch: plan.batchMode
-            ? {
-                trajectoryDumps: plan.batchTrajectoryDumps ?? [],
-                contextNodeId: plan.contextNodeId
-            }
-            : undefined,
         traceContext: serializedTraceContext
     };
 

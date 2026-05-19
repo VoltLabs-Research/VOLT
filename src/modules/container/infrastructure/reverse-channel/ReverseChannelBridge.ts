@@ -51,6 +51,7 @@ interface ReverseChannelTunnelState {
     transitionId: number;
     socket: net.Socket;
     isOpen: boolean;
+    isClosing: boolean;
     isObjectGatewayTunnel: boolean;
     nextOutboundSequence: number;
     pendingOutboundAcks: Map<number, PendingTunnelAck>;
@@ -517,12 +518,20 @@ export class ReverseChannelBridge {
             );
         };
         const onError = (error: Error) => {
+            const tunnelState = this.tunnelStates.get(payload.sessionId);
+            if (!tunnelState || tunnelState.isClosing) {
+                return;
+            }
             this.closeTunnelWithError(payload.sessionId, error.message, sessionTransition);
         };
         const onTimeout = () => {
             this.closeTunnelWithError(payload.sessionId, 'Tunnel session timed out while opening', sessionTransition);
         };
         const onClose = () => {
+            const tunnelState = this.tunnelStates.get(payload.sessionId);
+            if (!tunnelState || tunnelState.isClosing) {
+                return;
+            }
             this.completeTunnelClose(payload.sessionId, sessionTransition);
         };
 
@@ -536,6 +545,7 @@ export class ReverseChannelBridge {
             transitionId: sessionTransition.transitionId,
             socket: tunnelSocket,
             isOpen: false,
+            isClosing: false,
             isObjectGatewayTunnel,
             nextOutboundSequence: 0,
             pendingOutboundAcks: new Map(),
@@ -561,6 +571,11 @@ export class ReverseChannelBridge {
         const tunnelState = this.tunnelStates.get(payload.sessionId);
         if (!tunnelState) {
             this.sessionActivity.delete(payload.sessionId);
+            return;
+        }
+
+        if (!this.isTunnelSocketWritable(tunnelState)) {
+            this.completeTunnelClose(payload.sessionId);
             return;
         }
 
@@ -603,24 +618,71 @@ export class ReverseChannelBridge {
                 acknowledged = true;
                 this.emitTunnelDrain(payload.sessionId, payload.sequence!);
             };
-            const isReadyForMore = tunnelState.socket.write(chunk, (error?: Error | null) => {
-                if (error) {
-                    this.closeTunnelWithError(payload.sessionId, error.message);
-                    return;
-                }
+            const isReadyForMore = this.writeTunnelSocketChunk(
+                payload.sessionId,
+                tunnelState,
+                chunk,
+                acknowledgeDrain
+            );
 
-                acknowledgeDrain();
-            });
+            if (!this.tunnelStates.has(payload.sessionId)) {
+                return;
+            }
 
             if (isReadyForMore) {
                 acknowledgeDrain();
             } else {
-                tunnelState.socket.once('drain', acknowledgeDrain);
+                tunnelState.socket.once('drain', () => {
+                    const activeTunnelState = this.tunnelStates.get(payload.sessionId);
+                    if (!activeTunnelState || activeTunnelState !== tunnelState || activeTunnelState.isClosing) {
+                        return;
+                    }
+
+                    acknowledgeDrain();
+                });
             }
             return;
         }
 
-        tunnelState.socket.write(chunk);
+        this.writeTunnelSocketChunk(payload.sessionId, tunnelState, chunk);
+    }
+
+    private isTunnelSocketWritable(tunnelState: ReverseChannelTunnelState): boolean {
+        const socket = tunnelState.socket;
+        return !tunnelState.isClosing
+            && !socket.destroyed
+            && !socket.closed
+            && socket.writable
+            && !socket.writableEnded;
+    }
+
+    private writeTunnelSocketChunk(
+        sessionId: string,
+        tunnelState: ReverseChannelTunnelState,
+        chunk: Buffer,
+        onWriteSuccess?: () => void
+    ): boolean {
+        if (!this.isTunnelSocketWritable(tunnelState)) {
+            this.completeTunnelClose(sessionId);
+            return false;
+        }
+
+        try {
+            return tunnelState.socket.write(chunk, (error?: Error | null) => {
+                if (error) {
+                    this.closeTunnelWithError(sessionId, error.message);
+                    return;
+                }
+
+                onWriteSuccess?.();
+            });
+        } catch (error) {
+            this.closeTunnelWithError(
+                sessionId,
+                error instanceof Error ? error.message : String(error)
+            );
+            return false;
+        }
     }
 
     private handleTunnelDrain(payload: BinaryTunnelDrainPayload): void {
@@ -771,6 +833,11 @@ export class ReverseChannelBridge {
             return;
         }
 
+        if (tunnelState.isClosing) {
+            return;
+        }
+        tunnelState.isClosing = true;
+
         if (!tunnelState.isOpen) {
             this.endSessionTransition({
                 sessionId,
@@ -783,6 +850,10 @@ export class ReverseChannelBridge {
         tunnelState.socket.removeListener('error', tunnelState.onError);
         tunnelState.socket.removeListener('close', tunnelState.onClose);
         tunnelState.socket.removeListener('timeout', tunnelState.onTimeout);
+
+        // Keep a fallback error listener in place while destroying the socket to
+        // avoid uncaught socket errors during teardown races.
+        tunnelState.socket.on('error', () => undefined);
 
         this.clearPendingTunnelAcks(tunnelState);
 
