@@ -25,7 +25,6 @@ import AnalysisListingDownloadModal, {
     ANALYSIS_LISTING_DOWNLOAD_MODAL_ID
 } from '../AnalysisListingDownloadModal';
 import CommandPalette from '../CommandPalette';
-import KeyboardShortcutsPanel from '../KeyboardShortcutsPanel';
 import PluginResultsViewer from '../PluginResultsViewer';
 import RightPanel from '../RightPanel';
 import StatusBar from '../StatusBar';
@@ -750,7 +749,6 @@ const CanvasPage = () => {
                 onDownload={handleConfirmAnalysisDownload}
                 onClose={() => setDownloadAnalysisModalTargetId(null)}
             />
-            <KeyboardShortcutsPanel />
             <CommandPalette />
             <ShortcutFeedback />
             <ExposureSettingsWidget />

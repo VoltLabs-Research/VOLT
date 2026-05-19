@@ -32,11 +32,8 @@ const useKeyboardShortcuts = ({
     availableTimesteps
 }: UseKeyboardShortcutsParams) => {
     const shortcuts = useKeyboardShortcutsStore((s) => s.shortcuts);
-    const showPanel = useKeyboardShortcutsStore((s) => s.showPanel);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
     const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
-    const togglePanel = useKeyboardShortcutsStore((s) => s.togglePanel);
-    const setShowPanel = useKeyboardShortcutsStore((s) => s.setShowPanel);
     const {
         showWidgets,
         showGrid,
@@ -165,8 +162,6 @@ const useKeyboardShortcuts = ({
                 useEditorStore.getState().decreasePointSize();
             },
 
-            'show-shortcuts': togglePanel,
-
             'command-palette': () => {
                 useCommandPaletteStore.getState().toggle();
             },
@@ -188,10 +183,6 @@ const useKeyboardShortcuts = ({
                     useCommandPaletteStore.getState().close();
                     return;
                 }
-                if (useKeyboardShortcutsStore.getState().showPanel) {
-                    setShowPanel(false);
-                    return;
-                }
                 setResultsPluginId(undefined, { replace: true });
             }
         };
@@ -204,8 +195,6 @@ const useKeyboardShortcuts = ({
             clearShortcutActions();
         };
     }, [
-        togglePanel,
-        setShowPanel,
         showWidgets,
         showGrid,
         showGizmo,
@@ -289,9 +278,7 @@ const useKeyboardShortcuts = ({
 
     return {
         shortcuts,
-        showPanel,
-        currentScope,
-        togglePanel
+        currentScope
     };
 };
 
