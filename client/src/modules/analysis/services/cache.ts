@@ -1,9 +1,10 @@
 import { analysisQuery, KEYS } from '../hooks/queries';
-import { patchPaginatedPage } from '@/shared/infrastructure/query/cache-utils';
+import { patchPaginatedPage, removeEntityFromList, snapshotQueries } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Analysis } from '../api/entities/analysis';
 import type { GetAnalysesByTrajectoryParams } from '../api/service';
+import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
 
 export interface PatchAnalysisStatusInput {
     analysisId: string;
@@ -55,6 +56,26 @@ const isAnalysisByTrajectoryQueryKey = (queryKey: readonly unknown[]): boolean =
         && queryKey.some((entry) => entry === 'byTrajectory');
 };
 
+const isCanvasAnalysesQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return queryKey.some((entry) => entry === 'canvas')
+        && queryKey.some((entry) => entry === 'analyses');
+};
+
+const isAnalysisListQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return queryKey.some((entry) => entry === 'analysis')
+        && (
+            queryKey.some((entry) => entry === 'list')
+            || queryKey.some((entry) => entry === 'infinite-list')
+            || queryKey.some((entry) => entry === 'detail')
+        );
+};
+
+const isAnalysisCacheQueryKey = (queryKey: readonly unknown[]): boolean => {
+    return isAnalysisByTrajectoryQueryKey(queryKey)
+        || isAnalysisListQueryKey(queryKey)
+        || isCanvasAnalysesQueryKey(queryKey);
+};
+
 const patchByTrajectoryQueries = (
     updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
 ): void => {
@@ -68,6 +89,50 @@ const patchByTrajectoryQueries = (
             return updater(current);
         }
     );
+};
+
+const patchCanvasAnalysesQueries = (
+    updater: (page: PaginatedResponse<Analysis>) => PaginatedResponse<Analysis>
+): void => {
+    queryClient.setQueriesData<PaginatedResponse<Analysis>>(
+        {
+            predicate: (query) => Array.isArray(query.queryKey)
+                && isCanvasAnalysesQueryKey(query.queryKey)
+        },
+        (current) => {
+            if (!current || !Array.isArray(current.data)) return current;
+            return updater(current);
+        }
+    );
+};
+
+export const snapshotAnalysisCaches = (): QueryDataSnapshot => {
+    return snapshotQueries((query) => Array.isArray(query.queryKey)
+        && isAnalysisCacheQueryKey(query.queryKey));
+};
+
+export const cancelAnalysisCacheQueries = (): Promise<void> => {
+    return queryClient.cancelQueries({
+        predicate: (query) => Array.isArray(query.queryKey)
+            && isAnalysisCacheQueryKey(query.queryKey)
+    });
+};
+
+export const removeAnalysisCaches = (analysisId: string): void => {
+    const removeFromPage = (page: PaginatedResponse<Analysis>) => removeEntityFromList(page, analysisId);
+
+    queryClient.removeQueries({ queryKey: KEYS.detail(analysisId) });
+
+    analysisQuery.cache.patchAllLists(removeFromPage);
+    analysisQuery.cache.patchAllInfiniteLists((current) => ({
+        ...current,
+        pages: current.pages.map(removeFromPage),
+        pageParams: current.pageParams
+    }));
+
+    patchPaginatedPage<Analysis>(KEYS.byTrajectory(), removeFromPage);
+    patchByTrajectoryQueries(removeFromPage);
+    patchCanvasAnalysesQueries(removeFromPage);
 };
 
 export const upsertAnalysisCaches = (analysis: Analysis): void => {
