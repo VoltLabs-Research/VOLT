@@ -157,7 +157,7 @@ const AnalysisTreeNode = ({
     tourTargetId,
     firstExposureTourTargetId
 }: AnalysisTreeNodeProps) => {
-    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig, configDiffSummary } = section;
+    const { analysis, pluginDisplayName, entry, isCurrentAnalysis, userConfig } = section;
     const isRasterSelectionMode = selectionMode === 'raster';
     const expectedArtifacts = analysis.expectedArtifacts ?? [];
     const artifactRows = buildArtifactRows(expectedArtifacts, entry.exposures);
@@ -306,16 +306,10 @@ const AnalysisTreeNode = ({
 
     const analysisRow = (
         <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
-            <span className='canvas-tree-analysis-copy'>
-                <span className={nameClassName} title={pluginDisplayName}>
-                    {pluginDisplayName}
-                </span>
-                {configDiffSummary && (
-                    <span className='canvas-tree-analysis-description truncate' title={configDiffSummary}>
-                        {configDiffSummary}
-                    </span>
-                )}
+            <span className={nameClassName} title={pluginDisplayName}>
+                {pluginDisplayName}
             </span>
+            <span className="flex-1" />
             <Button
                 variant='ghost'
                 intent='neutral'
