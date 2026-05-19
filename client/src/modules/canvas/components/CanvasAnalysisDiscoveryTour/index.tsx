@@ -6,7 +6,6 @@ import './CanvasAnalysisDiscoveryTour.css';
 
 const TOUR_STORAGE_KEY_PREFIX = 'volt:tutorial:canvas-analysis-discovery:v1';
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
-const TOUR_SELECT_EXPOSURE_EVENT = 'canvas-analysis-tour:select-first-exposure';
 const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 const TARGET_GAP = 12;
 const VIEWPORT_MARGIN = 12;
@@ -84,15 +83,13 @@ const getTargetElement = (selector: string): HTMLElement | null => {
     return document.querySelector<HTMLElement>(selector);
 };
 
-const dispatchAutoAction = (action: 'select-analysis' | 'select-exposure'): void => {
+const dispatchAutoAction = (action: 'select-analysis'): void => {
     if (typeof window === 'undefined') {
         return;
     }
 
     if (action === 'select-analysis') {
         window.dispatchEvent(new CustomEvent(TOUR_SELECT_ANALYSIS_EVENT));
-    } else if (action === 'select-exposure') {
-        window.dispatchEvent(new CustomEvent(TOUR_SELECT_EXPOSURE_EVENT));
     }
 };
 
@@ -108,7 +105,7 @@ const buildSteps = (isMobile: boolean): TourStep[] => {
     const sharedSteps: TourStep[] = [{
         id: 'analysis-section',
         title: 'Analysis panel',
-        description: 'This panel lists the analysis results available for the trajectory. A result is opened automatically so you can inspect it right away.',
+        description: 'This panel lists the analysis results available for the trajectory.',
         targetSelector: '[data-tour-id="canvas-analyses-section"]',
         requiresAnalysisPanel: true
     }, {
@@ -259,13 +256,10 @@ const CanvasAnalysisDiscoveryTour = ({
 
         const runAutoAction = () => {
             dispatchAutoAction('select-analysis');
-            if (attempts >= 2) {
-                dispatchAutoAction('select-exposure');
-            }
             attempts += 1;
 
-            const selectedExposure = getTargetElement('[data-tour-id="canvas-first-exposure-row"]');
-            if (selectedExposure?.getAttribute('aria-selected') === 'true' || attempts >= maxAttempts) {
+            const selectedAnalysis = getTargetElement('[data-tour-id="canvas-first-analysis-row"]');
+            if (selectedAnalysis?.getAttribute('aria-selected') === 'true' || attempts >= maxAttempts) {
                 completedPanelAutoSelectRef.current = true;
                 return true;
             }
