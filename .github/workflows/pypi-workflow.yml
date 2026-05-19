@@ -5,32 +5,150 @@ on:
     types:
       - published
   workflow_dispatch:
+    inputs:
+      plugin_ref:
+        description: "Optional branch, tag, or SHA for plugin repositories"
+        required: false
+        default: ""
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  build-voltsdk:
+    name: Build ${{ matrix.name }} wheel
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            platform_tag: linux_x86_64
+          - name: macos-x86_64
+            os: macos-13
+            platform_tag: macosx_13_0_x86_64
+          - name: macos-arm64
+            os: macos-14
+            platform_tag: macosx_14_0_arm64
+          - name: windows-amd64
+            os: windows-2022
+            platform_tag: win_amd64
 
     steps:
-      - name: Check out repository
+      - name: Check out VoltSDK
         uses: actions/checkout@v4
+
+      - name: Configure git on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux compiler tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld cmake ninja-build
+
+      - name: Install macOS compiler tools
+        if: runner.os == 'macOS'
+        run: brew install ninja || true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install build tools
-        working-directory: python3/voltsdk
-        run: python -m pip install --upgrade build
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip conan cmake ninja build wheel
 
-      - name: Build package
-        working-directory: python3/voltsdk
-        run: python -m build
+      - name: Clone plugin sources
+        env:
+          VOLT_PLUGIN_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.plugin_ref || '' }}
+        run: python .github/scripts/clone_plugin_sources.py --dest build/plugin-sources
 
-      - name: Publish package to PyPI
+      - name: Install native plugins on Linux
+        if: runner.os == 'Linux'
+        env:
+          CC: clang
+          CXX: clang++
+        run: >
+          python .github/scripts/install_native_plugins.py
+          --plugins-root build/plugin-sources
+          --build-root build/plugin-build
+          --install-root build/plugin-install
+          --jobs 2
+
+      - name: Install native plugins
+        if: runner.os != 'Linux'
+        run: >
+          python .github/scripts/install_native_plugins.py
+          --plugins-root build/plugin-sources
+          --build-root build/plugin-build
+          --install-root build/plugin-install
+          --jobs 2
+
+      - name: Stage native files into VoltSDK
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil
+
+          source = Path("build/plugin-install")
+          destination = Path("python3/voltsdk/native")
+          if destination.exists():
+              shutil.rmtree(destination)
+          destination.mkdir(parents=True)
+          for name in ("bin", "lib", "share"):
+              item = source / name
+              if item.exists():
+                  shutil.copytree(item, destination / name, symlinks=True)
+
+      - name: Build VoltSDK platform wheel
+        env:
+          VOLTSDK_PLATFORM_TAG: ${{ matrix.platform_tag }}
+        working-directory: python3/voltsdk
+        run: python -m build --wheel --outdir ../../build/wheelhouse
+
+      - name: Install built wheel
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          wheel = next(Path("build/wheelhouse").glob("voltsdk-*.whl"))
+          subprocess.run([sys.executable, "-m", "pip", "install", str(wheel)], check=True)
+
+      - name: Smoke-test native runtime
+        run: python .github/scripts/smoke_native_plugins.py --timeout 20
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: voltsdk-${{ matrix.name }}
+          path: build/wheelhouse/*.whl
+          if-no-files-found: error
+
+  publish:
+    name: Publish wheels to PyPI
+    runs-on: ubuntu-24.04
+    needs:
+      - build-voltsdk
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-to-publish
+          merge-multiple: true
+
+      - name: Publish wheels to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: python3/voltsdk/dist/
+          packages-dir: dist-to-publish/

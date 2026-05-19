@@ -1,44 +1,77 @@
-"""VoltSDK — Python SDK for the Volt scientific computing platform.
+"""VoltSDK - Python SDK for the Volt scientific computing platform.
 
 Quick start::
 
-    from voltsdk import VoltClient
+    from voltsdk import VoltClient, PluginHub
 
-    client = VoltClient.from_env()          # inside Volt notebooks
-    client = VoltClient(secret_key="vsk_…") # explicit key
+    # Marketplace, no auth needed:
+    hub = PluginHub()
+    ptm = hub.get("polyhedral-template-matching")
+    ptm.run("frame.dump", output_base="out/frame", rmsd=0.1)
 
-    for traj in client.trajectories:
-        print(traj.name, traj.frame_count)
+    # Or via an authenticated client:
+    client = VoltClient.from_env()
+    client.plugins.get("opendxa").run("frame.dump", output_base="out/frame")
 """
 
-from .client import VoltClient
+from __future__ import annotations
+
 from .exceptions import (
-    VoltError,
     VoltAPIError,
     VoltAuthenticationError,
     VoltConnectionError,
+    VoltError,
     VoltNotFoundError,
     VoltPermissionError,
     VoltTimeoutError,
 )
+from .plugins import (
+    Manifest,
+    Plugin,
+    PluginError,
+    PluginHub,
+    PluginNotFoundError,
+    PluginRun,
+    PluginVerificationError,
+)
 
-from .io.msgpack import msgpack_as_df
-from .integrations.glb import view_glb
+__version__ = "2.2.0"
 
 __all__ = [
-    # Core
-    'VoltClient',
-    # Exceptions
-    'VoltError',
-    'VoltAPIError',
-    'VoltAuthenticationError',
-    'VoltConnectionError',
-    'VoltNotFoundError',
-    'VoltPermissionError',
-    'VoltTimeoutError',
-    # Utilities
-    'msgpack_as_df',
-    'view_glb',
+    "VoltClient",
+    "VoltError",
+    "VoltAPIError",
+    "VoltAuthenticationError",
+    "VoltConnectionError",
+    "VoltNotFoundError",
+    "VoltPermissionError",
+    "VoltTimeoutError",
+    "msgpack_as_df",
+    "view_glb",
+    "Manifest",
+    "Plugin",
+    "PluginError",
+    "PluginHub",
+    "PluginNotFoundError",
+    "PluginRun",
+    "PluginVerificationError",
 ]
 
-__version__ = '2.1.0'
+
+def __getattr__(name: str):
+    if name == "VoltClient":
+        from .client import VoltClient
+
+        globals()[name] = VoltClient
+        return VoltClient
+    if name == "msgpack_as_df":
+        from .io.msgpack import msgpack_as_df
+
+        globals()[name] = msgpack_as_df
+        return msgpack_as_df
+    if name == "view_glb":
+        from .integrations.glb import view_glb
+
+        globals()[name] = view_glb
+        return view_glb
+    raise AttributeError(name)

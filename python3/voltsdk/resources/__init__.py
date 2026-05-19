@@ -12,7 +12,6 @@ from .analyses import Analysis, AnalysisCollection
 from .frames import Frame, FrameCollection
 from .listings import ListingCollection, AnalysisListingProxy, TrajectoryListingProxy
 from .exposures import Exposure, ExposureCollection
-from .plugins import Plugin, PluginCollection
 from .simulation_cells import SimulationCell
 
 __all__ = [
@@ -30,7 +29,5 @@ __all__ = [
     'TrajectoryListingProxy',
     'Exposure',
     'ExposureCollection',
-    'Plugin',
-    'PluginCollection',
     'SimulationCell',
 ]

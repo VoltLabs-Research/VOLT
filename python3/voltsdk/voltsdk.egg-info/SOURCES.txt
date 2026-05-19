@@ -4,12 +4,12 @@ client.py
 exceptions.py
 http.py
 pyproject.toml
-utils.py
+setup.py
 ./__init__.py
 ./client.py
 ./exceptions.py
 ./http.py
-./utils.py
+./setup.py
 ./integrations/__init__.py
 ./integrations/glb.py
 ./integrations/ovito.py
@@ -17,6 +17,10 @@ utils.py
 ./io/__init__.py
 ./io/downloads.py
 ./io/msgpack.py
+./plugins/__init__.py
+./plugins/base.py
+./plugins/dislocation_analysis.py
+./plugins/polyhedral_template_matching.py
 ./resources/__init__.py
 ./resources/analyses.py
 ./resources/base.py
@@ -34,6 +38,10 @@ integrations/plotting.py
 io/__init__.py
 io/downloads.py
 io/msgpack.py
+plugins/__init__.py
+plugins/base.py
+plugins/dislocation_analysis.py
+plugins/polyhedral_template_matching.py
 resources/__init__.py
 resources/analyses.py
 resources/base.py

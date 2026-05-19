@@ -25,10 +25,10 @@ from __future__ import annotations
 import os
 
 from .http import HttpTransport
+from .plugins import PluginHub
+from .resources.analyses import AnalysisCollection
 from .resources.teams import Team
 from .resources.trajectories import TrajectoryCollection
-from .resources.analyses import AnalysisCollection
-from .resources.plugins import PluginCollection
 
 
 class VoltClient:
@@ -77,6 +77,7 @@ class VoltClient:
 
         # Lazy-loaded team context
         self._team: Team | None = None
+        self._plugins: PluginHub | None = None
 
     # ------------------------------------------------------------------
     # Factory
@@ -136,9 +137,11 @@ class VoltClient:
         )
 
     @property
-    def plugins(self) -> PluginCollection:
-        """Lazy, paginated collection of available analysis plugins."""
-        return PluginCollection(self._http)
+    def plugins(self) -> PluginHub:
+        """Plugin marketplace (download, cache, run native plugins)."""
+        if self._plugins is None:
+            self._plugins = PluginHub()
+        return self._plugins
 
     # ------------------------------------------------------------------
     # Dunder

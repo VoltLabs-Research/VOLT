@@ -1,8 +1,8 @@
 Metadata-Version: 2.4
 Name: voltsdk
-Version: 2.0.0
+Version: 2.1.0
 Summary: Python SDK for the Volt scientific computing platform
-License: MIT
+License-Expression: MIT
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: msgpack>=1.0.0
@@ -37,7 +37,7 @@ Install visualization support with:
 pip install "voltsdk[visualization]"
 ```
 
-Install notebook s  upport with:
+Install notebook support with:
 
 ```bash
 pip install "voltsdk[notebook]"
@@ -54,3 +54,29 @@ client = VoltClient(
 )
 ```
 
+## Native plugin algorithms
+
+`pip install voltsdk` installs a platform wheel that includes the native VOLT
+executables for the current OS. The SDK runs those executables directly; no
+VOLT API call is used. Plugin classes live under `voltsdk.plugins` and are
+re-exported from `voltsdk` for convenience.
+
+```python
+from voltsdk import DislocationAnalysis, PolyhedralTemplateMatching
+
+structural_identification = PolyhedralTemplateMatching(
+    input_file="timestep-0.dump",
+    output_base="out/timestep-0",
+    rmsd=0.1,
+)
+
+analysis = DislocationAnalysis(
+    input_file="timestep-0.dump",
+    output_base="out/timestep-0",
+    reference_topology="fcc",
+    structural_identification=structural_identification,
+)
+
+analysis.run()
+print(analysis.dislocations)
+```

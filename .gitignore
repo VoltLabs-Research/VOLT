@@ -1,3 +1,8 @@
 package-lock.json
 node_modules
 dist
+build
+*.egg-info
+python3/voltsdk/native
+python3/voltsdk/dist
+python3/voltsdk/build
