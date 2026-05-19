@@ -2,7 +2,7 @@ import useCreateTrajectory from './use-create-trajectory';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
-import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
+import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';

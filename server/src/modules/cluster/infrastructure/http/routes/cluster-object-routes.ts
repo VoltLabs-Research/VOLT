@@ -1,12 +1,12 @@
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import ClusterObjectSignedUrlService from '@modules/cluster-object/infrastructure/services/ClusterObjectSignedUrlService';
+import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { pipeline } from 'node:stream/promises';
 import { container } from 'tsyringe';
 
 import type { Request, Response } from 'express';
-import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster-object/application/dtos/ClusterObjectGatewayDTO';
+import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster/application/dtos/ClusterObjectGatewayDTO';
 
 const signedUrlService = (): ClusterObjectSignedUrlService => container.resolve(ClusterObjectSignedUrlService);
 const objectGatewayClient = (): TeamClusterObjectGatewayClient => container.resolve(TeamClusterObjectGatewayClient);

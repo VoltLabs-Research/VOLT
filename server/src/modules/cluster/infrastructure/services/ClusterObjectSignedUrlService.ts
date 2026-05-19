@@ -5,7 +5,7 @@ import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation,
     ClusterObjectSignedUrl
-} from '@modules/cluster-object/application/dtos/ClusterObjectGatewayDTO';
+} from '@modules/cluster/application/dtos/ClusterObjectGatewayDTO';
 
 type ClusterObjectTokenPayload = Omit<ClusterObjectAccessClaims, 'iat' | 'exp'>;
 

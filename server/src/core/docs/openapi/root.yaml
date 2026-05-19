@@ -402,6 +402,8 @@ paths:
     $ref: paths/notifications/read-status.yaml
   /api/system/rbac:
     $ref: paths/system/rbac.yaml
+  /plugin-registry/index.json:
+    $ref: paths/plugin-registry/index.yaml
   /api/teams/{teamId}/members:
     $ref: paths/teams/by-teamid__members.yaml
   /api/teams/{teamId}/members/{teamMemberId}:
