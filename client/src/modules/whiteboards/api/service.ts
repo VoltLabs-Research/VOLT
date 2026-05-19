@@ -1,4 +1,4 @@
-import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
+import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import {
     createFolderCrudEndpoints,
     type FolderCreateParams,

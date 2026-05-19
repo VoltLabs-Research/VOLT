@@ -19,6 +19,7 @@ import NotificationHttpModule from '@modules/notification/infrastructure/http/ro
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure';
 import PluginListingRowHttpModule from '@modules/plugin/infrastructure/http/routes/listing-row';
 import PluginHttpModule from '@modules/plugin/infrastructure/http/routes/plugin';
+import PluginRegistryHttpModule from '@modules/plugin-registry/infrastructure/http/routes/plugin-registry-routes';
 import RasterHttpModule from '@modules/raster/infrastructure/http/routes/raster-routes';
 import SessionHttpModule from '@modules/session/infrastructure/http/routes/session-routes';
 import ScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-routes';
@@ -38,7 +39,7 @@ import TeamHttpModule from '@modules/team/infrastructure/http/routes/team';
 import TeamClusterHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-routes';
 import TeamClusterObjectStoreProxyHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-object-store-proxy-routes';
 import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
-import ClusterObjectHttpModule from '@modules/cluster-object/infrastructure/http/routes/cluster-object-routes';
+import ClusterObjectHttpModule from '@modules/cluster/infrastructure/http/routes/cluster-object-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import DiscoverHttpModule from '@modules/trajectory/infrastructure/http/routes/discover';
@@ -95,6 +96,7 @@ const HTTP_MODULES: HttpModule[] = [
     JobsHttpModule,
     AnalysisHttpModule,
     PluginHttpModule,
+    PluginRegistryHttpModule,
     RasterHttpModule,
     SimulationCellHttpModule,
     DailyActivityHttpModule,

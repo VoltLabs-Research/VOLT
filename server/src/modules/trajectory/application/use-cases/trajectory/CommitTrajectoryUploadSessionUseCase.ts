@@ -1,11 +1,12 @@
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import ClusterObjectUploadSessionRepository from '@modules/cluster-object/infrastructure/persistence/mongo/repositories/ClusterObjectUploadSessionRepository';
 import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import type { TrajectoryUploadSessionDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -20,7 +21,6 @@ import type {
     CommitTrajectoryUploadSessionInputDTO,
     CommitTrajectoryUploadSessionOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/TrajectoryUploadSessionDTO';
-import type { ClusterObjectUploadSessionDocument } from '@modules/cluster-object/infrastructure/persistence/mongo/models/ClusterObjectUploadSessionModel';
 
 interface TrajectoryIngestResult {
     trajectoryId: string;
@@ -55,7 +55,7 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly uploadSessionRepository: ClusterObjectUploadSessionRepository,
+        private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly trajectoryRepo: TrajectoryRepository,
         private readonly simulationCellRepo: SimulationCellRepository,
@@ -68,7 +68,7 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         const session = await this.uploadSessionRepository.findById(input.uploadSessionId);
         if (!session) {
             return Result.fail(ApplicationError.notFound(
-                'ClusterObjectUploadSession::NotFound',
+                'TrajectoryUploadSession::NotFound',
                 'Upload session not found'
             ));
         }
@@ -163,33 +163,33 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
     }
 
     private validateSession(
-        session: ClusterObjectUploadSessionDocument,
+        session: TrajectoryUploadSessionDocument,
         input: CommitTrajectoryUploadSessionInputDTO
     ): ApplicationError | null {
         if (session.status !== 'pending') {
             return ApplicationError.conflict(
-                'ClusterObjectUploadSession::NotPending',
+                'TrajectoryUploadSession::NotPending',
                 'Upload session is not pending'
             );
         }
 
         if (session.expiresAt.getTime() <= Date.now()) {
             return ApplicationError.badRequest(
-                'ClusterObjectUploadSession::Expired',
+                'TrajectoryUploadSession::Expired',
                 'Upload session has expired'
             );
         }
 
         if (session.team.toString() !== input.teamId || session.user.toString() !== input.userId) {
             return ApplicationError.forbidden(
-                'ClusterObjectUploadSession::Forbidden',
+                'TrajectoryUploadSession::Forbidden',
                 'Upload session does not belong to this user and team'
             );
         }
 
         if (session.resourceKind !== 'trajectory') {
             return ApplicationError.badRequest(
-                'ClusterObjectUploadSession::UnsupportedResource',
+                'TrajectoryUploadSession::UnsupportedResource',
                 'Upload session is not a trajectory upload'
             );
         }

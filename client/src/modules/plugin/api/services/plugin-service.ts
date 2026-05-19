@@ -1,5 +1,5 @@
 import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utilities/create-service';
-import { uploadClusterObjectParts } from '@/modules/cluster-object/services/cluster-object-upload';
+import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Plugin } from '../entities/plugin/plugin';

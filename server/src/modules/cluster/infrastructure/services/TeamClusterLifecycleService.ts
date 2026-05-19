@@ -7,7 +7,6 @@ import TeamCluster, {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@modules/cluster/domain/entities/TeamCluster';
-import FirstTeamClusterConnectedEvent from '@modules/cluster/domain/events/FirstTeamClusterConnectedEvent';
 import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import {
@@ -16,12 +15,9 @@ import {
 } from '@modules/cluster/utilities/teamClusterMetricsSocket';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
 const BYTES_PER_GB = 1024 ** 3;
 const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
@@ -131,8 +127,6 @@ export default class TeamClusterLifecycleService {
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
         private readonly teamClusterRepository: TeamClusterRepository,
         private readonly socketEmitter: SocketIOEmitter,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ){}
 
@@ -191,8 +185,6 @@ export default class TeamClusterLifecycleService {
         metrics?: TeamClusterHeartbeatMetricsDTO
     ): Promise<TeamClusterDTO> {
         const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
-        const isFirstTeamConnection = teamCluster.props.lastHeartbeatAt === null
-            && !(await this.teamClusterRepository.hasTeamEverConnected(teamCluster.props.team));
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: teamCluster.props.status,
             installedVersion,
@@ -204,13 +196,6 @@ export default class TeamClusterLifecycleService {
             },
             logContext: 'heartbeat'
         });
-
-        if (isFirstTeamConnection) {
-            await this.eventBus.publish(new FirstTeamClusterConnectedEvent({
-                teamId: updatedTeamCluster.props.team,
-                teamClusterId: updatedTeamCluster.id
-            }));
-        }
 
         if (metrics) {
             const systemMetrics = this.toSystemMetrics(updatedTeamCluster.id, metrics);
