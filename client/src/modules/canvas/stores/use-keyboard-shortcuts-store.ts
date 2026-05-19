@@ -18,17 +18,13 @@ interface ShortcutTriggered {
 
 interface KeyboardShortcutsState {
     shortcuts: Map<string, Shortcut>;
-    showPanel: boolean;
     currentScope: ShortcutScope;
     lastTriggered: ShortcutTriggered | null;
 }
 
 interface KeyboardShortcutsActions {
-    togglePanel: () => void;
-    setShowPanel: (value: boolean) => void;
     setCurrentScope: (scope: ShortcutScope) => void;
     setLastTriggered: (trigger: ShortcutTriggered | null) => void;
-    getShortcutsByCategory: () => Record<string, Shortcut[]>;
     reset: () => void;
 }
 
@@ -50,7 +46,6 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },
     { id: 'undo', description: 'Undo', keys: ['ctrl', 'z'], scope: 'canvas', category: 'general' },
     { id: 'redo', description: 'Redo', keys: ['ctrl', 'shift', 'z'], scope: 'canvas', category: 'general' },
-    { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['?'], scope: 'global', category: 'general' },
     { id: 'command-palette', description: 'Open command palette', keys: ['ctrl', 'k'], scope: 'global', category: 'general' },
     { id: 'screenshot', description: 'Screenshot', keys: ['ctrl', 's'], scope: 'canvas', category: 'general' },
     { id: 'escape', description: 'Close panels', keys: ['escape'], scope: 'global', category: 'general' }
@@ -60,28 +55,14 @@ const DEFAULT_SHORTCUTS_MAP = new Map(DEFAULT_SHORTCUTS.map((shortcut) => [short
 
 const createInitialState = (): KeyboardShortcutsState => ({
     shortcuts: new Map(DEFAULT_SHORTCUTS_MAP),
-    showPanel: false,
     currentScope: 'global',
     lastTriggered: null
 });
 
-const groupShortcuts = (shortcuts: Map<string, Shortcut>) => {
-    const groups: Record<string, Shortcut[]> = {};
-    shortcuts.forEach((shortcut) => {
-        const category = shortcut.category ?? 'general';
-        if (!groups[category]) groups[category] = [];
-        groups[category].push(shortcut);
-    });
-    return groups;
-};
-
-export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & KeyboardShortcutsActions>((set, get) => ({
+export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & KeyboardShortcutsActions>((set) => ({
     ...createInitialState(),
 
-    togglePanel: () => set((state) => ({ showPanel: !state.showPanel })),
-    setShowPanel: (value) => set({ showPanel: value }),
     setCurrentScope: (scope) => set({ currentScope: scope }),
     setLastTriggered: (trigger) => set({ lastTriggered: trigger }),
-    getShortcutsByCategory: () => groupShortcuts(get().shortcuts),
     reset: () => set(createInitialState())
 }));
