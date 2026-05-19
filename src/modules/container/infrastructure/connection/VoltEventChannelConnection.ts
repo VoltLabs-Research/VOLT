@@ -99,6 +99,10 @@ export class VoltEventChannelConnection {
 
     emitMessage(message: EventTransportMessage): void {
         if (!this.channelClient || !this.registered) {
+            if (this.isStreamTransportedServerEventMessage(message)) {
+                this.emitBufferedMessage(message);
+                return;
+            }
             logger.warn(`Daemon event channel is not connected; dropping event type=${message.type}`);
             return;
         }
@@ -106,6 +110,10 @@ export class VoltEventChannelConnection {
         try {
             this.emitEventMessage(message);
         } catch (err) {
+            if (this.isStreamTransportedServerEventMessage(message)) {
+                this.emitBufferedMessage(message);
+                return;
+            }
             logger.warn(`Failed to emit event to VoltCloud: ${err instanceof Error ? err.message : String(err)}`);
         }
     }

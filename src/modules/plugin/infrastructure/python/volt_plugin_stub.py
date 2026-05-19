@@ -259,19 +259,22 @@ def _mirror_subprocess_output_to_stderr():
     original_run = subprocess.run
 
     def _mirrored_run(*popenargs, **kwargs):
-        if kwargs.get("capture_output"):
-            return original_run(*popenargs, **kwargs)
-
+        capture_output = bool(kwargs.get("capture_output"))
         stdout_target = kwargs.get("stdout")
         stderr_target = kwargs.get("stderr")
 
-        capture_stdout = stdout_target is None or stdout_target is subprocess.DEVNULL
-        capture_stderr = stderr_target is None or stderr_target is subprocess.DEVNULL
+        requested_stdout_pipe = stdout_target is subprocess.PIPE
+        requested_stderr_pipe = stderr_target is subprocess.PIPE
 
-        if not capture_stdout and not capture_stderr:
+        capture_stdout = capture_output or stdout_target is None or stdout_target is subprocess.DEVNULL or requested_stdout_pipe
+        capture_stderr = capture_output or stderr_target is None or stderr_target is subprocess.DEVNULL or requested_stderr_pipe
+
+        if not capture_stdout and not capture_stderr and not capture_output:
             return original_run(*popenargs, **kwargs)
 
         patched_kwargs = dict(kwargs)
+        if capture_output:
+            patched_kwargs.pop("capture_output", None)
         if capture_stdout:
             patched_kwargs["stdout"] = subprocess.PIPE
         if capture_stderr:
@@ -281,10 +284,12 @@ def _mirror_subprocess_output_to_stderr():
 
         if capture_stdout:
             _emit_captured_process_output(completed.stdout)
-            completed.stdout = None
+            if not (capture_output or requested_stdout_pipe):
+                completed.stdout = None
         if capture_stderr:
             _emit_captured_process_output(completed.stderr)
-            completed.stderr = None
+            if not (capture_output or requested_stderr_pipe):
+                completed.stderr = None
 
         return completed
 
