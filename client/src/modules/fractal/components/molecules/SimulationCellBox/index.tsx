@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/api/entities/model';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
+import useMedia from '@/shared/presentation/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -44,6 +45,9 @@ type DragAxisLock = 'x' | 'y' | 'z';
 const FLOOR_AXIS_LOCK: DragAxisLock = 'z';
 
 const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;
+const DOUBLE_TAP_MAX_DELAY_MS = 320;
+const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
+const TOUCH_DRAG_ARM_TIMEOUT_MS = 800;
 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     sceneKey,
@@ -75,6 +79,12 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
     const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
     const axisLockRef = useRef<DragAxisLock>(FLOOR_AXIS_LOCK);
+    const isMobileViewport = useMedia('(max-width: 768px)');
+    const lastPointerTypeRef = useRef<string | null>(null);
+    const lastTouchTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
+    const touchDragArmedRef = useRef(false);
+    const suppressCurrentTouchDragRef = useRef(false);
+    const touchDragArmTimerRef = useRef<number | null>(null);
     axisLockRef.current = axisLock;
 
     // Pick the vertical drag plane (XZ or YZ) whose normal points most at the
@@ -110,6 +120,59 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     useEffect(() => {
         return subscribeToAppTheme(setTheme);
     }, []);
+
+    const clearTouchDragArmTimer = useCallback(() => {
+        if (touchDragArmTimerRef.current !== null) {
+            window.clearTimeout(touchDragArmTimerRef.current);
+            touchDragArmTimerRef.current = null;
+        }
+    }, []);
+
+    const disarmTouchDrag = useCallback(() => {
+        touchDragArmedRef.current = false;
+        clearTouchDragArmTimer();
+    }, [clearTouchDragArmTimer]);
+
+    const armTouchDrag = useCallback(() => {
+        touchDragArmedRef.current = true;
+        clearTouchDragArmTimer();
+        touchDragArmTimerRef.current = window.setTimeout(() => {
+            touchDragArmedRef.current = false;
+            touchDragArmTimerRef.current = null;
+        }, TOUCH_DRAG_ARM_TIMEOUT_MS);
+    }, [clearTouchDragArmTimer]);
+
+    useEffect(() => {
+        return () => clearTouchDragArmTimer();
+    }, [clearTouchDragArmTimer]);
+
+    const handlePointerDownCapture = useCallback((event: ThreeEvent<PointerEvent>) => {
+        lastPointerTypeRef.current = event.pointerType;
+        if (!isMobileViewport || event.pointerType !== 'touch') {
+            return;
+        }
+
+        const now = Date.now();
+        const previousTap = lastTouchTapRef.current;
+        const isDoubleTap = Boolean(
+            previousTap &&
+            now - previousTap.time <= DOUBLE_TAP_MAX_DELAY_MS &&
+            Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <= DOUBLE_TAP_MAX_DISTANCE_PX
+        );
+
+        lastTouchTapRef.current = {
+            time: now,
+            x: event.clientX,
+            y: event.clientY
+        };
+
+        if (isDoubleTap) {
+            armTouchDrag();
+            return;
+        }
+
+        disarmTouchDrag();
+    }, [armTouchDrag, disarmTouchDrag, isMobileViewport]);
 
     const simulationCellMaterial = useMemo(() => {
         if (theme === Theme.Light) {
@@ -244,6 +307,19 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             ]}
             onHover={onHoverChange}
             onDragStart={() => {
+                const isMobileTouchGesture = isMobileViewport && lastPointerTypeRef.current === 'touch';
+                if (isMobileTouchGesture && !touchDragArmedRef.current) {
+                    suppressCurrentTouchDragRef.current = true;
+                    if (orbitControlsRef?.current) {
+                        orbitControlsRef.current.enabled = true;
+                    }
+                    return;
+                }
+
+                suppressCurrentTouchDragRef.current = false;
+                if (isMobileTouchGesture) {
+                    disarmTouchDrag();
+                }
                 isDraggingRef.current = true;
                 dragStartPosRef.current.copy(currentDragPosRef.current);
                 onSelect?.(contentRef.current);
@@ -252,6 +328,10 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 }
             }}
             onDrag={(localMatrix: THREE.Matrix4) => {
+                if (suppressCurrentTouchDragRef.current) {
+                    return;
+                }
+
                 // Decompose into scratch vectors — zero allocations.
                 localMatrix.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
                 // In vertical mode DragControls drags on XZ or YZ; freeze the
@@ -288,6 +368,14 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 invalidate();
             }}
             onDragEnd={() => {
+                if (suppressCurrentTouchDragRef.current) {
+                    suppressCurrentTouchDragRef.current = false;
+                    if (orbitControlsRef?.current) {
+                        orbitControlsRef.current.enabled = true;
+                    }
+                    return;
+                }
+
                 isDraggingRef.current = false;
                 dragMatrixRef.current.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
                 currentDragPosRef.current.copy(_decomposePos);
@@ -305,6 +393,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         >
             <group
                 ref={contentRef}
+                onPointerDownCapture={handlePointerDownCapture}
                 onClick={(event: ThreeEvent<MouseEvent>) => {
                     if (isDraggingRef.current) {
                         return;

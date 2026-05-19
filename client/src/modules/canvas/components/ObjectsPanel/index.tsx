@@ -1,10 +1,9 @@
-import { isArtifactSceneActive, isSameScene, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
+import { isArtifactSceneActive, toSceneObjectFromArtifact } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
-import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../../utilities/plugin-exposure-export';
 import SceneCollection from '../SceneCollection';
 import {
     CanvasTreeEmptyRow,
@@ -25,7 +24,6 @@ import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSect
 import Stack from '@/shared/presentation/primitives/Stack';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -47,7 +45,6 @@ const TREE_MODIFIER_ICON_SIZE = 12;
 const TREE_MODIFIER_ICON_COLOR = 'var(--accent-blue)';
 const TIMESTEP_PAGE_SIZE = 50;
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
-const TOUR_SELECT_EXPOSURE_EVENT = 'canvas-analysis-tour:select-first-exposure';
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',
@@ -213,7 +210,6 @@ const ObjectsPanel = ({
 
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const { toneByAnalysisId } = useAnalysisActivityTone(statusMap);
-    const { pluginsById } = usePluginSelectors();
 
     const {
         isLoading: sceneArtifactsLoading,
@@ -245,7 +241,9 @@ const ObjectsPanel = ({
         setCurrentTimestep: s.setCurrentTimestep
     })));
 
-    const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
+    const handleToggleSimulationCell = useCallback(() => {
+        setShowSimulationCell(!showSimulationCell);
+    }, [setShowSimulationCell, showSimulationCell]);
 
     const syncArtifactTimestep = useCallback((artifact: SceneArtifact) => {
         setCurrentTimestep(artifact.timestep);
@@ -278,66 +276,13 @@ const ObjectsPanel = ({
         onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, section.analysis);
     }, [activeScene, expandedSections, getFirstTourSection, onRetryLoadExposures, onSelectScene, toggleSection]);
 
-    const selectFirstTourExposure = useCallback(() => {
-        const sections = [...sceneCollectionSections, ...selectedTimestepSections];
-        const section = sections.find((candidate) => candidate.isCurrentAnalysis) ?? getFirstTourSection();
-        if (!section) {
-            return;
-        }
-
-        if (!expandedSections.has(section.analysis._id)) {
-            toggleSection(section.analysis._id);
-        }
-
-        if (section.entry.state !== 'loaded') {
-            onRetryLoadExposures?.(section.analysis._id);
-            return;
-        }
-
-        const primaryExposureId = section.analysis.expectedArtifacts?.find((artifact) => artifact.isPrimary)?.exposureId;
-        const exposure = section.entry.exposures.find((candidate) => candidate.exposureId === primaryExposureId)
-            ?? section.entry.exposures[0];
-
-        if (!exposure) {
-            return;
-        }
-
-        const scene = buildPluginScene({
-            analysisId: exposure.analysisId,
-            exposureId: exposure.exposureId,
-            sceneRenderMetadata: resolveExposureSceneRenderMetadata({
-                exposureId: exposure.exposureId,
-                exposureExport: exposure.export,
-                plugin: pluginsById[section.pluginId]
-            })
-        });
-
-        if (isSameScene(activeScene, scene)) {
-            return;
-        }
-
-        onSelectScene(scene, section.analysis);
-    }, [
-        activeScene,
-        expandedSections,
-        getFirstTourSection,
-        onRetryLoadExposures,
-        onSelectScene,
-        pluginsById,
-        sceneCollectionSections,
-        selectedTimestepSections,
-        toggleSection
-    ]);
-
     useEffect(() => {
         window.addEventListener(TOUR_SELECT_ANALYSIS_EVENT, selectFirstTourAnalysis);
-        window.addEventListener(TOUR_SELECT_EXPOSURE_EVENT, selectFirstTourExposure);
 
         return () => {
             window.removeEventListener(TOUR_SELECT_ANALYSIS_EVENT, selectFirstTourAnalysis);
-            window.removeEventListener(TOUR_SELECT_EXPOSURE_EVENT, selectFirstTourExposure);
         };
-    }, [selectFirstTourAnalysis, selectFirstTourExposure]);
+    }, [selectFirstTourAnalysis]);
 
     useEffect(() => {
         setExpandedParticleFilterTimesteps((current) => pruneExpandedTimesteps(current, particleFilterTimesteps));
@@ -431,6 +376,7 @@ const ObjectsPanel = ({
     }, [
         activeRasterContainerId,
         handleSelectRasterScene,
+        handleToggleSimulationCell,
         onSetActiveRasterContainer,
         sceneCollectionSections,
         sceneCollectionTotalAnalyses,
