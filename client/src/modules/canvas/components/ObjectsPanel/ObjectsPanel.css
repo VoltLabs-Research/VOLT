@@ -151,21 +151,6 @@
     transition: color 180ms ease, text-shadow 180ms ease;
 }
 
-.canvas-tree-analysis-copy {
-    min-width: 0;
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.canvas-tree-analysis-description {
-    min-width: 0;
-    color: var(--color-text-muted);
-    font-size: 0.6875rem;
-    line-height: 1.25;
-}
-
 .canvas-tree-analysis-name--queued {
     color: var(--status-warning);
 }
