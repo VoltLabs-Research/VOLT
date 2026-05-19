@@ -6,7 +6,6 @@ import {
     getNearestTimestep,
     getSelectedTimestepsForAnalysis
 } from '../utilities/selected-timestep-analysis';
-import { buildAnalysisConfigDiffSummaryByAnalysisId } from '../utilities/analysis-config-diff-summary';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState from './use-canvas-url-state';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../utilities/plugin-exposure-export';
@@ -46,7 +45,6 @@ export interface AnalysisSectionData {
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
     userConfig: Record<string, unknown>;
-    configDiffSummary?: string;
 }
 
 interface UseCanvasSidebarSceneProps {
@@ -468,8 +466,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (resolvedAnalyses.length === 0) return [];
 
-        const configDiffSummaryByAnalysisId = buildAnalysisConfigDiffSummaryByAnalysisId(resolvedAnalyses);
-
         return resolvedAnalyses.map((analysis: Analysis) => {
             const entry = exposureEntries.get(analysis._id) ?? DEFAULT_ENTRY;
 
@@ -479,8 +475,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 pluginDisplayName: analysis.pluginDisplayName,
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
-                userConfig: analysis.config,
-                configDiffSummary: configDiffSummaryByAnalysisId.get(analysis._id)
+                userConfig: analysis.config
             };
         });
     }, [resolvedAnalyses, exposureEntries, analysisConfigId]);
