@@ -48,6 +48,7 @@ import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Result } from '@shared/domain/port/Result';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { z } from 'zod/v4';
 
 interface SubscribeToTeamClusterSocketPayload {
@@ -60,6 +61,10 @@ interface ClusterMetricsHistorySocketPayload {
 }
 
 const MAX_CLUSTER_METRICS_HISTORY_MINUTES = 60;
+const TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS',
+    60_000
+);
 
 const subscribeToTeamClusterSocketPayloadSchema = z.object({
     teamClusterIds: z.array(z.string().trim().min(1))
@@ -138,6 +143,7 @@ const daemonSceneArtifactUpsertBatchStreamPayloadSchema = z.object({
 export default class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
+    private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
     constructor(
         emitter: SocketIOEmitter,
@@ -168,6 +174,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         for (const unsubscribe of this.daemonStreamUnsubscribeFns.splice(0)) {
             unsubscribe();
         }
+        for (const timer of this.pendingDaemonDisconnectTimers.values()) {
+            clearTimeout(timer);
+        }
+        this.pendingDaemonDisconnectTimers.clear();
         this.teamClusterHeartbeatMonitor.stop();
     }
 
@@ -292,6 +302,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                     channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
                     || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
                 ) {
+                    this.clearPendingDaemonDisconnect(parsed.data.teamClusterId);
                     await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
                 }
 
@@ -330,20 +341,8 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         this.onDisconnect(connection.id, async (conn) => {
             delete conn.data.teamClusterIds;
             const registration = this.teamClusterReverseChannelService.unregisterDaemonConnection(connection.id);
-            const shouldMarkDisconnected = registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
-                || (
-                    registration?.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
-                    && !this.teamClusterReverseChannelService.hasDaemonConnection(
-                        registration.teamClusterId,
-                        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
-                    )
-                );
-            if (registration && shouldMarkDisconnected) {
-                try {
-                    await this.teamClusterLifecycleService.markDaemonDisconnected(registration.teamClusterId);
-                } catch {
-                    logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${registration.teamClusterId}`);
-                }
+            if (registration && this.isLifecycleSocketChannel(registration.channel)) {
+                this.scheduleDaemonDisconnect(registration.teamClusterId, registration.channel);
             }
         });
     }
@@ -589,6 +588,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         }
 
         if (payload.type === 'runtime-heartbeat') {
+            this.clearPendingDaemonDisconnect(payload.teamClusterId);
             const result = await this.recordTeamClusterHeartbeatUseCase.execute(payload as never);
             if (!result.success) {
                 logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${result.error.statusCode} message=${result.error.message}`);
@@ -598,6 +598,68 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         }
 
         return false;
+    }
+
+    private isLifecycleSocketChannel(channel: string): boolean {
+        return channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+            || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat;
+    }
+
+    private hasLifecycleSocketConnection(teamClusterId: string): boolean {
+        return this.teamClusterReverseChannelService.hasDaemonConnection(
+            teamClusterId,
+            TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
+        ) || this.teamClusterReverseChannelService.hasDaemonConnection(
+            teamClusterId,
+            TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
+        );
+    }
+
+    private clearPendingDaemonDisconnect(teamClusterId: string): void {
+        const timer = this.pendingDaemonDisconnectTimers.get(teamClusterId);
+        if (!timer) {
+            return;
+        }
+
+        clearTimeout(timer);
+        this.pendingDaemonDisconnectTimers.delete(teamClusterId);
+    }
+
+    private scheduleDaemonDisconnect(teamClusterId: string, channel: string): void {
+        if (this.hasLifecycleSocketConnection(teamClusterId)) {
+            this.clearPendingDaemonDisconnect(teamClusterId);
+            return;
+        }
+
+        this.clearPendingDaemonDisconnect(teamClusterId);
+
+        if (TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS <= 0) {
+            void this.finalizeDaemonDisconnect(teamClusterId);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            this.pendingDaemonDisconnectTimers.delete(teamClusterId);
+            void this.finalizeDaemonDisconnect(teamClusterId);
+        }, TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS);
+        timer.unref();
+        this.pendingDaemonDisconnectTimers.set(teamClusterId, timer);
+
+        logger.warn(
+            `Scheduling team cluster disconnect after daemon ${channel} socket close teamClusterId=${teamClusterId} graceMs=${TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS}`
+        );
+    }
+
+    private async finalizeDaemonDisconnect(teamClusterId: string): Promise<void> {
+        if (this.hasLifecycleSocketConnection(teamClusterId)) {
+            return;
+        }
+
+        try {
+            await this.teamClusterLifecycleService.markDaemonDisconnected(teamClusterId);
+        } catch {
+            logger.warn(`Failed to mark team cluster disconnected after daemon socket close teamClusterId=${teamClusterId}`);
+        }
     }
 
     private emitUseCaseResult<T>(socketId: string, requestId: string, result: Result<T, ApplicationError>): void {
