@@ -141,7 +141,7 @@ const DiscoverTeamEmailPrompt = ({
                     <div className='discover-team-email-prompt__links'>
                         <a
                             className='discover-team-email-prompt__link'
-                            href='      '
+                            href='https://github.com/voltlabs-research'
                             target='_blank'
                             rel='noopener noreferrer'
                         >

@@ -2,7 +2,10 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import { resolveAnalysisStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import {
+    resolveAnalysisComputeClusterId,
+    resolveAnalysisStorageClusterId
+} from '@modules/cluster/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';
@@ -53,6 +56,8 @@ export default class DeleteAnalysisByIdUseCase {
             pluginId: analysis.props.plugin ?? '',
             teamId: analysis.props.team ?? '',
             teamClusterId: resolveAnalysisStorageClusterId(analysis.props),
+            storageClusterId: resolveAnalysisStorageClusterId(analysis.props),
+            computeClusterId: resolveAnalysisComputeClusterId(analysis.props),
             userId: input.userId ?? '',
             pluginDisplayName: analysis.props.pluginDisplayName
         }));

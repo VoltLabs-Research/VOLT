@@ -126,11 +126,11 @@ export default class TeamJobProjectionService {
         private readonly redis: IORedis
     ) {}
 
-    async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot> {
+    async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         return this.upsertProjectedSnapshot(payload);
     }
 
-    private async upsertProjectedSnapshot(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot> {
+    private async upsertProjectedSnapshot(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
             jobId,
             teamId,
@@ -202,7 +202,7 @@ export default class TeamJobProjectionService {
             ) as [number, string] | null;
 
             if (Array.isArray(result) && result[0] === -1) {
-                return nextSnapshot;
+                return null;
             }
 
             if (Array.isArray(result) && result[0] === 1) {
