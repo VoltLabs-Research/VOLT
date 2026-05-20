@@ -48,7 +48,7 @@
           },
           "linux-x86_64": {
             "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "e3e4ac3e9d08b46889b1a6f64caba53710e792c1b044414c227eaa89f496d596"
+            "sha256": "dfc7de1e80a7b3880291ee0d0656bbd7be369ceaf53955459bc46baeccb7e3c4"
           },
           "windows-x86_64": {
             "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-windows-x86_64.tar.zst",

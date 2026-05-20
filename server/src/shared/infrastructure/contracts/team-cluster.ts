@@ -24,6 +24,7 @@ export const TEAM_CLUSTER_DAEMON_EVENT = Object.freeze({
 
 export const ChannelCommands = Object.freeze({
     AnalysisStart: 'analysis.start',
+    AnalysisCleanupRuntimeState: 'analysis.cleanup-runtime-state',
 
     ContainerList: 'container.list',
     ContainerCreate: 'container.create',
@@ -73,6 +74,7 @@ export const ChannelCommands = Object.freeze({
     TrajectoryClone: 'trajectory.clone',
     TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
+    TrajectoryCleanupRuntimeState: 'trajectory.cleanup-runtime-state',
     TrajectoryParquetIngest: 'trajectory.parquet.ingest',
     TrajectoryNativePreprocess: 'trajectory.native.preprocess',
     TrajectoryNativeMetadata: 'trajectory.native.metadata',

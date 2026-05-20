@@ -37,7 +37,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const queryClient = useQueryClient();
     const currentTeamId = useSelectedTeamId();
     const socketService = useSocket();
-    const latestObservedRevisionRef = useRef(0);
     const trajectoryInvalidationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const jobsLoadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     const pendingJobUpdatesRef = useRef<Job[]>([]);
@@ -45,9 +44,11 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
+    const latestAppliedRevision = useTeamJobsStore((state) => state.latestAppliedRevision);
     const setConnected = useTeamJobsStore((state) => state.setConnected);
     const setLoading = useTeamJobsStore((state) => state.setLoading);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
+    const setLatestAppliedRevision = useTeamJobsStore((state) => state.setLatestAppliedRevision);
     const setRequestedRasterTrajectoryIds = useTeamJobsStore((state) => state.setRequestedRasterTrajectoryIds);
     const reset = useTeamJobsStore((state) => state.reset);
 
@@ -82,17 +83,24 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         clearJobsLoadingTimeout();
 
         if (typeof revision === 'number') {
-            latestObservedRevisionRef.current = Math.max(latestObservedRevisionRef.current, revision);
+            setLatestAppliedRevision(revision);
         }
 
         setGroups(incomingGroups);
         setLoading(false);
-    }, [clearJobsLoadingTimeout, setGroups, setLoading]);
+    }, [clearJobsLoadingTimeout, setGroups, setLatestAppliedRevision, setLoading]);
 
     const flushPendingJobUpdates = useCallback(() => {
         jobUpdateFlushTimerRef.current = undefined;
 
-        const queued = pendingJobUpdatesRef.current;
+        const appliedRevision = useTeamJobsStore.getState().latestAppliedRevision;
+        const queued = pendingJobUpdatesRef.current.filter((event) => {
+            if (typeof event.revision !== 'number') {
+                return true;
+            }
+
+            return event.revision > appliedRevision;
+        });
         if (queued.length === 0) return;
         pendingJobUpdatesRef.current = [];
 
@@ -128,6 +136,18 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             return groups;
         }, queryClient);
 
+        const maxAppliedRevision = queued.reduce((highestRevision, event) => {
+            if (typeof event.revision !== 'number') {
+                return highestRevision;
+            }
+
+            return Math.max(highestRevision, event.revision);
+        }, appliedRevision);
+
+        if (maxAppliedRevision > appliedRevision) {
+            setLatestAppliedRevision(maxAppliedRevision);
+        }
+
         for (const trajectoryId of rasterCompletedTrajectoryIds) {
             queryClient.invalidateQueries({
                 queryKey: TRAJECTORY_QUERY_KEYS.preview({ trajectoryId }),
@@ -142,19 +162,15 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
                 queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
             }, 500);
         }
-    }, [queryClient, setRequestedRasterTrajectoryIds]);
+    }, [queryClient, setLatestAppliedRevision, setRequestedRasterTrajectoryIds]);
 
     const handleJobUpdate = useCallback((event: Job) => {
         if (!event.trajectoryId) return;
         if (currentTeamId && typeof event.teamId === 'string' && event.teamId !== currentTeamId) {
             return;
         }
-        if (typeof event.revision === 'number' && event.revision < latestObservedRevisionRef.current) {
+        if (typeof event.revision === 'number' && event.revision <= latestAppliedRevision) {
             return;
-        }
-
-        if (typeof event.revision === 'number') {
-            latestObservedRevisionRef.current = Math.max(latestObservedRevisionRef.current, event.revision);
         }
 
         pendingJobUpdatesRef.current.push(event);
@@ -162,17 +178,17 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         if (jobUpdateFlushTimerRef.current === undefined) {
             jobUpdateFlushTimerRef.current = setTimeout(flushPendingJobUpdates, TEAM_JOBS_UPDATE_FLUSH_INTERVAL_MS);
         }
-    }, [currentTeamId, flushPendingJobUpdates]);
+    }, [currentTeamId, flushPendingJobUpdates, latestAppliedRevision]);
 
     const handleInitialJobsEvent = useCallback((payload: TeamJobsEventPayload) => {
-        if (payload.revision < latestObservedRevisionRef.current) {
+        if (payload.revision < latestAppliedRevision) {
             clearJobsLoadingTimeout();
             setLoading(false);
             return;
         }
 
         handleTeamJobs(payload.groups, payload.revision);
-    }, [clearJobsLoadingTimeout, handleTeamJobs, setLoading]);
+    }, [clearJobsLoadingTimeout, handleTeamJobs, latestAppliedRevision, setLoading]);
 
     const handleJobUpdateEvent = useCallback((payload: Job) => {
         handleJobUpdate(payload);
@@ -186,11 +202,11 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         }
 
         setCurrentTeamId(teamId);
-        latestObservedRevisionRef.current = 0;
+        setLatestAppliedRevision(0);
         setGroups([]);
         setLoading(true);
         startJobsLoadingTimeout();
-    }, [setCurrentTeamId, setGroups, setLoading, startJobsLoadingTimeout]);
+    }, [setCurrentTeamId, setGroups, setLatestAppliedRevision, setLoading, startJobsLoadingTimeout]);
 
     const clearTeamJobs = useCallback(() => {
         clearJobsLoadingTimeout();
@@ -199,13 +215,33 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             jobUpdateFlushTimerRef.current = undefined;
         }
         pendingJobUpdatesRef.current = [];
-        latestObservedRevisionRef.current = 0;
         resetTeamJobsGroupsQueryData(queryClient);
         reset();
     }, [clearJobsLoadingTimeout, queryClient, reset]);
 
     useSocketEvent<TeamJobsEventPayload>(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent, { enabled: subscribe });
     useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdateEvent, { enabled: subscribe });
+
+    useEffect(() => {
+        const remainingPendingUpdates = pendingJobUpdatesRef.current.filter((event) => {
+            if (typeof event.revision !== 'number') {
+                return true;
+            }
+
+            return event.revision > latestAppliedRevision;
+        });
+
+        if (remainingPendingUpdates.length === pendingJobUpdatesRef.current.length) {
+            return;
+        }
+
+        pendingJobUpdatesRef.current = remainingPendingUpdates;
+
+        if (remainingPendingUpdates.length === 0 && jobUpdateFlushTimerRef.current !== undefined) {
+            clearTimeout(jobUpdateFlushTimerRef.current);
+            jobUpdateFlushTimerRef.current = undefined;
+        }
+    }, [latestAppliedRevision]);
 
     useEffect(() => {
         if (!subscribe) {

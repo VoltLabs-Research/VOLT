@@ -6,6 +6,8 @@ export interface TrajectoryDeletedEventPayload {
     storageClusterId?: string;
     userId: string;
     trajectoryName: string;
+    analysisIds?: string[];
+    analysisComputeClusterIds?: string[];
 }
 
 export default class TrajectoryDeletedEvent extends BaseDomainEvent<TrajectoryDeletedEventPayload> {

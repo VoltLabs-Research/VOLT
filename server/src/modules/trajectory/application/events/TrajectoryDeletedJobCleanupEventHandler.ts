@@ -17,11 +17,11 @@ export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHa
         }
 
         try {
-            await this.teamJobMaintenanceService.removeJobsForTrajectory(teamId, trajectoryId);
+            await this.teamJobMaintenanceService.cleanupDeletedTrajectory(event.payload);
         } catch (error) {
             logger.warn(
                 error,
-                `[TrajectoryDeletedJobCleanupEventHandler] Failed to cancel running jobs for trajectory ${trajectoryId}`
+                `[TrajectoryDeletedJobCleanupEventHandler] Failed to purge runtime state for trajectory ${trajectoryId}`
             );
         }
     }

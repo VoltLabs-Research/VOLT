@@ -19,6 +19,14 @@ const useJobGroupActions = (trajectoryId: string) => {
             {
                 loading: { title: 'Removing queued and running jobs...' },
                 success: (data) => {
+                    if (data.clusterFailures.length > 0) {
+                        if (data.deletedJobs === 0) {
+                            return { title: 'No jobs removed; some clusters did not confirm the request' };
+                        }
+
+                        return { title: `Removed ${data.deletedJobs} job(s); some clusters did not fully confirm` };
+                    }
+
                     if (data.deletedJobs === 0) {
                         return { title: 'No queued or running jobs found' };
                     }
