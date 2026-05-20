@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -24,7 +25,7 @@ interface DeleteTrajectoryByIdOutput {
 @injectable()
 export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTrajectoryByIdInput, DeleteTrajectoryByIdOutput, ApplicationError> {
     constructor(
-        
+        private readonly analysisRepository: AnalysisRepository,
         private readonly repository: TrajectoryRepository,
 
         @inject(SHARED_TOKENS.EventBus)
@@ -40,6 +41,7 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
             ));
         }
 
+        const analysisRuntimeTargets = await this.analysisRepository.findRuntimeTargetsByTrajectoryId(input.trajectoryId);
         const deleted = await this.repository.deleteById(input.trajectoryId);
         if (!deleted) {
             return Result.fail(ApplicationError.notFound(
@@ -53,7 +55,15 @@ export default class DeleteTrajectoryByIdUseCase implements IUseCase<DeleteTraje
             teamId: input.teamId ?? trajectory.props.team ?? '',
             storageClusterId: resolveTrajectoryStorageClusterId(trajectory.props),
             userId: input.userId ?? '',
-            trajectoryName: trajectory.props.name
+            trajectoryName: trajectory.props.name,
+            analysisIds: analysisRuntimeTargets.map((target) => target.analysisId),
+            analysisComputeClusterIds: [
+                ...new Set(
+                    analysisRuntimeTargets
+                        .map((target) => target.computeClusterId)
+                        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+                )
+            ]
         }));
 
         return Result.ok({ success: true });

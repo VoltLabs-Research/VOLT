@@ -15,12 +15,16 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
         const { jobId } = event.payload;
-        let snapshot: TeamJobSnapshot;
+        let snapshot: TeamJobSnapshot | null;
 
         try {
             snapshot = await this.teamJobProjectionService.upsertFromStatusChangedEvent(event.payload);
         } catch (error) {
             logger.warn(error, `[ProjectTeamJobStatusChangedEventHandler] Failed to persist projected job snapshot ${jobId}`);
+            return;
+        }
+
+        if (!snapshot) {
             return;
         }
 

@@ -4,6 +4,7 @@ import { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
 import service from '../api/service';
 import { createSocketQuery, withSuccess } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
+import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { useMutation } from '@tanstack/react-query';
 import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
 import type {
@@ -18,12 +19,6 @@ import type { QueryClient } from '@tanstack/react-query';
 export interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
 };
-
-const REMOVABLE_STATUSES = new Set<JobStatus>([
-    JobStatus.Queued,
-    JobStatus.Running,
-    JobStatus.Retrying
-]);
 
 const getActiveQueryClient = (client?: QueryClient): QueryClient => client ?? queryClient;
 
@@ -132,15 +127,6 @@ const mapTrajectoryGroups = (
         .filter((group): group is TrajectoryJobGroup => group !== null);
 };
 
-const dropRemovableJobsInTrajectory = (
-    groups: TrajectoryJobGroup[],
-    trajectoryId: string
-): TrajectoryJobGroup[] => {
-    return mapTrajectoryGroups(groups, trajectoryId, (jobs) =>
-        jobs.filter((job) => !REMOVABLE_STATUSES.has(job.status))
-    );
-};
-
 const markFailedJobsForRetryInTrajectory = (
     groups: TrajectoryJobGroup[],
     trajectoryId: string
@@ -193,11 +179,14 @@ const useOptimisticTrajectoryMutation = <TData, TVariables extends { trajectoryI
 export const useRemoveRunningJobsMutation = (
     options?: MutationOptions<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>
 ) => {
-    return useOptimisticTrajectoryMutation<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>({
+    return useMutation<RemoveRunningJobsOutputDTO, Error, RemoveRunningJobsParams>({
+        ...options,
         mutationFn: (params) => service.removeRunningJobs(params),
-        applyOptimisticUpdate: dropRemovableJobsInTrajectory,
-        shouldRollbackOnSuccess: (result) => result.deletedJobs === 0 && result.deletedAnalyses === 0
-    }, options);
+        onSuccess: withSuccess<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>((result) => {
+            setTeamJobsGroupsQueryData(result.groups);
+            useTeamJobsStore.getState().setLatestAppliedRevision(result.revision);
+        }, options)
+    });
 };
 
 export const useRetryFailedJobsMutation = (

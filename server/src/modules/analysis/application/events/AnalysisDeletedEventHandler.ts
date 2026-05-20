@@ -10,6 +10,7 @@ import type IORedis from 'ioredis';
 import { inject } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
+const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
@@ -25,12 +26,10 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         const { analysisId, teamId } = event.payload;
         const query = { analysis: analysisId };
 
-        if (teamId) {
-            try {
-                await this.teamJobMaintenanceService.removeJobsForAnalysis(teamId, analysisId);
-            } catch (error) {
-                logger.warn(error, `[AnalysisDeletedEventHandler] Failed to cancel running jobs for analysis ${analysisId}`);
-            }
+        try {
+            await this.teamJobMaintenanceService.cleanupDeletedAnalysis(event.payload);
+        } catch (error) {
+            logger.warn(error, `[AnalysisDeletedEventHandler] Failed to purge running jobs for analysis ${analysisId}`);
         }
 
         try {
@@ -49,13 +48,20 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     }
 
     private async removeProjectedJobHistory(analysisId: string, teamId: string): Promise<void> {
-        const jobIds = await this.redis.smembers(this.projectedAnalysisJobsKey(analysisId));
+        const [jobIds, terminalKeys] = await Promise.all([
+            this.redis.smembers(this.projectedAnalysisJobsKey(analysisId)),
+            this.redis.smembers(this.analysisTerminalReceiptSetKey(analysisId))
+        ]);
         const pipeline = this.redis.pipeline();
 
         pipeline.del(this.projectedAnalysisJobsKey(analysisId));
+        pipeline.del(this.analysisRemainingKey(analysisId));
+        pipeline.del(this.analysisFailedKey(analysisId));
+        pipeline.del(this.analysisTerminalReceiptSetKey(analysisId));
 
         for (const jobId of jobIds) {
             pipeline.del(this.jobStatusKey(jobId));
+            pipeline.del(this.jobTombstoneKey(jobId));
 
             if (!teamId) {
                 continue;
@@ -68,11 +74,19 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
             pipeline.incr(this.projectedTeamJobsRevisionKey(teamId));
         }
 
+        for (const terminalKey of terminalKeys) {
+            pipeline.del(terminalKey);
+        }
+
         await pipeline.exec();
     }
 
     private jobStatusKey(jobId: string): string {
         return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
+    }
+
+    private jobTombstoneKey(jobId: string): string {
+        return `${JOB_TOMBSTONE_KEY_PREFIX}${jobId}`;
     }
 
     private projectedTeamJobsKey(teamId: string): string {
@@ -85,5 +99,17 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
 
     private projectedAnalysisJobsKey(analysisId: string): string {
         return `analysis:${analysisId}:projected-jobs`;
+    }
+
+    private analysisRemainingKey(analysisId: string): string {
+        return `daemon-analysis:${analysisId}:remaining`;
+    }
+
+    private analysisFailedKey(analysisId: string): string {
+        return `daemon-analysis:${analysisId}:failed`;
+    }
+
+    private analysisTerminalReceiptSetKey(analysisId: string): string {
+        return `daemon-analysis:${analysisId}:terminal-keys`;
     }
 }

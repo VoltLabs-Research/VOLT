@@ -14,6 +14,11 @@ interface CompletedFramesAggregationItem {
     count: number;
 }
 
+export interface AnalysisRuntimeTarget {
+    analysisId: string;
+    computeClusterId?: string;
+}
+
 interface CompletedFramesGroupStage {
     $group: {
         _id: unknown;
@@ -35,6 +40,18 @@ interface CompletedFramesMatchStage {
 export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {
+
+    async findRuntimeTargetsByTrajectoryId(trajectoryId: string): Promise<AnalysisRuntimeTarget[]> {
+        const docs = await this.model.find({ trajectory: trajectoryId })
+            .select('_id computeClusterId')
+            .lean()
+            .exec() as Array<{ _id: mongoose.Types.ObjectId | string; computeClusterId?: string | null }>;
+
+        return docs.map((doc) => ({
+            analysisId: String(doc._id),
+            computeClusterId: doc.computeClusterId || undefined
+        }));
+    }
 
     async getCompletedFramesByCluster(): Promise<Record<string, number>> {
         const pipeline: Array<CompletedFramesMatchStage | CompletedFramesGroupStage> = [
