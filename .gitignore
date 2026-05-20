@@ -6,3 +6,6 @@ build
 python3/voltsdk/native
 python3/voltsdk/dist
 python3/voltsdk/build
+__pycache__/
+*.py[cod]
+python3/examples/output/

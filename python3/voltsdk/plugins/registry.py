@@ -208,7 +208,7 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _is_absolute(url: str) -> bool:
-    return urllib.parse.urlparse(url).scheme in {"http", "https"}
+    return urllib.parse.urlparse(url).scheme in {"http", "https", "file"}
 
 
 def _sha256(path: Path) -> str:
