@@ -8,6 +8,22 @@ Python SDK for the Volt scientific computing platform.
 pip install voltsdk
 ```
 
+`pip` will select the platform wheel that matches the host operating system and
+architecture. VoltSDK wheels bundle the native Volt runtime under
+`voltsdk/native/{bin,lib,share}`, so users do not need to install the shipped
+TBB, hwloc, and related shared libraries manually for the bundled binaries.
+
+Supported wheel targets published by CI:
+
+- `linux_x86_64` built on `ubuntu-24.04`
+- `macosx_13_0_x86_64`
+- `macosx_14_0_arm64`
+- `win_amd64`
+
+Linux wheels target the Ubuntu 24.04 build baseline. Older glibc releases are
+not supported; document that requirement in downstream READMEs when you ship
+Linux-native workflows.
+
 Optional extras:
 
 ```bash
@@ -48,6 +64,10 @@ print(result.artifact("annotatedDump"))
 ```
 
 The same hub is exposed on an authenticated client via `client.plugins`.
+
+When a plugin subprocess is launched, VoltSDK also prepends its bundled native
+runtime directories to `PATH`, `LD_LIBRARY_PATH`, and `DYLD_LIBRARY_PATH`. This
+lets downloaded plugin bundles reuse the libraries installed with the wheel.
 
 ### Configuration
 

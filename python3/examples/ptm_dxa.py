@@ -1,3 +1,4 @@
+import os
 import json
 from pathlib import Path
 
@@ -6,7 +7,59 @@ import pandas as pd
 
 from voltsdk import PluginHub
 
-hub = PluginHub()
+EXAMPLES_DIR = Path(__file__).resolve().parent
+REPO_ROOT = EXAMPLES_DIR.parents[2]
+REGISTRY_DIR = EXAMPLES_DIR / "output" / "_plugin_registry"
+CACHE_DIR = EXAMPLES_DIR / "output" / "_plugin_cache"
+PTM_PLUGIN_BUNDLE = Path(
+    os.environ.get(
+        "VOLT_PTM_PLUGIN_BUNDLE",
+        REPO_ROOT / "voltlabs-ecosystem" / "plugins" / "_dist" / "PolyhedralTemplateMatching" / "polyhedral-template-matching-plugin.zip",
+    )
+).resolve()
+OPENDXA_PLUGIN_BUNDLE = Path(
+    os.environ.get(
+        "VOLT_OPENDXA_PLUGIN_BUNDLE",
+        REPO_ROOT / "voltlabs-ecosystem" / "plugins" / "_dist" / "OpenDXA" / "opendxa-plugin-localstack.zip",
+    )
+).resolve()
+
+
+def build_local_registry_index() -> Path:
+    REGISTRY_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "plugins": {
+            "polyhedral-template-matching": {
+                "latest": "1.0.0",
+                "versions": {
+                    "1.0.0": {
+                        "linux-x86_64": {
+                            "url": PTM_PLUGIN_BUNDLE.as_uri(),
+                            "sha256": "",
+                        }
+                    }
+                },
+            },
+            "opendxa": {
+                "latest": "1.0.0",
+                "versions": {
+                    "1.0.0": {
+                        "linux-x86_64": {
+                            "url": OPENDXA_PLUGIN_BUNDLE.as_uri(),
+                            "sha256": "",
+                        }
+                    }
+                },
+            },
+        }
+    }
+
+    index_path = REGISTRY_DIR / "index.json"
+    index_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return index_path
+
+
+hub = PluginHub(url=build_local_registry_index().as_uri(), cache_dir=CACHE_DIR)
 
 ptm = hub.get("polyhedral-template-matching")
 dxa = hub.get("opendxa")

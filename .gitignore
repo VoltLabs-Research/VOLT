@@ -2,6 +2,7 @@ package-lock.json
 node_modules
 dist
 build
+.venv/
 *.egg-info
 python3/voltsdk/native
 python3/voltsdk/dist

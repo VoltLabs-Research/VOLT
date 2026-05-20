@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voltsdk"
-version = "2.2.0"
+version = "2.2.1"
 description = "Python SDK for the Volt scientific computing platform"
-readme = "README.md"
+readme = "voltsdk/README.md"
 requires-python = ">=3.10"
 license = "MIT"
 
@@ -28,11 +28,19 @@ all = ["vtk>=9.2.0", "k3d>=2.16.0", "ovito>=3.9.0"]
 include-package-data = true
 packages = [
     "voltsdk",
+    "voltsdk.native",
     "voltsdk.plugins",
     "voltsdk.resources",
     "voltsdk.io",
     "voltsdk.integrations",
 ]
 
-[tool.setuptools.package-dir]
-voltsdk = "."
+[tool.setuptools.package-data]
+"voltsdk.native" = [
+    "bin/*",
+    "bin/**/*",
+    "lib/*",
+    "lib/**/*",
+    "share/*",
+    "share/**/*",
+]

@@ -109,8 +109,8 @@ jobs:
       - name: Build VoltSDK platform wheel
         env:
           VOLTSDK_PLATFORM_TAG: ${{ matrix.platform_tag }}
-        working-directory: python3/voltsdk
-        run: python -m build --wheel --outdir ../../build/wheelhouse
+        working-directory: python3
+        run: python -m build --wheel --outdir ../build/wheelhouse
 
       - name: Install built wheel
         shell: python

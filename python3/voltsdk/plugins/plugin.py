@@ -73,20 +73,19 @@ class Plugin:
         timeout: int | float | None = None,
         **options: Any,
     ) -> PluginRun:
-        config = _prepare_config({**self.options, **options})
+        raw_options = {**self.options, **options}
+        explicit_export_format = _has_explicit_export_format(raw_options)
+        config = _prepare_config(raw_options)
         input_path = Path(input_file).expanduser().resolve()
         output = Path(output_base).expanduser() if output_base else input_path.with_suffix("")
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(config)]
-        completed = subprocess.run(
-            command,
-            cwd=self.root,
-            env=_env(self.root),
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=None if timeout is None or timeout < 0 else timeout,
+        command, completed, effective_config = self._run_subprocess(
+            input_path,
+            output,
+            config,
+            timeout=timeout,
+            explicit_export_format=explicit_export_format,
         )
         result = PluginRun(
             command=command,
@@ -94,7 +93,7 @@ class Plugin:
             stdout=completed.stdout,
             stderr=completed.stderr,
             output_base=output.resolve(),
-            artifacts=self._collect_artifacts(output, config),
+            artifacts=self._collect_artifacts(output, effective_config),
         )
         if completed.returncode != 0:
             raise PluginError(
@@ -146,6 +145,29 @@ class Plugin:
             raise PluginError(f"Missing binary at {candidate}.")
         return candidate.resolve()
 
+    def _run_subprocess(
+        self,
+        input_path: Path,
+        output: Path,
+        config: dict[str, Any],
+        *,
+        timeout: int | float | None,
+        explicit_export_format: bool,
+    ) -> tuple[list[str], subprocess.CompletedProcess[str], dict[str, Any]]:
+        command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(config)]
+        completed = _subprocess_run(command, self.root, timeout)
+        if (
+            completed.returncode != 0
+            and not explicit_export_format
+            and _should_retry_without_export_flag(config, completed.stderr)
+        ):
+            fallback_config = dict(config)
+            fallback_config.pop("export-as", None)
+            fallback_command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(fallback_config)]
+            fallback_completed = _subprocess_run(fallback_command, self.root, timeout)
+            return fallback_command, fallback_completed, fallback_config
+        return command, completed, config
+
     def _collect_artifacts(self, output: Path, config: dict[str, Any]) -> dict[str, Path]:
         result: dict[str, Path] = {}
         export_format = _resolve_export_format(config)
@@ -195,6 +217,35 @@ def _prepare_config(options: dict[str, Any]) -> dict[str, Any]:
     return config
 
 
+def _has_explicit_export_format(options: dict[str, Any]) -> bool:
+    return any(alias in options for alias in ("export-as", "export_as", "exportAs"))
+
+
+def _subprocess_run(
+    command: list[str],
+    root: Path,
+    timeout: int | float | None,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        cwd=root,
+        env=_env(root),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=None if timeout is None or timeout < 0 else timeout,
+    )
+
+
+def _should_retry_without_export_flag(config: dict[str, Any], stderr: str) -> bool:
+    if config.get("export-as") is None:
+        return False
+    return "--export-as" in stderr and (
+        "Argumentos no soportados" in stderr
+        or "unsupported" in stderr.lower()
+    )
+
+
 def _resolve_export_format(config: dict[str, Any]) -> str:
     export_format = str(config.get("export-as", "json")).strip().lower()
     return export_format if export_format in {"json", "msgpack"} else "json"
@@ -220,13 +271,33 @@ def _artifact_name_candidates(name: str, export_format: str) -> tuple[str, ...]:
 
 def _env(root: Path) -> dict[str, str]:
     env = os.environ.copy()
-    bin_dir = root / "bin"
-    lib_dir = root / "lib"
-    paths = [str(directory) for directory in (bin_dir, lib_dir) if directory.exists()]
-    if paths:
-        env["PATH"] = os.pathsep.join([*paths, env.get("PATH", "")]).rstrip(os.pathsep)
-    if lib_dir.exists():
-        for key in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
-            current = env.get(key, "")
-            env[key] = os.pathsep.join([str(lib_dir), current]).rstrip(os.pathsep)
+    plugin_bin_dir = root / "bin"
+    plugin_lib_dir = root / "lib"
+    runtime_bin_dir, runtime_lib_dir = _bundled_runtime_dirs()
+    _prepend_env_paths(env, "PATH", plugin_bin_dir, plugin_lib_dir, runtime_bin_dir, runtime_lib_dir)
+    _prepend_env_paths(env, "LD_LIBRARY_PATH", plugin_lib_dir, runtime_lib_dir)
+    _prepend_env_paths(env, "DYLD_LIBRARY_PATH", plugin_lib_dir, runtime_lib_dir)
     return env
+
+
+def _bundled_runtime_dirs() -> tuple[Path | None, Path | None]:
+    try:
+        from ..native import bin_dir, lib_dir
+    except Exception:
+        return None, None
+    return bin_dir(), lib_dir()
+
+
+def _prepend_env_paths(env: dict[str, str], key: str, *candidates: Path | None) -> None:
+    entries = [str(candidate) for candidate in candidates if candidate is not None and candidate.exists()]
+    if not entries:
+        return
+    current_entries = [entry for entry in env.get(key, "").split(os.pathsep) if entry]
+    merged: list[str] = []
+    seen: set[str] = set()
+    for entry in [*entries, *current_entries]:
+        if entry in seen:
+            continue
+        merged.append(entry)
+        seen.add(entry)
+    env[key] = os.pathsep.join(merged)

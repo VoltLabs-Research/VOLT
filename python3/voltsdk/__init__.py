@@ -34,8 +34,9 @@ from .plugins import (
     PluginRun,
     PluginVerificationError,
 )
+from .native import root as native_root
 
-__version__ = "2.2.0"
+__version__ = "2.2.1"
 
 __all__ = [
     "VoltClient",
@@ -55,6 +56,7 @@ __all__ = [
     "PluginNotFoundError",
     "PluginRun",
     "PluginVerificationError",
+    "native_root",
 ]
 
 

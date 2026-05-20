@@ -7,7 +7,6 @@ import argparse
 import os
 import subprocess
 import sys
-from importlib.resources import files
 from pathlib import Path
 
 
@@ -55,12 +54,16 @@ def main() -> None:
 
 def _package_native_root() -> Path:
     try:
-        return Path(str(files("voltsdk").joinpath("native")))
+        from voltsdk.native import root as native_root
+
+        return native_root()
     except ModuleNotFoundError:
         repo_python = Path(__file__).resolve().parents[2] / "python3" / "voltsdk"
         if (repo_python / "__init__.py").exists():
             sys.path.insert(0, str(repo_python.parent))
-        return Path(str(files("voltsdk").joinpath("native")))
+        from voltsdk.native import root as native_root
+
+        return native_root()
 
 
 def _native_root(explicit: Path | None) -> Path:
