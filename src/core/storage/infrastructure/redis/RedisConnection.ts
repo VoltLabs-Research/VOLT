@@ -159,16 +159,41 @@ export class RedisConnection {
         return this.client.del(key);
     };
 
+    readonly deleteKeys = async (keys: string[]): Promise<number> => {
+        if (keys.length === 0) {
+            return 0;
+        }
+
+        await this.connect();
+
+        return this.client.del(...keys);
+    };
+
     readonly getValue = async (key: string): Promise<string | null> => {
         await this.connect();
 
         return this.client.get(key);
     };
 
+    readonly getSetMembers = async (key: string): Promise<string[]> => {
+        await this.connect();
+
+        return this.client.smembers(key);
+    };
+
     readonly setValueWithTtl = async (key: string, value: string, ttlSeconds: number): Promise<void> => {
         await this.connect();
 
         await this.client.setex(key, ttlSeconds, value);
+    };
+
+    readonly addSetMemberWithTtl = async (key: string, value: string, ttlSeconds: number): Promise<void> => {
+        await this.connect();
+
+        const pipeline = this.client.pipeline();
+        pipeline.sadd(key, value);
+        pipeline.expire(key, ttlSeconds);
+        await pipeline.exec();
     };
 
     readonly appendListWithTtl = async (key: string, values: string[], ttlSeconds: number): Promise<void> => {

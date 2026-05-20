@@ -53,6 +53,10 @@ export class AnalysisDispatcher {
         return `analysis-plan:${request.pluginId}:${hash.digest('hex')}`;
     }
 
+    private planCacheIndexKey(trajectoryId: string): string {
+        return `analysis-plan:index:trajectory:${trajectoryId}`;
+    }
+
     private async loadCachedPlan(cacheKey: string): Promise<WorkflowPlanResult | null> {
         try {
             const cached = await this.redisConnection.getValue(cacheKey);
@@ -64,9 +68,16 @@ export class AnalysisDispatcher {
         }
     }
 
-    private async storeCachedPlan(cacheKey: string, plan: WorkflowPlanResult): Promise<void> {
+    private async storeCachedPlan(cacheKey: string, trajectoryId: string, plan: WorkflowPlanResult): Promise<void> {
         try {
-            await this.redisConnection.setValueWithTtl(cacheKey, JSON.stringify(plan), PLAN_CACHE_TTL_SECONDS);
+            await Promise.all([
+                this.redisConnection.setValueWithTtl(cacheKey, JSON.stringify(plan), PLAN_CACHE_TTL_SECONDS),
+                this.redisConnection.addSetMemberWithTtl(
+                    this.planCacheIndexKey(trajectoryId),
+                    cacheKey,
+                    PLAN_CACHE_TTL_SECONDS
+                )
+            ]);
         } catch (error) {
             logger.warn({ err: error, cacheKey }, '@analysis-dispatcher: plan cache write failed');
         }
@@ -100,7 +111,7 @@ export class AnalysisDispatcher {
         });
 
         if (!cachedPlan) {
-            await this.storeCachedPlan(planCacheKey, plan);
+            await this.storeCachedPlan(planCacheKey, input.trajectoryId, plan);
         }
 
         const serializedExecutionData = serializeAnalysisExecutionData(executionData);

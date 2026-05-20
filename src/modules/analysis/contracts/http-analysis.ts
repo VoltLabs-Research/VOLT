@@ -200,6 +200,15 @@ export interface RemoveRunningJobsRequest {
     jobIds: string[];
 }
 
+export interface AnalysisRuntimeCleanupRequest {
+    analysisId: string;
+    jobIds?: string[];
+}
+
+export interface RuntimeStateCleanupResponse {
+    deletedKeys: number;
+}
+
 export interface JobsActionResponse {
     affectedJobs: number;
     affectedJobIds: string[];

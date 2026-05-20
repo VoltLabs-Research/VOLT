@@ -72,6 +72,12 @@ export interface EnqueuePreprocessingResponse {
     skippedJobs: number;
 }
 
+export interface TrajectoryRuntimeCleanupRequest {
+    trajectoryId: string;
+    analysisIds?: string[];
+    jobIds?: string[];
+}
+
 export interface FrameProcessingQueueJobPayload extends JobIdentity {
     trajectoryId: string;
     timestep: number;

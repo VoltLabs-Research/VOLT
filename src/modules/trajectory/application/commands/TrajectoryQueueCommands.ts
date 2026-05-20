@@ -1,8 +1,15 @@
-import type { EnqueuePreprocessingRequest, EnqueuePreprocessingResponse, GlbConversionQueueJobPayload, RasterizeTrajectoryRequest } from '@/contracts';
+import type {
+    EnqueuePreprocessingRequest,
+    EnqueuePreprocessingResponse,
+    GlbConversionQueueJobPayload,
+    RasterizeTrajectoryRequest,
+    TrajectoryRuntimeCleanupRequest
+} from '@/contracts';
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import { logger } from '@/core/logger';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import { RuntimeStateCleanupControl } from '@/modules/jobs/application/control/RuntimeStateCleanupControl';
 import type { TrajectoryRasterQueue } from '@/modules/trajectory/application/raster/TrajectoryRasterQueue';
 import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 
@@ -13,7 +20,8 @@ const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY
 export class TrajectoryQueueCommands {
     constructor(
         private readonly trajectoryRasterQueue: TrajectoryRasterQueue,
-        private readonly queueService: QueueService
+        private readonly queueService: QueueService,
+        private readonly runtimeStateCleanupControl: RuntimeStateCleanupControl
     ) {}
 
     @Command('rasterize')
@@ -77,5 +85,10 @@ export class TrajectoryQueueCommands {
         }
 
         return result;
+    }
+
+    @Command('cleanup-runtime-state')
+    cleanupRuntimeState(payload: TrajectoryRuntimeCleanupRequest) {
+        return this.runtimeStateCleanupControl.cleanupTrajectoryRuntimeState(payload);
     }
 }
