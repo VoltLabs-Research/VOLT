@@ -5,6 +5,7 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
 import type { RuntimeRoleCoordinator } from '@/app/coordination/RuntimeRoleCoordinator';
+import { applyPreferredPlaneProcessPriority } from '@/support/runtime/process-priority';
 
 const HEARTBEAT_PROCESS_RESTART_DELAY_MS = 2_000;
 
@@ -69,6 +70,7 @@ export class HeartbeatPlaneProcess {
         });
 
         this.child = child;
+        applyPreferredPlaneProcessPriority(child.pid, 'heartbeat-plane');
 
         child.stdout?.on('data', (chunk: Buffer) => {
             process.stdout.write(`[heartbeat-plane] ${chunk.toString('utf8')}`);

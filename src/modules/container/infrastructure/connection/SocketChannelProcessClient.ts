@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
+import { applyPreferredPlaneProcessPriority } from '@/support/runtime/process-priority';
 
 type MessageListener = (message: unknown) => void;
 type DisconnectedListener = () => void;
@@ -145,6 +146,7 @@ export class SocketChannelProcessClient {
         });
 
         this.child = child;
+        applyPreferredPlaneProcessPriority(child.pid, `${this.channel}-plane`);
 
         child.stdout?.on('data', (chunk: Buffer) => {
             process.stdout.write(`[${this.channel}-plane] ${chunk.toString('utf8')}`);

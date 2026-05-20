@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import { logger } from '@/core/logger';
 import type { DaemonConfig } from '@/core/config';
+import { applyPreferredPlaneProcessPriority } from '@/support/runtime/process-priority';
 import type {
     CommandResult,
     HandlerContext,
@@ -159,6 +160,7 @@ export class ControlPlaneProcessClient {
         });
 
         this.child = child;
+        applyPreferredPlaneProcessPriority(child.pid, 'control-plane');
 
         child.stdout?.on('data', (chunk: Buffer) => {
             process.stdout.write(`[control-plane] ${chunk.toString('utf8')}`);
