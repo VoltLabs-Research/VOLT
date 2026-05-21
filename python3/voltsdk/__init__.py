@@ -35,7 +35,7 @@ from .plugins import (
 )
 from .native import root as native_root
 
-__version__ = "2.2.2"
+__version__ = "2.2.3"
 
 __all__ = [
     "VoltClient",
