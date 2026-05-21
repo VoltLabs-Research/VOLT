@@ -4,14 +4,14 @@ Quick start::
 
     from voltsdk import VoltClient, PluginHub
 
-    # Marketplace, no auth needed:
-    hub = PluginHub()
-    ptm = hub.get("voltlabs@polyhedral-template-matching")
-    ptm.run("frame.dump", output_base="out/frame", rmsd=0.1)
+    hub = PluginHub(default_publisher="voltlabs")
+    ptm = hub.get("polyhedral-template-matching")
+    run = ptm("frame.dump", output_dir="out", rmsd=0.1)
+    print(run["annotated.dump"].path)
 
-    # Or via an authenticated client:
     client = VoltClient.from_env()
-    client.plugins.get("voltlabs@opendxa").run("frame.dump", output_base="out/frame")
+    dxa = client.plugins.get("voltlabs@opendxa")
+    dxa("frame.dump", output_dir="out")
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from .exceptions import (
 )
 from .plugins import (
     Plugin,
+    PluginArtifact,
     PluginError,
     PluginHub,
     PluginNotFoundError,
@@ -35,7 +36,7 @@ from .plugins import (
 )
 from .native import root as native_root
 
-__version__ = "2.2.5"
+__version__ = "3.0.1"
 
 __all__ = [
     "VoltClient",
@@ -51,6 +52,7 @@ __all__ = [
     "SpatialAssembler",
     "view_glb",
     "Plugin",
+    "PluginArtifact",
     "PluginError",
     "PluginHub",
     "PluginNotFoundError",

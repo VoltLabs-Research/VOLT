@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -14,16 +15,91 @@ from typing import Any
 from .errors import PluginError
 
 
+@dataclass(frozen=True)
+class PluginArtifact(os.PathLike[str]):
+    run: "PluginRun"
+    name: str
+    path: Path
+
+    def __fspath__(self) -> str:
+        return str(self.path)
+
+    def __str__(self) -> str:
+        return str(self.path)
+
+    def json(self, key: str | None = None) -> Any:
+        if self.path.suffix.lower() != '.json':
+            raise PluginError(f'Artifact {self.path.name!r} is not a JSON artifact.')
+
+        from ..io.msgpack import get_nested_value
+
+        with self.path.open('r', encoding='utf-8') as fh:
+            return get_nested_value(json.load(fh), key)
+
+    def df(self, key: str | None = None):
+        return _artifact_df(self.path, key)
+
+    def glb(
+        self,
+        *,
+        output_path: str | os.PathLike[str] | None = None,
+        exporter: str | None = None,
+        **options: Any,
+    ) -> Path:
+        from ..spatial import SpatialAssembler
+
+        if _is_glb_artifact(self.path):
+            return self.path
+
+        target = Path(output_path).expanduser().resolve() if output_path else _default_glb_output_path(self.path)
+        result = SpatialAssembler().glb(self.path, output_path=target, exporter=exporter, **options)
+        if not isinstance(result, Path):
+            raise PluginError('SpatialAssembler did not return a file path.')
+        return result
+
+    def open_in_volt(
+        self,
+        *,
+        volt_url: str | None = None,
+        open_browser: bool = True,
+    ) -> str:
+        from ..viewer import open_in_volt
+
+        source = self.path if _is_glb_artifact(self.path) else self.glb()
+        return open_in_volt(source, volt_url=volt_url, open_browser=open_browser)
+
+    def __repr__(self) -> str:
+        return f"<PluginArtifact name={self.name!r} path={str(self.path)!r}>"
+
+
 @dataclass
 class PluginRun:
     command: list[str]
     returncode: int
     stdout: str
     stderr: str
-    output_base: Path
+    output_prefix: Path
+    output_dir: Path
     artifacts: dict[str, Path] = field(default_factory=dict)
 
-    def artifact(self, name: str) -> Path | None:
+    def __getitem__(self, name: str) -> PluginArtifact:
+        path = self._resolve_artifact_path(name)
+        return PluginArtifact(run=self, name=name, path=path)
+
+    def __iter__(self):
+        return iter(self.artifacts)
+
+    def __contains__(self, name: str) -> bool:
+        return self._find_artifact_path(name) is not None
+
+    def _resolve_artifact_path(self, name: str) -> Path:
+        artifact = self._find_artifact_path(name)
+        if artifact is not None:
+            return artifact
+        available = ', '.join(sorted(self.artifacts)) or '<none>'
+        raise PluginError(f'Artifact {name!r} not found. Available artifacts: {available}.')
+
+    def _find_artifact_path(self, name: str) -> Path | None:
         for candidate in _artifact_lookup_candidates(name):
             artifact = self.artifacts.get(candidate)
             if artifact is not None:
@@ -33,57 +109,6 @@ class PluginRun:
             if Path(key).stem == stem:
                 return artifact
         return None
-
-    def path(self, name: str) -> Path:
-        artifact = self.artifact(name)
-        if artifact is not None:
-            return artifact
-        available = ', '.join(sorted(self.artifacts)) or '<none>'
-        raise PluginError(f'Artifact {name!r} not found. Available artifacts: {available}.')
-
-    def df(self, name: str, key: str | None = None):
-        path = self.path(name)
-        suffix = path.suffix.lower()
-        if suffix == '.msgpack':
-            from ..io.msgpack import msgpack_as_df
-
-            return msgpack_as_df(str(path), key)
-        if suffix == '.json':
-            return _json_df(path, key)
-        raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
-
-    def glb(
-        self,
-        name: str,
-        *,
-        output_path: str | os.PathLike[str] | None = None,
-        exporter: str | None = None,
-        **options: Any,
-    ) -> Path:
-        from ..spatial import SpatialAssembler
-
-        path = self.path(name)
-        if _is_glb_artifact(path):
-            return path
-
-        target = Path(output_path).expanduser().resolve() if output_path else _default_glb_output_path(path)
-        result = SpatialAssembler().glb(path, output_path=target, exporter=exporter, **options)
-        if not isinstance(result, Path):
-            raise PluginError('SpatialAssembler did not return a file path.')
-        return result
-
-    def open_in_volt(
-        self,
-        name: str,
-        *,
-        volt_url: str | None = None,
-        open_browser: bool = True,
-    ) -> str:
-        from ..viewer import open_in_volt
-
-        path = self.path(name)
-        source = path if _is_glb_artifact(path) else self.glb(name)
-        return open_in_volt(source, volt_url=volt_url, open_browser=open_browser)
 
 
 class Plugin:
@@ -97,41 +122,29 @@ class Plugin:
         self._key = key
         self._version = version
         self.root = Path(root)
-        self.options: dict[str, Any] = {}
 
-    # ------------------------------------------------------------------
-    # Configuration
-    # ------------------------------------------------------------------
-
-    def configure(self, **options: Any) -> "Plugin":
-        self.options.update(options)
-        return self
-
-    def __call__(self, **options: Any) -> "Plugin":
-        clone = Plugin(self._key, self._version, self.root)
-        clone.options = {**self.options, **options}
-        return clone
-
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
-
-    def run(
+    def __call__(
         self,
         input_file: str | os.PathLike[str],
         *,
-        output_base: str | os.PathLike[str] | None = None,
+        output_dir: str | os.PathLike[str] | None = None,
+        output_name: str | None = None,
         timeout: int | float | None = None,
         **options: Any,
     ) -> PluginRun:
-        config = _prepare_config({**self.options, **options})
+        config = _prepare_config(options)
         input_path = Path(input_file).expanduser().resolve()
-        output = Path(output_base).expanduser().resolve() if output_base else input_path.with_suffix("")
-        output.parent.mkdir(parents=True, exist_ok=True)
+        output_prefix = _resolve_output_prefix(
+            input_path,
+            plugin_key=self._key,
+            output_dir=output_dir,
+            output_name=output_name,
+        )
+        output_prefix.parent.mkdir(parents=True, exist_ok=True)
 
         command, completed = self._run_subprocess(
             input_path,
-            output,
+            output_prefix,
             config,
             timeout=timeout,
         )
@@ -140,8 +153,9 @@ class Plugin:
             returncode=completed.returncode,
             stdout=completed.stdout,
             stderr=completed.stderr,
-            output_base=output.resolve(),
-            artifacts=self._collect_artifacts(output),
+            output_prefix=output_prefix.resolve(),
+            output_dir=output_prefix.parent.resolve(),
+            artifacts=self._collect_artifacts(output_prefix),
         )
         if completed.returncode != 0:
             raise PluginError(
@@ -161,10 +175,6 @@ class Plugin:
     @property
     def version(self) -> str:
         return self._version
-
-    @property
-    def arguments(self) -> tuple:
-        return ()
 
     def __repr__(self) -> str:
         return f"<Plugin key={self._key!r} version={self._version!r}>"
@@ -191,9 +201,11 @@ class Plugin:
         if not bin_dir.is_dir():
             return None
 
-        preferred = [bin_dir / self._key]
+        short_key = self._key.rsplit('@', 1)[-1]
+        preferred = [bin_dir / self._key, bin_dir / short_key]
         if os.name == "nt":
             preferred.insert(0, bin_dir / f"{self._key}.exe")
+            preferred.insert(1, bin_dir / f"{short_key}.exe")
         for candidate in preferred:
             if candidate.is_file():
                 return candidate.resolve()
@@ -268,6 +280,7 @@ def _argv(options: dict[str, Any]) -> list[str]:
         if value is None:
             continue
         flag = f"--{key}"
+        value = _coerce_option_value(value)
         if isinstance(value, bool):
             args.extend([flag, "true" if value else "false"])
             continue
@@ -278,12 +291,46 @@ def _argv(options: dict[str, Any]) -> list[str]:
     return args
 
 
+def _resolve_output_prefix(
+    input_path: Path,
+    *,
+    plugin_key: str,
+    output_dir: str | os.PathLike[str] | None,
+    output_name: str | None,
+) -> Path:
+    if output_name is not None and output_name.strip() == '':
+        raise PluginError('output_name cannot be empty.')
+
+    if output_dir is None:
+        return input_path.with_suffix('').resolve()
+
+    name = output_name or _plugin_output_name(plugin_key)
+    return (Path(output_dir).expanduser() / name).resolve()
+
+
+def _plugin_output_name(plugin_key: str) -> str:
+    name = plugin_key.rsplit('@', 1)[-1]
+    normalized = re.sub(r'[^A-Za-z0-9_.-]+', '-', name).strip('-._')
+    return normalized or 'plugin'
+
+
+def _coerce_option_value(value: Any) -> Any:
+    if isinstance(value, os.PathLike):
+        return os.fspath(value)
+    if isinstance(value, list):
+        return [_coerce_option_value(item) for item in value]
+    if isinstance(value, tuple):
+        return [_coerce_option_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _coerce_option_value(item) for key, item in value.items()}
+    return value
+
+
 def _prepare_config(options: dict[str, Any]) -> dict[str, Any]:
     config = dict(options)
-    for alias in ("export_as", "exportAs"):
-        value = config.pop(alias, None)
-        if value is not None and config.get("export-as") is None:
-            config["export-as"] = value
+    value = config.pop("export_as", None)
+    if value is not None:
+        config["export-as"] = value
     return config
 
 
@@ -334,9 +381,19 @@ def _default_glb_output_path(path: Path) -> Path:
     return path.with_name(f'{path.name}.glb')
 
 
+def _artifact_df(path: Path, key: str | None):
+    suffix = path.suffix.lower()
+    if suffix == '.msgpack':
+        from ..io.msgpack import msgpack_as_df
+
+        return msgpack_as_df(str(path), key)
+    if suffix == '.json':
+        return _json_df(path, key)
+    raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
+
+
 def _json_df(path: Path, key: str | None):
     import pandas as pd
-
     from ..io.msgpack import get_nested_value
 
     with path.open('r', encoding='utf-8') as fh:

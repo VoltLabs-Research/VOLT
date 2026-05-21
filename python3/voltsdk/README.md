@@ -64,11 +64,11 @@ trajectory.open_in_volt(timestep=5000)
 frame.open_in_volt()
 analysis.open_in_volt(timestep=5000)
 exposure.open_in_volt(5000)
-run.open_in_volt('dislocations')
+run['dislocations'].open_in_volt()
 ```
 
-For plugin runs, `open_in_volt(...)` auto-assembles supported `.json` and
-`.msgpack` exporter payloads into a sibling `.glb` when needed.
+For plugin artifacts, `open_in_volt(...)` auto-assembles supported `.json`
+and `.msgpack` exporter payloads into a sibling `.glb` when needed.
 
 For local files, VoltSDK serves them directly to `/canvas/glb` without creating
 fake analyses. In a Volt notebook it uses the Jupyter proxy; on a local machine
@@ -99,8 +99,8 @@ or `export.DislocationExporter`.
 You can also let a `PluginRun` do the conversion directly:
 
 ```python
-viewer_url = dxa_run.open_in_volt('dislocations', open_browser=False)
-mesh_glb = dxa_run.glb('defect_mesh')
+viewer_url = dxa_run['dislocations'].open_in_volt(open_browser=False)
+mesh_glb = dxa_run['defect_mesh'].glb()
 ```
 
 ## Plugin hub
@@ -111,17 +111,17 @@ registry; bundles are downloaded and cached on first use:
 ```python
 from voltsdk import PluginHub
 
-hub = PluginHub()                          # default registry, ~/.cache/volt
+hub = PluginHub(default_publisher="voltlabs")
 print(hub.list())                          # publisher-qualified marketplace listing
 
-ptm = hub.get("voltlabs@polyhedral-template-matching")
-result = ptm.run(
+ptm = hub.get("polyhedral-template-matching")
+result = ptm(
     "frame.dump",
-    output_base="out/frame",
+    output_dir="out",
     crystal_structure="FCC",
     rmsd=0.1,
 )
-print(result.path("annotated.dump"))
+print(result["annotated.dump"].path)
 ```
 
 The same hub is exposed on an authenticated client via `client.plugins`.

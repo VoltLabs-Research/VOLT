@@ -1,30 +1,33 @@
+# pip install voltsdk
 from voltsdk import PluginHub
 
 INPUT_FILE = 'dump'
-OUTPUT_BASE = 'output/ptm-dxa'
+OUTPUT_DIR = 'output/ptm-dxa'
 
-hub = PluginHub()
-ptm = hub.get('voltlabs@polyhedral-template-matching')
-dxa = hub.get('voltlabs@opendxa')
+hub = PluginHub(default_publisher='voltlabs')
 
-ptm_run = ptm.run(
+ptm = hub.get('polyhedral-template-matching')
+dxa = hub.get('opendxa')
+
+ptm_run = ptm(
     INPUT_FILE,
-    output_base=OUTPUT_BASE,
+    output_dir=OUTPUT_DIR,
     crystal_structure='FCC',
     rmsd=0.10,
 )
 
-dxa_run = dxa.run(
-    ptm_run.path('annotated.dump'),
-    output_base=OUTPUT_BASE,
+dxa_run = dxa(
+    ptm_run['annotated.dump'],
+    output_dir=OUTPUT_DIR,
     reference_topology='FCC',
-    clusters_table=ptm_run.path('clusters.table'),
-    clusters_transitions=ptm_run.path('cluster_transitions.table'),
+    clusters_table=ptm_run['clusters.table'],
+    clusters_transitions=ptm_run['cluster_transitions.table'],
     export_as='json',
 )
 
-viewer_url = dxa_run.open_in_volt('dislocations', open_browser=False)
+dislocations = dxa_run['dislocations']
+viewer_url = dislocations.open_in_volt(open_browser=False)
 
-print(dxa_run.df('dislocations', 'main_listing'))
-print(dxa_run.df('dislocations', 'sub_listings.dislocation_segments').head())
+print(dislocations.df('main_listing'))
+print(dislocations.df('sub_listings.dislocation_segments').head())
 print(viewer_url)

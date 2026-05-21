@@ -25,9 +25,9 @@ _DEFAULT_MESH_MATERIAL = {
 }
 
 _DEFAULT_DISLOCATION_MATERIAL = {
-    'baseColor': [1.0, 1.0, 1.0, 1.0],
-    'metallic': 0.1,
-    'roughness': 0.3,
+    'baseColor': [1.0, 0.5, 0.0, 1.0],
+    'metallic': 0.0,
+    'roughness': 0.8,
     'emissive': [0.0, 0.0, 0.0],
     'doubleSided': True,
 }
@@ -142,7 +142,7 @@ class SpatialAssembler:
         source: Any,
         *,
         output_path: Pathish | None = None,
-        line_width: float = 0.08,
+        line_width: float = 0.8,
         tubular_segments: int = 12,
         min_segment_points: int = 2,
         material: Mapping[str, Any] | None = None,
