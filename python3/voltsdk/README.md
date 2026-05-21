@@ -41,6 +41,67 @@ client = VoltClient(
 )
 ```
 
+## Open In Volt
+
+Use the Volt web canvas as the viewer for local GLBs, GLB sequences, or
+existing Volt resources:
+
+```python
+from voltsdk import open_in_volt
+
+open_in_volt('out/frame.glb')
+open_in_volt({
+    0: 'out/frame-0000.glb',
+    5000: 'out/frame-5000.glb',
+    10000: 'out/frame-10000.glb',
+})
+```
+
+Resource helpers open the exact canvas route:
+
+```python
+trajectory.open_in_volt(timestep=5000)
+frame.open_in_volt()
+analysis.open_in_volt(timestep=5000)
+exposure.open_in_volt(5000)
+run.open_in_volt('dislocations')
+```
+
+For plugin runs, `open_in_volt(...)` auto-assembles supported `.json` and
+`.msgpack` exporter payloads into a sibling `.glb` when needed.
+
+For local files, VoltSDK serves them directly to `/canvas/glb` without creating
+fake analyses. In a Volt notebook it uses the Jupyter proxy; on a local machine
+it starts a tiny background file server. The browser still needs an authenticated
+Volt session.
+
+## SpatialAssembler
+
+Volt exporter payloads can also be rendered locally from Python:
+
+```python
+from voltsdk import SpatialAssembler, open_in_volt
+
+assembler = SpatialAssembler()
+glb_path = assembler.dislocations_glb(
+    'output/ptm-dxa_dislocations.json',
+    output_path='output/ptm-dxa_dislocations.glb',
+)
+
+open_in_volt(glb_path)
+```
+
+The Python API accepts either the full artifact file (`.json` or `.msgpack`) or
+the raw nested payload from `export.AtomisticExporter`, `export.MeshExporter`,
+or `export.DislocationExporter`.
+
+You can also let a `PluginRun` do the conversion directly:
+
+```python
+viewer_url = dxa_run.open_in_volt('dislocations', open_browser=False)
+mesh_glb = dxa_run.glb('defect_mesh')
+```
+
 ## Plugin hub
 
 VoltSDK ships a Hugging Face-style plugin hub. Plugins live in a static

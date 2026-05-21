@@ -101,6 +101,28 @@ class Exposure(BaseResource):
             dest=dest,
         )
 
+    def open_in_volt(
+        self,
+        timestep: int,
+        *,
+        volt_url: str | None = None,
+        open_browser: bool = True,
+    ) -> str:
+        from voltsdk.viewer import open_canvas_view
+
+        trajectory_id = self._get('trajectory', '')
+        if not trajectory_id:
+            raise ValueError('Exposure does not include a trajectory ID.')
+
+        return open_canvas_view(
+            trajectory_id=trajectory_id,
+            analysis_id=self.analysis_id,
+            exposure_id=self.id,
+            timestep=timestep,
+            volt_url=volt_url,
+            open_browser=open_browser,
+        )
+
 
 class ExposureCollection(BaseCollection['Exposure']):
     """Paginated collection of exposures for an analysis."""

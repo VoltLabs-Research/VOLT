@@ -1,0 +1,51 @@
+{
+    "name": "@voltstack/volt-shared",
+    "version": "1.0.0",
+    "description": "Shared pure TypeScript utilities and protocol contracts for Volt runtimes",
+    "author": "VoltLabs",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./argument-visibility": {
+            "types": "./dist/argument-visibility.d.ts",
+            "import": "./dist/argument-visibility.js",
+            "require": "./dist/argument-visibility.cjs"
+        },
+        "./binary-envelope": {
+            "types": "./dist/binary-envelope.d.ts",
+            "import": "./dist/binary-envelope.js",
+            "require": "./dist/binary-envelope.cjs"
+        },
+        "./lammps": {
+            "types": "./dist/lammps.d.ts",
+            "import": "./dist/lammps.js",
+            "require": "./dist/lammps.cjs"
+        },
+        "./plugin-reference": {
+            "types": "./dist/plugin-reference.d.ts",
+            "import": "./dist/plugin-reference.js",
+            "require": "./dist/plugin-reference.cjs"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "~5.8.3"
+    }
+}

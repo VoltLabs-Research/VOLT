@@ -23,5 +23,8 @@ dxa_run = dxa.run(
     export_as='json',
 )
 
+viewer_url = dxa_run.open_in_volt('dislocations', open_browser=False)
+
 print(dxa_run.df('dislocations', 'main_listing'))
 print(dxa_run.df('dislocations', 'sub_listings.dislocation_segments').head())
+print(viewer_url)

@@ -95,6 +95,24 @@ class Trajectory(BaseResource):
             dest=dest,
         )
 
+    def open_in_volt(
+        self,
+        *,
+        analysis_id: str | None = None,
+        timestep: int | None = None,
+        volt_url: str | None = None,
+        open_browser: bool = True,
+    ) -> str:
+        from voltsdk.viewer import open_canvas_view
+
+        return open_canvas_view(
+            trajectory_id=self.id,
+            analysis_id=analysis_id,
+            timestep=timestep,
+            volt_url=volt_url,
+            open_browser=open_browser,
+        )
+
     # ------------------------------------------------------------------
     # Plotting
     # ------------------------------------------------------------------

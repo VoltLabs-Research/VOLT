@@ -52,6 +52,39 @@ class PluginRun:
             return _json_df(path, key)
         raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
 
+    def glb(
+        self,
+        name: str,
+        *,
+        output_path: str | os.PathLike[str] | None = None,
+        exporter: str | None = None,
+        **options: Any,
+    ) -> Path:
+        from ..spatial import SpatialAssembler
+
+        path = self.path(name)
+        if _is_glb_artifact(path):
+            return path
+
+        target = Path(output_path).expanduser().resolve() if output_path else _default_glb_output_path(path)
+        result = SpatialAssembler().glb(path, output_path=target, exporter=exporter, **options)
+        if not isinstance(result, Path):
+            raise PluginError('SpatialAssembler did not return a file path.')
+        return result
+
+    def open_in_volt(
+        self,
+        name: str,
+        *,
+        volt_url: str | None = None,
+        open_browser: bool = True,
+    ) -> str:
+        from ..viewer import open_in_volt
+
+        path = self.path(name)
+        source = path if _is_glb_artifact(path) else self.glb(name)
+        return open_in_volt(source, volt_url=volt_url, open_browser=open_browser)
+
 
 class Plugin:
     """A single plugin instance backed by a downloaded bundle.
@@ -287,6 +320,18 @@ def _canonical_artifact_name(prefix: str, filename: str) -> str:
     if filename.startswith(f"{prefix}_"):
         return filename[len(prefix) + 1 :]
     return filename
+
+
+def _is_glb_artifact(path: Path) -> bool:
+    suffix = path.suffix.lower()
+    return suffix in {'.glb', '.gltf'} or path.name.lower().endswith('.glb.zst')
+
+
+def _default_glb_output_path(path: Path) -> Path:
+    suffix = path.suffix.lower()
+    if suffix:
+        return path.with_suffix('.glb')
+    return path.with_name(f'{path.name}.glb')
 
 
 def _json_df(path: Path, key: str | None):

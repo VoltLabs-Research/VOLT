@@ -47,6 +47,8 @@ __all__ = [
     "VoltPermissionError",
     "VoltTimeoutError",
     "msgpack_as_df",
+    "open_in_volt",
+    "SpatialAssembler",
     "view_glb",
     "Plugin",
     "PluginError",
@@ -69,6 +71,16 @@ def __getattr__(name: str):
 
         globals()[name] = msgpack_as_df
         return msgpack_as_df
+    if name == "open_in_volt":
+        from .viewer import open_in_volt
+
+        globals()[name] = open_in_volt
+        return open_in_volt
+    if name == "SpatialAssembler":
+        from .spatial import SpatialAssembler
+
+        globals()[name] = SpatialAssembler
+        return SpatialAssembler
     if name == "view_glb":
         from .integrations.glb import view_glb
 

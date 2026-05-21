@@ -101,6 +101,23 @@ class Analysis(BaseResource):
             return self._client.unzip_recursive(zip_path)
         return zip_path
 
+    def open_in_volt(
+        self,
+        *,
+        timestep: int | None = None,
+        volt_url: str | None = None,
+        open_browser: bool = True,
+    ) -> str:
+        from voltsdk.viewer import open_canvas_view
+
+        return open_canvas_view(
+            trajectory_id=self.trajectory_id,
+            analysis_id=self.id,
+            timestep=timestep,
+            volt_url=volt_url,
+            open_browser=open_browser,
+        )
+
 
 class AnalysisCollection(BaseCollection['Analysis']):
     """Paginated collection of analyses.
