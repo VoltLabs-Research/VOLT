@@ -10,9 +10,14 @@ from pathlib import Path
 
 class ViewerRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
-        self.send_header('Access-Control-Allow-Origin', '*')
+        origin = self.headers.get('Origin')
+        self.send_header('Access-Control-Allow-Origin', origin or '*')
+        if origin:
+            self.send_header('Vary', 'Origin')
+            self.send_header('Access-Control-Allow-Credentials', 'true')
         self.send_header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', '*')
+        requested_headers = self.headers.get('Access-Control-Request-Headers')
+        self.send_header('Access-Control-Allow-Headers', requested_headers or '*')
         self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
