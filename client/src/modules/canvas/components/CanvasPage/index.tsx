@@ -66,6 +66,9 @@ import type { RasterContainerId, RasterContainerSelection } from '@/modules/rast
 
 import './CanvasPage.css';
 import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
+import { fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utilities/local-glb-manifest';
+
+import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utilities/local-glb-manifest';
 
 interface DownloadExposureListingParams {
     pluginId: string;
@@ -191,6 +194,7 @@ const CanvasPage = () => {
         resultsPluginId,
         showWidgets,
         searchParams,
+        updateSearchParams,
         activeWorkspace,
         selectedNotebookId,
         setActiveWorkspace,
@@ -198,7 +202,6 @@ const CanvasPage = () => {
     } = useCanvasUrlState();
     const localGlbUrl = useLocalGlbStore((s) => s.localGlbUrl);
     const clearLocalGlb = useLocalGlbStore((s) => s.clearLocalGlb);
-    const forcedGlbUrl = isLocalGlbViewer ? localGlbUrl : null;
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const hasResolvedCanvasAccess = isLocalGlbViewer || Boolean(canvasAccess);
     const canMutateCanvas = isLocalGlbViewer || Boolean(canvasAccess?.hasTeamMembership);
@@ -217,6 +220,24 @@ const CanvasPage = () => {
     const [downloadAnalysisModalTargetId, setDownloadAnalysisModalTargetId] = useState<string | null>(null);
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
     const [analysisDiscoveryTourActive, setAnalysisDiscoveryTourActive] = useState(false);
+    const [localManifest, setLocalManifest] = useState<ResolvedLocalGlbManifest | null>(null);
+    const [localManifestError, setLocalManifestError] = useState<string | null>(null);
+    const [isLocalManifestLoading, setIsLocalManifestLoading] = useState(false);
+
+    const localManifestUrl = isLocalGlbViewer ? searchParams.get('manifest')?.trim() || null : null;
+    const localGlbQueryUrl = useMemo(() => {
+        if (!isLocalGlbViewer) {
+            return null;
+        }
+
+        const rawUrl = searchParams.get('url')?.trim();
+        if (!rawUrl) {
+            return null;
+        }
+
+        return resolveLocalGlbUrl(rawUrl);
+    }, [isLocalGlbViewer, searchParams]);
+    const localFrameParam = searchParams.get('frame');
 
     const handleScriptingNotebookIdChange = useCallback((resolvedNotebookId: string) => {
         if (!resolvedNotebookId || selectedNotebookId === resolvedNotebookId) {
@@ -308,6 +329,76 @@ const CanvasPage = () => {
         editorState.resetPlayback();
         editorState.resetModel();
     }, [trajectoryId, isLocalGlbViewer]);
+
+    useEffect(() => {
+        if (!isLocalGlbViewer || !localManifestUrl) {
+            setLocalManifest(null);
+            setLocalManifestError(null);
+            setIsLocalManifestLoading(false);
+            return;
+        }
+
+        const abortController = new AbortController();
+        setIsLocalManifestLoading(true);
+        setLocalManifest(null);
+        setLocalManifestError(null);
+
+        fetchLocalGlbManifest(resolveLocalGlbUrl(localManifestUrl), abortController.signal)
+            .then((nextManifest) => {
+                setLocalManifest(nextManifest);
+            })
+            .catch((error: unknown) => {
+                if (abortController.signal.aborted) {
+                    return;
+                }
+
+                setLocalManifest(null);
+                setLocalManifestError(error instanceof Error ? error.message : 'Unexpected manifest error.');
+            })
+            .finally(() => {
+                if (!abortController.signal.aborted) {
+                    setIsLocalManifestLoading(false);
+                }
+            });
+
+        return () => {
+            abortController.abort();
+        };
+    }, [isLocalGlbViewer, localManifestUrl]);
+
+    const localManifestFrameIndex = useMemo(() => {
+        if (!localManifest || localManifest.frames.length === 0) {
+            return 0;
+        }
+
+        const requestedFrame = Number(localFrameParam);
+        if (Number.isFinite(requestedFrame)) {
+            return Math.max(0, Math.min(localManifest.frames.length - 1, Math.floor(requestedFrame)));
+        }
+
+        return localManifest.initialFrame;
+    }, [localFrameParam, localManifest]);
+
+    const localManifestFrame = useMemo(() => {
+        if (!localManifest || localManifest.frames.length === 0) {
+            return null;
+        }
+
+        return localManifest.frames[localManifestFrameIndex] ?? localManifest.frames[0] ?? null;
+    }, [localManifest, localManifestFrameIndex]);
+
+    const forcedGlbUrl = isLocalGlbViewer
+        ? localManifestFrame?.url ?? localGlbQueryUrl ?? localGlbUrl
+        : null;
+
+    const setLocalManifestFrameIndex = useCallback((nextIndex: number) => {
+        if (!localManifest || localManifest.frames.length === 0) {
+            return;
+        }
+
+        const clampedIndex = Math.max(0, Math.min(localManifest.frames.length - 1, Math.floor(nextIndex)));
+        updateSearchParams({ frame: clampedIndex }, { replace: true });
+    }, [localManifest, updateSearchParams]);
 
     const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
@@ -530,12 +621,34 @@ const CanvasPage = () => {
             );
         }
 
+        if (isLocalGlbViewer && isLocalManifestLoading) {
+            return (
+                <Row justify='center' width='max' height='max'>
+                    <EmptyState
+                        title='Loading scene manifest'
+                        description='Resolving local viewer frames.'
+                    />
+                </Row>
+            );
+        }
+
+        if (isLocalGlbViewer && localManifestError) {
+            return (
+                <Row justify='center' width='max' height='max'>
+                    <EmptyState
+                        title='Failed to load local scene manifest'
+                        description={localManifestError}
+                    />
+                </Row>
+            );
+        }
+
         if (isLocalGlbViewer && !forcedGlbUrl) {
             return (
                 <Row justify='center' width='max' height='max'>
                     <EmptyState
                         title='Drop a GLB file to preview'
-                        description='Use the global dashboard dropzone to open a local GLB viewer.'
+                        description='Use the dashboard dropzone, or open /canvas/glb?url=... or /canvas/glb?manifest=....'
                     />
                 </Row>
             );
@@ -669,6 +782,58 @@ const CanvasPage = () => {
                                 disableContextualTips={isNarrowViewport}
                                 onDownloadExposureListing={handleDownloadExposureListing}
                             />
+                        </Stack>
+                    )}
+                    {isLocalGlbViewer && localManifest && localManifest.frames.length > 1 && (
+                        <Stack id="canvas-center-timeline" className="canvas-center-timeline canvas-center-timeline--local">
+                            <div className='canvas-local-viewer-controls'>
+                                <div className='canvas-local-viewer-controls__meta'>
+                                    <div className='canvas-local-viewer-controls__title'>
+                                        {localManifest.title || 'Local scene sequence'}
+                                    </div>
+                                    <div className='canvas-local-viewer-controls__subtitle'>
+                                        {localManifestFrame?.label
+                                            || (localManifestFrame?.timestep !== undefined
+                                                ? `t=${localManifestFrame.timestep}`
+                                                : `Frame ${localManifestFrameIndex + 1}`)}
+                                    </div>
+                                </div>
+                                <div className='canvas-local-viewer-controls__transport'>
+                                    <Button
+                                        variant='outline'
+                                        intent='canvas'
+                                        size='sm'
+                                        shape='rounded'
+                                        onClick={() => setLocalManifestFrameIndex(localManifestFrameIndex - 1)}
+                                        disabled={localManifestFrameIndex <= 0}
+                                    >
+                                        Prev
+                                    </Button>
+                                    <input
+                                        className='canvas-local-viewer-controls__slider'
+                                        type='range'
+                                        min='0'
+                                        max={String(localManifest.frames.length - 1)}
+                                        step='1'
+                                        value={String(localManifestFrameIndex)}
+                                        onChange={(event) => setLocalManifestFrameIndex(Number(event.currentTarget.value))}
+                                        aria-label='Select local scene frame'
+                                    />
+                                    <Button
+                                        variant='outline'
+                                        intent='canvas'
+                                        size='sm'
+                                        shape='rounded'
+                                        onClick={() => setLocalManifestFrameIndex(localManifestFrameIndex + 1)}
+                                        disabled={localManifestFrameIndex >= localManifest.frames.length - 1}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                                <div className='canvas-local-viewer-controls__index'>
+                                    {localManifestFrameIndex + 1} / {localManifest.frames.length}
+                                </div>
+                            </div>
                         </Stack>
                     )}
                 </Stack>

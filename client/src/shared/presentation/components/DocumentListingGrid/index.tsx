@@ -2,6 +2,7 @@ import getListingDisplayState from '@/shared/presentation/components/DocumentLis
 import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
+import { buildItemMapByGeneratedId } from '@/shared/presentation/components/DocumentListing/dnd-maps';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingGrid.css';
 import { CSS } from '@dnd-kit/utilities';
@@ -215,35 +216,15 @@ const DocumentListingGrid = <T extends { _id: string },>({
     });
 
     const draggableItemsById = useMemo(() => {
-        const nextMap = new Map<string, T>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const draggableId = dragAndDrop.getDraggableId(item);
-            if (draggableId) {
-                nextMap.set(draggableId, item);
-            }
+        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
+            return dragAndDrop?.getDraggableId(item);
         });
-
-        return nextMap;
     }, [data, dragAndDrop]);
 
     const droppableItemsById = useMemo(() => {
-        const nextMap = new Map<string, T>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const droppableId = dragAndDrop.getDroppableId(item);
-            if (droppableId) {
-                nextMap.set(droppableId, item);
-            }
+        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
+            return dragAndDrop?.getDroppableId(item);
         });
-
-        return nextMap;
     }, [data, dragAndDrop]);
 
     const activeDragItem = activeDragId ? draggableItemsById.get(activeDragId) ?? null : null;

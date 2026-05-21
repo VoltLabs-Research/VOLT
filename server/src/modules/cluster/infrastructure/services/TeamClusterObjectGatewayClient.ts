@@ -129,6 +129,11 @@ interface ObjectGatewayHttpSessionEntry {
     expiresAt: number;
 }
 
+interface ObjectGatewayRequestTimeouts {
+    requestTimeoutMs: number;
+    tunnelAttachTimeoutMs: number;
+}
+
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 const OBJECT_GATEWAY_EXPOSURE_NAME = 'object-gateway';
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
@@ -138,6 +143,11 @@ const TOKEN_TTL_SECONDS = 5 * 60;
 const HTTP_PROXY_SESSION_TTL_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_SESSION_TTL_MS', 30_000);
 const HTTP_PROXY_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_REQUEST_TIMEOUT_MS', 10 * 60 * 1000);
 const HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_TUNNEL_ATTACH_TIMEOUT_MS', 120_000);
+const HTTP_PROXY_FAST_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_FAST_REQUEST_TIMEOUT_MS', 45_000);
+const HTTP_PROXY_FAST_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_OBJECT_GATEWAY_FAST_TUNNEL_ATTACH_TIMEOUT_MS',
+    20_000
+);
 
 const readHeaderValue = (value: string | null): string | undefined => {
     return value && value.length > 0
@@ -257,6 +267,33 @@ const mapStatusToApplicationError = (statusCode: number, code: string, message: 
     if (statusCode === 409) return ApplicationError.conflict(code, message);
     if (statusCode === 503) return new ApplicationError(code, message, 503);
     return new ApplicationError(code, message, statusCode >= 400 ? statusCode : 500);
+};
+
+const resolveOperationTimeouts = (operation: ObjectGatewayOperationName): ObjectGatewayRequestTimeouts => {
+    switch (operation) {
+        case 'head':
+        case 'list':
+            return {
+                requestTimeoutMs: Math.min(HTTP_PROXY_FAST_REQUEST_TIMEOUT_MS, HTTP_PROXY_REQUEST_TIMEOUT_MS),
+                tunnelAttachTimeoutMs: Math.min(
+                    HTTP_PROXY_FAST_TUNNEL_ATTACH_TIMEOUT_MS,
+                    HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
+                    HTTP_PROXY_FAST_REQUEST_TIMEOUT_MS
+                )
+            };
+
+        case 'get':
+        case 'put':
+        case 'compose':
+        default:
+            return {
+                requestTimeoutMs: HTTP_PROXY_REQUEST_TIMEOUT_MS,
+                tunnelAttachTimeoutMs: Math.min(
+                    HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
+                    HTTP_PROXY_REQUEST_TIMEOUT_MS
+                )
+            };
+    }
 };
 
 @Singleton()
@@ -460,13 +497,19 @@ export default class TeamClusterObjectGatewayClient {
         options: ObjectGatewayRequestOptions,
         operation: ObjectGatewayOperationName
     ): Promise<RawHttpResponse> {
+        const timeouts = resolveOperationTimeouts(operation);
         const accessToken = await this.resolveAccessToken(teamClusterId);
         const headers = new Headers(options.headers);
         headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, accessToken.token);
-        const session = await this.acquireHttpSession(teamClusterId);
+        const session = await this.acquireHttpSession(teamClusterId, timeouts.tunnelAttachTimeoutMs);
 
         try {
-            const response = await this.performTunnelRequest(options, headers, session.agent);
+            const response = await this.performTunnelRequest(
+                options,
+                headers,
+                session.agent,
+                timeouts.requestTimeoutMs
+            );
 
             if (response.statusCode >= 200 && response.statusCode < 300) {
                 this.bindResponseLifecycle(response.stream, session);
@@ -552,7 +595,8 @@ export default class TeamClusterObjectGatewayClient {
     private async performTunnelRequest(
         options: ObjectGatewayRequestOptions,
         headers: Headers,
-        agent: http.Agent
+        agent: http.Agent,
+        requestTimeoutMs: number
     ): Promise<RawHttpResponse> {
         return new Promise<RawHttpResponse>((resolve, reject) => {
             const request = http.request({
@@ -572,8 +616,8 @@ export default class TeamClusterObjectGatewayClient {
                 });
             });
 
-            request.setTimeout(HTTP_PROXY_REQUEST_TIMEOUT_MS, () => {
-                request.destroy(new Error(`Object gateway tunnel request timed out after ${HTTP_PROXY_REQUEST_TIMEOUT_MS}ms`));
+            request.setTimeout(requestTimeoutMs, () => {
+                request.destroy(new Error(`Object gateway tunnel request timed out after ${requestTimeoutMs}ms`));
             });
             request.once('error', reject);
 
@@ -594,7 +638,10 @@ export default class TeamClusterObjectGatewayClient {
         });
     }
 
-    private async acquireHttpSession(teamClusterId: string): Promise<ObjectGatewayHttpSessionEntry> {
+    private async acquireHttpSession(
+        teamClusterId: string,
+        tunnelAttachTimeoutMs: number
+    ): Promise<ObjectGatewayHttpSessionEntry> {
         const sessionKey = this.buildSessionKey(teamClusterId);
         const existingSessions = this.pruneHttpSessions(sessionKey);
         const reusableSession = existingSessions.find((session) => !session.inUse && !session.tunnel.destroyed);
@@ -610,8 +657,8 @@ export default class TeamClusterObjectGatewayClient {
             OBJECT_GATEWAY_EXPOSURE_ID,
             TeamClusterServiceExposureAccessMode.Http,
             {
-                timeoutMs: HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS,
-                timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS}ms`
+                timeoutMs: tunnelAttachTimeoutMs,
+                timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${tunnelAttachTimeoutMs}ms`
             }
         );
         const latestSessions = this.pruneHttpSessions(sessionKey);

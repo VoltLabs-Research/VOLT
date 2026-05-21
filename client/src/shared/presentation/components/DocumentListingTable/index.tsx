@@ -1,5 +1,6 @@
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
+import { buildItemMapByGeneratedId } from '@/shared/presentation/components/DocumentListing/dnd-maps';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
@@ -235,35 +236,15 @@ const DocumentListingTable = <T extends Identifiable>({
     }, [data, dragAndDrop]);
 
     const draggableItemsById = useMemo(() => {
-        const nextMap = new Map<string, T>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const draggableId = dragAndDrop.getDraggableId(item);
-            if (draggableId) {
-                nextMap.set(draggableId, item);
-            }
+        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
+            return dragAndDrop?.getDraggableId(item);
         });
-
-        return nextMap;
     }, [data, dragAndDrop]);
 
     const droppableItemsById = useMemo(() => {
-        const nextMap = new Map<string, T>();
-        if (!dragAndDrop) {
-            return nextMap;
-        }
-
-        data.forEach((item) => {
-            const droppableId = dragAndDrop.getDroppableId(item);
-            if (droppableId) {
-                nextMap.set(droppableId, item);
-            }
+        return buildItemMapByGeneratedId(data, Boolean(dragAndDrop), (item) => {
+            return dragAndDrop?.getDroppableId(item);
         });
-
-        return nextMap;
     }, [data, dragAndDrop]);
 
     const handleRowClick = useCallback((event: React.MouseEvent | React.KeyboardEvent, item: T) => {

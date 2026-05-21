@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-// Cache of parsed BufferGeometry keyed by GLB URL. We persist raw ArrayBuffers
-// to OPFS when available so reloads on the same machine skip network fetches.
+// Cache of parsed BufferGeometry keyed by a stable GLB resource identity. The
+// transport URL may change without the underlying model changing, so the cache
+// key is deliberately decoupled from the fetch URL.
 
 interface PoolEntry {
     geometry: THREE.BufferGeometry;
@@ -44,10 +45,10 @@ const getOpfsRoot = async (): Promise<FileSystemDirectoryHandle | null> => {
     }
 };
 
-const urlToFileName = (url: string): string => {
+const resourceKeyToFileName = (resourceKey: string): string => {
     let hash = 2166136261;
-    for (let i = 0; i < url.length; i += 1) {
-        hash ^= url.charCodeAt(i);
+    for (let i = 0; i < resourceKey.length; i += 1) {
+        hash ^= resourceKey.charCodeAt(i);
         hash = Math.imul(hash, 16777619);
     }
     return `glb-${(hash >>> 0).toString(36)}.bin`;
@@ -63,24 +64,24 @@ class GeometryPool {
         this.evict();
     }
 
-    get(url: string): THREE.BufferGeometry | null {
-        const entry = this.pool.get(url);
+    get(resourceKey: string): THREE.BufferGeometry | null {
+        const entry = this.pool.get(resourceKey);
         if (!entry) return null;
         entry.accessedAt = Date.now();
-        this.pool.delete(url);
-        this.pool.set(url, entry);
+        this.pool.delete(resourceKey);
+        this.pool.set(resourceKey, entry);
         return entry.geometry;
     }
 
-    insert(url: string, geometry: THREE.BufferGeometry): void {
-        const existing = this.pool.get(url);
+    insert(resourceKey: string, geometry: THREE.BufferGeometry): void {
+        const existing = this.pool.get(resourceKey);
         if (existing) {
             this.currentBytes = Math.max(0, this.currentBytes - existing.byteSize);
-            this.pool.delete(url);
+            this.pool.delete(resourceKey);
         }
 
         const byteSize = estimateGeometryBytes(geometry);
-        this.pool.set(url, {
+        this.pool.set(resourceKey, {
             geometry,
             accessedAt: Date.now(),
             byteSize
@@ -108,11 +109,11 @@ class GeometryPool {
         this.currentBytes = 0;
     }
 
-    async readFromOpfs(url: string): Promise<ArrayBuffer | null> {
+    async readFromOpfs(resourceKey: string): Promise<ArrayBuffer | null> {
         const root = await getOpfsRoot();
         if (!root) return null;
         try {
-            const handle = await root.getFileHandle(urlToFileName(url));
+            const handle = await root.getFileHandle(resourceKeyToFileName(resourceKey));
             const file = await handle.getFile();
             return await file.arrayBuffer();
         } catch {
@@ -120,11 +121,11 @@ class GeometryPool {
         }
     }
 
-    async writeToOpfs(url: string, buffer: ArrayBuffer): Promise<void> {
+    async writeToOpfs(resourceKey: string, buffer: ArrayBuffer): Promise<void> {
         const root = await getOpfsRoot();
         if (!root) return;
         try {
-            const handle = await root.getFileHandle(urlToFileName(url), { create: true });
+            const handle = await root.getFileHandle(resourceKeyToFileName(resourceKey), { create: true });
             const writable = await handle.createWritable();
             await writable.write(buffer);
             await writable.close();
