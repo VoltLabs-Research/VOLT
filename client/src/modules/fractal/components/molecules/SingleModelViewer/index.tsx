@@ -5,7 +5,7 @@ import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-worl
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import { computeGlbUrl } from '@/modules/fractal/api/service/compute-glb-url';
+import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fit';
 import { useThree } from '@react-three/fiber';
@@ -201,8 +201,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig, modelWorldBounds);
 
     const canvasMode = useCanvasAccessMode();
-    const url = useMemo(() =>
-        computeGlbUrl({
+    const glbResource = useMemo(() =>
+        resolveGlbResource({
             teamId: teamId || '',
             trajectoryId,
             currentTimestep,
@@ -212,6 +212,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         }),
         [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
     );
+    const url = glbResource.url;
 
     const handleEmptyData = useCallback(async () => {
         return;
@@ -227,6 +228,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         onHoverChange
     } = useGlbScene({
         url,
+        resourceKey: glbResource.resourceKey,
         sliceClippingPlanes,
         position: {
             x: position.x ?? 0,

@@ -142,6 +142,12 @@ app.use(compression({
 }));
 app.use(express.json({ limit: '1mb', verify: captureRawBody }));
 app.use(express.urlencoded({ extended: true, limit: '1mb', verify: captureRawBody }));
+app.head('/healthz', (_req: Request, res: Response) => {
+    res.status(204).end();
+});
+app.get('/healthz', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok' });
+});
 app.use(express.static('static'));
 
 export default app;

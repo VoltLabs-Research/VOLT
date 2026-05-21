@@ -1,14 +1,15 @@
 import {
+    buildTeamClusterEntity,
+    createDaemonPassword,
+    createServiceCredentials,
+    encryptTeamClusterServices
+} from '@modules/cluster/application/utilities/team-cluster-builder';
+import {
     ProvisionDemoTeamClusterInputDTO,
     ProvisionDemoTeamClusterOutputDTO
 } from '@modules/cluster/application/dtos/DemoTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
-import TeamCluster, {
-    createDefaultTeamClusterRoleConfig,
-    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
-    TeamClusterStatus
-} from '@modules/cluster/domain/entities/TeamCluster';
+import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
 import DemoClusterDeploymentService, {
@@ -20,24 +21,24 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
-import crypto from 'node:crypto';
 import { injectable } from 'tsyringe';
 
 const DEMO_CLUSTER_TTL_MINUTES = readNumberEnv('DEMO_CLUSTER_TTL_MINUTES', 30);
 
 const buildPlaintextCredentials = (enrollmentToken: string): DemoClusterPlaintextCredentials => {
-    const suffix = (): string => crypto.randomBytes(4).toString('hex');
-    const password = (): string => crypto.randomBytes(24).toString('hex');
+    const minio = createServiceCredentials('minio');
+    const redis = createServiceCredentials('redis');
+    const mongodb = createServiceCredentials('mongodb');
 
     return {
         enrollmentToken,
-        minioUsername: `volt_minio_${suffix()}`,
-        minioPassword: password(),
-        redisUsername: `volt_redis_${suffix()}`,
-        redisPassword: password(),
-        mongodbUsername: `volt_mongodb_${suffix()}`,
-        mongodbPassword: password(),
-        daemonPassword: password()
+        minioUsername: minio.username,
+        minioPassword: minio.password,
+        redisUsername: redis.username,
+        redisPassword: redis.password,
+        mongodbUsername: mongodb.username,
+        mongodbPassword: mongodb.password,
+        daemonPassword: createDaemonPassword()
     };
 };
 
@@ -60,66 +61,35 @@ export default class ProvisionDemoTeamClusterUseCase implements IUseCase<Provisi
 
         const enrollmentToken = createEnrollmentToken();
         const credentials = buildPlaintextCredentials(enrollmentToken);
-
-        const [
-            encryptedMinioUsername,
-            encryptedMinioPassword,
-            encryptedRedisUsername,
-            encryptedRedisPassword,
-            encryptedMongodbUsername,
-            encryptedMongodbPassword,
-            encryptedDaemonPassword
-        ] = await Promise.all([
-            this.teamClusterCredentialsCipher.encrypt(credentials.minioUsername),
-            this.teamClusterCredentialsCipher.encrypt(credentials.minioPassword),
-            this.teamClusterCredentialsCipher.encrypt(credentials.redisUsername),
-            this.teamClusterCredentialsCipher.encrypt(credentials.redisPassword),
-            this.teamClusterCredentialsCipher.encrypt(credentials.mongodbUsername),
-            this.teamClusterCredentialsCipher.encrypt(credentials.mongodbPassword),
-            this.teamClusterCredentialsCipher.encrypt(credentials.daemonPassword)
-        ]);
-
         const now = new Date();
         const expiresAt = new Date(now.getTime() + DEMO_CLUSTER_TTL_MINUTES * 60_000);
-
-        const teamCluster = new TeamCluster('', {
-            name: `Demo Cluster ${now.toISOString().slice(0, 16).replace('T', ' ')}`,
-            team: input.teamId,
-            createdBy: input.userId,
-            status: TeamClusterStatus.WaitingForConnection,
-            enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
-            installedVersion: null,
-            installRoot: null,
-            lastHeartbeatAt: null,
-            lastDisconnectAt: null,
-            services: {
-                minio: {
-                    port: null,
-                    username: encryptedMinioUsername,
-                    password: encryptedMinioPassword
-                },
-                redis: {
-                    port: null,
-                    username: encryptedRedisUsername,
-                    password: encryptedRedisPassword
-                },
-                mongodb: {
-                    port: null,
-                    username: encryptedMongodbUsername,
-                    password: encryptedMongodbPassword
-                },
-                daemon: {
-                    port: null,
-                    password: encryptedDaemonPassword
-                }
+        const encryptedServices = await encryptTeamClusterServices(this.teamClusterCredentialsCipher, {
+            minio: {
+                username: credentials.minioUsername,
+                password: credentials.minioPassword
             },
-            queueConcurrency: DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-            queueScopeLimits: DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
-            roleConfig: createDefaultTeamClusterRoleConfig(),
+            redis: {
+                username: credentials.redisUsername,
+                password: credentials.redisPassword
+            },
+            mongodb: {
+                username: credentials.mongodbUsername,
+                password: credentials.mongodbPassword
+            },
+            daemon: {
+                password: credentials.daemonPassword
+            }
+        });
+
+        const teamCluster = buildTeamClusterEntity({
+            name: `Demo Cluster ${now.toISOString().slice(0, 16).replace('T', ' ')}`,
+            teamId: input.teamId,
+            createdBy: input.userId,
+            enrollmentTokenHash: hashEnrollmentToken(enrollmentToken),
+            services: encryptedServices,
             isDemo: true,
             demoExpiresAt: expiresAt,
-            createdAt: now,
-            updatedAt: now
+            now
         });
 
         let createdTeamCluster: TeamCluster;

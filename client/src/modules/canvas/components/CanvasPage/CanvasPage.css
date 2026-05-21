@@ -164,6 +164,58 @@
     height: auto;
 }
 
+.canvas-center-timeline.canvas-center-timeline--local {
+    padding: 0.875rem 1rem;
+    width: auto;
+    max-width: min(44rem, calc(100% - 1.5rem));
+    border-top-right-radius: 14px;
+}
+
+.canvas-local-viewer-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.875rem;
+    align-items: center;
+}
+
+.canvas-local-viewer-controls__meta {
+    min-width: 0;
+}
+
+.canvas-local-viewer-controls__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-local-viewer-controls__subtitle {
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.canvas-local-viewer-controls__transport {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: min(22rem, 46vw);
+}
+
+.canvas-local-viewer-controls__slider {
+    width: min(22rem, 46vw);
+    accent-color: var(--accent-blue);
+}
+
+.canvas-local-viewer-controls__index {
+    min-width: 3.5rem;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
 @media (max-width: 768px) {
     .canvas-editor-root {
         --canvas-header-height: 40px;
@@ -174,6 +226,34 @@
         --canvas-mobile-control-column-right: calc(0.5rem + env(safe-area-inset-right, 0px));
         --canvas-mobile-drawer-trigger-top: calc(1rem + env(safe-area-inset-top, 0px));
         --canvas-mobile-viewport-controls-top: calc(var(--canvas-mobile-drawer-trigger-top) + var(--canvas-mobile-control-column-size) + 0.5rem);
+    }
+
+    .canvas-center-timeline.canvas-center-timeline--local {
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: none;
+        border-top-right-radius: 0;
+        border-top-left-radius: 0;
+        padding: 0.75rem 0.875rem calc(0.875rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .canvas-local-viewer-controls {
+        grid-template-columns: 1fr;
+        gap: 0.625rem;
+    }
+
+    .canvas-local-viewer-controls__transport {
+        min-width: 0;
+    }
+
+    .canvas-local-viewer-controls__slider {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .canvas-local-viewer-controls__index {
+        text-align: left;
     }
 
 }

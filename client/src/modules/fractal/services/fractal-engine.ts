@@ -28,7 +28,7 @@ interface FractalEngineState {
     model: THREE.Group | null;
     mesh: THREE.Mesh | THREE.Points | null;
     bounds: BoundsInfo | null;
-    lastLoadedUrl: string | null;
+    lastLoadedResourceKey: string | null;
     isLoading: boolean;
     loadProgress: number;
     loadError: string | null;
@@ -46,6 +46,7 @@ interface DislocationGeometryUserData {
 
 export type FractalParams = {
     url?: string | null;
+    resourceKey?: string | null;
     sliceClippingPlanes: Plane[];
     position: Pos3D;
     rotation: Pos3D;
@@ -131,7 +132,7 @@ export class FractalEngine {
         model: null,
         mesh: null,
         bounds: null,
-        lastLoadedUrl: null,
+        lastLoadedResourceKey: null,
         isLoading: false,
         loadProgress: 0,
         loadError: null
@@ -171,9 +172,11 @@ export class FractalEngine {
     }
 
     configure(params: FractalParams) {
-        const didUrlChange = params.url !== this.params.url;
+        const nextResourceKey = params.resourceKey ?? params.url ?? null;
+        const previousResourceKey = this.params.resourceKey ?? this.params.url ?? null;
+        const didResourceChange = nextResourceKey !== previousResourceKey;
         this.params = params;
-        if (didUrlChange) {
+        if (didResourceChange) {
             this.consecutiveLoadFailures = 0;
             this.state.loadError = null;
         }
@@ -206,7 +209,8 @@ export class FractalEngine {
     async loadIfNeeded() {
         if (this.isDisposed) return;
         const url = this.params.url ?? null;
-        if (!url || url === this.state.lastLoadedUrl || this.state.isLoading) return;
+        const resourceKey = this.params.resourceKey ?? url;
+        if (!url || !resourceKey || resourceKey === this.state.lastLoadedResourceKey || this.state.isLoading) return;
         if (this.consecutiveLoadFailures >= FractalEngine.MAX_LOAD_RETRIES) return;
 
         const currentLoadGeneration = ++this.loadGeneration;
@@ -218,6 +222,7 @@ export class FractalEngine {
         this.state.loadError = null;
         debugFractal('engine.load-start', {
             url,
+            resourceKey,
             sceneKey: this.params.sceneKey,
             clippingPlanes: this.params.sliceClippingPlanes.length
         });
@@ -228,7 +233,7 @@ export class FractalEngine {
                 const pct = Math.round(progress * 100);
                 this.state.loadProgress = pct;
                 this.callbacks.onLoadingState?.({ isLoading: true, progress: pct, error: null });
-            }, currentAbortController.signal);
+            }, currentAbortController.signal, resourceKey);
 
             if (this.isDisposed || currentLoadGeneration !== this.loadGeneration) {
                 loadedModel.removeFromParent();
@@ -275,7 +280,7 @@ export class FractalEngine {
             this.state.model = loadedModel;
             this.state.mesh = newMesh;
             this.state.bounds = bounds;
-            this.state.lastLoadedUrl = url;
+            this.state.lastLoadedResourceKey = resourceKey;
             this.traversalCache = this.buildTraversalCache(loadedModel);
             this.consecutiveLoadFailures = 0;
 
@@ -283,6 +288,7 @@ export class FractalEngine {
 
             debugFractal('engine.load-success', {
                 url,
+                resourceKey,
                 sceneKey: this.params.sceneKey,
                 hasPointClouds,
                 pointCloudCount: this.traversalCache.pointClouds.length,
@@ -315,6 +321,7 @@ export class FractalEngine {
             this.state.loadError = message;
             warnFractal('engine.load-failed', {
                 url,
+                resourceKey,
                 sceneKey: this.params.sceneKey,
                 attempts: this.consecutiveLoadFailures,
                 message
@@ -329,7 +336,8 @@ export class FractalEngine {
                 this.surface.invalidate();
             }
             const latestUrl = this.params.url ?? null;
-            if (!this.isDisposed && latestUrl && latestUrl !== this.state.lastLoadedUrl
+            const latestResourceKey = this.params.resourceKey ?? latestUrl;
+            if (!this.isDisposed && latestUrl && latestResourceKey && latestResourceKey !== this.state.lastLoadedResourceKey
                 && this.consecutiveLoadFailures < FractalEngine.MAX_LOAD_RETRIES) {
                 this.loadIfNeeded();
             }

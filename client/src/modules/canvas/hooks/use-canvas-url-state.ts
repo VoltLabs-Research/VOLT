@@ -27,6 +27,15 @@ const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     return CanvasWorkspace.Scene;
 };
 
+const parseNumberParam = (value: string | null): number | undefined => {
+    if (value === null) {
+        return undefined;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 const useCanvasUrlState = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const {
@@ -42,6 +51,7 @@ const useCanvasUrlState = () => {
     const settingsKey = searchParams.get('settings') || undefined;
     const selectedNotebookId = searchParams.get('notebook') || undefined;
     const rasterModel = searchParams.get('rasterModel') || undefined;
+    const requestedTimestep = parseNumberParam(searchParams.get('timestep'));
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
@@ -85,6 +95,10 @@ const useCanvasUrlState = () => {
         updateSearchParams({ rasterModel: value ?? null }, options);
     }, [updateSearchParams]);
 
+    const setRequestedTimestep = useCallback((value?: number | null, options?: UpdateOptions) => {
+        updateSearchParams({ timestep: value ?? null }, options);
+    }, [updateSearchParams]);
+
     const setRenderConfigOpen = useCallback((open: boolean, options?: UpdateOptions) => {
         updateSearchParams({ renderConfig: open ? 'true' : null }, options);
     }, [updateSearchParams]);
@@ -122,6 +136,7 @@ const useCanvasUrlState = () => {
         settingsKey,
         selectedNotebookId,
         rasterModel,
+        requestedTimestep,
         showWidgets,
         showGrid,
         showGizmo,
@@ -137,6 +152,7 @@ const useCanvasUrlState = () => {
         setSettingsKey,
         setSelectedNotebookId,
         setRasterModel,
+        setRequestedTimestep,
         setRenderConfigOpen,
         setActiveWorkspace,
         setModifiers

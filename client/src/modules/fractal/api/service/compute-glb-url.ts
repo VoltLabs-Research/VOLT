@@ -17,6 +17,11 @@ export interface ComputeGlbUrlParams {
     mode?: CanvasAccessMode;
 }
 
+export interface ResolvedGlbResource {
+    url: string | null;
+    resourceKey: string | null;
+}
+
 const DEFAULT_ANALYSIS_ID = 'default';
 
 const isPropertyCondition = (condition: ParticleFilterSceneCondition) => {
@@ -131,16 +136,60 @@ export const computeGlbUrl = ({
     activeScene,
     mode = 'rbac'
 }: ComputeGlbUrlParams): string | null => {
-    if (!trajectoryId || currentTimestep === undefined) return null;
+    return resolveGlbResource({
+        teamId,
+        trajectoryId,
+        currentTimestep,
+        analysisId,
+        activeScene,
+        mode
+    }).url;
+};
+
+export const resolveGlbResource = ({
+    teamId,
+    trajectoryId,
+    currentTimestep,
+    analysisId,
+    activeScene,
+    mode = 'rbac'
+}: ComputeGlbUrlParams): ResolvedGlbResource => {
+    if (!trajectoryId || currentTimestep === undefined) {
+        return {
+            url: null,
+            resourceKey: null
+        };
+    }
 
     switch (activeScene?.source) {
-        case 'plugin':
-            return buildPluginUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
-        case 'color-coding':
-            return buildColorCodingUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
-        case 'particle-filter':
-            return buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+        case 'plugin': {
+            const url = buildPluginUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            return {
+                url,
+                resourceKey: url
+            };
+        }
+        case 'color-coding': {
+            const url = buildColorCodingUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            return {
+                url,
+                resourceKey: url
+            };
+        }
+        case 'particle-filter': {
+            const url = buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            return {
+                url,
+                resourceKey: url
+            };
+        }
         default:
-            return buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`);
+            return {
+                url: buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`),
+                // Why: the default trajectory GLB endpoint ignores analysisId
+                // server-side, so analysis selection must not invalidate the
+                // core model identity or trigger a reload.
+                resourceKey: `trajectory:${trajectoryId}:${currentTimestep}`
+            };
     }
 };

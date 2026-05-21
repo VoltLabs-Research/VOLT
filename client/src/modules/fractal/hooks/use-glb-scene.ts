@@ -35,6 +35,7 @@ import type { RefObject } from 'react';
 function extractEngineParams(params: UseGlbSceneParams): FractalParams {
     return {
         url: params.url,
+        resourceKey: params.resourceKey,
         sliceClippingPlanes: params.sliceClippingPlanes,
         position: params.position,
         rotation: params.rotation,
@@ -172,6 +173,7 @@ export default function useGlbScene(
         engine.updateDislocationLineWidth(paramsRef.current.dislocationLineSettings);
     }, [
         params.url,
+        params.resourceKey,
         params.sliceClippingPlanes,
         params.position.x, params.position.y, params.position.z,
         params.rotation.x, params.rotation.y, params.rotation.z,
@@ -232,7 +234,7 @@ export default function useGlbScene(
                 pendingLoadRef.current = null;
             }
         };
-    }, [params.updateThrottle, updateScene]);
+    }, [params.resourceKey, params.updateThrottle, updateScene]);
 
     useEffect(() => {
         if (!loadingState.error) return;

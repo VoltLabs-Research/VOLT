@@ -239,67 +239,52 @@ export const findCachedAnalysisById = ({ analysisId, trajectoryId, fallbackAnaly
     return undefined;
 };
 
-export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): void => {
-    const patchEntity = (a: Analysis): Analysis => {
-        if (a._id !== patch.analysisId) return a;
-        return {
-            ...a,
-            status: patch.status,
-            completedFrames: patch.completedFrames ?? a.completedFrames,
-            totalFrames: patch.totalFrames ?? a.totalFrames,
-            artifactStatus: patch.artifactStatus ?? a.artifactStatus,
-            expectedArtifacts: patch.expectedArtifacts ?? a.expectedArtifacts,
-            stages: patch.stages ?? a.stages,
-            childAnalyses: patch.childAnalyses ?? a.childAnalyses
-        };
+const patchAnalysisCaches = (
+    analysisId: string,
+    patchEntity: (analysis: Analysis) => Analysis
+): void => {
+    const applyPatch = (analysis: Analysis): Analysis => {
+        return analysis._id === analysisId ? patchEntity(analysis) : analysis;
     };
 
-    queryClient.setQueryData<Analysis>(KEYS.detail(patch.analysisId), (current) => {
-        return current ? patchEntity(current) : current;
+    queryClient.setQueryData<Analysis>(KEYS.detail(analysisId), (current) => {
+        return current ? applyPatch(current) : current;
     });
 
     analysisQuery.cache.patchAllLists((current) => ({
         ...current,
-        data: current.data.map(patchEntity)
+        data: current.data.map(applyPatch)
     }));
 
     patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => ({
         ...page,
-        data: page.data.map(patchEntity)
+        data: page.data.map(applyPatch)
     }));
     patchByTrajectoryQueries((page) => ({
         ...page,
-        data: page.data.map(patchEntity)
+        data: page.data.map(applyPatch)
+    }));
+};
+
+export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): void => {
+    patchAnalysisCaches(patch.analysisId, (analysis) => ({
+        ...analysis,
+        status: patch.status,
+        completedFrames: patch.completedFrames ?? analysis.completedFrames,
+        totalFrames: patch.totalFrames ?? analysis.totalFrames,
+        artifactStatus: patch.artifactStatus ?? analysis.artifactStatus,
+        expectedArtifacts: patch.expectedArtifacts ?? analysis.expectedArtifacts,
+        stages: patch.stages ?? analysis.stages,
+        childAnalyses: patch.childAnalyses ?? analysis.childAnalyses
     }));
 };
 
 export const updateAnalysisExecutionCaches = (patch: PatchAnalysisExecutionInput): void => {
-    const patchEntity = (a: Analysis): Analysis => {
-        if (a._id !== patch.analysisId) return a;
-        return {
-            ...a,
-            artifactStatus: patch.artifactStatus ?? a.artifactStatus,
-            expectedArtifacts: patch.expectedArtifacts ?? a.expectedArtifacts,
-            stages: patch.stages ?? a.stages,
-            childAnalyses: patch.childAnalyses ?? a.childAnalyses
-        };
-    };
-
-    queryClient.setQueryData<Analysis>(KEYS.detail(patch.analysisId), (current) => {
-        return current ? patchEntity(current) : current;
-    });
-
-    analysisQuery.cache.patchAllLists((current) => ({
-        ...current,
-        data: current.data.map(patchEntity)
-    }));
-
-    patchPaginatedPage<Analysis>(KEYS.byTrajectory(), (page) => ({
-        ...page,
-        data: page.data.map(patchEntity)
-    }));
-    patchByTrajectoryQueries((page) => ({
-        ...page,
-        data: page.data.map(patchEntity)
+    patchAnalysisCaches(patch.analysisId, (analysis) => ({
+        ...analysis,
+        artifactStatus: patch.artifactStatus ?? analysis.artifactStatus,
+        expectedArtifacts: patch.expectedArtifacts ?? analysis.expectedArtifacts,
+        stages: patch.stages ?? analysis.stages,
+        childAnalyses: patch.childAnalyses ?? analysis.childAnalyses
     }));
 };

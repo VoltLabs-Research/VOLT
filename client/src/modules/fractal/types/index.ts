@@ -26,6 +26,7 @@ export interface OrbitControlsHandle {
 
 export type UseGlbSceneParams = {
     url?: string | null;
+    resourceKey?: string | null;
     sliceClippingPlanes: Plane[];
     position: Pos3D;
     rotation: Pos3D;
