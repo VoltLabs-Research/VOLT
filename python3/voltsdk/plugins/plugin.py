@@ -34,6 +34,24 @@ class PluginRun:
                 return artifact
         return None
 
+    def path(self, name: str) -> Path:
+        artifact = self.artifact(name)
+        if artifact is not None:
+            return artifact
+        available = ', '.join(sorted(self.artifacts)) or '<none>'
+        raise PluginError(f'Artifact {name!r} not found. Available artifacts: {available}.')
+
+    def df(self, name: str, key: str | None = None):
+        path = self.path(name)
+        suffix = path.suffix.lower()
+        if suffix == '.msgpack':
+            from ..io.msgpack import msgpack_as_df
+
+            return msgpack_as_df(str(path), key)
+        if suffix == '.json':
+            return _json_df(path, key)
+        raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
+
 
 class Plugin:
     """A single plugin instance backed by a downloaded bundle.
@@ -75,7 +93,7 @@ class Plugin:
     ) -> PluginRun:
         config = _prepare_config({**self.options, **options})
         input_path = Path(input_file).expanduser().resolve()
-        output = Path(output_base).expanduser() if output_base else input_path.with_suffix("")
+        output = Path(output_base).expanduser().resolve() if output_base else input_path.with_suffix("")
         output.parent.mkdir(parents=True, exist_ok=True)
 
         command, completed = self._run_subprocess(
@@ -269,6 +287,39 @@ def _canonical_artifact_name(prefix: str, filename: str) -> str:
     if filename.startswith(f"{prefix}_"):
         return filename[len(prefix) + 1 :]
     return filename
+
+
+def _json_df(path: Path, key: str | None):
+    import pandas as pd
+
+    from ..io.msgpack import get_nested_value
+
+    with path.open('r', encoding='utf-8') as fh:
+        data = get_nested_value(json.load(fh), key)
+    return _data_as_df(data, pd)
+
+
+def _data_as_df(data: Any, pd):
+    if data is None:
+        return pd.DataFrame()
+    if isinstance(data, list):
+        return pd.DataFrame(data)
+    if _is_columnar_dict(data):
+        return pd.DataFrame(data)
+    if isinstance(data, dict):
+        return pd.DataFrame([data])
+    return pd.DataFrame([{'value': data}])
+
+
+def _is_columnar_dict(value: Any) -> bool:
+    if not isinstance(value, dict) or not value:
+        return False
+    lengths: list[int] = []
+    for item in value.values():
+        if not isinstance(item, list):
+            return False
+        lengths.append(len(item))
+    return len(set(lengths)) == 1
 
 
 def _env(root: Path) -> dict[str, str]:

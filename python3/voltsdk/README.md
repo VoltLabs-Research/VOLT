@@ -56,10 +56,10 @@ ptm = hub.get("voltlabs@polyhedral-template-matching")
 result = ptm.run(
     "frame.dump",
     output_base="out/frame",
-    crystalStructure="FCC",
+    crystal_structure="FCC",
     rmsd=0.1,
 )
-print(result.artifact("annotatedDump"))
+print(result.path("annotated.dump"))
 ```
 
 The same hub is exposed on an authenticated client via `client.plugins`.
