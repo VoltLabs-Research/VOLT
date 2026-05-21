@@ -187,7 +187,7 @@
             },
             "linux-x86_64": {
               "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-linux-x86_64.tar.zst",
-              "sha256": "45ead7e46928f10c6597dabf7ed4681a58150dd1fe3f90f1d4880fc6f0c7fae9"
+              "sha256": "04a946b6999d063fe24ca5232d7d4e85e2033c65640dacc12888ca485f6445d0"
             },
             "windows-x86_64": {
               "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-windows-x86_64.tar.zst",
@@ -227,7 +227,7 @@
             },
             "linux-x86_64": {
               "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-linux-x86_64.tar.zst",
-              "sha256": "bfccaee3e7abcbd3873d3fceebc55e87638d03608ceec458e22d411f63b29c83"
+              "sha256": "a68fcd7b741a095b30297da6e807110e12520367fb6d7da071a24fe500437888"
             },
             "windows-x86_64": {
               "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-windows-x86_64.tar.zst",
