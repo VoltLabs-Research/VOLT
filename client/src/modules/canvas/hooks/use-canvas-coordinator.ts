@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
-    const { analysisId } = useCanvasUrlState();
+    const { analysisId, requestedTimestep } = useCanvasUrlState();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
     const shouldFetch = Boolean(trajectoryId);
 
@@ -83,6 +83,7 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const resolvedCurrentTimestep = getNearestTimestep(currentTimestep, availableTimesteps);
     const isAwaitingSelectedAnalysis = Boolean(analysisId && analysesQuery.isLoading && !selectedAnalysis);
     const previousTimelineScopeKeyRef = useRef<string>('');
+    const previousRequestedTimestepKeyRef = useRef<string>('');
 
     useEffect(() => {
         if (isAwaitingSelectedAnalysis || previousTimelineScopeKeyRef.current === timelineScopeKey) {
@@ -104,6 +105,37 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
 
         setCurrentTimestep(resolvedCurrentTimestep);
     }, [trajectory, isAwaitingSelectedAnalysis, resolvedCurrentTimestep, currentTimestep, setCurrentTimestep]);
+
+    useEffect(() => {
+        if (!trajectory || isAwaitingSelectedAnalysis) {
+            return;
+        }
+
+        if (requestedTimestep === undefined) {
+            previousRequestedTimestepKeyRef.current = '';
+            return;
+        }
+
+        const requestedTimestepKey = `${requestedTimestep}|${availableTimesteps.join(',')}`;
+        if (previousRequestedTimestepKeyRef.current === requestedTimestepKey) {
+            return;
+        }
+
+        previousRequestedTimestepKeyRef.current = requestedTimestepKey;
+        const nextTimestep = getNearestTimestep(requestedTimestep, availableTimesteps);
+        if (nextTimestep === undefined || nextTimestep === currentTimestep) {
+            return;
+        }
+
+        setCurrentTimestep(nextTimestep);
+    }, [
+        availableTimesteps,
+        currentTimestep,
+        isAwaitingSelectedAnalysis,
+        requestedTimestep,
+        setCurrentTimestep,
+        trajectory
+    ]);
 
     const prevTrajectoryStatusRef = useRef<string | undefined>(undefined);
 

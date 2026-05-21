@@ -4,6 +4,7 @@ export default interface IFractalAssetLoader {
     load(
         url: string,
         onProgress?: (progress: number) => void,
-        signal?: AbortSignal
+        signal?: AbortSignal,
+        resourceKey?: string
     ): Promise<THREE.Group>;
 }

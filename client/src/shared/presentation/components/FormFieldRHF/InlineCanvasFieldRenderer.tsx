@@ -5,7 +5,8 @@ import { autoUpdate, flip, FloatingPortal, offset, shift, useDismiss, useFloatin
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import type { FieldRendererProps, FieldStatusAriaProps } from './FormFieldRHF.types';
+import type { FieldRendererProps } from './FormFieldRHF.types';
+import { buildFieldAccessibilityState } from './field-accessibility';
 
 const InlineCanvasFieldRenderer = ({
     field,
@@ -24,23 +25,22 @@ const InlineCanvasFieldRenderer = ({
     isLoading
 }: FieldRendererProps) => {
     const reactId = useId();
-    const baseId = `${field.name || 'field'}-${reactId}`;
-    const labelId = `${baseId}-label`;
-    const errorId = `${baseId}-error`;
-    const fieldId = inputProps?.id ?? `${baseId}-control`;
-    const fieldName = inputProps?.name ?? field.name;
-    const describedBy = [inputProps?.['aria-describedby'], error ? errorId : undefined]
-        .filter((value): value is string => Boolean(value?.trim()))
-        .join(' ') || undefined;
-    const ariaLabelledBy = label ? labelId : undefined;
-    const fieldStatusAriaProps: FieldStatusAriaProps = {
-        'aria-describedby': describedBy,
-        'aria-invalid': error ? true : undefined,
-        'aria-errormessage': error ? errorId : undefined
-    };
-    const labelTargetId = fieldType === 'input' || fieldType === 'textarea' || fieldType === 'color'
-        ? fieldId
-        : undefined;
+    const {
+        labelId,
+        errorId,
+        fieldId,
+        fieldName,
+        ariaLabelledBy,
+        fieldStatusAriaProps,
+        labelTargetId
+    } = buildFieldAccessibilityState({
+        reactId,
+        field,
+        label,
+        error,
+        fieldType,
+        inputProps
+    });
 
     const inputElementRef = useRef<HTMLInputElement | null>(null);
     const textareaElementRef = useRef<HTMLTextAreaElement | null>(null);

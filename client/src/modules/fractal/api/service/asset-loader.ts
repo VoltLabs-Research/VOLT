@@ -43,6 +43,7 @@ const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => (
 // FractalAssetLoader: downloads the GLB bytes, parses, and caches both the
 // raw ArrayBuffer (for fast re-parse) and the parsed BufferGeometry (via the
 // GeometryPool). Parsed geometries avoid the GLTFLoader cost on hot paths.
+// Cache lookups use a stable resource key, not necessarily the transport URL.
 
 export class FractalAssetLoader implements IFractalAssetLoader {
     private static sharedDracoLoader: DRACOLoader | null = null;
@@ -105,48 +106,51 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         geometryPool.clear();
     }
 
-    static async preload(url: string, signal?: AbortSignal): Promise<void> {
-        if (geometryPool.get(url)) return;
-        const existing = await geometryPool.readFromOpfs(url);
+    static async preload(url: string, signal?: AbortSignal, resourceKeyOverride?: string): Promise<void> {
+        const resourceKey = resourceKeyOverride || url;
+        if (geometryPool.get(resourceKey)) return;
+        const existing = await geometryPool.readFromOpfs(resourceKey);
         if (existing) return;
         const blob = await FractalAssetLoader.requestBlob(url, signal);
         if (signal?.aborted) return;
         const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
         if (signal?.aborted) return;
-        await geometryPool.writeToOpfs(url, arrayBuffer);
+        await geometryPool.writeToOpfs(resourceKey, arrayBuffer);
     }
 
     async load(
         url: string,
         onProgress?: (progress: number) => void,
-        signal?: AbortSignal
+        signal?: AbortSignal,
+        resourceKeyOverride?: string
     ): Promise<THREE.Group> {
+        const resourceKey = resourceKeyOverride || url;
         if (signal?.aborted) throw FractalAssetLoader.createAbortError();
 
-        const cached = geometryPool.get(url);
+        const cached = geometryPool.get(resourceKey);
         if (cached) {
             onProgress?.(1);
-            debugFractal('asset-loader.geometry-cache-hit', { url });
+            debugFractal('asset-loader.geometry-cache-hit', { url, resourceKey });
             return this.wrapGeometry(cached);
         }
 
-        let arrayBuffer = await geometryPool.readFromOpfs(url);
+        let arrayBuffer = await geometryPool.readFromOpfs(resourceKey);
         if (!arrayBuffer) {
             const blob = await FractalAssetLoader.requestBlob(url, signal);
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
             arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
-            debugFractal('asset-loader.fetch-complete', { url, bytes: arrayBuffer.byteLength });
-            void geometryPool.writeToOpfs(url, arrayBuffer);
+            debugFractal('asset-loader.fetch-complete', { url, resourceKey, bytes: arrayBuffer.byteLength });
+            void geometryPool.writeToOpfs(resourceKey, arrayBuffer);
         } else {
-            debugFractal('asset-loader.opfs-hit', { url, bytes: arrayBuffer.byteLength });
+            debugFractal('asset-loader.opfs-hit', { url, resourceKey, bytes: arrayBuffer.byteLength });
         }
         onProgress?.(1);
 
         const group = await this.parse(arrayBuffer, signal);
         const geometry = this.extractRenderableGeometry(group);
         if (geometry) {
-            geometryPool.insert(url, geometry);
+            geometryPool.insert(resourceKey, geometry);
         }
         return group;
     }
