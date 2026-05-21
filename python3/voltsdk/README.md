@@ -73,7 +73,8 @@ For plugin runs, `open_in_volt(...)` auto-assembles supported `.json` and
 For local files, VoltSDK serves them directly to `/canvas/glb` without creating
 fake analyses. In a Volt notebook it uses the Jupyter proxy; on a local machine
 it starts a tiny background file server. The browser still needs an authenticated
-Volt session.
+Volt session. By default the viewer opens against `https://app.voltcloud.dev`;
+override it with `volt_url=...` or `VOLT_APP_URL` if needed.
 
 ## SpatialAssembler
 

@@ -23,6 +23,7 @@ import requests
 
 _LOCAL_VIEWER_HOST = '127.0.0.1'
 _LOCAL_JUPYTER_URL = 'http://127.0.0.1:8888'
+_DEFAULT_VOLT_APP_URL = 'https://app.voltcloud.dev'
 _NOTEBOOK_VIEWER_ROOT = PurePosixPath('.voltsdk-viewer')
 
 
@@ -470,7 +471,7 @@ def _resolve_volt_app_url(volt_url: str | None) -> str:
         normalized = _normalize_app_url(candidate)
         if normalized:
             return normalized
-    return 'http://localhost:3000'
+    return _DEFAULT_VOLT_APP_URL
 
 
 def _normalize_app_url(value: str | None) -> str | None:
