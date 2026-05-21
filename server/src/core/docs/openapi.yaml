@@ -7280,25 +7280,30 @@ paths:
                     type: object
                     additionalProperties:
                       type: object
-                      properties:
-                        latest:
-                          type: string
-                        versions:
-                          type: object
-                          additionalProperties:
+                      additionalProperties:
+                        type: object
+                        properties:
+                          publisher:
+                            type: string
+                          latest:
+                            type: string
+                          versions:
                             type: object
                             additionalProperties:
                               type: object
-                              properties:
-                                url:
-                                  type: string
-                                sha256:
-                                  type: string
-                              required:
-                                - url
-                      required:
-                        - latest
-                        - versions
+                              additionalProperties:
+                                type: object
+                                properties:
+                                  url:
+                                    type: string
+                                  sha256:
+                                    type: string
+                                required:
+                                  - url
+                        required:
+                          - publisher
+                          - latest
+                          - versions
   /api/teams/{teamId}/members:
     get:
       operationId: listTeamMembers

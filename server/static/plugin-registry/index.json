@@ -1,248 +1,269 @@
 {
   "plugins": {
-    "adaptive-common-neighbor-analysis": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "f42f90433282d1ee45baf746337f74dc5ba25f329db9dbf87131a9b822872c04"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "dccc69a5072f890bf609b1451f480d5fa03a9d0b6cf65948c43628127a8ab65f"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "7e1e81a42377223cc07b6c2b5b39cf567e13481476f39e38514080f99ccc2c6c"
+    "voltlabs": {
+      "adaptive-common-neighbor-analysis": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "f42f90433282d1ee45baf746337f74dc5ba25f329db9dbf87131a9b822872c04"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "dccc69a5072f890bf609b1451f480d5fa03a9d0b6cf65948c43628127a8ab65f"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/AdaptiveCommonNeighborAnalysis/releases/download/v1.0.0/adaptive-common-neighbor-analysis-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "7e1e81a42377223cc07b6c2b5b39cf567e13481476f39e38514080f99ccc2c6c"
+            }
           }
         }
-      }
-    },
-    "atomic-strain": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "0c158dfc1de4c3b85c081a8ee22dd7a8943b3449026f0b35a5db39111c658fc2"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "e31a81df0a3507af194cf310d52a28733528a277af2460ac4b2575f9f34c6e43"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "485742e1fc8c3b14798dbd74c3347dc9035a328d036b94857d9340a4e4615992"
+      },
+      "atomic-strain": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "0c158dfc1de4c3b85c081a8ee22dd7a8943b3449026f0b35a5db39111c658fc2"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "e31a81df0a3507af194cf310d52a28733528a277af2460ac4b2575f9f34c6e43"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/AtomicStrain/releases/download/v1.0.0/atomic-strain-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "485742e1fc8c3b14798dbd74c3347dc9035a328d036b94857d9340a4e4615992"
+            }
           }
         }
-      }
-    },
-    "centrosymmetry-parameter": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "e634550e8de8464387121c2396b6de7a4ead6c220f3969d1725cf5d766517195"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "dfc7de1e80a7b3880291ee0d0656bbd7be369ceaf53955459bc46baeccb7e3c4"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "80d715bb151a5d1df0a1efe4d3edeb4882970ca17a984774e24e6e1b817c5c13"
+      },
+      "centrosymmetry-parameter": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "e634550e8de8464387121c2396b6de7a4ead6c220f3969d1725cf5d766517195"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "dfc7de1e80a7b3880291ee0d0656bbd7be369ceaf53955459bc46baeccb7e3c4"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/CentrosymmetryParameter/releases/download/v1.0.0/centrosymmetry-parameter-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "80d715bb151a5d1df0a1efe4d3edeb4882970ca17a984774e24e6e1b817c5c13"
+            }
           }
         }
-      }
-    },
-    "cluster-analysis": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "bcf76cd23a5862b9a9df0ecc5498569281067c2677b1a3665e4e1c4b864116e6"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "3ec6d60df8df55dafe766ed7c71fd41e5f0e89747893f55a92e79d49adb5a18b"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "a8a64ee1cab0fd5691db5c533420eaa1fdcba73b3428468509af29c99d5f0e36"
+      },
+      "cluster-analysis": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "bcf76cd23a5862b9a9df0ecc5498569281067c2677b1a3665e4e1c4b864116e6"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "3ec6d60df8df55dafe766ed7c71fd41e5f0e89747893f55a92e79d49adb5a18b"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/ClusterAnalysis/releases/download/v1.0.0/cluster-analysis-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "a8a64ee1cab0fd5691db5c533420eaa1fdcba73b3428468509af29c99d5f0e36"
+            }
           }
         }
-      }
-    },
-    "cluster-daemon": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "coordination-analysis": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "efee6825047cce10299d85334835488f7b69fb88ad6c3743b68ab55e95adbebe"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "5f27f2ac3d17b8756c6db419a9965c901a8f49e6a9ea7df117f7393d66a10dea"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "fdb655f75e5fe4094c25cb60b928d253831628bab4b393f99f44ff2d3180f5f1"
+      },
+      "cluster-daemon": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "coordination-analysis": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "efee6825047cce10299d85334835488f7b69fb88ad6c3743b68ab55e95adbebe"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "5f27f2ac3d17b8756c6db419a9965c901a8f49e6a9ea7df117f7393d66a10dea"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/CoordinationAnalysis/releases/download/v1.0.0/coordination-analysis-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "fdb655f75e5fe4094c25cb60b928d253831628bab4b393f99f44ff2d3180f5f1"
+            }
           }
         }
-      }
-    },
-    "displacements-analysis": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "76658b4e3f214e4561b830e34c9a6c2d95fc6b511d5e595ccd84cd73d1cf3e13"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "58652fb651c7bf97366a68580ff90bf55ed9c9db8cc49599a6046d99a8549778"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "8342bf270f672aef8125d863aa8e72aed8dcc2785f6867a656d643998c5f4928"
+      },
+      "displacements-analysis": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "76658b4e3f214e4561b830e34c9a6c2d95fc6b511d5e595ccd84cd73d1cf3e13"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "58652fb651c7bf97366a68580ff90bf55ed9c9db8cc49599a6046d99a8549778"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/DisplacementsAnalysis/releases/download/v1.0.0/displacements-analysis-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "8342bf270f672aef8125d863aa8e72aed8dcc2785f6867a656d643998c5f4928"
+            }
           }
         }
-      }
-    },
-    "elastic-strain": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "f952caaff0f82d848d92f9acbe2f76c36313a2e37d1de4013dfb2a0a80a3fe39"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "84907d78ed101d7aacef4f1d33be0981ae8b723477ff04f5d1f11ffa541e9cbb"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "80efbcad3fba5f278c59777525bfc058498c47b8e677a71737433ac0d54e98be"
+      },
+      "elastic-strain": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "f952caaff0f82d848d92f9acbe2f76c36313a2e37d1de4013dfb2a0a80a3fe39"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "84907d78ed101d7aacef4f1d33be0981ae8b723477ff04f5d1f11ffa541e9cbb"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/ElasticStrain/releases/download/v1.0.0/elastic-strain-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "80efbcad3fba5f278c59777525bfc058498c47b8e677a71737433ac0d54e98be"
+            }
           }
         }
-      }
-    },
-    "headless-rasterizer": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "lammps-io": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "lammps-runtime": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "line-reconstruction-dxa": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "opendxa": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "997633c92bab5d52d1627cefab5f54aac3f4125ea0140d81c916a2dd1f35a300"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "45ead7e46928f10c6597dabf7ed4681a58150dd1fe3f90f1d4880fc6f0c7fae9"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "c40983e0cf4c18cc65addd4c4b849f8d4599f84d7aa3b0e3c21ab06d2150b6f9"
+      },
+      "headless-rasterizer": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "lammps-io": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "lammps-runtime": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "line-reconstruction-dxa": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "opendxa": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "997633c92bab5d52d1627cefab5f54aac3f4125ea0140d81c916a2dd1f35a300"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "45ead7e46928f10c6597dabf7ed4681a58150dd1fe3f90f1d4880fc6f0c7fae9"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/OpenDXA/releases/download/v1.0.0/opendxa-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "c40983e0cf4c18cc65addd4c4b849f8d4599f84d7aa3b0e3c21ab06d2150b6f9"
+            }
           }
         }
-      }
-    },
-    "pattern-structure-matching": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "1e3cf8331f161d45fa4726d9d2ca7a6c75d401206469e43fa92d65a8f8a0e479"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "8ea25e83d0080229f7a6f49934f676c9214a28ea3020dcd6f5f5df709ba986fa"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "4aa0bce3708cd7a754dd9338ec80d6a1c387b386f5da5b25c16fa9ba8a1283c4"
+      },
+      "pattern-structure-matching": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "1e3cf8331f161d45fa4726d9d2ca7a6c75d401206469e43fa92d65a8f8a0e479"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "8ea25e83d0080229f7a6f49934f676c9214a28ea3020dcd6f5f5df709ba986fa"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/PatternStructureMatcher/releases/download/v1.0.0/pattern-structure-matching-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "4aa0bce3708cd7a754dd9338ec80d6a1c387b386f5da5b25c16fa9ba8a1283c4"
+            }
           }
         }
-      }
-    },
-    "polyhedral-template-matching": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "darwin-arm64": {
-            "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-darwin-arm64.tar.zst",
-            "sha256": "36167d311937f65a3494146527e961fa428dacd5a5cca2591765672d9571e9ff"
-          },
-          "linux-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-linux-x86_64.tar.zst",
-            "sha256": "bfccaee3e7abcbd3873d3fceebc55e87638d03608ceec458e22d411f63b29c83"
-          },
-          "windows-x86_64": {
-            "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-windows-x86_64.tar.zst",
-            "sha256": "b2c89cf89442c797874654212e4da09272a8801135de8f46e6eed2f8f60d8b8f"
+      },
+      "polyhedral-template-matching": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "darwin-arm64": {
+              "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-darwin-arm64.tar.zst",
+              "sha256": "36167d311937f65a3494146527e961fa428dacd5a5cca2591765672d9571e9ff"
+            },
+            "linux-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-linux-x86_64.tar.zst",
+              "sha256": "bfccaee3e7abcbd3873d3fceebc55e87638d03608ceec458e22d411f63b29c83"
+            },
+            "windows-x86_64": {
+              "url": "https://github.com/VoltLabs-Research/PolyhedralTemplateMatching/releases/download/v1.0.0/polyhedral-template-matching-1.0.0-windows-x86_64.tar.zst",
+              "sha256": "b2c89cf89442c797874654212e4da09272a8801135de8f46e6eed2f8f60d8b8f"
+            }
           }
         }
-      }
-    },
-    "spatial-assembler": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "structure-identification-library": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "volt": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {}
-      }
-    },
-    "volt-sdk": {
-      "latest": "2.2.0",
-      "versions": {
-        "2.2.0": {},
-        "1.0.0": {}
+      },
+      "spatial-assembler": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "structure-identification-library": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "volt": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {}
+        }
+      },
+      "volt-sdk": {
+        "publisher": "voltlabs",
+        "latest": "2.2.0",
+        "versions": {
+          "2.2.0": {},
+          "1.0.0": {}
+        }
       }
     }
   }
