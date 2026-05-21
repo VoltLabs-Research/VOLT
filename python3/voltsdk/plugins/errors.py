@@ -10,4 +10,4 @@ class PluginNotFoundError(PluginError):
 
 
 class PluginVerificationError(PluginError):
-    """Raised when a downloaded bundle fails sha256 verification."""
+    """Reserved for plugin bundle validation failures."""

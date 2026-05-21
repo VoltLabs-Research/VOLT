@@ -9,8 +9,7 @@ Expected index format::
           "bundles": [
             {
               "name": "atomic-strain-1.0.0-linux-x86_64.tar.zst",
-              "url": "https://example.invalid/native/atomic-strain-1.0.0-linux-x86_64.tar.zst",
-              "sha256": "..."
+              "url": "https://example.invalid/native/atomic-strain-1.0.0-linux-x86_64.tar.zst"
             }
           ]
         }
@@ -32,8 +31,7 @@ The script also accepts the plugin-registry format used by VoltSDK itself::
             "versions": {
               "1.0.0": {
                 "linux-x86_64": {
-                  "url": "https://example.invalid/opendxa-1.0.0-linux-x86_64.tar.zst",
-                  "sha256": "..."
+                  "url": "https://example.invalid/opendxa-1.0.0-linux-x86_64.tar.zst"
                 }
               }
             }
@@ -46,7 +44,6 @@ The script also accepts the plugin-registry format used by VoltSDK itself::
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import tarfile
@@ -83,13 +80,10 @@ def main() -> None:
     installed: list[dict[str, str]] = []
     for number, bundle in enumerate(bundles, start=1):
         url = str(bundle["url"])
-        sha256 = str(bundle.get("sha256", "")).strip()
         name = str(bundle.get("name") or Path(urllib.parse.urlparse(url).path).name or f"bundle-{number}")
         archive_path = _fetch(index_root, url, name)
-        if sha256:
-            _verify_digest(archive_path, sha256)
         _merge_bundle(archive_path, install_root)
-        installed.append({"name": name, "url": url, "sha256": sha256})
+        installed.append({"name": name, "url": url})
         print(f"Installed {name}")
 
     metadata_dir = install_root / "share" / "voltsdk"
@@ -157,7 +151,6 @@ def _resolve_plugin_registry_bundles(publishers: dict[str, Any], platform_tag: s
                 "key": key,
                 "version": version,
                 "url": str(bundle["url"]),
-                "sha256": str(bundle.get("sha256", "")).strip(),
             }
             bundles.append(normalized)
     return bundles
@@ -198,20 +191,6 @@ def _fetch(index_root: str, url: str, fallback_name: str) -> Path:
 
 def _is_absolute(url: str) -> bool:
     return urllib.parse.urlparse(url).scheme in {"http", "https", "file"}
-
-
-def _verify_digest(path: Path, expected_sha256: str) -> None:
-    actual_sha256 = _sha256(path)
-    if actual_sha256 != expected_sha256:
-        raise SystemExit(f"sha256 mismatch for {path.name}: expected {expected_sha256}, got {actual_sha256}")
-
-
-def _sha256(path: Path) -> str:
-    hasher = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1 << 20), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
 
 
 def _merge_bundle(archive_path: Path, install_root: Path) -> None:

@@ -11,8 +11,7 @@ Index format (``GET <registry>/index.json``)::
             "versions": {
               "1.0.0": {
                 "linux-x86_64": {
-                  "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
-                  "sha256": "..."
+                  "url": "opendxa/1.0.0/linux-x86_64.tar.zst"
                 }
               }
             }
@@ -32,7 +31,6 @@ Layout inside a bundle (after extraction)::
 
 from __future__ import annotations
 
-import hashlib
 import os
 import platform
 import shutil
@@ -43,7 +41,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .errors import PluginNotFoundError, PluginVerificationError
+from .errors import PluginNotFoundError
 
 DEFAULT_REGISTRY_URL = "https://server.voltcloud.dev/plugin-registry"
 INDEX_PATH = "index.json"
@@ -56,7 +54,6 @@ class BundleRef:
     version: str
     platform: str
     url: str
-    sha256: str
 
 
 class PluginRegistry:
@@ -121,7 +118,6 @@ class PluginRegistry:
             version=version,
             platform=self.platform_tag,
             url=str(platform_entry["url"]),
-            sha256=str(platform_entry.get("sha256", "")),
         )
 
     # ------------------------------------------------------------------
@@ -135,14 +131,6 @@ class PluginRegistry:
             return target
 
         archive = self._fetch(ref.url, f"{ref.key}-{ref.version}-{ref.platform}")
-        if ref.sha256:
-            actual = _sha256(archive)
-            if actual != ref.sha256:
-                archive.unlink(missing_ok=True)
-                raise PluginVerificationError(
-                    f"sha256 mismatch for {ref.key}@{ref.version}: expected {ref.sha256}, got {actual}."
-                )
-
         if target.exists():
             shutil.rmtree(target)
         target.mkdir(parents=True, exist_ok=True)
@@ -237,14 +225,6 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 def _is_absolute(url: str) -> bool:
     return urllib.parse.urlparse(url).scheme in {"http", "https", "file"}
-
-
-def _sha256(path: Path) -> str:
-    hasher = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
 
 
 def _extract(archive: Path, target: Path) -> None:

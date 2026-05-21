@@ -166,13 +166,12 @@ The hub expects a static index plus per-platform bundles:
         "publisher": "voltlabs",
         "latest": "1.0.0",
         "versions": {
-          "1.0.0": {
-            "linux-x86_64": {
-              "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
-              "sha256": "..."
+            "1.0.0": {
+              "linux-x86_64": {
+                "url": "opendxa/1.0.0/linux-x86_64.tar.zst"
+              }
             }
           }
-        }
       }
     }
   }
