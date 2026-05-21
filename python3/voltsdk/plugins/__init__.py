@@ -4,13 +4,9 @@ from __future__ import annotations
 
 from .errors import PluginError, PluginNotFoundError, PluginVerificationError
 from .hub import PluginHub
-from .manifest import Argument, Manifest, Output
 from .plugin import Plugin, PluginRun
 
 __all__ = [
-    "Argument",
-    "Manifest",
-    "Output",
     "Plugin",
     "PluginError",
     "PluginHub",

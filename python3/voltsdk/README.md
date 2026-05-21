@@ -16,7 +16,6 @@ TBB, hwloc, and related shared libraries manually for the bundled binaries.
 Supported wheel targets published by CI:
 
 - `linux_x86_64` built on `ubuntu-24.04`
-- `macosx_13_0_x86_64`
 - `macosx_14_0_arm64`
 - `win_amd64`
 
@@ -51,9 +50,9 @@ registry; bundles are downloaded and cached on first use:
 from voltsdk import PluginHub
 
 hub = PluginHub()                          # default registry, ~/.cache/volt
-print(hub.list())                          # marketplace listing
+print(hub.list())                          # publisher-qualified marketplace listing
 
-ptm = hub.get("polyhedral-template-matching")
+ptm = hub.get("voltlabs@polyhedral-template-matching")
 result = ptm.run(
     "frame.dump",
     output_base="out/frame",
@@ -78,11 +77,13 @@ lets downloaded plugin bundles reuse the libraries installed with the wheel.
 
 ### Pinning versions
 
+Plugin identifiers are always publisher-qualified: `publisher@plugin`.
+
 ```python
-hub.get("opendxa", "1.0.0")     # explicit version
-hub["opendxa@1.0.0"]            # shorthand
-hub.install("opendxa")          # pre-download the latest bundle
-hub.uninstall("opendxa")        # drop every cached version
+hub.get("voltlabs@opendxa", "1.0.0")  # explicit version
+hub["voltlabs@opendxa"]               # shorthand for the latest version
+hub.install("voltlabs@opendxa")       # pre-download the latest bundle
+hub.uninstall("voltlabs@opendxa")     # drop every cached version
 ```
 
 ### Registry layout
@@ -99,13 +100,16 @@ The hub expects a static index plus per-platform bundles:
 ```json
 {
   "plugins": {
-    "opendxa": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "linux-x86_64": {
-            "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
-            "sha256": "..."
+    "voltlabs": {
+      "opendxa": {
+        "publisher": "voltlabs",
+        "latest": "1.0.0",
+        "versions": {
+          "1.0.0": {
+            "linux-x86_64": {
+              "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
+              "sha256": "..."
+            }
           }
         }
       }

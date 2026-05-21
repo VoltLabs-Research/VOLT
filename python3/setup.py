@@ -16,7 +16,6 @@ PACKAGE_ROOT = PROJECT_ROOT / "voltsdk"
 NATIVE_ROOT = PACKAGE_ROOT / "native"
 PLATFORM_TAG_ENV = "VOLTSDK_PLATFORM_TAG"
 
-
 def _native_runtime_staged() -> bool:
     return any((NATIVE_ROOT / name).exists() for name in ("bin", "lib", "share"))
 
@@ -44,6 +43,9 @@ if _bdist_wheel is not None:
         def get_tag(self) -> tuple[str, str, str]:
             python_tag, abi_tag, platform_tag = super().get_tag()
             requested = _requested_platform_tag()
+            if requested or _native_runtime_staged():
+                python_tag = "py3"
+                abi_tag = "none"
             if requested:
                 platform_tag = requested
             return python_tag, abi_tag, platform_tag

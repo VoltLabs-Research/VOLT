@@ -4,7 +4,8 @@ dist
 build
 .venv/
 *.egg-info
-python3/voltsdk/native
+python3/voltsdk/native/*
+!python3/voltsdk/native/__init__.py
 python3/voltsdk/dist
 python3/voltsdk/build
 __pycache__/

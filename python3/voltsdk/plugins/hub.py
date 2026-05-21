@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 from .errors import PluginNotFoundError
-from .manifest import Manifest
 from .plugin import Plugin
 from .registry import PluginRegistry
 
@@ -17,7 +16,7 @@ class PluginHub:
     Usage::
 
         hub = PluginHub()
-        ptm = hub.get("polyhedral-template-matching")
+        ptm = hub.get("voltlabs@polyhedral-template-matching")
         ptm.run("frame.dump", output_base="out/frame", rmsd=0.1)
     """
 
@@ -53,23 +52,20 @@ class PluginHub:
     def get(self, key: str, version: str | None = None) -> Plugin:
         installed = self.registry.installed(key, version) if not version else None
         root = installed or self.registry.install(key, version)
-        manifest = Manifest.load(root / "plugin.json")
-        return Plugin(manifest, root)
+        resolved_version = version or root.parent.name
+        return Plugin(key, resolved_version, root)
 
     # ------------------------------------------------------------------
     # Sugar
     # ------------------------------------------------------------------
 
     def __getitem__(self, key: str) -> Plugin:
-        if "@" in key:
-            name, version = key.split("@", 1)
-            return self.get(name, version)
         return self.get(key)
 
     def __contains__(self, key: str) -> bool:
         try:
             self.registry.resolve(key)
-        except PluginNotFoundError:
+        except (PluginNotFoundError, ValueError):
             return False
         return True
 

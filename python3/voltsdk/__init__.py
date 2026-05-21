@@ -6,12 +6,12 @@ Quick start::
 
     # Marketplace, no auth needed:
     hub = PluginHub()
-    ptm = hub.get("polyhedral-template-matching")
+    ptm = hub.get("voltlabs@polyhedral-template-matching")
     ptm.run("frame.dump", output_base="out/frame", rmsd=0.1)
 
     # Or via an authenticated client:
     client = VoltClient.from_env()
-    client.plugins.get("opendxa").run("frame.dump", output_base="out/frame")
+    client.plugins.get("voltlabs@opendxa").run("frame.dump", output_base="out/frame")
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ from .exceptions import (
     VoltTimeoutError,
 )
 from .plugins import (
-    Manifest,
     Plugin,
     PluginError,
     PluginHub,
@@ -49,7 +48,6 @@ __all__ = [
     "VoltTimeoutError",
     "msgpack_as_df",
     "view_glb",
-    "Manifest",
     "Plugin",
     "PluginError",
     "PluginHub",

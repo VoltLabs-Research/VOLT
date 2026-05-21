@@ -1,0 +1,9 @@
+model = "gpt-5.4" 
+model_provider = "azure"
+model_reasoning_effort = "xhigh"
+
+[model_providers.azure]
+name = "Azure OpenAI"
+base_url = "https://andro-moxf958t-swedencentral.openai.azure.com/openai/v1"
+env_key = "AZURE_OPENAI_API_KEY"
+wire_api = "responses"

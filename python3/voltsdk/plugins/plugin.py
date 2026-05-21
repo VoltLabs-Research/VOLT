@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 from .errors import PluginError
-from .manifest import Manifest
 
 
 @dataclass
@@ -25,13 +24,14 @@ class PluginRun:
     artifacts: dict[str, Path] = field(default_factory=dict)
 
     def artifact(self, name: str) -> Path | None:
-        artifact = self.artifacts.get(name)
-        if artifact is not None:
-            return artifact
-        if name.endswith(".msgpack"):
-            return self.artifacts.get(f"{name[:-8]}.json")
-        if name.endswith(".json"):
-            return self.artifacts.get(f"{name[:-5]}.msgpack")
+        for candidate in _artifact_lookup_candidates(name):
+            artifact = self.artifacts.get(candidate)
+            if artifact is not None:
+                return artifact
+        stem = Path(name).stem
+        for key, artifact in self.artifacts.items():
+            if Path(key).stem == stem:
+                return artifact
         return None
 
 
@@ -39,12 +39,12 @@ class Plugin:
     """A single plugin instance backed by a downloaded bundle.
 
     Plugins are obtained from :class:`voltsdk.plugins.PluginHub`; the user does
-    not instantiate this class directly. The same class powers every plugin —
-    behaviour comes from ``plugin.json``.
+    not instantiate this class directly.
     """
 
-    def __init__(self, manifest: Manifest, root: Path) -> None:
-        self.manifest = manifest
+    def __init__(self, key: str, version: str, root: Path) -> None:
+        self._key = key
+        self._version = version
         self.root = Path(root)
         self.options: dict[str, Any] = {}
 
@@ -57,7 +57,7 @@ class Plugin:
         return self
 
     def __call__(self, **options: Any) -> "Plugin":
-        clone = Plugin(self.manifest, self.root)
+        clone = Plugin(self._key, self._version, self.root)
         clone.options = {**self.options, **options}
         return clone
 
@@ -73,19 +73,16 @@ class Plugin:
         timeout: int | float | None = None,
         **options: Any,
     ) -> PluginRun:
-        raw_options = {**self.options, **options}
-        explicit_export_format = _has_explicit_export_format(raw_options)
-        config = _prepare_config(raw_options)
+        config = _prepare_config({**self.options, **options})
         input_path = Path(input_file).expanduser().resolve()
         output = Path(output_base).expanduser() if output_base else input_path.with_suffix("")
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        command, completed, effective_config = self._run_subprocess(
+        command, completed = self._run_subprocess(
             input_path,
             output,
             config,
             timeout=timeout,
-            explicit_export_format=explicit_export_format,
         )
         result = PluginRun(
             command=command,
@@ -93,11 +90,11 @@ class Plugin:
             stdout=completed.stdout,
             stderr=completed.stderr,
             output_base=output.resolve(),
-            artifacts=self._collect_artifacts(output, effective_config),
+            artifacts=self._collect_artifacts(output),
         )
         if completed.returncode != 0:
             raise PluginError(
-                f"{self.manifest.key} failed (exit {completed.returncode}).\n"
+                f"{self._key} failed (exit {completed.returncode}).\n"
                 f"$ {shlex.join(command)}\n{completed.stderr.strip()}"
             )
         return result
@@ -108,42 +105,83 @@ class Plugin:
 
     @property
     def key(self) -> str:
-        return self.manifest.key
+        return self._key
 
     @property
     def version(self) -> str:
-        return self.manifest.version
+        return self._version
 
     @property
     def arguments(self) -> tuple:
-        return self.manifest.arguments
+        return ()
 
     def __repr__(self) -> str:
-        return f"<Plugin key={self.manifest.key!r} version={self.manifest.version!r}>"
+        return f"<Plugin key={self._key!r} version={self._version!r}>"
 
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
     def _resolve_entrypoint(self) -> list[str]:
-        if self.manifest.entrypoint_script:
-            script_path = (self.root / self.manifest.entrypoint_script).resolve()
-            if script_path.exists():
-                if script_path.suffix.lower() == ".py":
-                    return [sys.executable, str(script_path)]
-                return [str(script_path)]
+        binary = self._resolve_binary()
+        if binary is not None:
+            return [str(binary)]
 
-        return [str(self._resolve_binary())]
+        script = self._resolve_script()
+        if script is not None:
+            if script.suffix.lower() == ".py":
+                return [sys.executable, str(script)]
+            return [str(script)]
 
-    def _resolve_binary(self) -> Path:
-        if not self.manifest.binary:
-            raise PluginError(f"Plugin {self.manifest.key!r} has no entrypoint binary.")
-        candidate = self.root / "bin" / self.manifest.binary
-        if not candidate.exists() and os.name == "nt":
-            candidate = candidate.with_suffix(".exe")
-        if not candidate.exists():
-            raise PluginError(f"Missing binary at {candidate}.")
-        return candidate.resolve()
+        raise PluginError(f"Could not resolve an entrypoint inside {self.root}.")
+
+    def _resolve_binary(self) -> Path | None:
+        bin_dir = self.root / "bin"
+        if not bin_dir.is_dir():
+            return None
+
+        preferred = [bin_dir / self._key]
+        if os.name == "nt":
+            preferred.insert(0, bin_dir / f"{self._key}.exe")
+        for candidate in preferred:
+            if candidate.is_file():
+                return candidate.resolve()
+
+        candidates = sorted(path for path in bin_dir.iterdir() if path.is_file())
+        if len(candidates) == 1:
+            return candidates[0].resolve()
+        if candidates:
+            executables = [path for path in candidates if os.access(path, os.X_OK) or path.suffix.lower() == ".exe"]
+            if len(executables) == 1:
+                return executables[0].resolve()
+            raise PluginError(
+                f"Multiple binaries found for plugin {self._key!r}: "
+                + ", ".join(path.name for path in executables or candidates)
+            )
+        return None
+
+    def _resolve_script(self) -> Path | None:
+        scripts_dir = self.root / "scripts"
+        if not scripts_dir.is_dir():
+            return None
+
+        wrappers = sorted(
+            path
+            for path in scripts_dir.iterdir()
+            if path.is_file() and path.suffix.lower() == ".py" and path.name.endswith("_wrapper.py")
+        )
+        if len(wrappers) == 1:
+            return wrappers[0].resolve()
+
+        candidates = sorted(path for path in scripts_dir.iterdir() if path.is_file())
+        if len(candidates) == 1:
+            return candidates[0].resolve()
+        if candidates:
+            raise PluginError(
+                f"Multiple scripts found for plugin {self._key!r}: "
+                + ", ".join(path.name for path in candidates)
+            )
+        return None
 
     def _run_subprocess(
         self,
@@ -152,41 +190,24 @@ class Plugin:
         config: dict[str, Any],
         *,
         timeout: int | float | None,
-        explicit_export_format: bool,
-    ) -> tuple[list[str], subprocess.CompletedProcess[str], dict[str, Any]]:
+    ) -> tuple[list[str], subprocess.CompletedProcess[str]]:
         command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(config)]
         completed = _subprocess_run(command, self.root, timeout)
-        if (
-            completed.returncode != 0
-            and not explicit_export_format
-            and _should_retry_without_export_flag(config, completed.stderr)
-        ):
-            fallback_config = dict(config)
-            fallback_config.pop("export-as", None)
-            fallback_command = [*self._resolve_entrypoint(), str(input_path), str(output), *_argv(fallback_config)]
-            fallback_completed = _subprocess_run(fallback_command, self.root, timeout)
-            return fallback_command, fallback_completed, fallback_config
-        return command, completed, config
+        return command, completed
 
-    def _collect_artifacts(self, output: Path, config: dict[str, Any]) -> dict[str, Path]:
+    def _collect_artifacts(self, output: Path) -> dict[str, Path]:
         result: dict[str, Path] = {}
-        export_format = _resolve_export_format(config)
-        for output_spec in self.manifest.outputs:
-            if not output_spec.suffix:
+        directory = output.parent
+        prefix = output.name
+        exact = output if output.is_file() else None
+        if exact is not None:
+            result[exact.name] = exact
+
+        for path in sorted(directory.glob(f"{prefix}*")):
+            if not path.is_file() or path == exact:
                 continue
-            for suffix in _artifact_suffix_candidates(output_spec.suffix, export_format):
-                path = Path(f"{output}{suffix}")
-                if path.exists():
-                    result[output_spec.name] = path
-                    break
-        for exposure in self.manifest.exposures:
-            for exposure_name in _artifact_name_candidates(exposure, export_format):
-                path = Path(f"{output}_{exposure_name}")
-                if path.exists():
-                    result.setdefault(exposure, path)
-                    if exposure_name != exposure:
-                        result.setdefault(exposure_name, path)
-                    break
+            key = _canonical_artifact_name(prefix, path.name)
+            result[key] = path
         return result
 
 
@@ -212,13 +233,7 @@ def _prepare_config(options: dict[str, Any]) -> dict[str, Any]:
         value = config.pop(alias, None)
         if value is not None and config.get("export-as") is None:
             config["export-as"] = value
-    if config.get("export-as") is None:
-        config["export-as"] = "json"
     return config
-
-
-def _has_explicit_export_format(options: dict[str, Any]) -> bool:
-    return any(alias in options for alias in ("export-as", "export_as", "exportAs"))
 
 
 def _subprocess_run(
@@ -237,36 +252,23 @@ def _subprocess_run(
     )
 
 
-def _should_retry_without_export_flag(config: dict[str, Any], stderr: str) -> bool:
-    if config.get("export-as") is None:
-        return False
-    return "--export-as" in stderr and (
-        "Argumentos no soportados" in stderr
-        or "unsupported" in stderr.lower()
-    )
+def _artifact_lookup_candidates(name: str) -> tuple[str, ...]:
+    candidates: list[str] = [name]
+    if name.endswith(".msgpack"):
+        candidates.append(f"{name[:-8]}.json")
+    elif name.endswith(".json"):
+        candidates.append(f"{name[:-5]}.msgpack")
+    else:
+        candidates.extend([f"{name}.msgpack", f"{name}.json"])
+    return tuple(dict.fromkeys(candidates))
 
 
-def _resolve_export_format(config: dict[str, Any]) -> str:
-    export_format = str(config.get("export-as", "json")).strip().lower()
-    return export_format if export_format in {"json", "msgpack"} else "json"
-
-
-def _artifact_suffix_candidates(suffix: str, export_format: str) -> tuple[str, ...]:
-    if not suffix.endswith(".msgpack"):
-        return (suffix,)
-    json_suffix = f"{suffix[:-8]}.json"
-    if export_format == "json":
-        return (json_suffix, suffix)
-    return (suffix, json_suffix)
-
-
-def _artifact_name_candidates(name: str, export_format: str) -> tuple[str, ...]:
-    if not name.endswith(".msgpack"):
-        return (name,)
-    json_name = f"{name[:-8]}.json"
-    if export_format == "json":
-        return (json_name, name)
-    return (name, json_name)
+def _canonical_artifact_name(prefix: str, filename: str) -> str:
+    if filename == prefix:
+        return filename
+    if filename.startswith(f"{prefix}_"):
+        return filename[len(prefix) + 1 :]
+    return filename
 
 
 def _env(root: Path) -> dict[str, str]:

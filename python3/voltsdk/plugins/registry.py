@@ -4,13 +4,16 @@ Index format (``GET <registry>/index.json``)::
 
     {
       "plugins": {
-        "opendxa": {
-          "latest": "1.0.0",
-          "versions": {
-            "1.0.0": {
-              "linux-x86_64": {
-                "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
-                "sha256": "..."
+        "voltlabs": {
+          "opendxa": {
+            "publisher": "voltlabs",
+            "latest": "1.0.0",
+            "versions": {
+              "1.0.0": {
+                "linux-x86_64": {
+                  "url": "opendxa/1.0.0/linux-x86_64.tar.zst",
+                  "sha256": "..."
+                }
               }
             }
           }
@@ -22,7 +25,6 @@ URLs may be relative to the registry base URL or absolute.
 
 Layout inside a bundle (after extraction)::
 
-    plugin.json
     bin/<binary>
     lib/...        (optional)
     scripts/...    (optional)
@@ -49,6 +51,7 @@ INDEX_PATH = "index.json"
 
 @dataclass(frozen=True)
 class BundleRef:
+    publisher: str
     key: str
     version: str
     platform: str
@@ -81,14 +84,25 @@ class PluginRegistry:
         return self._index
 
     def list(self) -> list[str]:
-        return sorted(self.index().get("plugins", {}).keys())
+        publishers = self.index().get("plugins", {})
+        if not isinstance(publishers, dict):
+            return []
+        result: list[str] = []
+        for publisher in sorted(publishers):
+            entries = publishers.get(publisher)
+            if not isinstance(entries, dict):
+                continue
+            for key, entry in sorted(entries.items()):
+                if isinstance(entry, dict):
+                    result.append(f"{publisher}@{key}")
+        return result
 
     def versions(self, key: str) -> list[str]:
-        plugin = self._plugin_entry(key)
+        _, _, plugin = self._plugin_entry(key)
         return sorted(plugin.get("versions", {}).keys())
 
     def resolve(self, key: str, version: str | None = None) -> BundleRef:
-        plugin = self._plugin_entry(key)
+        publisher, plugin_key, plugin = self._plugin_entry(key)
         version = version or str(plugin.get("latest") or "")
         if not version:
             raise PluginNotFoundError(f"No versions listed for plugin {key!r}.")
@@ -102,7 +116,8 @@ class PluginRegistry:
                 f"Plugin {key}@{version} has no bundle for {self.platform_tag!r}."
             )
         return BundleRef(
-            key=key,
+            publisher=publisher,
+            key=plugin_key,
             version=version,
             platform=self.platform_tag,
             url=str(platform_entry["url"]),
@@ -116,7 +131,7 @@ class PluginRegistry:
     def install(self, key: str, version: str | None = None, *, force: bool = False) -> Path:
         ref = self.resolve(key, version)
         target = self._install_dir(ref)
-        if not force and (target / "plugin.json").exists():
+        if not force and _installed_bundle(target):
             return target
 
         archive = self._fetch(ref.url, f"{ref.key}-{ref.version}-{ref.platform}")
@@ -136,22 +151,24 @@ class PluginRegistry:
         return target
 
     def uninstall(self, key: str, version: str | None = None) -> None:
+        publisher, plugin_key = _split_plugin_ref(key)
         if version is None:
-            shutil.rmtree(self.cache_dir / "plugins" / key, ignore_errors=True)
+            shutil.rmtree(self.cache_dir / "plugins" / publisher / plugin_key, ignore_errors=True)
             return
-        target = self.cache_dir / "plugins" / key / version
+        target = self.cache_dir / "plugins" / publisher / plugin_key / version
         shutil.rmtree(target, ignore_errors=True)
 
     def installed(self, key: str, version: str | None = None) -> Path | None:
-        plugin_dir = self.cache_dir / "plugins" / key
+        publisher, plugin_key = _split_plugin_ref(key)
+        plugin_dir = self.cache_dir / "plugins" / publisher / plugin_key
         if version:
             candidate = plugin_dir / version / self.platform_tag
-            return candidate if (candidate / "plugin.json").exists() else None
+            return candidate if _installed_bundle(candidate) else None
         if not plugin_dir.is_dir():
             return None
         for version_dir in sorted(plugin_dir.iterdir(), reverse=True):
             candidate = version_dir / self.platform_tag
-            if (candidate / "plugin.json").exists():
+            if _installed_bundle(candidate):
                 return candidate
         return None
 
@@ -159,15 +176,26 @@ class PluginRegistry:
     # Internals
     # ------------------------------------------------------------------
 
-    def _plugin_entry(self, key: str) -> dict[str, Any]:
+    def _plugin_entry(self, key: str) -> tuple[str, str, dict[str, Any]]:
+        publisher, plugin_key = _split_plugin_ref(key)
         plugins = self.index().get("plugins", {})
-        entry = plugins.get(key)
+        if not isinstance(plugins, dict):
+            raise PluginNotFoundError("Registry index has no publishers.")
+        publisher_plugins = plugins.get(publisher)
+        if not isinstance(publisher_plugins, dict):
+            raise PluginNotFoundError(f"Publisher {publisher!r} is not in the registry index.")
+        entry = publisher_plugins.get(plugin_key)
         if not isinstance(entry, dict):
             raise PluginNotFoundError(f"Plugin {key!r} is not in the registry index.")
-        return entry
+        entry_publisher = str(entry.get("publisher") or "")
+        if entry_publisher != publisher:
+            raise PluginNotFoundError(
+                f"Plugin {key!r} has invalid publisher metadata {entry_publisher!r}."
+            )
+        return publisher, plugin_key, entry
 
     def _install_dir(self, ref: BundleRef) -> Path:
-        return self.cache_dir / "plugins" / ref.key / ref.version / ref.platform
+        return self.cache_dir / "plugins" / ref.publisher / ref.key / ref.version / ref.platform
 
     def _fetch(self, url: str, fallback_name: str) -> Path:
         absolute = url if _is_absolute(url) else f"{self.url}/{url.lstrip('/')}"
@@ -246,3 +274,14 @@ def _ensure_executable(bin_dir: Path) -> None:
     for entry in bin_dir.iterdir():
         if entry.is_file():
             entry.chmod(entry.stat().st_mode | 0o111)
+
+
+def _installed_bundle(path: Path) -> bool:
+    return path.is_dir() and ((path / "bin").is_dir() or (path / "scripts").is_dir())
+
+
+def _split_plugin_ref(value: str) -> tuple[str, str]:
+    publisher, separator, key = value.partition("@")
+    if separator != "@" or not publisher or not key or "@" in key:
+        raise ValueError("Plugin key must use the form 'publisher@plugin'.")
+    return publisher, key

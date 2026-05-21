@@ -6,10 +6,10 @@ on:
       - published
   workflow_dispatch:
     inputs:
-      plugin_ref:
-        description: "Optional branch, tag, or SHA for plugin repositories"
+      native_index_url:
+        description: "Base URL or direct index.json URL for the native runtime bundle index"
         required: false
-        default: ""
+        default: "https://server.voltcloud.dev/plugin-registry/index.json"
 
 jobs:
   build-voltsdk:
@@ -24,15 +24,18 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-24.04
             platform_tag: linux_x86_64
-          - name: macos-x86_64
-            os: macos-13
-            platform_tag: macosx_13_0_x86_64
+            bundle_os: linux
+            bundle_arch: x86_64
           - name: macos-arm64
             os: macos-14
             platform_tag: macosx_14_0_arm64
+            bundle_os: darwin
+            bundle_arch: arm64
           - name: windows-amd64
             os: windows-2022
             platform_tag: win_amd64
+            bundle_os: windows
+            bundle_arch: x86_64
 
     steps:
       - name: Check out VoltSDK
@@ -42,53 +45,23 @@ jobs:
         if: runner.os == 'Windows'
         run: git config --global core.longpaths true
 
-      - name: Set up MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Linux compiler tools
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang lld cmake ninja-build
-
-      - name: Install macOS compiler tools
-        if: runner.os == 'macOS'
-        run: brew install ninja || true
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install build tooling
-        run: python -m pip install --upgrade pip conan cmake ninja build wheel
+        run: python -m pip install --upgrade pip build wheel zstandard
 
-      - name: Clone plugin sources
+      - name: Download published native bundles
         env:
-          VOLT_PLUGIN_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.plugin_ref || '' }}
-        run: python .github/scripts/clone_plugin_sources.py --dest build/plugin-sources
-
-      - name: Install native plugins on Linux
-        if: runner.os == 'Linux'
-        env:
-          CC: clang
-          CXX: clang++
+          VOLTSDK_NATIVE_INDEX_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.native_index_url || vars.VOLTSDK_NATIVE_INDEX_URL || 'https://server.voltcloud.dev/plugin-registry/index.json' }}
         run: >
-          python .github/scripts/install_native_plugins.py
-          --plugins-root build/plugin-sources
-          --build-root build/plugin-build
+          python .github/scripts/download_native_bundles.py
+          --index-url "${VOLTSDK_NATIVE_INDEX_URL}"
           --install-root build/plugin-install
-          --jobs 2
-
-      - name: Install native plugins
-        if: runner.os != 'Linux'
-        run: >
-          python .github/scripts/install_native_plugins.py
-          --plugins-root build/plugin-sources
-          --build-root build/plugin-build
-          --install-root build/plugin-install
-          --jobs 2
+          --os ${{ matrix.bundle_os }}
+          --arch ${{ matrix.bundle_arch }}
 
       - name: Stage native files into VoltSDK
         shell: python
@@ -98,13 +71,14 @@ jobs:
 
           source = Path("build/plugin-install")
           destination = Path("python3/voltsdk/native")
-          if destination.exists():
-              shutil.rmtree(destination)
-          destination.mkdir(parents=True)
+          destination.mkdir(parents=True, exist_ok=True)
           for name in ("bin", "lib", "share"):
+              staged = destination / name
+              if staged.exists():
+                  shutil.rmtree(staged)
               item = source / name
               if item.exists():
-                  shutil.copytree(item, destination / name, symlinks=True)
+                  shutil.copytree(item, staged, symlinks=True)
 
       - name: Build VoltSDK platform wheel
         env:
