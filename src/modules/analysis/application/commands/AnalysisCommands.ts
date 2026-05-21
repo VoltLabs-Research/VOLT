@@ -32,14 +32,23 @@ export class AnalysisCommands {
     private async readAnalysisStartRequest(payload: AnalysisStartTransportPayload): Promise<AnalysisStartRequestWithTrace> {
         const request = { ...payload } as AnalysisStartRequestWithTrace;
 
-        request.trajectoryFrames = await readCompressed<AnalysisStartRequest['trajectoryFrames']>(
-            payload.trajectoryFramesCompressed);
-        request.workflow = await readCompressed<AnalysisStartRequest['workflow']>(
-            payload.workflowCompressed);
-        request.nestedPlugins = await readCompressed<AnalysisStartRequest['nestedPlugins']>(
-            payload.nestedPluginsCompressed);
-        request.pluginReferenceExecutions = await readCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
-            payload.pluginReferenceExecutionsCompressed);
+        const [
+            trajectoryFrames,
+            workflow,
+            nestedPlugins,
+            pluginReferenceExecutions
+        ] = await Promise.all([
+            readCompressed<AnalysisStartRequest['trajectoryFrames']>(payload.trajectoryFramesCompressed),
+            readCompressed<AnalysisStartRequest['workflow']>(payload.workflowCompressed),
+            readCompressed<AnalysisStartRequest['nestedPlugins']>(payload.nestedPluginsCompressed),
+            readCompressed<AnalysisStartRequest['pluginReferenceExecutions']>(
+                payload.pluginReferenceExecutionsCompressed
+            )
+        ]);
+        request.trajectoryFrames = trajectoryFrames;
+        request.workflow = workflow;
+        request.nestedPlugins = nestedPlugins;
+        request.pluginReferenceExecutions = pluginReferenceExecutions;
 
         const traceContext = extractDaemonTraceContext(payload as unknown as Record<string, unknown>);
         if (traceContext) {

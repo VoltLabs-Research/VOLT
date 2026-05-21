@@ -2,7 +2,6 @@ import Bottleneck from 'bottleneck';
 
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import { MetricsService } from '@/core/metrics/application/MetricsService';
 import {
     EnvelopeKind,
     encodeEnvelope
@@ -10,14 +9,13 @@ import {
 import type { BinaryStreamPayload } from '@/core/reverse-channel/contracts/binary-messages';
 import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
 import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
-import http from 'node:http';
-import https from 'node:https';
 import type { DaemonConfig } from '@/core/config';
 import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
 import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 import { ControlPlaneProcessClient } from '@/modules/container/infrastructure/connection/ControlPlaneProcessClient';
 import { TeamClusterStatus } from '@/modules/container/contracts/container-types';
 import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
+import { BufferedDedupeQueue } from '@/modules/container/infrastructure/connection/BufferedDedupeQueue';
 
 interface RuntimeLifecycleUpdateRequest {
     teamClusterId: string;
@@ -40,11 +38,6 @@ interface BufferedEventOptions {
     dedupeKey?: string;
 }
 
-interface QueuedEventMessage {
-    message: TeamClusterDaemonServerEventMessage;
-    dedupeKey?: string;
-}
-
 const STREAM_TRANSPORTED_SERVER_EVENT_TYPES = [
     'analysis-log-chunk',
     'debug-log-chunk',
@@ -62,22 +55,17 @@ const STREAM_TRANSPORTED_SERVER_EVENT_TYPE_SET = new Set<string>(STREAM_TRANSPOR
 @Service('voltCloudConnection')
 export class VoltCloudConnection {
     private connectedToCloud = false;
-    private lastCloudLatencyMs: number | null = null;
     private heartbeatFailureCount = 0;
     private readonly backgroundCommandConcurrency = 2;
     private readonly backgroundCommandMaxQueueSize = 2048;
     private readonly backgroundCommandLimiter: Bottleneck;
     private readonly backgroundCommandDedupeKeys = new Set<string>();
-    private readonly bufferedEventMaxQueueSize = 8192;
-    private readonly bufferedEventQueue: QueuedEventMessage[] = [];
-    private readonly bufferedEventDedupeKeys = new Set<string>();
-    private cloudLatencyProbeTimer: ReturnType<typeof setInterval> | null = null;
+    private readonly bufferedEvents = new BufferedDedupeQueue<TeamClusterDaemonServerEventMessage>(8192);
 
     public readonly client: ControlPlaneProcessClient;
 
     constructor(
         private readonly config: DaemonConfig,
-        private readonly metricsService: MetricsService,
         private readonly getRuntimeConfigSnapshot?: () => TeamClusterDaemonRuntimeConfig | null
     ) {
         this.client = new ControlPlaneProcessClient(config);
@@ -117,15 +105,9 @@ export class VoltCloudConnection {
 
     async start(): Promise<void> {
         await this.client.connect();
-        this.startCloudLatencyProbe();
     }
 
     stop(): void {
-        if (this.cloudLatencyProbeTimer) {
-            clearInterval(this.cloudLatencyProbeTimer);
-            this.cloudLatencyProbeTimer = null;
-        }
-
         void this.backgroundCommandLimiter.stop({
             dropWaitingJobs: true
         }).catch(() => undefined);
@@ -146,43 +128,27 @@ export class VoltCloudConnection {
 
     emitBufferedMessage(message: TeamClusterDaemonServerEventMessage, options: BufferedEventOptions = {}): void {
         const dedupeKey = options.dedupeKey;
-
-        if (dedupeKey && this.bufferedEventDedupeKeys.has(dedupeKey)) {
+        const enqueueResult = this.bufferedEvents.enqueue(message, dedupeKey);
+        if (enqueueResult === 'duplicate') {
             logger.debug(`Skipped duplicate buffered daemon event type=${message.type}, dedupeKey=${dedupeKey}`);
             return;
         }
 
-        if (this.bufferedEventQueue.length >= this.bufferedEventMaxQueueSize) {
-            logger.warn(`Buffered daemon event queue is full; dropping event type=${message.type}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.bufferedEventQueue.length}`);
+        if (enqueueResult === 'overflow') {
+            logger.warn(`Buffered daemon event queue is full; dropping event type=${message.type}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.bufferedEvents.length}`);
             return;
         }
-
-        if (dedupeKey) {
-            this.bufferedEventDedupeKeys.add(dedupeKey);
-        }
-
-        this.bufferedEventQueue.push({ message, dedupeKey });
         this.drainBufferedEvents();
     }
 
     private drainBufferedEvents(): void {
         if (!this.connectedToCloud || !this.client.isReady()) return;
 
-        while (this.bufferedEventQueue.length > 0) {
-            const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
-
-            try {
-                this.emitServerEventMessage(queued.message);
-            } catch (err) {
-                logger.warn(`Failed to flush buffered daemon event type=${queued.message.type}: ${err instanceof Error ? err.message : String(err)}`);
-                return;
-            }
-
-            this.bufferedEventQueue.shift();
-
-            if (queued.dedupeKey) {
-                this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
-            }
+        const drainResult = this.bufferedEvents.drain((queuedMessage) => {
+            this.emitServerEventMessage(queuedMessage);
+        });
+        if (!drainResult.ok && drainResult.failedItem) {
+            logger.warn(`Failed to flush buffered daemon event type=${drainResult.failedItem.type}: ${drainResult.error instanceof Error ? drainResult.error.message : String(drainResult.error)}`);
         }
     }
 
@@ -278,57 +244,6 @@ export class VoltCloudConnection {
     private isBackgroundCommandDropError(error: unknown): boolean {
         return error instanceof Error
             && error.message.toLowerCase().includes('drop');
-    }
-
-    private startCloudLatencyProbe(): void {
-        if (this.cloudLatencyProbeTimer) {
-            return;
-        }
-
-        const runProbe = (): void => {
-            this.probeCloudLatency();
-        };
-
-        runProbe();
-        this.cloudLatencyProbeTimer = setInterval(runProbe, this.config.metricsIntervalMs);
-        this.cloudLatencyProbeTimer.unref();
-    }
-
-    private async probeCloudLatency(): Promise<void> {
-        const targetUrl = new URL(this.config.voltCloudUrl);
-        const transport = targetUrl.protocol === 'https:'
-            ? https
-            : http;
-        const startedAt = Date.now();
-
-        await new Promise<void>((resolve) => {
-            const request = transport.request({
-                method: 'HEAD',
-                protocol: targetUrl.protocol,
-                hostname: targetUrl.hostname,
-                port: targetUrl.port ? Number(targetUrl.port) : undefined,
-                path: `${targetUrl.pathname}${targetUrl.search}`,
-                timeout: 5_000
-            }, (response) => {
-                response.resume();
-                response.once('end', () => {
-                    this.lastCloudLatencyMs = Date.now() - startedAt;
-                    resolve();
-                });
-            });
-
-            request.once('timeout', () => {
-                this.lastCloudLatencyMs = null;
-                request.destroy(new Error('Cloud latency probe timed out'));
-            });
-
-            request.once('error', () => {
-                this.lastCloudLatencyMs = null;
-                resolve();
-            });
-
-            request.end();
-        });
     }
 
     private emitTransportMessage(message: OutboundMessage): void {

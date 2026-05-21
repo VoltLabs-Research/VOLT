@@ -17,6 +17,7 @@ import type {
     RemoteClusterObjectPutStreamRequest,
     RemoteClusterObjectStoreGateway
 } from '@/core/storage/contracts/cluster-object-store';
+import { readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
 import { Readable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 
@@ -40,6 +41,13 @@ interface ObjectStoreErrorPayload {
     code?: string;
     message?: string;
 }
+
+const OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS'
+) ?? 10 * 60 * 1000;
+const OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv(
+    'TEAM_CLUSTER_OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS'
+) ?? 45_000;
 
 const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): ClusterObjectListResponse => {
     const objects = payload.objects ?? [];
@@ -122,7 +130,8 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
 
         const response = await this.fetch(
             this.buildCollectionPath(ownerClusterId, request.bucket, query),
-            { method: 'GET' }
+            { method: 'GET' },
+            OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS
         );
         return normalizeListResponse(await response.json() as RawDirectObjectStoreListResponse);
     }
@@ -130,7 +139,7 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
     readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse> => {
         const response = await this.fetch(this.buildObjectPath(ownerClusterId, bucket, objectKey), {
             method: 'HEAD'
-        });
+        }, OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS);
 
         return parseHeadResponse(response.headers);
     };
@@ -185,7 +194,8 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
 
     private async fetch(
         path: string,
-        init: DirectObjectStoreRequestInit = GET_REQUEST_INIT
+        init: DirectObjectStoreRequestInit = GET_REQUEST_INIT,
+        timeoutMs = OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS
     ): Promise<Response> {
         const headers = new Headers(init.headers);
         headers.set(TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER, this.config.teamClusterId);
@@ -201,7 +211,31 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
             requestInit.duplex = 'half';
         }
 
-        const response = await fetch(new URL(path, this.config.voltCloudUrl), requestInit);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            controller.abort(new Error(`Object store proxy request timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+        timeout.unref();
+        requestInit.signal = controller.signal;
+
+        let response: Response;
+        try {
+            response = await fetch(new URL(path, this.config.voltCloudUrl), requestInit);
+        } catch (error) {
+            if (controller.signal.aborted) {
+                throw Object.assign(
+                    new Error(`Object store proxy request timed out after ${timeoutMs}ms`),
+                    {
+                        name: 'ObjectStoreProxyTimeoutError',
+                        statusCode: 504
+                    }
+                );
+            }
+
+            throw error;
+        } finally {
+            clearTimeout(timeout);
+        }
 
         if (response.ok) {
             return response;

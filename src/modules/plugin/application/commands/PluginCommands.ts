@@ -1,5 +1,6 @@
 import { Command, CommandGroup } from '@/core/commands/decorators';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
+import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 import {
     ObjectBucketName,
     type PluginSyncRequest,
@@ -14,6 +15,7 @@ import type {
     PluginListingRepository,
     PluginSubListingFilter
 } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
+import ApplicationError from '@/app/coordination/ApplicationError';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { PLUGIN_WARMUP_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { PluginWarmupJobPayload } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
@@ -34,11 +36,22 @@ export class PluginCommands {
                 synced: true,
                 objectKey: payload.objectKey
             };
-        } catch {
-            return {
-                synced: false,
-                objectKey: payload.objectKey
-            };
+        } catch (error) {
+            if (isObjectNotFoundError(error)) {
+                return {
+                    synced: false,
+                    objectKey: payload.objectKey
+                };
+            }
+
+            throw new ApplicationError(
+                'Plugin::SyncUnavailable',
+                `Failed to verify plugin binary availability for ${payload.objectKey}`,
+                {
+                    statusCode: 503,
+                    cause: error
+                }
+            );
         }
     }
 

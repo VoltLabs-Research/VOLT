@@ -16,6 +16,7 @@ const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
 const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
 const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
 const HEARTBEAT_CHANNEL = 'heartbeat';
+const VOLT_HEALTHCHECK_PATH = '/healthz';
 
 const config = loadConfig();
 const metricsService = new MetricsService();
@@ -78,6 +79,9 @@ const sendHeartbeat = async (): Promise<void> => {
 
 const probeCloudLatency = async (): Promise<void> => {
     const targetUrl = new URL(config.voltCloudUrl);
+    const basePath = targetUrl.pathname === '/'
+        ? ''
+        : targetUrl.pathname.replace(/\/+$/g, '');
     const transport = targetUrl.protocol === 'https:' ? https : http;
     const startedAt = Date.now();
 
@@ -87,7 +91,7 @@ const probeCloudLatency = async (): Promise<void> => {
             protocol: targetUrl.protocol,
             hostname: targetUrl.hostname,
             port: targetUrl.port ? Number(targetUrl.port) : undefined,
-            path: `${targetUrl.pathname}${targetUrl.search}`,
+            path: `${basePath}${VOLT_HEALTHCHECK_PATH}${targetUrl.search}`,
             timeout: 5_000
         }, (response) => {
             response.resume();

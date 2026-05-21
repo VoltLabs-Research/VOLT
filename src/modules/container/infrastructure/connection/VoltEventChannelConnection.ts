@@ -12,14 +12,10 @@ import type { ExposureSnapshotMessage } from '@/modules/container/contracts/cont
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
 import type { ControlPlaneProcessClient } from '@/modules/container/infrastructure/connection/ControlPlaneProcessClient';
 import { SocketChannelProcessClient } from '@/modules/container/infrastructure/connection/SocketChannelProcessClient';
+import { BufferedDedupeQueue } from '@/modules/container/infrastructure/connection/BufferedDedupeQueue';
 import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 
 interface BufferedEventOptions {
-    dedupeKey?: string;
-}
-
-interface QueuedEventMessage {
-    message: TeamClusterDaemonServerEventMessage;
     dedupeKey?: string;
 }
 
@@ -48,9 +44,7 @@ const STREAM_TRANSPORTED_SERVER_EVENT_TYPE_SET = new Set<string>(STREAM_TRANSPOR
 export class VoltEventChannelConnection {
     private channelClient: SocketChannelProcessClient | null = null;
     private registered = false;
-    private readonly bufferedEventMaxQueueSize = 8192;
-    private readonly bufferedEventQueue: QueuedEventMessage[] = [];
-    private readonly bufferedEventDedupeKeys = new Set<string>();
+    private readonly bufferedEvents = new BufferedDedupeQueue<TeamClusterDaemonServerEventMessage>(8192);
 
     constructor(
         private readonly config: DaemonConfig,
@@ -93,8 +87,7 @@ export class VoltEventChannelConnection {
         this.registered = false;
         this.channelClient?.stop();
         this.channelClient = null;
-        this.bufferedEventQueue.length = 0;
-        this.bufferedEventDedupeKeys.clear();
+        this.bufferedEvents.clear();
     }
 
     emitMessage(message: EventTransportMessage): void {
@@ -120,43 +113,27 @@ export class VoltEventChannelConnection {
 
     emitBufferedMessage(message: TeamClusterDaemonServerEventMessage, options: BufferedEventOptions = {}): void {
         const dedupeKey = options.dedupeKey;
-
-        if (dedupeKey && this.bufferedEventDedupeKeys.has(dedupeKey)) {
+        const enqueueResult = this.bufferedEvents.enqueue(message, dedupeKey);
+        if (enqueueResult === 'duplicate') {
             logger.debug(`Skipped duplicate buffered daemon event type=${message.type}, dedupeKey=${dedupeKey}`);
             return;
         }
 
-        if (this.bufferedEventQueue.length >= this.bufferedEventMaxQueueSize) {
-            logger.warn(`Buffered daemon event queue is full; dropping event type=${message.type}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.bufferedEventQueue.length}`);
+        if (enqueueResult === 'overflow') {
+            logger.warn(`Buffered daemon event queue is full; dropping event type=${message.type}, dedupeKey=${dedupeKey ?? 'none'}, queueLength=${this.bufferedEvents.length}`);
             return;
         }
-
-        if (dedupeKey) {
-            this.bufferedEventDedupeKeys.add(dedupeKey);
-        }
-
-        this.bufferedEventQueue.push({ message, dedupeKey });
         this.drainBufferedEvents();
     }
 
     private drainBufferedEvents(): void {
         if (!this.channelClient || !this.registered) return;
 
-        while (this.bufferedEventQueue.length > 0) {
-            const queued = this.bufferedEventQueue[0] as QueuedEventMessage;
-
-            try {
-                this.emitEventMessage(queued.message);
-            } catch (err) {
-                logger.warn(`Failed to flush buffered daemon event type=${queued.message.type}: ${err instanceof Error ? err.message : String(err)}`);
-                return;
-            }
-
-            this.bufferedEventQueue.shift();
-
-            if (queued.dedupeKey) {
-                this.bufferedEventDedupeKeys.delete(queued.dedupeKey);
-            }
+        const drainResult = this.bufferedEvents.drain((queuedMessage) => {
+            this.emitEventMessage(queuedMessage);
+        });
+        if (!drainResult.ok && drainResult.failedItem) {
+            logger.warn(`Failed to flush buffered daemon event type=${drainResult.failedItem.type}: ${drainResult.error instanceof Error ? drainResult.error.message : String(drainResult.error)}`);
         }
     }
 
