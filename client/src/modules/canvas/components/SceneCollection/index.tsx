@@ -185,6 +185,8 @@ const SceneCollection = ({
                     resolveSceneRenderMetadata={(pluginId, exposureId) => {
                         return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                     }}
+                    plugin={pluginsById[section.pluginId]}
+                    pluginsById={pluginsById}
                     selectionMode={selectionMode}
                     selectedScene={selectedScene}
                     onSelectRasterScene={onSelectRasterScene}

@@ -3,8 +3,16 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { ANALYSIS_EXECUTION_METADATA_KEY } from '@/modules/canvas/utilities/selected-timestep-analysis';
+import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
+import type {
+    IArgumentDefinition,
+    IPluginNodeData,
+    IPluginReferenceSelection,
+    IWorkflowNode
+} from '@/modules/plugin/api/entities/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 
 const ACRONYMS = new Set(['id', 'url', 'api', 'ui', 'sdk', 'rdf', 'rms', 'pbc', 'xyz']);
 
@@ -114,16 +122,17 @@ interface ConfigRow {
 }
 
 interface ConfigColumn {
+    key: string;
     title: string;
     rows: ConfigRow[];
 }
 
-const buildColumn = (title: string, source: Record<string, unknown>): ConfigColumn => {
+const buildColumn = (title: string, source: Record<string, unknown>, key = title): ConfigColumn => {
     const rows = Object.entries(source).map(([key, value]) => {
         const rendered = renderValue(value);
         return { label: humanizeKey(key), value: rendered.node, mono: rendered.mono };
     });
-    return { title, rows };
+    return { key, title, rows };
 };
 
 const buildScopeColumn = (metadata: unknown): ConfigColumn | undefined => {
@@ -138,19 +147,194 @@ const buildScopeColumn = (metadata: unknown): ConfigColumn | undefined => {
     const sorted = [...numbers].sort((left, right) => left - right);
 
     return {
+        key: 'scope',
         title: 'Scope',
         rows: [
             { label: 'Timesteps', value: String(sorted.length), mono: true },
-            { label: 'Range', value: `${sorted[0]} – ${sorted[sorted.length - 1]}`, mono: true }
+            { label: 'Range', value: `${sorted[0]} - ${sorted[sorted.length - 1]}`, mono: true }
         ]
     };
 };
 
-interface ExecutionConfigSummaryProps {
+const getPluginDisplayName = (
+    pluginId: string,
+    pluginsById: Record<string, Plugin> | undefined
+): string => {
+    const plugin = pluginsById?.[pluginId];
+    return plugin?.modifier?.name?.trim() || pluginId;
+};
+
+const isPluginReferenceSelection = (value: unknown): value is IPluginReferenceSelection => {
+    return isPlainObject(value) && typeof value.pluginId === 'string';
+};
+
+const getPluginReferenceSelections = (value: unknown): IPluginReferenceSelection[] => {
+    const rawSelections = isPlainObject(value) && Array.isArray(value.selections)
+        ? value.selections
+        : Array.isArray(value)
+            ? value
+            : isPluginReferenceSelection(value)
+                ? [value]
+                : [];
+
+    return rawSelections.flatMap((selection): IPluginReferenceSelection[] => {
+        if (!isPluginReferenceSelection(selection)) return [];
+        const pluginId = selection.pluginId.trim();
+        if (!pluginId) return [];
+
+        return [{
+            pluginId,
+            config: isPlainObject(selection.config) ? selection.config : {}
+        }];
+    });
+};
+
+const resolvePluginNodeExecutionMode = (pluginNode: IPluginNodeData): PluginNodeExecutionMode | undefined => {
+    if (pluginNode.executionMode) return pluginNode.executionMode;
+    if (pluginNode.pluginId) return PluginNodeExecutionMode.MANUAL;
+    if (pluginNode.argumentReference) return PluginNodeExecutionMode.ARGUMENT_REFERENCE;
+    return undefined;
+};
+
+const buildArgumentsByKey = (nodes: IWorkflowNode[]): Record<string, IArgumentDefinition> => {
+    const argumentsNode = nodes.find((node) => node.type === NodeType.ARGUMENTS);
+    const definitions = argumentsNode?.data.arguments?.arguments ?? [];
+    return Object.fromEntries(definitions.map((definition) => [definition.argument, definition]));
+};
+
+const formatTimesteps = (selectedTimesteps: number[] | undefined): string | undefined => {
+    if (!selectedTimesteps?.length) return undefined;
+
+    const sorted = Array.from(new Set(
+        selectedTimesteps.filter((timestep) => typeof timestep === 'number' && Number.isFinite(timestep))
+    )).sort((left, right) => left - right);
+
+    if (sorted.length === 0) return undefined;
+    if (sorted.length === 1) return String(sorted[0]);
+
+    return `${sorted.length} (${sorted[0]} - ${sorted[sorted.length - 1]})`;
+};
+
+interface PluginExecutionColumnInput {
+    key: string;
+    pluginId: string;
     config: Record<string, unknown>;
+    selectedTimesteps?: number[];
+    source?: string;
+    clusterId?: string;
 }
 
-const ExecutionConfigSummary = ({ config }: ExecutionConfigSummaryProps) => {
+const buildPluginExecutionColumn = (
+    execution: PluginExecutionColumnInput,
+    pluginsById: Record<string, Plugin> | undefined
+): ConfigColumn => {
+    const rows: ConfigRow[] = [];
+
+    if (execution.source) {
+        rows.push({ label: 'Source', value: execution.source, mono: false });
+    }
+
+    const selectedTimesteps = formatTimesteps(execution.selectedTimesteps);
+    if (selectedTimesteps) {
+        rows.push({ label: 'Timesteps', value: selectedTimesteps, mono: true });
+    }
+
+    if (execution.clusterId) {
+        rows.push({ label: 'Cluster', value: execution.clusterId, mono: true });
+    }
+
+    Object.entries(execution.config).forEach(([key, value]) => {
+        const rendered = renderValue(value);
+        rows.push({ label: humanizeKey(key), value: rendered.node, mono: rendered.mono });
+    });
+
+    if (rows.length === 0) {
+        rows.push({ label: 'Parameters', value: <MutedPlaceholder />, mono: false });
+    }
+
+    return {
+        key: execution.key,
+        title: `Plugin node: ${getPluginDisplayName(execution.pluginId, pluginsById)}`,
+        rows
+    };
+};
+
+const buildPluginExecutionColumns = (
+    plugin: Plugin | undefined,
+    config: Record<string, unknown>,
+    pluginsById: Record<string, Plugin> | undefined
+): ConfigColumn[] => {
+    const nodes = plugin?.workflow?.nodes ?? [];
+    if (!nodes.length) return [];
+
+    const argumentsByKey = buildArgumentsByKey(nodes);
+    const executions: PluginExecutionColumnInput[] = [];
+
+    nodes.forEach((node, nodeIndex) => {
+        if (node.type !== NodeType.PLUGIN && !node.data.pluginNode) return;
+
+        const pluginNode = node.data.pluginNode;
+        if (!pluginNode) return;
+
+        const executionMode = resolvePluginNodeExecutionMode(pluginNode);
+        const selectedTimesteps = pluginNode.selectedTimesteps;
+        const clusterId = pluginNode.selectedTeamClusterId;
+
+        if (executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE) {
+            const argumentReference = pluginNode.argumentReference?.trim();
+            if (!argumentReference) return;
+
+            const selections = getPluginReferenceSelections(config[argumentReference]);
+            if (!selections.length) return;
+
+            const definition = argumentsByKey[argumentReference];
+            const shouldUseSelectionConfig = definition?.showPluginConfiguration === true;
+            const source = definition?.label?.trim() || humanizeKey(argumentReference);
+
+            selections.forEach((selection, selectionIndex) => {
+                const fallbackConfig = isPlainObject(pluginNode.configByPluginId?.[selection.pluginId])
+                    ? pluginNode.configByPluginId?.[selection.pluginId] ?? {}
+                    : isPlainObject(pluginNode.config)
+                        ? pluginNode.config
+                        : {};
+                const selectionConfig = isPlainObject(selection.config) ? selection.config : {};
+
+                executions.push({
+                    key: `${node.id || nodeIndex}:${selection.pluginId}:${selectionIndex}`,
+                    pluginId: selection.pluginId,
+                    config: shouldUseSelectionConfig ? selectionConfig : fallbackConfig,
+                    selectedTimesteps,
+                    source,
+                    clusterId
+                });
+            });
+
+            return;
+        }
+
+        const pluginId = pluginNode.pluginId?.trim();
+        if (!pluginId) return;
+
+        executions.push({
+            key: `${node.id || nodeIndex}:${pluginId}`,
+            pluginId,
+            config: isPlainObject(pluginNode.config) ? pluginNode.config : {},
+            selectedTimesteps,
+            source: 'Manual',
+            clusterId
+        });
+    });
+
+    return executions.map((execution) => buildPluginExecutionColumn(execution, pluginsById));
+};
+
+interface ExecutionConfigSummaryProps {
+    config: Record<string, unknown>;
+    plugin?: Plugin;
+    pluginsById?: Record<string, Plugin>;
+}
+
+const ExecutionConfigSummary = ({ config, plugin, pluginsById }: ExecutionConfigSummaryProps) => {
     const columns = useMemo<ConfigColumn[]>(() => {
         const parameters: Record<string, unknown> = {};
         const nestedObjectEntries: [string, Record<string, unknown>][] = [];
@@ -171,18 +355,23 @@ const ExecutionConfigSummary = ({ config }: ExecutionConfigSummaryProps) => {
         const result: ConfigColumn[] = [];
 
         if (Object.keys(parameters).length > 0) {
-            result.push(buildColumn('Parameters', parameters));
+            result.push(buildColumn('Parameters', parameters, 'parameters'));
         }
 
-        for (const [key, value] of nestedObjectEntries) {
-            result.push(buildColumn(humanizeKey(key), value));
+        nestedObjectEntries.forEach(([key, value], index) => {
+            result.push(buildColumn(humanizeKey(key), value, `nested:${key}:${index}`));
+        });
+
+        const pluginExecutionColumns = buildPluginExecutionColumns(plugin, config, pluginsById);
+        for (const column of pluginExecutionColumns) {
+            result.push(column);
         }
 
         const scopeColumn = buildScopeColumn(metadata);
         if (scopeColumn) result.push(scopeColumn);
 
         return result;
-    }, [config]);
+    }, [config, plugin, pluginsById]);
 
     if (columns.length === 0) {
         return (
@@ -196,10 +385,10 @@ const ExecutionConfigSummary = ({ config }: ExecutionConfigSummaryProps) => {
         <Box p='1'>
             <Row align='start' gap='1-5' wrap>
                 {columns.map((column) => (
-                    <Stack key={column.title} gap='05' style={{ minWidth: 140 }}>
+                    <Stack key={column.key} gap='05' style={{ minWidth: 140 }}>
                         <Text size='xs' tone='muted'>{column.title}</Text>
-                        {column.rows.map((row) => (
-                            <Row key={row.label} justify='between' gap='1' className='font-size-1 color-secondary'>
+                        {column.rows.map((row, rowIndex) => (
+                            <Row key={`${row.label}:${rowIndex}`} justify='between' gap='1' className='font-size-1 color-secondary'>
                                 <Text tone='muted'>{row.label}</Text>
                                 <span className={row.mono ? 'font-mono tabular-nums' : undefined}>
                                     {row.value}
