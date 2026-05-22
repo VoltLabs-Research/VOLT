@@ -44,6 +44,7 @@ import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utilities/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { Analysis, AnalysisExpectedArtifact } from '@/modules/analysis/api/entities/analysis';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
@@ -73,6 +74,8 @@ interface AnalysisTreeNodeProps {
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
     resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
+    plugin?: Plugin;
+    pluginsById?: Record<string, Plugin>;
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -151,6 +154,8 @@ const AnalysisTreeNode = ({
     setSceneOpacity,
     setSceneLineWidth,
     resolveSceneRenderMetadata,
+    plugin,
+    pluginsById,
     selectionMode = 'default',
     selectedScene,
     onSelectRasterScene,
@@ -175,6 +180,9 @@ const AnalysisTreeNode = ({
         : isCurrentAnalysis;
 
     const hasConfig = useMemo(() => Object.keys(userConfig ?? {}).length > 0, [userConfig]);
+    const hasWorkflowPluginNodes = useMemo(() => {
+        return plugin?.workflow?.nodes?.some((node) => node.type === 'plugin-node' || Boolean(node.data.pluginNode)) ?? false;
+    }, [plugin]);
 
     useEffect(() => {
         const previousStatuses = previousArtifactStatusesRef.current;
@@ -252,7 +260,7 @@ const AnalysisTreeNode = ({
     }, []);
 
     const tooltipContent = useMemo(() => {
-        if (!isAnalysisInProgress && !hasConfig) return null;
+        if (!isAnalysisInProgress && !hasConfig && !hasWorkflowPluginNodes) return null;
 
         return (
             <div className='canvas-tree-config-tooltip__content'>
@@ -262,15 +270,19 @@ const AnalysisTreeNode = ({
                     </div>
                 )}
                 <div className='canvas-tree-config-tooltip__body'>
-                    {hasConfig ? (
-                        <ExecutionConfigSummary config={userConfig ?? {}} />
+                    {hasConfig || hasWorkflowPluginNodes ? (
+                        <ExecutionConfigSummary
+                            config={userConfig ?? {}}
+                            plugin={plugin}
+                            pluginsById={pluginsById}
+                        />
                     ) : (
                         <div className='canvas-tree-config-tooltip__empty'>No execution config captured for this analysis.</div>
                     )}
                 </div>
             </div>
         );
-    }, [hasConfig, isAnalysisInProgress, userConfig]);
+    }, [hasConfig, hasWorkflowPluginNodes, isAnalysisInProgress, plugin, pluginsById, userConfig]);
 
     const handleSelectAnalysis = () => {
         if (isRasterSelectionMode) {

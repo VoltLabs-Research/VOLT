@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { http } from '@/app/core/http/utilities/create-client';
+import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
@@ -58,14 +59,39 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return url.startsWith('blob:') || url.startsWith('data:');
     }
 
-    private static async requestBlob(url: string, signal?: AbortSignal): Promise<Blob> {
-        if (FractalAssetLoader.isDirectBrowserAssetUrl(url)) {
-            const response = await fetch(url, { signal });
-            if (!response.ok) {
-                throw new Error(`Failed to load local GLB (status ${response.status})`);
+    private static isExternalAssetUrl(url: string): boolean {
+        try {
+            const assetUrl = new URL(url, window.location.href);
+            if (assetUrl.protocol !== 'http:' && assetUrl.protocol !== 'https:') {
+                return false;
             }
-            return response.blob();
+
+            const backendOrigin = new URL(getBackendOrigin(), window.location.href).origin;
+            return assetUrl.origin !== backendOrigin;
+        } catch {
+            return false;
         }
+    }
+
+    private static async fetchBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+        const response = await fetch(url, {
+            signal,
+            credentials: 'omit'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to load GLB asset (status ${response.status})`);
+        }
+        return response.blob();
+    }
+
+    private static async requestBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+        if (
+            FractalAssetLoader.isDirectBrowserAssetUrl(url)
+            || FractalAssetLoader.isExternalAssetUrl(url)
+        ) {
+            return FractalAssetLoader.fetchBlob(url, signal);
+        }
+
         return http.request<Blob>({
             method: 'GET',
             url,
