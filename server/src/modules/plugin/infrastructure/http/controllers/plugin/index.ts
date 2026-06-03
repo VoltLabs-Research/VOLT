@@ -6,6 +6,7 @@ import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/p
 import { DownloadPluginBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DownloadPluginBinaryUseCase';
 import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
 import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
+import GetNodeTypesSchemaUseCase from '@modules/plugin/application/use-cases/plugin/GetNodeTypesSchemaUseCase';
 import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
 import { ImportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ImportPluginUseCase';
 import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/ListPluginsUseCase';
@@ -40,6 +41,7 @@ const ExecutePluginController = createController(ExecutePluginUseCase, {
     extendParams: withAuthenticatedUserId
 });
 const ExportPluginController = createPreparedDownloadStreamController(ExportPluginUseCase);
+const GetNodeTypesSchemaController = createController(GetNodeTypesSchemaUseCase);
 const GetPluginByIdController = createController(GetPluginByIdUseCase);
 const ImportPluginController = createController(ImportPluginUseCase, HttpStatus.Created);
 const ListPluginsController = createController(ListPluginsUseCase);
@@ -56,6 +58,7 @@ export default createControllerRegistry({
     downloadBinary: DownloadPluginBinaryController,
     executePlugin: ExecutePluginController,
     exportPlugin: ExportPluginController,
+    getNodeTypesSchema: GetNodeTypesSchemaController,
     getPluginById: GetPluginByIdController,
     importPlugin: ImportPluginController,
     listPlugins: ListPluginsController,

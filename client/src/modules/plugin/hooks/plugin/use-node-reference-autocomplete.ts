@@ -4,30 +4,17 @@ import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
+import pluginService from '@/modules/plugin/api/services/plugin-service';
+import { useQuery } from '@tanstack/react-query';
 
 interface NodeReferenceOption {
     value: string;
     label: string;
 }
 
-// TODO: Get from server
-const BASE_OUTPUT_PROPERTIES: Partial<Record<NodeType, string[]>> = {
-    [NodeType.MODIFIER]: ['pluginId', 'trajectory', 'analysis'],
-    [NodeType.ARGUMENTS]: ['as_str', 'as_array', 'selectedTimesteps'],
-    [NodeType.CONTEXT]: ['trajectory_dumps', 'count', 'trajectory'],
-    [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
-    [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode', 'projectPath'],
-    [NodeType.PLUGIN]: ['execution_result', 'execution_result.exposures', 'execution_result.exposures.items', 'execution_result.exposures.str_json'],
-    [NodeType.EXPOSURE]: ['results', 'sample'],
-    [NodeType.EXPORT]: ['results'],
-    [NodeType.IF_STATEMENT]: ['result', 'branch'],
-    [NodeType.SWITCH_STATEMENT]: ['expression', 'resolvedValue', 'matchedCaseId', 'matchedValue'],
-    [NodeType.SWITCH_CASE]: ['value', 'defaultCase']
-};
-
-const getNodeOutputProperties = (node: Node<INodeData>): string[] => {
+const getNodeOutputProperties = (node: Node<INodeData>, baseProperties: Record<string, string[]>): string[] => {
     const nodeType = node.type as NodeType;
-    const baseProperties = BASE_OUTPUT_PROPERTIES[nodeType] ?? [];
+    const base = baseProperties[nodeType] ?? [];
     const dynamicProperties: string[] = [];
 
     if (nodeType === NodeType.ARGUMENTS) {
@@ -37,7 +24,7 @@ const getNodeOutputProperties = (node: Node<INodeData>): string[] => {
         dynamicProperties.push(...argumentKeys);
     }
 
-    return Array.from(new Set([...baseProperties, ...dynamicProperties]));
+    return Array.from(new Set([...base, ...dynamicProperties]));
 };
 
 const getNodeLabel = (node: Node<INodeData>): string => {
@@ -60,6 +47,13 @@ const getNodeLabel = (node: Node<INodeData>): string => {
 
 const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOption[] => {
     const nodes = usePluginBuilderStore((state) => state.nodes);
+    const { data: schema } = useQuery({
+        queryKey: ['plugin', 'node-types-schema'],
+        queryFn: () => pluginService.getNodeTypesSchema(),
+        staleTime: Infinity
+    });
+
+    const baseProperties = schema?.nodeTypes ?? {};
 
     return useMemo(() => {
         const optionsMap = new Map<string, NodeReferenceOption>();
@@ -68,7 +62,7 @@ const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOptio
             const node = rawNode as Node<INodeData>;
             if (!node?.id || node.id === currentNodeId) continue;
 
-            const properties = getNodeOutputProperties(node);
+            const properties = getNodeOutputProperties(node, baseProperties);
             const nodeLabel = getNodeLabel(node);
 
             for (const property of properties) {
@@ -83,7 +77,7 @@ const useNodeReferenceAutocomplete = (currentNodeId: string): NodeReferenceOptio
         }
 
         return Array.from(optionsMap.values());
-    }, [nodes, currentNodeId]);
+    }, [nodes, currentNodeId, baseProperties]);
 };
 
 export default useNodeReferenceAutocomplete;

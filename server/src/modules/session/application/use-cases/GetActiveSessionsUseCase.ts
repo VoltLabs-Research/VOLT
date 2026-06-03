@@ -14,6 +14,6 @@ export default class GetActiveSessionsUseCase implements IUseCase<GetActiveSessi
 
     async execute(input: GetActiveSessionsInputDTO): Promise<Result<GetActiveSessionsOutputDTO[], ApplicationError>>{
         const sessions = await this.sessionRepository.findActiveByUserId(input.userId);
-        return Result.ok(sessions.map(toPersistedSessionDTO));
+        return Result.ok(sessions.map((session) => toPersistedSessionDTO(session, input.token)));
     }
 }
