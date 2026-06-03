@@ -4,7 +4,6 @@ import {
     useRevokeAllOtherSessionsMutation,
     useRevokeSessionMutation
 } from './queries';
-import { tokenStorage } from '@/shared/auth/token-storage';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useMemo, useState } from 'react';
@@ -18,8 +17,6 @@ const LOGIN_ACTIVITY_LIMIT = 20;
 const useSessionData = () => {
     const [revokeTarget, setRevokeTarget] = useState<ActiveSession | null>(null);
 
-    const currentToken = tokenStorage.getToken();
-
     const activeSessionsResult = activeSessionsQuery(undefined);
     const loginActivityResult = loginActivityQuery(LOGIN_ACTIVITY_LIMIT);
     const revokeSessionMutation = useRevokeSessionMutation();
@@ -30,11 +27,11 @@ const useSessionData = () => {
     const isRevoking = revokeSessionMutation.isPending || revokeAllOtherSessionsMutation.isPending;
 
     const otherSessionsCount = useMemo(
-        () => sessions.filter((session) => session.token !== currentToken).length,
-        [currentToken, sessions]
+        () => sessions.filter((session) => !session.isCurrent).length,
+        [sessions]
     );
 
-    const isCurrentSession = (session: ActiveSession) => session.token === currentToken;
+    const isCurrentSession = (session: ActiveSession) => session.isCurrent;
 
     const openRevokeSessionModal = (session: ActiveSession) => {
         setRevokeTarget(session);

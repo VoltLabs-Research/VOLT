@@ -19,14 +19,6 @@ interface UseAIConversationsOptions {
     checkAccessDeniedError: (error: unknown) => boolean;
 }
 
-const sortConversations = (conversations: AIConversation[]) => {
-    return [...conversations].sort((left, right) => {
-        const leftDate = left.lastMessageAt || left.updatedAt || left.createdAt;
-        const rightDate = right.lastMessageAt || right.updatedAt || right.createdAt;
-        return new Date(rightDate).getTime() - new Date(leftDate).getTime();
-    });
-};
-
 const useAIConversations = (
     teamId: string | null,
     conversationId: string | undefined,
@@ -54,7 +46,7 @@ const useAIConversations = (
     });
 
     const conversations = useMemo(() => {
-        return sortConversations(conversationsResult.data?.data ?? []);
+        return conversationsResult.data?.data ?? [];
     }, [conversationsResult.data]);
 
     const createConversationMutationResult = useCreateConversationMutation({

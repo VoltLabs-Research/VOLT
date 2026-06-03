@@ -110,6 +110,10 @@ interface UploadBinaryCommitApiResponse {
     data: UploadBinaryOutputDTO;
 }
 
+export interface NodeTypesSchemaOutputDTO {
+    nodeTypes: Record<string, string[]>;
+}
+
 const endpoints = {
     getAll: paginated<GetPluginsInputDTO, PaginatedResponse<Plugin>>('/'),
     getById: get<GetPluginInputDTO, Plugin>('/:_id'),
@@ -174,7 +178,8 @@ const endpoints = {
     execute: post<ExecutePluginInputDTO, ExecutePluginOutputDTO>('/:pluginId/trajectories/:trajectoryId/executions'),
     listTeamClusters: paginated<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>('/:teamId/clusters', {
         client: 'teamClusters'
-    })
+    }),
+    getNodeTypesSchema: get<void, NodeTypesSchemaOutputDTO>('/node-types/schema')
 };
 
 export default createService({

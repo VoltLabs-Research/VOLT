@@ -5,7 +5,6 @@ import {
 import {
     formatSessionRelativeTime,
     getSessionActivityIcon,
-    isMobileUserAgent,
     parseSessionUserAgent,
     SESSION_ACTION_LABELS
 } from '@/modules/session/utilities/session-display';
@@ -55,14 +54,13 @@ const SessionSettings: FC = () => {
 
     const renderSession = (session: ActiveSession) => {
         const isCurrent = isCurrentSession(session);
-        const { browser, os } = parseSessionUserAgent(session.userAgent);
-        const DeviceIcon = isMobileUserAgent(session.userAgent) ? Smartphone : Monitor;
+        const DeviceIcon = session.isMobile ? Smartphone : Monitor;
 
         return (
             <li key={session._id} className='session-row'>
                 <DeviceIcon size={16} className='session-row__icon session-row__icon--muted' />
                 <div className='session-row__body'>
-                    <span className='session-row__title'>{browser} on {os}</span>
+                    <span className='session-row__title'>{session.browser} on {session.os}</span>
                     <span className='session-row__line'>{session.ip}</span>
                     <span className={`session-row__line${isCurrent ? ' session-row__line--brand' : ''}`}>
                         {isCurrent ? 'Current session' : formatSessionRelativeTime(session.lastActivity)}
@@ -220,8 +218,8 @@ const SessionSettings: FC = () => {
                 {revokeTarget && (
                     <Text as='p' size='md' tone='muted' className='p-1-5'>
                         Are you sure you want to revoke the session from{' '}
-                        <strong>{parseSessionUserAgent(revokeTarget.userAgent).browser}</strong> on{' '}
-                        <strong>{parseSessionUserAgent(revokeTarget.userAgent).os}</strong> ({revokeTarget.ip})?
+                        <strong>{revokeTarget.browser}</strong> on{' '}
+                        <strong>{revokeTarget.os}</strong> ({revokeTarget.ip})?
                     </Text>
                 )}
             </Modal>

@@ -15,6 +15,7 @@ export default createHttpModule({
     resource: Resource.PLUGIN,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
+        router.get('/node-types/schema', controllers.getNodeTypesSchema.handle);
         router.post('/workflow-validation', pluginValidation.validateWorkflow, controllers.validateWorkflow.handle);
         router.get('/:pluginId/export', controllers.exportPlugin.handle);
         router.post('/import', importUpload.single('file'), controllers.importPlugin.handle);
