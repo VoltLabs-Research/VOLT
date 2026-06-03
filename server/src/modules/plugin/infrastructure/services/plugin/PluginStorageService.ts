@@ -129,7 +129,7 @@ export default class PluginStorageService implements IPluginStorageService {
             fileName: string;
             size: number;
             contentType?: string;
-            sha256: string;
+            sha256?: string;
         }
     ): Promise<BinaryUploadTarget> {
         const plugin = await this.pluginRepo.findById(pluginId);
@@ -159,7 +159,7 @@ export default class PluginStorageService implements IPluginStorageService {
             contentType: input.contentType || 'application/octet-stream',
             metadata: {
                 'original-name': originalName,
-                sha256: input.sha256
+                ...(input.sha256 ? { sha256: input.sha256 } : {})
             }
         });
 
@@ -167,7 +167,7 @@ export default class PluginStorageService implements IPluginStorageService {
             objectPath,
             fileName: originalName,
             size: input.size,
-            binaryHash: input.sha256,
+            binaryHash: input.sha256 ?? '',
             uploadUrl: signed.url,
             expiresAt: signed.expiresAt
         };
@@ -180,7 +180,7 @@ export default class PluginStorageService implements IPluginStorageService {
             objectPath: string;
             fileName: string;
             size: number;
-            sha256: string;
+            sha256?: string;
         }
     ): Promise<BinaryUploadResult> {
         const plugin = await this.pluginRepo.findById(pluginId);
@@ -207,7 +207,12 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
-        if (head.metadata.sha256 && head.metadata.sha256 !== input.sha256) {
+        let sha256 = input.sha256;
+
+        if (!sha256) {
+            const buffer = await this.objectGatewayClient.getBuffer(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
+            sha256 = computeSha256(buffer);
+        } else if (head.metadata.sha256 && head.metadata.sha256 !== sha256) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
                 'Uploaded plugin binary hash metadata does not match the requested upload'
@@ -227,7 +232,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binary: originalName,
             binaryObjectPath: input.objectPath,
             binaryFileName: originalName,
-            binaryHash: input.sha256
+            binaryHash: sha256
         });
 
         await this.persistWorkflow(pluginId, plugin.props.workflow);
@@ -236,7 +241,7 @@ export default class PluginStorageService implements IPluginStorageService {
             objectPath: input.objectPath,
             fileName: originalName,
             size: input.size,
-            binaryHash: input.sha256
+            binaryHash: sha256
         };
     }
 

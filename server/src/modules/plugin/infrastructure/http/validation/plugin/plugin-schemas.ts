@@ -71,14 +71,14 @@ const uploadBinarySchema = z.object({
     fileName: z.string().min(1).max(255),
     size: z.number().int().positive().max(512 * 1024 * 1024),
     type: z.string().min(1).max(255).optional(),
-    sha256: sha256Schema
+    sha256: sha256Schema.optional()
 }).strict();
 
 const commitBinaryUploadSchema = z.object({
     objectPath: z.string().min(1).max(1024),
     fileName: z.string().min(1).max(255),
     size: z.number().int().positive().max(512 * 1024 * 1024),
-    sha256: sha256Schema
+    sha256: sha256Schema.optional()
 }).strict();
 
 export const pluginValidation = createResourceValidation({
