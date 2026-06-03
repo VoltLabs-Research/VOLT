@@ -1,4 +1,5 @@
 import TeamCluster, {
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
     TeamClusterDaemonServiceProps,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
@@ -171,7 +172,9 @@ export const toTeamClusterDTO = (
             daemon: toServiceDTO(services.daemon)
         },
         queueConcurrency: toTeamClusterQueueConcurrencyDTO(teamCluster.props.queueConcurrency),
-        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(teamCluster.props.queueScopeLimits),
+        queueScopeLimits: toTeamClusterQueueScopeLimitsDTO(
+            teamCluster.props.queueScopeLimits ?? DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
+        ),
         roleConfig: {
             desiredRole: roleConfig.desiredRole,
             effectiveRole: roleConfig.effectiveRole,

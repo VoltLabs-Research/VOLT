@@ -52,14 +52,6 @@ export const messagesQuery = createQuery(
     ({ conversationId, params }: ConversationMessagesQueryParams) => service.listMessages({ conversationId, ...params })
 );
 
-const sortConversations = (items: AIConversation[]) => {
-    return [...items].sort((left, right) => {
-        const leftDate = left.lastMessageAt || left.updatedAt || left.createdAt;
-        const rightDate = right.lastMessageAt || right.updatedAt || right.createdAt;
-        return new Date(rightDate).getTime() - new Date(leftDate).getTime();
-    });
-};
-
 const patchConversations = (
     queryParams: ConversationsQueryParams | undefined,
     updater: (current: PaginatedResponse<AIConversation>) => PaginatedResponse<AIConversation>
@@ -112,10 +104,10 @@ export const useCreateConversationMutation = (
     ({ conversation }) => {
         patchConversations(conversationsQueryParams, (current) => ({
             ...current,
-            data: sortConversations([
+            data: [
                 conversation,
                 ...current.data.filter((item) => item._id !== conversation._id)
-            ])
+            ]
         }));
     }
 )(options);
@@ -150,7 +142,7 @@ export const useRenameConversationMutation = (
 
             return {
                 ...current,
-                data: sortConversations(conversations)
+                data: conversations
             };
         };
 

@@ -74,9 +74,7 @@ const useChatData = () => {
     );
 
     const messages = useMemo(
-        () => (messagesQuery.data?.pages.flatMap((p) => p.data) ?? []).sort((left, right) => {
-            return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
-        }),
+        () => messagesQuery.data?.pages.flatMap((p) => p.data) ?? [],
         [messagesQuery.data]
     );
 

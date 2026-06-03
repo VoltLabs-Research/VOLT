@@ -11,4 +11,13 @@ export interface GetContainerStatsOutputDTO {
         memory: number;
         cpus: number;
     };
+    memoryMB: {
+        used: number;
+        total: number;
+        free: number;
+    };
+    networkTotals: {
+        rxBytes: number;
+        txBytes: number;
+    };
 }

@@ -19,11 +19,33 @@ export class GetContainerStatsUseCase implements IUseCase<GetContainerStatsInput
 
         const stats = await this.containerRuntimeService.getStats(teamClusterId, container.containerId);
 
+        const usedBytes = stats.memory_stats?.usage ?? 0;
+        const limitBytes = stats.memory_stats?.limit ?? 0;
+        const usedMB = usedBytes / 1024 / 1024;
+        const totalMB = limitBytes / 1024 / 1024;
+
+        const networks = stats.networks ?? {};
+        let rxBytes = 0;
+        let txBytes = 0;
+        for (const iface of Object.values(networks)) {
+            rxBytes += iface.rx_bytes ?? 0;
+            txBytes += iface.tx_bytes ?? 0;
+        }
+
         return Result.ok({
             stats,
             limits: {
                 memory: container.memory * 1024 * 1024,
                 cpus: container.cpus
+            },
+            memoryMB: {
+                used: Math.round(usedMB * 100) / 100,
+                total: Math.round(totalMB * 100) / 100,
+                free: Math.round((totalMB - usedMB) * 100) / 100
+            },
+            networkTotals: {
+                rxBytes,
+                txBytes
             }
         });
     }

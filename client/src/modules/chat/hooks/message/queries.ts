@@ -62,12 +62,6 @@ export const useChatMessagesInfiniteQuery = (
     });
 };
 
-const sortMessagesByCreatedAt = (messages: ChatMessage[]) => {
-    return [...messages].sort((left, right) => {
-        return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
-    });
-};
-
 export const addMessageToCache = (queryClient: QueryClient, chatId: string | null | undefined, message: ChatMessage) => {
     if (!chatId) return;
 
@@ -97,7 +91,7 @@ export const addMessageToCache = (queryClient: QueryClient, chatId: string | nul
                     if (index === lastPageIndex) {
                         return {
                             ...page,
-                            data: sortMessagesByCreatedAt([...page.data, message])
+                            data: [...page.data, message]
                         };
                     }
 

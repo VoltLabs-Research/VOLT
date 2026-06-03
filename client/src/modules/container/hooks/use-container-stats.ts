@@ -50,21 +50,14 @@ const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): 
             }
         }
         prevCpuRef.current = { total: cpuTotal, system: systemTotal };
-        const usedMB = (stats.memory_stats?.usage || 0) / 1024 / 1024;
-        const limitMB = (stats.memory_stats?.limit || 0) / 1024 / 1024;
+
         setMemory({
-            used: usedMB,
-            total: limitMB,
-            free: limitMB - usedMB
+            used: statsResponse.memoryMB.used,
+            total: statsResponse.memoryMB.total,
+            free: statsResponse.memoryMB.free
         });
 
-        const networks = stats.networks || {};
-        let rx = 0, tx = 0;
-        for(const iface of Object.values(networks)){
-            rx += iface.rx_bytes || 0;
-            tx += iface.tx_bytes || 0;
-        }
-        setNetwork({ rx, tx });
+        setNetwork({ rx: statsResponse.networkTotals.rxBytes, tx: statsResponse.networkTotals.txBytes });
     }, [statsResponse]);
 
     return {
