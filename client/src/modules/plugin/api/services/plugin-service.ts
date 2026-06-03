@@ -110,20 +110,6 @@ interface UploadBinaryCommitApiResponse {
     data: UploadBinaryOutputDTO;
 }
 
-const toHex = (buffer: ArrayBuffer): string => {
-    return Array.from(new Uint8Array(buffer))
-        .map((value) => value.toString(16).padStart(2, '0'))
-        .join('');
-};
-
-const computeFileSha256 = async (file: File): Promise<string> => {
-    if (!globalThis.crypto?.subtle) {
-        throw new Error('SHA-256 hashing is not available in this browser');
-    }
-
-    return toHex(await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
-};
-
 const endpoints = {
     getAll: paginated<GetPluginsInputDTO, PaginatedResponse<Plugin>>('/'),
     getById: get<GetPluginInputDTO, Plugin>('/:_id'),
@@ -136,7 +122,6 @@ const endpoints = {
     }),
     delete: del<DeletePluginInputDTO>('/:_id'),
     uploadBinary: custom<UploadBinaryInputDTO, UploadBinaryOutputDTO>(async ({ getClient }, params) => {
-        const sha256 = await computeFileSha256(params.file);
         const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
             'PATCH',
             `/${params.pluginId}/binary`,
@@ -144,8 +129,7 @@ const endpoints = {
                 body: {
                     fileName: params.file.name,
                     size: params.file.size,
-                    ...(params.file.type ? { type: params.file.type } : {}),
-                    sha256
+                    ...(params.file.type ? { type: params.file.type } : {})
                 }
             }
         );
@@ -173,8 +157,7 @@ const endpoints = {
                 body: {
                     objectPath: target.objectPath,
                     fileName: target.fileName,
-                    size: target.size,
-                    sha256
+                    size: target.size
                 }
             }
         );

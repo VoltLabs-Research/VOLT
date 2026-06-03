@@ -28,7 +28,7 @@ export interface IPluginStorageService {
             fileName: string;
             size: number;
             contentType?: string;
-            sha256: string;
+            sha256?: string;
         }
     ): Promise<BinaryUploadTarget>;
 
@@ -39,7 +39,7 @@ export interface IPluginStorageService {
             objectPath: string;
             fileName: string;
             size: number;
-            sha256: string;
+            sha256?: string;
         }
     ): Promise<BinaryUploadResult>;
 
