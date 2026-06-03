@@ -5,7 +5,7 @@ export interface UploadBinaryInputDTO {
     fileName: string;
     size: number;
     type?: string;
-    sha256: string;
+    sha256?: string;
 }
 
 export interface CommitBinaryUploadInputDTO {
@@ -15,5 +15,5 @@ export interface CommitBinaryUploadInputDTO {
     objectPath: string;
     fileName: string;
     size: number;
-    sha256: string;
+    sha256?: string;
 }
