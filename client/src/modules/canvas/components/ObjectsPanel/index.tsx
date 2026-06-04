@@ -98,6 +98,11 @@ const formatParticleFilterArtifactLabel = (artifact: SceneArtifact): string => {
     return [baseCondition, extraConditions, actionLabel].filter(Boolean).join(' · ');
 };
 
+const capitalizeProperty = (property: string): string => {
+    if (!property) return property;
+    return property.charAt(0).toUpperCase() + property.slice(1);
+};
+
 const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
     const { params, displayName } = artifact;
 
@@ -109,10 +114,10 @@ const formatColorCodingArtifactLabel = (artifact: SceneArtifact): string => {
         return displayName;
     }
 
-    const rangeLabel = `[${formatArtifactValue(params.startValue)}, ${formatArtifactValue(params.endValue)}]`;
+    const rangeLabel = `Range: [${formatArtifactValue(params.startValue)}, ${formatArtifactValue(params.endValue)}]`;
     const gradientLabel = typeof params.gradient === 'string' ? params.gradient : '';
 
-    return [params.property, rangeLabel, gradientLabel].filter(Boolean).join(' · ');
+    return [capitalizeProperty(params.property), rangeLabel, gradientLabel].filter(Boolean).join(' · ');
 };
 
 const formatArtifactLabel = (artifact: SceneArtifact): string => {
@@ -291,6 +296,23 @@ const ObjectsPanel = ({
     useEffect(() => {
         setExpandedColorCodingTimesteps((current) => pruneExpandedTimesteps(current, colorCodingTimesteps));
     }, [colorCodingTimesteps]);
+
+    useEffect(() => {
+        const onArtifactsChanged = (event: Event) => {
+            const { source, timestep } = (event as CustomEvent<{ source?: string; timestep?: number }>).detail ?? {};
+            if (source !== 'color-coding' || timestep === undefined) return;
+            setColorCodingOpen(true);
+            setExpandedColorCodingTimesteps((current) => {
+                if (current.has(timestep)) return current;
+                return new Set([...current, timestep]);
+            });
+        };
+
+        window.addEventListener('canvas:scene-artifacts:changed', onArtifactsChanged);
+        return () => {
+            window.removeEventListener('canvas:scene-artifacts:changed', onArtifactsChanged);
+        };
+    }, []);
 
     const handleSelectRasterScene = useCallback((scene: RasterSelectableScene, label: string) => {
         if (!onUpdateRasterContainerSelection) return;

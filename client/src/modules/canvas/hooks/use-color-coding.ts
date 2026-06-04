@@ -1,9 +1,10 @@
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import { parseNumericInput } from '../utilities/parse-numeric-input';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';
@@ -89,23 +90,32 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         }
     }, [statsQuery.data, syncEndValue, syncStartValue]);
 
+    const colorCodingToast = useMemo(() => createPromiseToastOptions({
+        loading: 'Applying color coding...',
+        success: 'Color coding applied successfully',
+        error: 'Failed to apply color coding'
+    }), []);
+
     const applyColorCoding = useCallback(async () => {
         if (!trajectoryId || currentTimestep === undefined || !property) return;
 
         setIsApplying(true);
         try {
-            await colorCodingService.apply({
-                trajectoryId,
-                analysisId,
-                timestep: currentTimestep,
-                payload: {
-                    property,
-                    startValue,
-                    endValue,
-                    gradient,
-                    ...(exposureId ? { exposureId } : {})
-                }
-            });
+            await showPromise(
+                colorCodingService.apply({
+                    trajectoryId,
+                    analysisId,
+                    timestep: currentTimestep,
+                    payload: {
+                        property,
+                        startValue,
+                        endValue,
+                        gradient,
+                        ...(exposureId ? { exposureId } : {})
+                    }
+                }),
+                colorCodingToast
+            );
 
             setActiveScene({
                 analysisId,
@@ -118,22 +128,13 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 sceneType: 'color-coding'
             } as ColorCodingScene);
 
-            // Why: the right-panel artifact tree listens for this event to
-            // refetch color-coding/particle-filter lists. Without it the user
-            // has to reload the page to see the entry they just created.
             window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
-                detail: { trajectoryId }
+                detail: { trajectoryId, source: 'color-coding', timestep: currentTimestep }
             }));
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) return;
-            reportError(error, {
-                surface: ErrorSurface.Toast,
-                fallbackTitle: 'Failed to apply color coding'
-            });
         } finally {
             setIsApplying(false);
         }
-    }, [trajectoryId, currentTimestep, property, gradient, startValue, endValue, analysisId, exposureId, setActiveScene]);
+    }, [trajectoryId, currentTimestep, property, gradient, startValue, endValue, analysisId, exposureId, setActiveScene, colorCodingToast]);
 
     useEffect(() => {
         if (!symmetricRange) return;
