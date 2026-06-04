@@ -32,6 +32,25 @@
     pointer-events: auto;
 }
 
+.canvas-toolbar-left {
+    max-width: calc(100% - clamp(120px, 16vw, 220px) + var(--canvas-right-overlay-size, 0px) / 2);
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+}
+
+.canvas-toolbar-left::-webkit-scrollbar {
+    display: none;
+}
+
+.canvas-toolbar-left > *,
+.canvas-toolbar-left .canvas-toolbar-menus,
+.canvas-toolbar-left .canvas-workspace-tabs {
+    flex-shrink: 0;
+}
+
 .canvas-toolbar-trajectory {
     max-width: 260px;
     padding: 0 0.75rem;
