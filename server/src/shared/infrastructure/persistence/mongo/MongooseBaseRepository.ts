@@ -64,7 +64,7 @@ const toSort = (sort?: Record<string, 1 | -1>): Record<string, SortOrder> | unde
 const toUpdateQuery = <TDocument extends Document, TProps>(
     data: Partial<TProps>
 ): UpdateQuery<TDocument> => {
-    return data as UpdateQuery<TDocument>;
+    return { $set: data } as UpdateQuery<TDocument>;
 };
 
 export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends Document> implements IBaseRepository<TDomain, TProps> {
