@@ -27,7 +27,7 @@
             libgl1-mesa-glx \
             libegl1-mesa \
             libegl1 \
-            libglib2.0-0 \
+            libglib2.0-0 \  
             libopengl0 \
             libxkbcommon0 \
             libdbus-1-3 \

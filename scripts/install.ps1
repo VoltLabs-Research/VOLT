@@ -98,9 +98,16 @@ function Invoke-VoltJsonPost {
     try {
         $body = $Payload | ConvertTo-Json -Depth 10
         $response = Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $body -UseBasicParsing
-        return $response.Content | ConvertFrom-Json -Depth 10
+        return $response.Content | ConvertFrom-Json
     } catch {
-        $response = $_.Exception.Response
+        $webException = $_.Exception
+        while ($webException -and -not ($webException -is [System.Net.WebException])) {
+            $webException = $webException.InnerException
+        }
+        if (-not $webException) {
+            throw
+        }
+        $response = $webException.Response
         if (-not $response) {
             throw
         }
@@ -112,7 +119,7 @@ function Invoke-VoltJsonPost {
         $stream.Dispose()
 
         try {
-            $errorPayload = $rawBody | ConvertFrom-Json -Depth 10
+            $errorPayload = $rawBody | ConvertFrom-Json
             $message = if ($errorPayload.message) { $errorPayload.message } elseif ($errorPayload.code) { $errorPayload.code } else { $rawBody }
             Fail-Install "HTTP $([int]$response.StatusCode): $message"
         } catch {
