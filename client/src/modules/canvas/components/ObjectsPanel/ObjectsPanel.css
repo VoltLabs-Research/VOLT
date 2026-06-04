@@ -145,6 +145,21 @@
     color: var(--color-text-muted);
 }
 
+.canvas-tree-analysis-label-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 0 1 auto;
+    gap: 1px;
+}
+
+.canvas-tree-analysis-config-hint {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    color: var(--color-text-muted);
+    opacity: 0.9;
+}
+
 .canvas-tree-analysis-name {
     min-width: 0;
     flex: 0 1 auto;
