@@ -37,6 +37,7 @@ import {
 import Button from '@/shared/presentation/primitives/Button';
 import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
+import { ANALYSIS_EXECUTION_METADATA_KEY } from '../../utilities/selected-timestep-analysis';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -184,6 +185,19 @@ const AnalysisTreeNode = ({
         return plugin?.workflow?.nodes?.some((node) => node.type === 'plugin-node' || Boolean(node.data.pluginNode)) ?? false;
     }, [plugin]);
 
+    const inlineSummary = useMemo(() => {
+        if (!userConfig) return null;
+        const parts: string[] = [];
+        for (const [key, value] of Object.entries(userConfig)) {
+            if (key === ANALYSIS_EXECUTION_METADATA_KEY) continue;
+            if (parts.length >= 3) break;
+            if (typeof value === 'string' && value) parts.push(value);
+            else if (typeof value === 'number') parts.push(String(value));
+            else if (typeof value === 'boolean') parts.push(value ? 'Yes' : 'No');
+        }
+        return parts.length > 0 ? parts.join(' · ') : null;
+    }, [userConfig]);
+
     useEffect(() => {
         const previousStatuses = previousArtifactStatusesRef.current;
         const currentStatuses = new Map<string, AnalysisExpectedArtifact['status']>();
@@ -318,8 +332,15 @@ const AnalysisTreeNode = ({
 
     const analysisRow = (
         <div className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isSelectedAnalysis ? 'selected' : ''} cursor-pointer`} onClick={handleSelectAnalysis} role="treeitem" aria-selected={isSelectedAnalysis} tabIndex={0} data-tour-id={tourTargetId}>
-            <span className={nameClassName} title={pluginDisplayName}>
-                {pluginDisplayName}
+            <span className="canvas-tree-analysis-label-group">
+                <span className={nameClassName} title={pluginDisplayName}>
+                    {pluginDisplayName}
+                </span>
+                {inlineSummary && (
+                    <span className="canvas-tree-analysis-config-hint truncate" title={inlineSummary}>
+                        {inlineSummary}
+                    </span>
+                )}
             </span>
             <span className="flex-1" />
             <Button
