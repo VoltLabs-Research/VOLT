@@ -6,7 +6,8 @@ import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
 import useTrajectoriesListing, {
     MOVE_TRAJECTORY_MODAL_ID,
-    NEW_TRAJECTORY_FOLDER_MODAL_ID
+    NEW_TRAJECTORY_FOLDER_MODAL_ID,
+    RENAME_TRAJECTORY_FOLDER_MODAL_ID
 } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import {
     getTrajectoryListingFolderDroppableId,
@@ -15,6 +16,7 @@ import {
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
+import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import Box from '@/shared/presentation/primitives/Box';
 import { ChevronRight, Download, Upload } from 'lucide-react';
@@ -251,12 +253,15 @@ function DashboardSimulationGrid() {
         handleMoveTrajectoryOpen,
         handleMoveTrajectorySubmit,
         handlePickerChange,
+        handleRenameFolderClose,
+        handleRenameFolderSubmit,
         isUploading,
         listMoveFolders,
         movingTrajectory,
         navigateToFolder,
         openFolder,
         queryKey,
+        renamingFolder,
         dragAndDrop,
         socketInvalidation
     } = useTrajectoriesListing();
@@ -412,6 +417,14 @@ function DashboardSimulationGrid() {
                 title='New Trajectory Folder'
                 description='Create a folder in the current trajectories location.'
                 onSubmit={handleCreateFolder}
+            />
+            <RenameFolderModal
+                id={RENAME_TRAJECTORY_FOLDER_MODAL_ID}
+                title='Rename Trajectory Folder'
+                description='Update the current trajectory folder name.'
+                folderName={renamingFolder?.title ?? null}
+                onSubmit={handleRenameFolderSubmit}
+                onClose={handleRenameFolderClose}
             />
             <MoveToFolderModal
                 id={MOVE_TRAJECTORY_MODAL_ID}
