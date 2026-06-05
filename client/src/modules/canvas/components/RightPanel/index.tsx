@@ -4,7 +4,6 @@ import useTrajectoryCloneFlow from '../../hooks/use-trajectory-clone-flow';
 import { useTrajectoryCloneFlowStore } from '../../stores/use-trajectory-clone-flow-store';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
 import { useCanvasAccessStore } from '../../api/access/use-canvas-access-store';
-import ModifierConfig from '../ModifierConfig';
 import ModifiersSection, { ModifierConfigContent } from '../ModifiersSection';
 import ObjectsPanel from '../ObjectsPanel';
 
@@ -370,9 +369,9 @@ const RightPanel = ({
         }
 
         return (
-            <ModifierConfig>
+            <Stack gap='05'>
                 {content}
-            </ModifierConfig>
+            </Stack>
         );
     }, [
         availableTimesteps,

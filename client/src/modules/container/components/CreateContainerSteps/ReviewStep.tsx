@@ -1,9 +1,8 @@
-import ReviewItem from '../ReviewItem';
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
 import Heading from '@/shared/presentation/primitives/Heading';
-import KeyValueList from '@/shared/presentation/primitives/KeyValueList';
+import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
@@ -76,18 +75,18 @@ const ReviewStep = ({
 
             <Box className='create-container-review-card' radius='md' overflow='hidden' p='1'>
                 <KeyValueList>
-                    <ReviewItem label='Name' value={config.name} />
-                    <ReviewItem label='Team' value={selectedTeamName} />
-                    <ReviewItem label='Cluster' value={selectedClusterName} />
-                    <ReviewItem label='Image' value={selectedImage} />
-                    <ReviewItem label='Image source' value={imageSource} />
-                    <ReviewItem label='CPU' value={`${config.cpus} vCPU`} />
-                    <ReviewItem label='Memory' value={`${config.memory} MB`} />
-                    <ReviewItem label='Ports' value={portsDisplay} />
-                    <ReviewItem label='Environment' value={environmentDisplay} />
-                    {customFieldsDisplay && <ReviewItem label='Template settings' value={customFieldsDisplay} />}
-                    <ReviewItem label='Docker access' value={dockerAccessLabel} />
-                    {draftLastSavedAt ? <ReviewItem label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
+                    <KeyValueRow label='Name' value={config.name} />
+                    <KeyValueRow label='Team' value={selectedTeamName} />
+                    <KeyValueRow label='Cluster' value={selectedClusterName} />
+                    <KeyValueRow label='Image' value={selectedImage} />
+                    <KeyValueRow label='Image source' value={imageSource} />
+                    <KeyValueRow label='CPU' value={`${config.cpus} vCPU`} />
+                    <KeyValueRow label='Memory' value={`${config.memory} MB`} />
+                    <KeyValueRow label='Ports' value={portsDisplay} />
+                    <KeyValueRow label='Environment' value={environmentDisplay} />
+                    {customFieldsDisplay && <KeyValueRow label='Template settings' value={customFieldsDisplay} />}
+                    <KeyValueRow label='Docker access' value={dockerAccessLabel} />
+                    {draftLastSavedAt ? <KeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
                 </KeyValueList>
             </Box>
 
