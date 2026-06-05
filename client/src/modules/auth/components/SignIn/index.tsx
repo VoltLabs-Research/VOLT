@@ -16,8 +16,10 @@ import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
+import Heading from '@/shared/presentation/primitives/Heading';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Stepper from '@/shared/presentation/primitives/Stepper';
+import Text from '@/shared/presentation/primitives/Text';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
@@ -240,19 +242,19 @@ const SignInTemplate = () => {
             <Stack as='section' justify='center' p='1-5' className='sign-in-form-shell screen-vh' aria-labelledby='sign-in-form-title'>
                 <Stack gap='2' width='max' className='sign-in-form-section'>
                     <Stack as='header' gap='05'>
-                        <h1 id='sign-in-form-title' className='sign-in-form-title'>{title}</h1>
-                        <p>{subtitle}</p>
+                        <Heading level={1} id='sign-in-form-title' className='sign-in-form-title'>{title}</Heading>
+                        <Text as='p'>{subtitle}</Text>
                     </Stack>
 
                     <Stepper
                         steps={signInSteps}
                         activeStep={step} />
 
-                    <p className='sign-in-consent text-center'>
+                    <Text as='p' align='center' className='sign-in-consent'>
                         By continuing with email or a social provider, you agree to our{' '}
-                        <span className='sign-in-legal-text'>Terms</span> and{' '}
-                        <span className='sign-in-legal-text'>Privacy Policy</span>.
-                    </p>
+                        <Text as='span' className='sign-in-legal-text'>Terms</Text> and{' '}
+                        <Text as='span' className='sign-in-legal-text'>Privacy Policy</Text>.
+                    </Text>
                 </Stack>
             </Stack>
         </main>

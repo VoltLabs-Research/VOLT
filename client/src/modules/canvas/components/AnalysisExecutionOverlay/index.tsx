@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { buildAnalysisExecutionRows } from './execution-rows';
+import Text from '@/shared/presentation/primitives/Text';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
@@ -84,13 +85,13 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             <div className="canvas-tree-execution-block" role="group" aria-label={`${analysis.pluginDisplayName} execution timeline`}>
                 {rows.map((row) => (
                     <div key={row.key} className={row.className}>
-                        <span className={`canvas-tree-execution-icon canvas-tree-execution-icon--${row.status}`}>
+                        <Text as='span' className={`canvas-tree-execution-icon canvas-tree-execution-icon--${row.status}`}>
                             {getStageIcon(row.iconSource)}
-                        </span>
-                        <span className="canvas-tree-execution-label truncate">{row.label}</span>
-                        {row.cacheHit && <span className="canvas-tree-execution-chip">cached</span>}
+                        </Text>
+                        <Text as='span' truncate className="canvas-tree-execution-label">{row.label}</Text>
+                        {row.cacheHit && <Text as='span' className="canvas-tree-execution-chip">cached</Text>}
                         {typeof row.durationMs === 'number' && (
-                            <span className="canvas-tree-execution-duration">{formatDuration(row.durationMs)}</span>
+                            <Text as='span' className="canvas-tree-execution-duration">{formatDuration(row.durationMs)}</Text>
                         )}
                     </div>
                 ))}

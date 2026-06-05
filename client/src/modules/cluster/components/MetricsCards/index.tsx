@@ -2,7 +2,9 @@ import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-n
 import './MetricsCards.css';
 import { Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
 import StatCard from '@/shared/presentation/primitives/StatCard';
+import Text from '@/shared/presentation/primitives/Text';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { ReactNode } from 'react';
 
@@ -93,13 +95,13 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                     value={card.value}
                     unit={card.unit}
                     footer={(
-                        <div className='d-flex items-center content-between gap-05'>
-                            <span className='color-secondary font-size-1'>{card.subtitle}</span>
-                            <span className={`d-flex items-center gap-025 font-size-1 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
+                        <Row align='center' justify='between' gap='05'>
+                            <Text as='span' size='sm' tone='secondary'>{card.subtitle}</Text>
+                            <Row as='span' align='center' gap='025' className={`font-size-1 ${card.trendUp ? 'metric-card-trend-positive' : 'metric-card-trend-negative'}`}>
                                 {renderTrendIcon(card.trendUp)}
                                 {card.trend}
-                            </span>
-                        </div>
+                            </Row>
+                        </Row>
                     )}
                 />
             ))}

@@ -1,4 +1,7 @@
 import { InvitationRow } from '../InvitationRow';
+import Box from '@/shared/presentation/primitives/Box';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import './InvitationsList.css';
@@ -20,11 +23,11 @@ export const InvitationsList = ({
 
     if(isLoading) {
         return (
-            <div className='invitations-list-loading d-flex items-center content-center'>
-                <p className='color-secondary font-size-2 text-center p-1'>
+            <Box display='flex' align='center' justify='center' className='invitations-list-loading'>
+                <Text as='p' tone='secondary' size='md' align='center' className='p-1'>
                     Loading invitations...
-                </p>
-            </div>
+                </Text>
+            </Box>
         );
     }
 
@@ -39,8 +42,8 @@ export const InvitationsList = ({
     }
 
     return (
-        <div className='invitations-list y-auto f-shrink-0'>
-            <div className='d-flex column gap-05'>
+        <Box overflow='y-auto' shrink='0' className='invitations-list'>
+            <Stack gap='05'>
                 {safeInvitations.map((invitation) => (
                     <InvitationRow
                         key={invitation._id}
@@ -50,7 +53,7 @@ export const InvitationsList = ({
                         isLoading={cancelingId === invitation._id}
                     />
                 ))}
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 };
