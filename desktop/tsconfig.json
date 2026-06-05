@@ -1,20 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "module": "commonjs",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
     "verbatimModuleSyntax": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
-      "@/src": [
-        "./src"
+      "@/*": [
+        "src/*"
       ]
     }
   },
