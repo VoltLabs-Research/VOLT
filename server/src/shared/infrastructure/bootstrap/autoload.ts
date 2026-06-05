@@ -25,7 +25,8 @@ const EXCLUDED_SEGMENTS = new Set<string>([
     'dtos',
     'validation',
     'constants',
-    'presenters'
+    'presenters',
+    'routes'
 ]);
 
 const FILE_SUFFIXES: readonly string[] = ['.ts', '.js'];

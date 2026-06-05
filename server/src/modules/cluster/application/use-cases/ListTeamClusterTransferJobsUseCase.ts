@@ -1,3 +1,7 @@
+import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
+import { inject } from 'tsyringe';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import { toClusterTransferJobDTO } from '@modules/cluster/application/dtos/ClusterTransferJobDTO';
 import {
     ListTeamClusterTransferJobsInputDTO,
@@ -5,8 +9,6 @@ import {
 } from '@modules/cluster/application/dtos/ListTeamClusterTransferJobsDTO';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import type { ClusterTransferJobProps } from '@modules/cluster/domain/entities/ClusterTransferJob';
-import ClusterTransferJobRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -25,8 +27,8 @@ export default class ListTeamClusterTransferJobsUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly clusterTransferJobRepository: ClusterTransferJobRepository
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
     ) {}
 
     async execute(

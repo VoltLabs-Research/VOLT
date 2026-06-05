@@ -1,3 +1,7 @@
+import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
+import { inject } from 'tsyringe';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import type { ClusterTransferJobDTO } from '@modules/cluster/application/dtos/ClusterTransferJobDTO';
 import { toClusterTransferJobDTO } from '@modules/cluster/application/dtos/ClusterTransferJobDTO';
 import {
@@ -5,8 +9,6 @@ import {
     ListTeamClustersOutputDTO
 } from '@modules/cluster/application/dtos/ListTeamClustersDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
-import ClusterTransferJobRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -19,8 +21,8 @@ interface ListTeamClustersFilter extends Record<string, unknown> {
 @injectable()
 export default class ListTeamClustersByTeamIdUseCase implements IUseCase<ListTeamClustersInputDTO, ListTeamClustersOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly clusterTransferJobRepository: ClusterTransferJobRepository
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
     ){}
 
     async execute(input: ListTeamClustersInputDTO): Promise<Result<ListTeamClustersOutputDTO, ApplicationError>> {

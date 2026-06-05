@@ -1,13 +1,14 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO } from '@modules/team/application/dtos/team/GenerateTeamInviteCodeDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getInviteCodePermissionError } from '@modules/team/application/use-cases/team/invite-code-helpers';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 const INVITE_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const INVITE_CODE_LENGTH = 5;
@@ -24,8 +25,8 @@ const generateCode = (): string => {
 @injectable()
 export default class GenerateTeamInviteCodeUseCase implements IUseCase<GenerateTeamInviteCodeInputDTO, GenerateTeamInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamRepository: TeamRepository,
-        private readonly teamMemberRepository: TeamMemberRepository
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
 
     async execute(input: GenerateTeamInviteCodeInputDTO): Promise<Result<GenerateTeamInviteCodeOutputDTO, ApplicationError>> {

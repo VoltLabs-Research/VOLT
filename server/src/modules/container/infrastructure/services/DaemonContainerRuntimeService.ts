@@ -6,13 +6,14 @@ import type {
     CreateRuntimeContainerOptions,
     RuntimeContainerInfo
 } from '@modules/container/domain/port/IContainerService';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type {
     ITeamClusterContainerRuntimeService,
     RuntimeContainerSummary
 } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 type ContainerRuntimeAction = 'start' | 'stop' | 'restart';
 
@@ -23,7 +24,7 @@ interface ReadContainerFileResponse {
 const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
 const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
 
-@injectable()
+@Singleton(CONTAINER_TOKENS.ContainerRuntimeService)
 export class DaemonContainerRuntimeService implements ITeamClusterContainerRuntimeService {
     private readonly statsCache = new Map<string, {
         expiresAt: number;

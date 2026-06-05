@@ -1,10 +1,14 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { createHash } from 'node:crypto';
 
 import sharp from 'sharp';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -12,7 +16,6 @@ import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const DASHBOARD_PREVIEW_MAX_WIDTH = 960;
@@ -22,9 +25,9 @@ const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
     constructor(
         
-        private readonly trajectoryRepository: TrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ){}
 
     async execute(input: GetTrajectoryPreviewInputDTO): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {

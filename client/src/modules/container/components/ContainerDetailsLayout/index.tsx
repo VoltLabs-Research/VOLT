@@ -6,7 +6,7 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -15,7 +15,8 @@ import Stack from '@/shared/presentation/primitives/Stack';
 import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ContainerAction } from '../../api/service';
-import ContainerDetailsSkeleton from '../ContainerDetailsSkeleton';
+import Row from '@/shared/presentation/primitives/Row';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import ContainerDetailsHeader from '../ContainerDetailsHeader';
 import { containerQuery, useContainerByIdQuery } from '../../hooks/queries';
 import useContainerStats from '../../hooks/use-container-stats';
@@ -174,7 +175,34 @@ const ContainerDetailsLayout = () => {
     }, [container, stats, isRunning, handleUpdateEnv, handleUpdatePorts]);
 
     if(isLoading && !container){
-        return <ContainerDetailsSkeleton />;
+        return (
+            <Stack className='container-details-layout'>
+                <Stack className='container-details-header'>
+                    <Skeleton variant='text' width={60} height={24} style={{ marginBottom: 8 }} />
+                    <Row justify='between' align='start' style={{ gap: '1rem' }}>
+                        <Stack gap='05'>
+                            <Skeleton variant='text' width={220} height={28} />
+                            <Skeleton variant='text' width={320} height={18} />
+                        </Stack>
+                        <Row gap='05'>
+                            <Skeleton variant='rounded' width={96} height={32} />
+                            <Skeleton variant='rounded' width={96} height={32} />
+                        </Row>
+                    </Row>
+                    <Box className='container-details-header-tabs-row'>
+                        <Skeleton variant='rounded' width={320} height={30} />
+                    </Box>
+                </Stack>
+                <Stack className='container-details-content-area' flex='1' p='1-5' gap='1-5'>
+                    <Row gap='2'>
+                        <Skeleton variant='rounded' width='33%' height={140} />
+                        <Skeleton variant='rounded' width='33%' height={140} />
+                        <Skeleton variant='rounded' width='33%' height={140} />
+                    </Row>
+                    <Skeleton variant='rounded' width='100%' height={240} />
+                </Stack>
+            </Stack>
+        );
     }
 
     if(accessDenied) return <AccessDenied />;

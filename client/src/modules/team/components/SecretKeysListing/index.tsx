@@ -6,10 +6,9 @@ import { openModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../SecretKeyCreationModal';
-import useDeleteSecretKey from '@/modules/team/hooks/secret-key/use-delete-secret-key';
-import useRevokeSecretKey from '@/modules/team/hooks/secret-key/use-revoke-secret-key';
+import { useDeleteSecretKeyMutation, useRevokeSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -82,8 +81,8 @@ export default function SecretKeysListing() {
     const canCreate = canAccess(['team-secret-key:create']);
     const selectedTeam = useSelectedTeam();
     const { queryKey, fetchData } = useSecretKeysListing(selectedTeam?._id);
-    const revokeSecretKey = useRevokeSecretKey();
-    const deleteSecretKey = useDeleteSecretKey();
+    const revokeSecretKeyMutation = useRevokeSecretKeyMutation();
+    const deleteSecretKeyMutation = useDeleteSecretKeyMutation();
 
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
         const keyPrefix = String(key.keyPrefix || '').trim();
@@ -116,7 +115,8 @@ export default function SecretKeysListing() {
                 label: 'Revoke Key',
                 icon: RiShieldKeyholeLine,
                 handler: async ({ item: key }) => {
-                    await revokeSecretKey(key._id);
+                    if (!selectedTeam?._id) return;
+                    await revokeSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, secretKeyId: key._id });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1
@@ -129,7 +129,10 @@ export default function SecretKeysListing() {
                 label: 'Delete',
                 handler: async ({ item: key }) => {
                     await runAction({
-                        action: () => deleteSecretKey(key._id),
+                        action: () => {
+                            if (!selectedTeam?._id) return Promise.resolve();
+                            return deleteSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, secretKeyId: key._id });
+                        },
                         toast: getDeleteSecretKeyToastOptions(key)
                     });
                 },

@@ -3,6 +3,7 @@ import {
     type AnalysisFileRef,
     type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
@@ -34,7 +35,7 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
     return left.objectName.localeCompare(right.objectName);
 };
 
-@Singleton()
+@Singleton(PLUGIN_TOKENS.PluginExposureExportService)
 export class PluginExposureExportService implements IPluginExposureExportService {
     constructor(
         private readonly trajectoryRepository: TrajectoryRepository,

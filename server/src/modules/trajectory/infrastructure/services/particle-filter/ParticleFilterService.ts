@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
@@ -46,7 +47,7 @@ const buildPluginPropertyUnavailableError = (
     );
 };
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.ParticleFilterService)
 export default class ParticleFilterService implements IParticleFilterService {
     constructor(
         

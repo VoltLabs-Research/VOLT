@@ -1,9 +1,11 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
 import LatexDocumentCreatedEvent from '@modules/latex/domain/events/LatexDocumentCreatedEvent';
-import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
-import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -15,9 +17,9 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        private readonly latexDocumentRepository: LatexDocumentRepository,
-        private readonly latexFolderRepository: LatexFolderRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
+        @inject(LATEX_TOKENS.LatexFolderRepository) private readonly latexFolderRepository: ILatexFolderRepository,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

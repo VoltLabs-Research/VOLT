@@ -1,5 +1,11 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { inject } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import {
     resolveAnalysisComputeClusterId,
     resolveTrajectoryStorageClusterId
@@ -11,14 +17,12 @@ import { Result } from '@shared/domain/port/Result';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import { injectable } from 'tsyringe';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type {
     AtomColumn,
     GetAtomsColumnarInputDTO,
     GetAtomsColumnarOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import TrajectoryReader from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryReader';
+import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajectory/ITrajectoryReader';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const ID_PROPERTY_NAME = 'id';
@@ -40,17 +44,17 @@ const buildUint32Column = (name: string, values: readonly number[]): AtomColumn 
 @injectable()
 export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO, ApplicationError> {
     constructor(
-        
-        private readonly trajectoryReader: TrajectoryReader,
+        @inject(TRAJECTORY_TOKENS.TrajectoryReader)
+        private readonly trajectoryReader: ITrajectoryReader,
+
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
         
-        private readonly trajectoryRepository: TrajectoryRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
         
-        private readonly analysisRepository: AnalysisRepository,
-
-        
-        private readonly teamClusterSelectionService: TeamClusterSelectionService
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async execute(input: GetAtomsColumnarInputDTO): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {

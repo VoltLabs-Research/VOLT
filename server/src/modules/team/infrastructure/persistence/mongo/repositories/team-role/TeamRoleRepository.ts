@@ -1,4 +1,5 @@
 import TeamRole, { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamRoleMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team-role/TeamRoleMapper';
 import TeamRoleModel, { TeamRoleDocument } from '@modules/team/infrastructure/persistence/mongo/models/team-role/TeamRoleModel';
 import { FindOptions, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
@@ -9,7 +10,7 @@ import { Types } from 'mongoose';
 
 type TeamRoleFilter = Record<string, unknown>;
 
-@Singleton()
+@Singleton(TEAM_TOKENS.TeamRoleRepository)
 export default class TeamRoleRepository
     extends MongooseBaseRepository<TeamRole, TeamRoleProps, TeamRoleDocument> {
 

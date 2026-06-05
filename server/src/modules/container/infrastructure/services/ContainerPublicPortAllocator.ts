@@ -1,9 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerPublicPortAllocator } from '@modules/container/domain/port/IContainerPublicPortAllocator';
 import type { ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { readRelayHostValue, readRelayPortRangeValue } from '@shared/infrastructure/utilities/relay-network';
+import { inject } from 'tsyringe';
 import net from 'node:net';
 
 const DEFAULT_PUBLIC_PORT_START = 24000;
@@ -19,14 +22,14 @@ interface ReservedPortMappings {
     reservedPublicPorts: number[];
 }
 
-@Singleton()
-export class ContainerPublicPortAllocator {
+@Singleton(CONTAINER_TOKENS.ContainerPublicPortAllocator)
+export class ContainerPublicPortAllocator implements IContainerPublicPortAllocator {
     private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_BIND_HOST);
     private readonly reservedPorts = new Set<number>();
 
-    constructor(private readonly containerRepository: ContainerRepository) {
+    constructor(@inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository) {
         if (this.portEnd < this.portStart) {
             throw new Error('TEAM_CLUSTER_APP_PROXY_PORT_END must be greater than or equal to TEAM_CLUSTER_APP_PROXY_PORT_START');
         }

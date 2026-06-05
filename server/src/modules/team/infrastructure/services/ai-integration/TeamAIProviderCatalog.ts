@@ -1,13 +1,10 @@
 import { AI_PROVIDERS, AI_PROVIDER_DESCRIPTIONS, AI_PROVIDER_NAMES } from '@modules/ai/domain/contracts/AIProviders';
 import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import type { ITeamAIProviderCatalog, TeamAIProviderMetadata } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-
-export interface TeamAIProviderMetadata {
-    id: TeamAIProvider;
-    name: string;
-    description: string;
-};
+export type { TeamAIProviderMetadata };
 
 const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadata> => {
     const entries = AI_PROVIDERS.map((provider) => {
@@ -23,8 +20,8 @@ const buildTeamAIProviderCatalog = (): Map<TeamAIProvider, TeamAIProviderMetadat
     return new Map(entries);
 };
 
-@Singleton()
-export default class TeamAIProviderCatalog {
+@Singleton(TEAM_TOKENS.TeamAIProviderCatalog)
+export default class TeamAIProviderCatalog implements ITeamAIProviderCatalog {
     private readonly catalog = buildTeamAIProviderCatalog();
 
     isSupported(provider: string): provider is TeamAIProvider {

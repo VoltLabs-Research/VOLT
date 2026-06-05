@@ -1,8 +1,9 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 const MANAGE_INVITE_CODES_MESSAGE = 'You do not have permission to manage invite codes';
@@ -19,7 +20,7 @@ export const invalidInviteCodeError = (): ApplicationError => {
 };
 
 export const getInviteCodePermissionError = async (
-    teamMemberRepository: TeamMemberRepository,
+    teamMemberRepository: ITeamMemberRepository,
     teamId: string,
     userId: string
 ): Promise<ApplicationError | null> => {

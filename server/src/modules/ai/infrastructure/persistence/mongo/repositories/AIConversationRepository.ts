@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 
 import AIConversation, { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
 import { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
@@ -6,7 +7,7 @@ import AIConversationModel, { AIConversationDocument } from '@modules/ai/infrast
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-@Singleton()
+@Singleton(AI_TOKENS.AIConversationRepository)
 export default class AIConversationRepository
     extends MongooseBaseRepository<AIConversation, AIConversationProps, AIConversationDocument>
     implements IAIConversationRepository {

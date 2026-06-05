@@ -1,5 +1,6 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { GetPluginExposureGLBOutputDTO } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
 import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
@@ -7,6 +8,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasPluginExposureGLBInput {
     trajectoryId: string;
@@ -28,7 +30,7 @@ export class GetPublicCanvasPluginExposureGLBUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
         
         private readonly getPluginExposureGLBUseCase: GetPluginExposureGLBUseCase

@@ -8,7 +8,7 @@ import Callout from '@/shared/presentation/primitives/Callout';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import Stack from '@/shared/presentation/primitives/Stack';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';

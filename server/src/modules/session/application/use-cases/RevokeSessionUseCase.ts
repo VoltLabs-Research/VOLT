@@ -1,15 +1,16 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { RevokeSessionInputDTO } from '@modules/session/application/dtos/RevokeSessionDTO';
-import SessionRepository from '@modules/session/infrastructure/persistence/mongo/repositories/SessionRepository';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void, ApplicationError>{
     constructor(
-        private sessionRepository: SessionRepository
+        @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository
     ){}
 
     async execute(input: RevokeSessionInputDTO): Promise<Result<void, ApplicationError>>{

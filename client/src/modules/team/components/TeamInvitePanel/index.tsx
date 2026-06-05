@@ -1,10 +1,11 @@
 import { InvitationEmailInput } from '../InvitationEmailInput';
 import { InvitationsList } from '../InvitationsList';
 import { InviteCodeSection } from '../InviteCodeSection';
-import { PanelFooter } from '../PanelFooter';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import Stack from '@/shared/presentation/primitives/Stack';
 import Box from '@/shared/presentation/primitives/Box';
+import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
@@ -142,9 +143,13 @@ export const TeamInvitePanel = ({
                             onCancelInvitation={handleCancelInvitation}
                         />
 
-                        <PanelFooter
-                            actions={footerActions}
-                        />
+                        <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
+                            {footerActions.map((action, index) => (
+                                <Button key={index} variant='ghost' intent='neutral' size='sm' leftIcon={action.icon} onClick={action.onClick} disabled={action.disabled}>
+                                    {action.label}
+                                </Button>
+                            ))}
+                        </Row>
                     </>
                 )}
 
@@ -171,9 +176,13 @@ export const TeamInvitePanel = ({
                             </Box>
                         </Stack>
 
-                        <PanelFooter
-                            actions={publicTrajectoriesFooterActions}
-                        />
+                        <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
+                            {publicTrajectoriesFooterActions.map((action, index) => (
+                                <Button key={index} variant='ghost' intent='neutral' size='sm' leftIcon={action.icon} onClick={action.onClick} disabled={action.disabled}>
+                                    {action.label}
+                                </Button>
+                            ))}
+                        </Row>
                     </>
                 )}
             </Stack>

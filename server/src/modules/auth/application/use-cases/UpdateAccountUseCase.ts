@@ -2,18 +2,19 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
 import type { UserProps } from '@modules/auth/domain/entities/User';
 import User from '@modules/auth/domain/entities/User';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import AvatarService from '@modules/auth/infrastructure/services/AvatarService';
+import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{
     constructor(
-        private readonly userRepository: UserRepository,
-        private readonly avatarService: AvatarService
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_TOKENS.AvatarService) private readonly avatarService: IAvatarService
     ) {}
 
     async execute(input: UpdateAccountInputDTO): Promise<Result<UpdateAccountOutputDTO, ApplicationError>>{

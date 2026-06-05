@@ -1,4 +1,6 @@
 import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import type { ITeamClusterInstallManifestService } from '@modules/cluster/domain/port/ITeamClusterInstallManifestService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/cluster/infrastructure/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
     DaemonDistributionMode,
@@ -23,8 +25,8 @@ import type {
 } from '@modules/cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 
-@Singleton()
-export default class TeamClusterInstallManifestService {
+@Singleton(CLUSTER_TOKENS.TeamClusterInstallManifestService)
+export default class TeamClusterInstallManifestService implements ITeamClusterInstallManifestService {
     constructor(
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
         private readonly teamClusterRepository: TeamClusterRepository

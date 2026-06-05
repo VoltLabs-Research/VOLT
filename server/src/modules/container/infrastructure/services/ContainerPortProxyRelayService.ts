@@ -1,4 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
 import {
     CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME,
     CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM,
@@ -59,8 +61,8 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-@Singleton()
-export class ContainerPortProxyRelayService {
+@Singleton(CONTAINER_TOKENS.ContainerPortProxyRelayService)
+export class ContainerPortProxyRelayService implements IContainerPortProxyRelayService {
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
     private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_APP_PROXY_ADVERTISED_HOST');
     private readonly publicProtocol = resolveContainerPortProxyRelayProtocol();

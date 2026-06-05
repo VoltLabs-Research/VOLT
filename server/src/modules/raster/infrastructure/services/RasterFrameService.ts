@@ -1,5 +1,6 @@
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
@@ -7,7 +8,7 @@ import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilitie
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@Singleton()
+@Singleton(RASTER_TOKENS.RasterFrameReader)
 export class RasterFrameService implements IRasterFrameReader {
     constructor(
         private readonly rasterStorage: RasterStorageService,

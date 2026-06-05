@@ -1,6 +1,8 @@
-import { injectable } from 'tsyringe';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerAccessiblePortResolver } from '@modules/container/domain/port/IContainerAccessiblePortResolver';
 import type { ContainerAccessiblePort } from '@modules/container/domain/entities/Container';
 import type { ContainerPortMapping } from '@modules/container/domain/port/IContainerService';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const BROWSER_ACCESSIBLE_PORTS = new Set([80, 81, 3000, 3001, 4173, 4200, 5000, 5173, 5174, 8000, 8080, 8081, 8088, 8888, 8889]);
 
@@ -32,8 +34,8 @@ const resolveBrowserAccessible = (port: ContainerPortMapping): boolean => {
     return BROWSER_ACCESSIBLE_LABELS.some(({ pattern }) => pattern.test(label));
 };
 
-@injectable()
-export class ContainerAccessiblePortResolver {
+@Singleton(CONTAINER_TOKENS.ContainerAccessiblePortResolver)
+export class ContainerAccessiblePortResolver implements IContainerAccessiblePortResolver {
     resolve(
         _teamId: string,
         _containerId: string,

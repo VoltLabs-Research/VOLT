@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import Trajectory, { TrajectoryFrame, TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import trajectoryMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/trajectory/TrajectoryMapper';
@@ -25,7 +26,7 @@ const extractFrames = <T extends { frames?: TrajectoryFrame[] } | undefined>(
     };
 };
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryRepository)
 export default class TrajectoryRepository
     extends MongooseBaseRepository<Trajectory, TrajectoryProps, TrajectoryDocument>
     implements ITrajectoryRepository {

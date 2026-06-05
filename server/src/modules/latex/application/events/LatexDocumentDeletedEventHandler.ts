@@ -1,9 +1,12 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
+import type LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
-import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
-import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
@@ -15,9 +18,9 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     constructor(
-        private readonly latexAssetRepository: LatexAssetRepository,
-        private readonly latexFileRepository: LatexFileRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: LatexAssetRepository,
+        @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: LatexFileRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {

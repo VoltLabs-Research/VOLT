@@ -1,6 +1,8 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import LoginActivityRow from '@/modules/auth/components/LoginActivityRow';
+import SettingsRow from '@/modules/auth/components/SettingsRow';
+import Button from '@/shared/presentation/primitives/Button';
+import { Activity } from 'lucide-react';
 import PasswordStatusRow from '@/modules/auth/components/PasswordStatusRow';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
@@ -60,7 +62,12 @@ const AuthenticationSettings = () => {
                     title="Login Activity"
                     description="Monitor recent login sessions and devices" />
 
-                <LoginActivityRow onViewActivity={handleViewLoginActivity} />
+                <SettingsRow
+                    icon={<Activity size={20} />}
+                    title="Recent Sessions"
+                    description="View your login history and active sessions"
+                    rightContent={<Button variant="soft" onClick={handleViewLoginActivity}>View Activity</Button>}
+                />
             </Stack>
         </SettingsPage>
     );

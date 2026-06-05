@@ -9,7 +9,7 @@ import { RoleEditorModal, openRoleEditorModal } from '../RoleEditorModal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';

@@ -14,6 +14,8 @@ import AnalysisExecutionLogService from '@modules/analysis/infrastructure/servic
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -203,8 +205,8 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
 }
 
-@Singleton()
-export default class DaemonAnalysisCompletionService {
+@Singleton(CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+export default class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,

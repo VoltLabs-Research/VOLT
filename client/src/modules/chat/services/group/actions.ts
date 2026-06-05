@@ -1,6 +1,6 @@
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../../hooks/chat/queries';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
 import type { Chat } from '../../api/entities/chat';

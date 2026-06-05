@@ -1,3 +1,4 @@
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import ChatMessage from '@modules/chat/domain/entities/chat-message/ChatMessage';
 import chatMessageMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/chat-message/ChatMessageMapper';
 import ChatMessageModel from '@modules/chat/infrastructure/persistence/mongo/models/chat-message/ChatMessageModel';
@@ -20,7 +21,7 @@ interface MarkMessagesAsReadUpdate {
     };
 }
 
-@Singleton()
+@Singleton(CHAT_TOKENS.ChatMessageRepository)
 export default class ChatMessageRepository
     extends MongooseBaseRepository<ChatMessage, ChatMessageProps, ChatMessageDocument>
     implements IChatMessageRepository {

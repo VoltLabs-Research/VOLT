@@ -3,11 +3,13 @@ import {
     UpdateTeamClusterLifecycleOutputDTO
 } from '@modules/cluster/application/dtos/UpdateTeamClusterLifecycleDTO';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export default class UpdateTeamClusterLifecycleUseCase implements IUseCase<
@@ -16,7 +18,7 @@ export default class UpdateTeamClusterLifecycleUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}
 
     async execute(input: UpdateTeamClusterLifecycleInputDTO): Promise<Result<UpdateTeamClusterLifecycleOutputDTO, ApplicationError>> {

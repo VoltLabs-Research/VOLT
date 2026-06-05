@@ -1,5 +1,11 @@
 import { Readable } from 'node:stream';
 
+export interface ColorCodingStreamResponse {
+    stream: Readable;
+    contentEncoding?: string;
+    contentLength?: number;
+}
+
 export interface IColorCodingService {
     getProperties(
         trajectoryId: string,
@@ -41,4 +47,15 @@ export interface IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable>;
+
+    getModelStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        property: string,
+        startValue: number,
+        endValue: number,
+        gradient: string,
+        analysisId?: string,
+        exposureId?: string
+    ): Promise<ColorCodingStreamResponse>;
 }

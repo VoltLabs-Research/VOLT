@@ -1,8 +1,9 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamMembershipService } from '@modules/team/domain/port/team/ITeamMembershipService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
 import TeamMemberDeletedEvent from '@modules/team/domain/events/team-member/TeamMemberDeletedEvent';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -13,8 +14,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamMemberByIdUseCase implements IUseCase<TeamScopedEntityIdInputDTO<'teamMemberId'>, null, ApplicationError>{
     constructor(
-        private teamMemberRepository: TeamMemberRepository,
-        private readonly teamMembershipService: TeamMembershipService,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_TOKENS.TeamMembershipService) private readonly teamMembershipService: ITeamMembershipService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

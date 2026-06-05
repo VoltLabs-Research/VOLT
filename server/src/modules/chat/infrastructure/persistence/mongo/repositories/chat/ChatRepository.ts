@@ -1,3 +1,4 @@
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import type { ChatProps } from '@modules/chat/domain/entities/chat/Chat';
 import Chat from '@modules/chat/domain/entities/chat/Chat';
 import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
@@ -22,7 +23,7 @@ interface FindOrCreateChatFilter {
     isGroup: false;
 }
 
-@Singleton()
+@Singleton(CHAT_TOKENS.ChatRepository)
 export default class ChatRepository
     extends MongooseBaseRepository<Chat, ChatProps, ChatDocument>
     implements IChatRepository {

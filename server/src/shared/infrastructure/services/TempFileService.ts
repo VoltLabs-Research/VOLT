@@ -1,3 +1,4 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { DeleteOptions, ITempFileService, TempFileOptions } from '@shared/domain/port/ITempFileService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
@@ -6,7 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { v4 } from 'uuid';
 
-@Singleton()
+@Singleton(SHARED_TOKENS.TempFileService)
 export default class TempFileService implements ITempFileService {
     private readonly TEMP_DIR: string;
 

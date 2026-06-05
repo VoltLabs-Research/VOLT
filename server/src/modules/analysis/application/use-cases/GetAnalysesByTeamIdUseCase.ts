@@ -1,8 +1,10 @@
 import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTeamIdDTO';
 import type { Analysis, AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import {
@@ -12,7 +14,7 @@ import {
     USER_POPULATE
 } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface TeamAnalysesFilter extends Partial<AnalysisProps> {
     team: string;
@@ -25,8 +27,8 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
-        private analysisRepo: AnalysisRepository,
-        private trajectoryRepo: TrajectoryRepository
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {

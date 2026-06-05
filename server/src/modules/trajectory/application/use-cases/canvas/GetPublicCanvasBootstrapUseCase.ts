@@ -1,10 +1,14 @@
+import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { PublicCanvasAccessMode } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import type {
     GetPublicCanvasBootstrapInputDTO,
     GetPublicCanvasBootstrapOutputDTO,
@@ -12,7 +16,6 @@ import type {
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasBootstrapDTO';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const toBootstrapTrajectory = (trajectory: Trajectory, frames: TrajectoryFrame[]): PublicCanvasBootstrapTrajectoryDTO => {
@@ -44,10 +47,10 @@ export class GetPublicCanvasBootstrapUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        private readonly teamMemberRepository: TeamMemberRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
 
         
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository
     ) {}
 
     async execute(

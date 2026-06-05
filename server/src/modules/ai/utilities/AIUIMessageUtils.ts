@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -8,7 +9,7 @@ type AITextPart = {
     text: string;
 } & Record<string, unknown>;
 
-@Singleton()
+@Singleton(AI_TOKENS.AIUIMessageUtils)
 export default class AIUIMessageUtils {
     private isTextPart(part: unknown): part is AITextPart {
         return typeof part === 'object'

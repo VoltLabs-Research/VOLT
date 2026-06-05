@@ -13,7 +13,7 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { GetPluginsInputDTO } from '@/modules/plugin/api/services/plugin-service';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';

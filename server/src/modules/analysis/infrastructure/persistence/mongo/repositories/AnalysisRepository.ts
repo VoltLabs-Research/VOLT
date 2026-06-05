@@ -1,3 +1,4 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
@@ -14,10 +15,8 @@ interface CompletedFramesAggregationItem {
     count: number;
 }
 
-export interface AnalysisRuntimeTarget {
-    analysisId: string;
-    computeClusterId?: string;
-}
+import type { AnalysisRuntimeTarget } from '@modules/analysis/domain/port/IAnalysisRepository';
+export type { AnalysisRuntimeTarget };
 
 interface CompletedFramesGroupStage {
     $group: {
@@ -36,7 +35,7 @@ interface CompletedFramesMatchStage {
     };
 }
 
-@Singleton()
+@Singleton(ANALYSIS_TOKENS.AnalysisRepository)
 export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {

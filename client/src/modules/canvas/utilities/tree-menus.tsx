@@ -1,12 +1,10 @@
 import { Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import CanvasSlider from '../components/CanvasSlider';
+import Slider from '@/shared/presentation/primitives/Slider';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface SliderSubmenuProps {
     label: string;
-    ariaLabel: string;
-    ariaValueText: string;
     min: number;
     max: number;
     step: number;
@@ -14,26 +12,22 @@ interface SliderSubmenuProps {
     onChange: (value: number) => void;
 }
 
-const SliderSubmenu = ({ label, ariaLabel, ariaValueText, min, max, step, value, onChange }: SliderSubmenuProps) => (
+const SliderSubmenu = ({ label, min, max, step, value, onChange }: SliderSubmenuProps) => (
     <div className="context-menu-transparency">
         <span className="context-menu-transparency__label">{label}</span>
-        <CanvasSlider
-            ariaLabel={ariaLabel}
+        <Slider
             min={min}
             max={max}
             step={step}
             value={value}
             onChange={onChange}
-            ariaValueText={ariaValueText}
         />
     </div>
 );
 
-export const buildTransparencySubmenu = (label: string, value: number, onChange: (value: number) => void) => (
+export const buildTransparencySubmenu = (_label: string, value: number, onChange: (value: number) => void) => (
     <SliderSubmenu
         label='Transparency'
-        ariaLabel={`Adjust ${label} transparency`}
-        ariaValueText={`${Math.round(value * 100)}% opacity`}
         min={0}
         max={1}
         step={0.01}
@@ -42,11 +36,9 @@ export const buildTransparencySubmenu = (label: string, value: number, onChange:
     />
 );
 
-export const buildLineWidthSubmenu = (label: string, value: number, defaultValue: number, onChange: (value: number) => void) => (
+export const buildLineWidthSubmenu = (_label: string, value: number, defaultValue: number, onChange: (value: number) => void) => (
     <SliderSubmenu
         label='Line Width'
-        ariaLabel={`Adjust ${label} line width`}
-        ariaValueText={`${value.toFixed(2)} line width`}
         min={Math.max(0.01, defaultValue * 0.25)}
         max={Math.max(defaultValue * 3, defaultValue + 0.25)}
         step={Math.max(0.01, defaultValue * 0.05)}

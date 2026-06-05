@@ -1,15 +1,16 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import type { DeleteContainerFolderInputDTO, DeleteContainerFolderOutputDTO } from '@modules/container/application/dtos/DeleteContainerFolderDTO';
 import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
 import { Container } from '@modules/container/domain/entities/Container';
 import type ContainerFolder from '@modules/container/domain/entities/ContainerFolder';
 import type { ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
-import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { DeleteCatalogFolderUseCase } from '@shared/application/catalog/DeleteCatalogFolderUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class DeleteContainerFolderUseCase
@@ -23,8 +24,8 @@ export class DeleteContainerFolderUseCase
     >
     implements IUseCase<DeleteContainerFolderInputDTO, DeleteContainerFolderOutputDTO, ApplicationError> {
     constructor(
-        containerFolderRepository: ContainerFolderRepository,
-        containerRepository: ContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly containerFolderRepository: IContainerFolderRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         deleteContainerUseCase: DeleteContainerUseCase
     ) {
         super(

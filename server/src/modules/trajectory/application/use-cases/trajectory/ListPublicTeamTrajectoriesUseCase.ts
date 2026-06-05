@@ -1,11 +1,14 @@
+import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import {
     ListPublicTeamTrajectoriesInputDTO,
     ListPublicTeamTrajectoriesOutputDTO
 } from '@modules/trajectory/application/dtos/trajectory/ListPublicTeamTrajectoriesDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
@@ -24,9 +27,9 @@ export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly teamRepository: TeamRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository
     ) {}
 
     async execute(input: ListPublicTeamTrajectoriesInputDTO): Promise<Result<ListPublicTeamTrajectoriesOutputDTO, ApplicationError>> {

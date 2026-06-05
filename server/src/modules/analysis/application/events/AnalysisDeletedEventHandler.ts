@@ -1,7 +1,10 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
-import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisExecutionLogService } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
@@ -17,9 +20,9 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
-        private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: SceneArtifactRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService,
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {

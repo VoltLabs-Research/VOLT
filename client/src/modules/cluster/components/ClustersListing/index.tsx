@@ -5,7 +5,8 @@ import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/compo
 import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/ClusterTransferModal';
 import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
-import ClustersEmptyState from '@/modules/cluster/components/ClustersEmptyState';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
 import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
@@ -23,7 +24,7 @@ import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import MetricBars from '@/modules/cluster/components/MetricBars';
+import Box from '@/shared/presentation/primitives/Box';
 import { openModal } from '@/shared/presentation/primitives/Modal';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
@@ -48,9 +49,14 @@ const CLUSTER_EXPLORER_MENU_ITEMS: Array<Pick<MenuOption, 'label' | 'icon'> & { 
 ];
 
 const renderMetricBars = (percentage: number, label: string): ReactNode => {
+    const activeBars = Math.floor(percentage / 20);
     return (
         <Row gap='05'>
-            <MetricBars percentage={percentage} />
+            <Box display='flex' className='gap-01'>
+                {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className={`server-table-bar ${i < activeBars ? 'server-table-bar-active' : ''}`} />
+                ))}
+            </Box>
             <Text as='p' size='sm' tone='muted'>{label}</Text>
         </Row>
     );
@@ -313,7 +319,15 @@ const ClustersListing = () => {
                 }}
                 defaultLimit={20}
                 emptyMessage='No clusters found.'
-                emptyIcon={<ClustersEmptyState />}
+                emptyIcon={(
+                    <Stack align='start' gap='1' p='1-5' radius='lg' className='clusters-empty-state'>
+                        <Heading level={3} size='xl' weight='bold'>No clusters connected yet</Heading>
+                        <Text as='p' size='md' tone='secondary'>
+                            Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
+                        </Text>
+                        <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
+                    </Stack>
+                )}
                 createNew={createNew}
                 hideTabs
                 enabled={Boolean(vm.selectedTeamId)}

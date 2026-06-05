@@ -1,13 +1,14 @@
+import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamInvitationProps } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
-import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface UpdateTeamInvitationByIdInput {
     invitationId: string;
@@ -18,7 +19,7 @@ interface UpdateTeamInvitationByIdInput {
 @injectable()
 export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInput, PersistedOutput<TeamInvitationProps>, ApplicationError> {
     constructor(
-        private readonly repository: TeamInvitationRepository
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly repository: TeamInvitationRepository
     ) {}
 
     async execute(input: UpdateTeamInvitationByIdInput): Promise<Result<PersistedOutput<TeamInvitationProps>, ApplicationError>> {

@@ -1,7 +1,8 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteTeamByIdInputDTO } from '@modules/team/application/dtos/team/DeleteTeamByIdDTO';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -12,7 +13,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamByIdUseCase implements IUseCase<DeleteTeamByIdInputDTO, null, ApplicationError>{
     constructor(
-        private readonly teamRepository: TeamRepository,
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

@@ -1,4 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import type { ITeamJobProjectionService } from '@modules/jobs/domain/port/ITeamJobProjectionService';
 import { inject } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/domain/events/JobStatusChangedEvent';
@@ -119,8 +121,8 @@ const resolveProjectedError = (
     return incomingError ?? previousError;
 };
 
-@Singleton()
-export default class TeamJobProjectionService {
+@Singleton(JOBS_TOKENS.TeamJobProjectionService)
+export default class TeamJobProjectionService implements ITeamJobProjectionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis

@@ -1,12 +1,14 @@
+import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/SendTeamInvitationDTO';
 import TeamInvitation, { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
 import InvitationSentEvent from '@modules/team/domain/events/team-invitation/InvitationSentEvent';
-import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -19,11 +21,11 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        private readonly invitationRepository: TeamInvitationRepository,
-        private readonly teamRepository: TeamRepository,
-        private readonly userRepository: UserRepository,
-        private readonly teamRoleRepository: TeamRoleRepository,
-        private readonly teamMemberRepository: TeamMemberRepository,
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: TeamInvitationRepository,
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

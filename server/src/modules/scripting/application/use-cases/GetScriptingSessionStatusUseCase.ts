@@ -1,23 +1,26 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type {
     GetScriptingSessionStatusInputDTO,
     GetScriptingSessionStatusOutputDTO
 } from '@modules/scripting/application/dtos/ScriptingSessionDTO';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
+import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/domain/port/IScriptingJupyterAccessTokenService';
 import { buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 @Singleton()
 export class GetScriptingSessionStatusUseCase implements IUseCase<GetScriptingSessionStatusInputDTO, GetScriptingSessionStatusOutputDTO, ApplicationError> {
     constructor(
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly scriptingJupyterAccessTokenService: ScriptingJupyterAccessTokenService,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly scriptingJupyterAccessTokenService: IScriptingJupyterAccessTokenService,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ) {}
 
     async execute(input: GetScriptingSessionStatusInputDTO): Promise<Result<GetScriptingSessionStatusOutputDTO, ApplicationError>> {

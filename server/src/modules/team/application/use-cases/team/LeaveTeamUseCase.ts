@@ -1,19 +1,20 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamMembershipService } from '@modules/team/domain/port/team/ITeamMembershipService';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamUserScopedInputDTO } from '@modules/team/application/dtos/common';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
-import TeamMembershipService from '@modules/team/infrastructure/services/team/TeamMembershipService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class LeaveTeamUseCase implements IUseCase<TeamUserScopedInputDTO, null, ApplicationError> {
     constructor(
-        private readonly teamRepository: TeamRepository,
-        private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly teamMembershipService: TeamMembershipService
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_TOKENS.TeamMembershipService) private readonly teamMembershipService: ITeamMembershipService
     ){}
 
     async execute(input: TeamUserScopedInputDTO): Promise<Result<null, ApplicationError>> {

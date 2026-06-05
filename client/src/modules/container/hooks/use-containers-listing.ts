@@ -29,7 +29,7 @@ import {
 } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { sileo } from 'sileo';
 import { Box, FolderInput, Play, RotateCcw, Square } from 'lucide-react';

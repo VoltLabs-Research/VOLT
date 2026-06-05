@@ -1,5 +1,7 @@
 import '@/modules/cluster/components/ClusterMonitoringPage/ClusterMonitoringPage.css';
-import ClustersEmptyState from '@/modules/cluster/components/ClustersEmptyState';
+import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Text from '@/shared/presentation/primitives/Text';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
@@ -114,7 +116,15 @@ const ClusterMonitoringPage = () => {
                     <Loader scale={0.5} isFixed={false} />
                 )}
 
-                {!vm.isLoading && !vm.hasClusters && <ClustersEmptyState />}
+                {!vm.isLoading && !vm.hasClusters && (
+                    <Stack align='start' gap='1' p='1-5' radius='lg' className='clusters-empty-state'>
+                        <Heading level={3} size='xl' weight='bold'>No clusters connected yet</Heading>
+                        <Text as='p' size='md' tone='secondary'>
+                            Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
+                        </Text>
+                        <Button variant='solid' intent='brand' to='/onboarding/cluster/setup'>Add New Cluster</Button>
+                    </Stack>
+                )}
 
                 {metricsUnavailableState && (
                     <RecoveryState

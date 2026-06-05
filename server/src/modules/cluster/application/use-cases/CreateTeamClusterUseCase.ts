@@ -1,4 +1,11 @@
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { inject, injectable } from 'tsyringe';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterCredentialsCipher } from '@modules/cluster/domain/port/ITeamClusterCredentialsCipher';
+import type { IDemoClusterDeploymentService } from '@modules/cluster/domain/port/IDemoClusterDeploymentService';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import {
     buildTeamClusterEntity,
     createDaemonPassword,
@@ -11,16 +18,11 @@ import {
 } from '@modules/cluster/application/dtos/CreateTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
 import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
-import DemoClusterDeploymentService from '@modules/cluster/infrastructure/services/DemoClusterDeploymentService';
-import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
 
 interface MongoDuplicateKeyError {
     code?: number;
@@ -33,11 +35,11 @@ const isMongoDuplicateKeyError = (error: unknown): error is MongoDuplicateKeyErr
 @injectable()
 export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-        private readonly userRepository: UserRepository,
-        private readonly demoClusterDeploymentService: DemoClusterDeploymentService,
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService,
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}
 
     async execute(input: CreateTeamClusterInputDTO): Promise<Result<CreateTeamClusterOutputDTO, ApplicationError>> {

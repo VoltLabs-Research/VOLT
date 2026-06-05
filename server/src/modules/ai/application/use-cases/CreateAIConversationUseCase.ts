@@ -1,9 +1,11 @@
+import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
+import { inject } from 'tsyringe';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { CreateAIConversationInputDTO, CreateAIConversationOutputDTO } from '@modules/ai/application/dtos/CreateAIConversationDTO';
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
 import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
-import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
-import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
 import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -13,9 +15,9 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export default class CreateAIConversationUseCase implements IUseCase<CreateAIConversationInputDTO, CreateAIConversationOutputDTO, ApplicationError> {
     constructor(
-        private readonly conversationRepository: AIConversationRepository,
-        private readonly messageRepository: AIMessageRepository,
-        private readonly messageDTOMapper: AIMessageDTOMapper
+        @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
+        @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository,
+        @inject(AI_TOKENS.AIMessageDTOMapper) private readonly messageDTOMapper: AIMessageDTOMapper
     ) {}
 
     async execute(input: CreateAIConversationInputDTO): Promise<Result<CreateAIConversationOutputDTO, ApplicationError>> {

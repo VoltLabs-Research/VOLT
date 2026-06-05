@@ -1,14 +1,15 @@
 import { CheckEmailInputDTO, CheckEmailOutputDTO } from '@modules/auth/application/dtos/CheckEmailDTO';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class CheckEmailUseCase implements IUseCase<CheckEmailInputDTO, CheckEmailOutputDTO, ApplicationError>{
     constructor(
-        private readonly userRepository: UserRepository
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository
     ) {}
 
     async execute(input: CheckEmailInputDTO): Promise<Result<CheckEmailOutputDTO, ApplicationError>>{
