@@ -42,6 +42,13 @@ const loadXlsx = (): Promise<XlsxModule> => {
     return xlsxPromise;
 };
 
+const EXCEL_COMPATIBLE_CSV_PREFIX = '\uFEFFsep=,\r\n';
+
+const toExcelCompatibleCsvContent = (csvContent: string): string => {
+    const normalized = csvContent.replace(/\r?\n/g, '\n').replace(/\n/g, '\r\n');
+    return `${EXCEL_COMPATIBLE_CSV_PREFIX}${normalized}`;
+};
+
 const stringifyValue = (value: unknown): string => {
     if (value == null) return '';
     if (typeof value === 'string') return value;
@@ -232,7 +239,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             const data = getExportData();
             const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
             const csvContent = XLSX.utils.sheet_to_csv(worksheet);
-            const blob = base64ToBlob(csvContent, 'text/csv');
+            const blob = new Blob([toExcelCompatibleCsvContent(csvContent)], { type: 'text/csv;charset=utf-8' });
             triggerBrowserDownload(blob, `${artifact.title || 'table'}.csv`);
             updateStatusMessage('Downloaded CSV file.');
         } catch {

@@ -1,3 +1,6 @@
+const CSV_DELIMITER = ',';
+const EXCEL_CSV_PREFIX = '\uFEFFsep=,';
+
 const escapeCsv = (value: unknown): string => {
     if (value === null || value === undefined) return '';
 
@@ -25,14 +28,20 @@ const inferColumns = (rows: Record<string, unknown>[]): string[] => {
     return Array.from(keys);
 };
 
-export const toCsvContent = (rows: Record<string, unknown>[], columns?: string[]): string => {
+export const toCsvContent = (
+    rows: Record<string, unknown>[],
+    columns?: string[]
+): string => {
     const headers = columns?.length ? columns : inferColumns(rows);
+    const lineEnding = '\r\n';
+
     if (!headers.length) {
-        return '';
+        return `${EXCEL_CSV_PREFIX}${lineEnding}`;
     }
 
-    const headerLine = headers.map((header) => escapeCsv(header)).join(',');
-    const lines = rows.map((row) => headers.map((header) => escapeCsv(row[header])).join(','));
+    const headerLine = headers.map((header) => escapeCsv(header)).join(CSV_DELIMITER);
+    const lines = rows.map((row) => headers.map((header) => escapeCsv(row[header])).join(CSV_DELIMITER));
+    const content = [headerLine, ...lines].join(lineEnding);
 
-    return [headerLine, ...lines].join('\n');
+    return `${EXCEL_CSV_PREFIX}${lineEnding}${content}`;
 };
