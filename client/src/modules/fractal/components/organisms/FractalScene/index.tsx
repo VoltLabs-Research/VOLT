@@ -273,7 +273,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         <section className='fractal-scene' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
             <VisuallyHidden as='h2' id={titleId}>3D model viewer</VisuallyHidden>
             <VisuallyHidden as='p' id={descriptionId}>
-                Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. When a model is selected, extra rotation controls appear in the viewer.
+                Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. On desktop, hold Control or Command while dragging a model to move it. On touch devices, double tap and drag to move the model. When a model is selected, extra rotation controls appear in the viewer.
             </VisuallyHidden>
             <VisuallyHidden as='div' aria-live='polite' aria-atomic='true'>
                 {screenshotAnnouncement}
