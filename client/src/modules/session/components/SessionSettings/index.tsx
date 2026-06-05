@@ -9,7 +9,7 @@ import {
     SESSION_ACTION_LABELS
 } from '@/modules/session/utilities/session-display';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSection from '@/shared/presentation/components/SettingsSection';
+import Stack from '@/shared/presentation/primitives/Stack';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
@@ -173,22 +173,22 @@ const SessionSettings: FC = () => {
 
     return (
         <SettingsPage title='Session Management'>
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title='Active Sessions'
                     description='Devices currently signed in to your account'
                     action={activeSessionsAction}
                 />
                 {renderList(sessionsContent, sessionsEmpty)}
-            </SettingsSection>
+            </Stack>
 
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title='Login Activity'
                     description='Recent login attempts on your account'
                 />
                 {renderList(activityContent, activityEmpty)}
-            </SettingsSection>
+            </Stack>
 
             <Modal
                 id={REVOKE_MODAL_ID}
