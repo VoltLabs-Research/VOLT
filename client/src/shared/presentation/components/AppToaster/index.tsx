@@ -39,6 +39,7 @@ const AppToaster = () => {
     return (
         <div
             ref={popoverRef}
+            id='app-toaster-popover'
             popover='manual'
             style={POPOVER_STYLE}
         >
