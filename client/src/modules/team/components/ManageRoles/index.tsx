@@ -1,4 +1,6 @@
+import Box from '@/shared/presentation/primitives/Box';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';
@@ -51,7 +53,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'name',
         title: 'Role Name',
         render: (_value, role) => (
-            <span className='font-weight-5 color-secondary'>{role.name}</span>
+            <Text weight='medium' tone='secondary'>{role.name}</Text>
         )
     },
     {
@@ -72,9 +74,9 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
             }
             const count = role.permissions.length;
             return (
-                <span className='color-secondary font-size-2'>
+                <Text tone='secondary' size='md'>
                     {count} permission{count !== 1 ? 's' : ''}
-                </span>
+                </Text>
             );
         }
     },
@@ -210,7 +212,7 @@ export default function ManageRolesTemplate() {
     }, [canDelete, canRead, canUpdate, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <div className='manage-roles-page h-max'>
+        <Box height='max' className='manage-roles-page'>
             <DocumentListing<TeamRole>
                 title='Manage Roles'
                 queryKey={queryKey}
@@ -232,6 +234,6 @@ export default function ManageRolesTemplate() {
                 onSave={handleSaveRole}
                 isSaving={isSaving}
             />
-        </div>
+        </Box>
     );
 };

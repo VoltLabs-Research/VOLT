@@ -1,4 +1,9 @@
+import Box from '@/shared/presentation/primitives/Box';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
@@ -182,7 +187,7 @@ export default function MyTeamTemplate() {
 
     const headerContent = useMemo(() => {
         return (
-            <div className='d-flex items-center gap-1'>
+            <Row gap='1'>
                 {canInvite ? (
                     <EditableTag
                         as='h1'
@@ -192,9 +197,9 @@ export default function MyTeamTemplate() {
                         {selectedTeam.name}
                     </EditableTag>
                 ) : (
-                    <h1 className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{selectedTeam.name}</h1>
+                    <Heading level={1} className='font-size-6 font-weight-5 sm:font-size-4 color-primary'>{selectedTeam.name}</Heading>
                 )}
-            </div>
+            </Row>
         );
     }, [selectedTeam, canInvite, handleSaveTeamName]);
 
@@ -245,14 +250,14 @@ export default function MyTeamTemplate() {
                 return isOnline ? (
                     <StatusBadge status='online' size='compact'>Online</StatusBadge>
                 ) : (
-                    <div className='d-flex column'>
+                    <Stack>
                         <StatusBadge status='offline' size='compact'>Offline</StatusBadge>
-                        <span className='color-muted font-size-2'>
+                        <Text size='md' tone='muted'>
                             {lastSeenAt
                                 ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`
                                 : 'Last seen unavailable'}
-                        </span>
-                    </div>
+                        </Text>
+                    </Stack>
                 );
             }
         },
@@ -263,9 +268,9 @@ export default function MyTeamTemplate() {
                 const timeSpentLast7Days = timeSpentByUser.get(member.user._id) ?? 0;
 
                 return (
-                    <span className='color-secondary font-size-2'>
+                    <Text tone='secondary' size='md'>
                         {formatDuration(timeSpentLast7Days)}
-                    </span>
+                    </Text>
                 );
             }
         },
@@ -322,7 +327,7 @@ export default function MyTeamTemplate() {
     }, [canInvite, currentUser?._id, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <div className='my-team-page h-max'>
+        <Box height='max' className='my-team-page'>
             <DocumentListing<TeamMemberStats>
                 title={headerContent}
                 queryKey={queryKey}
@@ -333,6 +338,6 @@ export default function MyTeamTemplate() {
                 headerActions={<ActivityHeatmap data={activityData} />}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
-        </div>
+        </Box>
     );
 };

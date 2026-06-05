@@ -164,10 +164,12 @@ const ClusterResourceSelectionPanel = ({
                             )}
                             <Box className='cluster-resource-selection-row mb-075' radius='sm' p='1'>
                                 <Row className='mb-075' justify='between'>
-                                    <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
-                                        <Cpu size={16} /> CPU
-                                    </span>
-                                    <span className='cluster-resource-selection-value radius-full font-weight-6'>{selectedCpuValue} vCPU</span>
+                                    <Row gap='05'>
+                                        <Text as='span' size='md' weight='medium' tone='secondary'>
+                                            <Cpu size={16} /> CPU
+                                        </Text>
+                                    </Row>
+                                    <Text as='span' weight='bold' className='cluster-resource-selection-value radius-full'>{selectedCpuValue} vCPU</Text>
                                 </Row>
                                 <Slider
                                     min={MIN_CLUSTER_CPU}
@@ -176,17 +178,19 @@ const ClusterResourceSelectionPanel = ({
                                     value={selectedCpuValue}
                                     onChange={onCpusChange ?? (() => {})}
                                 />
-                                <Box className='d-flex content-between font-size-1 color-muted'>
-                                    <span>{MIN_CLUSTER_CPU} vCPU</span>
-                                    <span>{maxCpu} vCPU</span>
-                                </Box>
+                                <Row justify='between' className='font-size-1 color-muted'>
+                                    <Text as='span'>{MIN_CLUSTER_CPU} vCPU</Text>
+                                    <Text as='span'>{maxCpu} vCPU</Text>
+                                </Row>
                             </Box>
                             <Box className='cluster-resource-selection-row' radius='sm' p='1'>
                                 <Row className='mb-075' justify='between'>
-                                    <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>
-                                        <HardDrive size={16} /> Memory
-                                    </span>
-                                    <span className='cluster-resource-selection-value radius-full font-weight-6'>{selectedMemoryValue} MB</span>
+                                    <Row gap='05'>
+                                        <Text as='span' size='md' weight='medium' tone='secondary'>
+                                            <HardDrive size={16} /> Memory
+                                        </Text>
+                                    </Row>
+                                    <Text as='span' weight='bold' className='cluster-resource-selection-value radius-full'>{selectedMemoryValue} MB</Text>
                                 </Row>
                                 <Slider
                                     min={MIN_CLUSTER_MEMORY_MB}
@@ -195,10 +199,10 @@ const ClusterResourceSelectionPanel = ({
                                     value={selectedMemoryValue}
                                     onChange={onMemoryChange ?? (() => {})}
                                 />
-                                <Box className='d-flex content-between font-size-1 color-muted'>
-                                    <span>{MIN_CLUSTER_MEMORY_MB} MB</span>
-                                    <span>{maxMemory} MB</span>
-                                </Box>
+                                <Row justify='between' className='font-size-1 color-muted'>
+                                    <Text as='span'>{MIN_CLUSTER_MEMORY_MB} MB</Text>
+                                    <Text as='span'>{maxMemory} MB</Text>
+                                </Row>
                             </Box>
                         </>
                     )}

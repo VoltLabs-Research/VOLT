@@ -1,8 +1,13 @@
 import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
 import StatCard from '@/shared/presentation/primitives/StatCard';
 import Tag from '@/shared/presentation/primitives/Tag';
+import Text from '@/shared/presentation/primitives/Text';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
@@ -120,25 +125,25 @@ export default function SecretKeyUsage() {
         navigate(-1);
     };
     const usageTitle = (
-        <div className='d-flex items-center gap-1'>
+        <Row gap='1'>
             {backButton(handleBack)}
-            <h3 className='font-size-5 font-weight-6'>Key Usage</h3>
-        </div>
+            <Heading level={3} size='2xl' weight='bold'>Key Usage</Heading>
+        </Row>
     );
 
     const loadingView = (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex items-center gap-1'>
+        <Box height='vh-max' className='secret-key-page color-primary'>
+            <Stack gap='2' width='max' className='secret-key-page-main'>
+                <Row gap='1'>
                     <Skeleton variant='circular' width={24} height={24} />
                     <Skeleton variant='text' width={300} height={32} />
-                </div>
+                </Row>
                 <div className='secret-key-page-cards gap-1'>
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className='secret-key-page-card radius-lg transition-normal'>
+                        <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
                             <Skeleton variant='text' width={100} height={16} />
                             <Skeleton variant='rectangular' width={80} height={40} style={{ borderRadius: 4, marginTop: '0.5rem' }} />
-                        </div>
+                        </Box>
                     ))}
                 </div>
                 <div className='secret-key-page-charts'>
@@ -146,8 +151,8 @@ export default function SecretKeyUsage() {
                         <Skeleton key={i} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
                     ))}
                 </div>
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 
     const errorView = (err: unknown) => (
@@ -206,17 +211,17 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex column gap-05'>
-                    <div className='d-flex items-center gap-1'>
+        <Box height='vh-max' className='secret-key-page color-primary'>
+            <Stack gap='2' width='max' className='secret-key-page-main'>
+                <Stack gap='05'>
+                    <Row gap='1'>
                         {backButton(handleBack)}
-                        <h3 className='font-size-5 font-weight-6'>{maskedName}</h3>
-                    </div>
-                    <p className='color-muted font-size-2' style={{ marginLeft: '2rem' }}>
+                        <Heading level={3} size='2xl' weight='bold'>{maskedName}</Heading>
+                    </Row>
+                    <Text as='p' tone='muted' size='md' style={{ marginLeft: '2rem' }}>
                         {usage.stats.totalRequests.toLocaleString()} total requests
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
 
                 <div className='secret-key-page-cards gap-1'>
                     {cards.map((card) => (
@@ -375,7 +380,7 @@ export default function SecretKeyUsage() {
                         </div>
                     </ChartContainer>
                 </div>
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 }

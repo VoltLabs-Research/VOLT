@@ -564,7 +564,7 @@ const CanvasPage = () => {
                     shape="rounded"
                     size="sm"
                     className="font-size-05 canvas-btn-compact"
-                    leftIcon={<span className="d-flex items-center content-center f-shrink-0"><ExternalLink size={12} /></span>}
+                    leftIcon={<ExternalLink size={12} />}
                     onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
                 >
                     Open in New Tab
@@ -584,7 +584,7 @@ const CanvasPage = () => {
                             shape="rounded"
                             size="sm"
                             className="font-size-05 canvas-btn-compact"
-                            leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Download size={12} /></span>}
+                            leftIcon={<Download size={12} />}
                             onClick={() => handleDownloadAnalysisListing()}
                             isLoading={isDownloading}
                         >

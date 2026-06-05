@@ -44,10 +44,10 @@ const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: Dashbo
             </Row>
 
             <Row align='end' gap='075'>
-                <span className='dashboard-stat-value'>{card.count}</span>
+                <Text as='span' className='dashboard-stat-value'>{card.count}</Text>
                 <Row gap='025' className={`dashboard-stat-trend ${isPositiveTrend ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
                     <TrendIcon size={10} />
-                    <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
+                    <Text as='span'>{Math.abs(card.lastMonthStatus ?? 0)}%</Text>
                 </Row>
             </Row>
 

@@ -1,5 +1,6 @@
 import './UserInfo.css';
 import Avatar from '@/shared/presentation/primitives/Avatar';
+import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import Text from '@/shared/presentation/primitives/Text';
 import type { User } from '@/modules/auth/api/entities/user';
@@ -28,7 +29,7 @@ const UserInfo = ({
                 showStatus={showStatus}
                 isOnline={isOnline}
             />
-            <div className='user-info-details flex-1 min-w-0'>
+            <Box flex='1' minW='0' className='user-info-details'>
                 <Text as='p' size='md' weight='bold' tone='primary' className='user-info-name overflow-hidden'>
                     {user?.firstName} {user?.lastName}
                     {suffix}
@@ -36,7 +37,7 @@ const UserInfo = ({
                 <Text as='p' size='sm' tone='muted' className='user-info-email overflow-hidden'>
                     {user?.email}
                 </Text>
-            </div>
+            </Box>
         </Row>
     );
 };

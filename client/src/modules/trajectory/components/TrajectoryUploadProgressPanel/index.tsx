@@ -1,3 +1,6 @@
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import { formatSize } from '@/shared/utils/format';
 import './TrajectoryUploadProgressPanel.css';
@@ -23,23 +26,23 @@ const TrajectoryUploadProgressPanel = () => {
     }
 
     return (
-        <div className='trajectory-upload-progress-panel glass-bg d-flex column gap-05' role='region' aria-label='Active trajectory uploads' aria-live='polite'>
+        <Stack gap='05' className='trajectory-upload-progress-panel glass-bg' role='region' aria-label='Active trajectory uploads' aria-live='polite'>
             {uploads.map((upload) => {
                 const percent = toPercent(upload.progress);
                 const valueText = buildProgressValueText(upload.loadedBytes, upload.totalBytes, percent);
 
                 return (
-                    <div key={upload.id} className='trajectory-upload-progress-item d-flex column gap-035' title={valueText}>
-                        <div className='d-flex items-center content-between gap-075'>
-                            <span className='trajectory-upload-progress-name text-truncate' title={upload.name}>
+                    <Stack key={upload.id} gap='035' className='trajectory-upload-progress-item' title={valueText}>
+                        <Row justify='between' gap='075'>
+                            <Text as='span' truncate className='trajectory-upload-progress-name' title={upload.name}>
                                 {upload.name}
-                            </span>
-                            <span className='trajectory-upload-progress-value'>{percent}%</span>
-                        </div>
-                    </div>
+                            </Text>
+                            <Text as='span' className='trajectory-upload-progress-value'>{percent}%</Text>
+                        </Row>
+                    </Stack>
                 );
             })}
-        </div>
+        </Stack>
     );
 };
 

@@ -3,7 +3,9 @@ import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { formatSize } from '@/shared/utils/format';
+import Divider from '@/shared/presentation/primitives/Divider';
 import Row from '@/shared/presentation/primitives/Row';
+import Text from '@/shared/presentation/primitives/Text';
 import { useMemo } from 'react';
 import type { Analysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
@@ -35,10 +37,10 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     <Row gap='05' className="canvas-status-group">
         {items.map(({ key, label, value, title, className }, i) => (
             <Row key={key} gap='05' className="canvas-status-item">
-                {i > 0 && <div className="canvas-status-divider" />}
-                <span className={`canvas-status-item-text font-size-1 color-muted ${className ?? ''}`.trim()} title={title}>
+                {i > 0 && <Divider orientation='vertical' className="canvas-status-divider" />}
+                <Text as='span' size='sm' tone='muted' className={className} title={title}>
                     {label}{label && ': '}{value}
-                </span>
+                </Text>
             </Row>
         ))}
     </Row>

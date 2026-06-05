@@ -1,4 +1,5 @@
 import Button from '@/shared/presentation/primitives/Button';
+import Box from '@/shared/presentation/primitives/Box';
 import ListRow from '@/shared/presentation/primitives/ListRow';
 import { getInitialsFromEmail, getAvatarColorFromString } from '@/shared/utils/user';
 import { format } from 'date-fns';
@@ -21,9 +22,9 @@ export const InvitationRow = ({
         <ListRow
             className='invitation-row'
             leading={
-                <div className='invitation-avatar radius-full d-flex items-center content-center f-shrink-0 font-weight-5' style={{ backgroundColor: getAvatarColorFromString(email) }}>
+                <Box display='flex' align='center' justify='center' radius='full' shrink='0' className='invitation-avatar font-weight-5' style={{ backgroundColor: getAvatarColorFromString(email) }}>
                     {getInitialsFromEmail(email)}
-                </div>
+                </Box>
             }
             title={email}
             subtitle={`Sent ${format(new Date(createdAt), 'MMM d, h:mm a')}`}

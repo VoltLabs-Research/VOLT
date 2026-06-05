@@ -2,6 +2,7 @@ import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
 import Sparkline from '@/shared/presentation/primitives/Sparkline';
 import StatCard from '@/shared/presentation/primitives/StatCard';
+import Text from '@/shared/presentation/primitives/Text';
 import './ContainerMetricTile.css';
 
 export interface MetricSecondaryStat {
@@ -55,12 +56,12 @@ const ContainerMetricTile = ({
             {secondary && secondary.length > 0 && (
                 <Row className='container-metric-tile-secondary' wrap>
                     {secondary.map((stat, index) => (
-                        <span key={stat.label} className='d-flex items-center'>
-                            {index > 0 && <span className='container-metric-tile-secondary-dot' aria-hidden='true'>·</span>}
-                            <span>
-                                {stat.label} <span className='color-secondary'>{stat.value}</span>
-                            </span>
-                        </span>
+                        <Row key={stat.label} as='span' align='center'>
+                            {index > 0 && <Text as='span' className='container-metric-tile-secondary-dot' aria-hidden='true'>·</Text>}
+                            <Text as='span'>
+                                {stat.label} <Text as='span' tone='secondary'>{stat.value}</Text>
+                            </Text>
+                        </Row>
                     ))}
                 </Row>
             )}
@@ -71,8 +72,8 @@ const ContainerMetricTile = ({
         <StatCard
             className={`container-metric-tile ${stateClass}`}
             label={label}
-            value={<span aria-label={`${label} ${displayValue}`}>{displayValue}</span>}
-            trend={badge ? <span className='container-metric-tile-badge'>{badge}</span> : undefined}
+            value={<Text as='span' aria-label={`${label} ${displayValue}`}>{displayValue}</Text>}
+            trend={badge ? <Text as='span' className='container-metric-tile-badge'>{badge}</Text> : undefined}
             footer={footer}
             surface='soft'
             tabular

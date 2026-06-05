@@ -1,5 +1,8 @@
 import Button from '@/shared/presentation/primitives/Button';
 import IconButton from '@/shared/presentation/primitives/IconButton';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import Popover from '@/shared/presentation/primitives/Popover';
 import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
@@ -32,13 +35,13 @@ export const InviteCodeSection = ({
     }
 
     return (
-        <div className='invite-code-section d-flex column gap-075 p-1-5'>
-            <p className='font-size-2 font-weight-5 color-secondary'>
+        <Stack gap='075' p='1-5' className='invite-code-section'>
+            <Text as='p' size='md' weight='medium' tone='secondary'>
                 Invite Code
-            </p>
+            </Text>
 
             {inviteCode ? (
-                <div className='invite-code-display d-flex items-center gap-05'>
+                <Row gap='05' className='invite-code-display'>
                     <div className='invite-code-badge radius-sm font-size-4 font-weight-6 font-mono flex-1'>
                         {inviteCode}
                     </div>
@@ -100,13 +103,13 @@ export const InviteCodeSection = ({
                             </PopoverMenu>
                         )}
                     </Popover>
-                </div>
+                </Row>
             ) : (
                 canManageCode && (
-                    <div className='d-flex column gap-1'>
-                        <p className='font-size-2 color-tertiary'>
+                    <Stack gap='1'>
+                        <Text as='p' size='md' className='color-tertiary'>
                             Generate a code so anyone with it can join this team.
-                        </p>
+                        </Text>
                         <Button
                             variant='outline'
                             intent='neutral'
@@ -118,9 +121,9 @@ export const InviteCodeSection = ({
                         >
                             Generate Invite Code
                         </Button>
-                    </div>
+                    </Stack>
                 )
             )}
-        </div>
+        </Stack>
     );
 };

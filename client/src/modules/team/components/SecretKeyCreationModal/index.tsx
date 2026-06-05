@@ -1,3 +1,6 @@
+import Box from '@/shared/presentation/primitives/Box';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Row from '@/shared/presentation/primitives/Row';
 import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
@@ -124,22 +127,23 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                 />
             }
         >
-            <div className='p-1-5'>
-                <form id={SECRET_KEY_CREATION_FORM_ID} className='d-flex column gap-1-5' onSubmit={handleFormSubmit}>
+            <Box p='1-5'>
+                <form id={SECRET_KEY_CREATION_FORM_ID} onSubmit={handleFormSubmit}>
+                    <Stack gap='1-5'>
                     {generatedKey ? (
                         <>
                             <CopyableField
                                 value={generatedKey}
                                 successMessage='Secret key copied to clipboard'
                             />
-                            <label className='d-flex items-center gap-075 color-secondary font-size-2 cursor-pointer'>
+                            <Row as='label' gap='075' cursor='pointer' className='color-secondary font-size-2'>
                                 <input
                                     type='checkbox'
                                     checked={hasConfirmedCopy}
                                     onChange={(event) => setHasConfirmedCopy(event.target.checked)}
                                 />
                                 <span>I copied or stored this secret key somewhere safe.</span>
-                            </label>
+                            </Row>
                         </>
                     ) : (
                         <>
@@ -169,8 +173,9 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                             />
                         </>
                     )}
+                    </Stack>
                 </form>
-            </div>
+            </Box>
         </Modal>
     );
 };

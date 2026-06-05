@@ -14,6 +14,7 @@ import {
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/presentation/components/DocumentListing/foldered-listing';
 import Heading from '@/shared/presentation/primitives/Heading';
+import Text from '@/shared/presentation/primitives/Text';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatSize } from '@/shared/utils/format';
@@ -36,7 +37,7 @@ const ContainersListing = () => {
             key: 'image',
             title: 'Image',
             sortable: true,
-            render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
+            render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
             skeleton: { variant: 'text', width: 150 }
         },
         clusterColumn<ContainerListingRow>({ isFolder: isContainerFolderRow }),
@@ -44,7 +45,7 @@ const ContainersListing = () => {
             key: 'cpus',
             title: 'Cores',
             sortable: true,
-            render: (value, row) => <span className='font-size-2 color-secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</span>,
+            render: (value, row) => <Text as='span' size='md' tone='secondary'>{isContainerFolderRow(row) ? '-' : String(value)}</Text>,
             skeleton: { variant: 'text', width: 70 }
         },
         {
@@ -53,10 +54,10 @@ const ContainersListing = () => {
             sortable: true,
             render: (value, row) => {
                 if (isContainerFolderRow(row)) {
-                    return <span className='font-size-2 color-muted'>-</span>;
+                    return <Text as='span' size='md' tone='muted'>-</Text>;
                 }
 
-                return <span className='font-size-2 color-secondary'>{formatSize(Number(value) * 1024 * 1024)}</span>;
+                return <Text as='span' size='md' tone='secondary'>{formatSize(Number(value) * 1024 * 1024)}</Text>;
             },
             skeleton: { variant: 'text', width: 90 }
         },
