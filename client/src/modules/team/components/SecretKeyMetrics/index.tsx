@@ -1,6 +1,12 @@
 import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
+import Box from '@/shared/presentation/primitives/Box';
+import Heading from '@/shared/presentation/primitives/Heading';
+import Row from '@/shared/presentation/primitives/Row';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
 import StatCard from '@/shared/presentation/primitives/StatCard';
+import Surface from '@/shared/presentation/primitives/Surface';
+import Text from '@/shared/presentation/primitives/Text';
 import { useMemo } from 'react';
 import {
     BarChart,
@@ -23,9 +29,9 @@ import '../secret-key/shared/SecretKeyShared.css';
 const renderAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
 const renderBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
 const metricsTitle = (
-    <div className='d-flex column gap-05'>
-        <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-    </div>
+    <Stack gap='05'>
+        <Heading level={3} size='2xl' weight='bold' tone='primary'>Secret Key Metrics</Heading>
+    </Stack>
 );
 
 export default function SecretKeyMetrics() {
@@ -53,29 +59,29 @@ export default function SecretKeyMetrics() {
     }, [metrics?.topEndpoints]);
 
     const loadingView = (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex column gap-05'>
+        <Box height='vh-max' className='secret-key-page color-primary'>
+            <Stack gap='2' width='max' className='secret-key-page-main'>
+                <Stack gap='05'>
                     <Skeleton variant='text' width={240} height={32} />
                     <Skeleton variant='text' width={160} height={20} />
-                </div>
+                </Stack>
                 <div className='secret-key-page-cards gap-1'>
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className='secret-key-page-card radius-lg transition-normal'>
-                            <div className='d-flex items-center gap-05 mb-075'>
+                        <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
+                            <Row gap='05' className='mb-075'>
                                 <Skeleton variant='circular' width={16} height={16} />
                                 <Skeleton variant='text' width={120} height={20} />
-                            </div>
+                            </Row>
                             <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
-                        </div>
+                        </Box>
                     ))}
                 </div>
                 <div className='secret-key-page-charts'>
                     <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
                     <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
                 </div>
-            </div>
-        </div>
+            </Stack>
+        </Box>
     );
 
     const errorView = (err: unknown) => (
@@ -133,14 +139,14 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <div className='secret-key-page vh-max color-primary'>
-            <div className='secret-key-page-main d-flex column gap-2 w-max'>
-                <div className='d-flex column gap-05'>
-                    <h3 className='font-size-5 font-weight-6 color-primary'>Secret Key Metrics</h3>
-                    <p className='font-size-2 color-secondary'>
+        <Box height='vh-max' className='secret-key-page color-primary'>
+            <Stack gap='2' width='max' className='secret-key-page-main'>
+                <Stack gap='05'>
+                    <Heading level={3} size='2xl' weight='bold' tone='primary'>Secret Key Metrics</Heading>
+                    <Text as='p' size='md' tone='secondary'>
                         {metrics.overview.totalRequests.toLocaleString()} total requests across {metrics.totalKeys} keys
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
 
                 <div className='secret-key-page-cards gap-1'>
                     {cards.map((card) => (
@@ -214,9 +220,9 @@ export default function SecretKeyMetrics() {
                     </ChartContainer>
                 </div>
 
-                <div className='d-flex column p-1-5 radius-lg glass-bg'>
-                    <h3 className='font-size-3 font-weight-6 color-primary mb-1-5'>Per-Key Breakdown</h3>
-                    <div className='x-auto'>
+                <Surface variant='glass' p='1-5' radius='lg'>
+                    <Heading level={3} size='lg' weight='bold' tone='primary' className='mb-1-5'>Per-Key Breakdown</Heading>
+                    <Box overflow='x-auto'>
                         <table className='secret-key-page-table'>
                             <thead>
                                 <tr>
@@ -232,10 +238,10 @@ export default function SecretKeyMetrics() {
                                 {metrics.perKey.map((key) => (
                                     <tr key={key.secretKeyId}>
                                         <td>
-                                            <div className='d-flex column'>
-                                                <span className='font-weight-5 color-primary'>{key.name}</span>
-                                                <span className='font-size-1 font-mono color-muted'>{key.keyPrefix}...</span>
-                                            </div>
+                                            <Stack>
+                                                <Text weight='medium' tone='primary'>{key.name}</Text>
+                                                <Text size='sm' tone='muted' className='font-mono'>{key.keyPrefix}...</Text>
+                                            </Stack>
                                         </td>
                                         <td className='color-secondary'>{key.roleName}</td>
                                         <td className='font-mono color-primary'>{key.totalRequests.toLocaleString()}</td>
@@ -246,17 +252,17 @@ export default function SecretKeyMetrics() {
                                                 : 'Never'}
                                         </td>
                                         <td>
-                                            <span style={{ color: key.isActive ? 'var(--status-success)' : 'var(--status-error)' }}>
+                                            <Text as='span' style={{ color: key.isActive ? 'var(--status-success)' : 'var(--status-error)' }}>
                                                 {key.isActive ? 'Active' : 'Revoked'}
-                                            </span>
+                                            </Text>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </Box>
+                </Surface>
+            </Stack>
+        </Box>
     );
 }

@@ -1,6 +1,9 @@
 import Button from '@/shared/presentation/primitives/Button';
 import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
+import Row from '@/shared/presentation/primitives/Row';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Text from '@/shared/presentation/primitives/Text';
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -268,15 +271,15 @@ export default function IntegrationsSettings() {
         const modelSummary = isDefault ? `${model.id} · default` : model.id;
 
         return (
-            <div key={model.id} className='integrations-model-item d-flex items-center content-between gap-05'>
-                <div className='d-flex column' style={{ minWidth: 0 }}>
-                    <p className='font-size-2 color-primary text-truncate' title={model.name}>
+            <Row key={model.id} gap='05' justify='between' align='center' className='integrations-model-item'>
+                <Stack style={{ minWidth: 0 }}>
+                    <Text as='p' size='md' tone='primary' truncate title={model.name}>
                         {model.name}
-                    </p>
-                    <p className='font-size-1 color-muted text-truncate' title={modelSummary}>
+                    </Text>
+                    <Text as='p' size='sm' tone='muted' truncate title={modelSummary}>
                         {modelSummary}
-                    </p>
-                </div>
+                    </Text>
+                </Stack>
                 <Button
                     size='sm'
                     variant='ghost'
@@ -286,7 +289,7 @@ export default function IntegrationsSettings() {
                     title={`Remove ${model.name}`}
                     aria-label={`Remove ${model.name}`}
                 />
-            </div>
+            </Row>
         );
     }, [modalDefaultModel]);
 
@@ -407,19 +410,19 @@ export default function IntegrationsSettings() {
                 />
 
                 {!teamId ? (
-                    <p className='font-size-2 color-muted'>
+                    <Text as='p' size='md' tone='muted'>
                         Select a team to manage integrations.
-                    </p>
+                    </Text>
                 ) : isLoading ? (
                     <div className='integrations-provider-list'>
                         {Array.from({ length: 3 }).map((_, index) => (
-                            <div key={index} className='integrations-provider-row d-flex items-center content-between gap-1'>
+                            <Row key={index} gap='1' justify='between' align='center' className='integrations-provider-row'>
                                 <Skeleton variant='text' width={100} height={20} />
-                                <div className='d-flex items-center gap-025'>
+                                <Row gap='025'>
                                     <Skeleton variant='circular' width={24} height={24} />
                                     <Skeleton variant='circular' width={24} height={24} />
-                                </div>
-                            </div>
+                                </Row>
+                            </Row>
                         ))}
                     </div>
                 ) : !isLoading && integrationsError && configuredIntegrations.length === 0 ? (
@@ -432,26 +435,26 @@ export default function IntegrationsSettings() {
                     />
                 ) : configuredIntegrations.length === 0 ? (
                     <div className='integrations-empty-state'>
-                        <p className='font-size-2 color-muted'>
+                        <Text as='p' size='md' tone='muted'>
                             No providers configured yet.
-                        </p>
+                        </Text>
                     </div>
                 ) : (
                     <div className='integrations-provider-list'>
                         {configuredIntegrations.map((integration) => (
-                            <div key={integration.provider} className='integrations-provider-row d-flex items-center content-between gap-1'>
-                                <div className='d-flex column gap-025' style={{ minWidth: 0 }}>
-                                    <p className='font-size-2 font-weight-5 color-primary'>
+                            <Row key={integration.provider} gap='1' justify='between' align='center' className='integrations-provider-row'>
+                                <Stack gap='025' style={{ minWidth: 0 }}>
+                                    <Text as='p' size='md' weight='medium' tone='primary'>
                                         {integration.providerName}
-                                    </p>
-                                    <p className='font-size-1 color-muted text-truncate' title={integration.defaultModel ?? 'No default model selected'}>
+                                    </Text>
+                                    <Text as='p' size='sm' tone='muted' truncate title={integration.defaultModel ?? 'No default model selected'}>
                                         {integration.defaultModel
                                             ? `Default model: ${integration.defaultModel}`
                                             : 'No default model selected'}
-                                    </p>
-                                </div>
+                                    </Text>
+                                </Stack>
 
-                                <div className='integrations-provider-row-actions d-flex items-center gap-025'>
+                                <Row gap='025' className='integrations-provider-row-actions'>
                                     <Button
                                         size='sm'
                                         variant='ghost'
@@ -473,8 +476,8 @@ export default function IntegrationsSettings() {
                                         title={`Remove ${integration.providerName}`}
                                         aria-label={`Remove ${integration.providerName}`}
                                     />
-                                </div>
-                            </div>
+                                </Row>
+                            </Row>
                         ))}
                     </div>
                 )}
@@ -511,9 +514,9 @@ export default function IntegrationsSettings() {
                 )}
             >
                 <form id={TEAM_AI_INTEGRATION_FORM_ID} className='p-1-5' onSubmit={handleIntegrationFormSubmit}>
-                    <div className='d-flex column gap-1'>
+                    <Stack gap='1'>
                         {!editingProvider ? (
-                            <div className='d-flex column gap-05'>
+                            <Stack gap='05'>
                                 <label id={providerLabelId} className='font-size-2 font-weight-5 color-secondary'>Provider</label>
                                 <Select
                                     options={providerSelectOptions}
@@ -523,14 +526,14 @@ export default function IntegrationsSettings() {
                                     placeholder='Select provider'
                                     aria-labelledby={providerLabelId}
                                 />
-                            </div>
+                            </Stack>
                         ) : (
-                            <div className='d-flex column gap-025'>
-                                <p className='font-size-1 color-muted'>Provider</p>
-                                <p className='font-size-3 font-weight-5 color-primary'>
+                            <Stack gap='025'>
+                                <Text as='p' size='sm' tone='muted'>Provider</Text>
+                                <Text as='p' size='lg' weight='medium' tone='primary'>
                                     {integrationsByProvider.get(editingProvider)?.providerName || editingProvider}
-                                </p>
-                            </div>
+                                </Text>
+                            </Stack>
                         )}
 
                         {modalProvider !== 'ollama' && (
@@ -555,11 +558,11 @@ export default function IntegrationsSettings() {
                             />
                         )}
 
-                        <div className='d-flex column gap-05'>
-                            <p className='font-size-2 font-weight-5 color-secondary'>
+                        <Stack gap='05'>
+                            <Text as='p' size='md' weight='medium' tone='secondary'>
                                 Models
-                            </p>
-                            <div className='d-flex gap-05 integrations-add-model-row'>
+                            </Text>
+                            <Row gap='05' className='integrations-add-model-row'>
                                 <FormFieldRHF
                                     label='Model ID'
                                     placeholder='Model ID (e.g. gpt-4o)'
@@ -583,15 +586,15 @@ export default function IntegrationsSettings() {
                                 >
                                     Add
                                 </Button>
-                            </div>
+                            </Row>
                             {modalEnabledModels.length > 0 && (
                                 <div className='integrations-model-checklist'>
                                     {modalEnabledModels.map(renderModelItem)}
                                 </div>
                             )}
-                        </div>
-                        
-                        <div className='d-flex column gap-05'>
+                        </Stack>
+
+                        <Stack gap='05'>
                             <label id={defaultModelLabelId} className='font-size-2 font-weight-5 color-secondary'>Default model</label>
                             <Select
                                 options={modalModelOptions}
@@ -601,13 +604,13 @@ export default function IntegrationsSettings() {
                                 placeholder={getDefaultModelPlaceholder(modalModelOptions)}
                                 aria-labelledby={defaultModelLabelId}
                             />
-                        </div>
+                        </Stack>
 
-                        <div className='d-flex items-center content-between gap-05 integrations-modal-toggle'>
-                            <p className='font-size-2 color-muted'>Enabled</p>
+                        <Row gap='05' justify='between' align='center' className='integrations-modal-toggle'>
+                            <Text as='p' size='md' tone='muted'>Enabled</Text>
                             <LiquidToggle pressed={modalEnabled} onChange={setModalEnabled} />
-                        </div>
-                    </div>
+                        </Row>
+                    </Stack>
                 </form>
             </Modal>
         </SettingsPage>

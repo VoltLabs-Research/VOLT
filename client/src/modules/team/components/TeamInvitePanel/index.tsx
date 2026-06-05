@@ -3,6 +3,9 @@ import { InvitationsList } from '../InvitationsList';
 import { InviteCodeSection } from '../InviteCodeSection';
 import { PanelFooter } from '../PanelFooter';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import Stack from '@/shared/presentation/primitives/Stack';
+import Box from '@/shared/presentation/primitives/Box';
+import Text from '@/shared/presentation/primitives/Text';
 import useInvitePanel from '@/modules/team/hooks/invitation/use-invite-panel';
 import useInviteCode from '@/modules/team/hooks/invitation/use-invite-code';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -113,13 +116,13 @@ export const TeamInvitePanel = ({
     ];
 
     return (
-        <div className='team-invite-panel d-flex column'>
+        <Stack className='team-invite-panel'>
             <PanelHeader
                 tabs={tabs}
                 onClose={onClose}
             />
 
-            <div className='team-invite-content d-flex column flex-1 y-auto'>
+            <Stack flex='1' overflow='y-auto' className='team-invite-content'>
                 {activeTab === InviteTab.Share && (
                     <>
                         <InvitationEmailInput
@@ -159,21 +162,21 @@ export const TeamInvitePanel = ({
 
                 {activeTab === InviteTab.PublicTrajectories && (
                     <>
-                        <div className='team-public-trajectories-section d-flex column gap-075'>
-                            <span className='font-size-2 font-weight-5 color-primary'>Public Trajectories</span>
-                            <div className='team-public-trajectories-link'>
-                                <span className='team-public-trajectories-link-value font-size-1 color-secondary'>
+                        <Stack gap='075' className='team-public-trajectories-section'>
+                            <Text weight='medium' size='md' tone='primary'>Public Trajectories</Text>
+                            <Box className='team-public-trajectories-link'>
+                                <Text as='span' size='sm' tone='secondary' className='team-public-trajectories-link-value'>
                                     {publicTrajectoriesLink || 'No team selected'}
-                                </span>
-                            </div>
-                        </div>
+                                </Text>
+                            </Box>
+                        </Stack>
 
                         <PanelFooter
                             actions={publicTrajectoriesFooterActions}
                         />
                     </>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };

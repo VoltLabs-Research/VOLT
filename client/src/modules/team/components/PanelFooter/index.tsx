@@ -1,4 +1,5 @@
 import Button from '@/shared/presentation/primitives/Button';
+import Row from '@/shared/presentation/primitives/Row';
 import type { ReactNode } from 'react';
 
 interface PanelAction {
@@ -16,7 +17,7 @@ export const PanelFooter = ({ actions }: PanelFooterProps) => {
     if(!actions || actions.length === 0) return null;
 
     return (
-        <div className='panel-footer-bordered d-flex gap-05 content-between f-shrink-0' style={{ marginTop: 'auto' }}>
+        <Row gap='05' justify='between' shrink='0' className='panel-footer-bordered' style={{ marginTop: 'auto' }}>
             {actions.map((action, index) => (
                 <Button
                     key={index}
@@ -30,6 +31,6 @@ export const PanelFooter = ({ actions }: PanelFooterProps) => {
                     {action.label}
                 </Button>
             ))}
-        </div>
+        </Row>
     );
 };

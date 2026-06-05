@@ -1,4 +1,5 @@
 import Button from '@/shared/presentation/primitives/Button';
+import Stack from '@/shared/presentation/primitives/Stack';
 import Tag from '@/shared/presentation/primitives/Tag';
 import Row from '@/shared/presentation/primitives/Row';
 import Heading from '@/shared/presentation/primitives/Heading';
@@ -191,21 +192,21 @@ export default function TeamInvitationTemplate() {
             </Text>
 
             <Row gap='1' wrap justify='center' radius='md' className='team-invitation-details'>
-                <div className='team-invitation-detail text-center'>
+                <Stack className='team-invitation-detail' textAlign='center'>
                     <Text as='span' className='team-invitation-detail-label'>Email</Text>
                     <Row as='p' gap='025' className='team-invitation-detail-value'>
                         <Mail size={14} />
                         {invitation.email}
                     </Row>
-                </div>
-                <div className='team-invitation-detail text-center'>
+                </Stack>
+                <Stack className='team-invitation-detail' textAlign='center'>
                     <Text as='span' className='team-invitation-detail-label'>Invited</Text>
                     <Row as='p' gap='025' className='team-invitation-detail-value'>
                         <Clock size={14} />
                         {new Date(invitation.createdAt).toLocaleDateString()}
                     </Row>
-                </div>
-                <div className='team-invitation-detail text-center'>
+                </Stack>
+                <Stack className='team-invitation-detail' textAlign='center'>
                     <Text as='span' className='team-invitation-detail-label'>Expires</Text>
                     <Text as='p' className='team-invitation-detail-value'>
                         {expiresAt.toLocaleString(undefined, {
@@ -214,7 +215,7 @@ export default function TeamInvitationTemplate() {
                             year: 'numeric'
                         })}
                     </Text>
-                </div>
+                </Stack>
             </Row>
 
             <Row gap='1' width='max' className='team-invitation-actions'>

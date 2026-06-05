@@ -1,17 +1,21 @@
+import Box from '@/shared/presentation/primitives/Box';
+import Row from '@/shared/presentation/primitives/Row';
+import Stack from '@/shared/presentation/primitives/Stack';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
 interface JobSkeletonProps {
     n?: number;
 };
 
 const JobSkeleton = ({ n = 10 }: JobSkeletonProps) => (
-    <div className='d-flex column'>
+    <Stack>
         {Array.from({ length: n }, (_, index) => (
-            <div
+            <Row
                 key={index}
-                className='d-flex items-center content-between'
+                justify='between'
+                align='center'
                 style={{ paddingTop: 12, paddingBottom: 12 }}
             >
-                <div className='d-flex items-center gap-1 flex-1'>
+                <Row gap='1' flex='1'>
                     <Skeleton
                         variant='circular'
                         width={30}
@@ -19,7 +23,7 @@ const JobSkeleton = ({ n = 10 }: JobSkeletonProps) => (
                         style={{ flexShrink: 0 }}
                     />
 
-                    <div className='flex-1' style={{ minWidth: 0 }}>
+                    <Box flex='1' style={{ minWidth: 0 }}>
                         <Skeleton
                             variant='text'
                             width='70%'
@@ -31,20 +35,20 @@ const JobSkeleton = ({ n = 10 }: JobSkeletonProps) => (
                             width='100px'
                             height={16}
                         />
-                    </div>
-                </div>
+                    </Box>
+                </Row>
 
-                <div className='d-flex column items-center gap-025'>
+                <Stack align='center' gap='025'>
                     <Skeleton
                         variant='rounded'
                         width={60}
                         height={18}
                         style={{ borderRadius: 12 }}
                     />
-                </div>
-            </div>
+                </Stack>
+            </Row>
         ))}
-    </div>
+    </Stack>
 );
 
 export default JobSkeleton;

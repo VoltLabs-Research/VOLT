@@ -5,6 +5,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
 import Stack from '@/shared/presentation/primitives/Stack';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import Text from '@/shared/presentation/primitives/Text';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -102,9 +103,9 @@ const ContainerDetailsHeader = ({
                         <StatusBadge status={container.status} />
                     </Row>
                     <Row className='container-details-header-meta' wrap>
-                        <span className='container-details-header-meta-image'>{container.image}</span>
-                        <span className='container-details-header-meta-dot' aria-hidden='true'>·</span>
-                        <span>Created {createdRelative}</span>
+                        <Text as='span' className='container-details-header-meta-image'>{container.image}</Text>
+                        <Text as='span' className='container-details-header-meta-dot' aria-hidden='true'>·</Text>
+                        <Text as='span'>Created {createdRelative}</Text>
                     </Row>
                 </Stack>
 

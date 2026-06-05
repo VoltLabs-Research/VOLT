@@ -1,6 +1,7 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import Stack from '@/shared/presentation/primitives/Stack';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import Callout from '@/shared/presentation/primitives/Callout';
 import Heading from '@/shared/presentation/primitives/Heading';
@@ -125,7 +126,7 @@ export const RoleEditorModal = ({
             className='role-editor-modal'
             footer={footer}
         >
-            <div className='p-2 d-flex column gap-2'>
+            <Stack gap='2' p='2'>
                 {isSystemRole && (
                     <Callout
                         tone='warning'
@@ -189,7 +190,7 @@ export const RoleEditorModal = ({
                         })}
                     </div>
                 </fieldset>
-            </div>
+            </Stack>
         </Modal>
     );
 };
