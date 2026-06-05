@@ -1,4 +1,4 @@
-import FileRowSkeleton from './FileRowSkeleton';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import './FileExplorer.css';
@@ -73,7 +73,12 @@ const FileExplorer = ({
 
         if(isLoading){
             return Array.from({ length: skeletonCount }).map((_, i) => (
-                <FileRowSkeleton key={i} />
+                <div key={i} className='file-explorer-row'>
+                        <Skeleton variant='circular' width={18} height={18} />
+                        <Skeleton variant='text' width='60%' height={20} />
+                        <Skeleton variant='text' width={60} height={18} />
+                        <Skeleton variant='text' width={80} height={18} />
+                    </div>
             ));
         }
 
