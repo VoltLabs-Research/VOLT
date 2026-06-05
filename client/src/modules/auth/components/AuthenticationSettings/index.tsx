@@ -4,7 +4,6 @@ import LoginActivityRow from '@/modules/auth/components/LoginActivityRow';
 import PasswordStatusRow from '@/modules/auth/components/PasswordStatusRow';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import Stack from '@/shared/presentation/primitives/Stack';
 import { useState } from 'react';
@@ -37,7 +36,7 @@ const AuthenticationSettings = () => {
 
     return (
         <SettingsPage title="Authentication Settings">
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title="Password"
                     description="Manage your password and security settings" />
@@ -54,15 +53,15 @@ const AuthenticationSettings = () => {
                         onSubmit={handleChangePassword}
                         onCancel={() => setIsPasswordFormOpen(false)} />
                 </Stack>
-            </SettingsSection>
+            </Stack>
 
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title="Login Activity"
                     description="Monitor recent login sessions and devices" />
 
                 <LoginActivityRow onViewActivity={handleViewLoginActivity} />
-            </SettingsSection>
+            </Stack>
         </SettingsPage>
     );
 };

@@ -16,7 +16,6 @@ import Modal, { openModal } from '@/shared/presentation/primitives/Modal';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import Select from '@/shared/presentation/primitives/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
@@ -390,7 +389,7 @@ export default function IntegrationsSettings() {
 
     return (
         <SettingsPage title='Integrations'>
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title='AI Providers'
                     description='Manage API keys and models shared across your team.'
@@ -481,7 +480,7 @@ export default function IntegrationsSettings() {
                         ))}
                     </div>
                 )}
-            </SettingsSection>
+            </Stack>
 
             <Modal
                 id={TEAM_AI_INTEGRATION_MODAL_ID}
