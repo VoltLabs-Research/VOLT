@@ -1,9 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Container } from '@modules/container/domain/entities/Container';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import containerMapper from '@modules/container/infrastructure/persistence/mongo/mappers/ContainerMapper';
 import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Transient } from '@shared/infrastructure/di/decorators';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
 import type { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
@@ -13,7 +14,7 @@ import mongoose from 'mongoose';
 const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const PLACEHOLDER_PUBLIC_PORT = 0;
 
-@Transient()
+@Singleton(CONTAINER_TOKENS.ContainerRepository)
 export class ContainerRepository extends MongooseBaseRepository<Container, IContainerProps, IContainerDoc> {
     constructor() {
         super(ContainerModel, containerMapper);

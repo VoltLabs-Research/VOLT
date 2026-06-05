@@ -1,12 +1,13 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerPortAccessUrlInputDTO, CreateContainerPortAccessUrlOutputDTO } from '@modules/container/application/dtos/GetContainerByIdDTO';
-import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
+import type { IContainerAccessiblePortResolver } from '@modules/container/domain/port/IContainerAccessiblePortResolver';
+import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
+import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class CreateContainerPortAccessUrlUseCase implements IUseCase<
@@ -14,9 +15,9 @@ export class CreateContainerPortAccessUrlUseCase implements IUseCase<
     CreateContainerPortAccessUrlOutputDTO
 > {
     constructor(
-        private readonly ownershipService: ContainerOwnershipService,
-        private readonly accessiblePortResolver: ContainerAccessiblePortResolver,
-        private readonly relayService: ContainerPortProxyRelayService
+        @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService,
+        @inject(CONTAINER_TOKENS.ContainerAccessiblePortResolver) private readonly accessiblePortResolver: IContainerAccessiblePortResolver,
+        @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService
     ) {}
 
     async execute(input: CreateContainerPortAccessUrlInputDTO): Promise<Result<CreateContainerPortAccessUrlOutputDTO>> {

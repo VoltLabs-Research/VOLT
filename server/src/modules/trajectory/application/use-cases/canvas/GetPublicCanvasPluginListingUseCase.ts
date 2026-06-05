@@ -1,6 +1,7 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
 import type {
     GetPluginListingDocumentsOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
@@ -10,6 +11,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasPluginListingInput {
     trajectoryId: string;
@@ -33,7 +35,7 @@ export class GetPublicCanvasPluginListingUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
         
         private readonly getPluginListingDocumentsUseCase: GetPluginListingDocumentsUseCase

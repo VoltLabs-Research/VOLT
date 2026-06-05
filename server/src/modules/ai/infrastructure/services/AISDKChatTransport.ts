@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createCerebras } from '@ai-sdk/cerebras';
 import { createCohere } from '@ai-sdk/cohere';
@@ -122,7 +123,7 @@ class AISDKReplyStream implements AIChatReplyStream {
     }
 }
 
-@Singleton()
+@Singleton(AI_TOKENS.AIChatTransport)
 export default class AISDKChatTransport implements IAIChatTransport {
     constructor(
         private readonly toolService: AIToolService,

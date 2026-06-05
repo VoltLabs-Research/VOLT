@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import trajectoryCloneJobMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/trajectory/TrajectoryCloneJobMapper';
 import TrajectoryCloneJobModel, { TrajectoryCloneJobDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryCloneJobModel';
@@ -11,7 +12,7 @@ const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
     'copying'
 ];
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository)
 export default class TrajectoryCloneJobRepository
     extends MongooseClaimableJobRepository<TrajectoryCloneJob, TrajectoryCloneJobProps, TrajectoryCloneJobDocument> {
 

@@ -1,8 +1,11 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
+import { inject } from 'tsyringe';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
@@ -17,9 +20,9 @@ export default class CancelTrajectoryUploadSessionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        private readonly trajectoryRepo: TrajectoryRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
     async execute(input: CancelTrajectoryUploadSessionInputDTO): Promise<Result<void, ApplicationError>> {

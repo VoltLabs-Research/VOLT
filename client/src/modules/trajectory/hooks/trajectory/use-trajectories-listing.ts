@@ -25,7 +25,7 @@ import {
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { Download, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';

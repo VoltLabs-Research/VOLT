@@ -1,14 +1,16 @@
+import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import type SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/CreateContainerDTO';
 import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
-import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
-import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
-import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
-import { ContainerPublicPortAllocator } from '@modules/container/infrastructure/services/ContainerPublicPortAllocator';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
+import type { IContainerPublicPortAllocator } from '@modules/container/domain/port/IContainerPublicPortAllocator';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -21,13 +23,13 @@ const MB_PER_GB = 1024;
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
-        private repository: ContainerRepository,
-        private readonly folderRepository: ContainerFolderRepository,
-        private containerRuntimeService: DaemonContainerRuntimeService,
-        private readonly publicPortAllocator: ContainerPublicPortAllocator,
-        private readonly relayService: ContainerPortProxyRelayService,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        private readonly systemMetricsRepository: SystemMetricsRedisRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly repository: IContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerFolderRepository) private readonly folderRepository: IContainerFolderRepository,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private readonly containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(CONTAINER_TOKENS.ContainerPublicPortAllocator) private readonly publicPortAllocator: IContainerPublicPortAllocator,
+        @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: SystemMetricsRedisRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

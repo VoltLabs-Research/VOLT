@@ -1,16 +1,18 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { GetLatexDocumentInputDTO } from '@modules/latex/application/dtos/GetLatexDocumentDTO';
 import type { LatexDocumentDTO } from '@modules/latex/application/dtos/LatexDocumentDTO';
-import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDTO, LatexDocumentDTO, ApplicationError> {
     constructor(
-        private readonly latexDocumentRepository: LatexDocumentRepository
+        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository
     ) {}
 
     async execute(input: GetLatexDocumentInputDTO): Promise<Result<LatexDocumentDTO, ApplicationError>> {

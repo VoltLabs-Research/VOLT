@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import TrajectoryFolder, { type TrajectoryFolderProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryFolder';
 import trajectoryFolderMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/trajectory/TrajectoryFolderMapper';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
@@ -6,7 +7,7 @@ import { MongooseCatalogFolderRepository } from '@shared/infrastructure/persiste
 import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryFolderRepository)
 export default class TrajectoryFolderRepository
     extends MongooseCatalogFolderRepository<TrajectoryFolder, TrajectoryFolderProps, CatalogFolderDocument> {
     constructor() {

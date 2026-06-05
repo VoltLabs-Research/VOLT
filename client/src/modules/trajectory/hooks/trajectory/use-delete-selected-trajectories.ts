@@ -1,7 +1,7 @@
 import { trajectoryQuery } from './queries';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback } from 'react';
 

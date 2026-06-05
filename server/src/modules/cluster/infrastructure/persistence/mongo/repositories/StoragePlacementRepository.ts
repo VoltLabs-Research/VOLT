@@ -1,3 +1,4 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type StoragePlacement from '@modules/cluster/domain/entities/StoragePlacement';
 import type { StoragePlacementProps } from '@modules/cluster/domain/entities/StoragePlacement';
 import storagePlacementMapper from '@modules/cluster/infrastructure/persistence/mongo/mappers/StoragePlacementMapper';
@@ -7,7 +8,7 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 import type { UpdateQuery } from 'mongoose';
 
 
-@Singleton()
+@Singleton(CLUSTER_TOKENS.StoragePlacementRepository)
 export default class StoragePlacementRepository
     extends MongooseBaseRepository<StoragePlacement, StoragePlacementProps, StoragePlacementDocument> {
 

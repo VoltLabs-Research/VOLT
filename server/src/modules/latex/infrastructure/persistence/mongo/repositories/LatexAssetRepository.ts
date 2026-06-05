@@ -1,3 +1,4 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import LatexAsset from '@modules/latex/domain/entities/LatexAsset';
 import latexAssetMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexAssetMapper';
 import LatexAssetModel from '@modules/latex/infrastructure/persistence/mongo/models/LatexAssetModel';
@@ -8,7 +9,7 @@ import type { LatexAssetProps } from '@modules/latex/domain/entities/LatexAsset'
 import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
 import type { LatexAssetDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexAssetModel';
 
-@Singleton()
+@Singleton(LATEX_TOKENS.LatexAssetRepository)
 export default class LatexAssetRepository
     extends MongooseBaseRepository<LatexAsset, LatexAssetProps, LatexAssetDocument>
     implements ILatexAssetRepository {

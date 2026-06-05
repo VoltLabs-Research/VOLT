@@ -1,3 +1,10 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import {
     ExportPluginListingDocumentsInputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
@@ -12,13 +19,10 @@ import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/Daemo
 import { IUseCase } from '@shared/application/IUseCase';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Result } from '@shared/domain/port/Result';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 const DAEMON_PAGE_SIZE = 200;
 
@@ -28,9 +32,9 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
     DownloadStreamOutputDTO
 > {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly daemonClient: TeamClusterDaemonClient
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
     async execute(input: ExportPluginListingDocumentsInputDTO): Promise<Result<DownloadStreamOutputDTO>> {

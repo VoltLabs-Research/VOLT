@@ -7,6 +7,7 @@ import type {
     PluginReferenceExecutionRequest,
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
@@ -257,7 +258,7 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
     };
 };
 
-@Singleton()
+@Singleton(PLUGIN_TOKENS.PluginExecutionRouter)
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
         private readonly storagePlacementService: StoragePlacementService,

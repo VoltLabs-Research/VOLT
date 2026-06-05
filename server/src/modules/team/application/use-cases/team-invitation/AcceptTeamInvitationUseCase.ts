@@ -1,24 +1,26 @@
+import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
-import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        private readonly invitationRepository: TeamInvitationRepository,
-        private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly teamRepository: TeamRepository,
-        private readonly teamRoleRepository: TeamRoleRepository,
-        private readonly userRepository: UserRepository
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: TeamInvitationRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository
     ){}
 
     async execute(input: AcceptTeamInvitationInputDTO): Promise<Result<AcceptTeamInvitationOutputDTO, ApplicationError>> {

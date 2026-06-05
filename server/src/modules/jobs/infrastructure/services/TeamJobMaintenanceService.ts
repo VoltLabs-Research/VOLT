@@ -1,3 +1,4 @@
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import type { AnalysisDeletedEventPayload } from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
@@ -56,7 +57,7 @@ interface GlbFrameDescriptor {
     ownerClusterId: string;
 }
 
-@Singleton()
+@Singleton(JOBS_TOKENS.TeamJobMaintenanceService)
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,

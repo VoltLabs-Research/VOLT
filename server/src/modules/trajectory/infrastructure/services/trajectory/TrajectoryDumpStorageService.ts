@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import TeamClusterObjectGatewayClient, {
@@ -17,7 +18,7 @@ export interface TrajectoryDumpStreamResponse {
     contentEncoding?: string;
 }
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
 export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
     constructor(
         private readonly trajectoryRepo: TrajectoryRepository,

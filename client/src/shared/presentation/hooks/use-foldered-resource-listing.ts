@@ -8,7 +8,7 @@ import type { UseFolderedListingOptions } from '@/shared/presentation/hooks/use-
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 

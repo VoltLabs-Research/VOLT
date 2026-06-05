@@ -6,10 +6,10 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import useCreateSecretKey from '@/modules/team/hooks/secret-key/use-create-secret-key';
+import { useCreateSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -34,7 +34,7 @@ const SECRET_KEY_CREATION_TOAST_OPTIONS = createPromiseToastOptions({
 export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProps) => {
     const selectedTeam = useSelectedTeam();
     const { roles } = useTeamRoleData({ teamId: selectedTeam?._id });
-    const { create: createSecretKey, isPending: isCreating } = useCreateSecretKey();
+    const createSecretKeyMutation = useCreateSecretKeyMutation();
 
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
     const [hasConfirmedCopy, setHasConfirmedCopy] = useState(false);
@@ -74,7 +74,10 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
         }
 
         await runAction({
-            action: () => createSecretKey(name, roleId),
+            action: () => {
+                if (!selectedTeam?._id) return Promise.resolve();
+                return createSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, name, roleId });
+            },
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
                 if (result?.secretKey) {
@@ -112,7 +115,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     secondary={generatedKey ? undefined : {
                         label: 'Cancel',
                         onClick: handleClose,
-                        disabled: isCreating
+                        disabled: createSecretKeyMutation.isPending
                     }}
                     primary={generatedKey ? {
                         label: 'Done',
@@ -122,7 +125,7 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                         label: 'Create Key',
                         type: 'submit',
                         form: SECRET_KEY_CREATION_FORM_ID,
-                        isLoading: isCreating
+                        isLoading: createSecretKeyMutation.isPending
                     }}
                 />
             }

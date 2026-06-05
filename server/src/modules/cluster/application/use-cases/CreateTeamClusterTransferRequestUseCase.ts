@@ -1,3 +1,7 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { inject, injectable } from 'tsyringe';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { IClusterTransferRunner } from '@modules/cluster/domain/port/IClusterTransferRunner';
 import { toClusterTransferJobDTO } from '@modules/cluster/application/dtos/ClusterTransferJobDTO';
 import {
     CreateTeamClusterTransferRequestInputDTO,
@@ -8,12 +12,9 @@ import StoragePlacementService from '@modules/cluster/application/services/Stora
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import type ClusterTransferJob from '@modules/cluster/domain/entities/ClusterTransferJob';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import ClusterTransferRunner from '@modules/cluster/infrastructure/services/ClusterTransferRunner';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateTeamClusterTransferRequestUseCase implements IUseCase<
@@ -22,10 +23,10 @@ export default class CreateTeamClusterTransferRequestUseCase implements IUseCase
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         private readonly storagePlacementService: StoragePlacementService,
         private readonly clusterTransferCoordinator: ClusterTransferCoordinator,
-        private readonly clusterTransferRunner: ClusterTransferRunner
+        @inject(CLUSTER_TOKENS.ClusterTransferRunner) private readonly clusterTransferRunner: IClusterTransferRunner
     ) {}
 
     async execute(

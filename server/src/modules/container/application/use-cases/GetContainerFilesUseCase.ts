@@ -1,16 +1,17 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { GetContainerFilesInputDTO, GetContainerFilesOutputDTO } from '@modules/container/application/dtos/GetContainerFilesDTO';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class GetContainerFilesUseCase implements IUseCase<GetContainerFilesInputDTO, GetContainerFilesOutputDTO> {
     constructor(
-        private containerRuntimeService: DaemonContainerRuntimeService,
-        private ownershipService: ContainerOwnershipService
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private readonly containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService
     ) {}
 
     async execute(input: GetContainerFilesInputDTO): Promise<Result<GetContainerFilesOutputDTO>> {

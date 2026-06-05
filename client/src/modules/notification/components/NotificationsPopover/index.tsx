@@ -1,5 +1,5 @@
 import useNotificationData from '../../hooks/use-notification-data';
-import NotificationBadge from '../NotificationBadge';
+import '../NotificationBadge/NotificationBadge.css';
 import NotificationList from '../NotificationList';
 import Button from '@/shared/presentation/primitives/Button';
 import IconButton from '@/shared/presentation/primitives/IconButton';
@@ -51,7 +51,11 @@ const NotificationsPopover = () => {
             aria-controls='notifications-popover'
         >
             <IoNotificationsOutline size={18} />
-            <NotificationBadge count={unreadCount} />
+            {unreadCount > 0 && (
+                <Row position='absolute' justify='center' radius='sm' className='notification-badge font-weight-6' aria-hidden='true'>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                </Row>
+            )}
         </IconButton>
     );
 

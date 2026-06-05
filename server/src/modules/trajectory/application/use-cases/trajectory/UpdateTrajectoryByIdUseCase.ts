@@ -1,3 +1,6 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/UpdateTrajectoryByIdDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -5,13 +8,12 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { injectable } from 'tsyringe';
 
 @injectable()
 export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO, ApplicationError>{
     constructor(
-        private readonly trajectoryRepo: TrajectoryRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ){}
 
     async execute(input: UpdateTrajectoryByIdInputDTO): Promise<Result<UpdateTrajectoryByIdOutputDTO, ApplicationError>>{

@@ -1,14 +1,16 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO } from '@modules/chat/application/dtos/chat/RemoveUsersFromGroupDTO';
 import type { ChatParticipant } from '@modules/chat/domain/entities/chat/Chat';
-import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 const toParticipantId = (participant: ChatParticipant): string => {
     if (typeof participant === 'string') {
@@ -25,8 +27,8 @@ const toParticipantId = (participant: ChatParticipant): string => {
 @injectable()
 export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO, ApplicationError> {
     constructor(
-        private chatRepo: ChatRepository,
-        private socketEmitter: SocketIOEmitter
+        @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
+        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: RemoveUsersFromGroupInputDTO): Promise<Result<RemoveUsersFromGroupOutputDTO, ApplicationError>> {

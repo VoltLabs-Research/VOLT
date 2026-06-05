@@ -1,19 +1,21 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO, ApplicationError> {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         private readonly teamJobsService: TeamJobsService,
-        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 
     async execute(input: RetryFailedFramesInputDTO): Promise<Result<RetryFailedFramesOutputDTO, ApplicationError>> {

@@ -5,7 +5,7 @@ import type { InviteButtonState } from '../../components/InviteButton';
 import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';

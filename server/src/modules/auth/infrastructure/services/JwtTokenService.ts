@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ITokenService, TokenPayload } from '@modules/auth/domain/port/ITokenService';
 import type { Secret, SignOptions } from 'jsonwebtoken';
@@ -53,7 +54,7 @@ const getSecretKey = (): Secret => {
     return key;
 };
 
-@Singleton()
+@Singleton(AUTH_TOKENS.TokenService)
 export default class JwtTokenService implements ITokenService {
     private readonly secret: Secret = getSecretKey();
     private readonly expiresIn = getExpiresIn();

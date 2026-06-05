@@ -1,6 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import type { ITeamMembershipService } from '@modules/team/domain/port/team/ITeamMembershipService';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
@@ -13,8 +15,8 @@ const logMembershipWarning = (context: Record<string, string>, message: string) 
     console.warn('[TeamMembershipService]', message, context);
 };
 
-@Singleton()
-export default class TeamMembershipService {
+@Singleton(TEAM_TOKENS.TeamMembershipService)
+export default class TeamMembershipService implements ITeamMembershipService {
     constructor(
         
         private readonly teamRoleRepository: TeamRoleRepository,

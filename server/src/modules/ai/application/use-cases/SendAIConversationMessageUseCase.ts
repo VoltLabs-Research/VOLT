@@ -1,3 +1,5 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
 import { SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO } from '@modules/ai/application/dtos/SendAIConversationMessageDTO';
@@ -6,19 +8,20 @@ import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConver
 import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import AIMessage, { AIMessageRole } from '@modules/ai/domain/entities/AIMessage';
 import type { AIChatFinishEvent } from '@modules/ai/domain/port/IAIChatTransport';
-import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
-import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
-import AISDKChatTransport from '@modules/ai/infrastructure/services/AISDKChatTransport';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
+import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
+import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
 import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import AIResponseMessagePartsMapper from '@modules/ai/utilities/AIResponseMessagePartsMapper';
 import AIUIMessageUtils from '@modules/ai/utilities/AIUIMessageUtils';
 import type { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamMember';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 interface ConversationUpdatePayload {
     lastMessageAt: Date;
@@ -46,13 +49,13 @@ interface LastAssistantMessageFilter extends Partial<AIMessageProps> {
 @Singleton()
 export default class SendAIConversationMessageUseCase implements IUseCase<SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO, ApplicationError> {
     constructor(
-        private readonly conversationRepository: AIConversationRepository,
-        private readonly messageRepository: AIMessageRepository,
-        private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly aiChatTransport: AISDKChatTransport,
-        private readonly messageDTOMapper: AIMessageDTOMapper,
-        private readonly uiMessageUtils: AIUIMessageUtils,
-        private readonly responseMessagePartsMapper: AIResponseMessagePartsMapper
+        @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
+        @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(AI_TOKENS.AIChatTransport) private readonly aiChatTransport: IAIChatTransport,
+        @inject(AI_TOKENS.AIMessageDTOMapper) private readonly messageDTOMapper: AIMessageDTOMapper,
+        @inject(AI_TOKENS.AIUIMessageUtils) private readonly uiMessageUtils: AIUIMessageUtils,
+        @inject(AI_TOKENS.AIResponseMessagePartsMapper) private readonly responseMessagePartsMapper: AIResponseMessagePartsMapper
     ) {}
 
     async execute(input: SendAIConversationMessageInputDTO): Promise<Result<SendAIConversationMessageOutputDTO, ApplicationError>> {

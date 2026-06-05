@@ -1,6 +1,12 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { inject } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import ClusterObjectArchiveService, { type ClusterArchiveReference } from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
+import type { IClusterObjectArchiveService, ClusterArchiveReference } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
 import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
 import {
     DownloadTrajectoryAnalysesInputDTO,
@@ -13,9 +19,7 @@ import { injectable } from 'tsyringe';
 import { v4 } from 'uuid';
 
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const ANALYSIS_STATUS_COMPLETED = 'completed';
@@ -46,17 +50,17 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
-        private readonly trajectoryRepository: TrajectoryRepository,
 
-        
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
-        
+
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+
+
         private readonly getPluginExposureExportUseCase: GetPluginExposureExportUseCase,
 
-        
-        private readonly archiveService: ClusterObjectArchiveService
+        @inject(CLUSTER_TOKENS.ClusterObjectArchiveService)
+        private readonly archiveService: IClusterObjectArchiveService
     ) {}
 
     async execute(

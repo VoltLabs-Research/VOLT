@@ -1,23 +1,25 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { SignInInputDTO, SignInOutputDTO } from '@modules/auth/application/dtos/SignInDTO';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import AuthSessionService from '@modules/auth/infrastructure/services/AuthSessionService';
-import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
+import type { IAuthSessionService } from '@modules/auth/domain/port/IAuthSessionService';
+import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
-import SessionRepository from '@modules/session/infrastructure/persistence/mongo/repositories/SessionRepository';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOutputDTO, ApplicationError>{
     constructor(
-        private readonly userRepository: UserRepository,
-        private readonly passwordHasher: BcryptPasswordHasher,
-        private readonly sessionRepository: SessionRepository,
-        private readonly authSessionService: AuthSessionService
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher,
+        @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository,
+        @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService
     ) {}
 
     async execute(input: SignInInputDTO): Promise<Result<SignInOutputDTO, ApplicationError>>{
@@ -52,7 +54,7 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
         }
 
         await this.userRepository.updateLastLogin(user._id);
-        
+
         const token = await this.authSessionService.createSessionWithToken({
             userId: user._id,
             ip: input.ip,

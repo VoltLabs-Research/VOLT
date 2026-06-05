@@ -1,18 +1,19 @@
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import type TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
+import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
-import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject } from 'tsyringe';
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
@@ -62,11 +63,11 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
 @Singleton()
 export default class TrajectoryCloneCoordinator {
     constructor(
-        private readonly cloneJobRepository: TrajectoryCloneJobRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository) private readonly cloneJobRepository: TrajectoryCloneJobRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
         private readonly storagePlacementService: StoragePlacementService,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

@@ -1,3 +1,8 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { inject, injectable } from 'tsyringe';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterCredentialsCipher } from '@modules/cluster/domain/port/ITeamClusterCredentialsCipher';
+import type { IDemoClusterDeploymentService, DemoClusterPlaintextCredentials } from '@modules/cluster/domain/port/IDemoClusterDeploymentService';
 import {
     buildTeamClusterEntity,
     createDaemonPassword,
@@ -10,18 +15,12 @@ import {
 } from '@modules/cluster/application/dtos/DemoTeamClusterDTO';
 import { toTeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
 import TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
-import DemoClusterDeploymentService, {
-    DemoClusterPlaintextCredentials
-} from '@modules/cluster/infrastructure/services/DemoClusterDeploymentService';
 import { createEnrollmentToken, hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
-import { injectable } from 'tsyringe';
 
 const DEMO_CLUSTER_TTL_MINUTES = readNumberEnv('DEMO_CLUSTER_TTL_MINUTES', 30);
 
@@ -45,9 +44,9 @@ const buildPlaintextCredentials = (enrollmentToken: string): DemoClusterPlaintex
 @injectable()
 export default class ProvisionDemoTeamClusterUseCase implements IUseCase<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-        private readonly demoClusterDeploymentService: DemoClusterDeploymentService
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+        @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService
     ){}
 
     async execute(input: ProvisionDemoTeamClusterInputDTO): Promise<Result<ProvisionDemoTeamClusterOutputDTO, ApplicationError>> {

@@ -4,7 +4,7 @@ import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/q
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { ColorCodingScene } from '@/modules/fractal/api/entities/scene';

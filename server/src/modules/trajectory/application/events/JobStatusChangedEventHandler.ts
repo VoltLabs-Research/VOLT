@@ -1,3 +1,5 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
@@ -8,7 +10,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { inject } from 'tsyringe';
 
 const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
@@ -20,7 +21,7 @@ const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
 @Subscribe('job.status.changed')
 export default class JobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
-        private readonly trajectoryRepo: TrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

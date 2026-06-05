@@ -1,18 +1,19 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GroupAdminAction, UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupAdminsDTO';
-import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO, ApplicationError> {
     constructor(
-        private chatRepo: ChatRepository
+        @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository
     ){}
 
     async execute(input: UpdateGroupAdminsInputDTO): Promise<Result<UpdateGroupAdminsOutputDTO, ApplicationError>> {

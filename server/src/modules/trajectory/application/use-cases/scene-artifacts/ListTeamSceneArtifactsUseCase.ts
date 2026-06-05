@@ -1,6 +1,8 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import type { ListTeamSceneArtifactsInputDTO, ListTeamSceneArtifactsOutputDTO } from '@modules/trajectory/application/dtos/scene-artifacts/ListTeamSceneArtifactsDTO';
 import type SceneArtifact from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -15,7 +17,7 @@ const toOutput = (artifact: SceneArtifact) => ({
 export class ListTeamSceneArtifactsUseCase implements IUseCase<ListTeamSceneArtifactsInputDTO, ListTeamSceneArtifactsOutputDTO, ApplicationError> {
     constructor(
         
-        private readonly sceneArtifactRepository: SceneArtifactRepository
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) {}
 
     async execute(input: ListTeamSceneArtifactsInputDTO) {

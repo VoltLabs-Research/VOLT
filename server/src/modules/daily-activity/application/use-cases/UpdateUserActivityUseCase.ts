@@ -1,16 +1,18 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dtos/UpdateUserActivityDTO';
-import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO, ApplicationError> {
     constructor(
-        private readonly repository: DailyActivityRepository
+        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository) private readonly repository: IDailyActivityRepository
     ) {}
 
     async execute(input: UpdateUserActivityInputDTO): Promise<Result<UpdateUserActivityOutputDTO, ApplicationError>> {

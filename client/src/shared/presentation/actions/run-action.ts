@@ -2,7 +2,7 @@ import { closeModal } from '@/shared/presentation/primitives/Modal';
 import { confirmAction } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { ConfirmActionOptions } from '@/shared/presentation/hooks/use-confirm';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 
 export type ActionSource<T> = Promise<T> | (() => Promise<T>);
 

@@ -3,7 +3,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useCallback, useMemo } from 'react';
 

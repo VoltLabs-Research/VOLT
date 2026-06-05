@@ -1,9 +1,15 @@
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
 } from '@modules/cluster/application/utilities/cluster-location';
-import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import SceneArtifactBatchUpsertedEvent, {
     SceneArtifactBatchUpsertedArtifact
 } from '@modules/trajectory/domain/events/scene-artifacts/SceneArtifactBatchUpsertedEvent';
@@ -14,12 +20,9 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import AnalysisStageChangedEvent from '@modules/analysis/domain/events/AnalysisStageChangedEvent';
 import type { AnalysisExpectedArtifact } from '@modules/analysis/domain/entities/Analysis';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 
 export interface ProcessDaemonSceneArtifactUpsertInputDTO {
@@ -68,10 +71,10 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

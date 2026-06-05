@@ -6,7 +6,7 @@ import { resetTeamScopedApplicationState, switchSelectedTeam, useTeamStore } fro
 import { runAction } from '@/shared/presentation/actions/run-action';
 import Select from '@/shared/presentation/primitives/Select';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { IoExitOutline } from 'react-icons/io5';
 import { useCallback, useMemo, useState } from 'react';

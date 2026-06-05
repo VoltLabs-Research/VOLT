@@ -1,4 +1,4 @@
-import '@/shared/presentation/styles/resize-handle.css';
+import '@/shared/presentation/assets/stylesheets/resize-handle.css';
 
 import type { ResizeDirectionValue } from '../../hooks/use-resizable';
 

@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { AIConversationMessageParts } from '@modules/ai/domain/contracts/AIConversationMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -7,7 +8,7 @@ interface AIResponseMessagePartsMappingResult {
     textContent: string;
 }
 
-@Singleton()
+@Singleton(AI_TOKENS.AIResponseMessagePartsMapper)
 export default class AIResponseMessagePartsMapper {
     /**
      * Merges new assistant response parts into an existing set of parts.

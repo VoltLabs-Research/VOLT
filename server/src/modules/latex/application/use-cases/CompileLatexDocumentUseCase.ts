@@ -1,5 +1,10 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import {
     getDocumentCompileWorkDirSegment,
     prepareWorkDir,
@@ -7,15 +12,13 @@ import {
     withDocumentCompileLock
 } from '@modules/latex/application/ai-tools/compile-helpers';
 import type { CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CompileLatexDocumentDTO';
-import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
-import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
-import LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import TempFileService from '@shared/infrastructure/services/TempFileService';
+import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -23,11 +26,11 @@ import { Readable } from 'node:stream';
 @Singleton()
 export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumentInputDTO, CompileLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        private readonly latexDocumentRepository: LatexDocumentRepository,
-        private readonly latexAssetRepository: LatexAssetRepository,
-        private readonly latexFileRepository: LatexFileRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        private readonly tempFileService: TempFileService
+        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
+        @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
+        @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: ILatexFileRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(SHARED_TOKENS.TempFileService) private readonly tempFileService: ITempFileService
     ) {}
 
     async execute(input: CompileLatexDocumentInputDTO): Promise<Result<CompileLatexDocumentOutputDTO, ApplicationError>> {

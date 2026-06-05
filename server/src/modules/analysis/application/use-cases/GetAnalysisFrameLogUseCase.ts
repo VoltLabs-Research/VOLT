@@ -3,12 +3,14 @@ import type {
     GetAnalysisFrameLogInputDTO,
     GetAnalysisFrameLogOutputDTO
 } from '@modules/analysis/application/dtos/GetAnalysisFrameLogDTO';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisExecutionLogService } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export default class GetAnalysisFrameLogUseCase implements IUseCase<
@@ -17,8 +19,8 @@ export default class GetAnalysisFrameLogUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly analysisExecutionLogService: AnalysisExecutionLogService
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService
     ) {}
 
     async execute(

@@ -1,4 +1,4 @@
-import CanvasSlider from '../CanvasSlider';
+import Slider from '@/shared/presentation/primitives/Slider';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import Box from '@/shared/presentation/primitives/Box';
 import Row from '@/shared/presentation/primitives/Row';
@@ -62,14 +62,12 @@ const CanvasRenderSubsectionContent = ({
                                         <Row key={`${section.key}-${row.label}`} justify='between' gap='05' className={`canvas-form-row ${row.className ?? ''}`} role="group" aria-label={row.label}>
                                             <Text size='sm' className="canvas-form-label">{row.label}</Text>
                                             <Row gap='02' className="canvas-form-control">
-                                                <CanvasSlider
-                                                    ariaLabel={row.label}
+                                                <Slider
                                                     min={row.min}
                                                     max={row.max}
-                                                    step={row.step}
+                                                    step={row.step ?? 1}
                                                     value={value}
                                                     onChange={onChange}
-                                                    ariaValueText={String(row.format?.(value) ?? value)}
                                                 />
                                                 <Text size='sm' className="canvas-form-value">
                                                     {row.format?.(value) ?? value}

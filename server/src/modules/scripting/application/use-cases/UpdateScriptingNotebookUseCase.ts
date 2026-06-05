@@ -1,23 +1,27 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import type { ScriptingNotebookDTO } from '@modules/scripting/application/dtos/ScriptingNotebookDTO';
 import type { UpdateScriptingNotebookInputDTO } from '@modules/scripting/application/dtos/UpdateScriptingNotebookDTO';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 @Singleton()
 export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingNotebookInputDTO, ScriptingNotebookDTO, ApplicationError> {
     constructor(
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ) {}
 
     async execute(input: UpdateScriptingNotebookInputDTO): Promise<Result<ScriptingNotebookDTO, ApplicationError>> {

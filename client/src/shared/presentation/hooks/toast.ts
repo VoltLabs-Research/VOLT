@@ -1,6 +1,6 @@
 import { getErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/core';
 import { sileo } from 'sileo';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
 /**

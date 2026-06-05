@@ -1,11 +1,13 @@
+import type { IClusterTransferRunner } from '@modules/cluster/domain/port/IClusterTransferRunner';
 import ClusterTransferCoordinator from '@modules/cluster/application/services/ClusterTransferCoordinator';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
 const TRANSFER_RUNNER_INTERVAL_MS = 30_000;
 
-@Singleton()
-export default class ClusterTransferRunner {
+@Singleton(CLUSTER_TOKENS.ClusterTransferRunner)
+export default class ClusterTransferRunner implements IClusterTransferRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
 

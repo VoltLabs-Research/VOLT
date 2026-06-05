@@ -1,3 +1,4 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
@@ -129,7 +130,7 @@ const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined
     }
 };
 
-@Singleton()
+@Singleton(SHARED_TOKENS.TeamClusterDaemonClient)
 export default class TeamClusterDaemonClient {
     private static readonly TIMEOUT_BY_CLASS: Record<NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>, number> = {
         default: 30_000,

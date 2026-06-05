@@ -1,3 +1,5 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/UpdateContainerDTO';
 import ContainerUpdatedEvent from '@modules/container/domain/events/ContainerUpdatedEvent';
@@ -6,11 +8,10 @@ import type {
     ContainerPortMapping,
     RuntimeContainerInfo
 } from '@modules/container/domain/port/IContainerService';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
-import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
-import { ContainerPublicPortAllocator } from '@modules/container/infrastructure/services/ContainerPublicPortAllocator';
+import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
+import type { IContainerPublicPortAllocator } from '@modules/container/domain/port/IContainerPublicPortAllocator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -21,11 +22,11 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
     constructor(
-        private repository: ContainerRepository,
-        private containerRuntimeService: DaemonContainerRuntimeService,
-        private ownershipService: ContainerOwnershipService,
-        private readonly publicPortAllocator: ContainerPublicPortAllocator,
-        private readonly relayService: ContainerPortProxyRelayService,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly repository: IContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private readonly containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService,
+        @inject(CONTAINER_TOKENS.ContainerPublicPortAllocator) private readonly publicPortAllocator: IContainerPublicPortAllocator,
+        @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

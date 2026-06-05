@@ -1,4 +1,6 @@
 import Team, { TeamProps } from '@modules/team/domain/entities/team/Team';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team/TeamMapper';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/team/TeamModel';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
@@ -37,9 +39,10 @@ interface TeamMembershipIdFilter {
     };
 };
 
-@Singleton()
+@Singleton(TEAM_TOKENS.TeamRepository)
 export default class TeamRepository
-    extends MongooseBaseRepository<Team, TeamProps, TeamDocument> {
+    extends MongooseBaseRepository<Team, TeamProps, TeamDocument>
+    implements ITeamRepository {
 
     constructor(
         

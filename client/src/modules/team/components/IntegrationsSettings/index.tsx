@@ -7,8 +7,7 @@ import Text from '@/shared/presentation/primitives/Text';
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import useCreateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-create-team-ai-integration';
-import useDeleteTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-delete-team-ai-integration';
+import { useCreateTeamAIIntegrationMutation, useDeleteTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
@@ -19,7 +18,7 @@ import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
@@ -102,9 +101,9 @@ export default function IntegrationsSettings() {
         error: integrationsError
     } = useTeamAIIntegrationsQuery(teamId, { enabled: !!teamId });
 
-    const createTeamAIIntegration = useCreateTeamAIIntegration();
+    const createTeamAIIntegrationMutation = useCreateTeamAIIntegrationMutation();
     const updateTeamAIIntegration = useUpdateTeamAIIntegration();
-    const deleteTeamAIIntegration = useDeleteTeamAIIntegration();
+    const deleteTeamAIIntegrationMutation = useDeleteTeamAIIntegrationMutation();
 
     const [isSaving, setIsSaving] = useState(false);
     const [busyProvider, setBusyProvider] = useState<AIProvider | null>(null);
@@ -330,7 +329,7 @@ export default function IntegrationsSettings() {
             await runAction({
                 action: integration
                     ? () => updateTeamAIIntegration(modalProvider, payload)
-                    : () => createTeamAIIntegration(modalProvider, payload),
+                    : () => createTeamAIIntegrationMutation.mutateAsync({ teamId, provider: modalProvider, ...payload }),
                 toast: getSaveIntegrationToastOptions(integration),
                 modalId: TEAM_AI_INTEGRATION_MODAL_ID,
                 afterSuccess: async () => {
@@ -372,7 +371,7 @@ export default function IntegrationsSettings() {
         setBusyProvider(provider);
         try {
             await runAction({
-                action: () => deleteTeamAIIntegration(provider),
+                action: () => deleteTeamAIIntegrationMutation.mutateAsync({ teamId, provider }),
                 toast: getRemoveIntegrationToastOptions(integration),
                 afterSuccess: async () => {
                     if (teamId) {

@@ -1,8 +1,10 @@
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import type { ITeamRoomPresenceService } from '@modules/team/domain/port/team-member/ITeamRoomPresenceService';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-@Singleton()
-export default class TeamRoomPresenceService {
+@Singleton(TEAM_TOKENS.TeamRoomPresenceService)
+export default class TeamRoomPresenceService implements ITeamRoomPresenceService {
     constructor(
         private readonly roomManager: SocketIORoomManager
     ) {}

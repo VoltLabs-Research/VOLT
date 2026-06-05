@@ -1,14 +1,15 @@
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import {
     PreviewJoinTeamByInviteCodeInputDTO,
     PreviewJoinTeamByInviteCodeOutputDTO
 } from '@modules/team/application/dtos/team/PreviewJoinTeamByInviteCodeDTO';
 import { invalidInviteCodeError, normalizeInviteCode } from '@modules/team/application/use-cases/team/invite-code-helpers';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface PopulatedTeamOwner {
     props: {
@@ -20,8 +21,8 @@ interface PopulatedTeamOwner {
 @injectable()
 export default class PreviewJoinTeamByInviteCodeUseCase implements IUseCase<PreviewJoinTeamByInviteCodeInputDTO, PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamRepository: TeamRepository,
-        private readonly teamMemberRepository: TeamMemberRepository
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
 
     async execute(input: PreviewJoinTeamByInviteCodeInputDTO): Promise<Result<PreviewJoinTeamByInviteCodeOutputDTO, ApplicationError>> {

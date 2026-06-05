@@ -14,6 +14,7 @@ import {
     WorkflowValidationResult
 } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import { PluginDependencyResolverService } from '@modules/plugin/infrastructure/services/plugin/PluginDependencyResolverService';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
@@ -109,7 +110,7 @@ const resolvePluginNodeExecutionMode = (
     return PluginNodeExecutionMode.Manual;
 };
 
-@Singleton()
+@Singleton(PLUGIN_TOKENS.WorkflowValidatorService)
 export class WorkflowValidatorService implements IWorkflowValidatorService {
     constructor(
         private readonly pluginDependencyResolverService: PluginDependencyResolverService

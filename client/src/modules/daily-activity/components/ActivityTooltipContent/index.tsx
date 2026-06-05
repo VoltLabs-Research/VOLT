@@ -1,6 +1,8 @@
-import ActivityEntry from '@/modules/daily-activity/components/ActivityEntry';
+import Box from '@/shared/presentation/primitives/Box';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
+import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utilities/activity-mappings';
+import '@/modules/daily-activity/components/ActivityEntry/ActivityEntry.css';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/api/entities/daily-activity';
 import { useMemo } from 'react';
 import type { FC } from 'react';
@@ -38,15 +40,17 @@ const ActivityTooltipContent: FC<ActivityTooltipContentProps> = ({ activity, dat
                 </Text>
             </Stack>
             {activity.map((item, index) => (
-                <ActivityEntry
-                    key={`${item.createdAt}-${index}`}
-                    type={item.type}
-                >
-                    <Text size='sm' tone='secondary'>
-                        {item.userDisplayName} · {timeFormatter.format(new Date(item.createdAt))}
-                    </Text>
-                    <Text size='md' tone='primary'>{item.description}</Text>
-                </ActivityEntry>
+                <Box key={`${item.createdAt}-${index}`} className='activity-entry d-flex items-start gap-05'>
+                    <span className='activity-entry-dot d-flex flex-center radius-md f-shrink-0' style={{ color: ACTIVITY_ACCENT[item.type] }}>
+                        {ACTIVITY_ICON[item.type]}
+                    </span>
+                    <Box className='activity-entry-content d-flex column min-w-0'>
+                        <Text size='sm' tone='secondary'>
+                            {item.userDisplayName} · {timeFormatter.format(new Date(item.createdAt))}
+                        </Text>
+                        <Text size='md' tone='primary'>{item.description}</Text>
+                    </Box>
+                </Box>
             ))}
         </Stack>
     );

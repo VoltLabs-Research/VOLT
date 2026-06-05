@@ -1,7 +1,8 @@
-import { injectable } from 'tsyringe';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ClusterRoleAwareSelectionService } from './ClusterRoleAwareSelectionService';
 
-@injectable()
+@Singleton(CONTAINER_TOKENS.TeamClusterSelectionService)
 export class TeamClusterSelectionService {
     constructor(
         private readonly clusterRoleAwareSelectionService: ClusterRoleAwareSelectionService

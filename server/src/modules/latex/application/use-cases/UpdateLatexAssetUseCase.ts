@@ -1,13 +1,15 @@
+import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO } from '@modules/latex/application/dtos/UpdateLatexAssetDTO';
 import { buildLatexAssetContentUrl } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
-import LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
-import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 /**
  * Updates the virtual path of a LaTeX asset (i.e., moves it to a folder).
@@ -17,8 +19,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class UpdateLatexAssetUseCase implements IUseCase<UpdateLatexAssetInputDTO, UpdateLatexAssetOutputDTO, ApplicationError> {
     constructor(
-        private readonly latexDocumentRepository: LatexDocumentRepository,
-        private readonly latexAssetRepository: LatexAssetRepository
+        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
+        @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository
     ) {}
 
     async execute(input: UpdateLatexAssetInputDTO): Promise<Result<UpdateLatexAssetOutputDTO, ApplicationError>> {

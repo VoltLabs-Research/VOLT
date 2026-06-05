@@ -1,7 +1,8 @@
+import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
 import TeamRole from '@modules/team/domain/entities/team-role/TeamRole';
 import TeamRoleCreatedEvent from '@modules/team/domain/events/team-role/TeamRoleCreatedEvent';
-import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -13,7 +14,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamRoleRepository: TeamRoleRepository,
+        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}

@@ -1,11 +1,13 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryCloneRunner } from '@modules/trajectory/domain/port/trajectory/ITrajectoryCloneRunner';
 import TrajectoryCloneCoordinator from '@modules/trajectory/application/services/TrajectoryCloneCoordinator';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
 const CLONE_RUNNER_INTERVAL_MS = 15_000;
 
-@Singleton()
-export default class TrajectoryCloneRunner {
+@Singleton(TRAJECTORY_TOKENS.TrajectoryCloneRunner)
+export default class TrajectoryCloneRunner implements ITrajectoryCloneRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
 

@@ -2,11 +2,12 @@ import {
     GenerateTeamClusterInstallManifestInputDTO,
     GenerateTeamClusterInstallManifestOutputDTO
 } from '@modules/cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
-import TeamClusterInstallManifestService from '@modules/cluster/infrastructure/services/TeamClusterInstallManifestService';
+import type { ITeamClusterInstallManifestService } from '@modules/cluster/domain/port/ITeamClusterInstallManifestService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class GenerateTeamClusterInstallManifestUseCase implements IUseCase<
@@ -15,7 +16,7 @@ export default class GenerateTeamClusterInstallManifestUseCase implements IUseCa
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterInstallManifestService: TeamClusterInstallManifestService
+        @inject(CLUSTER_TOKENS.TeamClusterInstallManifestService) private readonly teamClusterInstallManifestService: ITeamClusterInstallManifestService
     ){}
 
     async execute(input: GenerateTeamClusterInstallManifestInputDTO): Promise<Result<GenerateTeamClusterInstallManifestOutputDTO, ApplicationError>> {

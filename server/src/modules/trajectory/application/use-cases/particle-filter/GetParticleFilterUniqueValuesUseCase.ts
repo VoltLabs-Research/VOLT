@@ -1,9 +1,9 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { GetParticleFilterUniqueValuesInputDTO, GetParticleFilterUniqueValuesOutputDTO } from '@modules/trajectory/application/dtos/particle-filter';
 import { ValidatedServiceUseCase } from '@modules/trajectory/application/use-cases/shared/ValidatedServiceUseCase';
-import { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
+import type { IParticleFilterService } from '@modules/trajectory/domain/port/particle-filter/IParticleFilterService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
-import ParticleFilterService from '@modules/trajectory/infrastructure/services/particle-filter/ParticleFilterService';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export class GetParticleFilterUniqueValuesUseCase extends ValidatedServiceUseCase<
@@ -12,8 +12,8 @@ export class GetParticleFilterUniqueValuesUseCase extends ValidatedServiceUseCas
     IParticleFilterService
 > {
     constructor(
-        
-        particleFilterService: ParticleFilterService
+        @inject(TRAJECTORY_TOKENS.ParticleFilterService)
+        @inject(TRAJECTORY_TOKENS.ParticleFilterService) particleFilterService: IParticleFilterService
     ) {
         super(
             particleFilterService,

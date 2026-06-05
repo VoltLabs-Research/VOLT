@@ -1,7 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
@@ -19,9 +20,8 @@ interface DeleteAnalysisByIdOutputDTO {
 @injectable()
 export default class DeleteAnalysisByIdUseCase {
     constructor(
-        private readonly repository: AnalysisRepository,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly repository: IAnalysisRepository,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: DeleteAnalysisByIdInputDTO): Promise<Result<DeleteAnalysisByIdOutputDTO, ApplicationError>> {

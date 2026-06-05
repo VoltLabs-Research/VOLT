@@ -1,22 +1,14 @@
 import EarlyAccessSubscription, {
     EarlyAccessSubscriptionProps
 } from '@modules/early-access/domain/entities/EarlyAccessSubscription';
+import type { IEarlyAccessSubscriptionRepository, RecordInterestInput, RecordInterestResult } from '@modules/early-access/domain/port/IEarlyAccessSubscriptionRepository';
+import { EARLY_ACCESS_TOKENS } from '@modules/early-access/infrastructure/di/EarlyAccessTokens';
 import earlyAccessSubscriptionMapper from '@modules/early-access/infrastructure/persistence/mongo/mappers/EarlyAccessSubscriptionMapper';
 import EarlyAccessSubscriptionModel, {
     EarlyAccessSubscriptionDocument
 } from '@modules/early-access/infrastructure/persistence/mongo/models/EarlyAccessSubscriptionModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-
-type RecordInterestInput = Pick<
-    EarlyAccessSubscriptionProps,
-    'team' | 'email' | 'source' | 'referrer' | 'lastSubmittedAt'
->;
-
-interface RecordInterestResult {
-    subscription: EarlyAccessSubscription;
-    alreadySubscribed: boolean;
-}
 
 const isDuplicateKeyError = (error: unknown): boolean => {
     return Boolean(
@@ -27,9 +19,10 @@ const isDuplicateKeyError = (error: unknown): boolean => {
     );
 };
 
-@Singleton()
+@Singleton(EARLY_ACCESS_TOKENS.EarlyAccessSubscriptionRepository)
 export default class EarlyAccessSubscriptionRepository
-    extends MongooseBaseRepository<EarlyAccessSubscription, EarlyAccessSubscriptionProps, EarlyAccessSubscriptionDocument> {
+    extends MongooseBaseRepository<EarlyAccessSubscription, EarlyAccessSubscriptionProps, EarlyAccessSubscriptionDocument>
+    implements IEarlyAccessSubscriptionRepository {
 
     constructor() {
         super(EarlyAccessSubscriptionModel, earlyAccessSubscriptionMapper);

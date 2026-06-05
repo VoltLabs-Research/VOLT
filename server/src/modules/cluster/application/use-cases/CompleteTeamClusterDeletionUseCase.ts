@@ -1,10 +1,12 @@
 import { CompleteTeamClusterDeletionInputDTO } from '@modules/cluster/application/dtos/CompleteTeamClusterDeletionDTO';
-import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { OperationSuccessDTO } from '@modules/team/application/dtos/common';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export default class CompleteTeamClusterDeletionUseCase implements IUseCase<
@@ -13,7 +15,7 @@ export default class CompleteTeamClusterDeletionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}
 
     async execute(input: CompleteTeamClusterDeletionInputDTO): Promise<Result<OperationSuccessDTO, ApplicationError>> {

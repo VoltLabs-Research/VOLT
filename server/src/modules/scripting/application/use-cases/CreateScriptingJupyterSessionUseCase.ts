@@ -1,5 +1,9 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import {
     CreateScriptingJupyterSessionInputDTO,
     CreateScriptingJupyterSessionOutputDTO
@@ -9,11 +13,9 @@ import type ScriptingNotebook from '@modules/scripting/domain/entities/Scripting
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
 import type {
+    IScriptingSessionOrchestrator,
     ScriptingSessionStartInput
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/infrastructure/services/DaemonScriptingSessionOrchestrator';
-import { RedisScriptingSessionLock } from '@modules/scripting/infrastructure/services/RedisScriptingSessionLock';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -68,10 +70,10 @@ const selectExistingTrajectoryNotebook = (
 @Singleton()
 export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScriptingJupyterSessionInputDTO, CreateScriptingJupyterSessionOutputDTO, ApplicationError> {
     constructor(
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator,
-        private readonly scriptingSessionLock: RedisScriptingSessionLock,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator) private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
+        @inject(SCRIPTING_TOKENS.ScriptingSessionLock) private readonly scriptingSessionLock: IScriptingSessionLock,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async execute(input: CreateScriptingJupyterSessionInputDTO): Promise<Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError>> {

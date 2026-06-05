@@ -1,12 +1,14 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
+import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasDumpInput {
     trajectoryId: string;
@@ -23,11 +25,11 @@ export class GetPublicCanvasDumpUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
+
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        
-        private readonly trajectoryDumpStorageService: TrajectoryDumpStorageService
+        @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
+        private readonly trajectoryDumpStorageService: ITrajectoryDumpStorageService
     ) {}
 
     async execute(input: GetPublicCanvasDumpInput): Promise<Result<GetPublicCanvasDumpOutput, ApplicationError>> {

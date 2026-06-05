@@ -1,5 +1,9 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import {
     CreateScriptingNotebookInputDTO,
     CreateScriptingNotebookOutputDTO
@@ -7,8 +11,7 @@ import {
 import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/application/utilities/build-scripting-notebook';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
+import type { IJupyterNotebookService } from '@modules/scripting/domain/port/IJupyterNotebookService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -18,9 +21,9 @@ import { randomUUID } from 'node:crypto';
 @Singleton()
 export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingNotebookInputDTO, CreateScriptingNotebookOutputDTO, ApplicationError> {
     constructor(
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly jupyterNotebookService: JupyterNotebookService,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(SCRIPTING_TOKENS.JupyterNotebookService) private readonly jupyterNotebookService: IJupyterNotebookService,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async execute(input: CreateScriptingNotebookInputDTO): Promise<Result<CreateScriptingNotebookOutputDTO, ApplicationError>> {

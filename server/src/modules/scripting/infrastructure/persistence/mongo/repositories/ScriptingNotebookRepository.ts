@@ -1,3 +1,4 @@
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
 import scriptingNotebookMapper from '@modules/scripting/infrastructure/persistence/mongo/mappers/ScriptingNotebookMapper';
 import ScriptingNotebookModel from '@modules/scripting/infrastructure/persistence/mongo/models/ScriptingNotebookModel';
@@ -8,7 +9,7 @@ import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/
 import type { ScriptingNotebookDocument } from '@modules/scripting/infrastructure/persistence/mongo/models/ScriptingNotebookModel';
 import type { FilterQuery } from 'mongoose';
 
-@Singleton()
+@Singleton(SCRIPTING_TOKENS.ScriptingNotebookRepository)
 export default class ScriptingNotebookRepository
     extends MongooseBaseRepository<ScriptingNotebook, ScriptingNotebookProps, ScriptingNotebookDocument> {
 

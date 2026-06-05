@@ -1,18 +1,22 @@
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
+import type { IRasterStorageService } from '@modules/raster/domain/port/IRasterStorageService';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import type {
     GetPublicCanvasRasterFrameInputDTO,
     GetPublicCanvasRasterFrameOutputDTO
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasRasterFrameDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 @Singleton()
@@ -22,17 +26,17 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
+
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        
-        private readonly rasterStorage: RasterStorageService,
+        @inject(RASTER_TOKENS.RasterStorageService)
+        private readonly rasterStorage: IRasterStorageService,
 
-        
-        private readonly trajectoryRepository: TrajectoryRepository,
 
-        
-        private readonly analysisRepository: AnalysisRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+
+
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async execute(

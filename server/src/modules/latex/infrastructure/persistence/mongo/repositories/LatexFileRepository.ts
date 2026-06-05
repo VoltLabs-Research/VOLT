@@ -1,3 +1,4 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import LatexFile from '@modules/latex/domain/entities/LatexFile';
 import latexFileMapper from '@modules/latex/infrastructure/persistence/mongo/mappers/LatexFileMapper';
 import LatexFileModel from '@modules/latex/infrastructure/persistence/mongo/models/LatexFileModel';
@@ -8,7 +9,7 @@ import type { LatexFileProps } from '@modules/latex/domain/entities/LatexFile';
 import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import type { LatexFileDocument } from '@modules/latex/infrastructure/persistence/mongo/models/LatexFileModel';
 
-@Singleton()
+@Singleton(LATEX_TOKENS.LatexFileRepository)
 export default class LatexFileRepository
     extends MongooseBaseRepository<LatexFile, LatexFileProps, LatexFileDocument>
     implements ILatexFileRepository {

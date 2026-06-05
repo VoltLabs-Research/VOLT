@@ -2,6 +2,12 @@ import { FilterExpression } from '@modules/trajectory/domain/port/trajectory/IAt
 
 import { Readable } from 'node:stream';
 
+export interface ParticleFilterStreamResponse {
+    stream: Readable;
+    contentEncoding?: string;
+    contentLength?: number;
+}
+
 export enum ParticleFilterCombinator {
     And = 'AND',
     Or = 'OR'
@@ -60,4 +66,12 @@ export interface IParticleFilterService {
         action?: string,
         analysisId?: string
     ): Promise<Readable>;
+
+    getModelStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        request: ParticleFilterRequest,
+        action?: string,
+        analysisId?: string
+    ): Promise<ParticleFilterStreamResponse>;
 }

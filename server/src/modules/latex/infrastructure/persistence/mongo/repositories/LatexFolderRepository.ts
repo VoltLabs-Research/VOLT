@@ -1,3 +1,4 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type LatexFolder from '@modules/latex/domain/entities/LatexFolder';
 import type { LatexFolderProps } from '@modules/latex/domain/entities/LatexFolder';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
@@ -7,7 +8,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseCatalogFolderRepository } from '@shared/infrastructure/persistence/mongo/MongooseCatalogFolderRepository';
 import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 
-@Singleton()
+@Singleton(LATEX_TOKENS.LatexFolderRepository)
 export default class LatexFolderRepository
     extends MongooseCatalogFolderRepository<LatexFolder, LatexFolderProps, CatalogFolderDocument>
     implements ILatexFolderRepository {

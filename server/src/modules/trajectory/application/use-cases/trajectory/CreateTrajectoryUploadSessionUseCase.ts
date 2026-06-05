@@ -1,17 +1,20 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
+import type TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { IClusterObjectSignedUrlService } from '@modules/cluster/domain/port/IClusterObjectSignedUrlService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
 import type {
     TrajectoryUploadSessionFileProps,
     TrajectoryUploadSessionPartProps
 } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
-import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -91,12 +94,13 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly trajectoryRepo: TrajectoryRepository,
-        private readonly trajectoryFolderRepository: TrajectoryFolderRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) private readonly trajectoryFolderRepository: TrajectoryFolderRepository,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         private readonly storagePlacementService: StoragePlacementService,
-        private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
-        private readonly signedUrlService: ClusterObjectSignedUrlService,
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
+        @inject(CLUSTER_TOKENS.ClusterObjectSignedUrlService)
+        private readonly signedUrlService: IClusterObjectSignedUrlService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

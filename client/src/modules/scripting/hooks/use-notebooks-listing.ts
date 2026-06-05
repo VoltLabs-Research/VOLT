@@ -12,7 +12,7 @@ import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripti
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
 import {
