@@ -48,6 +48,7 @@ const ZERO_OFFSET = { x: 0, y: 0, z: 0 } as const;
 const DOUBLE_TAP_MAX_DELAY_MS = 320;
 const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
 const TOUCH_DRAG_ARM_TIMEOUT_MS = 800;
+const isPrimaryDragModifierPressed = (event: KeyboardEvent) => event.ctrlKey || event.metaKey;
 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     sceneKey,
@@ -78,6 +79,8 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const setModelDragOffsetForScene = useEditorStore((state) => state.setModelDragOffsetForScene);
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
     const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
+    const [isDesktopDragModifierActive, setIsDesktopDragModifierActive] = useState(false);
+    const [isDesktopDragSessionActive, setIsDesktopDragSessionActive] = useState(false);
     const axisLockRef = useRef<DragAxisLock>(FLOOR_AXIS_LOCK);
     const isMobileViewport = useMedia('(max-width: 768px)');
     const lastPointerTypeRef = useRef<string | null>(null);
@@ -99,13 +102,28 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             if (event.key === 'Alt' && axisLockRef.current === FLOOR_AXIS_LOCK) {
                 setAxisLock(pickVerticalAxisLock());
             }
+
+            if (!isMobileViewport) {
+                setIsDesktopDragModifierActive(isPrimaryDragModifierPressed(event));
+            }
         };
         const handleKeyUp = (event: KeyboardEvent) => {
             if (event.key === 'Alt') {
                 setAxisLock(FLOOR_AXIS_LOCK);
             }
+
+            if (!isMobileViewport) {
+                setIsDesktopDragModifierActive(isPrimaryDragModifierPressed(event));
+            }
         };
-        const handleBlur = () => setAxisLock(FLOOR_AXIS_LOCK);
+        const handleBlur = () => {
+            setAxisLock(FLOOR_AXIS_LOCK);
+            setIsDesktopDragModifierActive(false);
+        };
+
+        if (isMobileViewport) {
+            setIsDesktopDragModifierActive(false);
+        }
 
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
@@ -115,7 +133,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             window.removeEventListener('keyup', handleKeyUp);
             window.removeEventListener('blur', handleBlur);
         };
-    }, [pickVerticalAxisLock]);
+    }, [isMobileViewport, pickVerticalAxisLock]);
 
     useEffect(() => {
         return subscribeToAppTheme(setTheme);
@@ -146,7 +164,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         return () => clearTouchDragArmTimer();
     }, [clearTouchDragArmTimer]);
 
-    const handlePointerDownCapture = useCallback((event: ThreeEvent<PointerEvent>) => {
+    const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
         lastPointerTypeRef.current = event.pointerType;
         if (!isMobileViewport || event.pointerType !== 'touch') {
             return;
@@ -300,6 +318,11 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
             autoTransform={false}
             axisLock={axisLock}
             matrix={dragMatrixRef.current}
+            dragConfig={isMobileViewport
+                ? undefined
+                : {
+                    enabled: isDesktopDragModifierActive || isDesktopDragSessionActive
+                }}
             dragLimits={[
                 undefined,
                 undefined,
@@ -321,6 +344,9 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     disarmTouchDrag();
                 }
                 isDraggingRef.current = true;
+                if (!isMobileTouchGesture) {
+                    setIsDesktopDragSessionActive(true);
+                }
                 dragStartPosRef.current.copy(currentDragPosRef.current);
                 onSelect?.(contentRef.current);
                 if (orbitControlsRef?.current) {
@@ -377,6 +403,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                 }
 
                 isDraggingRef.current = false;
+                setIsDesktopDragSessionActive(false);
                 dragMatrixRef.current.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
                 currentDragPosRef.current.copy(_decomposePos);
                 targetDragPosRef.current.copy(_decomposePos);
@@ -393,7 +420,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         >
             <group
                 ref={contentRef}
-                onPointerDownCapture={handlePointerDownCapture}
+                onPointerDown={handlePointerDown}
                 onClick={(event: ThreeEvent<MouseEvent>) => {
                     if (isDraggingRef.current) {
                         return;
