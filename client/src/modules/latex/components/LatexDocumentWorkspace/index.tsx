@@ -4,12 +4,11 @@ import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import WorkspaceToolbar from '@/shared/presentation/components/WorkspaceToolbar';
+import Row from '@/shared/presentation/primitives/Row';
 import Avatar from '@/shared/presentation/primitives/Avatar';
 import Box from '@/shared/presentation/primitives/Box';
 import Button from '@/shared/presentation/primitives/Button';
 import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
 import SaveStatusIndicator from '@/shared/presentation/primitives/SaveStatusIndicator';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import Stack from '@/shared/presentation/primitives/Stack';
@@ -688,8 +687,8 @@ const LatexDocumentWorkspace = () => {
 
     return (
         <Stack className='latex-workspace'>
-            <WorkspaceToolbar
-                title={(
+            <Row justify='between' gap='1' className='latex-workspace__toolbar'>
+                <Row minW='0'>
                     <EditableTag
                         as='span'
                         className='latex-workspace__toolbar-title color-primary'
@@ -698,35 +697,33 @@ const LatexDocumentWorkspace = () => {
                     >
                         {latexDocument?.title ?? 'LaTeX Document'}
                     </EditableTag>
-                )}
-                actions={(
-                    <>
-                        <ThemeToggleButton className='latex-workspace__theme-toggle' />
-                        {collaboratorAvatars.length > 0 && (
-                            <Row className='latex-workspace__collaborators'>
-                                {collaboratorAvatars}
-                            </Row>
-                        )}
-                        {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
-                        {isDirty && !isSaving ? (
-                            <span className='latex-workspace__status-text color-muted' aria-live='polite'>
-                                Unsaved changes
-                            </span>
-                        ) : (
-                            <SaveStatusIndicator
-                                status={isSaving ? 'saving' : 'saved'}
-                                hideIdle={false}
-                                className='latex-workspace__status-text color-muted'
-                            />
-                        )}
-                        {writeWithAIButton}
-                        {compileButton}
-                        {exportTexButton}
-                        {exportPdfButton}
-                        {exportZipButton}
-                    </>
-                )}
-            />
+                </Row>
+                <Row gap='075'>
+                    <ThemeToggleButton className='latex-workspace__theme-toggle' />
+                    {collaboratorAvatars.length > 0 && (
+                        <Row className='latex-workspace__collaborators'>
+                            {collaboratorAvatars}
+                        </Row>
+                    )}
+                    {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
+                    {isDirty && !isSaving ? (
+                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>
+                            Unsaved changes
+                        </span>
+                    ) : (
+                        <SaveStatusIndicator
+                            status={isSaving ? 'saving' : 'saved'}
+                            hideIdle={false}
+                            className='latex-workspace__status-text color-muted'
+                        />
+                    )}
+                    {writeWithAIButton}
+                    {compileButton}
+                    {exportTexButton}
+                    {exportPdfButton}
+                    {exportZipButton}
+                </Row>
+            </Row>
 
             <div className='latex-workspace__sr-only' aria-live='polite'>
                 {saveStatusMessage}

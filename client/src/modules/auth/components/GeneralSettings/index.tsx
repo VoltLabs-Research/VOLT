@@ -6,7 +6,6 @@ import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
 import Callout from '@/shared/presentation/primitives/Callout';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSection from '@/shared/presentation/components/SettingsSection';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import Stack from '@/shared/presentation/primitives/Stack';
 import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
@@ -75,7 +74,7 @@ const GeneralSettings = () => {
 
     return (
         <SettingsPage title="General Settings">
-            <SettingsSection>
+            <Stack border='soft' gap='1' p='1-5' radius='md'>
                 <SettingsSectionHeader
                     title="Profile"
                     description="Update your personal information and profile picture" />
@@ -90,7 +89,7 @@ const GeneralSettings = () => {
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
                 </Stack>
-            </SettingsSection>
+            </Stack>
 
             <Callout
                 tone='danger'
