@@ -7,7 +7,9 @@ import TeamCluster, {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@modules/cluster/domain/entities/TeamCluster';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
@@ -121,8 +123,8 @@ interface TeamClusterLifecycleEventPayload {
     timestamp: string;
 }
 
-@Singleton()
-export default class TeamClusterLifecycleService {
+@Singleton(CLUSTER_TOKENS.TeamClusterLifecycleService)
+export default class TeamClusterLifecycleService implements ITeamClusterLifecycleService {
     constructor(
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
         private readonly teamClusterRepository: TeamClusterRepository,

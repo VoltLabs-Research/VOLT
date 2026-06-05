@@ -1,4 +1,16 @@
-import { extractPluginId } from '@modules/analysis/infrastructure/services/AnalysisPluginDisplayNameService';
+import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
 import type { Analysis } from '@modules/analysis/domain/entities/Analysis';
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
@@ -10,17 +22,11 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { ChatParticipant } from '@modules/chat/domain/entities/chat/Chat';
 import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
-import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 10;
@@ -82,12 +88,12 @@ const getLastMessageContent = (chat: PersistedChatDTO): string | undefined => {
 export default class GetGlobalSearchUseCase
 implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly containerRepository: ContainerRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly pluginRepository: PluginRepository,
-        private readonly teamRepository: TeamRepository,
-        private readonly chatRepository: ChatRepository
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: ContainerRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepository: IChatRepository
     ) {}
 
     async execute(input: GetGlobalSearchInputDTO): Promise<Result<GetGlobalSearchOutputDTO>> {

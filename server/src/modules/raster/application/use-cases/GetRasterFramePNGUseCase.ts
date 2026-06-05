@@ -1,17 +1,18 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 import type { GetRasterFramePNGInputDTO } from '@modules/raster/application/dtos/GetRasterFramePNGDTO';
-import { RasterFrameService } from '@modules/raster/infrastructure/services/RasterFrameService';
+import type { IRasterFrameReader } from '@modules/raster/domain/port/IRasterFrameReader';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInputDTO, DownloadStreamOutputDTO, ApplicationError> {
     constructor(
-        private readonly rasterFrameReader: RasterFrameService
+        @inject(RASTER_TOKENS.RasterFrameReader) private readonly rasterFrameReader: IRasterFrameReader
     ) {}
 
     async execute(input: GetRasterFramePNGInputDTO): Promise<Result<DownloadStreamOutputDTO, ApplicationError>> {

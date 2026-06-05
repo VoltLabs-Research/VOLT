@@ -2,7 +2,7 @@ import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
 import useMedia from '@/shared/presentation/hooks/use-media';
 import './Sidebar.css';
-import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
+import './SidebarTab.css';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState, useRef, useCallback, useMemo, useId } from 'react';
 import React from 'react';

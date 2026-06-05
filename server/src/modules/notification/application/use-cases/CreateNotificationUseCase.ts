@@ -1,6 +1,7 @@
 import type { CreateNotificationInputDTO, PersistedNotificationDTO } from '@modules/notification/application/dtos';
+import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
 import NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';
-import NotificationRepository from '@modules/notification/infrastructure/persistence/mongo/repositories/NotificationRepository';
+import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -11,9 +12,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, PersistedNotificationDTO, ApplicationError> {
     constructor(
-        private readonly notificationRepository: NotificationRepository,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        @inject(NOTIFICATION_TOKENS.NotificationRepository) private readonly notificationRepository: INotificationRepository,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) { }
 
     async execute(input: CreateNotificationInputDTO): Promise<Result<PersistedNotificationDTO, ApplicationError>> {
@@ -29,7 +29,6 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
             updatedAt: new Date()
         });
 
-        // Publish event for real-time socket delivery
         await this.eventBus.publish(new NotificationCreatedEvent({
             _id: notification._id,
             recipient: notification.props.recipient,

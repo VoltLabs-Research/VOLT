@@ -1,6 +1,9 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { inject } from 'tsyringe';
 import ClusterTransferJobRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
@@ -11,8 +14,8 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        private readonly storagePlacementRepository: StoragePlacementRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: StoragePlacementRepository,
         private readonly clusterTransferJobRepository: ClusterTransferJobRepository
     ) {}
 

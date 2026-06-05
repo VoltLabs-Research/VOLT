@@ -1,7 +1,9 @@
+import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
+import { inject } from 'tsyringe';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteAIConversationInputDTO } from '@modules/ai/application/dtos/DeleteAIConversationDTO';
-import AIConversationRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIConversationRepository';
-import AIMessageRepository from '@modules/ai/infrastructure/persistence/mongo/repositories/AIMessageRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
@@ -16,8 +18,8 @@ interface DeleteAIConversationLookup {
 @Singleton()
 export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null, ApplicationError> {
     constructor(
-        private readonly conversationRepository: AIConversationRepository,
-        private readonly messageRepository: AIMessageRepository
+        @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
+        @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository
     ) {}
 
     async execute(input: DeleteAIConversationInputDTO): Promise<Result<null, ApplicationError>> {

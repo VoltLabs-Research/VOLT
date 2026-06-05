@@ -1,13 +1,16 @@
-import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import type TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        private readonly teamJobMaintenanceService: TeamJobMaintenanceService
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService)
+        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {

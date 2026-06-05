@@ -1,7 +1,8 @@
+import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
+import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { DeleteLatexDocumentInputDTO, DeleteLatexDocumentOutputDTO } from '@modules/latex/application/dtos/DeleteLatexDocumentDTO';
 import LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
-import LatexDocumentRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexDocumentRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -13,7 +14,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeleteLatexDocumentUseCase implements IUseCase<DeleteLatexDocumentInputDTO, DeleteLatexDocumentOutputDTO, ApplicationError> {
     constructor(
-        private readonly latexDocumentRepository: LatexDocumentRepository,
+        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

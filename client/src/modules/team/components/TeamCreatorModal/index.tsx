@@ -7,7 +7,7 @@ import ModalFooterActions from '@/shared/presentation/components/ModalFooterActi
 import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
 import Text from '@/shared/presentation/primitives/Text';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';

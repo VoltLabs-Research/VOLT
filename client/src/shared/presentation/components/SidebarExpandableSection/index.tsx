@@ -1,6 +1,6 @@
 import Button from '@/shared/presentation/primitives/Button';
 import './SidebarExpandableSection.css';
-import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
+import './SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState, forwardRef } from 'react';

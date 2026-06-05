@@ -1,4 +1,6 @@
 import SimulationCell from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import simulationCellMapper from '@modules/simulation-cell/infrastructure/persistence/mongo/mappers/SimulationCellMapper';
 import SimulationCellModel from '@modules/simulation-cell/infrastructure/persistence/mongo/models/SimulationCellModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -7,9 +9,10 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { SimulationCellDocument } from '@modules/simulation-cell/infrastructure/persistence/mongo/models/SimulationCellModel';
 
-@Singleton()
+@Singleton(SIMULATION_CELL_TOKENS.SimulationCellRepository)
 export default class SimulationCellRepository
-    extends MongooseBaseRepository<SimulationCell, SimulationCellProps, SimulationCellDocument> {
+    extends MongooseBaseRepository<SimulationCell, SimulationCellProps, SimulationCellDocument>
+    implements ISimulationCellRepository {
 
     constructor() {
         super(SimulationCellModel, simulationCellMapper);

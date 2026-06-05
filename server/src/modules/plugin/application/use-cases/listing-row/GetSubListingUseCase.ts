@@ -1,3 +1,7 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import {
     GetSubListingInputDTO,
     GetSubListingOutputDTO,
@@ -7,11 +11,9 @@ import { resolveListingPagination } from '@modules/plugin/application/use-cases/
 import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface DaemonSubListingRow {
     _id: string;
@@ -40,8 +42,8 @@ const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
 @injectable()
 export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO> {
     constructor(
-        private analysisRepository: AnalysisRepository,
-        private daemonClient: TeamClusterDaemonClient
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
     async execute(input: GetSubListingInputDTO): Promise<Result<GetSubListingOutputDTO>> {

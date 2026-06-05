@@ -1,20 +1,21 @@
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import BcryptPasswordHasher from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
+import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
+import { inject, injectable } from 'tsyringe';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterCredentialsCipher } from '@modules/cluster/domain/port/ITeamClusterCredentialsCipher';
 import {
     RevealTeamClusterCredentialsInputDTO,
     RevealTeamClusterCredentialsOutputDTO
 } from '@modules/cluster/application/dtos/RevealTeamClusterCredentialsDTO';
 import { TeamClusterCredentialServicesDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
 import { requireOwnedTeamClusterWithSensitiveData } from '@modules/cluster/application/utilities/team-cluster-ownership';
-import type { ITeamClusterCredentialsCipher } from '@modules/cluster/domain/port/ITeamClusterCredentialsCipher';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterCredentialsCipher from '@modules/cluster/infrastructure/services/TeamClusterCredentialsCipher';
 import { assertConfirmedPassword } from '@modules/cluster/utilities/assertConfirmedPassword';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
 
 const decryptRequiredValue = async (
     value: string | undefined,
@@ -32,10 +33,10 @@ const decryptRequiredValue = async (
 @injectable()
 export default class RevealTeamClusterCredentialsUseCase implements IUseCase<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO, ApplicationError> {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher,
-        private readonly userRepository: UserRepository,
-        private readonly passwordHasher: BcryptPasswordHasher
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher
     ){}
 
     async execute(input: RevealTeamClusterCredentialsInputDTO): Promise<Result<RevealTeamClusterCredentialsOutputDTO, ApplicationError>> {

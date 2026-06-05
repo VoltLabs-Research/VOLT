@@ -3,16 +3,17 @@ import type {
     TriggerRasterizationInputDTO,
     TriggerRasterizationOutputDTO
 } from '@modules/raster/application/dtos/TriggerRasterizationDTO';
-import { RasterJobEnqueuerService } from '@modules/raster/infrastructure/services/RasterJobEnqueuerService';
+import type { IRasterJobEnqueuer } from '@modules/raster/domain/port/IRasterJobEnqueuer';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizationInputDTO, TriggerRasterizationOutputDTO, ApplicationError> {
     constructor(
-        private readonly rasterJobEnqueuer: RasterJobEnqueuerService
+        @inject(RASTER_TOKENS.RasterJobEnqueuer) private readonly rasterJobEnqueuer: IRasterJobEnqueuer
     ) {}
 
     async execute(input: TriggerRasterizationInputDTO): Promise<Result<TriggerRasterizationOutputDTO, ApplicationError>> {

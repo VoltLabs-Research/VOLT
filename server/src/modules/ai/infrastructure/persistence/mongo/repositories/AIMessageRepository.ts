@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 
 import AIMessage, { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
 import { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
@@ -6,7 +7,7 @@ import AIMessageModel, { AIMessageDocument } from '@modules/ai/infrastructure/pe
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-@Singleton()
+@Singleton(AI_TOKENS.AIMessageRepository)
 export default class AIMessageRepository
     extends MongooseBaseRepository<AIMessage, AIMessageProps, AIMessageDocument>
     implements IAIMessageRepository {

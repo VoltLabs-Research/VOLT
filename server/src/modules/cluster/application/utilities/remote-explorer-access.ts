@@ -3,8 +3,8 @@ import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterRemoteAccessSessionService } from '@modules/cluster/domain/port/ITeamClusterRemoteAccessSessionService';
 import type { OwnedTeamClusterInput } from '@modules/cluster/application/utilities/team-cluster-ownership';
-import type TeamClusterRemoteAccessSessionService from '@modules/cluster/infrastructure/services/TeamClusterRemoteAccessSessionService';
 
 interface ValidateRemoteExplorerSessionInput extends OwnedTeamClusterInput {
     sessionId: string;
@@ -19,7 +19,7 @@ export interface RemoteExplorerPreflightContext {
 }
 
 export const validateRemoteExplorerSession = (
-    sessionService: TeamClusterRemoteAccessSessionService,
+    sessionService: ITeamClusterRemoteAccessSessionService,
     input: ValidateRemoteExplorerSessionInput
 ): ApplicationError | null => {
     const sessionResult = sessionService.validateSession({
@@ -39,7 +39,7 @@ export const validateRemoteExplorerSession = (
  */
 export const preflightRemoteExplorerAccess = async (
     repository: ITeamClusterRepository,
-    sessionService: TeamClusterRemoteAccessSessionService,
+    sessionService: ITeamClusterRemoteAccessSessionService,
     input: ValidateRemoteExplorerSessionInput
 ): Promise<RemoteExplorerPreflightContext | ApplicationError> => {
     const teamCluster = await requireOwnedTeamCluster(repository, input);

@@ -1,12 +1,13 @@
+import type SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
+import type SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO } from '@modules/team/application/dtos/secret-key/GetSecretKeyUsageDTO';
-import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
-import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
-import SecretKeyUsageMetricsMapper from '@modules/team/infrastructure/services/secret-key/SecretKeyUsageMetricsMapper';
+import type { ISecretKeyUsageMetricsMapper } from '@modules/team/domain/port/secret-key/ISecretKeyUsageMetricsMapper';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface SecretKeyRolePopulate {
     path: 'role';
@@ -18,9 +19,10 @@ export default class GetSecretKeyUsageUseCase
     implements IUseCase<GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, ApplicationError> {
 
     constructor(
-        private readonly secretKeyRepo: SecretKeyRepository,
-        private readonly usageLogRepo: SecretKeyUsageLogRepository,
-        private readonly metricsMapper: SecretKeyUsageMetricsMapper
+        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepo: SecretKeyRepository,
+        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository) private readonly usageLogRepo: SecretKeyUsageLogRepository,
+        @inject(TEAM_TOKENS.SecretKeyUsageMetricsMapper)
+        private readonly metricsMapper: ISecretKeyUsageMetricsMapper
     ) {}
 
     async execute(input: GetSecretKeyUsageInputDTO): Promise<Result<GetSecretKeyUsageOutputDTO, ApplicationError>> {

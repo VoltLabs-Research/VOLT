@@ -8,6 +8,7 @@ import StoragePlacementService from '@modules/cluster/application/services/Stora
 import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -48,7 +49,7 @@ const normalizeBinaryFileName = (fileName: string): string => {
     return normalized.length > 0 ? normalized : 'binary';
 };
 
-@Singleton()
+@Singleton(PLUGIN_TOKENS.PluginStorageService)
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,

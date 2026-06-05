@@ -1,16 +1,17 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { CreateColoredModelInputDTO, CreateColoredModelOutputDTO } from '@modules/trajectory/application/dtos/color-coding';
+import type { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-
-import ColorCodingService from '@modules/trajectory/infrastructure/services/color-coding/ColorCodingService';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export class CreateColoredModelUseCase implements IUseCase<CreateColoredModelInputDTO, CreateColoredModelOutputDTO, ApplicationError> {
     constructor(
-        
-        private readonly colorCodingService: ColorCodingService
+        @inject(TRAJECTORY_TOKENS.ColorCodingService)
+        private readonly colorCodingService: IColorCodingService
     ) { }
 
     async execute(input: CreateColoredModelInputDTO): Promise<Result<CreateColoredModelOutputDTO, ApplicationError>> {

@@ -1,11 +1,12 @@
 import TeamAIIntegration, { TeamAIIntegrationProps, TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamAIIntegrationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/ai-integration/TeamAIIntegrationMapper';
 import TeamAIIntegrationModel, { TeamAIIntegrationDocument } from '@modules/team/infrastructure/persistence/mongo/models/ai-integration/TeamAIIntegrationModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
 
-@Singleton()
+@Singleton(TEAM_TOKENS.TeamAIIntegrationRepository)
 export default class TeamAIIntegrationRepository
     extends MongooseBaseRepository<TeamAIIntegration, TeamAIIntegrationProps, TeamAIIntegrationDocument> {
 

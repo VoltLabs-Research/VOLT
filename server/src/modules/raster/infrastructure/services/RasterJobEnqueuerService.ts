@@ -1,4 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type {
     IRasterJobEnqueuer,
@@ -21,7 +22,7 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     config?: RasterTriggerConfig;
 }
 
-@Singleton()
+@Singleton(RASTER_TOKENS.RasterJobEnqueuer)
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
         private readonly trajectoryRepository: TrajectoryRepository,

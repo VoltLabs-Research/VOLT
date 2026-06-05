@@ -25,7 +25,9 @@ const toActivityUser = (user: unknown): DailyActivityRecord['user'] => {
     };
 };
 
-@Singleton()
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+
+@Singleton(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
 export default class DailyActivityRepository
     extends MongooseBaseRepository<DailyActivity, DailyActivityProps, DailyActivityDocument>
     implements IDailyActivityRepository {

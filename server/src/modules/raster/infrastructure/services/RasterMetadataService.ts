@@ -13,6 +13,8 @@ import {
 } from '@modules/cluster/application/utilities/cluster-location';
 import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import type { IRasterMetadataService } from '@modules/raster/domain/port/IRasterMetadataService';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
@@ -26,8 +28,8 @@ interface ResolvedTrajectoryRasterMetadata {
     trajectory: RasterTrajectoryMetadata | null;
 }
 
-@Singleton()
-export class RasterMetadataService {
+@Singleton(RASTER_TOKENS.RasterMetadataService)
+export class RasterMetadataService implements IRasterMetadataService {
     constructor(
         private readonly rasterStorage: RasterStorageService,
         private readonly trajectoryRepository: TrajectoryRepository,

@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import TrajectoryFrameModel, {
     TrajectoryFrameLean
 } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryFrameModel';
@@ -63,7 +64,7 @@ const mapLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => 
         : undefined
 });
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
 export default class TrajectoryFrameRepository {
     async getFrames(trajectoryId: string, options: GetFramesOptions = {}): Promise<TrajectoryFrame[]> {
         const filter: Record<string, unknown> = {

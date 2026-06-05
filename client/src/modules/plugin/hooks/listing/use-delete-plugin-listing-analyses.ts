@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import { isAccessDeniedError } from '@/shared/errors/core';

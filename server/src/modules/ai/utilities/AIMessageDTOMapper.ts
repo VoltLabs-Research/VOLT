@@ -1,3 +1,4 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
 import type AIMessage from '@modules/ai/domain/entities/AIMessage';
 import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
@@ -6,7 +7,7 @@ import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 const VALID_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
 
-@Singleton()
+@Singleton(AI_TOKENS.AIMessageDTOMapper)
 export default class AIMessageDTOMapper {
     toDTO(message: AIMessage): AIMessageDTO {
         const { modelInfo } = message.props;

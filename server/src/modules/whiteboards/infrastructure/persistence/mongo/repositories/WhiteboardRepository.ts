@@ -1,3 +1,4 @@
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import whiteboardMapper from '@modules/whiteboards/infrastructure/persistence/mongo/mappers/WhiteboardMapper';
 import WhiteboardModel from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
@@ -8,7 +9,7 @@ import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/White
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type { WhiteboardDocument } from '@modules/whiteboards/infrastructure/persistence/mongo/models/WhiteboardModel';
 
-@Singleton()
+@Singleton(WHITEBOARD_TOKENS.WhiteboardRepository)
 export default class WhiteboardRepository
     extends MongooseBaseRepository<Whiteboard, WhiteboardProps, WhiteboardDocument>
     implements IWhiteboardRepository {

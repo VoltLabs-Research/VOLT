@@ -1,5 +1,12 @@
+import type TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
+import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ClusterRoleAwareSelectionService } from '@modules/container/infrastructure/services/ClusterRoleAwareSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { resolveEffectiveCapabilitiesFromRoleConfig, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
@@ -12,6 +19,7 @@ import { TrajectoryReadAccessService } from '@modules/trajectory/application/ser
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import { createTrajectoryCloneJobProps } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
+import type { ITrajectoryCloneRunner } from '@modules/trajectory/domain/port/trajectory/ITrajectoryCloneRunner';
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
@@ -20,11 +28,6 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import TrajectoryCloneRunner from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryCloneRunner';
 import { inject } from 'tsyringe';
 
 @Singleton()
@@ -34,32 +37,32 @@ export default class CloneTrajectoryUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
-        private readonly trajectoryRepository: TrajectoryRepository,
 
-        
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
-        
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
+
+
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        
-        private readonly cloneJobRepository: TrajectoryCloneJobRepository,
 
-        
+        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository) private readonly cloneJobRepository: TrajectoryCloneJobRepository,
+
+
         private readonly cloneCoordinator: TrajectoryCloneCoordinator,
 
-        
-        private readonly cloneRunner: TrajectoryCloneRunner,
+        @inject(TRAJECTORY_TOKENS.TrajectoryCloneRunner)
+        private readonly cloneRunner: ITrajectoryCloneRunner,
 
-        
+
         private readonly storagePlacementService: StoragePlacementService,
 
-        
-        private readonly teamClusterRepository: TeamClusterRepository,
 
-        
-        private readonly clusterSelectionService: ClusterRoleAwareSelectionService,
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService)
+        private readonly clusterSelectionService: ITeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -159,7 +162,7 @@ export default class CloneTrajectoryUseCase implements IUseCase<
         requestedClusterId?: string
     ): Promise<string> {
         if (!requestedClusterId) {
-            return this.clusterSelectionService.resolveStorageClusterId({ teamId });
+            return this.clusterSelectionService.resolveStorageClusterId(teamId);
         }
 
         const requestedCluster = await this.teamClusterRepository.findById(requestedClusterId);
@@ -185,9 +188,10 @@ export default class CloneTrajectoryUseCase implements IUseCase<
             return requestedCluster.id;
         }
 
-        return this.clusterSelectionService.resolveStorageClusterId({
+        return this.clusterSelectionService.resolveStorageClusterId(
             teamId,
-            preferredComputeClusterId: requestedCluster.id
-        });
+            undefined,
+            requestedCluster.id
+        );
     }
 }

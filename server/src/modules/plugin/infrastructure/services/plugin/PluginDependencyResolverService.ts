@@ -5,6 +5,8 @@ import type {
 } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { ArgumentType } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import type { IPluginDependencyResolverService } from '@modules/plugin/domain/port/plugin/IPluginDependencyResolverService';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -311,8 +313,8 @@ const collectArgumentPluginReferenceValidationTargets = (
     }
 };
 
-@Singleton()
-export class PluginDependencyResolverService {
+@Singleton(PLUGIN_TOKENS.PluginDependencyResolverService)
+export class PluginDependencyResolverService implements IPluginDependencyResolverService {
     constructor(
         private readonly pluginRepository: PluginRepository
     ) {}

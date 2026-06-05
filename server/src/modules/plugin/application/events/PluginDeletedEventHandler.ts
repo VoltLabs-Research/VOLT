@@ -1,13 +1,15 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @Subscribe('plugin.deleted')
 export default class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
     constructor(
-        private readonly sceneArtifactRepository: SceneArtifactRepository
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) {}
 
     async handle(event: PluginDeletedEvent): Promise<void> {

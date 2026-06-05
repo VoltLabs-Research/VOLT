@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { ISceneArtifactRepository, TeamSceneArtifactFilters } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import SceneArtifactMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/scene-artifacts/SceneArtifactMapper';
@@ -19,7 +20,7 @@ interface CountResult {
     total: number;
 }
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.SceneArtifactRepository)
 export default class SceneArtifactRepository
     extends MongooseBaseRepository<SceneArtifact, SceneArtifactProps, SceneArtifactDocument>
     implements ISceneArtifactRepository {

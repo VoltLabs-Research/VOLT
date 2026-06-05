@@ -1,4 +1,5 @@
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { Server, Socket } from 'socket.io';
 
 import { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
@@ -9,6 +10,7 @@ import logger from '@shared/infrastructure/logger';
  * Handles all event emission through the Socket.IO server.
  */
 @Singleton()
+@AliasOf(SOCKET_TOKENS.SocketEmitter)
 export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRuntime{
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();

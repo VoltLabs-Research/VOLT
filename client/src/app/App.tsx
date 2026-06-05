@@ -11,7 +11,8 @@ import AppToaster from '@/shared/presentation/components/AppToaster';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalContextMenu from '@/shared/presentation/components/GlobalContextMenu';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
-import QueryProvider from '@/shared/presentation/components/QueryProvider';
+import queryClient from '@/shared/infrastructure/query/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
 import TrajectoryUploadProgressPanel from '@/modules/trajectory/components/TrajectoryUploadProgressPanel';
 import { useThemeInitialization } from '@/shared/presentation/hooks/use-theme';
@@ -167,10 +168,10 @@ export default function App() {
     }, []);
 
     return (
-        <QueryProvider>
+        <QueryClientProvider client={queryClient}>
             <BrowserRouter unstable_useTransitions={false}>
                 <AppChrome />
             </BrowserRouter>
-        </QueryProvider>
+        </QueryClientProvider>
     );
 }

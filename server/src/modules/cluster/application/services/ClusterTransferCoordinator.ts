@@ -1,7 +1,15 @@
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
+import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
 import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
@@ -16,10 +24,7 @@ import ClusterTransferJob, {
 import StoragePlacement from '@modules/cluster/domain/entities/StoragePlacement';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
-import ClusterTransferJobRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import {
@@ -34,7 +39,6 @@ import {
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { Readable } from 'node:stream';
 import { inject } from 'tsyringe';
 import StoragePlacementService from './StoragePlacementService';
@@ -181,13 +185,13 @@ const compareObjectListingEntries = (
 export default class ClusterTransferCoordinator {
     constructor(
         private readonly storagePlacementService: StoragePlacementService,
-        private readonly clusterTransferJobRepository: ClusterTransferJobRepository,
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly systemMetricsRepository: SystemMetricsRedisRepository,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

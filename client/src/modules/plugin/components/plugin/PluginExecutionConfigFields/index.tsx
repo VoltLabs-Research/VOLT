@@ -1,5 +1,5 @@
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import PluginClusterField from '@/modules/canvas/components/PluginClusterField';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
@@ -46,7 +46,10 @@ const PluginExecutionConfigFields = ({
 
     if (hasTeamClusterOptions) {
         clusterField = (
-            <PluginClusterField
+            <FormFieldRHF
+                label='Cluster'
+                fieldType='select'
+                variant='canvas'
                 fieldKey='plugin-execution-cluster'
                 fieldValue={selectedTeamClusterId}
                 options={teamClusterOptions}

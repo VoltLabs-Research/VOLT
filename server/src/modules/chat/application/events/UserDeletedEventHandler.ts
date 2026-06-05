@@ -1,5 +1,7 @@
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import type ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import type UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
+import { inject } from 'tsyringe';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
@@ -7,7 +9,7 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('user.deleted')
 export default class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
     constructor(
-        private readonly repository: ChatRepository
+        @inject(CHAT_TOKENS.ChatRepository) private readonly repository: ChatRepository
     ) {}
 
     async handle(event: UserDeletedEvent): Promise<void> {

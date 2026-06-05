@@ -1,9 +1,10 @@
+import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -14,7 +15,7 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {
     constructor(
-        private pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
         @inject(SHARED_TOKENS.EventBus) private eventBus: IEventBus
     ) {}
 

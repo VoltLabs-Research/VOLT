@@ -1,10 +1,11 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteContainerInputDTO, DeleteContainerOutputDTO } from '@modules/container/application/dtos/DeleteContainerDTO';
 import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDeletedEvent';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
-import { ContainerOwnershipService } from '@modules/container/infrastructure/services/ContainerOwnershipService';
-import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
-import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
+import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
+import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -15,11 +16,11 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export class DeleteContainerUseCase implements IUseCase<DeleteContainerInputDTO, DeleteContainerOutputDTO> {
     constructor(
-        private repository: ContainerRepository,
-        private containerRuntimeService: DaemonContainerRuntimeService,
-        private readonly relayService: ContainerPortProxyRelayService,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly repository: IContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private readonly containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
-        private ownershipService: ContainerOwnershipService
+        @inject(CONTAINER_TOKENS.ContainerOwnershipService) private readonly ownershipService: IContainerOwnershipService
     ) {}
 
     async execute(input: DeleteContainerInputDTO): Promise<Result<DeleteContainerOutputDTO>> {

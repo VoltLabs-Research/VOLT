@@ -1,10 +1,10 @@
 import type { TeamAIIntegrationItemDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
 import type TeamAIIntegration from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
-import type TeamAIProviderCatalog from '@modules/team/infrastructure/services/ai-integration/TeamAIProviderCatalog';
+import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 
 export const toTeamAIIntegrationItemDTO = (
     integration: TeamAIIntegration,
-    providerCatalog: TeamAIProviderCatalog
+    providerCatalog: ITeamAIProviderCatalog
 ): TeamAIIntegrationItemDTO => {
     const providerMetadata = providerCatalog.getProviderMetadata(integration.props.provider);
 

@@ -1,10 +1,12 @@
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
 import {
     ListScriptingNotebooksInputDTO,
     ListScriptingNotebooksOutputDTO
 } from '@modules/scripting/application/dtos/ListScriptingNotebooksDTO';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import { ScriptingNotebookScope } from '@modules/scripting/domain/entities/ScriptingNotebookScope';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
@@ -14,7 +16,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO, ApplicationError> {
     constructor(
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository
     ) {}
 
     async execute(input: ListScriptingNotebooksInputDTO): Promise<Result<ListScriptingNotebooksOutputDTO, ApplicationError>> {

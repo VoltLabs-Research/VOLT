@@ -1,6 +1,8 @@
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
+import type { IRasterStorageService } from '@modules/raster/domain/port/IRasterStorageService';
 import {
     getAnalysisRasterFrameObjectName,
     getAnalysisRasterPreviewsPrefix,
@@ -12,8 +14,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-@Singleton()
-export class RasterStorageService {
+@Singleton(RASTER_TOKENS.RasterStorageService)
+export class RasterStorageService implements IRasterStorageService {
     constructor(
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}

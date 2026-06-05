@@ -1,10 +1,11 @@
 import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import { FOLDER_LIST_LIMIT, ROOT_FOLDER_ID } from '@/shared/presentation/constants/foldered-listing';
+const FOLDER_LIST_LIMIT = 500;
+const ROOT_FOLDER_ID = 'root';
 import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import type { FolderedListingContext } from '@/shared/presentation/hooks/use-foldered-listing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { createCrudToastOptions } from '@/shared/presentation/toast-options';
+import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 
 interface FolderedItemListQueryParams {
     page: number;

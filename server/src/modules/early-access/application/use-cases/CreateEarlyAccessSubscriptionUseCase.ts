@@ -5,13 +5,15 @@ import {
 import EarlyAccessSubscription, {
     EarlyAccessSubscriptionSource
 } from '@modules/early-access/domain/entities/EarlyAccessSubscription';
-import EarlyAccessSubscriptionRepository from '@modules/early-access/infrastructure/persistence/mongo/repositories/EarlyAccessSubscriptionRepository';
+import type { IEarlyAccessSubscriptionRepository } from '@modules/early-access/domain/port/IEarlyAccessSubscriptionRepository';
+import { EARLY_ACCESS_TOKENS } from '@modules/early-access/infrastructure/di/EarlyAccessTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import TeamRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team/TeamRepository';
+import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateEarlyAccessSubscriptionUseCase implements IUseCase<
@@ -20,8 +22,8 @@ export default class CreateEarlyAccessSubscriptionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly teamRepository: TeamRepository,
-        private readonly earlyAccessSubscriptionRepository: EarlyAccessSubscriptionRepository
+        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(EARLY_ACCESS_TOKENS.EarlyAccessSubscriptionRepository) private readonly earlyAccessSubscriptionRepository: IEarlyAccessSubscriptionRepository
     ) {}
 
     async execute(input: CreateEarlyAccessSubscriptionInputDTO): Promise<Result<CreateEarlyAccessSubscriptionOutputDTO, ApplicationError>> {

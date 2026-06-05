@@ -1,5 +1,6 @@
 import SecretKeyUsageLog, { SecretKeyUsageLogProps } from '@modules/team/domain/entities/secret-key/SecretKeyUsageLog';
 import { ISecretKeyUsageLogRepository, LogRequestInput } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import secretKeyUsageLogMapper from '@modules/team/infrastructure/persistence/mongo/mappers/secret-key/SecretKeyUsageLogMapper';
 import SecretKeyUsageLogModel, { SecretKeyUsageLogDocument } from '@modules/team/infrastructure/persistence/mongo/models/secret-key/SecretKeyUsageLogModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -174,7 +175,7 @@ const endpointPipelineStages = (limit?: number): FacetStage[] => {
     return stages;
 };
 
-@Singleton()
+@Singleton(TEAM_TOKENS.SecretKeyUsageLogRepository)
 export default class SecretKeyUsageLogRepository
     extends MongooseBaseRepository<SecretKeyUsageLog, SecretKeyUsageLogProps, SecretKeyUsageLogDocument>
     implements ISecretKeyUsageLogRepository {

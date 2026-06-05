@@ -1,5 +1,10 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 import { resolveAnalysisStorageClusterId, resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import {
@@ -7,18 +12,17 @@ import {
     buildPluginBinaryPlacementBuckets,
     buildTrajectoryPlacementBuckets
 } from '@modules/cluster/application/utilities/storage-placement-targets';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import StoragePlacement, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps
 } from '@modules/cluster/domain/entities/StoragePlacement';
 import StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface ResolvedPlacementDefinition {
     team: string;
@@ -30,11 +34,11 @@ interface ResolvedPlacementDefinition {
 export default class StoragePlacementService {
     constructor(
         private readonly storagePlacementRepository: StoragePlacementRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         private readonly pluginRepository: PluginRepository,
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async findByScope(

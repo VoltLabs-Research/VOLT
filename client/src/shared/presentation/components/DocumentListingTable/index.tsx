@@ -3,7 +3,7 @@ import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/com
 import { buildItemMapByGeneratedId } from '@/shared/presentation/components/DocumentListing/dnd-maps';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
-import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
 import './DocumentListingTable.css';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -361,12 +361,15 @@ const DocumentListingTable = <T extends Identifiable>({
                 <div ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
 
                 {isFetchingMore && Array.from({ length: skeletonRowsCount }).map((_, i) => (
-                    <TableSkeletonRow
-                        key={`fetching-${i}`}
-                        columns={columns}
-                        columnStyles={columnStyles}
-                        columnGap={resolvedGap}
-                    />
+                    <div key={`fetching-${i}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
+                        {columns.map((col, colIdx) => (
+                            <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? { flex: 1, minWidth: 0 }}>
+                                <span className='document-listing-cell-value'>
+                                    <Skeleton {...(col.skeleton ?? { variant: 'text', width: 100 })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 ))}
 
                 {shouldShowEmptyState && (
@@ -402,12 +405,15 @@ const DocumentListingTable = <T extends Identifiable>({
                     <div className='document-listing-overlay-blur p-absolute inset-0'>
                         <div className='document-listing-infinite-skeleton-loader p-absolute inset-0 overflow-hidden d-flex column'>
                             {Array.from({ length: 20 }).map((_, index) => (
-                                <TableSkeletonRow
-                                    key={`loading-skeleton-${index}`}
-                                    columns={columns}
-                                    columnStyles={columnStyles}
-                                    columnGap={resolvedGap}
-                                />
+                                <div key={`loading-skeleton-${index}`} className='document-listing-table-row-container skeleton-row d-flex f-shrink-0' role='row' aria-hidden='true' style={{ gap: `${resolvedGap}px` }}>
+                                    {columns.map((col, colIdx) => (
+                                        <div className={`document-listing-cell overflow-hidden d-flex items-center font-size-2 color-secondary ${col.numeric ? 'is-numeric' : ''}`} data-label={col.title} key={`${String(col.key ?? col.path ?? col.title ?? colIdx)}-skeleton`} role='gridcell' style={columnStyles?.[colIdx] ?? { flex: 1, minWidth: 0 }}>
+                                            <span className='document-listing-cell-value'>
+                                                <Skeleton {...(col.skeleton ?? { variant: 'text', width: 100 })} animation='wave' style={{ borderRadius: col.skeleton?.variant === 'rounded' ? 12 : 4 }} />
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             ))}
                         </div>
                     </div>

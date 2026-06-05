@@ -5,6 +5,7 @@ import type {
     ScriptingSessionStartInput,
     ScriptingSessionStartResult
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
@@ -47,7 +48,7 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
     return teamCluster ?? null;
 };
 
-@Singleton()
+@Singleton(SCRIPTING_TOKENS.ScriptingSessionOrchestrator)
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,

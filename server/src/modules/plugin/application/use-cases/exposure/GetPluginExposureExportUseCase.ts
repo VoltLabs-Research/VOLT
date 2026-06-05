@@ -1,3 +1,8 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { inject } from 'tsyringe';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetPluginExposureExportInputDTO,
     GetPluginExposureExportOutputDTO
@@ -10,9 +15,7 @@ import { Result } from '@shared/domain/port/Result';
 
 import type { IUseCase } from '@shared/application/IUseCase';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import { PluginExposureExportService } from '@modules/plugin/infrastructure/services/exposure/PluginExposureExportService';
+import type { IPluginExposureExportService } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
 
 @Singleton()
 export class GetPluginExposureExportUseCase implements IUseCase<
@@ -21,9 +24,9 @@ export class GetPluginExposureExportUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly pluginRepository: PluginRepository,
-        private readonly pluginExposureExportService: PluginExposureExportService
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginExposureExportService) private readonly pluginExposureExportService: IPluginExposureExportService
     ) {}
 
     async execute(

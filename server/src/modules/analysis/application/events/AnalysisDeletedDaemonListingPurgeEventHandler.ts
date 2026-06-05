@@ -1,9 +1,11 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { inject } from 'tsyringe';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 type DaemonListingDocumentType = 'listing' | 'sub-listing';
 
@@ -12,7 +14,7 @@ const DAEMON_LISTING_DOCUMENT_TYPES: DaemonListingDocumentType[] = ['listing', '
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {

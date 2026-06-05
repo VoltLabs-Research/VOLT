@@ -1,6 +1,6 @@
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import type { PromiseToastOptions } from '@/shared/presentation/toast-options';
+import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useCallback, useState } from 'react';
 
 interface UseRenameEntityModalOptions<TEntity, TUpdateParams, TResult> {

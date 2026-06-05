@@ -3,17 +3,18 @@ import type {
     GetSimulationCellByTrajectoryOutputDTO
 } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
-import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
+import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class GetSimulationCellByTrajectoryUseCase {
     constructor(
-        private readonly repository: SimulationCellRepository
+        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository) private readonly repository: ISimulationCellRepository
     ) {}
 
     async execute(

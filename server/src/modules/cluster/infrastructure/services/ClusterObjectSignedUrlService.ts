@@ -1,6 +1,8 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import jwt from 'jsonwebtoken';
 import type { Secret, SignOptions } from 'jsonwebtoken';
+import type { IClusterObjectSignedUrlService } from '@modules/cluster/domain/port/IClusterObjectSignedUrlService';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation,
@@ -39,8 +41,8 @@ const isClaims = (value: unknown): value is ClusterObjectAccessClaims => {
         && typeof candidate.exp === 'number';
 };
 
-@Singleton()
-export default class ClusterObjectSignedUrlService {
+@Singleton(CLUSTER_TOKENS.ClusterObjectSignedUrlService)
+export default class ClusterObjectSignedUrlService implements IClusterObjectSignedUrlService {
     private readonly secret = getSecret();
 
     createToken(payload: ClusterObjectTokenPayload, ttlSeconds = DEFAULT_TTL_SECONDS): ClusterObjectSignedUrl {

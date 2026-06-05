@@ -1,6 +1,8 @@
 
 import type { KeyUsageAnalytics, TeamUsageAnalytics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageAnalytics';
 import type { KeyUsageMetrics, TeamUsageMetrics } from '@modules/team/domain/contracts/secret-key/SecretKeyUsageMetrics';
+import type { ISecretKeyUsageMetricsMapper } from '@modules/team/domain/port/secret-key/ISecretKeyUsageMetricsMapper';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface TeamMetricsDailySeries {
@@ -12,8 +14,8 @@ interface TeamMetricsDailySeries {
 const calcSuccessRate = (success: number, total: number): number =>
     total > 0 ? Math.round((success / total) * 1000) / 10 : 0;
 
-@Singleton()
-export default class SecretKeyUsageMetricsMapper {
+@Singleton(TEAM_TOKENS.SecretKeyUsageMetricsMapper)
+export default class SecretKeyUsageMetricsMapper implements ISecretKeyUsageMetricsMapper {
     toTeamMetrics(analytics: TeamUsageAnalytics): TeamUsageMetrics {
         const dateSet = new Set<string>();
         const keyDayMap: Record<string, Record<string, number>> = {};

@@ -1,4 +1,6 @@
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import type { IRemoteExplorerDaemonGateway } from '@modules/cluster/domain/port/IRemoteExplorerDaemonGateway';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -14,8 +16,8 @@ interface RemoteExplorerDaemonRequest {
     path: string;
 }
 
-@Singleton()
-export default class RemoteExplorerDaemonGateway {
+@Singleton(CLUSTER_TOKENS.RemoteExplorerDaemonGateway)
+export default class RemoteExplorerDaemonGateway implements IRemoteExplorerDaemonGateway {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient
     ) {}

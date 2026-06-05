@@ -1,5 +1,5 @@
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -7,7 +7,7 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 interface ResolveTrajectoryNativeClusterContextInput {
     trajectoryId: string;
     trajectoryRepository: ITrajectoryRepository;
-    teamClusterSelectionService: TeamClusterSelectionService;
+    teamClusterSelectionService: ITeamClusterSelectionService;
 }
 
 interface TrajectoryNativeClusterContext {

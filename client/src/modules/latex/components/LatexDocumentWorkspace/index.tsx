@@ -12,7 +12,7 @@ import Loader from '@/shared/presentation/primitives/Loader';
 import SaveStatusIndicator from '@/shared/presentation/primitives/SaveStatusIndicator';
 import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import Stack from '@/shared/presentation/primitives/Stack';
-import '@/shared/presentation/styles/resize-handle.css';
+import '@/shared/presentation/assets/stylesheets/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import LatexEditorPanel from './LatexEditorPanel';

@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TrajectoryUploadSessionModel from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
 
@@ -18,7 +19,7 @@ export interface CreateTrajectoryUploadSessionInput {
     expiresAt: Date;
 }
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository)
 export default class TrajectoryUploadSessionRepository {
     async create(input: CreateTrajectoryUploadSessionInput): Promise<TrajectoryUploadSessionDocument> {
         return TrajectoryUploadSessionModel.create(input);

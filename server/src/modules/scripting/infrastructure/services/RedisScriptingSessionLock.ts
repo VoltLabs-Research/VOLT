@@ -2,6 +2,7 @@ import type {
     IScriptingSessionLock,
     IScriptingSessionLockLease
 } from '@modules/scripting/domain/port/IScriptingSessionLock';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type IORedis from 'ioredis';
@@ -15,7 +16,7 @@ end
 return 0
 `;
 
-@Singleton()
+@Singleton(SCRIPTING_TOKENS.ScriptingSessionLock)
 export class RedisScriptingSessionLock implements IScriptingSessionLock {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)

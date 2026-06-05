@@ -1,3 +1,4 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -5,6 +6,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
 
+import type { IClusterObjectArchiveService } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
 import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
 
 export interface ClusterArchiveObjectEntry {
@@ -44,8 +46,8 @@ interface CreateArchiveDownloadInput {
     cacheControl?: string;
 }
 
-@Singleton()
-export default class ClusterObjectArchiveService {
+@Singleton(CLUSTER_TOKENS.ClusterObjectArchiveService)
+export default class ClusterObjectArchiveService implements IClusterObjectArchiveService {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient

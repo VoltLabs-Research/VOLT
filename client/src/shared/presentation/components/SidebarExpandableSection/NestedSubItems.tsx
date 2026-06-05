@@ -1,5 +1,5 @@
 import Button from '@/shared/presentation/primitives/Button';
-import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
+import './SidebarSubItems.css';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import type { SubItem } from './SidebarExpandableSection.types';

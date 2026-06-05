@@ -1,3 +1,5 @@
+import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO } from '@modules/plugin/application/dtos/plugin/UpdatePluginByIdDTO';
 import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
@@ -9,8 +11,7 @@ import WorkflowProjectionService from '@modules/plugin/utilities/plugin/Workflow
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/plugin/WorkflowValidatorService';
+import type { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -22,8 +23,8 @@ import { inject } from 'tsyringe';
 @Singleton()
 export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO> {
     constructor(
-        private pluginRepository: PluginRepository,
-        private workflowValidator: WorkflowValidatorService,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService) private readonly workflowValidator: IWorkflowValidatorService,
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus
     ) {}

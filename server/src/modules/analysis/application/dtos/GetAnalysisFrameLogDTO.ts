@@ -1,4 +1,4 @@
-import type { AnalysisFrameLogSnapshot } from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
+import type { AnalysisFrameLogSnapshot } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
 
 export interface GetAnalysisFrameLogInputDTO {
     teamId: string;

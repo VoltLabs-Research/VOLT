@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -8,7 +9,7 @@ import type { ITrajectoryReader } from '@modules/trajectory/domain/port/trajecto
 import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryReader)
 export default class TrajectoryReader implements ITrajectoryReader {
     constructor(
         

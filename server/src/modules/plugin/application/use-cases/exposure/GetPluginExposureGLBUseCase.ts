@@ -1,3 +1,9 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { inject } from 'tsyringe';
+import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
@@ -7,14 +13,12 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { resolveSceneArtifactStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import { getClusterGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { Readable } from 'node:stream';
@@ -26,9 +30,9 @@ export class GetPluginExposureGLBUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 
     async execute(

@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TeamMetricsSnapshot } from '@modules/trajectory/domain/contracts/trajectory';
 import { ITeamMetricsQueryService } from '@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -77,7 +78,7 @@ const toMonthChange = (current: number, previous: number): number => {
     return Math.round(((current - previous) / previous) * 100);
 };
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TeamMetricsQueryService)
 export default class TeamMetricsQueryService implements ITeamMetricsQueryService {
     constructor(
         private readonly trajectoryRepo: TrajectoryRepository,

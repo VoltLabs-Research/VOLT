@@ -1,12 +1,14 @@
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { GetAnalysisFrameLogOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisFrameLogDTO';
 import GetAnalysisFrameLogUseCase from '@modules/analysis/application/use-cases/GetAnalysisFrameLogUseCase';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasAnalysisFrameLogInput {
     trajectoryId: string;
@@ -27,7 +29,7 @@ export class GetPublicCanvasAnalysisFrameLogUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
         
         private readonly getAnalysisFrameLogUseCase: GetAnalysisFrameLogUseCase

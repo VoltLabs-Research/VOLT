@@ -1,3 +1,4 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -296,7 +297,7 @@ const resolveOperationTimeouts = (operation: ObjectGatewayOperationName): Object
     }
 };
 
-@Singleton()
+@Singleton(SHARED_TOKENS.TeamClusterObjectGatewayClient)
 export default class TeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();

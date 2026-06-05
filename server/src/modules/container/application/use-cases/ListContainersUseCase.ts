@@ -1,15 +1,15 @@
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { ListContainersInputDTO, ListContainersOutputDTO } from '@modules/container/application/dtos/ListContainersDTO';
 import type { Container, IContainerProps } from '@modules/container/domain/entities/Container';
 import type { RuntimeContainerInfo } from '@modules/container/domain/port/IContainerService';
-import type { RuntimeContainerSummary } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
-import { ContainerAccessiblePortResolver } from '@modules/container/infrastructure/services/ContainerAccessiblePortResolver';
-import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
+import type { ITeamClusterContainerRuntimeService, RuntimeContainerSummary } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
+import type { IContainerAccessiblePortResolver } from '@modules/container/domain/port/IContainerAccessiblePortResolver';
 import { IUseCase } from '@shared/application/IUseCase';
 import { CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 
 interface ListContainersFilter extends Record<string, unknown> {
     team: string;
@@ -27,9 +27,9 @@ const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 @injectable()
 export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, ListContainersOutputDTO> {
     constructor(
-        private repository: ContainerRepository,
-        private containerRuntimeService: DaemonContainerRuntimeService,
-        private accessiblePortResolver: ContainerAccessiblePortResolver
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly repository: IContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRuntimeService) private readonly containerRuntimeService: ITeamClusterContainerRuntimeService,
+        @inject(CONTAINER_TOKENS.ContainerAccessiblePortResolver) private readonly accessiblePortResolver: IContainerAccessiblePortResolver
     ) {}
 
     async execute(input: ListContainersInputDTO): Promise<Result<ListContainersOutputDTO>> {

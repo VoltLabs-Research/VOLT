@@ -1,7 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from '@modules/auth/application/dtos/DeleteAccountDTO';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -12,9 +13,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInputDTO, DeleteAccountOutputDTO, ApplicationError>{
     constructor(
-        private readonly userRepository: UserRepository,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: DeleteAccountInputDTO): Promise<Result<DeleteAccountOutputDTO, ApplicationError>>{

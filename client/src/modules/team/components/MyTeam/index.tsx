@@ -26,7 +26,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import Select from '@/shared/presentation/primitives/Select';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { createPromiseToastOptions } from '@/shared/presentation/toast-options';
+import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
