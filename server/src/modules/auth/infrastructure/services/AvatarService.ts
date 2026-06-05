@@ -1,6 +1,7 @@
 import { SYS_BUCKETS } from '@core/config/minio';
 import type { AvatarResult, IAvatarService } from '@modules/auth/domain/port/IAvatarService';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -10,7 +11,7 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { inject } from 'tsyringe';
 
-@Singleton()
+@Singleton(AUTH_TOKENS.AvatarService)
 export default class AvatarService implements IAvatarService {
     private readonly AVATAR_SIZE_PX = 420;
     private readonly COMPRESSION_QUALITY_PCT = 80;

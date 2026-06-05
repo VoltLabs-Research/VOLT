@@ -1,9 +1,10 @@
 
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import bcrypt from 'bcryptjs';
 
-@Singleton()
+@Singleton(AUTH_TOKENS.PasswordHasher)
 export default class BcryptPasswordHasher implements IPasswordHasher {
     private readonly saltRounds = 12;
 

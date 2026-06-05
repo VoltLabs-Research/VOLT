@@ -3,7 +3,8 @@ import { useState, useMemo } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import ChatListSkeleton from '../ChatListSkeleton';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import '../ChatListSkeleton/ChatListSkeleton.css';
 import ChatListItem from '../ChatListItem';
 import TeamMemberList from '../TeamMemberList';
 import IconButton from '@/shared/presentation/primitives/IconButton';
@@ -70,7 +71,20 @@ const ChatSidebar = ({
     }
 
     if (isLoading) {
-        chatListContent = <ChatListSkeleton count={5} />;
+        chatListContent = (
+            <Stack gap='05'>
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <Row key={i} gap='075' className='chat-skeleton-item'>
+                        <Skeleton variant='circular' width={40} height={40} />
+                        <Stack gap='025' flex='1'>
+                            <Skeleton variant='rounded' width={120} height={14} />
+                            <Skeleton variant='rounded' width={80} height={12} />
+                        </Stack>
+                        <Skeleton variant='circular' width={8} height={8} />
+                    </Row>
+                ))}
+            </Stack>
+        );
     } else if (error && filteredChats.length === 0) {
         chatListContent = (
             <RecoveryState

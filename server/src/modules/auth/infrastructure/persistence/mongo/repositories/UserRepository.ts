@@ -1,13 +1,14 @@
 import User from '@modules/auth/domain/entities/User';
 import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/UserMapper';
 import UserModel from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { UserProps } from '@modules/auth/domain/entities/User';
 import type { IUserRepository, UserWithPassword } from '@modules/auth/domain/port/IUserRepository';
 import type { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
 
-@Singleton()
+@Singleton(AUTH_TOKENS.UserRepository)
 export default class UserRepository
     extends MongooseBaseRepository<User, UserProps, UserDocument>
     implements IUserRepository {

@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import EmptyState from '@/shared/presentation/primitives/EmptyState';
-import MessageListSkeleton from '../MessageListSkeleton';
+import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import Stack from '@/shared/presentation/primitives/Stack';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import Box from '@/shared/presentation/primitives/Box';
 import Text from '@/shared/presentation/primitives/Text';
+import '../MessageListSkeleton/MessageListSkeleton.css';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './MessageList.css';
 
@@ -36,7 +38,16 @@ const MessageList = ({ messages, isLoading, hasMore, onLoadMore, renderMessage }
             onLoadMore={onLoadMore}
             className='message-list'
             preserveScrollOnPrepend
-            renderLoading={<MessageListSkeleton />}
+            renderLoading={(
+                <Stack gap='1'>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Stack key={i} gap='025' className={`message-skeleton ${i % 3 === 0 ? 'sent' : 'received'}`}>
+                            <Skeleton variant='rounded' width='80%' height='1rem' />
+                            <Skeleton variant='rounded' width='60%' height='1rem' />
+                        </Stack>
+                    ))}
+                </Stack>
+            )}
             renderEmpty={<EmptyState title='No messages yet' description='Start the conversation!' />}
             loadMoreIndicator={loadMoreIndicator}
         />
