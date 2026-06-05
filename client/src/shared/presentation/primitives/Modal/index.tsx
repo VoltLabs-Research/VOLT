@@ -249,6 +249,11 @@ export const openModal = (id: string) => {
     const element = document.getElementById(id);
     if (isDialogElement(element) && !element.open) {
         element.showModal();
+        const toaster = document.getElementById('app-toaster-popover');
+        if (toaster) {
+            toaster.hidePopover();
+            toaster.showPopover();
+        }
     }
 };
 
