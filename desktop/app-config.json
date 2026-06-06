@@ -1,13 +1,33 @@
 {
-    "env": {
-        "SERVER_PORT": "8100",
-        "WEB_PORT": "5273",
-        "MINIO_PORT": "9100",
-        "MINIO_CONSOLE": "9101",
-        "DAEMON_PORT": "18020",
-        "MONGO_PASS": "volt",
-        "REDIS_PASS": "voltredis",
-        "SECRET_KEY": "volt-local-secret",
-        "SSH_KEY": "volt-local-ssh"
-    }
+  "env": {
+    "SERVER_PORT": "8100",
+    "WEB_PORT": "5273",
+    "MINIO_PORT": "9100",
+    "MINIO_CONSOLE": "9101",
+    "DAEMON_PORT": "18020",
+    "MONGO_USER": "volt",
+    "MONGO_PASS": "volt",
+    "REDIS_PASS": "voltredis",
+    "MINIO_USER": "voltminio",
+    "MINIO_PASS": "voltminiosecret",
+    "DAEMON_PASS": "daemon-local-pass",
+    "SECRET_KEY": "volt-local-secret",
+    "SSH_KEY": "volt-local-ssh"
+  },
+  "voltlabs-research/volt": {
+    "tag": "1.0.0"
+  },
+  "voltlabs-research/clusterdaemon": {
+    "tag": "1.0.0"
+  },
+  "bootstrap": {
+    "done": true,
+    "email": "local-a8ff8f99@volt.local",
+    "password": "RSmanXdRew4_PjebZSRVEO2brWZ04bh7",
+    "userId": "6a23d348abd630246bd85ad7",
+    "teamId": "6a23d348abd630246bd85ae2",
+    "teamClusterId": "6a23d349abd630246bd85af4",
+    "enrollmentToken": "aa159bdbb644efb5e6cc32b43614d0a0d7130b3a8c400ee9444db4e87ff32830",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTIzZDM0OGFiZDYzMDI0NmJkODVhZDciLCJ1c2VySWQiOiI2YTIzZDM0OGFiZDYzMDI0NmJkODVhZDciLCJpZCI6IjZhMjNkMzQ4YWJkNjMwMjQ2YmQ4NWFkNyIsImlhdCI6MTc4MDczNDQ2NCwiZXhwIjoxNzgxMzM5MjY0fQ.ow4n_fiGUC6Y65nOsLqobMZlyIy8m8ulYbkksbneTfA"
+  }
 }

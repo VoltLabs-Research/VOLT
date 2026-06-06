@@ -3,12 +3,14 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 contextBridge.exposeInMainWorld('volt', {
     deploy: {
         start: () => ipcRenderer.invoke('deploy:start'),
-        stop: () => ipcRenderer.invoke('deploy:stop'),
-        status: () => ipcRenderer.invoke('deploy:status')
+        stop:  () => ipcRenderer.invoke('deploy:stop')
     },
     config: {
-        get: () => ipcRenderer.invoke('config:get'),
+        get:    () => ipcRenderer.invoke('config:get'),
         update: (payload: object) => ipcRenderer.invoke('config:update', payload)
+    },
+    app: {
+        voltUrl: () => ipcRenderer.invoke('app:voltUrl')
     },
     on: (channel: 'deploy:log' | 'deploy:state' | 'source:progress', cb: (p: any) => void) => {
         const handler = (_: IpcRendererEvent, payload: any) => cb(payload);
