@@ -8,8 +8,24 @@ import {
     isPluginReferenceArgumentType
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import ArgumentOptionsEditor from './ArgumentOptionsEditor';
+import {
+    ARGUMENT_TYPE_LABELS,
+    ARGUMENT_TYPE_SELECT_OPTIONS,
+    ARGUMENT_VISIBILITY_OPERATOR_OPTIONS,
+    BOOLEAN_ARGUMENT_VALUE_OPTIONS,
+    ANY_PLUGIN_OPTION,
+    ANY_PLUGIN_KEY_OPTION
+} from './argument-definition-constants';
+import {
+    isMultiValueVisibilityOperator,
+    getArgumentLabel,
+    getArgumentFieldInputValue,
+    getVisibilityValueInput,
+    formatValueMapInput,
+    parseValueMapInput
+} from './argument-definition-helpers';
+import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from './argument-field.types';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import FormSection from '@/shared/presentation/components/FormSection';
 import DashedActionBox from '@/shared/presentation/primitives/DashedActionBox';
@@ -23,9 +39,8 @@ import type {
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { FormFieldChangeHandler } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];
@@ -35,170 +50,9 @@ interface ArgumentDefinitionSectionProps {
     level?: number;
 }
 
-const ARGUMENT_TYPE_LABELS: Record<string, string> = ARGUMENT_TYPE_OPTIONS.reduce<Record<string, string>>(
-    (accumulator, option) => {
-        accumulator[option.value] = option.label;
-        return accumulator;
-    },
-    {}
-);
-
-const ARGUMENT_TYPE_SELECT_OPTIONS = ARGUMENT_TYPE_OPTIONS.map((option) => ({
-    value: option.value,
-    title: option.label
-}));
-
-const ARGUMENT_VISIBILITY_OPERATOR_OPTIONS = [{
-    value: ArgumentVisibilityOperator.EQUALS,
-    title: 'Equals'
-}, {
-    value: ArgumentVisibilityOperator.NOT_EQUALS,
-    title: 'Does not equal'
-}, {
-    value: ArgumentVisibilityOperator.IN,
-    title: 'Matches any of'
-}, {
-    value: ArgumentVisibilityOperator.NOT_IN,
-    title: 'Matches none of'
-}];
-
-const BOOLEAN_ARGUMENT_VALUE_OPTIONS: SelectOption[] = [{
-    value: '',
-    title: 'Unset'
-}, {
-    value: 'true',
-    title: 'true'
-}, {
-    value: 'false',
-    title: 'false'
-}];
-
-const ANY_PLUGIN_OPTION: SelectOption = {
-    value: '',
-    title: 'Any plugin'
-};
-
-const ANY_PLUGIN_KEY_OPTION: SelectOption = {
-    value: '',
-    title: 'Any key'
-};
-
-type ArgumentFieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
-
-interface ArgumentFieldProps {
-    label: string;
-    name: string;
-    fieldType?: 'input' | 'select' | 'checkbox' | 'textarea';
-    value?: string | number | boolean;
-    onChange?: FormFieldChangeHandler;
-    options?: SelectOption[];
-    placeholder?: string;
-    inputProps?: InputHTMLAttributes<HTMLInputElement>;
-    rows?: number;
-}
-
 const ArgumentField = (props: ArgumentFieldProps) => (
     <FormFieldRHF {...props} variant='inline' />
 );
-
-const isMultiValueVisibilityOperator = (
-    operator?: ArgumentVisibilityOperator
-): boolean => {
-    return operator === ArgumentVisibilityOperator.IN || operator === ArgumentVisibilityOperator.NOT_IN;
-};
-
-const getArgumentLabel = (argument: IArgumentDefinition): string => {
-    return argument.label?.trim() || argument.argument?.trim() || '';
-};
-
-const getArgumentFieldInputValue = (
-    argument: IArgumentDefinition,
-    field: 'default' | 'value'
-): string => {
-    const fieldValue = argument[field];
-    if (fieldValue === undefined || fieldValue === null) {
-        return '';
-    }
-
-    if (typeof fieldValue === 'string') {
-        return fieldValue;
-    }
-
-    if (typeof fieldValue === 'number' || typeof fieldValue === 'boolean') {
-        return String(fieldValue);
-    }
-
-    try {
-        return JSON.stringify(fieldValue);
-    } catch {
-        return '';
-    }
-};
-
-const getVisibilityValueInput = (condition?: IArgumentVisibilityCondition): string => {
-    if (!condition) {
-        return '';
-    }
-
-    if (isMultiValueVisibilityOperator(condition.operator)) {
-        return (condition.values ?? []).map(String).join(', ');
-    }
-
-    if (condition.value === undefined) {
-        return '';
-    }
-
-    return String(condition.value);
-};
-
-const formatValueMapInput = (valueMap?: Record<string, unknown>): string => {
-    if (!valueMap) {
-        return '';
-    }
-
-    try {
-        return JSON.stringify(valueMap);
-    } catch {
-        return '';
-    }
-};
-
-const parseValueMapInput = (rawValue: string): Record<string, unknown> | undefined => {
-    const trimmedValue = rawValue.trim();
-    if (!trimmedValue) {
-        return undefined;
-    }
-
-    try {
-        const parsedValue = JSON.parse(trimmedValue) as unknown;
-        if (typeof parsedValue === 'object' && parsedValue !== null && !Array.isArray(parsedValue)) {
-            return parsedValue as Record<string, unknown>;
-        }
-    } catch {
-        return undefined;
-    }
-
-    return undefined;
-};
-
-const getMultiSelectTriggerLabel = (
-    selectedCount: number,
-    selectedValues: string[] | undefined,
-    options: SelectOption[],
-    emptyLabel: string,
-    selectedSuffix: string
-): string => {
-    if (selectedCount === 0) {
-        return emptyLabel;
-    }
-
-    if (selectedCount === 1) {
-        const selectedValue = selectedValues?.[0];
-        return options.find((option) => option.value === selectedValue)?.title ?? '1 selected';
-    }
-
-    return `${selectedCount} ${selectedSuffix}`;
-};
 
 const ArgumentDefinitionSection = ({
     arguments: argumentDefinitions,

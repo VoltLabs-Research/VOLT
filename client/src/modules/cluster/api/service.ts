@@ -1,15 +1,9 @@
-import { createService, del, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
+import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from './entities/team-cluster';
-import type {
-    TeamClusterRemoteAccessSession,
-    TeamClusterRemoteAccessTarget,
-    TeamClusterRemoteExplorerEntry,
-    TeamClusterRemoteExplorerNode
-} from './entities/team-cluster-remote-access';
 import type { ClusterTransferJob, ClusterTransferJobState } from './entities/team-cluster-transfer';
 
 export interface CreateTeamClusterInputDTO {
@@ -20,17 +14,6 @@ export interface CreateTeamClusterInputDTO {
 export interface CreateTeamClusterOutputDTO {
     teamCluster: TeamCluster;
     enrollmentToken: string;
-}
-
-export interface CreateTeamClusterRemoteAccessSessionInputDTO {
-    teamId: string;
-    teamClusterId: string;
-    password: string;
-    target: TeamClusterRemoteAccessTarget;
-}
-
-export interface CreateTeamClusterRemoteAccessSessionOutputDTO {
-    session: TeamClusterRemoteAccessSession;
 }
 
 export interface CreateTeamClusterTransferRequestInputDTO {
@@ -69,28 +52,6 @@ export interface DeleteDemoTeamClusterOutputDTO {
     teardownScheduled: boolean;
 }
 
-export interface DownloadTeamClusterRemoteExplorerObjectInputDTO {
-    teamId: string;
-    teamClusterId: string;
-    sessionId: string;
-    target: TeamClusterRemoteAccessTarget;
-    path: string;
-}
-
-export interface GetTeamClusterRemoteExplorerNodeInputDTO {
-    teamId: string;
-    teamClusterId: string;
-    sessionId: string;
-    target: TeamClusterRemoteAccessTarget;
-    path: string;
-}
-
-export interface GetTeamClusterRemoteExplorerNodeOutputDTO {
-    teamClusterId: string;
-    target: TeamClusterRemoteAccessTarget;
-    node: TeamClusterRemoteExplorerNode;
-}
-
 export interface GetTeamClusterResourceLimitsInputDTO {
     teamId: string;
     teamClusterId: string;
@@ -108,21 +69,6 @@ export interface ListTeamClustersInputDTO {
 }
 
 export type ListTeamClustersOutputDTO = PaginatedResponse<TeamCluster>;
-
-export interface ListTeamClusterRemoteExplorerEntriesInputDTO {
-    teamId: string;
-    teamClusterId: string;
-    sessionId: string;
-    target: TeamClusterRemoteAccessTarget;
-    path: string;
-}
-
-export interface ListTeamClusterRemoteExplorerEntriesOutputDTO {
-    teamClusterId: string;
-    target: TeamClusterRemoteAccessTarget;
-    path: string;
-    entries: TeamClusterRemoteExplorerEntry[];
-}
 
 export interface ListTeamClusterTransferJobsInputDTO {
     teamId: string;
@@ -216,17 +162,8 @@ const teamClusterEndpoints = {
     create: post<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO>('/:teamId/clusters'),
     listByTeamId: paginated<ListTeamClustersInputDTO, ListTeamClustersOutputDTO>('/:teamId/clusters'),
     deleteById: post<DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO>('/:teamId/clusters/:teamClusterId/delete-requests'),
-    createRemoteAccessSession: post<CreateTeamClusterRemoteAccessSessionInputDTO, CreateTeamClusterRemoteAccessSessionOutputDTO>(
-        '/:teamId/clusters/:teamClusterId/remote-access/sessions'
-    ),
-    getRemoteExplorerNode: post<GetTeamClusterRemoteExplorerNodeInputDTO, GetTeamClusterRemoteExplorerNodeOutputDTO>(
-        '/:teamId/clusters/:teamClusterId/remote-access/explorer/node'
-    ),
     getResourceLimits: get<GetTeamClusterResourceLimitsInputDTO, GetTeamClusterResourceLimitsOutputDTO>(
         '/:teamId/clusters/:teamClusterId/resource-limits'
-    ),
-    listRemoteExplorerEntries: post<ListTeamClusterRemoteExplorerEntriesInputDTO, ListTeamClusterRemoteExplorerEntriesOutputDTO>(
-        '/:teamId/clusters/:teamClusterId/remote-access/explorer/entries'
     ),
     revealCredentials: post<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO>(
         '/:teamId/clusters/:teamClusterId/credentials/reveal'
@@ -236,9 +173,6 @@ const teamClusterEndpoints = {
     ),
     createTransferRequest: post<CreateTeamClusterTransferRequestInputDTO, CreateTeamClusterTransferRequestOutputDTO>(
         '/:teamId/clusters/:teamClusterId/transfers'
-    ),
-    downloadRemoteExplorerObject: download<DownloadTeamClusterRemoteExplorerObjectInputDTO>(
-        'POST', '/:teamId/clusters/:teamClusterId/remote-access/explorer/download'
     ),
     regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO>(
         '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'

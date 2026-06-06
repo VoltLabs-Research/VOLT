@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { Readable } from 'node:stream';
 
 export interface RunOptions{
     cwd?: string;
@@ -8,59 +9,39 @@ export interface RunOptions{
 }
 
 export default class ProcessRunner{
-    #lineReader(onLine: (line: string) => void){
-        let buf = '';
+    #readLines(stream: Readable, onLine?: (line: string) => void){
+        if(!onLine) return () => {};
 
-        const onData = (chunk: Buffer) => {
+        let buf = '';
+        stream.on('data', (chunk: Buffer) => {
             buf += chunk.toString('utf8');
             const parts = buf.split('\n');
             buf = parts.pop() ?? '';
-
             for(const line of parts) onLine(line);
-        };
+        });
 
-        const flush = () => {
-            if(buf){
-                onLine(buf);
-                buf = '';
-            }
+        return () => {
+            if(buf) onLine(buf);
         };
-
-        return { onData, flush };
     }
 
-    async run(bin: string, args: string[], options: RunOptions = {}){
-        await new Promise<void>((resolve, reject) => {
+    run(bin: string, args: string[], options: RunOptions = {}){
+        return new Promise<void>((resolve, reject) => {
             const child = spawn(bin, args, {
                 cwd: options.cwd,
                 env: options.env ? { ...process.env, ...options.env } : process.env,
                 shell: false
             });
 
-            const flushes: Array<() => void> = [];
-
-            if(options.onStdout){
-                const reader = this.#lineReader(options.onStdout);
-                child.stdout.on('data', reader.onData);
-                flushes.push(reader.flush);
-            }
-
-            if(options.onStderr){
-                const reader = this.#lineReader(options.onStderr);
-                child.stderr.on('data', reader.onData);
-                flushes.push(reader.flush);
-            }
+            const flushStdout = this.#readLines(child.stdout, options.onStdout);
+            const flushStderr = this.#readLines(child.stderr, options.onStderr);
 
             child.on('error', reject);
             child.on('close', (code) => {
-                flushes.forEach((flush) => flush());
-
-                if(code === 0){
-                    resolve();
-                    return;
-                }
-
-                reject(new Error(`${bin} ${args.join(' ')} exited ${code}`));
+                flushStdout();
+                flushStderr();
+                if(code === 0) resolve();
+                else reject(new Error(`${bin} ${args.join(' ')} exited ${code}`));
             });
         });
     }

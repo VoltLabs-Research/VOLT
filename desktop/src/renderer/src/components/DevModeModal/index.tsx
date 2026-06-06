@@ -44,8 +44,6 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
     const [voltPath, setVoltPath] = useState('');
     const [clusterDaemonPath, setClusterDaemonPath] = useState('');
 
-    // Pull the persisted choice each time the modal opens so the fields reflect
-    // what's actually deployed.
     useEffect(() => {
         if(!open) return;
         window.volt.config.get().then((config) => {
@@ -56,8 +54,6 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
         });
     }, [open]);
 
-    // Escape closes regardless of focus — the gear menu that opens this modal
-    // leaves focus outside the overlay, so an element-scoped handler would miss it.
     useEffect(() => {
         if(!open) return;
         const onKey = (event: KeyboardEvent) => { if(event.key === 'Escape') onClose(); };

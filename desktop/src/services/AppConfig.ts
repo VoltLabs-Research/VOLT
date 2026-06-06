@@ -12,12 +12,7 @@ export interface BootstrapState{
     userId: string;
     teamId: string;
     teamClusterId: string;
-    enrollmentToken: string;
     authToken: string;
-    // The server mints a random daemon password per cluster (encrypted at rest). The
-    // daemon authenticates its control-plane websocket with it, so we reveal it once
-    // at bootstrap and feed it back into the daemon's env. Without it the handshake
-    // is rejected and the daemon crash-loops on "did not connect before timeout".
     daemonPassword: string;
 }
 
@@ -40,7 +35,7 @@ export default class AppConfig{
         return JSON.parse(configStr.toString());
     }
 
-    async update(payload: object){
+    async #update(payload: object){
         const current = await this.get();
         const merged = { ...current, ...payload };
 
@@ -48,17 +43,12 @@ export default class AppConfig{
     }
 
     async updateRelease(repoId: string, tag: string){
-        await this.update({ [repoId]: { tag } });
+        await this.#update({ [repoId]: { tag } });
     }
 
-    async checkInstalledRelease(repoId: string): Promise<string>{
+    async getInstalledReleaseTag(repoId: string): Promise<string | null>{
         const config = await this.get();
-
-        if(!config?.[repoId]){
-            return '0';
-        }
-
-        return config[repoId].tag;
+        return config?.[repoId]?.tag ?? null;
     }
 
     async getStackEnv(): Promise<Record<string, string>>{
@@ -69,7 +59,7 @@ export default class AppConfig{
     async ensureStackDefaults(defaults: Record<string, string>){
         const config = await this.get();
         const merged = { ...defaults, ...(config.env ?? {}) };
-        await this.update({ env: merged });
+        await this.#update({ env: merged });
     }
 
     async getBootstrap(): Promise<BootstrapState | null>{
@@ -80,7 +70,7 @@ export default class AppConfig{
     }
 
     async setBootstrap(state: BootstrapState){
-        await this.update({ bootstrap: state });
+        await this.#update({ bootstrap: state });
     }
 
     async clearBootstrap(){
@@ -89,16 +79,17 @@ export default class AppConfig{
         await this.#write(current);
     }
 
-    // Returns the dev-mode source override only when it is enabled and both
-    // paths are set; null otherwise so callers can treat it as "release mode".
-    async getDevMode(): Promise<DevModeState | null>{
-        const config = await this.get();
-        const dev = config.devMode as Partial<DevModeState> | undefined;
+    async getActiveDevMode(): Promise<DevModeState | null>{
+        const dev = await this.getPersistedDevMode();
         if(!dev?.enabled || !dev.voltPath || !dev.clusterDaemonPath) return null;
         return dev as DevModeState;
     }
 
+    async getPersistedDevMode(): Promise<Partial<DevModeState> | undefined>{
+        return (await this.get()).devMode as Partial<DevModeState> | undefined;
+    }
+
     async setDevMode(state: DevModeState){
-        await this.update({ devMode: state });
+        await this.#update({ devMode: state });
     }
 };

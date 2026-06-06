@@ -231,21 +231,6 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/cluster/components/ClusterMonitoringPage')
     },
     {
-        path: '/dashboard/clusters/:clusterId/mongo',
-        title: 'Mongo Explorer',
-        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
-    },
-    {
-        path: '/dashboard/clusters/:clusterId/redis',
-        title: 'Redis Explorer',
-        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
-    },
-    {
-        path: '/dashboard/clusters/:clusterId/minio',
-        title: 'MinIO Explorer',
-        loader: () => import('@/modules/cluster/components/ClusterRemoteExplorerPage')
-    },
-    {
         path: '/dashboard/containers',
         title: 'Containers',
         loader: () => import('@/modules/container/components/ContainersListing'),
