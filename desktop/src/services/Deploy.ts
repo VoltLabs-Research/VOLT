@@ -37,17 +37,27 @@ export default class Deploy{
 
     start(){
         return this.#runStage('starting', 'up', async () => {
+            const env = await this.props.appConfig.getStackEnv();
+            const serverOrigin = `http://localhost:${env.SERVER_PORT}`;
+            const webProbe = `http://localhost:${env.WEB_PORT}/api/auth/emails/probe%40volt.local/availability`;
+
+            // Full stack (including the enrolled daemon) already running & healthy —
+            // the app was closed without stopping it. Refresh the auth token and hand
+            // off to the renderer without re-fetching sources, rebuilding images or
+            // recreating containers.
+            if(await this.#stackAlreadyHealthy()){
+                bus.emit('deploy:log', { stream: 'stdout', line: '[deploy] stack already running, reusing containers' });
+                await new Bootstrap({ appConfig: this.props.appConfig, serverOrigin }).ensure();
+                return;
+            }
+
             const sources = await this.#ensureSources();
             const baseEnv = await this.#composeEnv(sources);
-            const stack = new Stack({ composeFile: this.props.composeFile, env: baseEnv });
+            await new Stack({ composeFile: this.props.composeFile, env: baseEnv }).up();
 
-            await stack.up();
-
-            const serverOrigin = `http://localhost:${baseEnv.SERVER_PORT}`;
             await waitForUrl(`${serverOrigin}/api/auth/emails/probe%40volt.local/availability`);
 
-            const bootstrap = new Bootstrap({ appConfig: this.props.appConfig, serverOrigin });
-            const state = await bootstrap.ensure();
+            const state = await new Bootstrap({ appConfig: this.props.appConfig, serverOrigin }).ensure();
 
             const daemonEnv = this.#withDaemonEnv(baseEnv, state);
             await new Stack({ composeFile: this.props.composeFile, env: daemonEnv }).up(['enrolled']);
@@ -56,7 +66,7 @@ export default class Deploy{
             // recreate. Wait until the whole proxy answers 200 before signaling the
             // renderer; otherwise the SPA hits /api/auth/me, gets a 502 and bounces
             // to /auth/sign-in.
-            await waitForUrl(`http://localhost:${baseEnv.WEB_PORT}/api/auth/emails/probe%40volt.local/availability`);
+            await waitForUrl(webProbe);
         });
     }
 
@@ -121,5 +131,33 @@ export default class Deploy{
     async #composeEnv(sources: Record<string, string>): Promise<Record<string, string>>{
         const userEnv = await this.props.appConfig.getStackEnv();
         return { ...userEnv, ...sources };
+    }
+
+    // Authoritative readiness check: every service compose expects for the enrolled
+    // profile (incl. cluster-daemon, and the health-checked mongo/redis) must be
+    // running and healthy. Any partial/unhealthy state returns false so start() falls
+    // through to the full bring-up, which converges whatever is missing.
+    async #stackAlreadyHealthy(): Promise<boolean>{
+        let env: Record<string, string>;
+        try{
+            // Resolve already-downloaded sources from disk — no GitHub, no rebuild.
+            const sources = await this.#resolveExistingSources();
+            env = await this.#composeEnv(sources);
+        }catch{
+            return false; // sources not downloaded yet (first run)
+        }
+
+        const stack = new Stack({ composeFile: this.props.composeFile, env });
+        const expected = await stack.services(['enrolled']);
+        if(!expected.length) return false;
+
+        const status = await stack.status(['enrolled']);
+        const healthy = new Set(
+            status
+                .filter((s) => s.state === 'running' && (s.health === '' || s.health === 'healthy'))
+                .map((s) => s.service)
+        );
+
+        return expected.every((service) => healthy.has(service));
     }
 };
