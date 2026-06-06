@@ -27,8 +27,9 @@
     "userId": "6a2484faae2271daa30605dc",
     "teamId": "6a2484faae2271daa30605e7",
     "teamClusterId": "6a2484fbae2271daa30605f9",
-    "enrollmentToken": "641009c94bb69607de4045617747376bdb33c026844e6b222c39629840d0a1c2",
-    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI0ODRmYWFlMjI3MWRhYTMwNjA1ZGMiLCJ1c2VySWQiOiI2YTI0ODRmYWFlMjI3MWRhYTMwNjA1ZGMiLCJpZCI6IjZhMjQ4NGZhYWUyMjcxZGFhMzA2MDVkYyIsImlhdCI6MTc4MDc3OTk3MywiZXhwIjoxNzgxMzg0NzczfQ.Bjgwr3rRcwD_cjmF8Agl3Ko5R1Q9qrEQlZZw4j6ZrRk"
+    "enrollmentToken": "40d4c244914fc8ad7ea0dfdf61deb4440e46c0b46191a5b59e37e695c8e38faf",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI0ODRmYWFlMjI3MWRhYTMwNjA1ZGMiLCJ1c2VySWQiOiI2YTI0ODRmYWFlMjI3MWRhYTMwNjA1ZGMiLCJpZCI6IjZhMjQ4NGZhYWUyMjcxZGFhMzA2MDVkYyIsImlhdCI6MTc4MDc4MjAzMywiZXhwIjoxNzgxMzg2ODMzfQ.kLvv4asjPbl_HHOY08zrpEJExRPnyF87WPhM7zBKjhs",
+    "daemonPassword": "89ebf776628c1638d48500240b0d769606ea7223aaea2c9e"
   },
   "devMode": {
     "enabled": true,

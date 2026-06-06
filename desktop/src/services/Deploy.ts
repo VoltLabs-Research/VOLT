@@ -108,16 +108,19 @@ export default class Deploy{
 
     stop(){
         return this.#enqueue(() => this.#runStage('stopping', 'down', async () => {
-            // down() targets containers by project/service label, not build context,
-            // so it works even when sources can't be resolved (first run, failed
-            // fetch). Don't let a missing-source error abort an otherwise-valid teardown.
-            let sources: Record<string, string> = {};
-            try{ sources = await this.#resolveExistingSources(); }catch{ /* nothing on disk yet */ }
+            this.#announce(STOP_PHASES);
+            await this.#phase('down', async () => {
+                // down() targets containers by project/service label, not build context,
+                // so it works even when sources can't be resolved (first run, failed
+                // fetch). Don't let a missing-source error abort an otherwise-valid teardown.
+                let sources: Record<string, string> = {};
+                try{ sources = await this.#resolveExistingSources(); }catch{ /* nothing on disk yet */ }
 
-            const env = await this.#composeEnv(sources);
-            const bootstrap = await this.props.appConfig.getBootstrap();
-            const downEnv = bootstrap ? this.#withDaemonEnv(env, bootstrap) : env;
-            await new Stack({ composeFile: this.props.composeFile, env: downEnv }).down(['enrolled']);
+                const env = await this.#composeEnv(sources);
+                const bootstrap = await this.props.appConfig.getBootstrap();
+                const downEnv = bootstrap ? this.#withDaemonEnv(env, bootstrap) : env;
+                await new Stack({ composeFile: this.props.composeFile, env: downEnv }).down(['enrolled']);
+            });
         }));
     }
 
@@ -146,11 +149,35 @@ export default class Deploy{
         }
     }
 
-    #withDaemonEnv(base: Record<string, string>, src: { teamClusterId: string; enrollmentToken: string }): Record<string, string>{
+    #announce(phases: PhaseSpec[]){
+        bus.emit('deploy:phases', { phases });
+    }
+
+    // Wraps one timeline step: marks it running, then done — or error (and rethrows,
+    // so #runStage still surfaces the failure on deploy:state). The thrown phase is
+    // the one the renderer highlights in red.
+    async #phase<T>(id: string, fn: () => Promise<T>): Promise<T>{
+        bus.emit('deploy:phase', { id, status: 'running' });
+        try{
+            const result = await fn();
+            bus.emit('deploy:phase', { id, status: 'done' });
+            return result;
+        }catch(err: any){
+            bus.emit('deploy:phase', { id, status: 'error', detail: err?.message ?? String(err) });
+            throw err;
+        }
+    }
+
+    #withDaemonEnv(base: Record<string, string>, src: { teamClusterId: string; enrollmentToken: string; daemonPassword?: string }): Record<string, string>{
         return {
             ...base,
             TEAM_CLUSTER_ID: src.teamClusterId,
-            TEAM_CLUSTER_ENROLLMENT_TOKEN: src.enrollmentToken
+            TEAM_CLUSTER_ENROLLMENT_TOKEN: src.enrollmentToken,
+            // compose maps DAEMON_PASS → the daemon's TEAM_CLUSTER_DAEMON_PASSWORD. It must
+            // match the password the server minted for this cluster or the control-plane
+            // handshake is rejected. Falls back to the stack default for a teardown driven
+            // by a legacy bootstrap state that predates this field (down() ignores it).
+            DAEMON_PASS: src.daemonPassword ?? base.DAEMON_PASS
         };
     }
 

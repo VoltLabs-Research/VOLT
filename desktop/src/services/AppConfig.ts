@@ -14,6 +14,11 @@ export interface BootstrapState{
     teamClusterId: string;
     enrollmentToken: string;
     authToken: string;
+    // The server mints a random daemon password per cluster (encrypted at rest). The
+    // daemon authenticates its control-plane websocket with it, so we reveal it once
+    // at bootstrap and feed it back into the daemon's env. Without it the handshake
+    // is rejected and the daemon crash-loops on "did not connect before timeout".
+    daemonPassword: string;
 }
 
 export interface DevModeState{
