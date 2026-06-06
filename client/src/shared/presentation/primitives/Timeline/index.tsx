@@ -1,5 +1,4 @@
 import { cn } from '@/shared/utils/cn';
-import Stack from '../Stack';
 import './Timeline.css';
 import { forwardRef } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
@@ -59,8 +58,5 @@ const Timeline = forwardRef<HTMLOListElement, TimelineProps>(({
 });
 
 Timeline.displayName = 'Timeline';
-
-// Re-export Stack here so consumers can compose custom items without TypeScript hurdles.
-export { Stack };
 
 export default Timeline;

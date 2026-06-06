@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('volt', {
     app: {
         voltUrl: () => ipcRenderer.invoke('app:voltUrl')
     },
+    window: {
+        minimize: () => ipcRenderer.invoke('window:minimize'),
+        maximize: () => ipcRenderer.invoke('window:maximize'),
+        close:    () => ipcRenderer.invoke('window:close')
+    },
     on: (channel: 'deploy:log' | 'deploy:state' | 'source:progress', cb: (p: any) => void) => {
         const handler = (_: IpcRendererEvent, payload: any) => cb(payload);
         ipcRenderer.on(channel, handler);

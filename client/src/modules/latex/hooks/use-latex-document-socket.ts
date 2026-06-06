@@ -290,20 +290,6 @@ const useLatexDocumentSocket = ({
         return true;
     }, []);
 
-    const leaveFileSession = useCallback((fileId: string): void => {
-        const session = sessionsRef.current.get(fileId);
-        if (!session) {
-            return;
-        }
-
-        if (socketService.isConnected() && documentId) {
-            socketService.emitWithoutAck(SOCKET_LATEX_EVENTS.FILE_LEAVE, { documentId, fileId });
-        }
-
-        session.doc.destroy();
-        sessionsRef.current.delete(fileId);
-    }, [documentId, socketService]);
-
     useEffect(() => {
         const sessions = sessionsRef.current;
 
@@ -325,8 +311,7 @@ const useLatexDocumentSocket = ({
         collaborators,
         sendContentUpdate,
         ensureFileSession,
-        applyLocalContentChange,
-        leaveFileSession
+        applyLocalContentChange
     };
 };
 

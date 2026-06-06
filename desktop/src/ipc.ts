@@ -17,6 +17,10 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     ipcMain.handle('config:get',    () => deps.appConfig.get());
     ipcMain.handle('config:update', (_e, payload: object) => deps.appConfig.update(payload));
 
+    ipcMain.handle('window:minimize', () => win.minimize());
+    ipcMain.handle('window:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
+    ipcMain.handle('window:close',    () => win.close());
+
     ipcMain.handle('app:voltUrl', async () => {
         const env = await deps.appConfig.getStackEnv();
         const origin = `http://localhost:${env.WEB_PORT}`;

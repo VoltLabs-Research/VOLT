@@ -86,6 +86,42 @@ services:
         })();
         </script></body></html>
         BOOT_EOF
+        RUN cat > /usr/share/nginx/html/__nav-bridge.js <<'BRIDGE_EOF'
+        (function(){
+          function send(){
+            try{
+              parent.postMessage({ source: 'volt-client', path: location.pathname + location.search + location.hash }, '*');
+            }catch(e){}
+          }
+          ['pushState', 'replaceState'].forEach(function(name){
+            var original = history[name];
+            history[name] = function(){
+              var result = original.apply(this, arguments);
+              send();
+              return result;
+            };
+          });
+          window.addEventListener('popstate', send);
+          window.addEventListener('message', function(event){
+            var data = event.data;
+            if(!data || data.source !== 'volt-shell') return;
+            if(data.action === 'go' && typeof data.path === 'string'){
+              var state = history.state;
+              var idx = (state && typeof state.idx === 'number') ? state.idx + 1 : 1;
+              var key = Math.random().toString(36).slice(2, 10);
+              history.pushState({ usr: null, key: key, idx: idx }, '', data.path);
+              window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+            }else if(data.action === 'back'){
+              history.back();
+            }else if(data.action === 'forward'){
+              history.forward();
+            }
+          });
+          if(document.readyState !== 'loading') send();
+          else window.addEventListener('DOMContentLoaded', send);
+        })();
+        BRIDGE_EOF
+        RUN sed -i 's#</body>#<script src="/__nav-bridge.js"></script></body>#' /usr/share/nginx/html/index.html
         RUN cat > /etc/nginx/conf.d/default.conf <<'NGINX_EOF'
         resolver 127.0.0.11 valid=5s ipv6=off;
 

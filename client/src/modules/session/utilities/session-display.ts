@@ -7,8 +7,6 @@ interface SessionUserAgentInfo {
     os: string;
 };
 
-const MOBILE_USER_AGENT_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
-
 export const parseSessionUserAgent = (userAgent: string | null | undefined): SessionUserAgentInfo => {
     const normalizedUserAgent = typeof userAgent === 'string' ? userAgent.trim() : '';
     let browser = 'Unknown Browser';
@@ -28,10 +26,6 @@ export const parseSessionUserAgent = (userAgent: string | null | undefined): Ses
     else if (normalizedUserAgent.includes('CrOS')) os = 'ChromeOS';
 
     return { browser, os };
-};
-
-export const isMobileUserAgent = (userAgent: string | null | undefined): boolean => {
-    return MOBILE_USER_AGENT_PATTERN.test(typeof userAgent === 'string' ? userAgent.trim() : '');
 };
 
 export const formatSessionRelativeTime = (dateValue: string | null | undefined): string => {

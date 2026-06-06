@@ -79,36 +79,12 @@ const useCanvasUrlState = () => {
         updateSearchParams({ timelineExposure: exposureId ?? null }, options);
     }, [updateSearchParams]);
 
-    const setPluginParam = useCallback((value?: string | null, options?: UpdateOptions) => {
-        updateSearchParams({ plugin: value ?? null }, options);
-    }, [updateSearchParams]);
-
-    const setSettingsKey = useCallback((value?: string | null, options?: UpdateOptions) => {
-        updateSearchParams({ settings: value ?? null }, options);
-    }, [updateSearchParams]);
-
     const setSelectedNotebookId = useCallback((value?: string | null, options?: UpdateOptions) => {
         updateSearchParams({ notebook: value ?? null }, options);
     }, [updateSearchParams]);
 
-    const setRasterModel = useCallback((value?: string | null, options?: UpdateOptions) => {
-        updateSearchParams({ rasterModel: value ?? null }, options);
-    }, [updateSearchParams]);
-
-    const setRequestedTimestep = useCallback((value?: number | null, options?: UpdateOptions) => {
-        updateSearchParams({ timestep: value ?? null }, options);
-    }, [updateSearchParams]);
-
-    const setRenderConfigOpen = useCallback((open: boolean, options?: UpdateOptions) => {
-        updateSearchParams({ renderConfig: open ? 'true' : null }, options);
-    }, [updateSearchParams]);
-
     const setActiveWorkspace = useCallback((id: CanvasWorkspace, options?: UpdateOptions) => {
         updateSearchParams({ workspace: id === CanvasWorkspace.Scene ? null : id }, options);
-    }, [updateSearchParams]);
-
-    const setModifiers = useCallback((ids: string[], options?: UpdateOptions) => {
-        updateSearchParams({ modifiers: ids.length ? ids.join(',') : null }, options);
     }, [updateSearchParams]);
 
     const toggleModifier = useCallback((id: string) => {
@@ -148,14 +124,8 @@ const useCanvasUrlState = () => {
         setAnalysisId,
         setResultsPluginId,
         setTimelineExposureId,
-        setPluginParam,
-        setSettingsKey,
         setSelectedNotebookId,
-        setRasterModel,
-        setRequestedTimestep,
-        setRenderConfigOpen,
-        setActiveWorkspace,
-        setModifiers
+        setActiveWorkspace
     };
 };
 
