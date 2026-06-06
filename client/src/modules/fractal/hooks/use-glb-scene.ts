@@ -247,19 +247,8 @@ export default function useGlbScene(
 
     return {
         modelBounds: modelBounds ?? params.activeModelBounds ?? null,
-        isLoading: loadingState.isLoading,
-        loadProgress: loadingState.progress,
         loadError: loadingState.error,
-        isSelected: interaction.isSelected,
-        isHovered: interaction.isHovered,
-        resetModel: interaction.resetTransform,
         deselect: interaction.deselect,
-        rotateXNegative: interaction.rotateXNegative,
-        rotateXPositive: interaction.rotateXPositive,
-        rotateYNegative: interaction.rotateYNegative,
-        rotateYPositive: interaction.rotateYPositive,
-        rotateZNegative: interaction.rotateZNegative,
-        rotateZPositive: interaction.rotateZPositive,
         setSelectedObject: interaction.setSelectedObject,
         onHoverChange: interaction.onHoverChange
     };

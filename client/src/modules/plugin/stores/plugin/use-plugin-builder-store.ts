@@ -11,8 +11,6 @@ type ValidationResult = {
     errors: string[];
 };
 
-type NodesUpdater = Node<INodeData>[] | ((prev: Node<INodeData>[]) => Node<INodeData>[]);
-type EdgesUpdater = Edge[] | ((prev: Edge[]) => Edge[]);
 type BuilderHistoryState = {
     nodes: Node<INodeData>[];
     edges: Edge[];
@@ -52,8 +50,6 @@ interface PluginBuilderState {
 }
 
 interface PluginBuilderActions {
-    setNodes: (nodesOrUpdater: NodesUpdater) => void;
-    setEdges: (edgesOrUpdater: EdgesUpdater) => void;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     validateConnection: (connection: Connection) => boolean;
@@ -64,13 +60,11 @@ interface PluginBuilderActions {
     addNode: (type: NodeType, position: XYPosition) => void;
     updateNodeData: (nodeId: string, data: Partial<INodeData>) => void;
     deleteNode: (nodeId: string) => void;
-    deleteEdge: (edgeId: string) => void;
     getWorkflow: () => IWorkflow;
     loadWorkflow: (workflow: IWorkflow) => void;
     clearWorkflow: () => void;
     setSaving: (value: boolean) => void;
     setSaveError: (error: string | null) => void;
-    setValidationResult: (result: ValidationResult | null) => void;
     undo: () => void;
     redo: () => void;
     reset: () => void;
@@ -155,34 +149,6 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
 
             return {
             ...initialState,
-
-            setNodes: (nodesOrUpdater) => {
-                _setGraphState((state) => {
-                    const nextNodes = typeof nodesOrUpdater === 'function'
-                        ? nodesOrUpdater(state.nodes)
-                        : nodesOrUpdater;
-
-                    if (nextNodes === state.nodes) {
-                        return null;
-                    }
-
-                    return { nodes: nextNodes };
-                });
-            },
-
-            setEdges: (edgesOrUpdater) => {
-                _setGraphState((state) => {
-                    const nextEdges = typeof edgesOrUpdater === 'function'
-                        ? edgesOrUpdater(state.edges)
-                        : edgesOrUpdater;
-
-                    if (nextEdges === state.edges) {
-                        return null;
-                    }
-
-                    return { edges: nextEdges };
-                });
-            },
 
             onNodesChange: (changes) => {
                 _setGraphState((state) => ({
@@ -285,18 +251,6 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                 });
             },
 
-            deleteEdge: (edgeId) => {
-                _setGraphState((state) => {
-                    const hasEdge = state.edges.some((edge) => edge.id === edgeId);
-
-                    if (!hasEdge) {
-                        return null;
-                    }
-
-                    return { edges: state.edges.filter((edge) => edge.id !== edgeId) };
-                });
-            },
-
             getWorkflow() {
                 const { nodes, edges } = get();
 
@@ -377,8 +331,6 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
             setSaving: (value) => set({ isSaving: value }),
 
             setSaveError: (error) => set({ saveError: error }),
-
-            setValidationResult: (result) => set({ validationResult: result }),
 
             undo: () => {
                 usePluginBuilderStore.temporal.getState().undo();

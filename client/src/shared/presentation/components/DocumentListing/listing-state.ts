@@ -1,4 +1,4 @@
-export enum ListingDisplayMode {
+enum ListingDisplayMode {
     Content = 'content',
     Loading = 'loading',
     Empty = 'empty',

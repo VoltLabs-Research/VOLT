@@ -59,11 +59,6 @@ class GeometryPool {
     private capacityBytes = computeCapacityBytes();
     private currentBytes = 0;
 
-    setCapacityBytes(bytes: number): void {
-        this.capacityBytes = bytes;
-        this.evict();
-    }
-
     get(resourceKey: string): THREE.BufferGeometry | null {
         const entry = this.pool.get(resourceKey);
         if (!entry) return null;

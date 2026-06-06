@@ -6,15 +6,6 @@
     gap: 12px;
 }
 
-.canvas-status-item-text {
-    display: inline-block;
-    min-width: 0;
-    max-width: min(44vw, 560px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .canvas-status-divider {
     width: 1px;
     height: 12px;

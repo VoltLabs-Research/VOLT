@@ -37,8 +37,6 @@ import type { PaginationParams } from '@/shared/presentation/hooks/use-paginatio
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { QueryKey } from '@tanstack/react-query';
 
-export { getValueByPath };
-
 export interface SocketInvalidationConfig {
     event: string;
     queryKeys: QueryKey[];

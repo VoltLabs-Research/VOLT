@@ -12,7 +12,6 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
@@ -48,19 +47,6 @@ export interface Identifiable {
     _id: string;
 };
 
-export enum EditableType {
-    Text = 'text',
-    Number = 'number',
-    Select = 'select'
-};
-
-export interface EditableConfig<TRow = unknown> {
-    type: EditableType;
-    onSave: (row: TRow, newValue: string) => void | Promise<void>;
-    options?: SelectOption[];
-    canEdit?: (row: TRow) => boolean;
-};
-
 export interface ColumnConfig<TRow = unknown> {
     key?: string;
     title?: string;
@@ -80,7 +66,6 @@ export interface ColumnConfig<TRow = unknown> {
     render?: (value: unknown, row: TRow) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
-    editable?: EditableConfig<TRow>;
 };
 
 interface DocumentListingTableProps<T extends Identifiable> {

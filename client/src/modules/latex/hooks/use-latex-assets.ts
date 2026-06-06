@@ -8,7 +8,6 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME } from '@/modules/latex/utilities/workspace';
 import { useCallback, useRef } from 'react';
-import type { ChangeEvent } from 'react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { FileWithPath } from '@/shared/utils/file';
 
@@ -59,7 +58,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
 
     const assetsQueryResult = latexAssetsQuery({ documentId }, { enabled: !!documentId });
     const assets = assetsQueryResult.data ?? [];
-    const isLoadingAssets = assetsQueryResult.isLoading;
 
     const { mutateAsync: uploadAsset, isPending: isUploading } = useUploadLatexAssetMutation();
     const { mutateAsync: deleteAsset } = useDeleteLatexAssetMutation();
@@ -79,27 +77,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         }
     }, [documentId, uploadAsset]);
 
-    const handleUploadEntries = useCallback(async (entries: FileWithPath[]) => {
-        if (entries.length === 0) {
-            return;
-        }
-
-        const totalCount = entries.length;
-        const isSingle = totalCount === 1;
-
-        await showPromise(
-            Promise.all(entries.map((entry) => uploadSingleAsset(entry))),
-            {
-                loading: { title: isSingle ? 'Uploading file...' : `Uploading ${totalCount} files...` },
-                success: { title: isSingle ? 'File uploaded' : `${totalCount} files uploaded` },
-                error: {
-                    title: isSingle ? 'Failed to upload file' : 'Failed to upload files',
-                    description: 'One or more files could not be uploaded.'
-                }
-            }
-        );
-    }, [uploadSingleAsset]);
-
     const uploadEntriesWithoutToast = useCallback(async (entries: FileWithPath[]) => {
         if (entries.length === 0) {
             return;
@@ -107,40 +84,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
 
         await Promise.all(entries.map((entry) => uploadSingleAsset(entry)));
     }, [uploadSingleAsset]);
-
-    const handleFileSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) return;
-
-        const files = Array.from(fileList).map((file) => ({
-            file,
-            path: file.name
-        }));
-        event.target.value = '';
-
-        await handleUploadEntries(files);
-    }, [handleUploadEntries]);
-
-    const handleFolderSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        const fileList = event.target.files;
-        if (!fileList || fileList.length === 0) return;
-
-        const files = Array.from(fileList).map((file) => ({
-            file,
-            path: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
-        }));
-        event.target.value = '';
-
-        await handleUploadEntries(files);
-    }, [handleUploadEntries]);
-
-    const handleUploadClick = useCallback(() => {
-        fileInputRef.current?.click();
-    }, []);
-
-    const handleUploadFolderClick = useCallback(() => {
-        folderInputRef.current?.click();
-    }, []);
 
     const handleDeleteAsset = useCallback(async (asset: LatexAsset) => {
         const isConfirmed = await confirm({
@@ -191,15 +134,9 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
     return {
         assets: visibleAssets,
         rawAssets: assets,
-        isLoadingAssets,
         isUploading,
         fileInputRef,
         folderInputRef,
-        handleUploadClick,
-        handleUploadFolderClick,
-        handleFileSelected,
-        handleFolderSelected,
-        handleUploadEntries,
         uploadEntriesWithoutToast,
         handleDeleteAsset,
         handleInsertRef,

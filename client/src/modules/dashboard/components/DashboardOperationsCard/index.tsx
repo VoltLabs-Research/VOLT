@@ -16,10 +16,8 @@ import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-clus
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useCallback, useMemo, useState } from 'react';
-import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
 import type { ReactNode } from 'react';
 
@@ -160,15 +158,6 @@ const DashboardOperationsCard = () => {
     const setClusterMetricTab = useCallback((clusterId: string, metricTab: ClusterMetricTabId) => {
         setActiveMetricByClusterId((previous) => ({ ...previous, [clusterId]: metricTab }));
     }, []);
-
-    const jobsEmptyState = (
-        <EmptyState
-            icon={<HiOutlineServerStack size={20} />}
-            title='No jobs yet'
-            description='Start a simulation or analysis to see activity here.'
-            className='flex-1 dashboard-operations-jobs-empty-state'
-        />
-    );
 
     const headerSummary = activeTab === 'clusters'
         ? (
@@ -342,11 +331,8 @@ const DashboardOperationsCard = () => {
         return (
             <Stack flex='1' minH='0' className='dashboard-operations-panel'>
                 <JobsHistoryViewer
-                    variant='embedded'
                     displayMode='full'
-                    hideAfterComplete={false}
                     groupStatusPresentation='trajectory-name'
-                    emptyState={jobsEmptyState}
                 />
             </Stack>
         );

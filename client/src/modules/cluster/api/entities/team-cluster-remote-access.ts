@@ -22,7 +22,7 @@ export enum TeamClusterRemoteExplorerEntryType {
 /**
  * Enumerates the concrete node payloads that can be opened from the explorer.
  */
-export enum TeamClusterRemoteExplorerNodeType {
+enum TeamClusterRemoteExplorerNodeType {
     Collection = 'collection',
     RedisValue = 'redis-value',
     Object = 'object'

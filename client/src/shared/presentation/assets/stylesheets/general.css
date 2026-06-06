@@ -578,10 +578,6 @@
     }
 }
 @media (max-width: 768px) {
-    .sm\:p-1-5 {
-        padding: 1.5rem;
-    }
-
     .sm\:p-1 {
         padding: 1rem;
     }

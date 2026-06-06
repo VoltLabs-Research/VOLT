@@ -24,12 +24,15 @@ export interface ContainerStats {
     networks?: Record<string, NetworkStats>;
 }
 
-export interface ContainerStatsLimits {
-    memory: number;
-    cpus: number;
-}
-
 export interface ContainerStatsResponse {
     stats: ContainerStats;
-    limits: ContainerStatsLimits;
+    memoryMB: {
+        used: number;
+        total: number;
+        free: number;
+    };
+    networkTotals: {
+        rxBytes: number;
+        txBytes: number;
+    };
 }
