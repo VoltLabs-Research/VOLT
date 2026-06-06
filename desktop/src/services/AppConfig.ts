@@ -16,6 +16,12 @@ export interface BootstrapState{
     authToken: string;
 }
 
+export interface DevModeState{
+    enabled: boolean;
+    voltPath: string;
+    clusterDaemonPath: string;
+}
+
 export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
@@ -76,5 +82,18 @@ export default class AppConfig{
         const current = await this.get();
         delete current.bootstrap;
         await this.#write(current);
+    }
+
+    // Returns the dev-mode source override only when it is enabled and both
+    // paths are set; null otherwise so callers can treat it as "release mode".
+    async getDevMode(): Promise<DevModeState | null>{
+        const config = await this.get();
+        const dev = config.devMode as Partial<DevModeState> | undefined;
+        if(!dev?.enabled || !dev.voltPath || !dev.clusterDaemonPath) return null;
+        return dev as DevModeState;
+    }
+
+    async setDevMode(state: DevModeState){
+        await this.update({ devMode: state });
     }
 };

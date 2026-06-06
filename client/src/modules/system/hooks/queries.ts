@@ -1,4 +1,4 @@
-import { buildKeys, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
+import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import service from '../api/service';
 
 const KEYS = buildKeys<{

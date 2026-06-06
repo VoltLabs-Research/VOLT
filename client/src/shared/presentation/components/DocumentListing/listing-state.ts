@@ -17,7 +17,6 @@ interface ListingDisplayState {
     hasNoData: boolean;
     hasError: boolean;
     isInitialLoading: boolean;
-    mode: ListingDisplayMode;
     shouldShowContent: boolean;
     shouldShowEmptyState: boolean;
     shouldShowErrorState: boolean;
@@ -50,7 +49,6 @@ const getListingDisplayState = ({
         hasNoData,
         hasError,
         isInitialLoading,
-        mode,
         shouldShowContent: mode === ListingDisplayMode.Content,
         shouldShowEmptyState: mode === ListingDisplayMode.Empty,
         shouldShowErrorState: mode === ListingDisplayMode.Error,

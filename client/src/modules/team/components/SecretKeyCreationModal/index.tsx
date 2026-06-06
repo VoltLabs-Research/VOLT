@@ -73,14 +73,16 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             return;
         }
 
+        const teamId = selectedTeam?._id;
+        if (!teamId) {
+            return;
+        }
+
         await runAction({
-            action: () => {
-                if (!selectedTeam?._id) return Promise.resolve();
-                return createSecretKeyMutation.mutateAsync({ teamId: selectedTeam._id, name, roleId });
-            },
+            action: () => createSecretKeyMutation.mutateAsync({ teamId, name, roleId }),
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
-                if (result?.secretKey) {
+                if (result.secretKey) {
                     setGeneratedKey(result.secretKey);
                     onCreated?.(result.secretKey);
                 }

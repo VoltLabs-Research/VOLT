@@ -22,22 +22,10 @@ type FractalEngineCallbacks = {
 
 const assetLoader: IFractalAssetLoader = new FractalAssetLoader();
 
-class FractalEngineFactory {
-    create(
-        surface: FractalSurface,
-        params: FractalParams,
-        callbacks: FractalEngineCallbacks = {}
-    ): FractalEngine {
-        return new FractalEngine(surface, params, assetLoader, callbacks);
-    }
-}
-
-const engineFactory = new FractalEngineFactory();
-
 export const createFractalEngine = (
     surface: FractalSurface,
     params: FractalParams,
     callbacks: FractalEngineCallbacks = {}
 ): FractalEngine => {
-    return engineFactory.create(surface, params, callbacks);
+    return new FractalEngine(surface, params, assetLoader, callbacks);
 };

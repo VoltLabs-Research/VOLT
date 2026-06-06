@@ -1,4 +1,5 @@
-import useCreateContainerForm, { getCustomImageValidationError } from '../../hooks/use-create-container-form';
+import useCreateContainerForm from '../../hooks/use-create-container-form';
+import { getCustomImageValidationError } from '../../utilities/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';

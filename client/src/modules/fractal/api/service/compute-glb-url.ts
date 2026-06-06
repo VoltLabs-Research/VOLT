@@ -30,10 +30,6 @@ const isPropertyCondition = (condition: ParticleFilterSceneCondition) => {
         && condition?.value !== undefined;
 };
 
-const buildApiUrl = (path: string): string => {
-    return buildBackendUrl(path);
-};
-
 const buildPluginUrl = (
     mode: CanvasAccessMode,
     teamId: string,
@@ -45,10 +41,10 @@ const buildPluginUrl = (
     if (!analysisId || !exposureId) return null;
 
     if (mode === 'public') {
-        return buildApiUrl(`/api/canvas/${trajectoryId}/exposures/${analysisId}/${exposureId}/${timestep}/glb`);
+        return buildBackendUrl(`/api/canvas/${trajectoryId}/exposures/${analysisId}/${exposureId}/${timestep}/glb`);
     }
 
-    return buildApiUrl(`/api/plugins/${teamId}/exposures/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
+    return buildBackendUrl(`/api/plugins/${teamId}/exposures/glb/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`);
 };
 
 const buildColorCodingUrl = (
@@ -70,10 +66,10 @@ const buildColorCodingUrl = (
     if (exposureId) params.set('exposureId', exposureId);
 
     if (mode === 'public') {
-        return buildApiUrl(`/api/canvas/${trajectoryId}/color-coding/model/${effectiveAnalysisId}?${params.toString()}`);
+        return buildBackendUrl(`/api/canvas/${trajectoryId}/color-coding/model/${effectiveAnalysisId}?${params.toString()}`);
     }
 
-    return buildApiUrl(`/api/color-codings/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildBackendUrl(`/api/color-codings/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
 const buildParticleFilterUrl = (
@@ -122,10 +118,10 @@ const buildParticleFilterUrl = (
     }
 
     if (mode === 'public') {
-        return buildApiUrl(`/api/canvas/${trajectoryId}/particle-filter/model/${effectiveAnalysisId}?${params.toString()}`);
+        return buildBackendUrl(`/api/canvas/${trajectoryId}/particle-filter/model/${effectiveAnalysisId}?${params.toString()}`);
     }
 
-    return buildApiUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
+    return buildBackendUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
 export const resolveGlbResource = ({
@@ -167,7 +163,7 @@ export const resolveGlbResource = ({
         }
         default:
             return {
-                url: buildApiUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`),
+                url: buildBackendUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`),
                 // Why: the default trajectory GLB endpoint ignores analysisId
                 // server-side, so analysis selection must not invalidate the
                 // core model identity or trigger a reload.

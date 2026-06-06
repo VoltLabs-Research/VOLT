@@ -75,10 +75,7 @@ interface SingleModelViewerProps {
     autoFitKeyOverride?: string | null;
     orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
-    enableInstancing?: boolean;
     updateThrottle?: number;
-    isPrimary?: boolean;
-    onModelLoaded?: (bounds: BoundsInfo) => void;
     onSelect?: () => void;
     isSelected?: boolean;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
@@ -111,10 +108,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     autoFitKeyOverride,
     orbitControlsRef,
     enableSlice = true,
-    enableInstancing: _enableInstancing = true,
     updateThrottle = 16,
-    isPrimary: _isPrimary = false,
-    onModelLoaded,
     onSelect,
     isSelected = false,
     onContentTypeDetected
@@ -349,12 +343,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             deselect();
         }
     }, [isSelected, deselect]);
-
-    useEffect(() => {
-        if (modelBounds && onModelLoaded) {
-            onModelLoaded(modelBounds);
-        }
-    }, [modelBounds, onModelLoaded]);
 
     useEffect(() => {
         if (!modelBounds) {

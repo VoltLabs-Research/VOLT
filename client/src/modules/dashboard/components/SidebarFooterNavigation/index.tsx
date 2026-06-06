@@ -2,7 +2,7 @@ import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DashboardNavigationSection } from '@/app/routes/types';
 import { useMemo } from 'react';
 import { BookOpen, Settings } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import Box from '@/shared/presentation/primitives/Box';

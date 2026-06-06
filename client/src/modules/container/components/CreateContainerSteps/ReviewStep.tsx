@@ -8,7 +8,7 @@ import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
-import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../hooks/use-create-container-form';
+import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utilities/container-form';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';

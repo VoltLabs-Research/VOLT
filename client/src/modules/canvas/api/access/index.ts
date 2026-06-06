@@ -3,7 +3,9 @@ export {
     useCanvasAccessMode,
     useCanvasCanCollaborate,
     useCanvasDataAccess,
-    withAccessMode
+    withAccessMode,
+    currentCanvasDataAccess,
+    currentAccessKey
 } from './use-canvas-access-store';
 export { buildCanvasDataAccess } from './build-canvas-data-access';
 export type { CanvasDataAccess } from './build-canvas-data-access';

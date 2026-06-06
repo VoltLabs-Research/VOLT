@@ -1,11 +1,12 @@
 import { createService, download, get } from '@/app/core/http/utilities/create-service';
 import { mapRawListingResponse } from './listing-response';
 
-import type { ExportType } from '@/shared/domain/export/types';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 import type { RawListingResponse } from './listing-response';
+
+export type ExportType = 'json' | 'csv';
 
 export interface ExportListingByAnalysisInputDTO {
     analysisId: string;

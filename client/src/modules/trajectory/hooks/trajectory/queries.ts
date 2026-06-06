@@ -21,12 +21,11 @@ import type {
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
     useCanvasAccessMode,
-    useCanvasAccessStore,
     useCanvasDataAccess,
-    withAccessMode
+    withAccessMode,
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type {
@@ -43,7 +42,7 @@ import type {
 import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';
 import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 import type { TrajectoryFolder } from '../../api/entities/trajectory/trajectory-folder';
-import type { InfiniteQueryOptions, QueryOptions } from '@/shared/infrastructure/query/create-paginated-query';
+import type { InfiniteQueryOptions, QueryOptions } from '@/shared/infrastructure/query';
 
 const BASE_KEY = 'trajectory';
 
@@ -139,10 +138,9 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
 export const publicTrajectoryPreviewQuery = createQuery(KEYS.publicPreview, canvasService.getPreview);
 const getAtomsWithAccess = (params: GetAtomsInputDTO) => {
-    const mode = useCanvasAccessStore.getState().mode;
-    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getAtoms(params);
+    return currentCanvasDataAccess().getAtoms(params);
 };
-const getAtomsKey = (params: GetAtomsInputDTO) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.atoms(params));
+const getAtomsKey = (params: GetAtomsInputDTO) => currentAccessKey(KEYS.atoms(params));
 export const trajectoryAtomsQuery = createQuery(getAtomsKey, getAtomsWithAccess);
 const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 

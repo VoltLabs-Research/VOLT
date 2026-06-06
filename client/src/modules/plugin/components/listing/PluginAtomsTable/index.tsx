@@ -11,7 +11,6 @@ interface PluginAtomsTableProps {
     trajectoryId: string;
     analysisId?: string;
     exposureId?: string;
-    onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
 }
 
 const TYPE_PALETTE = [
@@ -32,7 +31,7 @@ const ATOMS_PAGE_SIZE = 100;
 
 const BASE_ATOM_COLUMN_KEYS = new Set(['id', 'type', 'x', 'y', 'z']);
 
-const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }: PluginAtomsTableProps) => {
+const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
     const resolvedAnalysisId = analysisId || 'default';
@@ -124,7 +123,6 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
             isFetchingMore={isFetchingNextPage}
             onLoadMore={handleLoadMore}
             error={error}
-            onDataReady={onDataReady}
         />
     );
 };
