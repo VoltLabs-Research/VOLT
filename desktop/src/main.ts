@@ -10,9 +10,8 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
-// Una sola instancia: si ya hay otra corriendo contra el mismo userData,
-// Chromium no podría abrir IndexedDB (LevelDB tiene lock exclusivo) y el
-// renderer reventaría con "Internal error opening backing store".
+// Single instance: a second process on the same userData can't open IndexedDB
+// (LevelDB holds an exclusive lock) and the renderer would crash.
 if(!app.requestSingleInstanceLock()){
     app.quit();
     process.exit(0);

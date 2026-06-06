@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
-import { sleep } from '@/utils/async';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 export interface BootstrapProps{
     appConfig: AppConfig;
