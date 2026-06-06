@@ -1,4 +1,3 @@
-import { CONTAINER_TEMPLATES } from '../services/container-templates';
 import { containerQuery } from './queries';
 import useTeamClusterResourceSelection from './use-team-cluster-resource-selection';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
@@ -10,7 +9,6 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
-import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
 import type {
     ContainerTemplate,
     ContainerTemplateCustomField,
@@ -22,11 +20,18 @@ import type { TeamClusterOption } from '../api/entities/team-cluster-option';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import { v4 as uuidv4 } from 'uuid';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
+import {
+    getContainerTemplateById,
+    getTemplateConfiguration,
+    getCreatePorts,
+    mergeContainerEnvVariables,
+    hasInvalidCustomField,
+    getCustomImageValidationError
+} from '../utilities/container-form';
 
 const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 const CREATE_CONTAINER_DRAFT_STORAGE_KEY = 'volt:create-container:draft';
-const DOCKER_IMAGE_REFERENCE_PATTERN = /^(?:(?:[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)(?:\/[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)*)(?::[\w][\w.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*:[0-9a-fA-F]{32,})?$/;
 
 interface ContainerDeployProgressEvent {
     operationId: string;
@@ -49,27 +54,6 @@ interface CreateContainerDraft {
     savedAt: number;
 }
 
-/** Validates one template custom field against required and pattern rules. */
-export const getCustomFieldValidationError = (
-    customField: ContainerTemplateCustomField,
-    value: string
-) => {
-    if (customField.required && !value.trim()) {
-        return `${customField.label} is required.`;
-    }
-
-    if (!value.trim() || !customField.pattern) {
-        return null;
-    }
-
-    const validationPattern = new RegExp(customField.pattern);
-    if (!validationPattern.test(value)) {
-        return customField.patternError ?? `${customField.label} is invalid.`;
-    }
-
-    return null;
-};
-
 export interface ContainerConfig {
     name: string;
     memory: number;
@@ -80,153 +64,6 @@ export interface ContainerConfig {
     customFieldValues: ContainerTemplateCustomFieldValues;
     mountDockerSocket: boolean;
 }
-
-interface TemplateConfiguration {
-    ports: PortMapping[];
-    env: EnvVariable[];
-    customFields: ContainerTemplateCustomField[];
-    customFieldValues: ContainerTemplateCustomFieldValues;
-    mountDockerSocket: boolean;
-}
-
-const getContainerTemplateById = (templateId: string) => {
-    return CONTAINER_TEMPLATES.find((containerTemplate) => containerTemplate.id === templateId);
-};
-
-const getTemplatePorts = (template: ContainerTemplate): PortMapping[] => {
-    if (!template.defaultPort) {
-        return [];
-    }
-
-    return [{
-        private: template.defaultPort
-    }];
-};
-
-const getCreatePorts = (ports: PortMapping[]): PortMapping[] => {
-    return ports
-        .filter((port) => port.private > 0)
-        .map((port) => {
-            if (port.public === undefined) {
-                return { private: port.private };
-            }
-
-            return {
-                private: port.private,
-                public: port.public
-            };
-        });
-};
-
-const getTemplateEnv = (template: ContainerTemplate): EnvVariable[] => {
-    if (!template.defaultEnv) {
-        return [];
-    }
-
-    return [...template.defaultEnv];
-};
-
-const getTemplateCustomFields = (template: ContainerTemplate): ContainerTemplateCustomField[] => {
-    if (!template.customFields) {
-        return [];
-    }
-
-    return [...template.customFields];
-};
-
-const getTemplateCustomFieldValues = (template: ContainerTemplate): ContainerTemplateCustomFieldValues => {
-    const customFieldValues: ContainerTemplateCustomFieldValues = {};
-
-    template.customFields?.forEach((customField) => {
-        customFieldValues[customField.id] = customField.defaultValue ?? '';
-    });
-
-    return customFieldValues;
-};
-
-const getTemplateConfiguration = (template: ContainerTemplate): TemplateConfiguration => {
-    return {
-        ports: getTemplatePorts(template),
-        env: getTemplateEnv(template),
-        customFields: getTemplateCustomFields(template),
-        customFieldValues: getTemplateCustomFieldValues(template),
-        mountDockerSocket: template.id === 'coder'
-    };
-};
-
-const getMappedCustomFieldEnv = (
-    customFields: ContainerTemplateCustomField[],
-    customFieldValues: ContainerTemplateCustomFieldValues
-): EnvVariable[] => {
-    return customFields.reduce<EnvVariable[]>((envVariables, customField) => {
-        if (!customField.env) {
-            return envVariables;
-        }
-
-        const value = customFieldValues[customField.id] ?? '';
-        if (!value) {
-            return envVariables;
-        }
-
-        envVariables.push({
-            key: customField.env.key,
-            value
-        });
-
-        return envVariables;
-    }, []);
-};
-
-export const mergeContainerEnvVariables = (
-    envVariables: EnvVariable[],
-    customFields: ContainerTemplateCustomField[],
-    customFieldValues: ContainerTemplateCustomFieldValues
-): EnvVariable[] => {
-    const mergedEnvVariables = new Map<string, EnvVariable>();
-
-    envVariables
-        .filter((envVariable) => envVariable.key && envVariable.value)
-        .forEach((envVariable) => {
-            mergedEnvVariables.set(envVariable.key, envVariable);
-        });
-
-    getMappedCustomFieldEnv(customFields, customFieldValues).forEach((envVariable) => {
-        mergedEnvVariables.set(envVariable.key, envVariable);
-    });
-
-    return Array.from(mergedEnvVariables.values());
-};
-
-const hasInvalidCustomField = (
-    customFields: ContainerTemplateCustomField[],
-    customFieldValues: ContainerTemplateCustomFieldValues
-) => {
-    return customFields.some((customField) => {
-        return getCustomFieldValidationError(customField, customFieldValues[customField.id] ?? '') !== null;
-    });
-};
-
-export const getMaskedCustomFieldValue = (customField: ContainerTemplateCustomField, value: string) => {
-    if (customField.type === ContainerTemplateCustomFieldType.Password && value) {
-        return '••••••••';
-    }
-
-    return value;
-};
-
-export const getCustomImageValidationError = (image: string): string | null => {
-    const trimmedImage = image.trim();
-
-    if (!trimmedImage) {
-        return 'Please enter a Docker image reference.';
-    }
-
-    if (!DOCKER_IMAGE_REFERENCE_PATTERN.test(trimmedImage)) {
-        return 'Use a valid Docker image reference, for example nginx:latest or ghcr.io/org/image:tag.';
-    }
-
-    return null;
-};
 
 export interface UseCreateContainerFormReturn {
     config: ContainerConfig;

@@ -14,7 +14,7 @@ import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
-import PluginExposureListingPanel from '@/modules/plugin/components/listing/PluginExposureListingPanel';
+import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import Box from '@/shared/presentation/primitives/Box';
 import Stack from '@/shared/presentation/primitives/Stack';
 import type { TimelineTabOption } from '../TimelineHeader';
@@ -540,7 +540,7 @@ const Timeline = ({
             {activeExposureId && trajectory?._id && pluginId && (
                 <Box flex='1' position='relative' overflow='hidden' minH='0' className="canvas-timeline-body">
                     {/* Reuse the dashboard listing flow so row actions keep the exact analysis/exposure/timestep context. */}
-                    <PluginExposureListingPanel
+                    <PluginExposureTable
                         key={`${pluginId}:${analysisId ?? 'default'}:${trajectory._id}:${activeExposureId}`}
                         pluginId={pluginId}
                         exposureId={activeExposureId}

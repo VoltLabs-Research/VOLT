@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig as ListingColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
+import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
 import InlineSubListingView from '@/modules/plugin/components/listing/InlineSubListingView';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
@@ -28,7 +28,6 @@ export interface PluginExposureTableProps {
     inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
-    onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
 }
 
 interface InlineSubListingState {
@@ -62,8 +61,7 @@ const CompactPluginExposureTable = ({
     analysisId,
     teamId,
     showTrajectoryColumn,
-    inlineSubListings,
-    onDataReady
+    inlineSubListings
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
     const pageSize = 20;
@@ -138,11 +136,6 @@ const CompactPluginExposureTable = ({
             fetchNextPage();
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-    useEffect(() => {
-        if (!onDataReady) return;
-        onDataReady(compactColumns, compactRows);
-    }, [compactColumns, compactRows, onDataReady]);
 
     const getMenuOptions = useCallback((row: Record<string, unknown>): MenuOption[] => {
         const item = row as Record<string, unknown> & { _id?: string; trajectoryId?: string; analysisId?: string; exposureId?: string; timestep?: number };
@@ -244,7 +237,6 @@ const CompactPluginExposureTable = ({
             isFetchingMore={isFetchingNextPage}
             onLoadMore={handleLoadMore}
             error={compactErrorMessage}
-            onDataReady={onDataReady}
             getMenuOptions={getMenuOptions}
         />
     );

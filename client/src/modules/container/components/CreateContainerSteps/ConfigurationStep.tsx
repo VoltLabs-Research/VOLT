@@ -8,7 +8,7 @@ import Heading from '@/shared/presentation/primitives/Heading';
 import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
-import { getCustomFieldValidationError } from '../../hooks/use-create-container-form';
+import { getCustomFieldValidationError } from '../../utilities/container-form';
 import { ContainerTemplateCustomFieldType } from '../../api/entities/container-template';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
 import type { ClusterResourceLimits } from '../../api/entities/cluster-resource-limits';

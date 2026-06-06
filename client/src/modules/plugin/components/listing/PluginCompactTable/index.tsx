@@ -184,7 +184,6 @@ interface PluginCompactTableProps {
     onLoadMore?: () => void;
     error?: unknown;
     rowHeight?: number;
-    onDataReady?: (columns: ColumnConfig[], data: Record<string, unknown>[]) => void;
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
     onRowClick?: (row: Record<string, unknown>) => void;
     selectedRowId?: string | null;

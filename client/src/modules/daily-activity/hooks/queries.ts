@@ -1,5 +1,5 @@
 import service from '../api/service';
-import { buildKeys, createQuery } from '@/shared/infrastructure/query/create-paginated-query';
+import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import type { GetDailyActivityParams } from '../api/service';
 
 interface DailyActivityQueryParams extends GetDailyActivityParams {

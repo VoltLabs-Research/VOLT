@@ -5,10 +5,8 @@ import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { useMutation } from '@tanstack/react-query';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import type {
     GetRasterMetadataParams,
@@ -45,10 +43,9 @@ const clearRasterizationRequestPending = (trajectoryId: string): void => {
 };
 
 const getRasterMetadataWithAccess = (params: GetRasterMetadataParams) => {
-    const mode = useCanvasAccessStore.getState().mode;
-    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getRasterMetadata(params);
+    return currentCanvasDataAccess().getRasterMetadata(params);
 };
-const rasterMetadataKey = (params: GetRasterMetadataParams) => withAccessMode(useCanvasAccessStore.getState().mode, KEYS.metadata(params));
+const rasterMetadataKey = (params: GetRasterMetadataParams) => currentAccessKey(KEYS.metadata(params));
 export const rasterMetadataQuery = createQuery(rasterMetadataKey, getRasterMetadataWithAccess);
 
 // Kept as raw `useMutation`: needs composed `onError` alongside `onSuccess`

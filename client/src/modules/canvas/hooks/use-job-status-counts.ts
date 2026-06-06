@@ -1,5 +1,6 @@
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
+import { isQueuedJobStatus, isRunningJobStatus } from '@/modules/canvas/utilities/analysis-job-status';
 import { useMemo } from 'react';
 
 interface JobStatusCounts {
@@ -12,14 +13,6 @@ const INITIAL_COUNTS: JobStatusCounts = {
     queued: 0,
     running: 0,
     completed: 0
-};
-
-const isQueuedJobStatus = (status: JobStatus): boolean => {
-    return status === JobStatus.Queued || status === JobStatus.QueuedAfterFailure;
-};
-
-const isRunningJobStatus = (status: JobStatus): boolean => {
-    return status === JobStatus.Running || status === JobStatus.Retrying;
 };
 
 const useJobStatusCounts = (trajectoryId?: string) => {

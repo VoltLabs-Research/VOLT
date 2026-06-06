@@ -13,6 +13,17 @@ export interface AppEvents{
         repoId: string;
         phase: 'download' | 'extract' | 'done';
         bytes?: number;
+    },
+    // Ordered step list for the current deploy operation, declared up front so the
+    // renderer can show every upcoming phase (Vercel-style) before it runs.
+    'deploy:phases': {
+        phases: { id: string; label: string }[];
+    },
+    // A single phase advancing through its lifecycle.
+    'deploy:phase': {
+        id: string;
+        status: 'running' | 'done' | 'error';
+        detail?: string;
     }
 };
 

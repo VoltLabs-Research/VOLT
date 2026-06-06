@@ -176,3 +176,49 @@
     color: var(--color-text-muted);
     white-space: nowrap;
 }
+
+/* settings (gear) button + menu */
+.settings-wrap{
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.settings-btn{ font-size: 16px; }
+.settings-btn.active{ background: var(--color-surface-3); color: var(--color-text-primary); }
+
+.menu-backdrop{
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    /* sits inside the draggable titlebar — keep it clickable so it can dismiss */
+    -webkit-app-region: no-drag;
+}
+
+.menu{
+    position: absolute;
+    top: 34px;
+    right: 0;
+    z-index: 41;
+    min-width: 168px;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+    -webkit-app-region: no-drag;
+}
+
+.menu-item{
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.menu-item:hover{ background: var(--color-surface-3); }

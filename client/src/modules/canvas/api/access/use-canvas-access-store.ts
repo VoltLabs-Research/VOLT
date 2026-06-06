@@ -30,3 +30,9 @@ export const withAccessMode = <TKey extends readonly unknown[]>(
 ) => {
     return ['canvas-access', mode, ...key] as const;
 };
+
+export const currentCanvasDataAccess = (): CanvasDataAccess =>
+    buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: useCanvasAccessStore.getState().mode });
+
+export const currentAccessKey = <TKey extends readonly unknown[]>(key: TKey) =>
+    withAccessMode(useCanvasAccessStore.getState().mode, key);

@@ -3,10 +3,8 @@ import {
     createQuery
 } from '@/shared/infrastructure/query';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import type {
     ColorCodingProperties,
@@ -27,23 +25,18 @@ export const COLOR_CODING_QUERY_KEYS = {
     colorCodingStats: KEYS.colorCodingStats
 } as const;
 
-const currentDataAccess = () => {
-    const mode = useCanvasAccessStore.getState().mode;
-    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode });
-};
-
 const getColorCodingPropertiesKey = (params: GetColorCodingPropertiesInputDTO) =>
-    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.colorCodingProperties(params));
+    currentAccessKey(KEYS.colorCodingProperties(params));
 
 const getColorCodingStatsKey = (params: GetColorCodingStatsInputDTO) =>
-    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.colorCodingStats(params));
+    currentAccessKey(KEYS.colorCodingStats(params));
 
 export const colorCodingPropertiesQuery = createQuery<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(
     getColorCodingPropertiesKey,
-    (params) => currentDataAccess().getColorCodingProperties(params)
+    (params) => currentCanvasDataAccess().getColorCodingProperties(params)
 );
 
 export const colorCodingStatsQuery = createQuery<GetColorCodingStatsInputDTO, ColorCodingStats>(
     getColorCodingStatsKey,
-    (params) => currentDataAccess().getColorCodingStats(params)
+    (params) => currentCanvasDataAccess().getColorCodingStats(params)
 );

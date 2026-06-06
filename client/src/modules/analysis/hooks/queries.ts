@@ -7,7 +7,7 @@ import {
     createPaginatedQuery,
     createQuery,
     type QueryOptions
-} from '@/shared/infrastructure/query/create-paginated-query';
+} from '@/shared/infrastructure/query';
 import {
     useCanvasAccessMode,
     useCanvasDataAccess,
