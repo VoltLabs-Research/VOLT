@@ -11,11 +11,9 @@ export interface RepositoryRelease{
 };
 
 export default class Repository{
-    props: RepositoryProps;
     octokit: Octokit;
 
-    constructor(props: RepositoryProps){
-        this.props = props;
+    constructor(private readonly props: RepositoryProps){
         this.octokit = new Octokit();
     }
 
@@ -28,8 +26,7 @@ export default class Repository{
             'GET /repos/{owner}/{repo}/releases/latest',
             { owner: this.props.owner, repo: this.props.repo }
         );
-    
-        console.log(data);
+
         if(!data.zipball_url || !data.tag_name) throw new Error('Invalid HTTP response');
 
         return {

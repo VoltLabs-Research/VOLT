@@ -14,11 +14,7 @@ export interface SoftwareUpdaterProps{
 }
 
 export default class SoftwareUpdater{
-    props: SoftwareUpdaterProps;
-
-    constructor(props: SoftwareUpdaterProps){
-        this.props = props;
-    }
+    constructor(private readonly props: SoftwareUpdaterProps){}
 
     #extractRoot(){
         return path.join(this.props.downloadDir, this.props.repoId);
