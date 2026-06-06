@@ -1,5 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 
 export interface RunOptions{
     cwd?: string;
@@ -11,12 +10,12 @@ export interface RunOptions{
 export default class ProcessRunner{
     #byLine(onLine: (line: string) => void){
         let buf = '';
-        
+
         return (chunk: Buffer) => {
             buf += chunk.toString('utf8');
             const parts = buf.split('\n');
             buf = parts.pop() ?? '';
-            
+
             for(const line of parts) onLine(line);
         };
     }
@@ -30,7 +29,7 @@ export default class ProcessRunner{
             });
 
             if(options.onStdout) child.stdout.on('data', this.#byLine(options.onStdout));
-            if(options.onStderr) child.stdout.on('data', this.#byLine(options.onStderr));
+            if(options.onStderr) child.stderr.on('data', this.#byLine(options.onStderr));
 
             child.on('error', reject);
             child.on('close', (code) => {

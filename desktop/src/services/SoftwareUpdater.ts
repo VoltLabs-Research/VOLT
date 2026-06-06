@@ -1,7 +1,7 @@
 import { RepositoryRelease } from '@/services/Repository';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import { mkdir, readdir, unlink } from 'node:fs/promises';
-import { Readable } from 'node:stream'
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
 import path from 'path';
@@ -14,15 +14,19 @@ export interface SoftwareUpdaterProps{
 }
 
 export default class SoftwareUpdater{
-    props: SoftwareUpdaterProps
-    
+    props: SoftwareUpdaterProps;
+
     constructor(props: SoftwareUpdaterProps){
-        this.props = props; 
+        this.props = props;
+    }
+
+    #extractRoot(){
+        return path.join(this.props.downloadDir, this.props.repoId);
     }
 
     async #download(release: RepositoryRelease, downloadPath: string){
         const res = await fetch(release.zipballUrl);
-        if(!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+        if(!res.ok || !res.body) throw new Error(`Error HTTP: ${res.status}`);
 
         let bytes = 0;
         let lastPct = -1;
@@ -32,7 +36,7 @@ export default class SoftwareUpdater{
         counter.on('data', (chunk: Buffer) => {
             bytes += chunk.length;
 
-            const pct = total ? Math.floor(bytes / total * 100) : - 1;
+            const pct = total ? Math.floor(bytes / total * 100) : -1;
             if(pct !== lastPct){
                 lastPct = pct;
                 bus.emit('source:progress', {
@@ -43,20 +47,24 @@ export default class SoftwareUpdater{
             }
         });
 
-        await pipeline(Readable.fromWeb(res.body), counter, createWriteStream(downloadPath));
+        await pipeline(Readable.fromWeb(res.body as any), counter, createWriteStream(downloadPath));
     }
 
     async #extract(zipPath: string, outputDir: string){
         await mkdir(outputDir, { recursive: true }).catch(() => {});
 
         await extractZip(zipPath, {
-            dir: path.resolve(outputDir),
+            dir: path.resolve(outputDir)
         });
     }
 
     async update(release: RepositoryRelease){
-        const downloadPath = `${this.props.downloadDir}/${release.tag}.zip`;
-        const extractPath = `${this.props.downloadDir}/${this.props.repoId}`;
+        // Namespace por repoId para evitar colisión cuando dos repos comparten tag.
+        const safeId = this.props.repoId.replace('/', '_');
+        const downloadPath = path.join(this.props.downloadDir, `${safeId}-${release.tag}.zip`);
+        const extractPath = this.#extractRoot();
+
+        await mkdir(this.props.downloadDir, { recursive: true });
 
         await this.#download(release, downloadPath);
 
@@ -66,10 +74,17 @@ export default class SoftwareUpdater{
         await unlink(downloadPath);
         bus.emit('source:progress', { repoId: this.props.repoId, phase: 'done' });
 
-        const entries = await readdir(extractPath, { withFileTypes: true });
-        const inner = entries.find((entry) => entry.isDirectory());
-        if(!inner) throw new Error('extracted archive has no top-level dir');
+        return this.resolveExtractedPath();
+    }
 
-        return path.join(extractPath, inner.name);
+    async resolveExtractedPath(){
+        const root = this.#extractRoot();
+        if(!existsSync(root)) throw new Error(`No source for ${this.props.repoId} at ${root}`);
+
+        const entries = await readdir(root, { withFileTypes: true });
+        const inner = entries.find((entry) => entry.isDirectory());
+        if(!inner) throw new Error(`Extracted archive ${this.props.repoId} has no top-level dir`);
+
+        return path.join(root, inner.name);
     }
 };

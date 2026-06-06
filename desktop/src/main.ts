@@ -1,84 +1,97 @@
 import { app, BrowserWindow } from 'electron';
-import { registerIpc } from '@/ipc';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import AppConfig from '@/services/AppConfig';
 import Repository from '@/services/Repository';
-import SoftwareUpdater from '@/services/SoftwareUpdater';
 import Deploy from '@/services/Deploy';
+import { registerIpc } from '@/ipc';
 
-const appConfig = new AppConfig({
-    configFile: './app-config.json'
-});
+app.commandLine.appendSwitch('disable-http-cache');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
 
-const REPOS = [{
-    repo: new Repository({
-        owner: 'voltlabs-research',
-        repo: 'volt'
-    }),
-    envKey: 'voltSourceDir'
-}, {
-    repo: new Repository({
-        owner: 'voltlabs-research',
-        repo: 'clusterdaemon'
-    }),
-    envKey: 'clusterDaemonSourceDir'
-}];
+// Una sola instancia: si ya hay otra corriendo contra el mismo userData,
+// Chromium no podría abrir IndexedDB (LevelDB tiene lock exclusivo) y el
+// renderer reventaría con "Internal error opening backing store".
+if(!app.requestSingleInstanceLock()){
+    app.quit();
+    process.exit(0);
+}
 
-const ensureSources = async () => {
-    const sources: Record<string, string> = {};
-    for(const { repo, envKey } of REPOS){
-        const repoId = repo.getId();
-        const latest = await repo.fetchLatestRelease();
-        const installed = await appConfig.checkInstalledRelease(repoId);
-        const updater = new SoftwareUpdater({
-            repoId,
-            downloadDir: './downloads'
-        });
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-        if(latest.tag !== installed){
-            sources[envKey] = await updater.update(latest);
-            await appConfig.updateRelease(repoId, latest.tag);
-        }else{
-            sources[envKey] = await updater.resolveExtractedPath();
-        }
-    }
-
-    return sources;
+const STACK_DEFAULTS: Record<string, string> = {
+    SERVER_PORT: '8100',
+    WEB_PORT: '5273',
+    MINIO_PORT: '9100',
+    MINIO_CONSOLE: '9101',
+    DAEMON_PORT: '18080',
+    MONGO_USER: 'volt',
+    MONGO_PASS: 'volt',
+    REDIS_PASS: 'voltredis',
+    MINIO_USER: 'voltminio',
+    MINIO_PASS: 'voltminiosecret',
+    DAEMON_PASS: 'daemon-local-pass',
+    SECRET_KEY: 'volt-local-secret',
+    SSH_KEY: 'volt-local-ssh'
 };
 
-const createWindow = () => {
+const createWindow = (): BrowserWindow => {
     const win = new BrowserWindow({
         width: 1400,
         height: 900,
+        show: false,
+        backgroundColor: '#0a0a0a',
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            devTools: true,
+            preload: path.join(__dirname, '../preload/preload.mjs'),
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: false
         }
     });
 
-    win.loadFile('renderer/index.html');
+    win.on('ready-to-show', () => win.show());
+
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if(devUrl){
+        win.loadURL(devUrl);
+    }else{
+        win.loadFile(path.join(__dirname, '../renderer/index.html'));
+    }
+
     return win;
 };
 
-app.whenReady().then(() => {
-    const sources = ensureSources();
+app.whenReady().then(async () => {
+    const appConfig = new AppConfig({ configFile: path.resolve('./app-config.json') });
+    await appConfig.ensureStackDefaults(STACK_DEFAULTS);
 
     const deploy = new Deploy({
-        composeFile: './stack/compose.yml',
+        composeFile: path.resolve('./stack/compose.yml'),
         appConfig,
-        voltSourceDir: sources.voltSourceDir,
-        clusterSourceDir: sources.clusterSourceDir
+        downloadDir: path.resolve('./downloads'),
+        repos: [
+            {
+                repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }),
+                envKey: 'VOLT_SOURCE_DIR'
+            },
+            {
+                repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }),
+                envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
+            }
+        ]
     });
-    
-    const win = createWindow();
 
+    const win = createWindow();
     registerIpc(win, { deploy, appConfig });
+
+    app.on('second-instance', () => {
+        if(win.isMinimized()) win.restore();
+        win.focus();
+    });
 });
 
 app.on('window-all-closed', () => {
-    if(process.platform !== 'darwin'){
-        app.quit();
-    }
+    if(process.platform !== 'darwin') app.quit();
 });
