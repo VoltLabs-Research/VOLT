@@ -36,10 +36,16 @@ export default class Bootstrap{
                 const authToken = await this.#signIn(existing.email, existing.password);
                 const enrollmentToken = await this.#tryRegenerateEnrollmentToken(authToken, existing.teamId, existing.teamClusterId);
 
+                // Reveal lazily so configs written before daemonPassword existed self-heal
+                // on the next launch instead of forcing a full re-bootstrap.
+                const daemonPassword = existing.daemonPassword
+                    ?? await this.#revealDaemonPassword(authToken, existing.teamId, existing.teamClusterId, existing.password);
+
                 const next: BootstrapState = {
                     ...existing,
                     authToken,
-                    enrollmentToken: enrollmentToken ?? existing.enrollmentToken
+                    enrollmentToken: enrollmentToken ?? existing.enrollmentToken,
+                    daemonPassword
                 };
                 await this.props.appConfig.setBootstrap(next);
                 return next;
@@ -84,6 +90,9 @@ export default class Bootstrap{
         log('creating local cluster');
         const cluster = await this.#createCluster(auth.token, team._id, 'Local Cluster');
 
+        log('revealing daemon credentials');
+        const daemonPassword = await this.#revealDaemonPassword(auth.token, team._id, cluster.teamCluster._id, password);
+
         const state: BootstrapState = {
             done: true,
             email,
@@ -92,7 +101,8 @@ export default class Bootstrap{
             teamId: team._id,
             teamClusterId: cluster.teamCluster._id,
             enrollmentToken: cluster.enrollmentToken,
-            authToken: auth.token
+            authToken: auth.token,
+            daemonPassword
         };
 
         await this.props.appConfig.setBootstrap(state);
@@ -119,6 +129,21 @@ export default class Bootstrap{
 
     async #createCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
         return this.#postJson<TeamClusterResponse>(`/api/teams/${teamId}/clusters`, { name }, token);
+    }
+
+    // Password-confirmed reveal of the cluster's decrypted service credentials. We only
+    // need the daemon password — the daemon reaches the shared infra (mongo/redis/minio)
+    // with the stack-level creds from compose, not the per-cluster generated ones.
+    async #revealDaemonPassword(token: string, teamId: string, teamClusterId: string, password: string): Promise<string>{
+        const data = await this.#postJson<{ services: { daemon: { password: string } } }>(
+            `/api/teams/${teamId}/clusters/${teamClusterId}/credentials/reveal`,
+            { password },
+            token
+        );
+
+        const daemonPassword = data.services?.daemon?.password;
+        if(!daemonPassword) throw new Error('reveal-credentials returned no daemon password');
+        return daemonPassword;
     }
 
     async #postJson<T>(path: string, body: object, token?: string): Promise<T>{
