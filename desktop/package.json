@@ -1,14 +1,32 @@
 {
+  "name": "volt-desktop",
+  "version": "0.1.0",
   "type": "module",
+  "main": "out/main/main.js",
+  "scripts": {
+    "dev": "electron-vite dev -- --no-sandbox",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit",
+    "package": "electron-vite build && electron-builder"
+  },
   "dependencies": {
     "dockerode": "^5.0.0",
-    "electron": "^42.3.3",
     "extract-zip": "^2.0.1",
     "octokit": "^5.0.5"
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.0",
     "electron-builder": "^26.8.1",
-    "tsx": "^4.22.4"
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.22.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
   }
 }

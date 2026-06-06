@@ -5,13 +5,18 @@ declare global{
         volt: {
             deploy: {
                 start: () => Promise<void>;
-                stop: () => Promise<void>;
+                stop:  () => Promise<void>;
             };
             config: {
-                get: () => Promise<Record<string, any>>;
+                get:    () => Promise<Record<string, any>>;
                 update: (payload: object) => Promise<void>;
+            };
+            app: {
+                voltUrl: () => Promise<string>;
             };
             on: <K extends keyof AppEvents>(channel: K, cb: (p: AppEvents[K]) => void) => () => void;
         }
     }
 }
+
+export {};

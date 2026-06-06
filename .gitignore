@@ -1,6 +1,11 @@
 .opencode/
 server/storage/
 
+.agents/
+out/
+
+downloads/
+
 .ai-workflow/
 
 # Logs
