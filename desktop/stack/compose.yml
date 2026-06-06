@@ -1,0 +1,118 @@
+name: volt
+services:
+  volt-mongodb:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-volt}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-volt}
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin | grep 1"]
+      interval: 10s
+      retries: 20
+    volumes: [volt-mongodb-data:/data/db]
+
+  volt-redis:
+    image: redis:7.4.2-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASS:-voltredis}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASS:-voltredis} ping | grep PONG"]
+      interval: 10s
+      retries: 20
+    volumes: [volt-redis-data:/data]
+
+  volt-minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-voltminio}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASS:-voltminiosecret}
+    command: server /data --console-address ":9001"
+    ports: ["${MINIO_PORT:-9100}:9000", "${MINIO_CONSOLE:-9101}:9001"]
+    volumes: [volt-minio-data:/data]
+
+  volt-server:
+    build:
+      context: ${VOLT_SOURCE_DIR}/server
+      dockerfile: Dockerfile.dev
+    image: volt-server:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: volt-redis
+      REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
+      MINIO_ENDPOINT: volt-minio
+      MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
+      MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
+      MONGO_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017?authSource=admin
+      SERVER_PORT: 8000
+      SERVER_HOST: 0.0.0.0
+      SECRET_KEY: ${SECRET_KEY:-volt-local-secret}
+      SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
+    depends_on:
+      volt-mongodb: { condition: service_healthy }
+      volt-redis:   { condition: service_healthy }
+      volt-minio:   { condition: service_started }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${VOLT_SOURCE_DIR}/server:/app
+      - volt-server-node-modules:/app/node_modules
+    ports: ["${SERVER_PORT:-8100}:8000"]
+
+  volt-client:
+    build:
+      context: ${VOLT_SOURCE_DIR}/client
+      dockerfile: Dockerfile.dev
+    image: volt-client:local
+    restart: unless-stopped
+    depends_on: [volt-server]
+    volumes:
+      - ${VOLT_SOURCE_DIR}/client:/app
+      - volt-client-node-modules:/app/node_modules
+    ports: ["${WEB_PORT:-5273}:5173"]
+
+  cluster-daemon:
+    build:
+      context: ${CLUSTER_DAEMON_SOURCE_DIR}
+      dockerfile: Dockerfile.dev
+    image: cluster-daemon:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: ${DAEMON_PORT:-18080}
+      TEAM_CLUSTER_ID: local-cluster
+      TEAM_CLUSTER_DAEMON_PASSWORD: ${DAEMON_PASS:-daemon-local-pass}
+      VOLT_CLOUD_URL: http://volt-server:8000
+      MONGODB_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017/volt-cluster?authSource=admin
+      REDIS_HOST: volt-redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
+      MINIO_ENDPOINT: http://volt-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
+      MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
+      BUCKET_PREFIX: cluster-
+      SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
+    depends_on:
+      volt-mongodb: { condition: service_healthy }
+      volt-redis:   { condition: service_healthy }
+      volt-minio:   { condition: service_started }
+      volt-server:  { condition: service_started }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CLUSTER_DAEMON_SOURCE_DIR}:/app
+      - cluster-daemon-node-modules:/app/node_modules
+    ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]
+
+volumes:
+  volt-mongodb-data:
+  volt-redis-data:
+  volt-minio-data:
+  cluster-mongodb-data:
+  cluster-redis-data:
+  cluster-minio-data:
+  volt-server-node-modules:
+  volt-client-node-modules:
+  cluster-daemon-node-modules:
