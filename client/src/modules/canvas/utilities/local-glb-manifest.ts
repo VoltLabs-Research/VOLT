@@ -26,7 +26,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
     return typeof value === 'object' && value !== null;
 };
 
-const clampFrameIndex = (value: number, frameCount: number): number => {
+export const clampFrameIndex = (value: number, frameCount: number): number => {
     if (frameCount <= 0) {
         return 0;
     }

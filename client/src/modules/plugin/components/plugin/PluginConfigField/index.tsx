@@ -14,6 +14,7 @@ import type {
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;
@@ -163,18 +164,13 @@ const PluginConfigField = ({
                             placeholder='Select plugins'
                             className='form-field-canvas-select labeled-input'
                             aria-label={argument.label || argument.argument}
-                            renderTriggerLabel={(selectedCount) => {
-                                if (selectedCount === 0) {
-                                    return 'Select plugins';
-                                }
-
-                                if (selectedCount === 1) {
-                                    const selectedPluginId = selectedPluginIds[0];
-                                    return pluginOptions.find((option) => option.value === selectedPluginId)?.title ?? '1 selected';
-                                }
-
-                                return `${selectedCount} plugins selected`;
-                            }}
+                            renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
+                                selectedCount,
+                                selectedPluginIds,
+                                pluginOptions,
+                                'Select plugins',
+                                'plugins selected'
+                            )}
                         />
                     ) : (
                         <Select

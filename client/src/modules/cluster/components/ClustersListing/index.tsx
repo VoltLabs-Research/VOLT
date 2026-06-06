@@ -30,7 +30,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
 import Text from '@/shared/presentation/primitives/Text';
-import { ArrowRightLeft, Database, FolderOpen, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
@@ -40,13 +40,6 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/ServerTable/ServerTable.css';
 import { useNavigate } from 'react-router-dom';
-import type { NavigateFunction } from 'react-router-dom';
-
-const CLUSTER_EXPLORER_MENU_ITEMS: Array<Pick<MenuOption, 'label' | 'icon'> & { segment: string }> = [
-    { label: 'Explore Mongo Documents', segment: 'mongo', icon: Database },
-    { label: 'Explore Redis Data', segment: 'redis', icon: Database },
-    { label: 'Explore MinIO', segment: 'minio', icon: FolderOpen }
-];
 
 const renderMetricBars = (percentage: number, label: string): ReactNode => {
     const activeBars = Math.floor(percentage / 20);
@@ -83,14 +76,6 @@ const createMetricColumn = (key: 'cpu' | 'memory', title: string): ColumnConfig<
     width: 180,
     render: (_, row) => renderMetricValue(row[key])
 });
-
-const createExplorerMenuOptions = (row: ServerRow, navigate: NavigateFunction): MenuOption[] => {
-    return CLUSTER_EXPLORER_MENU_ITEMS.map(({ label, segment, icon }) => ({
-        label,
-        icon,
-        onClick: () => navigate(`/dashboard/clusters/${row.id}/${segment}`)
-    }));
-};
 
 const ClustersListing = () => {
     const navigate = useNavigate();
@@ -265,7 +250,6 @@ const ClustersListing = () => {
             disabled: row.teamCluster.status !== TeamClusterStatus.Connected || !row.teamCluster.effectiveCapabilities.servesStorageReads,
             onClick: () => handleTransferData(row.teamCluster)
         },
-        ...createExplorerMenuOptions(row, navigate),
         {
             label: 'Delete cluster',
             icon: Trash2,

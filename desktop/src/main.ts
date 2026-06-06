@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'node:url';
 import AppConfig from '@/services/AppConfig';
 import Repository from '@/services/Repository';
+import SourceResolver from '@/services/SourceResolver';
 import Deploy from '@/services/Deploy';
 import { registerIpc } from '@/ipc';
 
@@ -10,8 +11,6 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
-// Single instance: a second process on the same userData can't open IndexedDB
-// (LevelDB holds an exclusive lock) and the renderer would crash.
 if(!app.requestSingleInstanceLock()){
     app.quit();
     process.exit(0);
@@ -67,8 +66,7 @@ app.whenReady().then(async () => {
     const appConfig = new AppConfig({ configFile: path.resolve('./app-config.json') });
     await appConfig.ensureStackDefaults(STACK_DEFAULTS);
 
-    const deploy = new Deploy({
-        composeFile: path.resolve('./stack/compose.yml'),
+    const sources = new SourceResolver({
         appConfig,
         downloadDir: path.resolve('./downloads'),
         repos: [
@@ -81,6 +79,12 @@ app.whenReady().then(async () => {
                 envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
             }
         ]
+    });
+
+    const deploy = new Deploy({
+        composeFile: path.resolve('./stack/compose.yml'),
+        appConfig,
+        sources
     });
 
     const win = createWindow();

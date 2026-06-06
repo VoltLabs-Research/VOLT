@@ -177,18 +177,6 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 {
                     label: 'Reveal Credentials',
                     onClick: () => sidebarClusters.handleRevealCredentials(cluster)
-                },
-                {
-                    label: 'Explore Mongo Documents',
-                    onClick: () => sidebarClusters.handleExploreMongo(cluster)
-                },
-                {
-                    label: 'Explore Redis Data',
-                    onClick: () => sidebarClusters.handleExploreRedis(cluster)
-                },
-                {
-                    label: 'Explore MinIO',
-                    onClick: () => sidebarClusters.handleExploreMinio(cluster)
                 }
             ]
         }))
