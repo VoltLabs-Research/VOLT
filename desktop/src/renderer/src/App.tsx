@@ -12,22 +12,45 @@ interface LogLine{
     text: string;
 }
 
-const STATUS: Record<DeployState, string> = {
+interface PhaseSpec{
+    id: string;
+    label: string;
+}
+
+type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
+
+const HEADING: Record<DeployState, string> = {
     idle:     'Preparing…',
-    starting: 'Starting Volt…',
-    up:       'Connecting…',
-    stopping: 'Stopping…',
+    starting: 'Deploying Volt',
+    up:       'Ready',
+    stopping: 'Stopping',
     down:     'Stopped',
-    error:    'Something went wrong'
+    error:    'Deploy failed'
 };
 
 const MAX_LINES = 800;
 
 const errMessage = (err: unknown) => (err as any)?.message ?? String(err);
 
+const StepIcon = ({ status }: { status: PhaseStatus }) => {
+    if(status === 'running') return <span className='step-spinner' aria-hidden='true' />;
+    if(status === 'done') return (
+        <svg className='step-glyph' viewBox='0 0 16 16' aria-hidden='true'>
+            <path d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='currentColor' strokeWidth='1.6' strokeLinecap='round' strokeLinejoin='round' />
+        </svg>
+    );
+    if(status === 'error') return (
+        <svg className='step-glyph' viewBox='0 0 16 16' aria-hidden='true'>
+            <path d='M4.5 4.5l7 7M11.5 4.5l-7 7' fill='none' stroke='currentColor' strokeWidth='1.6' strokeLinecap='round' />
+        </svg>
+    );
+    return <span className='step-dot' aria-hidden='true' />;
+};
+
 const App = () => {
     const [state, setState] = useState<DeployState>('idle');
-    const [status, setStatus] = useState(STATUS.idle);
+    const [phases, setPhases] = useState<PhaseSpec[]>([]);
+    const [phaseState, setPhaseState] = useState<Record<string, { status: PhaseStatus; detail?: string }>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
     const [voltUrl, setVoltUrl] = useState<string | null>(null);
     const [iframeReady, setIframeReady] = useState(false);
@@ -68,7 +91,6 @@ const App = () => {
     useEffect(() => {
         const unsubState = window.volt.on('deploy:state', (p) => {
             setState(p.state);
-            setStatus(STATUS[p.state]);
 
             if(p.state === 'error'){
                 const message = p.message ?? 'Unknown error';
@@ -83,14 +105,26 @@ const App = () => {
             }
         });
 
+        const unsubPhases = window.volt.on('deploy:phases', (p) => {
+            setPhases(p.phases);
+            setPhaseState({});
+        });
+
+        const unsubPhase = window.volt.on('deploy:phase', (p) => {
+            setPhaseState((prev) => ({ ...prev, [p.id]: { status: p.status, detail: p.detail } }));
+        });
+
         const unsubLog = window.volt.on('deploy:log', (p) => {
             const text = p.line.replace(/\s+$/, '');
             if(text) append({ stream: p.stream, text });
         });
 
+        // Stream source download/extract progress into the 'sources' step's detail line.
         const unsubProgress = window.volt.on('source:progress', (p) => {
-            const mb = p.bytes ? ` · ${(p.bytes / 1024 / 1024).toFixed(1)} MB` : '';
-            setStatus(`${p.repoId} — ${p.phase}${mb}`);
+            const detail = p.phase === 'download' && p.bytes
+                ? `downloading · ${(p.bytes / 1024 / 1024).toFixed(1)} MB`
+                : p.phase;
+            setPhaseState((prev) => ({ ...prev, sources: { status: 'running', detail } }));
         });
 
         if(!startedRef.current){
@@ -98,12 +132,13 @@ const App = () => {
             begin();
         }
 
-        return () => { unsubState(); unsubLog(); unsubProgress(); };
+        return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); };
     }, []);
 
     const resetBoot = () => {
         setState('idle');
-        setStatus(STATUS.idle);
+        setPhases([]);
+        setPhaseState({});
         setLogs([]);
         setVoltUrl(null);
         setIframeReady(false);
@@ -144,17 +179,34 @@ const App = () => {
                 {!iframeReady && (
                     <main className='boot'>
                         <div className='boot-lead'>
-                            <span className={state === 'error' ? 'boot-status boot-error' : 'boot-status'}>{status}</span>
+                            <span className={[
+                                'boot-heading',
+                                state === 'error' ? 'boot-error' : '',
+                                state === 'idle' || state === 'starting' || state === 'stopping' ? 'is-loading' : ''
+                            ].filter(Boolean).join(' ')}>
+                                {HEADING[state]}
+                            </span>
+
+                            {phases.length > 0 && (
+                                <ol className='boot-steps'>
+                                    {phases.map((phase) => {
+                                        const current = phaseState[phase.id];
+                                        const status = current?.status ?? 'pending';
+                                        return (
+                                            <li key={phase.id} className={`boot-step is-${status}`}>
+                                                <StepIcon status={status} />
+                                                <span className='boot-step-label'>{phase.label}</span>
+                                                {current?.detail && <span className='boot-step-detail'>{current.detail}</span>}
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                            )}
+
                             {state === 'error' && (
                                 <button className='retry' onClick={retry}>Retry</button>
                             )}
                         </div>
-
-                        {state !== 'error' && (
-                            <div className='boot-loader' aria-hidden='true'>
-                                <span /><span /><span /><span />
-                            </div>
-                        )}
 
                         <div className='boot-logs'>
                             {logs.map((line, index) => (
