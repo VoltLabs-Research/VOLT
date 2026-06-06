@@ -9,7 +9,7 @@ export interface ReleaseAsset{
     name: string;
     size: number;
     browser_download_url: string;
-};
+}
 
 export default class ReleaseChecker{
     props: ReleaseCheckerProps;

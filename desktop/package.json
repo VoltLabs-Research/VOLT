@@ -1,11 +1,13 @@
 {
   "type": "module",
   "dependencies": {
+    "dockerode": "^5.0.0",
     "electron": "^42.3.3",
     "extract-zip": "^2.0.1",
     "octokit": "^5.0.5"
   },
   "devDependencies": {
+    "@types/dockerode": "^4.0.1",
     "electron-builder": "^26.8.1",
     "tsx": "^4.22.4"
   }
