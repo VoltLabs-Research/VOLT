@@ -7,11 +7,9 @@ export interface StackProps{
 };
 
 export default class Stack{
-    props: StackProps;
     runner: ProcessRunner;
 
-    constructor(props: StackProps){
-        this.props = props;
+    constructor(private readonly props: StackProps){
         this.runner = new ProcessRunner();
     }
 

@@ -12,6 +12,8 @@ const STATE_TEXT: Record<DeployState, string> = {
     error:    'Something went wrong'
 };
 
+const errMessage = (err: unknown) => (err as any)?.message ?? String(err);
+
 const App = () => {
     const [state, setState] = useState<DeployState>('idle');
     const [hint, setHint] = useState('');
@@ -25,7 +27,7 @@ const App = () => {
             setState(p.state);
             if(p.state === 'error') setError(p.message ?? 'unknown error');
             if(p.state === 'up'){
-                window.volt.app.voltUrl().then(setVoltUrl).catch((err) => setError(err?.message ?? String(err)));
+                window.volt.app.voltUrl().then(setVoltUrl).catch((err) => setError(errMessage(err)));
             }
         });
 
@@ -41,7 +43,7 @@ const App = () => {
 
         if(!startedRef.current){
             startedRef.current = true;
-            window.volt.deploy.start().catch((err) => setError(err?.message ?? String(err)));
+            window.volt.deploy.start().catch((err) => setError(errMessage(err)));
         }
 
         return () => { unsubState(); unsubLog(); unsubProgress(); };
@@ -53,7 +55,7 @@ const App = () => {
         setState('idle');
         setVoltUrl(null);
         setIframeReady(false);
-        window.volt.deploy.start().catch((err) => setError(err?.message ?? String(err)));
+        window.volt.deploy.start().catch((err) => setError(errMessage(err)));
     };
 
     const showSplash = !iframeReady;

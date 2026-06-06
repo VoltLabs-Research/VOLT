@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
+import { sleep } from '@/utils/async';
 
 export interface BootstrapProps{
     appConfig: AppConfig;
@@ -25,14 +26,8 @@ const log = (line: string) => bus.emit('deploy:log', { stream: 'stdout', line: `
 
 const randomPassword = () => crypto.randomBytes(24).toString('base64url');
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export default class Bootstrap{
-    props: BootstrapProps;
-
-    constructor(props: BootstrapProps){
-        this.props = props;
-    }
+    constructor(private readonly props: BootstrapProps){}
 
     async ensure(): Promise<BootstrapState>{
         const existing = await this.props.appConfig.getBootstrap();
