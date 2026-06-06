@@ -1,15 +1,16 @@
-import type { ReleaseAsset } from '@/services/ReleaseChecker';
+import { RepositoryRelease } from '@/services/Repository';
 import { createWriteStream } from 'node:fs';
-import { mkdir, unlink } from 'node:fs/promises';
+import { mkdir, readdir, unlink } from 'node:fs/promises';
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises';
+import { PassThrough } from 'node:stream';
 import path from 'path';
 import extractZip from 'extract-zip';
-import ReleaseChecker from '@/services/ReleaseChecker';
+import bus from '@/services/EventBus';
 
 export interface SoftwareUpdaterProps{
     downloadDir: string;
-    appAssets: string[];
+    repoId: string;
 }
 
 export default class SoftwareUpdater{
@@ -19,44 +20,56 @@ export default class SoftwareUpdater{
         this.props = props; 
     }
 
-    async #download(asset: ReleaseAsset, downloadPath: string){
-        const res = await fetch(asset.browser_download_url);
+    async #download(release: RepositoryRelease, downloadPath: string){
+        const res = await fetch(release.zipballUrl);
         if(!res.ok) throw new Error(`Error HTTP: ${res.status}`);
 
-        await pipeline(Readable.fromWeb(res.body), createWriteStream(downloadPath));
+        let bytes = 0;
+        let lastPct = -1;
+        const total = Number(res.headers.get('content-length') ?? 0);
+
+        const counter = new PassThrough();
+        counter.on('data', (chunk: Buffer) => {
+            bytes += chunk.length;
+
+            const pct = total ? Math.floor(bytes / total * 100) : - 1;
+            if(pct !== lastPct){
+                lastPct = pct;
+                bus.emit('source:progress', {
+                    repoId: this.props.repoId,
+                    phase: 'download',
+                    bytes
+                });
+            }
+        });
+
+        await pipeline(Readable.fromWeb(res.body), counter, createWriteStream(downloadPath));
     }
 
     async #extract(zipPath: string, outputDir: string){
-        await mkdir(outputDir);
+        await mkdir(outputDir, { recursive: true }).catch(() => {});
 
         await extractZip(zipPath, {
             dir: path.resolve(outputDir),
         });
     }
 
-    async update(assets: ReleaseAsset[]){
-        const validAssets = assets.filter(({ name }) => this.props.appAssets.includes(name));
-        
-        for(const asset of validAssets){
-            const downloadPath = `${this.props.downloadDir}/${asset.name}.zip`;
-            const extractPath = `${this.props.downloadDir}/${asset.name}`;
+    async update(release: RepositoryRelease){
+        const downloadPath = `${this.props.downloadDir}/${release.tag}.zip`;
+        const extractPath = `${this.props.downloadDir}/${this.props.repoId}`;
 
-            await this.#download(asset, downloadPath);
-            await this.#extract(downloadPath, extractPath);
+        await this.#download(release, downloadPath);
 
-            await unlink(downloadPath);
-        }
+        bus.emit('source:progress', { repoId: this.props.repoId, phase: 'extract' });
+        await this.#extract(downloadPath, extractPath);
+
+        await unlink(downloadPath);
+        bus.emit('source:progress', { repoId: this.props.repoId, phase: 'done' });
+
+        const entries = await readdir(extractPath, { withFileTypes: true });
+        const inner = entries.find((entry) => entry.isDirectory());
+        if(!inner) throw new Error('extracted archive has no top-level dir');
+
+        return path.join(extractPath, inner.name);
     }
 };
-
-(async () => {
-    const checker = new ReleaseChecker({
-        repo: 'Test-VOLT',
-        owner: 'rodyherrera'
-    });
-
-    const assets = await checker.discover();
-
-    const updater = new SoftwareUpdater({ downloadDir: './downloads/', appAssets: ['dist.zip'] });
-    updater.update(assets);
-})();

@@ -1,13 +1,13 @@
 import Docker from '@/services/Docker';
 import path from 'path';
-
-export interface App{
-    name: string;
-    source: string;
-};
+import Stack from '@/services/Stack';
+import bus from '@/services/EventBus';
 
 export interface DeployProps{
-    app: App;
+    composeFile: string;
+    envFile: string;
+    voltSourceDir: string;
+    clusterSourceDir: string;
 };
     
 export default class Deploy{
@@ -20,16 +20,34 @@ export default class Deploy{
     }
 
     async start(){
-        const source = path.resolve(this.props.app.source);
-        const imageTag = `${this.props.app.name}:latest`;
+        bus.emit('deploy:state', { state: 'starting' });
+        try{
+            await this.#stack().up();
+            bus.emit('deploy:state', { state: 'up' });
+        }catch(err: any){
+            bus.emit('deploy:state',  { state: 'error', message: err.message });
+            throw err;
+        }
+    }
 
-        await this.docker.buildImage({ source, imageTag });
-        await this.docker.removeContainerIfExists(this.props.app.name);
+    async stop(){
+        bus.emit('deploy:state', { state: 'stopping' });
+        try{
+            await this.#stack().down();
+            bus.emit('deploy:state', { state: 'down' });
+        }catch(err: any){
+            bus.emit('deploy:state', { state: 'error', message: err.message });
+            throw err;
+        }
+    }
 
-        return this.docker.runContainer({
-            name: this.props.app.name,
-            imageTag,
-            cwd: source
+    #stack(){
+        return new Stack({
+            composeFile: this.props.composeFile,
+            env: {
+                VOLT_SOURCE_DIR: path.resolve(this.props.voltSourceDir),
+                CLUSTER_DAEMON_SOURCE_DIR: path.resolve(this.props.clusterSourceDir)
+            }
         });
     }
 };

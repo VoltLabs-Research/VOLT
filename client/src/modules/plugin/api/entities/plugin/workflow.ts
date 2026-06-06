@@ -60,6 +60,12 @@ export interface IArgumentOption {
     label: string;
 }
 
+export interface IArgumentOptionSource {
+    argument?: string;
+    valueField?: string;
+    labelField?: string;
+}
+
 export interface IArgumentVisibilityCondition {
     argument: string;
     operator: ArgumentVisibilityOperator;
@@ -82,7 +88,9 @@ export interface IArgumentDefinition {
     default?: unknown;
     value?: unknown;
     options?: IArgumentOption[];
+    optionsFromArguments?: IArgumentOptionSource[];
     listArguments?: IArgumentDefinition[];
+    listItemLabelArgument?: string;
     required?: boolean;
     multipleSelection?: boolean;
     pluginReferenceFilter?: string[];
