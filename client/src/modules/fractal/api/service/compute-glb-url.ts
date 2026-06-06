@@ -128,24 +128,6 @@ const buildParticleFilterUrl = (
     return buildApiUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
-export const computeGlbUrl = ({
-    teamId,
-    trajectoryId,
-    currentTimestep,
-    analysisId,
-    activeScene,
-    mode = 'rbac'
-}: ComputeGlbUrlParams): string | null => {
-    return resolveGlbResource({
-        teamId,
-        trajectoryId,
-        currentTimestep,
-        analysisId,
-        activeScene,
-        mode
-    }).url;
-};
-
 export const resolveGlbResource = ({
     teamId,
     trajectoryId,

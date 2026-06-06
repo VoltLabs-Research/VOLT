@@ -22,7 +22,7 @@ export const isAccessDeniedError = (error: unknown): error is ApiError => {
     return isApiError(error) && error.isPermissionDenied();
 };
 
-export const isHandledApiError = (error: unknown): error is ApiError => {
+const isHandledApiError = (error: unknown): error is ApiError => {
     return isApiError(error) && error.isHandled();
 };
 

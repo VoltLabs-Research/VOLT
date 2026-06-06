@@ -24,8 +24,7 @@ const KEYS = buildKeys<{
 
 export const PARTICLE_FILTER_QUERY_KEYS = {
     filterProperties: KEYS.filterProperties,
-    uniqueValues: KEYS.uniqueValues,
-    uniqueValuesByParams: KEYS.uniqueValues
+    uniqueValues: KEYS.uniqueValues
 } as const;
 
 const currentDataAccess = () => {

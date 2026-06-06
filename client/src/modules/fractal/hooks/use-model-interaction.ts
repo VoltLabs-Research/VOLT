@@ -19,7 +19,6 @@ interface UseModelInteractionParams {
 
 interface UseModelInteractionReturn {
     isSelected: boolean;
-    isHovered: boolean;
     deselect: () => void;
     resetTransform: () => void;
     rotateXNegative: () => void;
@@ -39,7 +38,6 @@ export default function useModelInteraction({
     onSelect,
     onInvalidate
 }: UseModelInteractionParams): UseModelInteractionReturn {
-    const isHoveredRef = useRef(false);
     const [isSelected, setIsSelected] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
 
@@ -151,9 +149,7 @@ export default function useModelInteraction({
         onSelectRef.current?.();
     }, [stopAnimation]);
 
-    const onHoverChange = useCallback((hovered: boolean) => {
-        isHoveredRef.current = hovered;
-    }, []);
+    const onHoverChange = useCallback((_hovered: boolean) => {}, []);
 
     const rotateXNegative = useCallback(() => {
         rotate(-ROTATION_STEP, 0, 0);
@@ -198,7 +194,6 @@ export default function useModelInteraction({
 
     return {
         isSelected,
-        isHovered: isHoveredRef.current,
         deselect,
         resetTransform,
         rotateXNegative,

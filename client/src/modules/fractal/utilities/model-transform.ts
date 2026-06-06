@@ -1,4 +1,4 @@
-import { Box3, Vector3, Sphere, MathUtils, Group, Object3D, PerspectiveCamera } from 'three';
+import { Box3, Vector3, Sphere, Group, Object3D } from 'three';
 
 interface ObjectWithOptionalScene extends Object3D {
     scene?: Object3D;
@@ -80,27 +80,6 @@ export class ModelTransform {
             position,
             rotation,
             scale
-        };
-    }
-
-    static closestCameraPositionZY(bounds: Box3, camera: PerspectiveCamera) {
-        const center = bounds.getCenter(new Vector3());
-        const size = bounds.getSize(new Vector3());
-
-        const viewHeight = size.z;
-        const viewWidth = size.y;
-        const fovRad = MathUtils.degToRad(camera.fov);
-
-        const distByHeight = (viewHeight / 2) / Math.tan(fovRad / 2);
-        const distByWidth = (viewWidth / 2) / (Math.tan(fovRad / 2) * camera.aspect);
-
-        let distance = Math.max(distByHeight, distByWidth);
-        distance *= 1.01;
-
-        return {
-            position: new Vector3(center.x + distance, center.y, center.z),
-            target: center.clone(),
-            up: new Vector3(0, 0, 1)
         };
     }
 

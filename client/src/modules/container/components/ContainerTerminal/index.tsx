@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-terminal-session';
 import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
@@ -20,10 +20,6 @@ interface ContainerTerminalProps {
     };
     onClose: () => void;
     embedded?: boolean;
-    appendOutput?: {
-        id: number;
-        data: string;
-    } | null;
 }
 
 interface ContainerTerminalSocketError {
@@ -41,7 +37,7 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
 };
 
-const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
+const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
     const attachPayload = useMemo(() => ({ containerId: container._id }), [container._id]);
     const resolveErrorMessage = useMemo(() => {
@@ -83,11 +79,6 @@ const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput 
 
         terminalRef.current?.resize(payload.cols, payload.rows);
     });
-
-    useEffect(() => {
-        if (!appendOutput?.data) return;
-        terminalRef.current?.write(appendOutput.data);
-    }, [appendOutput?.id, appendOutput?.data]);
 
     const content = (
         <Stack className={`container-terminal-window ${embedded ? 'embedded' : ''}`} overflow='hidden'>

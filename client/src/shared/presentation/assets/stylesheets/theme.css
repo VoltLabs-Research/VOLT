@@ -7,24 +7,11 @@
     --radius-2xl: 24px;
     --radius-full: 9999px;
     --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
-    --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
-    --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
 
-    --duration-instant: 100ms;
     --duration-fast: 150ms;
     --duration-base: 250ms;
-    --duration-slow: 400ms;
-    --duration-slower: 600ms;
 
     --z-floating: 99999;
-    --bp-xs: 480px;
-    --bp-sm: 640px;
-    --bp-md: 768px;
-    --bp-lg: 1024px;
-    --bp-xl: 1280px;
-    --bp-2xl: 1440px;
-    --touch-target-min: 44px;
 }
 
 :root[data-theme='dark'] {

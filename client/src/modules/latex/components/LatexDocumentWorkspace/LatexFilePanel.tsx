@@ -53,8 +53,6 @@ interface LatexFilePanelProps {
     onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
     onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
     onUpdateAssetDirect: (input: { documentId: string; assetId: string; path: string }) => Promise<unknown>;
-    onMoveFolderDirect?: (sourceFolderPath: string, targetFolderPath: string) => Promise<unknown>;
-    onDeleteFolderDirect?: (folderPath: string) => Promise<unknown>;
     onRenameFile: (fileId: string, name: string) => Promise<void>;
     onRenameAsset: (asset: LatexAsset, name: string) => Promise<void>;
     onSetEntrypoint: (fileId: string) => Promise<void>;
@@ -145,8 +143,6 @@ const LatexFilePanel = ({
     onDeleteAssetDirect,
     onUpdateFileDirect,
     onUpdateAssetDirect,
-    onMoveFolderDirect,
-    onDeleteFolderDirect,
     onRenameFile,
     onRenameAsset,
     onSetEntrypoint,
@@ -189,8 +185,6 @@ const LatexFilePanel = ({
         onDeleteAssetDirect,
         onUpdateFileDirect,
         onUpdateAssetDirect,
-        onMoveFolderDirect,
-        onDeleteFolderDirect,
         documentId
     });
     const sensors = useSensors(

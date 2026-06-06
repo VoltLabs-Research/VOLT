@@ -13,7 +13,8 @@
     "dockerode": "^5.0.0",
     "extract-zip": "^2.0.1",
     "octokit": "^5.0.5",
-    "p-wait-for": "^6.0.0"
+    "p-wait-for": "^6.0.0",
+    "sileo": "^0.1.5"
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",

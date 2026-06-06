@@ -1,9 +1,6 @@
-import * as THREE from 'three';
-
 interface ShaderDescriptor {
     vertex: string;
     fragment: string;
-    defines?: Record<string, string | number | boolean>;
 }
 
 interface IncludeDictionary {
@@ -23,12 +20,6 @@ const resolveIncludes = (source: string, includes: IncludeDictionary): string =>
         }
         return replacement;
     });
-};
-
-const hashDefines = (defines: Record<string, string | number | boolean> | undefined): string => {
-    if (!defines) return '';
-    const keys = Object.keys(defines).sort();
-    return keys.map((key) => `${key}=${String(defines[key])}`).join('|');
 };
 
 const simpleHash = (value: string): string => {
@@ -55,8 +46,7 @@ class ShaderRegistry {
     }
 
     compile(descriptor: ShaderDescriptor): RegisteredProgram {
-        const definesHash = hashDefines(descriptor.defines);
-        const key = `${simpleHash(descriptor.vertex)}:${simpleHash(descriptor.fragment)}:${definesHash}`;
+        const key = `${simpleHash(descriptor.vertex)}:${simpleHash(descriptor.fragment)}`;
         const cached = this.programCache.get(key);
         if (cached) return cached;
 
@@ -68,30 +58,6 @@ class ShaderRegistry {
 
         this.programCache.set(key, program);
         return program;
-    }
-
-    createMaterial(
-        descriptor: ShaderDescriptor,
-        uniforms: Record<string, THREE.IUniform>,
-        options: Omit<THREE.ShaderMaterialParameters, 'vertexShader' | 'fragmentShader' | 'uniforms' | 'defines'> = {}
-    ): THREE.ShaderMaterial {
-        const program = this.compile(descriptor);
-        const material = new THREE.ShaderMaterial({
-            ...options,
-            vertexShader: program.vertex,
-            fragmentShader: program.fragment,
-            uniforms,
-            defines: descriptor.defines as Record<string, string | number | boolean> | undefined
-        });
-        return material;
-    }
-
-    debugDump(): Record<string, { vertex: string; fragment: string }> {
-        const out: Record<string, { vertex: string; fragment: string }> = {};
-        for (const [key, value] of this.programCache.entries()) {
-            out[key] = { vertex: value.vertex, fragment: value.fragment };
-        }
-        return out;
     }
 }
 

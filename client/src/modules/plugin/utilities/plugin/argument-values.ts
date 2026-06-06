@@ -27,7 +27,7 @@ export const createDefaultArgumentDefinition = (): IArgumentDefinition => {
     };
 };
 
-export const hasPresetArgumentValue = (definition: IArgumentDefinition): boolean => {
+const hasPresetArgumentValue = (definition: IArgumentDefinition): boolean => {
     return definition.value !== undefined;
 };
 

@@ -29,8 +29,6 @@ interface UseFileTreeInput {
     onDeleteAssetDirect: (input: { documentId: string; assetId: string }) => Promise<unknown>;
     onUpdateFileDirect: (input: { documentId: string; fileId: string; path?: string; name?: string; content?: string }) => Promise<unknown>;
     onUpdateAssetDirect: (input: { documentId: string; assetId: string; path: string }) => Promise<unknown>;
-    onMoveFolderDirect?: (sourceFolderPath: string, targetFolderPath: string) => Promise<unknown>;
-    onDeleteFolderDirect?: (folderPath: string) => Promise<unknown>;
     documentId: string;
 }
 
@@ -84,8 +82,6 @@ const useFileTree = ({
     onDeleteAssetDirect,
     onUpdateFileDirect,
     onUpdateAssetDirect,
-    onMoveFolderDirect,
-    onDeleteFolderDirect,
     documentId
 }: UseFileTreeInput): UseFileTreeOutput => {
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -233,24 +229,6 @@ const useFileTree = ({
             return false;
         }
 
-        if (onMoveFolderDirect) {
-            await onMoveFolderDirect(sourceFolderPath, normalizedTargetFolderPath);
-
-            ensureExpandedFolders([
-                getFolderParentPath(normalizedTargetFolderPath),
-                normalizedTargetFolderPath
-            ]);
-
-            setExpandedFolders((prev) => {
-                const next = new Set(prev);
-                next.delete(sourceFolderPath);
-                next.add(normalizedTargetFolderPath);
-                return next;
-            });
-
-            return true;
-        }
-
         const operations: Promise<unknown>[] = [];
 
         for (const file of files) {
@@ -293,7 +271,7 @@ const useFileTree = ({
         });
 
         return true;
-    }, [assets, documentId, ensureExpandedFolders, files, onMoveFolderDirect, onUpdateAssetDirect, onUpdateFileDirect]);
+    }, [assets, documentId, ensureExpandedFolders, files, onUpdateAssetDirect, onUpdateFileDirect]);
 
     const renameFolder = useCallback(async (folderPath: string, nextName: string) => {
         const parentPath = getFolderParentPath(folderPath);
@@ -392,16 +370,6 @@ const useFileTree = ({
             return;
         }
 
-        if (onDeleteFolderDirect) {
-            await onDeleteFolderDirect(folderPath);
-            setExpandedFolders((prev) => {
-                const next = new Set(prev);
-                next.delete(folderPath);
-                return next;
-            });
-            return;
-        }
-
         const fileOperations = files
             .filter((file) => file.path.startsWith(folderPath))
             .map((file) => onDeleteFileDirect({ documentId, fileId: file._id }));
@@ -410,7 +378,7 @@ const useFileTree = ({
             .map((asset) => onDeleteAssetDirect({ documentId, assetId: asset._id }));
 
         await Promise.all([...fileOperations, ...assetOperations]);
-    }, [assets, confirm, documentId, files, onDeleteAssetDirect, onDeleteFileDirect, onDeleteFolderDirect]);
+    }, [assets, confirm, documentId, files, onDeleteAssetDirect, onDeleteFileDirect]);
 
     return {
         treeNodes,

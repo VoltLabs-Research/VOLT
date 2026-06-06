@@ -1,7 +1,4 @@
 import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
-import EditableTag from '@/shared/presentation/components/EditableTag';
-import Select from '@/shared/presentation/primitives/Select';
-import { EditableType } from '@/shared/presentation/components/DocumentListingTable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
@@ -134,37 +131,7 @@ const TableRow = <T extends Identifiable>({
 
     const renderCellContent = (col: ColumnConfig<T>, cellValue: unknown) => {
         const formattedCellValue = formatUnknownValue(cellValue);
-        const defaultContent = col.render ? col.render(cellValue, item) : formattedCellValue;
-
-        if (!col.editable) return defaultContent;
-
-        const { editable } = col;
-        if (editable.canEdit && !editable.canEdit(item)) return defaultContent;
-
-        if (editable.type === EditableType.Text || editable.type === EditableType.Number) {
-            const handleSave = (newValue: string) => editable.onSave(item, newValue);
-            return (
-                <EditableTag as='span' onSave={handleSave}>
-                    {formattedCellValue}
-                </EditableTag>
-            );
-        }
-
-        if (editable.type === EditableType.Select && editable.options) {
-            const handleChange = (newValue: string) => editable.onSave(item, newValue);
-            const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
-            return (
-                <span onClick={stopPropagation} onMouseDown={stopPropagation}>
-                    <Select
-                        options={editable.options}
-                        value={String(cellValue ?? '')}
-                        onChange={handleChange}
-                    />
-                </span>
-            );
-        }
-
-        return defaultContent;
+        return col.render ? col.render(cellValue, item) : formattedCellValue;
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

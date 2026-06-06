@@ -66,7 +66,7 @@ export const LISTING_QUERY_KEYS = {
 
 // ─── Listing queries ─────────────────────────────────────────────────────────
 
-export const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
+const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
     const trajectoryId = params.trajectoryId ?? accessState.trajectoryId ?? '';

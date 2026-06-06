@@ -4,8 +4,6 @@ import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { Team } from '@/modules/team/api/entities/team/team';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { TrajectoryStats } from './trajectory-stats';
-import type { TrajectoryProcessingProgress } from './trajectory-processing';
-import type { AvailableModels } from './available-models';
 import type { TimestepInfo } from './timestep-info';
 
 export type TrajectoryStatus =
@@ -30,9 +28,7 @@ export interface Trajectory extends BaseEntity {
     preview?: string;
     isPublic?: boolean;
     status?: TrajectoryStatus;
-    processingProgress?: TrajectoryProcessingProgress;
     users: (User | string)[];
     createdBy?: User | string;
     storageClusterId?: TeamCluster | string | null;
-    availableModels?: AvailableModels;
 }

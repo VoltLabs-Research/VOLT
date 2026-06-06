@@ -40,7 +40,8 @@ const createWindow = (): BrowserWindow => {
         width: 1400,
         height: 900,
         show: false,
-        backgroundColor: '#0a0a0a',
+        frame: false,
+        backgroundColor: '#ffffff',
         webPreferences: {
             devTools: true,
             preload: path.join(__dirname, '../preload/preload.mjs'),
