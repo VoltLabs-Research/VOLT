@@ -133,33 +133,6 @@ interface UploadLatexAssetApiResponse {
     };
 }
 
-interface LatexService {
-    listDocuments: (params: ListLatexDocumentsParams) => Promise<PaginatedResponse<LatexDocument>>;
-    createDocument: (params: CreateLatexDocumentParams) => Promise<LatexDocument>;
-    getDocument: (params: GetLatexDocumentParams) => Promise<LatexDocument>;
-    deleteDocument: (params: DeleteLatexDocumentParams) => Promise<void>;
-    updateDocument: (params: UpdateLatexDocumentParams) => Promise<LatexDocument>;
-    moveDocument: (params: MoveLatexDocumentParams) => Promise<LatexDocument>;
-    listFolders: (params: FolderListParams) => Promise<PaginatedResponse<LatexFolder>>;
-    getFolder: (params: FolderGetParams) => Promise<LatexFolder>;
-    createFolder: (params: FolderCreateParams) => Promise<LatexFolder>;
-    updateFolder: (params: FolderUpdateParams) => Promise<LatexFolder>;
-    deleteFolder: (params: FolderDeleteParams) => Promise<void>;
-    listAssets: (params: ListLatexAssetsParams) => Promise<LatexAsset[]>;
-    uploadAsset: (params: UploadLatexAssetParams) => Promise<UploadLatexAssetsResult>;
-    deleteAsset: (params: DeleteLatexAssetParams) => Promise<void>;
-    updateAsset: (params: UpdateLatexAssetParams) => Promise<LatexAsset>;
-    exportDocumentTex: (params: ExportLatexDocumentParams) => Promise<Blob>;
-    exportDocumentZip: (params: ExportLatexDocumentParams) => Promise<Blob>;
-    importDocument: (params: ImportLatexDocumentParams) => Promise<ImportLatexDocumentResult>;
-    compileDocument: (params: CompileLatexDocumentParams) => Promise<Blob>;
-    listFiles: (params: ListLatexFilesParams) => Promise<LatexFile[]>;
-    createFile: (params: CreateLatexFileParams) => Promise<LatexFile>;
-    updateFile: (params: UpdateLatexFileParams) => Promise<LatexFile>;
-    deleteFile: (params: DeleteLatexFileParams) => Promise<void>;
-    setFileEntrypoint: (params: SetLatexFileEntrypointParams) => Promise<LatexFile>;
-}
-
 const endpoints = {
     listDocuments: paginated<ListLatexDocumentsParams, PaginatedResponse<LatexDocument>>(
         '/documents'
@@ -260,7 +233,7 @@ const endpoints = {
     >()
 };
 
-const service: LatexService = createService({
+const service = createService({
     clients: {
         default: {
             basePath: '/latex',

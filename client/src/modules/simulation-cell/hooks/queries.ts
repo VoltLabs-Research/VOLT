@@ -1,9 +1,7 @@
 import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import service from '../api/service';
 import type { GetSimulationCellByTrajectoryParams, GetSimulationCellsParams } from '../api/service';
@@ -22,12 +20,11 @@ export const simulationCellsQueryKey = KEYS.listing;
 export const simulationCellsQuery = createQuery(KEYS.listing, service.getAll);
 
 const getSimulationCellWithAccess = (params: GetSimulationCellByTrajectoryParams) => {
-    const mode = useCanvasAccessStore.getState().mode;
-    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode }).getSimulationCell(params);
+    return currentCanvasDataAccess().getSimulationCell(params);
 };
 
 const simulationCellByTrajectoryKey = (params: GetSimulationCellByTrajectoryParams) => {
-    return withAccessMode(useCanvasAccessStore.getState().mode, KEYS.byTrajectory(params));
+    return currentAccessKey(KEYS.byTrajectory(params));
 };
 
 export const simulationCellByTrajectoryQuery = createQuery(

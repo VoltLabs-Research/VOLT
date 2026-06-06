@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { IoSettingsOutline } from 'react-icons/io5';
 import './Titlebar.css';
 import { pageTitleForPath, searchPages } from './pages';
 
@@ -8,6 +9,7 @@ interface TitlebarProps{
     onNavigate: (path: string) => void;
     onBack: () => void;
     onForward: () => void;
+    onOpenDevMode: () => void;
 }
 
 interface Item{
@@ -28,10 +30,11 @@ const SearchIcon = () => (
     <svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><circle cx='11' cy='11' r='7' /><path d='M21 21l-4.35-4.35' /></svg>
 );
 
-const Titlebar = ({ ready, currentPath, onNavigate, onBack, onForward }: TitlebarProps) => {
+const Titlebar = ({ ready, currentPath, onNavigate, onBack, onForward, onOpenDevMode }: TitlebarProps) => {
     const [query, setQuery] = useState('');
     const [focused, setFocused] = useState(false);
     const [active, setActive] = useState(0);
+    const [menuOpen, setMenuOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const items = useMemo<Item[]>(() => {
@@ -107,6 +110,30 @@ const Titlebar = ({ ready, currentPath, onNavigate, onBack, onForward }: Titleba
                             </li>
                         ))}
                     </ul>
+                )}
+            </div>
+
+            <div className='settings-wrap'>
+                <button
+                    className={`nav-btn settings-btn ${menuOpen ? 'active' : ''}`}
+                    onClick={() => setMenuOpen((value) => !value)}
+                    aria-label='Settings'
+                >
+                    <IoSettingsOutline />
+                </button>
+
+                {menuOpen && (
+                    <>
+                        <div className='menu-backdrop' onClick={() => setMenuOpen(false)} />
+                        <ul className='menu'>
+                            <li
+                                className='menu-item'
+                                onClick={() => { setMenuOpen(false); onOpenDevMode(); }}
+                            >
+                                Dev Mode
+                            </li>
+                        </ul>
+                    </>
                 )}
             </div>
         </header>

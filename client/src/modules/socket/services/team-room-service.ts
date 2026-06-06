@@ -2,7 +2,6 @@ import { SOCKET_TEAM_EVENTS } from '../events/team';
 import socketService from './socket-service';
 import { emitOrSwallow, emitWithReport } from './socket-emit-helpers';
 import type { ISocketService } from './contracts/socket-service';
-import type { ITeamSocketRoomService } from './contracts/team-room-service';
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -10,7 +9,7 @@ interface SocketAck<T = unknown> {
     error?: string;
 }
 
-class TeamSocketRoomService implements ITeamSocketRoomService {
+class TeamSocketRoomService {
     private currentTeamId: string | null = null;
     private subscribedTeamId: string | null = null;
     private pendingSubscriptionPromise: Promise<void> | null = null;

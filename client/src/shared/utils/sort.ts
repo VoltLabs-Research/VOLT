@@ -1,4 +1,9 @@
-import type { SortConfig, SortDirection } from '@/shared/domain/sorting/types';
+export type SortDirection = 'asc' | 'desc';
+
+export interface SortConfig {
+    key: string;
+    direction: SortDirection;
+}
 
 const PREFERRED_KEYS = ['name', 'title', '_id'];
 

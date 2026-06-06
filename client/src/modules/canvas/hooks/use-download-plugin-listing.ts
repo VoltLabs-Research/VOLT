@@ -1,6 +1,6 @@
 import { useExportListingMutation, useExportListingByAnalysisMutation } from '@/modules/plugin/hooks/listing/queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
-import { ExportType } from '@/shared/domain/export/types';
+import { ExportType } from '@/modules/plugin/api/services/listing-service';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { triggerBrowserDownload } from '@/shared/utils/file';

@@ -3,10 +3,8 @@ import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import { snapshotQueries } from '@/shared/infrastructure/query/cache-utils';
 import queryClient from '@/shared/infrastructure/query/query-client';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
@@ -78,12 +76,10 @@ const removeAnalysisItemsFromSceneArtifactPage = (
 };
 
 const getSceneArtifactsKey = (params: ListSceneArtifactsInputDTO) =>
-    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.sceneArtifacts(params));
+    currentAccessKey(KEYS.sceneArtifacts(params));
 
 const fetchSceneArtifacts = (params: ListSceneArtifactsInputDTO): Promise<SceneArtifactsPage> => {
-    const mode = useCanvasAccessStore.getState().mode;
-    const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode });
-    return dataAccess.listSceneArtifacts(params);
+    return currentCanvasDataAccess().listSceneArtifacts(params);
 };
 
 export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneArtifacts);
@@ -92,9 +88,8 @@ export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneA
 // so invalidating with the bare `SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts()` key
 // fails the prefix match and nothing refetches.
 export const invalidateSceneArtifacts = (): Promise<void> => {
-    const mode = useCanvasAccessStore.getState().mode;
     return queryClient.invalidateQueries({
-        queryKey: withAccessMode(mode, SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts())
+        queryKey: currentAccessKey(SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts())
     });
 };
 

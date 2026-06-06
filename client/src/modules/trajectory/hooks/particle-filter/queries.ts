@@ -3,10 +3,8 @@ import {
     createQuery
 } from '@/shared/infrastructure/query';
 import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
+    currentCanvasDataAccess,
+    currentAccessKey
 } from '@/modules/canvas/api/access';
 import type {
     FilterPropertiesData,
@@ -27,23 +25,18 @@ export const PARTICLE_FILTER_QUERY_KEYS = {
     uniqueValues: KEYS.uniqueValues
 } as const;
 
-const currentDataAccess = () => {
-    const mode = useCanvasAccessStore.getState().mode;
-    return buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode });
-};
-
 const getFilterPropertiesKey = (params: GetFilterPropertiesInputDTO) =>
-    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.filterProperties(params));
+    currentAccessKey(KEYS.filterProperties(params));
 
 const getUniqueValuesKey = (params: GetUniqueValuesInputDTO) =>
-    withAccessMode(useCanvasAccessStore.getState().mode, KEYS.uniqueValues(params));
+    currentAccessKey(KEYS.uniqueValues(params));
 
 export const filterPropertiesQuery = createQuery<GetFilterPropertiesInputDTO, FilterPropertiesData>(
     getFilterPropertiesKey,
-    (params) => currentDataAccess().getParticleFilterProperties(params)
+    (params) => currentCanvasDataAccess().getParticleFilterProperties(params)
 );
 
 export const uniqueValuesQuery = createQuery<GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO>(
     getUniqueValuesKey,
-    (params) => currentDataAccess().getParticleFilterUniqueValues(params)
+    (params) => currentCanvasDataAccess().getParticleFilterUniqueValues(params)
 );

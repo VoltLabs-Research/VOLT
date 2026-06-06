@@ -4,7 +4,7 @@ import { DEFAULT_DISLOCATION_LINE_WIDTH } from '@/modules/canvas/utilities/plugi
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { forwardRef, useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
@@ -41,14 +41,9 @@ interface TimestepViewerProps {
     autoFitKeyOverride?: string | null;
     orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     enableSlice?: boolean;
-    enableInstancing?: boolean;
     updateThrottle?: number;
     forceDefaultScene?: boolean;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
-}
-
-interface TimestepViewerRef {
-    loadModel: () => void;
 }
 
 const WORLD_MODEL_EXTENT = 8;
@@ -79,7 +74,7 @@ const computeSpawnPosition = (
     return { x: spawn.x, y: spawn.y, z: spawn.z };
 };
 
-const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
+const TimestepViewer = ({
     teamId,
     trajectoryId,
     currentTimestep,
@@ -100,11 +95,10 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     autoFitKeyOverride,
     orbitControlsRef,
     enableSlice = true,
-    enableInstancing = true,
     updateThrottle = 16,
     forceDefaultScene = false,
     onContentTypeDetected
-}, _ref) => {
+}: TimestepViewerProps) => {
     const scenesToRender = getRenderableScenes(storeActiveScenes, forceDefaultScene);
     const camera = useThree((state) => state.camera);
     const scenePositionsRef = useRef<Map<string, OptionalPosition>>(new Map());
@@ -118,10 +112,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
             }
         }
     }, [scenesToRender]);
-
-    const handleModelLoaded = useCallback((_sceneKey: string, _bounds: BoundsInfo) => {
-        /* reserved */
-    }, []);
 
     if (scenesToRender.length === 0) return null;
 
@@ -195,10 +185,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                             autoFitKeyOverride={autoFitKeyOverride}
                             orbitControlsRef={orbitControlsRef}
                             enableSlice={enableSlice}
-                            enableInstancing={enableInstancing}
                             updateThrottle={updateThrottle}
-                            isPrimary={index === scenesToRender.length - 1}
-                            onModelLoaded={(bounds) => handleModelLoaded(sceneKey, bounds)}
                             onSelect={() => setSelectedModelIndex(index)}
                             isSelected={selectedModelIndex === index}
                             onContentTypeDetected={onContentTypeDetected}
@@ -208,8 +195,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
             })}
         </>
     );
-});
-
-TimestepViewer.displayName = 'TimestepViewer';
+};
 
 export default TimestepViewer;

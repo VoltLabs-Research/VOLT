@@ -1,7 +1,7 @@
 import { guestRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import { DashboardNavigationSection } from '@/app/routes/types';
 import { matchPath } from 'react-router-dom';
-import type { RouteConfig, RouteGroup, RouteNavigationConfig } from '@/app/routes/types';
+import type { RouteConfig, RouteNavigationConfig } from '@/app/routes/types';
 
 interface RouteManifestEntry {
     order: number;
@@ -26,10 +26,10 @@ export interface DashboardNavigationItem {
     disabledReason?: string;
 };
 
-type RouteCollectionKey = keyof Pick<RouteGroup, 'public' | 'protected' | 'guest'>;
+type RouteCollectionKey = 'public' | 'protected' | 'guest';
 
 const ROUTE_COLLECTION_KEYS: RouteCollectionKey[] = ['public', 'protected', 'guest'];
-const ROUTE_COLLECTIONS: Pick<RouteGroup, 'public' | 'protected' | 'guest'> = {
+const ROUTE_COLLECTIONS: Record<RouteCollectionKey, RouteConfig[]> = {
     public: publicRoutes,
     protected: protectedRoutes,
     guest: guestRoutes

@@ -1,4 +1,5 @@
 import { AppEvents } from '@/services/EventBus';
+import { DevModeState } from '@/services/AppConfig';
 
 declare global{
     interface Window{
@@ -10,6 +11,12 @@ declare global{
             config: {
                 get:    () => Promise<Record<string, any>>;
                 update: (payload: object) => Promise<void>;
+            };
+            devmode: {
+                apply: (payload: DevModeState) => Promise<void>;
+            };
+            dialog: {
+                pickDirectory: () => Promise<string | null>;
             };
             app: {
                 voltUrl: () => Promise<string>;

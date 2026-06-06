@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { sileo, Toaster } from 'sileo';
 import type { AppEvents } from '@/services/EventBus';
+import type { DevModeState } from '@/services/AppConfig';
 import Titlebar from './Titlebar';
+import DevModeModal from './DevModeModal';
 
 type DeployState = AppEvents['deploy:state']['state'];
 
@@ -30,8 +32,8 @@ const App = () => {
     const [voltUrl, setVoltUrl] = useState<string | null>(null);
     const [iframeReady, setIframeReady] = useState(false);
     const [currentPath, setCurrentPath] = useState<string | null>(null);
+    const [devModeOpen, setDevModeOpen] = useState(false);
     const startedRef = useRef(false);
-    const termRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     const append = (line: LogLine) =>
@@ -99,18 +101,28 @@ const App = () => {
         return () => { unsubState(); unsubLog(); unsubProgress(); };
     }, []);
 
-    useEffect(() => {
-        const el = termRef.current;
-        if(el) el.scrollTop = el.scrollHeight;
-    }, [logs]);
-
-    const retry = () => {
+    const resetBoot = () => {
         setState('idle');
         setStatus(STATUS.idle);
         setLogs([]);
         setVoltUrl(null);
         setIframeReady(false);
+        setCurrentPath(null);
+    };
+
+    const retry = () => {
+        resetBoot();
         begin();
+    };
+
+    // Tear the iframe down back to the boot screen and let the main process
+    // stop the running stack and redeploy from the newly chosen sources. Deploy
+    // state/log events drive the boot screen from here on; failures surface through
+    // the deploy:state 'error' listener above, so the rejection is just swallowed.
+    const applyDevMode = (payload: DevModeState) => {
+        setDevModeOpen(false);
+        resetBoot();
+        window.volt.devmode.apply(payload).catch(() => { /* surfaced via deploy:state */ });
     };
 
     return (
@@ -121,6 +133,7 @@ const App = () => {
                 onNavigate={(path) => postToVolt({ action: 'go', path })}
                 onBack={() => postToVolt({ action: 'back' })}
                 onForward={() => postToVolt({ action: 'forward' })}
+                onOpenDevMode={() => setDevModeOpen(true)}
             />
 
             <div className='body'>
@@ -130,20 +143,33 @@ const App = () => {
 
                 {!iframeReady && (
                     <main className='boot'>
-                        <span className={state === 'error' ? 'boot-status boot-error' : 'boot-status'}>{status}</span>
+                        <div className='boot-lead'>
+                            <span className={state === 'error' ? 'boot-status boot-error' : 'boot-status'}>{status}</span>
+                            {state === 'error' && (
+                                <button className='retry' onClick={retry}>Retry</button>
+                            )}
+                        </div>
 
-                        <div className='terminal' ref={termRef}>
+                        {state !== 'error' && (
+                            <div className='boot-loader' aria-hidden='true'>
+                                <span /><span /><span /><span />
+                            </div>
+                        )}
+
+                        <div className='boot-logs'>
                             {logs.map((line, index) => (
                                 <div key={index} className={`term-line term-${line.stream}`}>{line.text}</div>
                             ))}
                         </div>
-
-                        {state === 'error' && (
-                            <button className='retry' onClick={retry}>Retry</button>
-                        )}
                     </main>
                 )}
             </div>
+
+            <DevModeModal
+                open={devModeOpen}
+                onClose={() => setDevModeOpen(false)}
+                onApply={applyDevMode}
+            />
 
             <Toaster position='bottom-right' theme='dark' />
         </div>
