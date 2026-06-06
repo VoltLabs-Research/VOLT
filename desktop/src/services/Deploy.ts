@@ -4,7 +4,7 @@ import SoftwareUpdater from '@/services/SoftwareUpdater';
 import Stack from '@/services/Stack';
 import Bootstrap from '@/services/Bootstrap';
 import bus, { AppEvents } from '@/services/EventBus';
-import { sleep } from '@/utils/async';
+import pWaitFor from 'p-wait-for';
 
 export interface DeployRepoSpec{
     repo: Repository;
@@ -20,17 +20,17 @@ export interface DeployProps{
 
 type DeployState = AppEvents['deploy:state']['state'];
 
-const waitForUrl = async (url: string, timeoutMs = 120_000) => {
-    const deadline = Date.now() + timeoutMs;
-    while(Date.now() < deadline){
-        try{
-            const res = await fetch(url, { signal: AbortSignal.timeout(2_000) });
-            if(res.ok || res.status === 404) return;
-        }catch{ /* not ready yet */ }
-        await sleep(500);
+const isUp = async (url: string) => {
+    try{
+        const res = await fetch(url, { signal: AbortSignal.timeout(2_000) });
+        return res.ok || res.status === 404;
+    }catch{
+        return false;
     }
-    throw new Error(`Timeout waiting for ${url}`);
 };
+
+const waitForUrl = (url: string, timeout = 120_000) =>
+    pWaitFor(() => isUp(url), { interval: 500, timeout });
 
 export default class Deploy{
     constructor(private readonly props: DeployProps){}
@@ -52,10 +52,10 @@ export default class Deploy{
             const daemonEnv = this.#withDaemonEnv(baseEnv, state);
             await new Stack({ composeFile: this.props.composeFile, env: daemonEnv }).up(['enrolled']);
 
-            // El resolver de nginx puede cachear una IP vieja de volt-server hasta 30s
-            // tras un recreate. Esperamos a que el proxy entero responda 200 antes
-            // de avisar al renderer; si no, la SPA pega /api/auth/me, recibe 502
-            // y nos manda a /auth/sign-in.
+            // nginx's resolver can cache a stale volt-server IP for up to 30s after a
+            // recreate. Wait until the whole proxy answers 200 before signaling the
+            // renderer; otherwise the SPA hits /api/auth/me, gets a 502 and bounces
+            // to /auth/sign-in.
             await waitForUrl(`http://localhost:${baseEnv.WEB_PORT}/api/auth/emails/probe%40volt.local/availability`);
         });
     }

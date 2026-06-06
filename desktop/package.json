@@ -12,7 +12,8 @@
   "dependencies": {
     "dockerode": "^5.0.0",
     "extract-zip": "^2.0.1",
-    "octokit": "^5.0.5"
+    "octokit": "^5.0.5",
+    "p-wait-for": "^6.0.0"
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
