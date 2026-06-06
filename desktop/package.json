@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "electron": "^42.3.3",
+    "extract-zip": "^2.0.1",
     "octokit": "^5.0.5"
   },
   "devDependencies": {
