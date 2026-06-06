@@ -45,6 +45,26 @@ const OUTPUT_PATH_MODE_OPTIONS = [{
     title: 'Parent output'
 }];
 
+interface ArgumentReferenceCandidate {
+    argument: IArgumentDefinition;
+    pluginReferenceDefinitions: IArgumentDefinition[];
+    supportsMultipleExecutions: boolean;
+}
+
+const collectPluginReferenceDefinitions = (
+    argument: IArgumentDefinition
+): IArgumentDefinition[] => {
+    if (argument.type === ArgumentType.PLUGIN_REFERENCE) {
+        return [argument];
+    }
+
+    if (argument.type !== ArgumentType.LIST) {
+        return [];
+    }
+
+    return (argument.listArguments ?? []).flatMap(collectPluginReferenceDefinitions);
+};
+
 const PluginNodeEditor = ({ node }: EditorProps) => {
     const selectedTeamId = useSelectedTeamId();
     const [searchParams] = useSearchParams();
@@ -89,31 +109,42 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }));
     }, [availableTimesteps]);
 
-    const argumentReferenceDefinitions = useMemo<IArgumentDefinition[]>(() => {
+    const argumentReferenceCandidates = useMemo<ArgumentReferenceCandidate[]>(() => {
         const argumentsNode = nodes.find((candidate) => candidate.type === NodeType.ARGUMENTS);
         const definitions = argumentsNode?.data.arguments?.arguments ?? [];
 
-        return definitions.filter((argument) => argument.type === ArgumentType.PLUGIN_REFERENCE);
+        return definitions.flatMap((argument) => {
+            const pluginReferenceDefinitions = collectPluginReferenceDefinitions(argument);
+            if (pluginReferenceDefinitions.length === 0 || !argument.argument.trim()) {
+                return [];
+            }
+
+            return [{
+                argument,
+                pluginReferenceDefinitions,
+                supportsMultipleExecutions: argument.type === ArgumentType.LIST
+                    || pluginReferenceDefinitions.some((definition) => definition.multipleSelection)
+            }];
+        });
     }, [nodes]);
 
     const argumentReferenceOptions = useMemo<SelectOption[]>(() => {
-        return argumentReferenceDefinitions
-            .filter((argument) => argument.argument.trim().length > 0)
-            .map((argument) => ({
-                value: argument.argument,
-                title: argument.label?.trim() || argument.argument
+        return argumentReferenceCandidates
+            .map((candidate) => ({
+                value: candidate.argument.argument,
+                title: candidate.argument.label?.trim() || candidate.argument.argument
             }));
-    }, [argumentReferenceDefinitions]);
+    }, [argumentReferenceCandidates]);
 
-    const argumentReferenceDefinitionsByKey = useMemo(() => {
-        return Object.fromEntries(argumentReferenceDefinitions.map((argument) => [argument.argument, argument]));
-    }, [argumentReferenceDefinitions]);
+    const argumentReferenceCandidatesByKey = useMemo(() => {
+        return Object.fromEntries(argumentReferenceCandidates.map((candidate) => [candidate.argument.argument, candidate]));
+    }, [argumentReferenceCandidates]);
 
     const selectedPluginId = pluginNodeData.pluginId ?? '';
     const selectedPlugin = selectedPluginId ? publishedPluginsById[selectedPluginId] : undefined;
     const selectedArgumentReference = pluginNodeData.argumentReference ?? '';
-    const selectedArgumentDefinition = selectedArgumentReference
-        ? argumentReferenceDefinitionsByKey[selectedArgumentReference]
+    const selectedArgumentCandidate = selectedArgumentReference
+        ? argumentReferenceCandidatesByKey[selectedArgumentReference]
         : undefined;
     const manualArgumentsDefinitions = useMemo(() => {
         if (!selectedPluginId) {
@@ -124,26 +155,28 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     }, [getPluginArguments, selectedPluginId]);
 
     const referencedCandidatePluginIds = useMemo(() => {
-        if (!selectedArgumentDefinition) {
+        if (!selectedArgumentCandidate) {
             return [];
         }
 
         const referencedPluginIds = new Set<string>();
-        for (const pluginId of selectedArgumentDefinition.pluginReferenceFilter ?? []) {
-            referencedPluginIds.add(pluginId);
-        }
+        for (const pluginReferenceDefinition of selectedArgumentCandidate.pluginReferenceDefinitions ?? []) {
+            for (const pluginId of pluginReferenceDefinition.pluginReferenceFilter ?? []) {
+                referencedPluginIds.add(pluginId);
+            }
 
-        const allowedPluginKeys = new Set(selectedArgumentDefinition.pluginReferenceFilterKeys ?? []);
-        if (allowedPluginKeys.size > 0) {
-            for (const plugin of publishedPlugins) {
-                const pluginKey = plugin.modifier?.key?.trim();
-                if (
-                    plugin.status === PluginStatus.PUBLISHED
-                    && plugin._id !== currentPluginId
-                    && pluginKey
-                    && allowedPluginKeys.has(pluginKey)
-                ) {
-                    referencedPluginIds.add(plugin._id);
+            const allowedPluginKeys = new Set(pluginReferenceDefinition.pluginReferenceFilterKeys ?? []);
+            if (allowedPluginKeys.size > 0) {
+                for (const plugin of publishedPlugins) {
+                    const pluginKey = plugin.modifier?.key?.trim();
+                    if (
+                        plugin.status === PluginStatus.PUBLISHED
+                        && plugin._id !== currentPluginId
+                        && pluginKey
+                        && allowedPluginKeys.has(pluginKey)
+                    ) {
+                        referencedPluginIds.add(plugin._id);
+                    }
                 }
             }
         }
@@ -153,7 +186,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         }
 
         return pluginOptions.map((option) => option.value);
-    }, [currentPluginId, pluginOptions, publishedPlugins, selectedArgumentDefinition]);
+    }, [currentPluginId, pluginOptions, publishedPlugins, selectedArgumentCandidate]);
 
     const referencedPluginConfigDefinitions = useMemo(() => {
         return Object.fromEntries(referencedCandidatePluginIds.map((pluginId) => [
@@ -295,7 +328,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
     );
 
     const renderArgumentReferenceConfiguration = () => {
-        if (!selectedArgumentDefinition) {
+        if (!selectedArgumentCandidate) {
             return (
                 <div >
                     <p className='font-size-1 color-muted'>
@@ -305,7 +338,11 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
             );
         }
 
-        if (selectedArgumentDefinition.showPluginConfiguration) {
+        const usesSelectionConfig = selectedArgumentCandidate.pluginReferenceDefinitions.some((definition) => {
+            return definition.showPluginConfiguration === true;
+        });
+
+        if (usesSelectionConfig) {
             return (
                 <div className='d-flex column gap-05'>
                     <p className='font-size-1 color-muted'>
@@ -398,9 +435,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             options={argumentReferenceOptions}
                             onFieldChange={handleArgumentReferenceChange}
                         />
-                        {selectedArgumentDefinition && (
+                        {selectedArgumentCandidate && (
                             <p className='font-size-1 color-muted'>
-                                {selectedArgumentDefinition.multipleSelection
+                                {selectedArgumentCandidate.supportsMultipleExecutions
                                     ? 'This argument can resolve one or more plugins at runtime.'
                                     : 'This argument resolves a single plugin at runtime.'}
                             </p>

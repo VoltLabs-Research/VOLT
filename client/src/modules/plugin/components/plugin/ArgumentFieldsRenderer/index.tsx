@@ -20,10 +20,12 @@ import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];
     values: Record<string, unknown>;
+    rootValues?: Record<string, unknown>;
     onChange: (key: string, value: unknown) => void;
     frameOptions?: SelectOption[];
     emptyMessage?: string;
@@ -51,7 +53,8 @@ interface PrimitiveFieldConfig {
 const getPrimitiveFieldConfig = (
     argument: IArgumentDefinition,
     value: unknown,
-    frameOptions: SelectOption[]
+    frameOptions: SelectOption[],
+    selectOptions: SelectOption[]
 ): PrimitiveFieldConfig => {
     if (argument.type === ArgumentType.BOOLEAN) {
         return {
@@ -64,10 +67,7 @@ const getPrimitiveFieldConfig = (
         return {
             fieldType: 'select',
             fieldValue: getPrimitiveArgumentFieldValue(argument, value),
-            options: (argument.options ?? []).map((option) => ({
-                value: option.key,
-                title: option.label
-            }))
+            options: selectOptions
         };
     }
 
@@ -98,9 +98,87 @@ const getPrimitiveFieldConfig = (
     };
 };
 
+const normalizeDynamicOptionValue = (value: unknown): string => {
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+
+    return '';
+};
+
+const readDynamicOptionField = (value: unknown, field?: string): string => {
+    if (field && isRecord(value)) {
+        return normalizeDynamicOptionValue(value[field]);
+    }
+
+    return normalizeDynamicOptionValue(value);
+};
+
+const resolveSelectOptions = (
+    argument: IArgumentDefinition,
+    rootValues: Record<string, unknown>
+): SelectOption[] => {
+    const staticOptions = (argument.options ?? []).map((option) => ({
+        value: option.key,
+        title: option.label
+    }));
+    const dynamicOptions: SelectOption[] = [];
+
+    for (const source of argument.optionsFromArguments ?? []) {
+        const sourceArgument = source.argument?.trim();
+        if (!sourceArgument) {
+            continue;
+        }
+
+        const sourceValue = rootValues[sourceArgument];
+        const entries = Array.isArray(sourceValue) ? sourceValue : [sourceValue];
+        for (const entry of entries) {
+            const optionValue = readDynamicOptionField(entry, source.valueField);
+            if (!optionValue) {
+                continue;
+            }
+
+            const optionLabel = readDynamicOptionField(entry, source.labelField) || optionValue;
+            dynamicOptions.push({
+                value: optionValue,
+                title: optionLabel
+            });
+        }
+    }
+
+    const dedupedOptions = new Map<string, SelectOption>();
+    for (const option of [...staticOptions, ...dynamicOptions]) {
+        if (!dedupedOptions.has(option.value)) {
+            dedupedOptions.set(option.value, option);
+        }
+    }
+
+    return Array.from(dedupedOptions.values());
+};
+
+const resolveListItemTitle = (
+    argument: IArgumentDefinition,
+    item: ListItemValue,
+    itemIndex: number
+): string => {
+    const labelArgument = argument.listItemLabelArgument?.trim();
+    if (!labelArgument) {
+        return `Item ${itemIndex + 1}`;
+    }
+
+    const labelValue = item[labelArgument];
+    const normalizedLabel = normalizeDynamicOptionValue(labelValue);
+    return normalizedLabel || `Item ${itemIndex + 1}`;
+};
+
 const ArgumentFieldsRenderer = ({
     arguments: argumentDefinitions,
     values,
+    rootValues,
     onChange,
     frameOptions,
     emptyMessage = 'No arguments configured.',
@@ -111,6 +189,7 @@ const ArgumentFieldsRenderer = ({
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
     const resolvedFrameOptions = useMemo(() => frameOptions ?? [], [frameOptions]);
+    const resolvedRootValues = useMemo(() => rootValues ?? values, [rootValues, values]);
     const configurableArgumentDefinitions = useMemo(() => {
         return getUserConfigurableArguments(argumentDefinitions);
     }, [argumentDefinitions]);
@@ -169,7 +248,7 @@ const ArgumentFieldsRenderer = ({
             return (
                 <CollapsibleSection
                     key={itemPath}
-                    title={`Item ${itemIndex + 1}`}
+                    title={resolveListItemTitle(argument, item, itemIndex)}
                     expanded={isExpanded}
                     onExpandedChange={(nextValue) => setSectionExpanded(itemPath, nextValue)}
                     onDelete={() => handleListItemRemove(argument, items, itemIndex)}
@@ -184,6 +263,7 @@ const ArgumentFieldsRenderer = ({
                         frameOptions={resolvedFrameOptions}
                         emptyMessage='No nested arguments configured.'
                         path={itemPath}
+                        rootValues={resolvedRootValues}
                         autocompleteOptions={autocompleteOptions}
                         allowTemplateReferenceMode={allowTemplateReferenceMode}
                     />
@@ -203,6 +283,7 @@ const ArgumentFieldsRenderer = ({
     const renderArgument = useCallback((argument: IArgumentDefinition, index: number) => {
         const argumentValue = values[argument.argument];
         const fieldKey = `${path}.${argument.argument}.${index}`;
+        const selectOptions = resolveSelectOptions(argument, resolvedRootValues);
 
         if (isPluginReferenceArgumentType(argument.type)) {
             return (
@@ -246,10 +327,6 @@ const ArgumentFieldsRenderer = ({
         if (argument.type === ArgumentType.SELECT && argument.multipleSelection) {
             const selectedValues = getSelectArgumentValue(argument, argumentValue);
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
-            const selectOptions = (argument.options ?? []).map((option) => ({
-                value: option.key,
-                title: option.label
-            }));
 
             return (
                 <div key={fieldKey} className='d-flex column gap-05'>
@@ -284,7 +361,12 @@ const ArgumentFieldsRenderer = ({
             && typeof argumentValue === 'string'
             && argumentValue.includes('{{');
 
-        const fieldConfig = getPrimitiveFieldConfig(argument, argumentValue, resolvedFrameOptions);
+        const fieldConfig = getPrimitiveFieldConfig(
+            argument,
+            argumentValue,
+            resolvedFrameOptions,
+            selectOptions
+        );
 
         return (
             <div key={fieldKey} className='d-flex column gap-05'>
@@ -329,6 +411,7 @@ const ArgumentFieldsRenderer = ({
         path,
         renderListItem,
         resolvedFrameOptions,
+        resolvedRootValues,
         values
     ]);
 

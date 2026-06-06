@@ -13,6 +13,12 @@ export interface ArgumentOption {
     label: string;
 }
 
+export interface ArgumentOptionSource {
+    argument?: string;
+    valueField?: string;
+    labelField?: string;
+}
+
 export const ArgumentVisibilityOperators = [
     'equals',
     'notEquals',
@@ -44,7 +50,9 @@ export interface ArgumentDefinition {
     default?: unknown;
     value?: unknown;
     options?: ArgumentOption[];
+    optionsFromArguments?: ArgumentOptionSource[];
     listArguments?: ArgumentDefinition[];
+    listItemLabelArgument?: string;
     required?: boolean;
     multipleSelection?: boolean;
     pluginReferenceFilter?: string[];

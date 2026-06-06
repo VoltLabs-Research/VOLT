@@ -426,7 +426,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                     errors.push(`Plugin node ${node.id} must define an arguments reference`);
                 } else {
                     const referencedArgument = argumentsDefinitions.find((definition) => definition.argument === argumentReference);
-                    if (!referencedArgument || referencedArgument.type !== ArgumentType.PluginReference) {
+                    if (!referencedArgument || !this.containsPluginReferenceArgument(referencedArgument)) {
                         errors.push(`Plugin node ${node.id} references unknown plugin argument "${argumentReference}"`);
                     }
                 }
@@ -471,7 +471,8 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
     private validateArgumentDefinitions(
         definitions: ArgumentDefinition[],
         errors: string[],
-        scope = 'arguments'
+        scope = 'arguments',
+        rootDefinitions: ArgumentDefinition[] = definitions
     ): void {
         for (const definition of definitions) {
             const argumentKey = definition.argument?.trim() || '<unnamed>';
@@ -536,10 +537,57 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 }
             }
 
+            if (definition.optionsFromArguments !== undefined) {
+                if (!Array.isArray(definition.optionsFromArguments)) {
+                    errors.push(`${argumentScope} optionsFromArguments must be an array`);
+                } else if (definition.type !== ArgumentType.Select) {
+                    errors.push(`${argumentScope} optionsFromArguments can only be used with select arguments`);
+                } else {
+                    definition.optionsFromArguments.forEach((source, sourceIndex) => {
+                        const sourceScope = `${argumentScope}.optionsFromArguments[${sourceIndex}]`;
+                        const sourceArgument = typeof source?.argument === 'string'
+                            ? source.argument.trim()
+                            : '';
+
+                        if (!sourceArgument) {
+                            errors.push(`${sourceScope} argument is required`);
+                            return;
+                        }
+
+                        const sourceExists = definitions.some((candidate) => candidate.argument === sourceArgument)
+                            || rootDefinitions.some((candidate) => candidate.argument === sourceArgument);
+                        if (!sourceExists) {
+                            errors.push(`${sourceScope} references unknown argument "${sourceArgument}"`);
+                        }
+                    });
+                }
+            }
+
+            if (definition.type === ArgumentType.List && definition.listItemLabelArgument !== undefined) {
+                const listItemLabelArgument = definition.listItemLabelArgument.trim();
+                if (!listItemLabelArgument) {
+                    errors.push(`${argumentScope} listItemLabelArgument cannot be empty`);
+                } else if (!(definition.listArguments ?? []).some((candidate) => candidate.argument === listItemLabelArgument)) {
+                    errors.push(`${argumentScope} listItemLabelArgument references unknown nested argument "${listItemLabelArgument}"`);
+                }
+            }
+
             if (definition.listArguments?.length) {
-                this.validateArgumentDefinitions(definition.listArguments, errors, argumentScope);
+                this.validateArgumentDefinitions(definition.listArguments, errors, argumentScope, rootDefinitions);
             }
         }
+    }
+
+    private containsPluginReferenceArgument(definition: ArgumentDefinition): boolean {
+        if (definition.type === ArgumentType.PluginReference) {
+            return true;
+        }
+
+        if (definition.type !== ArgumentType.List || !Array.isArray(definition.listArguments)) {
+            return false;
+        }
+
+        return definition.listArguments.some((nestedDefinition) => this.containsPluginReferenceArgument(nestedDefinition));
     }
 
     private hasAncestorOfType(nodeId: string, workflow: WorkflowProps, blockedTypes: Set<WorkflowNodeType>): boolean {

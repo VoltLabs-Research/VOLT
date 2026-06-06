@@ -1,0 +1,13 @@
+{
+    "env": {
+        "SERVER_PORT": "8100",
+        "WEB_PORT": "5273",
+        "MINIO_PORT": "9100",
+        "MINIO_CONSOLE": "9101",
+        "DAEMON_PORT": "18020",
+        "MONGO_PASS": "volt",
+        "REDIS_PASS": "voltredis",
+        "SECRET_KEY": "volt-local-secret",
+        "SSH_KEY": "volt-local-ssh"
+    }
+}

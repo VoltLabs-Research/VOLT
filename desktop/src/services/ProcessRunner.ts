@@ -1,27 +1,36 @@
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const execAsync = promisify(execFile);
-
-export interface RunCommandProps{
-    bin: string;
-    args: string[];
+export interface RunOptions{
     cwd?: string;
+    env?: Record<string, string>;
+    onStdout?: (line: string) => void;
+    onStderr?: (line: string) => void;
 }
 
 export default class ProcessRunner{
-    async capture(bin: string, args: string[], cwd?: string): Promise<string>{
-        const { stdout } = await execAsync(bin, args, { cwd: cwd });
-        return stdout.trim();
+    #byLine(onLine: (line: string) => void){
+        let buf = '';
+        
+        return (chunk: Buffer) => {
+            buf += chunk.toString('utf8');
+            const parts = buf.split('\n');
+            buf = parts.pop() ?? '';
+            
+            for(const line of parts) onLine(line);
+        };
     }
 
-    async run(bin: string, args: string[], cwd?: string){
+    async run(bin: string, args: string[], options: RunOptions = {}){
         await new Promise<void>((resolve, reject) => {
             const child = spawn(bin, args, {
-                cwd: cwd,
-                stdio: 'inherit',
+                cwd: options.cwd,
+                env: options.env ? { ...process.env, ...options.env } : process.env,
                 shell: false
             });
+
+            if(options.onStdout) child.stdout.on('data', this.#byLine(options.onStdout));
+            if(options.onStderr) child.stdout.on('data', this.#byLine(options.onStderr));
 
             child.on('error', reject);
             child.on('close', (code) => {
@@ -30,8 +39,8 @@ export default class ProcessRunner{
                     return;
                 }
 
-                reject(new Error(`${bin} ${args.join(' ')} failed with code ${code}`));
-            })
+                reject(new Error(`${bin} ${args.join(' ')} exited ${code}`));
+            });
         });
     }
 };

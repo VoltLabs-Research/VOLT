@@ -17,6 +17,18 @@ export const ArgumentOptionSchema = new Schema({
     }
 }, { _id: false });
 
+export const ArgumentOptionSourceSchema = new Schema({
+    argument: {
+        type: String
+    },
+    valueField: {
+        type: String
+    },
+    labelField: {
+        type: String
+    }
+}, { _id: false });
+
 export const ArgumentVisibilityConditionSchema = new Schema({
     argument: {
         type: String,
@@ -76,6 +88,10 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Schema.Types.Mixed
     },
     options: [ArgumentOptionSchema],
+    optionsFromArguments: [ArgumentOptionSourceSchema],
+    listItemLabelArgument: {
+        type: String
+    },
     required: {
         type: Boolean,
         default: false
