@@ -10,13 +10,13 @@ import ReleaseChecker from '@/services/ReleaseChecker';
 export interface SoftwareUpdaterProps{
     downloadDir: string;
     appAssets: string[];
-};
+}
 
 export default class SoftwareUpdater{
     props: SoftwareUpdaterProps
     
     constructor(props: SoftwareUpdaterProps){
-        this.props = props;
+        this.props = props; 
     }
 
     async #download(asset: ReleaseAsset, downloadPath: string){
