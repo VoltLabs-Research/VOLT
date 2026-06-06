@@ -2,7 +2,33 @@ import useLatexAssets from '@/modules/latex/hooks/use-latex-assets';
 import useLatexDocumentSocket from '@/modules/latex/hooks/use-latex-document-socket';
 import useLatexFiles from '@/modules/latex/hooks/use-latex-files';
 import { invalidateLatexFilesQuery, latexDocumentQuery, useCompileLatexDocumentMutation, useExportLatexDocumentTexMutation, useExportLatexDocumentZipMutation, useUpdateLatexDocumentMutation } from '@/modules/latex/hooks/queries';
-import { isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
+import { isWorkspaceTextLikeFile, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
+import type {
+    LatexFileEntry,
+    LatexWorkspaceSelection,
+    LatexWorkspaceTab,
+    LatexEditorGroupId,
+    LatexEditorGroup,
+    FileEditorState,
+    PendingRemoteFileUpdate,
+    WorkspaceUploadEntry
+} from './workspace/types';
+import {
+    AUTOSAVE_DELAY,
+    TEX_EXTENSION,
+    PRIMARY_EDITOR_GROUP_ID,
+    SECONDARY_EDITOR_GROUP_ID,
+    isSameSelection,
+    isSameTab,
+    createEditorGroup,
+    createFileEditorState
+} from './workspace/editor-helpers';
+import {
+    EXPORT_TEX_TOAST,
+    EXPORT_ZIP_TOAST,
+    RENAME_TOAST,
+    IMPORT_WORKSPACE_TOAST
+} from './workspace/toasts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
@@ -17,113 +43,7 @@ interface UseLatexWorkspaceInput {
     documentId: string;
 }
 
-export interface LatexFileEntry {
-    _id: string;
-    name: string;
-    path: string;
-    content: string;
-    isEntrypoint: boolean;
-    isSelected: boolean;
-}
-
-interface LatexWorkspaceFileSelection {
-    type: 'file';
-    id: string;
-}
-
-interface LatexWorkspaceAssetSelection {
-    type: 'asset';
-    id: string;
-}
-
-interface WorkspaceUploadEntry {
-    file: File;
-    path: string;
-}
-
-export type LatexWorkspaceSelection =
-    | LatexWorkspaceFileSelection
-    | LatexWorkspaceAssetSelection
-    | null;
-
-export type LatexWorkspaceTab = LatexWorkspaceFileSelection | LatexWorkspaceAssetSelection;
-
-export type LatexEditorGroupId = 'primary' | 'secondary';
-
-export interface LatexEditorGroup {
-    id: LatexEditorGroupId;
-    selection: LatexWorkspaceSelection;
-    openTabs: LatexWorkspaceTab[];
-}
-
-interface FileEditorState {
-    content: string;
-    lastSavedContent: string;
-    remoteContent: string;
-    isDirty: boolean;
-}
-
-interface PendingRemoteFileUpdate {
-    content: string;
-    timestamp: number;
-}
-
-const AUTOSAVE_DELAY = 500;
-const TEX_EXTENSION = '.tex';
-const PRIMARY_EDITOR_GROUP_ID: LatexEditorGroupId = 'primary';
-const SECONDARY_EDITOR_GROUP_ID: LatexEditorGroupId = 'secondary';
-
-const isSameSelection = (left: LatexWorkspaceSelection, right: LatexWorkspaceSelection): boolean => {
-    if (!left || !right) {
-        return left === right;
-    }
-
-    return left.type === right.type && left.id === right.id;
-};
-
-const isSameTab = (left: LatexWorkspaceTab, right: LatexWorkspaceTab): boolean => {
-    return left.type === right.type && left.id === right.id;
-};
-
-const createEditorGroup = (id: LatexEditorGroupId): LatexEditorGroup => ({
-    id,
-    selection: null,
-    openTabs: []
-});
-
-const createFileEditorState = (content: string): FileEditorState => ({
-    content,
-    lastSavedContent: content,
-    remoteContent: content,
-    isDirty: false
-});
-
-const EXPORT_TEX_TOAST = {
-    loading: { title: 'Exporting .tex file...' },
-    success: { title: 'Export ready' },
-    error: { title: 'Failed to export document' }
-};
-
-const EXPORT_ZIP_TOAST = {
-    loading: { title: 'Exporting .zip archive...' },
-    success: { title: 'Export ready' },
-    error: { title: 'Failed to export document' }
-};
-
-const RENAME_TOAST = {
-    loading: { title: 'Renaming document...' },
-    success: { title: 'Document renamed' },
-    error: { title: 'Failed to rename document' }
-};
-
-const IMPORT_WORKSPACE_TOAST = {
-    loading: { title: 'Importing LaTeX project...' },
-    success: { title: 'LaTeX project imported' },
-    error: {
-        title: 'Failed to import LaTeX project',
-        description: 'One or more workspace entries could not be imported.'
-    }
-};
+export type { LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab, LatexEditorGroupId } from './workspace/types';
 
 const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const teamId = useSelectedTeamId();
@@ -1045,14 +965,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 const binaryEntries = entries.filter((entry) => !isWorkspaceTextLikeFile(entry.path, entry.file.type));
 
                 for (const entry of textEntries) {
-                    const { path, name } = (() => {
-                        const normalized = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
-                        const index = normalized.lastIndexOf('/');
-                        return {
-                            path: index >= 0 ? normalized.slice(0, index + 1) : '',
-                            name: index >= 0 ? normalized.slice(index + 1) : normalized
-                        };
-                    })();
+                    const { path, name } = splitWorkspacePath(entry.path);
 
                     await createFileWithoutSelection(name, path || undefined, await entry.file.text());
                 }

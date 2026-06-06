@@ -17,9 +17,6 @@ interface SidebarClustersResult {
     credentials: TeamClusterCredentialServices | null;
     handleMonitor: (cluster: TeamCluster) => void;
     handleRevealCredentials: (cluster: TeamCluster) => void;
-    handleExploreMongo: (cluster: TeamCluster) => void;
-    handleExploreRedis: (cluster: TeamCluster) => void;
-    handleExploreMinio: (cluster: TeamCluster) => void;
     revealCredentials: (password: string) => Promise<void>;
     setCredentialsCluster: (cluster: TeamCluster | null) => void;
 }
@@ -66,21 +63,6 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         openModal(CLUSTER_CREDENTIALS_MODAL_ID);
     }, [isOnClustersRoute, navigateToCluster]);
 
-    const handleExploreMongo = useCallback((cluster: TeamCluster) => {
-        navigate(`/dashboard/clusters/${cluster._id}/mongo`);
-        setSidebarOpen(false);
-    }, [navigate, setSidebarOpen]);
-
-    const handleExploreRedis = useCallback((cluster: TeamCluster) => {
-        navigate(`/dashboard/clusters/${cluster._id}/redis`);
-        setSidebarOpen(false);
-    }, [navigate, setSidebarOpen]);
-
-    const handleExploreMinio = useCallback((cluster: TeamCluster) => {
-        navigate(`/dashboard/clusters/${cluster._id}/minio`);
-        setSidebarOpen(false);
-    }, [navigate, setSidebarOpen]);
-
     const revealCredentials = useCallback(async (password: string) => {
         if (!credentialsCluster || !selectedTeamId) {
             return;
@@ -110,9 +92,6 @@ const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClu
         credentials,
         handleMonitor,
         handleRevealCredentials,
-        handleExploreMongo,
-        handleExploreRedis,
-        handleExploreMinio,
         revealCredentials,
         setCredentialsCluster: (cluster: TeamCluster | null) => {
             setCredentials(null);

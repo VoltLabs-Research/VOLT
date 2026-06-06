@@ -184,15 +184,6 @@ export const CONTEXTUAL_TIPS = {
         duration: 6500,
         position: 'bottom-center'
     },
-    'cluster-remote-explorer': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Explore cluster databases',
-        description: 'Browse MongoDB collections, Redis keys, and MinIO buckets directly from this panel.',
-        buttonLabel: 'Got it',
-        delay: 1400,
-        position: 'top-center'
-    },
     'plugins-import-export': {
         surface: 'page',
         dismissMode: 'manual',

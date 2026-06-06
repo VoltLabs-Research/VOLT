@@ -177,7 +177,6 @@ services:
       HOST: 0.0.0.0
       PORT: ${DAEMON_PORT:-18080}
       TEAM_CLUSTER_ID: ${TEAM_CLUSTER_ID}
-      TEAM_CLUSTER_ENROLLMENT_TOKEN: ${TEAM_CLUSTER_ENROLLMENT_TOKEN}
       TEAM_CLUSTER_HEALTHCHECK_PATH: /api/team-clusters/${TEAM_CLUSTER_ID}/healthcheck
       TEAM_CLUSTER_DAEMON_PASSWORD: ${DAEMON_PASS:-daemon-local-pass}
       VOLT_CLOUD_URL: http://volt-server:8000

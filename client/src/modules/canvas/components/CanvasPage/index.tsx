@@ -66,7 +66,7 @@ import type { RasterContainerId, RasterContainerSelection } from '@/modules/rast
 
 import './CanvasPage.css';
 import { createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
-import { fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utilities/local-glb-manifest';
+import { clampFrameIndex, fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utilities/local-glb-manifest';
 
 import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utilities/local-glb-manifest';
 
@@ -373,7 +373,7 @@ const CanvasPage = () => {
 
         const requestedFrame = Number(localFrameParam);
         if (Number.isFinite(requestedFrame)) {
-            return Math.max(0, Math.min(localManifest.frames.length - 1, Math.floor(requestedFrame)));
+            return clampFrameIndex(requestedFrame, localManifest.frames.length);
         }
 
         return localManifest.initialFrame;
@@ -396,7 +396,7 @@ const CanvasPage = () => {
             return;
         }
 
-        const clampedIndex = Math.max(0, Math.min(localManifest.frames.length - 1, Math.floor(nextIndex)));
+        const clampedIndex = clampFrameIndex(nextIndex, localManifest.frames.length);
         updateSearchParams({ frame: clampedIndex }, { replace: true });
     }, [localManifest, updateSearchParams]);
 

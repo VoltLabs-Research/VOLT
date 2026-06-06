@@ -19,12 +19,7 @@ interface TeamResponse{
 
 interface TeamClusterResponse{
     teamCluster: { _id: string };
-    enrollmentToken: string;
 }
-
-const log = (line: string) => bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] ${line}` });
-
-const randomPassword = () => crypto.randomBytes(24).toString('base64url');
 
 export default class Bootstrap{
     constructor(private readonly props: BootstrapProps){}
@@ -34,23 +29,11 @@ export default class Bootstrap{
         if(existing){
             try{
                 const authToken = await this.#signIn(existing.email, existing.password);
-                const enrollmentToken = await this.#tryRegenerateEnrollmentToken(authToken, existing.teamId, existing.teamClusterId);
-
-                // Reveal lazily so configs written before daemonPassword existed self-heal
-                // on the next launch instead of forcing a full re-bootstrap.
-                const daemonPassword = existing.daemonPassword
-                    ?? await this.#revealDaemonPassword(authToken, existing.teamId, existing.teamClusterId, existing.password);
-
-                const next: BootstrapState = {
-                    ...existing,
-                    authToken,
-                    enrollmentToken: enrollmentToken ?? existing.enrollmentToken,
-                    daemonPassword
-                };
+                const next: BootstrapState = { ...existing, authToken };
                 await this.props.appConfig.setBootstrap(next);
                 return next;
             }catch(err){
-                log(`re-signIn failed (${(err as Error).message}); running full bootstrap`);
+                bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] re-signIn failed (${(err as Error).message}); running full bootstrap` });
                 await this.props.appConfig.clearBootstrap();
             }
         }
@@ -58,39 +41,20 @@ export default class Bootstrap{
         return this.#fullBootstrap();
     }
 
-    async #tryRegenerateEnrollmentToken(authToken: string, teamId: string, teamClusterId: string): Promise<string | null>{
-        try{
-            const data = await this.#postJson<{ enrollmentToken: string }>(
-                `/api/teams/${teamId}/clusters/${teamClusterId}/enrollment-token/regenerate`,
-                {},
-                authToken
-            );
-            log('regenerated enrollment token');
-            return data.enrollmentToken;
-        }catch(err){
-            const msg = (err as Error).message;
-            if(/InvalidStatusForTokenRegeneration|409/.test(msg)){
-                log('cluster is connected; keeping existing enrollment token');
-                return null;
-            }
-            throw err;
-        }
-    }
-
     async #fullBootstrap(): Promise<BootstrapState>{
         const email = `local-${crypto.randomBytes(4).toString('hex')}@volt.local`;
-        const password = randomPassword();
+        const password = crypto.randomBytes(24).toString('base64url');
 
-        log(`creating local user ${email}`);
+        bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating local user ${email}` });
         const auth = await this.#signUp(email, password);
 
-        log('creating local team');
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating local team' });
         const team = await this.#createTeam(auth.token, 'Local');
 
-        log('creating local cluster');
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating local cluster' });
         const cluster = await this.#createCluster(auth.token, team._id, 'Local Cluster');
 
-        log('revealing daemon credentials');
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] revealing daemon credentials' });
         const daemonPassword = await this.#revealDaemonPassword(auth.token, team._id, cluster.teamCluster._id, password);
 
         const state: BootstrapState = {
@@ -100,7 +64,6 @@ export default class Bootstrap{
             userId: auth.user._id,
             teamId: team._id,
             teamClusterId: cluster.teamCluster._id,
-            enrollmentToken: cluster.enrollmentToken,
             authToken: auth.token,
             daemonPassword
         };
@@ -131,9 +94,6 @@ export default class Bootstrap{
         return this.#postJson<TeamClusterResponse>(`/api/teams/${teamId}/clusters`, { name }, token);
     }
 
-    // Password-confirmed reveal of the cluster's decrypted service credentials. We only
-    // need the daemon password — the daemon reaches the shared infra (mongo/redis/minio)
-    // with the stack-level creds from compose, not the per-cluster generated ones.
     async #revealDaemonPassword(token: string, teamId: string, teamClusterId: string, password: string): Promise<string>{
         const data = await this.#postJson<{ services: { daemon: { password: string } } }>(
             `/api/teams/${teamId}/clusters/${teamClusterId}/credentials/reveal`,
@@ -151,38 +111,39 @@ export default class Bootstrap{
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if(token) headers.Authorization = `Bearer ${token}`;
 
-        const attempts = 30;
+        const attempts = 5;
         let lastErr: unknown;
 
         for(let i = 0; i < attempts; i++){
+            let res: Response;
+            let text: string;
             try{
-                const res = await fetch(url, {
+                res = await fetch(url, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(body),
                     signal: AbortSignal.timeout(10_000)
                 });
-
-                const text = await res.text();
-                let parsed: any = null;
-                try{ parsed = text ? JSON.parse(text) : null; }catch{ /* non-json */ }
-
-                if(!res.ok){
-                    const code = parsed?.code ?? parsed?.status ?? '';
-                    const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
-                    throw new Error(`${path} → ${res.status} ${code} ${msg}`);
-                }
-
-                return (parsed?.data ?? parsed) as T;
+                text = await res.text();
             }catch(err){
                 lastErr = err;
-                const msg = (err as Error).message;
-                if(/ECONNREFUSED|ENOTFOUND|fetch failed|timeout/i.test(msg) && i < attempts - 1){
+                if(i < attempts - 1){
                     await sleep(1000);
                     continue;
                 }
                 throw err;
             }
+
+            let parsed: any;
+            try{ parsed = text ? JSON.parse(text) : null; }catch{ parsed = null; }
+
+            if(!res.ok){
+                const code = parsed?.code ?? parsed?.status ?? '';
+                const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
+                throw new Error(`${path} → ${res.status} ${code} ${msg}`);
+            }
+
+            return (parsed?.data ?? parsed) as T;
         }
 
         throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));

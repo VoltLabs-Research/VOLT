@@ -11,18 +11,16 @@ export interface RepositoryRelease{
 };
 
 export default class Repository{
-    octokit: Octokit;
+    #octokit = new Octokit();
 
-    constructor(private readonly props: RepositoryProps){
-        this.octokit = new Octokit();
-    }
+    constructor(private readonly props: RepositoryProps){}
 
     getId(){
         return `${this.props.owner}/${this.props.repo}`;
     }
 
     async fetchLatestRelease(){
-        const { data } = await this.octokit.request(
+        const { data } = await this.#octokit.request(
             'GET /repos/{owner}/{repo}/releases/latest',
             { owner: this.props.owner, repo: this.props.repo }
         );

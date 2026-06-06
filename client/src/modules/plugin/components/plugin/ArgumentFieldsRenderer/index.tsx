@@ -20,6 +20,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
 import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentFieldsRendererProps {
@@ -340,18 +341,13 @@ const ArgumentFieldsRenderer = ({
                         selectedValues={selectValues}
                         onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
                         placeholder='Select options'
-                        renderTriggerLabel={(selectedCount) => {
-                            if (selectedCount === 0) {
-                                return 'Select options';
-                            }
-
-                            if (selectedCount === 1) {
-                                const selectedValue = selectValues[0];
-                                return selectOptions.find((option) => option.value === selectedValue)?.title ?? '1 selected';
-                            }
-
-                            return `${selectedCount} selected`;
-                        }}
+                        renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
+                            selectedCount,
+                            selectValues,
+                            selectOptions,
+                            'Select options',
+                            'selected'
+                        )}
                     />
                 </div>
             );

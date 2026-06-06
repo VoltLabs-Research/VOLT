@@ -55,7 +55,6 @@ export default class SoftwareUpdater{
     }
 
     async update(release: RepositoryRelease){
-        // Namespace by repoId so two repos sharing a tag don't collide.
         const safeId = this.props.repoId.replace('/', '_');
         const downloadPath = path.join(this.props.downloadDir, `${safeId}-${release.tag}.zip`);
         const extractPath = this.#extractRoot();
