@@ -17,10 +17,10 @@ export interface BootstrapState{
 }
 
 export default class AppConfig{
-    props: AppConfigProps;
+    constructor(private readonly props: AppConfigProps){}
 
-    constructor(props: AppConfigProps){
-        this.props = props;
+    async #write(config: object){
+        await writeFile(this.props.configFile, JSON.stringify(config, null, 2));
     }
 
     async get(): Promise<Record<string, any>>{
@@ -33,7 +33,7 @@ export default class AppConfig{
         const current = await this.get();
         const merged = { ...current, ...payload };
 
-        await writeFile(this.props.configFile, JSON.stringify(merged, null, 2));
+        await this.#write(merged);
     }
 
     async updateRelease(repoId: string, tag: string){
@@ -75,6 +75,6 @@ export default class AppConfig{
     async clearBootstrap(){
         const current = await this.get();
         delete current.bootstrap;
-        await writeFile(this.props.configFile, JSON.stringify(current, null, 2));
+        await this.#write(current);
     }
 };

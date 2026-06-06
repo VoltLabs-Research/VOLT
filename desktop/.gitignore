@@ -1,0 +1,3 @@
+# Estado por-máquina escrito en runtime (env del stack + bootstrap con credenciales).
+# No es fuente: lo regenera AppConfig.ensureStackDefaults / Bootstrap en cada arranque.
+app-config.json
