@@ -8,16 +8,25 @@ export interface RunOptions{
 }
 
 export default class ProcessRunner{
-    #byLine(onLine: (line: string) => void){
+    #lineReader(onLine: (line: string) => void){
         let buf = '';
 
-        return (chunk: Buffer) => {
+        const onData = (chunk: Buffer) => {
             buf += chunk.toString('utf8');
             const parts = buf.split('\n');
             buf = parts.pop() ?? '';
 
             for(const line of parts) onLine(line);
         };
+
+        const flush = () => {
+            if(buf){
+                onLine(buf);
+                buf = '';
+            }
+        };
+
+        return { onData, flush };
     }
 
     async run(bin: string, args: string[], options: RunOptions = {}){
@@ -28,11 +37,24 @@ export default class ProcessRunner{
                 shell: false
             });
 
-            if(options.onStdout) child.stdout.on('data', this.#byLine(options.onStdout));
-            if(options.onStderr) child.stderr.on('data', this.#byLine(options.onStderr));
+            const flushes: Array<() => void> = [];
+
+            if(options.onStdout){
+                const reader = this.#lineReader(options.onStdout);
+                child.stdout.on('data', reader.onData);
+                flushes.push(reader.flush);
+            }
+
+            if(options.onStderr){
+                const reader = this.#lineReader(options.onStderr);
+                child.stderr.on('data', reader.onData);
+                flushes.push(reader.flush);
+            }
 
             child.on('error', reject);
             child.on('close', (code) => {
+                flushes.forEach((flush) => flush());
+
                 if(code === 0){
                     resolve();
                     return;
