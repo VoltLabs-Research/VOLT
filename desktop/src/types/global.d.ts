@@ -4,6 +4,7 @@ import type { DevModeState } from '@/services/AppConfig';
 declare global{
     interface Window{
         volt: {
+            platform: NodeJS.Platform;
             deploy: {
                 start: () => Promise<void>;
                 stop: () => Promise<void>;

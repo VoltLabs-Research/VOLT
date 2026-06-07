@@ -34,13 +34,28 @@ const STACK_DEFAULTS: Record<string, string> = {
     SSH_KEY: 'volt-local-ssh'
 };
 
+// Glass + rounded corners are native on macOS (vibrancy) and Windows (acrylic);
+// on Linux there is no native blur, so we go transparent and let the renderer
+// paint the rounded surface. Light/dark follows the system theme automatically:
+// vibrancy/acrylic adapt to the OS appearance and the renderer honours
+// prefers-color-scheme, so no extra theme wiring is needed here.
+const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
+    if(process.platform === 'darwin'){
+        return { vibrancy: 'under-window', visualEffectState: 'active', roundedCorners: true, backgroundColor: '#00000000' };
+    }
+    if(process.platform === 'win32'){
+        return { backgroundMaterial: 'acrylic', backgroundColor: '#00000000' };
+    }
+    return { transparent: true, backgroundColor: '#00000000' };
+};
+
 const createWindow = (): BrowserWindow => {
     const win = new BrowserWindow({
         width: 1400,
         height: 900,
         show: false,
         frame: false,
-        backgroundColor: '#ffffff',
+        ...visualChrome(),
         webPreferences: {
             devTools: true,
             preload: path.join(__dirname, '../preload/preload.mjs'),

@@ -30,8 +30,7 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 };
 
 const App = () => {
-    const { state, phases, phaseState, logs, voltUrl, reset, begin } = useDeploy();
-    const busy = state === 'starting' || state === 'stopping';
+    const { state, phases, phaseState, logs, voltUrl, busy, reset, run } = useDeploy();
     const [iframeReady, setIframeReady] = useState(false);
     const [devModeOpen, setDevModeOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -47,21 +46,14 @@ const App = () => {
         setIframeReady(false);
     };
 
-    const retry = () => {
-        resetBoot();
-        begin();
-    };
+    const retry = () => run(() => window.volt.deploy.start(), resetBoot);
 
     const applyDevMode = (payload: DevModeState) => {
         setDevModeOpen(false);
-        resetBoot();
-        window.volt.devmode.apply(payload).catch(() => {});
+        run(() => window.volt.devmode.apply(payload), resetBoot);
     };
 
-    const resetAndRedeploy = () => {
-        resetBoot();
-        window.volt.deploy.reset().catch(() => {});
-    };
+    const resetAndRedeploy = () => run(() => window.volt.deploy.reset(), resetBoot);
 
     return (
         <div className='app'>

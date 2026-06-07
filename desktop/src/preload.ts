@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import type { AppEvents } from '@/types/events';
 
 contextBridge.exposeInMainWorld('volt', {
+    platform: process.platform,
     deploy: {
         start: () => ipcRenderer.invoke('deploy:start'),
         stop: () => ipcRenderer.invoke('deploy:stop'),

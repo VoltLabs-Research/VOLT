@@ -1,5 +1,5 @@
 :root{
-    color-scheme: light;
+    color-scheme: light dark;
 
     --color-bg: #FFFFFF;
     --color-surface-2: #F6F6FA;
@@ -9,20 +9,48 @@
     --color-text-muted: #8E8E93;
     --color-border: rgba(60, 60, 67, 0.12);
     --color-border-strong: rgba(60, 60, 67, 0.18);
+    --header-border: rgba(0, 0, 0, 0.06);
+    --color-brand: #007aff;
     --status-error: #ff3b30;
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-strong: rgba(255, 255, 255, 0.9);
     --radius-sm: 8px;
     --radius-md: 12px;
+    --radius-window: 12px;
     --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
 
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
 
+/* Follow the system appearance. macOS vibrancy / Windows acrylic adapt natively;
+   this is what keeps the renderer chrome in sync with the OS theme. */
+@media (prefers-color-scheme: dark){
+    :root{
+        --color-bg: #000000;
+        --color-surface-2: #1C1C1E;
+        --color-surface-3: #2C2C2E;
+        --color-text-primary: #F5F5F7;
+        --color-text-secondary: #AEAEB2;
+        --color-text-muted: #8E8E93;
+        --color-border: rgba(255, 255, 255, 0.12);
+        --color-border-strong: rgba(255, 255, 255, 0.2);
+        --header-border: rgba(255, 255, 255, 0.05);
+        --color-brand: #0a84ff;
+        /* Header matches the pure-black app surface exactly: opaque black, no
+           lighter glass tint. (Light mode keeps the translucent glass.) */
+        --glass-bg: #000000;
+        --glass-strong: #1C1C1E;
+    }
+}
+
 *{ box-sizing: border-box; }
-html, body, #root{ margin: 0; height: 100%; }
+
+/* The native window is transparent (glass on macOS/Windows); the rounded surface
+   is painted by .app so the corners read as see-through. */
+html, body, #root{ margin: 0; height: 100%; background: transparent; }
 
 body{
-    background: var(--color-bg);
     color: var(--color-text-primary);
     user-select: none;
 }
@@ -31,7 +59,15 @@ body{
     display: flex;
     flex-direction: column;
     height: 100%;
+    border-radius: var(--radius-window);
+    overflow: hidden;
+    background: var(--color-bg);
 }
+
+/* Let macOS vibrancy / Windows acrylic show through the chrome by keeping the
+   surface transparent there. Linux has no native blur, so it stays solid. */
+[data-platform='darwin'] .app,
+[data-platform='win32'] .app{ background: transparent; }
 
 .body{
     position: relative;

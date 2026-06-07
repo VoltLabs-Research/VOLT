@@ -38,6 +38,12 @@ services:
       dockerfile: Dockerfile.dev
     image: volt-server:local
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
     environment:
       NODE_ENV: production
       REDIS_HOST: volt-redis
@@ -194,7 +200,7 @@ services:
       volt-mongodb: { condition: service_healthy }
       volt-redis:   { condition: service_healthy }
       volt-minio:   { condition: service_started }
-      volt-server:  { condition: service_started }
+      volt-server:  { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CLUSTER_DAEMON_SOURCE_DIR}:/app

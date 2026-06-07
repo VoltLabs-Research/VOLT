@@ -20,7 +20,9 @@ export const useDeploy = () => {
     const [phaseState, setPhaseState] = useState<Record<string, { status: PhaseStatus; detail?: string }>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
     const [voltUrl, setVoltUrl] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
     const startedRef = useRef(false);
+    const busyRef = useRef(false);
 
     const append = (line: LogLine) =>
         setLogs((prev) => {
@@ -28,10 +30,16 @@ export const useDeploy = () => {
             return [...base, line];
         });
 
-    const begin = () =>
-        window.volt.deploy.start().catch((err) =>
-            sileo.error({ title: 'Deploy failed', description: errMessage(err) })
-        );
+    const run = (op: () => Promise<unknown>, reset?: () => void) => {
+        if(busyRef.current) return;
+        busyRef.current = true;
+        setBusy(true);
+        reset?.();
+        op().catch(() => {}).finally(() => {
+            busyRef.current = false;
+            setBusy(false);
+        });
+    };
 
     useEffect(() => {
         const unsubState = window.volt.on('deploy:state', (p) => {
@@ -73,7 +81,7 @@ export const useDeploy = () => {
 
         if(!startedRef.current){
             startedRef.current = true;
-            begin();
+            run(() => window.volt.deploy.start());
         }
 
         return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); };
@@ -87,5 +95,5 @@ export const useDeploy = () => {
         setVoltUrl(null);
     };
 
-    return { state, phases, phaseState, logs, voltUrl, reset, begin };
+    return { state, phases, phaseState, logs, voltUrl, busy, reset, run };
 };

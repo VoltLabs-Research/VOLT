@@ -8,10 +8,10 @@
     height: 44px;
     flex: 0 0 44px;
     padding: 0 14px;
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--header-border);
 }
 
 .titlebar button,
@@ -110,7 +110,7 @@
     margin: 0;
     padding: 6px;
     list-style: none;
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--glass-strong);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--color-border);
