@@ -178,7 +178,7 @@
 }
 
 .dm-input:focus{
-    background: #fff;
+    background: var(--color-surface-3);
     border-color: var(--color-brand, #007aff);
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
