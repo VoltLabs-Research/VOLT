@@ -1,12 +1,6 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Tag from '@/shared/presentation/primitives/Tag';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';

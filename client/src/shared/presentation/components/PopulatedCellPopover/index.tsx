@@ -1,6 +1,6 @@
 import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
-import Popover from '@/shared/presentation/primitives/Popover';
+import { Popover, Row, Stack, Text } from '@voltstack/bravais';
 import './PopulatedCellPopover.css';
 import { useMemo } from 'react';
 import { ArrowUpRight } from 'lucide-react';
@@ -144,8 +144,8 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         };
 
         return (
-            <div className='populated-cell-popover-header d-flex items-center content-between p-05 gap-1'>
-                <span className='font-size-1 color-secondary'>{modelName}</span>
+            <Row justify='between' p='05' gap='1' className='populated-cell-popover-header'>
+                <Text size='sm' tone='secondary'>{modelName}</Text>
                 {listingRoute && (
                     <nav aria-label={`${modelName} links`}>
                         <Link
@@ -158,16 +158,16 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                         </Link>
                     </nav>
                 )}
-            </div>
+            </Row>
         );
     };
 
     const renderField = (field: FieldEntry) => {
         return (
-            <div key={field.key} className='populated-cell-popover-field d-flex items-start gap-05 p-025'>
+            <Row key={field.key} align='start' gap='05' p='025' className='populated-cell-popover-field'>
                 <dt className='populated-cell-popover-field-label'>{field.label}</dt>
                 <dd className='populated-cell-popover-field-value' title={field.value}>{field.value}</dd>
-            </div>
+            </Row>
         );
     };
 
@@ -175,15 +175,15 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         <div className='d-inline-flex' onClick={handleStopPropagation}>
             <Popover id={popoverId} trigger={trigger} placement='bottom-start'>
                 {(close: () => void) => (
-                    <div className='d-flex column' role='dialog' aria-label={`${modelName} details`}>
+                    <Stack role='dialog' aria-label={`${modelName} details`}>
                         {renderHeader(close)}
-                        <div className='populated-cell-popover-body d-flex column'>
+                        <Stack className='populated-cell-popover-body'>
                             {fields.length > 0
                                 ? <dl className='populated-cell-popover-fields m-0'>{fields.map(renderField)}</dl>
-                                : <span className='font-size-1 color-muted p-05'>No fields to display</span>
+                                : <Text size='sm' tone='muted' className='p-05'>No fields to display</Text>
                             }
-                        </div>
-                    </div>
+                        </Stack>
+                    </Stack>
                 )}
             </Popover>
         </div>

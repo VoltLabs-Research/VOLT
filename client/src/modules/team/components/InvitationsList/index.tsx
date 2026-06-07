@@ -1,8 +1,5 @@
 import { InvitationRow } from '../InvitationRow';
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { Box, Stack, Text, EmptyState } from '@voltstack/bravais';
 import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team-invitation';
 import './InvitationsList.css';
 

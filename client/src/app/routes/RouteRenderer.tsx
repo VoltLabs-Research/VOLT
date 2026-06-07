@@ -2,7 +2,7 @@ import { canAccessByPermissions } from '@/modules/team/utilities/team/permission
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import Loader from '@/shared/presentation/primitives/Loader';
+import { Loader } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';

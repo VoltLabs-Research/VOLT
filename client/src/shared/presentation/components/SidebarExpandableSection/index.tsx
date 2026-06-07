@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button } from '@voltstack/bravais';
 import './SidebarExpandableSection.css';
 import './SidebarSubItems.css';
 import NestedSubItems from './NestedSubItems';

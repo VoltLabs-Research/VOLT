@@ -1,13 +1,6 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils/file';
-import Box from '@/shared/presentation/primitives/Box';
-import Divider from '@/shared/presentation/primitives/Divider';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
-import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
+import { Box, Divider, IconButton, Row, Stack, Text, Tooltip, VisuallyHidden } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';

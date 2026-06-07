@@ -1,11 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Divider from '@/shared/presentation/primitives/Divider';
-import FloatingToolbar from '@/shared/presentation/primitives/FloatingToolbar';
-import Row from '@/shared/presentation/primitives/Row';
-import SaveStatusIndicator from '@/shared/presentation/primitives/SaveStatusIndicator';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
-import type { SaveStatus } from '@/shared/presentation/primitives/SaveStatusIndicator';
+import { Button, Divider, FloatingToolbar, Row, SaveStatusIndicator, Text, Tooltip } from '@voltstack/bravais';
+import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
 import { ZoomIn, ZoomOut, Maximize, Save, AlertTriangle } from 'lucide-react';

@@ -1,5 +1,5 @@
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState } from '@voltstack/bravais';
 import { AlertTriangle, CircleHelp, FileText } from 'lucide-react';
 import type { ReactNode } from 'react';
 

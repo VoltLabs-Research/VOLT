@@ -1,8 +1,5 @@
 import './UserInfo.css';
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Avatar, Box, Row, Text } from '@voltstack/bravais';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
 

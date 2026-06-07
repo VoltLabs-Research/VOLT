@@ -1,7 +1,5 @@
 import { Users } from 'lucide-react';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Stack, Text } from '@voltstack/bravais';
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
 interface CanvasBannersProps {

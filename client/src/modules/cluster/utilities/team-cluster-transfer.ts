@@ -1,5 +1,5 @@
 import type { ClusterTransferJob, ClusterTransferJobScopeType, ClusterTransferJobState } from '@/modules/cluster/api/entities/team-cluster-transfer';
-import type { StatusBadgeProps } from '@/shared/presentation/primitives/StatusBadge';
+import type { StatusBadgeProps } from '@voltstack/bravais';
 
 export const OPEN_CLUSTER_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'queued',

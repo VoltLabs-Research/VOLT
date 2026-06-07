@@ -1,13 +1,7 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import { IconButton, Popover, PopoverMenu, PopoverMenuItem, Heading, Row, Stack } from '@voltstack/bravais';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import './SimulationFolderCard.css';

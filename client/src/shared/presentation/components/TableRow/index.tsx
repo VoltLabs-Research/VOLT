@@ -1,4 +1,4 @@
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';

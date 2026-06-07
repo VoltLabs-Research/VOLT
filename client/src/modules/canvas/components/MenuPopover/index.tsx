@@ -1,7 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Divider from '@/shared/presentation/primitives/Divider';
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import { Button, Divider, Popover, PopoverMenu, Row, Text } from '@voltstack/bravais';
 import type { MenuConfig, MenuItem } from '../TopToolbarMenus';
 
 import { MenuItemType } from '../TopToolbarMenus';
@@ -18,7 +15,7 @@ const renderMenuItemIcon = (item: MenuItem) => {
         return undefined;
     }
 
-    return <span className="d-flex items-center content-center f-shrink-0 font-size-3">{item.icon}</span>;
+    return <Row as='span' justify='center' shrink='0' className="font-size-3">{item.icon}</Row>;
 };
 
 const renderMenuItemShortcut = (item: MenuItem) => {
@@ -26,7 +23,7 @@ const renderMenuItemShortcut = (item: MenuItem) => {
         return undefined;
     }
 
-    return <span className="font-size-05 color-muted">{item.shortcut}</span>;
+    return <Text as='span' size='xs' tone='muted'>{item.shortcut}</Text>;
 };
 
 const createMenuItemRenderer = (close: () => void) => (item: MenuItem, index: number) => {

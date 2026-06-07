@@ -9,15 +9,10 @@ import {
     SESSION_ACTION_LABELS
 } from '@/modules/session/utilities/session-display';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Stack, EmptyState, Button, Modal, Skeleton, Text } from '@voltstack/bravais';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
-import Button from '@/shared/presentation/primitives/Button';
-import Modal from '@/shared/presentation/primitives/Modal';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Text from '@/shared/presentation/primitives/Text';
 import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
 import { SessionActivityType } from '@/modules/session/api/entities/session';
 import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/entities/session';

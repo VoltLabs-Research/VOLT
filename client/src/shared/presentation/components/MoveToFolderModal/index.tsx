@@ -1,16 +1,11 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import Button from '@/shared/presentation/primitives/Button';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Breadcrumbs from '@/shared/presentation/primitives/Breadcrumbs';
+import { Button, Modal, closeModal, Row, Stack, Text, Breadcrumbs } from '@voltstack/bravais';
+import type { BreadcrumbItem } from '@voltstack/bravais';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { BreadcrumbItem } from '@/shared/presentation/primitives/Breadcrumbs';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';
 import type { FolderBreadcrumbEntity } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
 

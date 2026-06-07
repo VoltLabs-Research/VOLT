@@ -1,8 +1,6 @@
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { IconButton, Row, Stack } from '@voltstack/bravais';
 import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
 import {
@@ -350,10 +348,10 @@ const FolderTreeNode = (props: FileTreeNodeProps) => {
                         ref={setRowNodeRef}
                         depth={depth}
                         icon={(
-                            <span className='d-flex items-center gap-025'>
+                            <Row as='span' gap='025'>
                                 {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                 {isExpanded ? <FolderOpen size={13} /> : <Folder size={13} />}
-                            </span>
+                            </Row>
                         )}
                         label={folderLabel}
                         treeItemLevel={depth + 1}

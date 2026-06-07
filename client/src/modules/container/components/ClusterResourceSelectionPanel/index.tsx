@@ -1,17 +1,12 @@
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState, Box, Row, Slider, Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Slider from '@/shared/presentation/primitives/Slider';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
 import './ClusterResourceSelectionPanel.css';
 import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';
 import { useMemo } from 'react';
 import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
 
 interface ClusterResourceSelectionPanelProps {

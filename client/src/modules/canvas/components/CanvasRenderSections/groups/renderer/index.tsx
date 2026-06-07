@@ -8,7 +8,7 @@ import {
     ToneMappingMode
 } from '@/shared/domain/rendering/renderer';
 
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 
 import { useMemo } from 'react';
 import { MdTune } from 'react-icons/md';

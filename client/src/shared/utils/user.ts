@@ -1,6 +1,12 @@
-import type { User } from '@/modules/auth/api/entities/user';
+/** Minimal user-like shape needed to derive initials — structural so this
+ *  helper carries no domain (auth) dependency. */
+interface InitialsUserSource {
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+}
 
-export const getInitialsFromUser = (user: User | string | null | undefined): string => {
+export const getInitialsFromUser = (user: InitialsUserSource | string | null | undefined): string => {
     if(!user || typeof user === 'string') return '?';
     
     if(user.firstName && user.lastName){

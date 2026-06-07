@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 import type { WorkspaceCursor } from '@/modules/canvas/collaboration/use-workspace-cursors';
 import './WorkspaceCursorsOverlay.css';
 

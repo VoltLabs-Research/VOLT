@@ -1,5 +1,4 @@
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
+import { IconButton, Popover } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { TeamInvitePanel } from '@/modules/team/components/TeamInvitePanel';
 import { GoPersonAdd } from 'react-icons/go';

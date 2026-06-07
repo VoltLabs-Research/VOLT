@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Loader, Row, Stack, Text } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';

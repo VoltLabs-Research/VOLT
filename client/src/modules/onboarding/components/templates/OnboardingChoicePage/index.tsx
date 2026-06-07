@@ -2,11 +2,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import Box from '@/shared/presentation/primitives/Box';
-import Heading from '@/shared/presentation/primitives/Heading';
-import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Heading, SelectableCard, Stack, Text } from '@voltstack/bravais';
 import { Plug, Zap } from 'lucide-react';
 import './OnboardingChoicePage.css';
 

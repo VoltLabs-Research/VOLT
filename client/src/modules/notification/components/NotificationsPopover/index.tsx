@@ -1,10 +1,7 @@
 import useNotificationData from '../../hooks/use-notification-data';
 import '../NotificationBadge/NotificationBadge.css';
 import NotificationList from '../NotificationList';
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
-import Row from '@/shared/presentation/primitives/Row';
+import { Button, IconButton, Popover, Row } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';
 import { IoNotificationsOutline } from 'react-icons/io5';

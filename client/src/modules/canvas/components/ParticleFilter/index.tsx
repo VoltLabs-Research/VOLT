@@ -5,10 +5,7 @@ import useParticleFilter, {
     FilterAction,
     FilterOperator
 } from '../../hooks/use-particle-filter';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { ParticleFilterCombinator } from '@/modules/trajectory/api/services/particle-filter-service';
 
@@ -157,7 +154,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                 <Stack gap='05' radius='sm' className='canvas-filter-preview'>
                     <Row justify='between'>
                         <span>Selection</span>
-                        <span className='color-primary'>{percentage}% of total</span>
+                        <Text as='span' tone='primary'>{percentage}% of total</Text>
                     </Row>
                 </Stack>
 
@@ -171,7 +168,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     variant='canvas'
                 />
 
-                {error && <div className='canvas-filter-error font-size-05'>{error}</div>}
+                {error && <Text as='div' size='xs' className='canvas-filter-error'>{error}</Text>}
 
                 <Stack gap='025'>
                     <Button
@@ -234,7 +231,7 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                         Add Condition
                     </Button>
 
-                    {error && <div className='canvas-filter-error font-size-05'>{error}</div>}
+                    {error && <Text as='div' size='xs' className='canvas-filter-error'>{error}</Text>}
 
                     <Button
                         isLoading={isLoadingPreview}

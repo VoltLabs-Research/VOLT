@@ -1,9 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
-import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
-import Row from '@/shared/presentation/primitives/Row';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, LiquidToggle, Row, Skeleton, Stack, Text, Modal, openModal, Select } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { invalidateTeamAIIntegrationsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
@@ -11,9 +7,7 @@ import { useCreateTeamAIIntegrationMutation, useDeleteTeamAIIntegrationMutation 
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Modal, { openModal } from '@/shared/presentation/primitives/Modal';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Select from '@/shared/presentation/primitives/Select';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
@@ -31,7 +25,6 @@ import type {
     TeamAIIntegration,
     TeamAIModelMetadata
 } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 
@@ -515,7 +508,7 @@ export default function IntegrationsSettings() {
                     <Stack gap='1'>
                         {!editingProvider ? (
                             <Stack gap='05'>
-                                <label id={providerLabelId} className='font-size-2 font-weight-5 color-secondary'>Provider</label>
+                                <Text as='label' id={providerLabelId} size='md' weight='medium' tone='secondary'>Provider</Text>
                                 <Select
                                     options={providerSelectOptions}
                                     value={modalProvider}
@@ -593,7 +586,7 @@ export default function IntegrationsSettings() {
                         </Stack>
 
                         <Stack gap='05'>
-                            <label id={defaultModelLabelId} className='font-size-2 font-weight-5 color-secondary'>Default model</label>
+                            <Text as='label' id={defaultModelLabelId} size='md' weight='medium' tone='secondary'>Default model</Text>
                             <Select
                                 options={modalModelOptions}
                                 value={modalDefaultModel}

@@ -1,9 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Tag from '@/shared/presentation/primitives/Tag';
-import Row from '@/shared/presentation/primitives/Row';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Stack, Tag, Row, Heading, Text } from '@voltstack/bravais';
 import { TeamInvitationCard, TeamInvitationStateCard } from '@/modules/team/components/TeamInvitationShared';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import {

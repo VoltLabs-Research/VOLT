@@ -1,5 +1,5 @@
 import { Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import Slider from '@/shared/presentation/primitives/Slider';
+import { Slider } from '@voltstack/bravais';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
 

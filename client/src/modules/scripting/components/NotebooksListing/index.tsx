@@ -7,7 +7,7 @@ import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCell
 import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
 import DocumentListing, { type DocumentListingTab } from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import Text from '@/shared/presentation/primitives/Text';
+import { Text } from '@voltstack/bravais';
 import { useCallback, useMemo, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';

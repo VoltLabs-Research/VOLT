@@ -2,9 +2,7 @@ import TeamMemberList from '../TeamMemberList';
 import { useState } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal from '@/shared/presentation/primitives/Modal';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Modal, Stack, Text } from '@voltstack/bravais';
 import { toggleSelection } from '@/shared/utils/selection';
 import type { User } from '@/modules/auth/api/entities/user';
 

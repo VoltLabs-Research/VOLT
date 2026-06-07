@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button, Text } from '@voltstack/bravais';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine } from 'react-icons/ri';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';
@@ -257,9 +257,9 @@ const PluginsListing = () => {
             render: (_, row) => {
                 const plugin = row as PluginListingRow;
                 return (
-                    <span className='plugin-name-link font-size-2 font-weight-5'>
+                    <Text as='span' size='md' weight='medium' className='plugin-name-link'>
                         {plugin.modifier!.name}
-                    </span>
+                    </Text>
                 );
             },
             skeleton: { variant: 'text', width: 160 }
@@ -279,9 +279,9 @@ const PluginsListing = () => {
             key: 'exposures',
             title: 'Exposures',
             render: (_, row) => (
-                <span className='exposure-count font-size-1 font-weight-6'>
+                <Text as='span' size='sm' weight='bold' className='exposure-count'>
                     {((row as PluginListingRow).exposures ?? []).length}
-                </span>
+                </Text>
             ),
             skeleton: { variant: 'text', width: 60 }
         },

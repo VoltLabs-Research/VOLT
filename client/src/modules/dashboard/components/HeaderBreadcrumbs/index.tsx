@@ -1,5 +1,5 @@
 import './HeaderBreadcrumbs.css';
-import Row from '@/shared/presentation/primitives/Row';
+import { Row } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { IoChevronForward } from 'react-icons/io5';
 import { Link, useLocation } from 'react-router-dom';

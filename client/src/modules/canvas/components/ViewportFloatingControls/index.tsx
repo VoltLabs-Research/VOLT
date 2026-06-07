@@ -3,7 +3,7 @@ import PerformanceMenuPopover from '../PerformanceMenuPopover';
 import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import FloatingToolbar from '@/shared/presentation/primitives/FloatingToolbar';
+import { FloatingToolbar } from '@voltstack/bravais';
 import useMedia from '@/shared/presentation/hooks/use-media';
 import useTip from '@/shared/tips/use-tip';
 

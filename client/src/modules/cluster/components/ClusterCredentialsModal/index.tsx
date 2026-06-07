@@ -1,11 +1,6 @@
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { useEffect, useState } from 'react';
 import './ClusterCredentialsModal.css';
@@ -124,14 +119,14 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                         <Stack gap='05' p='1' radius='md' className='cluster-credentials-warning' role='status' aria-live='polite'>
                             <Heading level={3} size='md' weight='bold'>Sensitive credentials</Heading>
                             <Text as='p' size='md' tone='secondary'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</Text>
-                            <label className='d-flex items-start gap-05 cluster-credentials-acknowledgement'>
+                            <Box as='label' display='flex' align='start' gap='05' className='cluster-credentials-acknowledgement'>
                                 <input
                                     type='checkbox'
                                     checked={hasAcknowledgedSensitiveCopy}
                                     onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
                                 />
                                 <Text size='md' tone='secondary'>I understand these credentials are sensitive and should not be pasted into chat, tickets, or shared docs.</Text>
-                            </label>
+                            </Box>
                         </Stack>
 
                         {services.map((service) => (

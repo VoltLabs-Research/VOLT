@@ -1,15 +1,8 @@
 import './DashboardActivityCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
-import Box from '@/shared/presentation/primitives/Box';
-import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Timeline, { TimelineItem } from '@/shared/presentation/primitives/Timeline';
+import { AsyncBoundary, Box, SegmentedTabs, Skeleton, Stack, Text, Timeline, TimelineItem, EmptyState } from '@voltstack/bravais';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { formatDuration } from '@/shared/utils/format';
 import { Activity as ActivityIcon } from 'lucide-react';
@@ -291,9 +284,9 @@ const DashboardActivityCard = () => {
                         icon={<span style={{ color: ACTIVITY_ACCENT[entry.type], display: 'inline-flex' }}>{ACTIVITY_ICON[entry.type]}</span>}
                     >
                         <Text size='md' tone='primary'>
-                            <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
+                            <Text as='strong' weight='medium' style={{ textTransform: 'capitalize' }}>
                                 {entry.userName}
-                            </strong>
+                            </Text>
                             {' '}
                             <Text tone='secondary'>{entry.description}</Text>
                         </Text>

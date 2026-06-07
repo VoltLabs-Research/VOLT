@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import './DemoWelcomeModal.css';
 interface DemoLocationState {
     justProvisionedDemo?: boolean;

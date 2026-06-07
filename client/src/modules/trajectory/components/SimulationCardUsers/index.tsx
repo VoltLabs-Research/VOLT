@@ -1,6 +1,5 @@
 import useTrajectoryPresence from '@/modules/trajectory/hooks/trajectory/use-trajectory-presence';
-import AvatarStack from '@/shared/presentation/primitives/AvatarStack';
-import Box from '@/shared/presentation/primitives/Box';
+import { AvatarStack, Box } from '@voltstack/bravais';
 import './SimulationCardUsers.css';
 
 interface SimulationCardUsersProps {

@@ -1,9 +1,5 @@
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
-import Modal from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusDot from '@/shared/presentation/primitives/StatusDot';
-import Text from '@/shared/presentation/primitives/Text';
+import { Modal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
 
 export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
 

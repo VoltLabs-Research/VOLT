@@ -10,13 +10,10 @@ import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Box, Stack, Row, Skeleton } from '@voltstack/bravais';
 import { Outlet, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ContainerAction } from '../../api/service';
-import Row from '@/shared/presentation/primitives/Row';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
 import ContainerDetailsHeader from '../ContainerDetailsHeader';
 import { containerQuery, useContainerByIdQuery } from '../../hooks/queries';
 import useContainerStats from '../../hooks/use-container-stats';

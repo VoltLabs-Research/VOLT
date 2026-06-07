@@ -1,6 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Stack, Text } from '@voltstack/bravais';
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utilities/activity-mappings';
 import '@/modules/daily-activity/components/ActivityEntry/ActivityEntry.css';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/api/entities/daily-activity';

@@ -1,7 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Modal from '@/shared/presentation/primitives/Modal';
+import { Modal, Box } from '@voltstack/bravais';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Box from '@/shared/presentation/primitives/Box';
 import { useCallback } from 'react';
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 import type { ModalFooterAction } from '@/shared/presentation/components/ModalFooterActions';

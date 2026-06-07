@@ -1,5 +1,5 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
-import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
+import { VisuallyHidden } from '@voltstack/bravais';
 import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import './FractalScene.css';

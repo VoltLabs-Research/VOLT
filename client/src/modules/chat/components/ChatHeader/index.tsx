@@ -2,12 +2,7 @@ import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import { IoArrowBackOutline, IoInformationCircleOutline } from 'react-icons/io5';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusDot from '@/shared/presentation/primitives/StatusDot';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { IconButton, Row, Stack, StatusDot, Text, Tooltip } from '@voltstack/bravais';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 import './ChatHeader.css';
 

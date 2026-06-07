@@ -1,7 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Box, Row, Stack, Skeleton } from '@voltstack/bravais';
 interface JobSkeletonProps {
     n?: number;
 };

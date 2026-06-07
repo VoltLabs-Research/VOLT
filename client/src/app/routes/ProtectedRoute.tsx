@@ -17,7 +17,7 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';
 import ConfirmActionModal from '@/shared/presentation/components/ConfirmActionModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import Loader from '@/shared/presentation/primitives/Loader';
+import { Loader } from '@voltstack/bravais';
 import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';

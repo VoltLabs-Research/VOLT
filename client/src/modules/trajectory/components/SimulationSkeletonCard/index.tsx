@@ -1,5 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Box, Skeleton } from '@voltstack/bravais';
 
 interface SimulationSkeletonCardProps {
     n?: number;

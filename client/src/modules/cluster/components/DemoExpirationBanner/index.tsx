@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Text } from '@voltstack/bravais';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 import { useDemoClusterCountdown } from '@/modules/cluster/hooks/use-demo-cluster-countdown';
 import { useDemoSessionActions } from '@/modules/cluster/hooks/use-demo-session-actions';

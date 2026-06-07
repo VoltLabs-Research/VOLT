@@ -9,15 +9,8 @@ import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluste
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utilities/team-cluster-status';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusDot from '@/shared/presentation/primitives/StatusDot';
-import Text from '@/shared/presentation/primitives/Text';
-import type { StatusDotTone } from '@/shared/presentation/primitives/StatusDot';
+import { Box, Button, Heading, Modal, closeModal, openModal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
+import type { StatusDotTone } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';

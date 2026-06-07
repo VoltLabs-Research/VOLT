@@ -1,7 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import { ANALYSIS_EXECUTION_METADATA_KEY } from '@/modules/canvas/utilities/selected-timestep-analysis';
 import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useMemo } from 'react';
@@ -205,9 +202,7 @@ const buildArgumentsByKey = (nodes: IWorkflowNode[]): Record<string, IArgumentDe
 const formatTimesteps = (selectedTimesteps: number[] | undefined): string | undefined => {
     if (!selectedTimesteps?.length) return undefined;
 
-    const sorted = Array.from(new Set(
-        selectedTimesteps.filter((timestep) => Number.isFinite(timestep))
-    )).sort((left, right) => left - right);
+    const sorted = Array.from(new Set(selectedTimesteps)).sort((left, right) => left - right);
 
     if (sorted.length === 0) return undefined;
     if (sorted.length === 1) return String(sorted[0]);

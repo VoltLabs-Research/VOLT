@@ -7,7 +7,7 @@ import useLatexDocumentsListing, {
 } from '@/modules/latex/hooks/use-latex-documents-listing';
 import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
-import Heading from '@/shared/presentation/primitives/Heading';
+import { Heading } from '@voltstack/bravais';
 import {
     FolderedDocumentListing,
     FolderedListingModals,

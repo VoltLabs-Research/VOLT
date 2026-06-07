@@ -5,9 +5,8 @@ import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajector
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import Select from '@/shared/presentation/primitives/Select';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Select, Row, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -15,7 +14,6 @@ import AtomTypeBadge from '../AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PerAtomViewerContext {
     trajectoryId: string;

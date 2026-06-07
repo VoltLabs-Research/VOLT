@@ -1,7 +1,4 @@
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Loader, Row, Stack, Text } from '@voltstack/bravais';
 import './ProcessingLoader.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 

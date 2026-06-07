@@ -1,8 +1,7 @@
 import './ThemeCard.css';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import themeTokensStylesheet from '@/shared/presentation/assets/stylesheets/theme.css?raw';
-import Row from '@/shared/presentation/primitives/Row';
-import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
+import { Row, SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';

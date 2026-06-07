@@ -18,7 +18,7 @@ import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModa
 import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
 import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 import { ChevronRight, Download, Upload } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useCallback, useMemo, useState } from 'react';

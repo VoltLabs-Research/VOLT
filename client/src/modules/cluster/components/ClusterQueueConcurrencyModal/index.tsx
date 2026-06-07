@@ -1,13 +1,9 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Table from '@/shared/presentation/primitives/Table';
-import Text from '@/shared/presentation/primitives/Text';
+import { CollapsibleSection, Modal, closeModal, Stack, Table, Text } from '@voltstack/bravais';
+import type { Column } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
-import type { Column } from '@/shared/presentation/primitives/Table';
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type {
     TeamClusterQueueConcurrencyInputDTO,

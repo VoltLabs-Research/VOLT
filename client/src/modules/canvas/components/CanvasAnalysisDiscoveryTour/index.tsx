@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button } from '@voltstack/bravais';
 import { Check, ChevronRight, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';

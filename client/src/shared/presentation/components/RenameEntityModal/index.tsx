@@ -1,4 +1,4 @@
-import { closeModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal } from '@voltstack/bravais';
 import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
 import { useCallback, useEffect, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';

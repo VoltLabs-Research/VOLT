@@ -1,7 +1,7 @@
 import { supportsPluginExecutionCluster } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useMemo } from 'react';
 import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import type { SelectOption } from '@voltstack/bravais';
 
 interface PluginExecutionClusterOptions {
     executionTeamClusters: PluginTeamClusterOption[];

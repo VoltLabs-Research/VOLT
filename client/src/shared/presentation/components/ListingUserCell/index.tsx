@@ -1,4 +1,5 @@
 import UserInfo from '@/modules/auth/components/UserInfo';
+import { Text } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
@@ -23,12 +24,12 @@ const ListingUserCell = ({
     const hasPresenceSnapshot = useTeamPresenceStore((state) => state.hasPresenceSnapshot);
 
     if (!user) {
-        return <span className='font-size-2 color-muted'>{fallback}</span>;
+        return <Text size='md' tone='muted'>{fallback}</Text>;
     }
 
     const isCurrentUser = showCurrentUserSuffix && currentUser?._id === user._id;
     const suffix = isCurrentUser
-        ? <span className='color-secondary'>(You)</span>
+        ? <Text tone='secondary'>(You)</Text>
         : undefined;
     const isOnline = showStatus
         ? resolveTeamUserOnline(user, onlineUserIds, hasPresenceSnapshot)

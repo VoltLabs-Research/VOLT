@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { format, formatDistanceStrict } from 'date-fns';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Divider from '@/shared/presentation/primitives/Divider';
-import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Divider, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
 import { formatSize } from '@/shared/utils/format';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';

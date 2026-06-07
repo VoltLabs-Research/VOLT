@@ -6,8 +6,7 @@ import {
     PERFORMANCE_PRESET_OPTIONS,
     POWER_PREFERENCE_OPTIONS
 } from '@/shared/domain/rendering/performance';
-import Select from '@/shared/presentation/primitives/Select';
-import Box from '@/shared/presentation/primitives/Box';
+import { Select, Box } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { MdSpeed } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';

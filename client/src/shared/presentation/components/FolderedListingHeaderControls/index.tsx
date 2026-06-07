@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import { openModal } from '@/shared/presentation/primitives/Modal';
+import { Button, openModal } from '@voltstack/bravais';
 import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 

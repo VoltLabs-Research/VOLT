@@ -1,8 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Sparkline from '@/shared/presentation/primitives/Sparkline';
-import StatCard from '@/shared/presentation/primitives/StatCard';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Row, Sparkline, StatCard, Text } from '@voltstack/bravais';
 import './ContainerMetricTile.css';
 
 export interface MetricSecondaryStat {

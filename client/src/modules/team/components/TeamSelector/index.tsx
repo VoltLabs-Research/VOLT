@@ -1,16 +1,15 @@
-import IconButton from '@/shared/presentation/primitives/IconButton';
+import { IconButton, Select } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useLeaveTeamMutation } from '@/modules/team/hooks/team/queries';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { resetTeamScopedApplicationState, switchSelectedTeam, useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import Select from '@/shared/presentation/primitives/Select';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { IoExitOutline } from 'react-icons/io5';
 import { useCallback, useMemo, useState } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { MouseEvent } from 'react';
 import './TeamSelector.css';
 

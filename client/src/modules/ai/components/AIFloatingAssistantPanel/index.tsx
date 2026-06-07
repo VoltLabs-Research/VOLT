@@ -1,11 +1,7 @@
 import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
-import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
+import { VisuallyHidden, IconButton, Row, Surface, Tooltip } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Surface from '@/shared/presentation/primitives/Surface';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';

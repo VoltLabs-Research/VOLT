@@ -1,7 +1,7 @@
 import ContainerTerminal from '../ContainerTerminal';
 import { Terminal } from 'lucide-react';
 import useContainerDetailsContext from '../../hooks/use-container-details-context';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState } from '@voltstack/bravais';
 const ContainerTerminalPage = () => {
     const { container, isRunning } = useContainerDetailsContext();
 

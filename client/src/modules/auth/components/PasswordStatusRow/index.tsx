@@ -1,5 +1,5 @@
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import Button from '@/shared/presentation/primitives/Button';
+import { Button } from '@voltstack/bravais';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import type { PasswordInfo } from '@/modules/auth/components/PasswordChangeForm/validation-schema';

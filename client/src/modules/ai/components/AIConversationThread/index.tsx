@@ -8,16 +8,7 @@ import {
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import SectionLabel from '@/shared/presentation/primitives/SectionLabel';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusDot from '@/shared/presentation/primitives/StatusDot';
-import Text from '@/shared/presentation/primitives/Text';
-import ThinkingDots from '@/shared/presentation/primitives/ThinkingDots';
-import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
+import { Box, Button, Row, SectionLabel, Skeleton, Stack, StatusDot, Text, ThinkingDots, VisuallyHidden } from '@voltstack/bravais';
 import { isToolUIPart } from 'ai';
 import { IoExpandOutline } from 'react-icons/io5';
 import { memo, useMemo } from 'react';
@@ -411,11 +402,11 @@ const AIMessageItem = memo(({
                     <SectionLabel className='ai-message-reasoning-label d-block'>
                         Thinking
                     </SectionLabel>
-                    <Box className='font-size-1 ai-message-text ai-message-markdown'>
+                    <Text as='div' size='sm' className='ai-message-text ai-message-markdown'>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
                             {segment.content}
                         </ReactMarkdown>
-                    </Box>
+                    </Text>
                 </Box>
             );
             segIdx++;
@@ -662,7 +653,7 @@ const AIConversationThread = ({
     }
 
     return (
-        <section className='d-flex column flex-1 ai-thread-region' aria-label='Conversation messages'>
+        <Stack as='section' flex='1' className='ai-thread-region' aria-label='Conversation messages'>
             <AutoScrollList
                 items={normalizedMessages}
                 isLoading={isLoading}
@@ -686,7 +677,7 @@ const AIConversationThread = ({
             >
                 {isResponding ? 'Assistant is responding.' : `Loaded ${normalizedMessages.length} messages.`}
             </VisuallyHidden>
-        </section>
+        </Stack>
     );
 };
 
