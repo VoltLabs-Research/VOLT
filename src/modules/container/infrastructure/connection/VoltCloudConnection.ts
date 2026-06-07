@@ -273,15 +273,9 @@ export class VoltCloudConnection {
     }
 
     private isServerEventMessage(message: OutboundMessage): message is TeamClusterDaemonServerEventMessage {
-        return typeof message === 'object'
-            && message !== null
-            && 'type' in message
-            && typeof message.type === 'string'
-            && (
-                message.type.startsWith('analysis-')
-                || message.type.startsWith('trajectory-')
-                || message.type === 'artifact-upload-job-status'
-            );
+        return message.type.startsWith('analysis-')
+            || message.type.startsWith('trajectory-')
+            || message.type === 'artifact-upload-job-status';
     }
 
     private isStreamTransportedServerEventMessage(

@@ -179,7 +179,7 @@ export class SocketChannelProcessClient {
     }
 
     private handleChildMessage(message: ChildEvent): void {
-        if (!message || typeof message !== 'object') return;
+        if (!message) return;
 
         if (message.type === 'connected') {
             this.ready = true;

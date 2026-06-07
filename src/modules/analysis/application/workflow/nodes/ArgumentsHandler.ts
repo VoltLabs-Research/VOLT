@@ -18,16 +18,6 @@ interface PluginReferencePlanningItem {
 
 type WorkflowArgumentValue = WorkflowNodeOutput[string];
 
-const isPluginReferenceSelectionRecord = (value: unknown): value is {
-    pluginId: string;
-    config?: unknown;
-} => {
-    return typeof value === 'object'
-        && value !== null
-        && !Array.isArray(value)
-        && typeof (value as { pluginId?: unknown }).pluginId === 'string';
-};
-
 const isWorkflowNodeOutputRecord = (value: unknown): value is WorkflowNodeOutput => {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
@@ -35,7 +25,7 @@ const isWorkflowNodeOutputRecord = (value: unknown): value is WorkflowNodeOutput
 const readPluginReferenceSelections = (
     value: unknown
 ): WorkflowPluginReferenceValueWithSelections['selections'] => {
-    const selections = (typeof value === 'object' && value !== null && !Array.isArray(value))
+    const selections = isWorkflowNodeOutputRecord(value)
         ? (value as { selections?: unknown }).selections
         : undefined;
 
@@ -44,18 +34,15 @@ const readPluginReferenceSelections = (
     }
 
     return selections.flatMap((selection) => {
-        if (!isPluginReferenceSelectionRecord(selection)) {
-            return [];
-        }
-
-        const pluginId = selection.pluginId.trim();
+        const candidate = selection as { pluginId?: unknown; config?: unknown };
+        const pluginId = typeof candidate.pluginId === 'string' ? candidate.pluginId.trim() : '';
         if (!pluginId) {
             return [];
         }
 
         return [{
             pluginId,
-            config: isWorkflowNodeOutputRecord(selection.config) ? selection.config : {}
+            config: isWorkflowNodeOutputRecord(candidate.config) ? candidate.config : {}
         }];
     });
 };
@@ -74,34 +61,22 @@ const normalizePluginReferenceMappings = (
     }
 
     return mappings.flatMap((mapping) => {
-        if (!mapping || typeof mapping !== 'object') {
-            return [];
-        }
-
-        const sourceArgument = typeof mapping.sourceArgument === 'string'
-            ? mapping.sourceArgument.trim()
-            : '';
-        const targetArgument = typeof mapping.targetArgument === 'string'
-            ? mapping.targetArgument.trim()
-            : '';
+        const sourceArgument = mapping.sourceArgument?.trim() ?? '';
+        const targetArgument = mapping.targetArgument?.trim() ?? '';
 
         if (!sourceArgument || !targetArgument) {
             return [];
         }
 
-        const targetPluginId = typeof mapping.targetPluginId === 'string'
-            ? mapping.targetPluginId.trim()
-            : '';
-        const targetPluginKey = typeof mapping.targetPluginKey === 'string'
-            ? mapping.targetPluginKey.trim()
-            : '';
+        const targetPluginId = mapping.targetPluginId?.trim() ?? '';
+        const targetPluginKey = mapping.targetPluginKey?.trim() ?? '';
 
         return [{
             sourceArgument,
             targetArgument,
             ...(targetPluginId ? { targetPluginId } : {}),
             ...(targetPluginKey ? { targetPluginKey } : {}),
-            ...(isWorkflowNodeOutputRecord(mapping.valueMap) ? { valueMap: mapping.valueMap } : {})
+            ...(mapping.valueMap ? { valueMap: mapping.valueMap } : {})
         }];
     });
 };
@@ -128,14 +103,15 @@ const resolveMappingSourceValue = (
         value = sourceDefinition?.default as WorkflowNodeOutput[string] | undefined;
     }
 
-    if (!isWorkflowNodeOutputRecord(mapping.valueMap)) {
+    const valueMap = mapping.valueMap;
+    if (!valueMap) {
         return value;
     }
 
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         const valueMapKey = String(value);
-        if (Object.prototype.hasOwnProperty.call(mapping.valueMap, valueMapKey)) {
-            return mapping.valueMap[valueMapKey];
+        if (Object.prototype.hasOwnProperty.call(valueMap, valueMapKey)) {
+            return valueMap[valueMapKey];
         }
     }
 
