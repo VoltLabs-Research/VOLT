@@ -1,6 +1,9 @@
 {
   "name": "volt-desktop",
   "version": "0.1.0",
+  "productName": "Volt",
+  "description": "Volt desktop — runs the local Volt stack via Docker Compose",
+  "author": "Volt Labs",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {
@@ -8,6 +11,15 @@
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit",
     "package": "electron-vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.voltlabs.volt",
+    "directories": { "output": "dist" },
+    "files": ["out/**/*", "package.json"],
+    "extraResources": [{ "from": "stack", "to": "stack" }],
+    "mac": { "target": ["dmg"], "category": "public.app-category.developer-tools", "identity": null, "hardenedRuntime": false },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage"], "category": "Development" }
   },
   "dependencies": {
     "dockerode": "^5.0.0",

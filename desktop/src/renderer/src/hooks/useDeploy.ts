@@ -4,6 +4,9 @@ import type { AppEvents, PhaseSpec } from '@/types/events';
 
 export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
+export type PreflightResult = AppEvents['deploy:preflight'];
+
+const POLL_INTERVAL = 2_000;
 
 interface LogLine{
     stream: 'stdout' | 'stderr';
@@ -20,6 +23,7 @@ export const useDeploy = () => {
     const [phaseState, setPhaseState] = useState<Record<string, { status: PhaseStatus; detail?: string }>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
     const [voltUrl, setVoltUrl] = useState<string | null>(null);
+    const [preflight, setPreflight] = useState<PreflightResult | null>(null);
     const [busy, setBusy] = useState(false);
     const startedRef = useRef(false);
     const busyRef = useRef(false);
@@ -40,6 +44,18 @@ export const useDeploy = () => {
             setBusy(false);
         });
     };
+
+    const boot = async (): Promise<void> => {
+        const status = await window.volt.docker.preflight();
+        if(!status.ok){
+            setPreflight(status);
+            return;
+        }
+        setPreflight(null);
+        run(() => window.volt.deploy.start());
+    };
+
+    const recheck = () => boot();
 
     useEffect(() => {
         const unsubState = window.volt.on('deploy:state', (p) => {
@@ -79,13 +95,23 @@ export const useDeploy = () => {
             setPhaseState((prev) => ({ ...prev, sources: { status: 'running', detail } }));
         });
 
+        const unsubPreflight = window.volt.on('deploy:preflight', (p) => {
+            setPreflight(p.ok ? null : p);
+        });
+
         if(!startedRef.current){
             startedRef.current = true;
-            run(() => window.volt.deploy.start());
+            void boot();
         }
 
-        return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); };
+        return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); unsubPreflight(); };
     }, []);
+
+    useEffect(() => {
+        if(preflight?.reason !== 'daemon-starting') return;
+        const id = setInterval(() => { void boot(); }, POLL_INTERVAL);
+        return () => clearInterval(id);
+    }, [preflight?.reason]);
 
     const reset = () => {
         setState('idle');
@@ -93,7 +119,8 @@ export const useDeploy = () => {
         setPhaseState({});
         setLogs([]);
         setVoltUrl(null);
+        setPreflight(null);
     };
 
-    return { state, phases, phaseState, logs, voltUrl, busy, reset, run };
+    return { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run };
 };

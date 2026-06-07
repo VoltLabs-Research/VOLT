@@ -1,12 +1,14 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import bus from '@/services/EventBus';
 import { CHANNELS } from '@/types/events';
 import Deploy from '@/services/Deploy';
+import DockerPreflight from '@/services/DockerPreflight';
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 
 export interface IpcDeps{
     deploy: Deploy;
     appConfig: AppConfig;
+    docker: DockerPreflight;
 };
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
@@ -14,7 +16,11 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     ipcMain.handle('deploy:stop', () => deps.deploy.stop());
     ipcMain.handle('deploy:reset', () => deps.deploy.resetAndRedeploy());
 
+    ipcMain.handle('docker:preflight', () => deps.docker.preflight());
+
     ipcMain.handle('config:get', () => deps.appConfig.get());
+
+    ipcMain.handle('shell:openExternal', (_e, url: string) => shell.openExternal(url));
 
     ipcMain.handle('dialog:pickDirectory', async () => {
         const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });

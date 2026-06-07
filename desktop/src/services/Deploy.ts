@@ -3,6 +3,7 @@ import SourceResolver from '@/services/SourceResolver';
 import Stack from '@/services/Stack';
 import Bootstrap from '@/services/Bootstrap';
 import ProcessRunner from '@/services/ProcessRunner';
+import DockerPreflight, { PreflightError } from '@/services/DockerPreflight';
 import { assertDevPaths } from '@/services/devPaths';
 import bus from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
@@ -12,6 +13,7 @@ export interface DeployProps{
     composeFile: string;
     appConfig: AppConfig;
     sources: SourceResolver;
+    docker: DockerPreflight;
 }
 
 type DeployState = AppEvents['deploy:state']['state'];
@@ -59,6 +61,10 @@ export default class Deploy{
     }
 
     async #startCore(){
+        const status = await this.props.docker.preflight();
+        bus.emit('deploy:preflight', status);
+        if(!status.ok) throw new PreflightError(status);
+
         const env = await this.props.appConfig.getStackEnv();
         const serverOrigin = `http://localhost:${env.SERVER_PORT}`;
         const webProbe = `http://localhost:${env.WEB_PORT}/api/auth/emails/probe%40volt.local/availability`;
@@ -73,8 +79,8 @@ export default class Deploy{
         const { env: sources, changed } = await this.#phase('sources', () => this.props.sources.resolve());
         const baseEnv = await this.#composeEnv(sources);
 
-        await this.#phase('build', () =>
-            new Stack({ composeFile: this.props.composeFile, env: baseEnv }).up([], changed));
+        await this.#phase('build', async () =>
+            (await this.#stack(baseEnv)).up([], changed));
 
         await this.#phase('server', () =>
             waitForUrl(`${serverOrigin}/api/auth/emails/probe%40volt.local/availability`));
@@ -83,8 +89,8 @@ export default class Deploy{
             new Bootstrap({ appConfig: this.props.appConfig, serverOrigin }).ensure());
 
         const daemonEnv = this.#withDaemonEnv(baseEnv, state);
-        await this.#phase('daemon', () =>
-            new Stack({ composeFile: this.props.composeFile, env: daemonEnv }).up(['enrolled'], changed));
+        await this.#phase('daemon', async () =>
+            (await this.#stack(daemonEnv)).up(['enrolled'], changed));
 
         await this.#phase('web', () => waitForUrl(webProbe));
     }
@@ -117,16 +123,27 @@ export default class Deploy{
             const env = await this.#composeEnv(sources);
             const bootstrap = await this.props.appConfig.getBootstrap();
             const downEnv = bootstrap ? this.#withDaemonEnv(env, bootstrap) : env;
-            await new Stack({ composeFile: this.props.composeFile, env: downEnv }).down(['enrolled'], volumes);
+            await (await this.#stack(downEnv)).down(['enrolled'], volumes);
         });
     }
 
     async resetDepsVolumes(){
-        await new ProcessRunner().run('docker', [
+        const dockerPath = await this.props.docker.dockerPath();
+        await new ProcessRunner().run(dockerPath ?? 'docker', [
             'volume', 'rm', '-f',
             'volt_volt-server-node-modules',
             'volt_cluster-daemon-node-modules'
-        ]).catch(() => {});
+        ], { env: { PATH: this.props.docker.augmentedPath() } }).catch(() => {});
+    }
+
+    async #stack(env: Record<string, string>): Promise<Stack>{
+        const dockerPath = await this.props.docker.dockerPath();
+        return new Stack({
+            composeFile: this.props.composeFile,
+            env,
+            dockerPath: dockerPath ?? undefined,
+            augmentedPath: this.props.docker.augmentedPath()
+        });
     }
 
     async applyDevMode(payload: DevModeState){
@@ -163,6 +180,7 @@ export default class Deploy{
     }
 
     #fail(err: unknown){
+        if(err instanceof PreflightError) return;
         bus.emit('deploy:state', { state: 'error', message: errMessage(err) });
     }
 
