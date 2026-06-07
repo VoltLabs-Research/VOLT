@@ -5,6 +5,8 @@ import AppConfig from '@/services/AppConfig';
 import Repository from '@/services/Repository';
 import SourceResolver from '@/services/SourceResolver';
 import Deploy from '@/services/Deploy';
+import DockerPreflight from '@/services/DockerPreflight';
+import AppPaths from '@/services/AppPaths';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -18,27 +20,6 @@ if(!app.requestSingleInstanceLock()){
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const STACK_DEFAULTS: Record<string, string> = {
-    SERVER_PORT: '8100',
-    WEB_PORT: '5273',
-    MINIO_PORT: '9100',
-    MINIO_CONSOLE: '9101',
-    DAEMON_PORT: '18080',
-    MONGO_USER: 'volt',
-    MONGO_PASS: 'volt',
-    REDIS_PASS: 'voltredis',
-    MINIO_USER: 'voltminio',
-    MINIO_PASS: 'voltminiosecret',
-    DAEMON_PASS: 'daemon-local-pass',
-    SECRET_KEY: 'volt-local-secret',
-    SSH_KEY: 'volt-local-ssh'
-};
-
-// Glass + rounded corners are native on macOS (vibrancy) and Windows (acrylic);
-// on Linux there is no native blur, so we go transparent and let the renderer
-// paint the rounded surface. Light/dark follows the system theme automatically:
-// vibrancy/acrylic adapt to the OS appearance and the renderer honours
-// prefers-color-scheme, so no extra theme wiring is needed here.
 const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     if(process.platform === 'darwin'){
         return { vibrancy: 'under-window', visualEffectState: 'active', roundedCorners: true, backgroundColor: '#00000000' };
@@ -78,12 +59,13 @@ const createWindow = (): BrowserWindow => {
 };
 
 app.whenReady().then(async () => {
-    const appConfig = new AppConfig({ configFile: path.resolve('./app-config.json') });
-    await appConfig.ensureStackDefaults(STACK_DEFAULTS);
+    const paths = new AppPaths();
+
+    const appConfig = new AppConfig({ configFile: paths.configFile });
 
     const sources = new SourceResolver({
         appConfig,
-        downloadDir: path.resolve('./downloads'),
+        downloadDir: paths.downloadDir,
         repos: [
             {
                 repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }),
@@ -96,14 +78,17 @@ app.whenReady().then(async () => {
         ]
     });
 
+    const docker = new DockerPreflight();
+
     const deploy = new Deploy({
-        composeFile: path.resolve('./stack/compose.yml'),
+        composeFile: paths.composeFile,
         appConfig,
-        sources
+        sources,
+        docker
     });
 
     const win = createWindow();
-    registerIpc(win, { deploy, appConfig });
+    registerIpc(win, { deploy, appConfig, docker });
 
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

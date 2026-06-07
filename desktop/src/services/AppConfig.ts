@@ -56,12 +56,6 @@ export default class AppConfig{
         return (config.env ?? {}) as Record<string, string>;
     }
 
-    async ensureStackDefaults(defaults: Record<string, string>){
-        const config = await this.get();
-        const merged = { ...defaults, ...(config.env ?? {}) };
-        await this.#update({ env: merged });
-    }
-
     async getBootstrap(): Promise<BootstrapState | null>{
         const config = await this.get();
         const bootstrap = config.bootstrap as Partial<BootstrapState> | undefined;

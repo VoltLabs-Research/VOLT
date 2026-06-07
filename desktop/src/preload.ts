@@ -8,8 +8,14 @@ contextBridge.exposeInMainWorld('volt', {
         stop: () => ipcRenderer.invoke('deploy:stop'),
         reset: () => ipcRenderer.invoke('deploy:reset')
     },
+    docker: {
+        preflight: () => ipcRenderer.invoke('docker:preflight')
+    },
     config: {
         get: () => ipcRenderer.invoke('config:get')
+    },
+    shell: {
+        openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
     },
     devmode: {
         apply: (payload: object) => ipcRenderer.invoke('devmode:apply', payload)

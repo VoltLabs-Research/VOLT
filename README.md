@@ -11,7 +11,7 @@ Or let Volt AI help you. Just ask. Volt AI understands the patterns in your anal
 
 Running out of storage or compute resources as your team grows? Not a problem. You can add as many clusters as you need. A cluster can be anything-from an old unused computer to high-performance servers.
 
-Inside Volt, you can spin up virtualized Linux environments using Docker containers and assign resources according to your cluster’s capabilities for fully customizable workflows.
+Inside Volt, you can spin up virtualized Linux environments using Docker containers and assign resources according to your cluster's capabilities for fully customizable workflows.
 
 Need to share results with other teams? You're just one link away. They can access everything directly in the browser-no downloads required. Everything stays in the cloud.
 

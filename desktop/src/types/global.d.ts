@@ -10,8 +10,14 @@ declare global{
                 stop: () => Promise<void>;
                 reset: () => Promise<void>;
             };
+            docker: {
+                preflight: () => Promise<AppEvents['deploy:preflight']>;
+            };
             config: {
                 get: () => Promise<Record<string, any>>;
+            };
+            shell: {
+                openExternal: (url: string) => Promise<void>;
             };
             devmode: {
                 apply: (payload: DevModeState) => Promise<void>;
