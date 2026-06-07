@@ -326,6 +326,7 @@ def _platform_tag() -> str:
         platform.system(), platform.system().lower()
     )
     machine = platform.machine().lower()
+    machine = {'x64': 'x86_64', 'amd64': 'x86_64', 'aarch64': 'arm64'}.get(machine, machine)
     return f'{system}-{machine}'
 
 
@@ -517,18 +518,20 @@ def _verify_sha256(archive: Path, expected: str) -> None:
 
 
 def _extract(archive: Path, target: Path) -> None:
-    if archive.suffixes[-2:] == ['.tar', '.zst']:
+    with archive.open('rb') as fh:
+        magic = fh.read(4)
+    if magic[:4] == b'\x28\xb5\x2f\xfd':
         import zstandard
 
         with archive.open('rb') as fh, zstandard.ZstdDecompressor().stream_reader(fh) as reader:
             with tarfile.open(fileobj=reader, mode='r|') as tar:
                 tar.extractall(target)
         return
-    if archive.suffixes[-2:] == ['.tar', '.gz'] or archive.suffix == '.tgz':
+    if magic[:2] == b'\x1f\x8b':
         with tarfile.open(archive, 'r:gz') as tar:
             tar.extractall(target)
         return
-    if archive.suffix == '.zip':
+    if magic[:2] == b'PK':
         import zipfile
 
         with zipfile.ZipFile(archive) as zf:
