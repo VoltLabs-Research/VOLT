@@ -27,8 +27,9 @@ class PluginHub:
         url: str | None = None,
         cache_dir: str | os.PathLike[str] | None = None,
         default_publisher: str | None = None,
+        token: str | None = None,
     ) -> None:
-        self.registry = registry or PluginRegistry(url=url, cache_dir=cache_dir)
+        self.registry = registry or PluginRegistry(url=url, cache_dir=cache_dir, token=token)
         self.default_publisher = default_publisher
 
     # ------------------------------------------------------------------
@@ -56,7 +57,7 @@ class PluginHub:
         installed = self.registry.installed(plugin_key, version) if not version else None
         root = installed or self.registry.install(plugin_key, version)
         resolved_version = version or root.parent.name
-        return Plugin(plugin_key, resolved_version, root)
+        return Plugin(_legacy_key(plugin_key), resolved_version, root)
 
     # ------------------------------------------------------------------
     # Sugar
@@ -73,13 +74,24 @@ class PluginHub:
         return True
 
     def _plugin_key(self, key: str) -> str:
-        if '@' in key or not self.default_publisher:
+        if '@' in key or '/' in key or not self.default_publisher:
             return key
         return f'{self.default_publisher}@{key}'
 
     def __repr__(self) -> str:
         return (
-            f"<PluginHub url={self.registry.url!r} "
-            f"cache={self.registry.cache_dir!s} "
-            f"default_publisher={self.default_publisher!r}>"
+            f'<PluginHub url={self.registry.url!r} '
+            f'cache={self.registry.cache_dir!s} '
+            f'default_publisher={self.default_publisher!r}>'
         )
+
+
+def _legacy_key(key: str) -> str:
+    """Render a normalized publisher@name key from either canonical or legacy input."""
+    from .registry import _resolve_key
+
+    try:
+        scope, name = _resolve_key(key)
+    except ValueError:
+        return key
+    return f'{scope}@{name}'

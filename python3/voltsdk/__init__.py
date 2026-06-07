@@ -26,6 +26,7 @@ from .exceptions import (
     VoltTimeoutError,
 )
 from .plugins import (
+    NetworkError,
     Plugin,
     PluginArtifact,
     PluginError,
@@ -33,10 +34,11 @@ from .plugins import (
     PluginNotFoundError,
     PluginRun,
     PluginVerificationError,
+    PluginYankedError,
 )
 from .native import root as native_root
 
-__version__ = "3.0.1"
+__version__ = "3.0.0"
 
 __all__ = [
     "VoltClient",
@@ -58,6 +60,8 @@ __all__ = [
     "PluginNotFoundError",
     "PluginRun",
     "PluginVerificationError",
+    "PluginYankedError",
+    "NetworkError",
     "native_root",
 ]
 

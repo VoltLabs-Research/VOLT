@@ -105,8 +105,9 @@ mesh_glb = dxa_run['defect_mesh'].glb()
 
 ## Plugin hub
 
-VoltSDK ships a Hugging Face-style plugin hub. Plugins live in a static
-registry; bundles are downloaded and cached on first use:
+VoltSDK 3.0 talks to the new [Volt-Registry](https://registry.voltcloud.dev) API
+(`/packages/:scope/:name`, `/-/search`) instead of the legacy hierarchical
+`index.json`. Bundles are downloaded and cached on first use:
 
 ```python
 from voltsdk import PluginHub
@@ -134,50 +135,35 @@ lets downloaded plugin bundles reuse the libraries installed with the wheel.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `VOLT_PLUGIN_REGISTRY` | Registry base URL | `https://server.voltcloud.dev/plugin-registry` |
+| `VOLT_PLUGIN_REGISTRY` | Volt-Registry base URL | `https://registry.voltcloud.dev` |
 | `VOLT_CACHE_DIR` | Local plugin cache | `$XDG_CACHE_HOME/volt` |
+| `VOLT_REGISTRY_TOKEN` | Optional Bearer JWT/PAT for authenticated reads | _unset_ |
 
 ### Pinning versions
 
-Plugin identifiers are always publisher-qualified: `publisher@plugin`.
+Plugin identifiers accept both the canonical npm-style form (`@scope/name`) and
+the legacy `publisher@name` form. Versions may be exact, the literal `latest`,
+or a semver range:
 
 ```python
-hub.get("voltlabs@opendxa", "1.0.0")  # explicit version
-hub["voltlabs@opendxa"]               # shorthand for the latest version
-hub.install("voltlabs@opendxa")       # pre-download the latest bundle
-hub.uninstall("voltlabs@opendxa")     # drop every cached version
+hub.get("@voltlabs/opendxa", "1.0.0")  # canonical, explicit version
+hub.get("voltlabs@opendxa", "^1.0.0")  # legacy form + semver range
+hub["voltlabs@opendxa"]                # shorthand for the latest version
+hub.install("@voltlabs/opendxa")       # pre-download the latest bundle
+hub.uninstall("@voltlabs/opendxa")     # drop every cached version
 ```
 
-### Registry layout
+### Registry endpoints
 
-The hub expects a static index plus per-platform bundles:
+The Volt-Registry API endpoints VoltSDK consumes:
 
 ```
-<registry>/index.json
-<registry>/<key>/<version>/<os>-<arch>.tar.zst
+GET <registry>/packages/:scope/:name              -> Packument
+GET <registry>/packages/:scope/:name/:version     -> VersionMetadata
+GET <registry>/packages/:scope/:name/:version/-/:platform.tgz  -> 307 to signed tarball
+GET <registry>/-/search?kind=engine&page=...      -> Search results
 ```
 
-`index.json` example:
-
-```json
-{
-  "plugins": {
-    "voltlabs": {
-      "opendxa": {
-        "publisher": "voltlabs",
-        "latest": "1.0.0",
-        "versions": {
-            "1.0.0": {
-              "linux-x86_64": {
-                "url": "opendxa/1.0.0/linux-x86_64.tar.zst"
-              }
-            }
-          }
-      }
-    }
-  }
-}
-```
-
-Each bundle is a flat archive containing `plugin.json`, `bin/<binary>`, and
-optional `lib/` and `scripts/` directories.
+Each bundle is a tar+gzip archive containing `bin/<binary>` and optional
+`lib/`, `scripts/`, and `share/` directories. The registry returns a 307
+redirect to a signed RustFS URL for the actual tarball download.

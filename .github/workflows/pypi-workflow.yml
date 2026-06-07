@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       native_index_url:
-        description: "Base URL or direct index.json URL for the native runtime bundle index"
+        description: "Base URL of the Volt-Registry API (e.g. https://registry.voltcloud.dev)"
         required: false
-        default: "https://server.voltcloud.dev/plugin-registry/index.json"
+        default: "https://registry.voltcloud.dev"
 
 jobs:
   build-voltsdk:
@@ -55,7 +55,7 @@ jobs:
 
       - name: Download published native bundles
         env:
-          VOLTSDK_NATIVE_INDEX_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.native_index_url || vars.VOLTSDK_NATIVE_INDEX_URL || 'https://server.voltcloud.dev/plugin-registry/index.json' }}
+          VOLTSDK_NATIVE_INDEX_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.native_index_url || vars.VOLTSDK_NATIVE_INDEX_URL || 'https://registry.voltcloud.dev' }}
         run: >
           python .github/scripts/download_native_bundles.py
           --index-url "${VOLTSDK_NATIVE_INDEX_URL}"

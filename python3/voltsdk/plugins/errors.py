@@ -10,4 +10,12 @@ class PluginNotFoundError(PluginError):
 
 
 class PluginVerificationError(PluginError):
-    """Reserved for plugin bundle validation failures."""
+    """Raised when a downloaded bundle fails integrity checks (sha256/signature)."""
+
+
+class PluginYankedError(PluginError):
+    """Raised when the requested version has been yanked from the registry."""
+
+
+class NetworkError(PluginError):
+    """Raised on transport failures while talking to the registry."""
