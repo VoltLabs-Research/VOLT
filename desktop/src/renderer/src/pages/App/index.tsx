@@ -3,6 +3,7 @@ import { Toaster } from 'sileo';
 import type { DevModeState } from '@/services/AppConfig';
 import Titlebar from '@/renderer/src/components/Titlebar';
 import DevModeModal from '@/renderer/src/components/DevModeModal';
+import DockerGate from '@/renderer/src/components/DockerGate';
 import { useDeploy, type DeployState, type PhaseStatus } from '@/renderer/src/hooks/useDeploy';
 
 const HEADING: Record<DeployState, string> = {
@@ -30,7 +31,7 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 };
 
 const App = () => {
-    const { state, phases, phaseState, logs, voltUrl, busy, reset, run } = useDeploy();
+    const { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run } = useDeploy();
     const [iframeReady, setIframeReady] = useState(false);
     const [devModeOpen, setDevModeOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -71,7 +72,15 @@ const App = () => {
                     <iframe ref={iframeRef} className='volt-frame' src={voltUrl} onLoad={() => setIframeReady(true)} />
                 )}
 
-                {!iframeReady && (
+                {!iframeReady && preflight && (
+                    <DockerGate
+                        result={preflight}
+                        onRecheck={recheck}
+                        onOpenUrl={(url) => window.volt.shell.openExternal(url)}
+                    />
+                )}
+
+                {!iframeReady && !preflight && (
                     <main className='boot'>
                         <div className='boot-lead'>
                             <span className={[

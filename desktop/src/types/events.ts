@@ -3,7 +3,8 @@ export const CHANNELS = [
     'deploy:state',
     'source:progress',
     'deploy:phases',
-    'deploy:phase'
+    'deploy:phase',
+    'deploy:preflight'
 ] as const;
 
 export type Channel = typeof CHANNELS[number];
@@ -12,6 +13,15 @@ export interface PhaseSpec{
     id: string;
     label: string;
 }
+
+export type PreflightReason =
+    | 'ok'
+    | 'cli-missing'
+    | 'compose-missing'
+    | 'daemon-down'
+    | 'daemon-starting'
+    | 'permission-denied'
+    | 'unknown';
 
 export interface AppEvents{
     'deploy:log': {
@@ -33,6 +43,20 @@ export interface AppEvents{
     'deploy:phase': {
         id: string;
         status: 'running' | 'done' | 'error';
+        detail?: string;
+    },
+    'deploy:preflight': {
+        ok: boolean;
+        reason: PreflightReason;
+        platform: NodeJS.Platform;
+        message: string;
+        remediation: string;
+        cta: string;
+        docsUrl?: string;
+        command?: string;
+        cliPath?: string;
+        serverVersion?: string;
+        composeVersion?: string;
         detail?: string;
     }
 };
