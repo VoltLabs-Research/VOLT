@@ -1,5 +1,5 @@
 import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { buildItemMapByGeneratedId } from '@/shared/presentation/components/DocumentListing/dnd-maps';

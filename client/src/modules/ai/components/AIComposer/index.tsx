@@ -1,14 +1,8 @@
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Select from '@/shared/presentation/primitives/Select';
-import VisuallyHidden from '@/shared/presentation/primitives/VisuallyHidden';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { IconButton, Select, VisuallyHidden, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { useId } from 'react';
 import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
 import type { KeyboardEvent } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import './AIComposer.css';
 
 interface AIComposerProps {

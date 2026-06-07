@@ -1,9 +1,7 @@
 import { getMemberRole } from '@/modules/chat/utilities/chat/chat-display';
 import TeamMemberList from '../../TeamMemberList';
 import { MemberListItem } from '../../MemberListItem';
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Stack, Text } from '@voltstack/bravais';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 

@@ -1,8 +1,6 @@
 import './SettingsRow.css';
 import { cn } from '@/shared/utils/cn';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
 export interface SettingsRowProps {

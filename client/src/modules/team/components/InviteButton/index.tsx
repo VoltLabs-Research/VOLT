@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button } from '@voltstack/bravais';
 import { Check, X } from 'lucide-react';
 
 export type InviteButtonState = 'idle' | 'success' | 'error';

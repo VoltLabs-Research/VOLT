@@ -10,7 +10,7 @@ import { isAccessDeniedError } from '@/shared/errors/core';
 import { SOCKET_NOTEBOOK_EVENTS } from '@/modules/socket/events/scripting';
 import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';

@@ -1,10 +1,6 @@
 import { cn } from '@/shared/utils/cn';
 import { formatSize } from '@/shared/utils/format';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import './FileAttachment.css';
 import { Copy, Download, FileText, Image } from 'lucide-react';

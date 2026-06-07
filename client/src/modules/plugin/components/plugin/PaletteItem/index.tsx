@@ -3,9 +3,7 @@ import type { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enu
 import type { NodeTypeConfig } from '@/modules/plugin/utilities/plugin/node-registry';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Stack, Text } from '@voltstack/bravais';
 interface PaletteItemProps {
     config: NodeTypeConfig;
     onDragStart: (event: DragEvent, nodeType: NodeType) => void;

@@ -1,14 +1,7 @@
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { getJobStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import '@/modules/jobs/components/JobQueue/JobQueue.css';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';

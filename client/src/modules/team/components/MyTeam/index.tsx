@@ -1,9 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Heading, Row, Stack, StatusBadge, Text, Select } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
@@ -23,7 +18,6 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import Select from '@/shared/presentation/primitives/Select';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';

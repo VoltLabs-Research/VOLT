@@ -14,8 +14,7 @@ import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'reac
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
 import { ChevronLeft } from 'lucide-react';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
+import { IconButton, Row } from '@voltstack/bravais';
 
 import './TopToolbar.css';
 
@@ -146,7 +145,7 @@ const TopToolbar = ({
         options: ToolbarOptionsRenderOptions = {}
     ) => (
         <div className={`canvas-toolbar-options ${className}`}>
-            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Canvas primary navigation">
+            <Row as='nav' px='1' gap='025' className="canvas-toolbar-menus" aria-label="Canvas primary navigation">
                 {options.includeBackButton && renderBackButton('canvas-toolbar-mobile-back')}
                 {menus.map((menu) => (
                     <MenuPopover
@@ -157,7 +156,7 @@ const TopToolbar = ({
                         idPrefix={menuIdPrefix}
                     />
                 ))}
-            </nav>
+            </Row>
 
             <WorkspaceTabs
                 disableAuxWorkspaces={localGlbMode}
@@ -181,8 +180,8 @@ const TopToolbar = ({
                 <Row flex='1' className="canvas-toolbar-left">
                     {renderBackButton('canvas-toolbar-back')}
                     {trajectory && (
-                        <div
-                            className="canvas-toolbar-logo canvas-toolbar-trajectory d-flex items-center"
+                        <Row
+                            className="canvas-toolbar-logo canvas-toolbar-trajectory"
                             title={trajectory.name}
                         >
                             <EditableTrajectoryName
@@ -190,7 +189,7 @@ const TopToolbar = ({
                                 name={trajectory.name}
                                 className="canvas-toolbar-trajectory-name"
                             />
-                        </div>
+                        </Row>
                     )}
 
                     {renderToolbarOptions('canvas-toolbar-options--desktop')}

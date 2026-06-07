@@ -1,3 +1,4 @@
+import { Box } from '@voltstack/bravais';
 import type { TimelineTickTone } from '@/modules/canvas/hooks/use-timeline-job-activity';
 import type { RefObject } from 'react';
 
@@ -38,8 +39,8 @@ const TimelineRuler = ({
     onWheel,
     onKeyDown
 }: TimelineRulerProps) => (
-    <div className="canvas-timeline-body flex-1 p-relative min-h-0">
-        <div className="canvas-timeline-ruler scrollbar-none d-flex items-end" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-describedby={helperTextId} aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
+    <Box flex='1' position='relative' minH='0' className="canvas-timeline-body">
+        <Box display='flex' align='end' className="canvas-timeline-ruler scrollbar-none" ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role="slider" tabIndex={0} aria-label="Timeline playhead" aria-describedby={helperTextId} aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
             {ticks.map((tick) => (
                 <div key={tick.frame} className={`canvas-ruler-tick d-flex column items-center${tick.tone ? ` is-${tick.tone}` : ''}`}>
                     {tick.major && (
@@ -50,12 +51,12 @@ const TimelineRuler = ({
                     <div className={`canvas-ruler-tick-mark ${tick.major ? 'major' : 'minor'}${tick.tone ? ` canvas-ruler-tick-mark--${tick.tone}` : ''}`} />
                 </div>
             ))}
-        </div>
+        </Box>
 
-        <div className="canvas-playhead p-absolute top-0 bottom-0" style={{ left: `${playheadLeft}px` }}>
-            <div className="canvas-playhead-head p-absolute" />
-        </div>
-    </div>
+        <Box position='absolute' top='0' bottom='0' className="canvas-playhead" style={{ left: `${playheadLeft}px` }}>
+            <Box position='absolute' className="canvas-playhead-head" />
+        </Box>
+    </Box>
 );
 
 export default TimelineRuler;

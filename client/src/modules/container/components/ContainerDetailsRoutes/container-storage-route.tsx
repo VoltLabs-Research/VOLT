@@ -1,7 +1,7 @@
 import ContainerFileExplorer from '../ContainerFileExplorer';
 import { Folder } from 'lucide-react';
 import useContainerDetailsContext from '../../hooks/use-container-details-context';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState } from '@voltstack/bravais';
 const ContainerStoragePage = () => {
     const { container, isRunning } = useContainerDetailsContext();
 

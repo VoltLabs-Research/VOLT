@@ -1,4 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 import './MetricBar.css';
 interface MetricBarProps {
     value: number;
@@ -20,9 +20,12 @@ const MetricBar = ({
     return (
         <Box display='flex' radius='full' overflow='hidden' className='gap-0125 metric-bar'>
             {Array.from({ length: segments }).map((_, i) => (
-                <div
+                <Box
                     key={i}
-                    className='metric-bar-segment h-max flex-1 radius-full'
+                    radius='full'
+                    height='max'
+                    flex='1'
+                    className='metric-bar-segment'
                     style={{
                         backgroundColor: i < filledSegments ? color : 'transparent',
                         boxShadow: i < filledSegments && i === filledSegments - 1 && glow ? glow : 'none',

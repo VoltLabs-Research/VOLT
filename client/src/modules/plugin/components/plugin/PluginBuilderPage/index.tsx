@@ -3,8 +3,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import Box from '@/shared/presentation/primitives/Box';
-import Loader from '@/shared/presentation/primitives/Loader';
+import { Box, Loader } from '@voltstack/bravais';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 // Why: ReactFlow (~200 KB gz), Monaco (~1 MB gz), and the builder/canvas graph

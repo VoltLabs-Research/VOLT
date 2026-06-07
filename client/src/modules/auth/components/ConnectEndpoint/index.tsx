@@ -8,10 +8,7 @@ import {
     probeEndpointHealth
 } from '@/modules/auth/services/endpoint-health';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { Server } from 'lucide-react';
 import { useState } from 'react';

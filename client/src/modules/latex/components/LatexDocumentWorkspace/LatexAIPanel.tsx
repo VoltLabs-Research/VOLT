@@ -1,10 +1,6 @@
 import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
-import Select from '@/shared/presentation/primitives/Select';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Select, IconButton, Row, Stack, Tooltip } from '@voltstack/bravais';
 import { useCallback, useEffect, useRef } from 'react';
 import { IoAddOutline, IoCloseOutline, IoExpandOutline } from 'react-icons/io5';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';

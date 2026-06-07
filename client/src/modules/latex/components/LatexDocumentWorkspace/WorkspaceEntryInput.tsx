@@ -1,4 +1,4 @@
-import Row from '@/shared/presentation/primitives/Row';
+import { Row } from '@voltstack/bravais';
 import { useCallback, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -40,7 +40,7 @@ const WorkspaceEntryInput = ({
 
     return (
         <Row gap='05' p='025' className='latex-workspace__new-file-input'>
-            <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
+            <Row as='span' shrink='0' className='color-muted'>{icon}</Row>
             <label htmlFor={inputId} className='latex-workspace__sr-only'>
                 {label}
             </label>

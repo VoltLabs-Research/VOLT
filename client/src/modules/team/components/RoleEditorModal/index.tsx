@@ -1,10 +1,7 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Modal, closeModal, openModal, Stack, Box, Callout, Heading } from '@voltstack/bravais';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import Callout from '@/shared/presentation/primitives/Callout';
-import Heading from '@/shared/presentation/primitives/Heading';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { RBACAction, RBACResource } from '@/modules/system/api/service';
 import { IoWarningOutline } from 'react-icons/io5';
@@ -152,9 +149,9 @@ export const RoleEditorModal = ({
                     <div className='role-editor-permissions-grid'>
                         <div className='role-editor-grid-header'>Resource</div>
                         {actions.map((action) => (
-                            <div key={action.key} className='role-editor-grid-header text-center'>
+                            <Box key={action.key} textAlign='center' className='role-editor-grid-header'>
                                 {action.label}
-                            </div>
+                            </Box>
                         ))}
 
                         {resources.map((resource) => {

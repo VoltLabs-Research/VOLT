@@ -1,8 +1,5 @@
 import { cn } from '@/shared/utils/cn';
-import Button from '@/shared/presentation/primitives/Button';
-import CloseButton from '@/shared/presentation/primitives/CloseButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, CloseButton, Heading, Row, Text } from '@voltstack/bravais';
 import './PanelHeader.css';
 import type { ReactNode } from 'react';
 
@@ -57,7 +54,7 @@ const PanelHeader = ({
                 {showCompactIconTitle && (
                     <Row gap='05'>
                         {icon && (
-                            <span className="shared-panel-header-icon d-flex items-center">{icon}</span>
+                            <Row as='span' className='shared-panel-header-icon'>{icon}</Row>
                         )}
                         {title && (
                             <Text as='p' size='xs' tone='muted' className={cn('shared-panel-header-title', variant === 'compact' && 'text-eyebrow')}>
@@ -67,12 +64,12 @@ const PanelHeader = ({
                     </Row>
                 )}
                 {showFullTitle && (
-                    <h3 className="font-size-4 font-weight-6 flex-1">
+                    <Heading level={3} size='xl' weight='bold' className='flex-1'>
                         {title}
-                    </h3>
+                    </Heading>
                 )}
                 {showTabs && (
-                    <div className="d-flex flex-1 gap-025">
+                    <Row flex='1' gap='025'>
                         {tabs!.map((tab, index) => (
                             <Button
                                 key={index}
@@ -86,7 +83,7 @@ const PanelHeader = ({
                                 {tab.label}
                             </Button>
                         ))}
-                    </div>
+                    </Row>
                 )}
             </>
         );

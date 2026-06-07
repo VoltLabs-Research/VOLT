@@ -1,10 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Button, Row, Stack, Text, EmptyState, Skeleton } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { Check, ChevronLeft, Play, X } from 'lucide-react';
 
 import { ExecState } from '../../hooks/use-plugin-execution';
@@ -164,9 +159,9 @@ const ModifierPopoverItem = ({
                 <Text size='sm' tone='secondary' truncate>{option.title}</Text>
             </Row>
             {hasContent && (
-                <span className='canvas-plugin-popover-indicator d-flex items-center color-muted' aria-hidden='true'>
+                <Row as='span' className='canvas-plugin-popover-indicator color-muted' aria-hidden='true'>
                     <ChevronLeft size={13} />
-                </span>
+                </Row>
             )}
         </button>
     );

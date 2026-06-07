@@ -1,4 +1,4 @@
-import { closeModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal } from '@voltstack/bravais';
 import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
 import useTextInputModalState from '@/shared/presentation/components/RenameEntityModal/use-text-input-modal-state';
 import useMedia from '@/shared/presentation/hooks/use-media';

@@ -1,11 +1,6 @@
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
-import CloseButton from '@/shared/presentation/primitives/CloseButton';
-import Divider from '@/shared/presentation/primitives/Divider';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { CloseButton, Divider, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
 
 import './TrajectorySharePanel.css';
@@ -49,11 +44,11 @@ const TrajectorySharePanel = ({
                         <Text as='p' size='sm' weight='medium' tone='primary'>
                             {isPublic ? 'Public trajectory' : 'Private trajectory'}
                         </Text>
-                        <p className='font-size-05 color-tertiary'>
+                        <Text as='p' size='xs' className='color-tertiary'>
                             {isPublic
                                 ? 'Anyone with the link can view this trajectory.'
                                 : 'Only team members can view this trajectory.'}
-                        </p>
+                        </Text>
                     </Stack>
                 )}
 

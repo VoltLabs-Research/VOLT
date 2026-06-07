@@ -1,6 +1,4 @@
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import { Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import { CiRedo, CiStop1 } from 'react-icons/ci';
 import type { ReactElement } from 'react';
 

@@ -5,19 +5,11 @@ import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationRes
 import { sortData, type SortConfig } from '@/shared/utils/sort';
 import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
 import type { SocketInvalidationRule } from '@/modules/socket/hooks/use-socket-query-invalidation';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Popover from '@/shared/presentation/primitives/Popover';
-import Row from '@/shared/presentation/primitives/Row';
-import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import AsyncMenuItemWrapper from '@/shared/presentation/primitives/AsyncMenuItemWrapper';
+import { Button, Heading, Popover, Row, SegmentedTabs, Skeleton, Stack, Text, PopoverMenu } from '@voltstack/bravais';
+import AsyncMenuItemWrapper from '@/shared/presentation/components/AsyncMenuItemWrapper';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
@@ -506,7 +498,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                 {sortAnnouncement}
             </span>
             {!hideHeader && (
-                <div className='d-flex column gap-3'>
+                <Stack gap='3'>
                     <Stack gap='1-5' p='2' className='document-listing-header-top-container'>
                         <Row justify='between' align='start' gap='1-5' className='document-listing-header-row'>
                             <Row gap='1' align='start' className='document-listing-header-main'>
@@ -613,7 +605,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                             <div className='document-listing-header-filters-container' />
                         </div>
                     )}
-                </div>
+                </Stack>
             )}
 
             {renderContent()}

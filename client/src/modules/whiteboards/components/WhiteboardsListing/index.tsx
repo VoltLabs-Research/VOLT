@@ -1,4 +1,4 @@
-import Heading from '@/shared/presentation/primitives/Heading';
+import { Heading } from '@voltstack/bravais';
 import useWhiteboardsListing, {
     MOVE_WHITEBOARD_MODAL_ID,
     NEW_WHITEBOARD_FOLDER_MODAL_ID,

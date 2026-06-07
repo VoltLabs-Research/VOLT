@@ -17,6 +17,8 @@ import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import { Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
 import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plugin-team-clusters';
 import { useCallback, useMemo } from 'react';
@@ -27,7 +29,6 @@ import type {
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { EditorProps } from '../types';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 const EXECUTION_MODE_OPTIONS = [{
     value: PluginNodeExecutionMode.MANUAL,
@@ -331,9 +332,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         if (!selectedArgumentCandidate) {
             return (
                 <div >
-                    <p className='font-size-1 color-muted'>
+                    <Text as='p' size='sm' tone='muted'>
                         Select a plugin reference argument to configure runtime execution.
-                    </p>
+                    </Text>
                 </div>
             );
         }
@@ -344,30 +345,30 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
 
         if (usesSelectionConfig) {
             return (
-                <div className='d-flex column gap-05'>
-                    <p className='font-size-1 color-muted'>
+                <Stack gap='05'>
+                    <Text as='p' size='sm' tone='muted'>
                         Runtime execution will use the plugin configuration provided by the user through the selected argument.
-                    </p>
+                    </Text>
                     {renderInlineExecutionFields()}
-                </div>
+                </Stack>
             );
         }
 
         if (referencedCandidatePluginIds.length === 0) {
             return (
                 <div >
-                    <p className='font-size-1 color-muted'>
+                    <Text as='p' size='sm' tone='muted'>
                         This argument does not expose any candidate plugins for manual configuration.
-                    </p>
+                    </Text>
                 </div>
             );
         }
 
         return (
-            <div className='d-flex column gap-05'>
-                <p className='font-size-1 color-muted'>
+            <Stack gap='05'>
+                <Text as='p' size='sm' tone='muted'>
                     Manual fallback configuration will be used for whichever referenced plugin the user selects.
-                </p>
+                </Text>
                 {referencedCandidatePluginIds.map((pluginId) => {
                     const pluginLabel = publishedPluginsById[pluginId]?.modifier?.name?.trim() || pluginId;
                     const configDefinitions = referencedPluginConfigDefinitions[pluginId] ?? [];
@@ -390,7 +391,7 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                     );
                 })}
                 {renderInlineExecutionFields()}
-            </div>
+            </Stack>
         );
     };
 
@@ -419,9 +420,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             onFieldChange={handlePluginChange}
                         />
                         {selectedPlugin && (
-                            <p className='font-size-1 color-muted'>
+                            <Text as='p' size='sm' tone='muted'>
                                 {selectedPlugin.modifier?.description?.trim() || 'Published plugin selected for inline execution.'}
-                            </p>
+                            </Text>
                         )}
                     </>
                 ) : (
@@ -436,11 +437,11 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                             onFieldChange={handleArgumentReferenceChange}
                         />
                         {selectedArgumentCandidate && (
-                            <p className='font-size-1 color-muted'>
+                            <Text as='p' size='sm' tone='muted'>
                                 {selectedArgumentCandidate.supportsMultipleExecutions
                                     ? 'This argument can resolve one or more plugins at runtime.'
                                     : 'This argument resolves a single plugin at runtime.'}
-                            </p>
+                            </Text>
                         )}
                     </>
                 )}
@@ -475,9 +476,9 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
                         />
                     ) : (
                         <div >
-                            <p className='font-size-1 color-muted'>
+                            <Text as='p' size='sm' tone='muted'>
                                 Select a published plugin to configure inline execution.
-                            </p>
+                            </Text>
                         </div>
                     )
                 ) : renderArgumentReferenceConfiguration()}

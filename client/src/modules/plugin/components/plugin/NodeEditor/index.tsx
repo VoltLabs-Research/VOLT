@@ -1,9 +1,8 @@
-import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
+import { SegmentedTabs, Callout, Text } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
-import Callout from '@/shared/presentation/primitives/Callout';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ModifierEditor from './editors/ModifierEditor';
@@ -77,9 +76,9 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                     EditorComponent ? (
                         <EditorComponent node={node} />
                     ) : (
-                        <p className='font-size-2 color-muted'>
+                        <Text as='p' size='md' tone='muted'>
                             No editor available for this node type.
-                        </p>
+                        </Text>
                     )
                 )}
 

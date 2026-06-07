@@ -5,16 +5,15 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
-import Select from '@/shared/presentation/primitives/Select';
+import { CollapsibleSection, Row, Select, Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;
@@ -147,12 +146,12 @@ const PluginConfigField = ({
     }, [pluginReferenceValue.selections, updateSelections]);
 
     return (
-        <div className='d-flex column gap-05'>
-            <div className='form-field-canvas d-flex content-between items-center gap-1'>
+        <Stack gap='05'>
+            <Row justify='between' gap='1' className='form-field-canvas'>
                 <p className='canvas-form-label'>
                     {argument.label || argument.argument}
                 </p>
-                <div className='d-flex items-center render-input-container w-max content-end p-relative'>
+                <Row justify='end' width='max' position='relative' className='render-input-container'>
                     {argument.multipleSelection ? (
                         <Select
                             id={`${fieldKey}-plugins-select`}
@@ -183,17 +182,17 @@ const PluginConfigField = ({
                             aria-label={argument.label || argument.argument}
                         />
                     )}
-                </div>
-            </div>
+                </Row>
+            </Row>
 
             {argument.showPluginConfiguration && pluginReferenceValue.selections.map((selection, index) => {
                 const selectedPluginArguments = selectionArguments[selection.pluginId] ?? [];
 
                 if (selectedPluginArguments.length === 0) {
                     return (
-                        <p key={`${selection.pluginId}-${index}`} className='font-size-1 color-muted'>
+                        <Text as='p' key={`${selection.pluginId}-${index}`} size='sm' tone='muted'>
                             {getSelectionTitle(selection, pluginOptions)} has no configurable arguments.
-                        </p>
+                        </Text>
                     );
                 }
 
@@ -218,11 +217,11 @@ const PluginConfigField = ({
             })}
 
             {selectedPluginIds.length > 0 && !argument.showPluginConfiguration && (
-                <p className='font-size-1 color-muted'>
+                <Text as='p' size='sm' tone='muted'>
                     Plugin configuration will be resolved later by the plugin node or workflow runtime.
-                </p>
+                </Text>
             )}
-        </div>
+        </Stack>
     );
 };
 

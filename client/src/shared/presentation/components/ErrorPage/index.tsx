@@ -1,7 +1,5 @@
 import { SOURCE_LABELS } from '@/shared/utils/error-routing';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Button, Row, Stack, Heading, Text } from '@voltstack/bravais';
 import './ErrorPage.css';
 import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -20,22 +18,22 @@ const ErrorPage = () => {
     const errorTimestamp = timestamp ? new Date(Number(timestamp)) : null;
 
     return (
-        <main className='error-page d-flex items-center content-center w-max'>
+        <Row as='main' justify='center' width='max' className='error-page'>
             <Stack align='center' gap='1-5' textAlign='center' className='error-page-content' role='alert' aria-live='assertive'>
                 <Row justify='center' className='error-page-icon'>
                     <AlertTriangle size={24} aria-hidden='true' />
                 </Row>
 
                 <Stack gap='05' textAlign='center'>
-                    <h1 className='font-size-3 font-weight-5 color-primary error-page-title'>
+                    <Heading level={1} size='lg' weight='medium' className='error-page-title'>
                         Something went wrong
-                    </h1>
-                    <p className='font-size-2 color-secondary line-height-5 error-page-description'>
+                    </Heading>
+                    <Text as='p' size='md' tone='secondary' lineHeight='5' className='error-page-description'>
                         {description}
-                    </p>
-                    <p className='font-size-2 color-muted error-page-description'>
+                    </Text>
+                    <Text as='p' size='md' tone='muted' className='error-page-description'>
                         Head back to the dashboard to continue.
-                    </p>
+                    </Text>
                 </Stack>
 
                 {source && (
@@ -83,7 +81,7 @@ const ErrorPage = () => {
                     Back to dashboard
                 </Button>
             </Stack>
-        </main>
+        </Row>
     );
 };
 

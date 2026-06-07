@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 import { MemberListItem } from '../../MemberListItem';
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Tag from '@/shared/presentation/primitives/Tag';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Stack, Tag, Text } from '@voltstack/bravais';
 import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface AdminsTabProps {

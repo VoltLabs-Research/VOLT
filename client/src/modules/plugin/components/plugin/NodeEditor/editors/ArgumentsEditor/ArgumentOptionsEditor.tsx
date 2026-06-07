@@ -1,6 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { Box, Button, IconButton, EmptyState, Row, Stack, Text } from '@voltstack/bravais';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 
@@ -136,12 +134,12 @@ const ArgumentOptionsEditor = ({
 
     if (options.length === 0) {
         return (
-            <div className='argument-options-editor d-flex column gap-075'>
+            <Stack gap='075' className='argument-options-editor'>
                 <EmptyState
                     title='No options defined'
                     description='Add options to populate the select.'
                 />
-                <div className='d-flex items-center content-center gap-05'>
+                <Row justify='center' gap='05'>
                     <Button
                         variant='solid'
                         intent='brand'
@@ -151,21 +149,21 @@ const ArgumentOptionsEditor = ({
                     >
                         Add first option
                     </Button>
-                </div>
-            </div>
+                </Row>
+            </Stack>
         );
     }
 
     return (
-        <div className='argument-options-editor d-flex column gap-075'>
-            <div className='argument-options-grid d-flex items-center' aria-hidden='true'>
-                <span className='argument-options-grid__header text-eyebrow flex-1'>Key</span>
+        <Stack gap='075' className='argument-options-editor'>
+            <Row className='argument-options-grid' aria-hidden='true'>
+                <Box as='span' flex='1' className='argument-options-grid__header text-eyebrow'>Key</Box>
                 <span className='argument-options-grid__gap' />
-                <span className='argument-options-grid__header text-eyebrow flex-1'>Label</span>
+                <Box as='span' flex='1' className='argument-options-grid__header text-eyebrow'>Label</Box>
                 <span className='argument-options-grid__spacer--action' />
-            </div>
+            </Row>
 
-            <ul className='argument-options-list d-flex column gap-025' role='list'>
+            <Stack as='ul' gap='025' role='list' className='argument-options-list'>
                 {options.map((option, index) => {
                     const trimmedKey = option.key.trim();
                     return (
@@ -183,9 +181,9 @@ const ArgumentOptionsEditor = ({
                         />
                     );
                 })}
-            </ul>
+            </Stack>
 
-            <div className='argument-options-footer d-flex column gap-05'>
+            <Stack gap='05' className='argument-options-footer'>
                 <Button
                     variant='outline'
                     intent='neutral'
@@ -197,12 +195,12 @@ const ArgumentOptionsEditor = ({
                     Add option
                 </Button>
                 {duplicateKeys.size > 0 && (
-                    <span className='font-size-05 argument-options-error-hint' role='status'>
+                    <Text as='span' size='xs' role='status' className='argument-options-error-hint'>
                         Duplicate keys must be unique
-                    </span>
+                    </Text>
                 )}
-            </div>
-        </div>
+            </Stack>
+        </Stack>
     );
 };
 

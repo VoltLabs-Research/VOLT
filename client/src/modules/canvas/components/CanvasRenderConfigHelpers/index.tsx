@@ -1,7 +1,5 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Select from '@/shared/presentation/primitives/Select';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Select, Stack, Text } from '@voltstack/bravais';
 
 import type { ReactNode } from 'react';
 

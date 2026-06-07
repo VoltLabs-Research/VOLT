@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
-import Heading from '@/shared/presentation/primitives/Heading';
-import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Heading, KeyValueList, KeyValueRow, Stack } from '@voltstack/bravais';
 
 export interface InspectorRow {
     label: string;

@@ -4,7 +4,7 @@ import {
     useRevokeAllOtherSessionsMutation,
     useRevokeSessionMutation
 } from './queries';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useMemo, useState } from 'react';
 import type { ActiveSession } from '../api/entities/session';

@@ -1,11 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import { Box, Button, IconButton, Row, Stack, Text, Popover, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
 import './InviteCodeSection.css';
 
@@ -42,9 +35,9 @@ export const InviteCodeSection = ({
 
             {inviteCode ? (
                 <Row gap='05' className='invite-code-display'>
-                    <div className='invite-code-badge radius-sm font-size-4 font-weight-6 font-mono flex-1'>
+                    <Box radius='sm' flex='1' className='invite-code-badge font-size-4 font-weight-6 font-mono'>
                         {inviteCode}
-                    </div>
+                    </Box>
                     <Popover
                         id='invite-code-actions-menu'
                         placement='bottom-end'

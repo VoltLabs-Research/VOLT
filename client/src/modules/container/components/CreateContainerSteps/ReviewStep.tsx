@@ -1,11 +1,5 @@
 import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import KeyValueList, { KeyValueRow } from '@/shared/presentation/primitives/KeyValueList';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utilities/container-form';

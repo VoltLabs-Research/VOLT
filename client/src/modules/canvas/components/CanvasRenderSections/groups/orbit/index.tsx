@@ -4,8 +4,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useMemo } from 'react';
 import { MdRotateLeft } from 'react-icons/md';
 import { useShallow } from 'zustand/react/shallow';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
+import { Box, Button } from '@voltstack/bravais';
 import type { RenderGroup } from '../../types';
 
 const useOrbitGroup = (): RenderGroup => {

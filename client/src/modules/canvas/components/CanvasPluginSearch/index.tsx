@@ -1,9 +1,6 @@
 import { buildCanvasModifierOptions } from '../../utilities/modifier-registry';
 import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
-import SearchInput from '@/shared/presentation/primitives/SearchInput';
-import Surface from '@/shared/presentation/primitives/Surface';
-import Text from '@/shared/presentation/primitives/Text';
+import { EmptyState, Row, SearchInput, Stack, Surface, Text } from '@voltstack/bravais';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
@@ -205,20 +202,22 @@ const CanvasPluginSearch = () => {
                         {...getFloatingProps()}
                     >
                         {results.length === 0 ? (
-                            <div className='canvas-plugin-search-empty d-flex items-center content-center'>
+                            <Row justify='center' className='canvas-plugin-search-empty'>
                                 <EmptyState
                                     title={query ? 'No plugins match' : 'No plugins available'}
                                     description={query
                                         ? `Nothing matches “${query.trim()}”. Try a different name.`
                                         : 'Install or publish a plugin to see it listed here.'}
                                 />
-                            </div>
+                            </Row>
                         ) : (
-                            <div
+                            <Stack
                                 id={resultsListId}
                                 role='listbox'
                                 aria-label='Plugin search results'
-                                className='canvas-plugin-search-list d-flex column gap-025 p-05'
+                                className='canvas-plugin-search-list'
+                                gap='025'
+                                p='05'
                             >
                                 {results.map((option, index) => {
                                     const isActive = index === activeIndex;
@@ -241,7 +240,7 @@ const CanvasPluginSearch = () => {
                                         </button>
                                     );
                                 })}
-                            </div>
+                            </Stack>
                         )}
                     </Surface>
                 </FloatingPortal>

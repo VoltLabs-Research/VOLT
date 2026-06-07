@@ -1,13 +1,4 @@
-import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatCard from '@/shared/presentation/primitives/StatCard';
-import Tag from '@/shared/presentation/primitives/Tag';
-import Text from '@/shared/presentation/primitives/Text';
+import { AsyncBoundary, Box, Button, Heading, Row, Skeleton, Stack, StatCard, Tag, Text } from '@voltstack/bravais';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
@@ -138,14 +129,14 @@ export default function SecretKeyUsage() {
                     <Skeleton variant='circular' width={24} height={24} />
                     <Skeleton variant='text' width={300} height={32} />
                 </Row>
-                <div className='secret-key-page-cards gap-1'>
+                <Box gap='1' className='secret-key-page-cards'>
                     {[...Array(4)].map((_, i) => (
                         <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
                             <Skeleton variant='text' width={100} height={16} />
                             <Skeleton variant='rectangular' width={80} height={40} style={{ borderRadius: 4, marginTop: '0.5rem' }} />
                         </Box>
                     ))}
-                </div>
+                </Box>
                 <div className='secret-key-page-charts'>
                     {[...Array(4)].map((_, i) => (
                         <Skeleton key={i} variant='rectangular' width='100%' height={300} style={{ borderRadius: 8 }} />
@@ -223,7 +214,7 @@ export default function SecretKeyUsage() {
                     </Text>
                 </Stack>
 
-                <div className='secret-key-page-cards gap-1'>
+                <Box gap='1' className='secret-key-page-cards'>
                     {cards.map((card) => (
                         <StatCard
                             key={card.title}
@@ -233,7 +224,7 @@ export default function SecretKeyUsage() {
                             className={`glass-bg${card.smallText ? ' secret-key-page-card--small' : ''}`}
                         />
                     ))}
-                </div>
+                </Box>
 
                 <div className='secret-key-page-charts'>
                     <ChartContainer

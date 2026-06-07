@@ -1,6 +1,6 @@
 import { ArgumentVisibilityOperator } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import type { SelectOption } from '@voltstack/bravais';
 
 export const ARGUMENT_TYPE_LABELS: Record<string, string> = ARGUMENT_TYPE_OPTIONS.reduce<Record<string, string>>(
     (accumulator, option) => {

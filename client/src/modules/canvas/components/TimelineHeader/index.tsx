@@ -2,16 +2,9 @@ import FrameCombobox from '../FrameCombobox';
 import TransportControls from '../TransportControls';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
-import Button from '@/shared/presentation/primitives/Button';
-import Divider from '@/shared/presentation/primitives/Divider';
-import Popover from '@/shared/presentation/primitives/Popover';
-import Row from '@/shared/presentation/primitives/Row';
-import Select from '@/shared/presentation/primitives/Select';
-import Text from '@/shared/presentation/primitives/Text';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import { Button, Divider, Popover, Row, Select, Text, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { ReactNode } from 'react';
 
 export enum TimelineTab {

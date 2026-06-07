@@ -1,6 +1,4 @@
-import CloseButton from '@/shared/presentation/primitives/CloseButton';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
+import { Box, CloseButton, Heading, Row } from '@voltstack/bravais';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -106,9 +104,9 @@ const FloatingNodePanel = () => {
                     onClick={(event) => event.stopPropagation()}
                 >
                     <Row gap='075' p='1' className='floating-node-panel-header'>
-                        <div className='d-flex flex-center floating-node-panel-icon radius-sm color-secondary'>
+                        <Box display='flex' radius='sm' className='flex-center floating-node-panel-icon color-secondary'>
                             <DynamicIcon iconName={config.icon} />
-                        </div>
+                        </Box>
                         <Heading level={3} size='lg' weight='bold' className='flex-1'>
                             {config.label}
                         </Heading>

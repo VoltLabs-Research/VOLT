@@ -3,10 +3,7 @@ import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS
 } from '@/shared/domain/rendering/performance';
-import Button from '@/shared/presentation/primitives/Button';
-import Popover from '@/shared/presentation/primitives/Popover';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import { Button, Popover, Row, Tooltip, PopoverMenu } from '@voltstack/bravais';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -49,7 +46,7 @@ const PerformanceMenuPopover = ({ compact = false }: PerformanceMenuPopoverProps
                     shape="rounded"
                     size="sm"
                     className="font-size-05 canvas-btn-compact"
-                    leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
+                    leftIcon={<Row as='span' justify='center' shrink='0'><Gauge size={12} /></Row>}
                 >
                     {presetLabel}
                 </Button>

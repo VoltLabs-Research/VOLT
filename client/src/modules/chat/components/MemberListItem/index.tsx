@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import ListRow from '@/shared/presentation/primitives/ListRow';
-import Tag from '@/shared/presentation/primitives/Tag';
-import type { TagProps } from '@/shared/presentation/primitives/Tag';
+import { Avatar, ListRow, Tag } from '@voltstack/bravais';
+import type { TagProps } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
 import type { User } from '@/modules/auth/api/entities/user';
 import './MemberListItem.css';

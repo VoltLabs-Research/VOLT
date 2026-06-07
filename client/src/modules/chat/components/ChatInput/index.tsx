@@ -2,14 +2,7 @@ import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline
 import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
 import { formatSize } from '@/shared/utils/format';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Box, Button, IconButton, Popover, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';

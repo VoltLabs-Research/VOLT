@@ -4,11 +4,7 @@ import { triggerShortcutAction } from '../../utilities/shortcut-actions';
 import formatKeyName from '../../utilities/format-key-name';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import SearchInput from '@/shared/presentation/primitives/SearchInput';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Modal, closeModal, openModal, Row, SearchInput, Stack, Text } from '@voltstack/bravais';
 
 import type { Shortcut } from '../../stores/use-keyboard-shortcuts-store';
 
@@ -136,12 +132,14 @@ const CommandPalette = () => {
                     data-modal-initial-focus='true'
                 />
 
-                <ul
+                <Stack
+                    as='ul'
                     ref={listRef}
                     role='listbox'
                     aria-label='Available commands'
                     aria-activedescendant={filteredItems[activeIndex] ? `canvas-command-${filteredItems[activeIndex].id}` : undefined}
-                    className='canvas-command-palette__list d-flex column gap-025'
+                    className='canvas-command-palette__list'
+                    gap='025'
                 >
                     {filteredItems.length === 0 && (
                         <Text as='li' size='md' tone='secondary' className='canvas-command-palette__empty'>No commands match "{query}"</Text>
@@ -171,7 +169,7 @@ const CommandPalette = () => {
                             </Row>
                         </li>
                     ))}
-                </ul>
+                </Stack>
             </Stack>
         </Modal>
     );

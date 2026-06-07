@@ -1,9 +1,6 @@
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box, Modal, closeModal, Stack, Text } from '@voltstack/bravais';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
 import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';

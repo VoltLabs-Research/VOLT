@@ -1,6 +1,6 @@
 import { X, Copy, Check } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import IconButton from '@/shared/presentation/primitives/IconButton';
+import { IconButton } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { renderExpandedValue } from '@/modules/plugin/components/listing/SubListingDetailPanel/expandedRenderers';
 import { inferCellKind, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';

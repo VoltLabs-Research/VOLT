@@ -1,13 +1,8 @@
 import '@/modules/cluster/components/ClusterMonitoringPage/ClusterMonitoringPage.css';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Text, Box, Loader, Stack } from '@voltstack/bravais';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import Box from '@/shared/presentation/primitives/Box';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Stack from '@/shared/presentation/primitives/Stack';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';

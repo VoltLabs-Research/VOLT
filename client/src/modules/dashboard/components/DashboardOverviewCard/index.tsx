@@ -1,11 +1,6 @@
 import './DashboardOverviewCard.css';
-import Sparkline from '@/shared/presentation/primitives/Sparkline';
+import { Sparkline, Box, IconFrame, Row, Stack, Text } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import Box from '@/shared/presentation/primitives/Box';
-import IconFrame from '@/shared/presentation/primitives/IconFrame';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';

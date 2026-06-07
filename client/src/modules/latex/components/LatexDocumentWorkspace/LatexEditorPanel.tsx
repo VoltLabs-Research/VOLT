@@ -1,12 +1,5 @@
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
-import Callout from '@/shared/presentation/primitives/Callout';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { Callout, Box, Button, IconButton, Loader, Row, Stack, Text, EmptyState } from '@voltstack/bravais';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import Editor from '@monaco-editor/react';
@@ -20,7 +13,6 @@ import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, Latex
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import LatexPdfViewer from './LatexPdfViewer';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
 interface LatexEditorPanelProps {
     groupId: LatexEditorGroupId;
     isGroupActive: boolean;
@@ -512,9 +504,9 @@ const LatexEditorPanel = ({
                             className='latex-editor-tab__button d-flex items-center gap-05 flex-1 min-w-0'
                             onClick={() => onTabSelect(tab.selection)}
                         >
-                            <span className='latex-editor-tab__icon d-flex items-center content-center'>
+                            <Row as='span' justify='center' className='latex-editor-tab__icon'>
                                 {tab.icon}
-                            </span>
+                            </Row>
                             <span className='latex-editor-tab__label'>
                                 {tab.title}
                             </span>

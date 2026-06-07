@@ -1,4 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button, CollapsibleSection, Select, Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
     coerceArgumentInputValue,
@@ -12,15 +13,12 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import PluginConfigField from '@/modules/plugin/components/plugin/PluginConfigField';
-import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Select from '@/shared/presentation/primitives/Select';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentFieldsRendererProps {
@@ -304,12 +302,12 @@ const ArgumentFieldsRenderer = ({
             const items = getListArgumentValue(argument, argumentValue);
 
             return (
-                <div key={fieldKey} className='d-flex column gap-05'>
+                <Stack key={fieldKey} gap='05'>
                     <p className='canvas-form-label'>
                         {argument.label || argument.argument}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
-                        <p className='font-size-1 color-muted'>No items added.</p>
+                        <Text as='p' size='sm' tone='muted'>No items added.</Text>
                     )}
                     <Button
                         variant='outline'
@@ -321,7 +319,7 @@ const ArgumentFieldsRenderer = ({
                     >
                         Add New
                     </Button>
-                </div>
+                </Stack>
             );
         }
 
@@ -330,7 +328,7 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <div key={fieldKey} className='d-flex column gap-05'>
+                <Stack key={fieldKey} gap='05'>
                     <p className='canvas-form-label'>
                         {argument.label || argument.argument}
                     </p>
@@ -349,7 +347,7 @@ const ArgumentFieldsRenderer = ({
                             'selected'
                         )}
                     />
-                </div>
+                </Stack>
             );
         }
 
@@ -365,7 +363,7 @@ const ArgumentFieldsRenderer = ({
         );
 
         return (
-            <div key={fieldKey} className='d-flex column gap-05'>
+            <Stack key={fieldKey} gap='05'>
                 {allowTemplateReferenceMode && (
                     <FormFieldRHF
                         label='Use reference'
@@ -396,7 +394,7 @@ const ArgumentFieldsRenderer = ({
                     autocomplete={autocompleteOptions?.length ? { options: autocompleteOptions } : undefined}
                     placeholder={isTemplateReferenceMode ? '{{ arguments.some-value }}' : undefined}
                 />
-            </div>
+            </Stack>
         );
     }, [
         allowTemplateReferenceMode,
@@ -413,16 +411,16 @@ const ArgumentFieldsRenderer = ({
 
     if (!visibleArgumentDefinitions.length) {
         return (
-            <p className='font-size-1 color-muted'>
+            <Text as='p' size='sm' tone='muted'>
                 {emptyMessage}
-            </p>
+            </Text>
         );
     }
 
     return (
-        <div className='d-flex column gap-05'>
+        <Stack gap='05'>
             {visibleArgumentDefinitions.map(renderArgument)}
-        </div>
+        </Stack>
     );
 };
 

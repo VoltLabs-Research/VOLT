@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import SelectableCard from '@/shared/presentation/primitives/SelectableCard';
+import { SelectableCard } from '@voltstack/bravais';
 
 interface TemplateCardProps {
     name: string;

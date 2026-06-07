@@ -1,10 +1,7 @@
 import './NotificationList.css';
 import NotificationItem from '../NotificationItem';
 import { useCallback, useEffect, useRef } from 'react';
-import Box from '@/shared/presentation/primitives/Box';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { Box, Skeleton, Stack, EmptyState } from '@voltstack/bravais';
 import type { Notification } from '@/modules/notification/api/entities/notification';
 
 interface NotificationListProps {

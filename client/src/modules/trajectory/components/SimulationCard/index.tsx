@@ -5,7 +5,7 @@ import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
 import SimulationCardUsers from '../SimulationCardUsers';
-import Row from '@/shared/presentation/primitives/Row';
+import { Row } from '@voltstack/bravais';
 import { PiAtomThin } from 'react-icons/pi';
 import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';

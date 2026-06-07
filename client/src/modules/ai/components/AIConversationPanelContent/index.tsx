@@ -1,10 +1,9 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState, Box } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Box from '@/shared/presentation/primitives/Box';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { UIMessage } from 'ai';
 
 interface ToolApprovalResponseParams {

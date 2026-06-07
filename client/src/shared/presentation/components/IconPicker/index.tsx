@@ -1,4 +1,4 @@
-import Popover from '@/shared/presentation/primitives/Popover';
+import { Popover } from '@voltstack/bravais';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import { ICON_COMPONENT_ENTRIES } from '@/shared/presentation/components/DynamicIcon/loaders';
 import { ChevronDown, Search } from 'lucide-react';

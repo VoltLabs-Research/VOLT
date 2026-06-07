@@ -1,11 +1,7 @@
 import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-reactions';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
-import Box from '@/shared/presentation/primitives/Box';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
+import { Box, IconButton, Popover, PopoverMenuItem, PopoverMenu } from '@voltstack/bravais';
 import './MessageControls.css';
 
 interface MessageControlsProps {

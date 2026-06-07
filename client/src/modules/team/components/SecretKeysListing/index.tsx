@@ -1,8 +1,6 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Tag from '@/shared/presentation/primitives/Tag';
+import { Button, Tag, openModal } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { openModal } from '@/shared/presentation/primitives/Modal';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';

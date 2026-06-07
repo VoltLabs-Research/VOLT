@@ -2,9 +2,7 @@ import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-s
 import formatKeyName from '../../utilities/format-key-name';
 
 import { Fragment } from 'react';
-import Row from '@/shared/presentation/primitives/Row';
-import Surface from '@/shared/presentation/primitives/Surface';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Surface, Text } from '@voltstack/bravais';
 import './ShortcutFeedback.css';
 
 const ShortcutFeedback = () => {

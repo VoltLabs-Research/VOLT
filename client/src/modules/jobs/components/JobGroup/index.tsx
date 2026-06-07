@@ -2,7 +2,7 @@ import { frameGroupStatusClassNames } from '@/modules/jobs/utilities/frame-group
 import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';

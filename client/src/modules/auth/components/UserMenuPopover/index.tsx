@@ -1,11 +1,7 @@
 import './UserMenuPopover.css';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserInfo from '@/modules/auth/components/UserInfo';
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import Popover from '@/shared/presentation/primitives/Popover';
+import { Button, IconButton, PopoverMenuItem, Avatar, Popover } from '@voltstack/bravais';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import { IoCloseOutline, IoSettingsOutline } from 'react-icons/io5';
 import type { ReactNode } from 'react';

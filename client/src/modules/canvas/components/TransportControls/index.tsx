@@ -4,8 +4,7 @@ import { resolveRangedTimesteps } from '@/modules/canvas/utilities/timeline-rang
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
+import { Button, Row } from '@voltstack/bravais';
 import './TransportControls.css';
 
 interface TransportControlsProps {

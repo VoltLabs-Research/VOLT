@@ -11,8 +11,7 @@ import { debugFractal } from '@/modules/fractal/utilities/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utilities/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Box, Stack } from '@voltstack/bravais';
 import { useMemo, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 

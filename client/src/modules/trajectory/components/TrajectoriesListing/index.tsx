@@ -12,9 +12,7 @@ import {
     FolderedListingModals,
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/presentation/components/DocumentListing/foldered-listing';
-import Heading from '@/shared/presentation/primitives/Heading';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Heading, StatusBadge, Text } from '@voltstack/bravais';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';

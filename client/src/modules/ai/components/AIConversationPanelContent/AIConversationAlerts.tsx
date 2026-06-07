@@ -1,5 +1,5 @@
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 
 interface AIConversationAlertsProps {
     className: string;

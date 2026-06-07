@@ -1,9 +1,7 @@
 import { ChatMessageType } from '@/modules/chat/api/entities/message';
 import { formatDistanceToNow } from 'date-fns';
 import FileAttachment from '@/shared/presentation/components/FileAttachment';
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Stack, Text } from '@voltstack/bravais';
 import type { ChatMessage } from '@/modules/chat/api/entities/message';
 import './SharedFilesList.css';
 

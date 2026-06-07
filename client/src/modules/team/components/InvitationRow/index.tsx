@@ -1,6 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Box from '@/shared/presentation/primitives/Box';
-import ListRow from '@/shared/presentation/primitives/ListRow';
+import { Button, Box, ListRow } from '@voltstack/bravais';
 import { getInitialsFromEmail, getAvatarColorFromString } from '@/shared/utils/user';
 import { format } from 'date-fns';
 import './InvitationRow.css';

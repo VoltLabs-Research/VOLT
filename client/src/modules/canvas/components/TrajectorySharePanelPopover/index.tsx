@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Popover from '@/shared/presentation/primitives/Popover';
+import { Button, Popover } from '@voltstack/bravais';
 import TrajectorySharePanel from '@/modules/canvas/components/TrajectorySharePanel';
 
 interface TrajectorySharePanelPopoverProps {

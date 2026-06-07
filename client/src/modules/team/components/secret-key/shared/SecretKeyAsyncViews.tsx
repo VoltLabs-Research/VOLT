@@ -1,3 +1,4 @@
+import { Box, Stack, Text } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { ReactNode } from 'react';
 
@@ -19,12 +20,12 @@ interface SecretKeyEmptyViewProps {
 }
 
 export const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
-    <div className='secret-key-page vh-max color-primary'>
-        <div className='secret-key-page-main d-flex column gap-2 w-max'>
+    <Box height='vh-max' className='secret-key-page color-primary'>
+        <Stack gap='2' width='max' className='secret-key-page-main'>
             {header}
             {children}
-        </div>
-    </div>
+        </Stack>
+    </Box>
 );
 
 export const SecretKeyRecoveryView = ({
@@ -46,8 +47,8 @@ export const SecretKeyRecoveryView = ({
 
 export const SecretKeyEmptyView = ({ header, message }: SecretKeyEmptyViewProps) => (
     <SecretKeyPageShell header={header}>
-        <div className='d-flex flex-center p-3'>
-            <p className='color-muted font-size-3'>{message}</p>
-        </div>
+        <Box display='flex' p='3' className='flex-center'>
+            <Text as='p' size='lg' tone='muted'>{message}</Text>
+        </Box>
     </SecretKeyPageShell>
 );

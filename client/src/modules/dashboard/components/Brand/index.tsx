@@ -1,8 +1,5 @@
 import './Brand.css';
-import Box from '@/shared/presentation/primitives/Box';
-import Heading from '@/shared/presentation/primitives/Heading';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import IconFrame from '@/shared/presentation/primitives/IconFrame';
+import { Box, Heading, IconButton, IconFrame } from '@voltstack/bravais';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 
 interface BrandProps {

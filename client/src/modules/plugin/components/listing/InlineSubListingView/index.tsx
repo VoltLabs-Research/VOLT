@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
-import IconButton from '@/shared/presentation/primitives/IconButton';
+import { IconButton } from '@voltstack/bravais';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { buildAnalysisExecutionRows } from './execution-rows';
-import Text from '@/shared/presentation/primitives/Text';
+import { Text } from '@voltstack/bravais';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';

@@ -1,8 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Modal, closeModal, openModal, Stack, Text } from '@voltstack/bravais';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/presentation/hooks/use-confirm';
 import './ConfirmActionModal.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';

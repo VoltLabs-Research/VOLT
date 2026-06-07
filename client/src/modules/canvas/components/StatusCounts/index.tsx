@@ -1,6 +1,5 @@
 import { Clock, Play, Check } from 'lucide-react';
-import Row from '@/shared/presentation/primitives/Row';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
+import { Row, StatusBadge } from '@voltstack/bravais';
 
 import type { ComponentType } from 'react';
 

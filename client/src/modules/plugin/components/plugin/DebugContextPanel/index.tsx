@@ -1,3 +1,4 @@
+import { Box, Row, Stack, Text } from '@voltstack/bravais';
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
@@ -110,13 +111,13 @@ const DebugContextPanel = () => {
         const isExpanded = expandedKeys.has(nodeId);
         return (
             <div key={nodeId} className='debug-context-entry'>
-                <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(nodeId)}>
-                    <div className='d-flex column'>
+                <Row justify='between' gap='05' onClick={() => toggleKey(nodeId)} className='debug-context-row cursor-pointer'>
+                    <Stack>
                         <p className='debug-context-label'>{getNodeLabel(nodeId)}</p>
-                        <p className='debug-context-id color-muted'>{nodeId}</p>
-                    </div>
+                        <Text as='p' tone='muted' className='debug-context-id'>{nodeId}</Text>
+                    </Stack>
                     <Chevron expanded={isExpanded} />
-                </div>
+                </Row>
                 {isExpanded && (
                     <div className='debug-context-tree'>
                         <JsonTree data={output} defaultExpanded={true} />
@@ -135,42 +136,42 @@ const DebugContextPanel = () => {
     }
 
     return (
-        <div className='debug-context-panel glass-bg p-absolute d-flex column panel-floating top-1 right-1 z-10'>
-            <div className='debug-context-row debug-context-panel-header d-flex items-center content-between gap-05 cursor-pointer u-select-none' onClick={() => setIsOpen((v) => !v)}>
+        <Stack position='absolute' zIndex='10' className='debug-context-panel glass-bg panel-floating top-1 right-1'>
+            <Row justify='between' gap='05' onClick={() => setIsOpen((v) => !v)} className='debug-context-row debug-context-panel-header cursor-pointer u-select-none'>
                 <Braces size={12} />
-                <p className='debug-context-panel-title d-flex items-center gap-035 f-1 font-size-05 font-weight-6'>
+                <Row as='p' gap='035' className='debug-context-panel-title f-1 font-size-05 font-weight-6'>
                     Context
-                    <span className='debug-context-panel-count radius-full font-weight-6'>{entries.length}</span>
-                </p>
+                    <Text as='span' weight='bold' className='debug-context-panel-count radius-full'>{entries.length}</Text>
+                </Row>
                 {panelToggleIcon}
-            </div>
+            </Row>
 
             {isOpen && (
-                <div className='debug-context-panel-body nowheel y-auto flex-1 min-h-0'>
+                <Box flex='1' minH='0' className='debug-context-panel-body nowheel y-auto'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
                         <div className='debug-context-entry'>
-                            <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(forEachGroupKey)}>
-                                <div className='d-flex items-center gap-05'>
+                            <Row justify='between' gap='05' onClick={() => toggleKey(forEachGroupKey)} className='debug-context-row cursor-pointer'>
+                                <Row gap='05'>
                                     <Repeat size={10} className='color-muted' />
-                                    <div className='d-flex column'>
+                                    <Stack>
                                         <p className='debug-context-label'>{getNodeLabel(forEachEntry[0])}</p>
-                                        <p className='debug-context-id color-muted'>
+                                        <Text as='p' tone='muted' className='debug-context-id'>
                                             {iterationCount} iteration{iterationCount !== 1 ? 's' : ''}
-                                        </p>
-                                    </div>
-                                </div>
+                                        </Text>
+                                    </Stack>
+                                </Row>
                                 <Chevron expanded={expandedKeys.has(forEachGroupKey)} />
-                            </div>
+                            </Row>
 
                             {expandedKeys.has(forEachGroupKey) && (
                                 <div className='debug-context-nested'>
                                     <div className='debug-context-entry'>
-                                        <div className='debug-context-row d-flex items-center content-between gap-05 cursor-pointer' onClick={() => toggleKey(iterationKey)}>
+                                        <Row justify='between' gap='05' onClick={() => toggleKey(iterationKey)} className='debug-context-row cursor-pointer'>
                                             <p className='debug-context-label'>Iteration {currentIndex}</p>
                                             <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
-                                        </div>
+                                        </Row>
 
                                         {expandedKeys.has(iterationKey) && (
                                             <div className='debug-context-nested'>
@@ -186,9 +187,9 @@ const DebugContextPanel = () => {
                     {!forEachEntry && postForEach.length === 0 && entries.length > preForEach.length &&
                         entries.slice(preForEach.length).map(([nodeId, output]) => renderEntry(nodeId, output))
                     }
-                </div>
+                </Box>
             )}
-        </div>
+        </Stack>
     );
 };
 

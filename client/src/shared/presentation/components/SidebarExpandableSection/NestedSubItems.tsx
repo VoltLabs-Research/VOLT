@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Button } from '@voltstack/bravais';
 import './SidebarSubItems.css';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';

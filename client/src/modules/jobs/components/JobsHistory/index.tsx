@@ -1,8 +1,7 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/JobGroup';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { EmptyState, Stack } from '@voltstack/bravais';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
