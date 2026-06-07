@@ -4,7 +4,7 @@ import path from 'node:path';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, __dirname, '');
-    const backendTarget = env.VITE_PROXY_API_URL || env.VITE_API_URL || 'http://127.0.0.1:8000';
+    const backendTarget = env.VITE_PROXY_API_URL || env.VITE_SERVER_ENDPOINT || 'http://127.0.0.1:8000';
 
     return {
         base: '/',

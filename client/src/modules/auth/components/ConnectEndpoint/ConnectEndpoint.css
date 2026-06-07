@@ -1,0 +1,46 @@
+.connect-page{
+    background: var(--color-bg);
+}
+
+.connect-form-section{
+    max-width: 26rem;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.connect-form-shell{
+    background: var(--color-bg);
+    position: relative;
+}
+
+.connect-form-title{
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-size: 2rem;
+    color: var(--color-text-primary);
+}
+
+.connect-hint{
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+@media (max-width: 1023px){
+    .connect-form-shell{
+        justify-content: center;
+        padding: 1.5rem;
+    }
+
+    .connect-form-title{
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 640px){
+    .connect-form-shell{
+        padding: 1rem;
+    }
+}

@@ -7,6 +7,11 @@ export const publicRoutes: RouteConfig[] = [
         path: '/error',
         title: 'Error',
         loader: () => import('@/shared/presentation/components/ErrorPage')
+    },
+    {
+        path: '/connect',
+        title: 'Connect',
+        loader: () => import('@/modules/auth/components/ConnectEndpoint')
     }
 ];
 
