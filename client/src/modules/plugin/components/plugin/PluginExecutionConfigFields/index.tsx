@@ -1,9 +1,10 @@
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestepsField';
+import { Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface PluginExecutionConfigFieldsProps {
     argumentsDefinitions: IArgumentDefinition[];
@@ -39,9 +40,9 @@ const PluginExecutionConfigFields = ({
     const hasTeamClusterOptions = teamClusterOptions.length > 0;
 
     let clusterField = (
-        <p className='font-size-1 color-muted'>
+        <Text as='p' size='sm' tone='muted'>
             {noClustersMessage}
-        </p>
+        </Text>
     );
 
     if (hasTeamClusterOptions) {
@@ -59,7 +60,7 @@ const PluginExecutionConfigFields = ({
     }
 
     return (
-        <div className='d-flex column gap-05'>
+        <Stack gap='05'>
             {argumentsDefinitions.length > 0 && (
                 <ArgumentFieldsRenderer
                     arguments={argumentsDefinitions}
@@ -77,7 +78,7 @@ const PluginExecutionConfigFields = ({
                 selectedTimesteps={selectedTimesteps}
                 onChange={onSelectedTimestepsChange}
             />
-        </div>
+        </Stack>
     );
 };
 

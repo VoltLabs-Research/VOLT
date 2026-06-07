@@ -3,8 +3,7 @@ import GradientPreview from '../GradientPreview';
 
 import { memo } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Button, Stack } from '@voltstack/bravais';
 
 interface SelectOption {
     value: string;

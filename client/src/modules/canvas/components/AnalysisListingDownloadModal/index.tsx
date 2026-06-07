@@ -1,10 +1,6 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
-import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
-import Modal, { closeModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { LiquidToggle, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
 import './AnalysisListingDownloadModal.css';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';

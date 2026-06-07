@@ -16,11 +16,8 @@ import { resolvePluginExecutionClusterId } from '@/modules/plugin/utilities/plug
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import Box from '@/shared/presentation/primitives/Box';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, IconButton, Row, Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import useMedia from '@/shared/presentation/hooks/use-media';
 import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
 import { ArrowLeft } from 'lucide-react';
@@ -28,7 +25,6 @@ import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
 import type { ComponentType, ReactNode } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
 import './RightPanel.css';

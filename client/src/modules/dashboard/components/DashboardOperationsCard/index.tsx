@@ -1,13 +1,6 @@
 import './DashboardOperationsCard.css';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
-import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
-import Box from '@/shared/presentation/primitives/Box';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { AsyncBoundary, Box, Loader, Row, SegmentedTabs, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';

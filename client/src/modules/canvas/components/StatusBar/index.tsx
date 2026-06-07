@@ -3,9 +3,7 @@ import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { formatSize } from '@/shared/utils/format';
-import Divider from '@/shared/presentation/primitives/Divider';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Divider, Row, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { Analysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
@@ -157,14 +155,14 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
             ].filter(Boolean).join(' • '),
             value: (
                 <>
-                    <span className="color-muted">Running: </span>
+                    <Text as='span' tone='muted'>Running: </Text>
                     <span className="canvas-status-activity canvas-status-activity--running">
                         {activitySummary.runningLabel}
                     </span>
                     {activitySummary.queuedCount > 0 && (
                         <span className="canvas-status-activity-queued">
                             {' '}(
-                            <span className="color-muted">Queued: </span>
+                            <Text as='span' tone='muted'>Queued: </Text>
                             <span className="canvas-status-activity canvas-status-activity--queued">{activitySummary.queuedLabel}</span>
                             )
                         </span>
@@ -179,7 +177,7 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
                 title: activitySummary.queuedTitle,
                 value: (
                     <>
-                        <span className="color-muted">Queued: </span>
+                        <Text as='span' tone='muted'>Queued: </Text>
                         <span className="canvas-status-activity canvas-status-activity--queued">{activitySummary.queuedLabel}</span>
                     </>
                 )
@@ -187,7 +185,7 @@ const StatusBar = ({ trajectory, currentTimestep, analysisId }: StatusBarProps) 
             : {
                 key: 'analysis-activity',
                 label: 'Analysis',
-                value: <span className="color-secondary">Idle</span>
+                value: <Text as='span' tone='secondary'>Idle</Text>
             };
 
     const atoms = trajectory?.frames?.[0]?.natoms ?? 0;

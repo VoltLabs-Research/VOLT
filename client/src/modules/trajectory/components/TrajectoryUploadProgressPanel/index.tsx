@@ -1,6 +1,4 @@
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Stack, Text } from '@voltstack/bravais';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import { formatSize } from '@/shared/utils/format';
 import './TrajectoryUploadProgressPanel.css';

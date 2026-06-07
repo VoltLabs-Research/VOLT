@@ -2,14 +2,7 @@ import usePluginResults from '../../hooks/use-plugin-results';
 
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Surface from '@/shared/presentation/primitives/Surface';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Box, Button, Heading, IconButton, Row, Surface, Text, Tooltip } from '@voltstack/bravais';
 
 import './PluginResultsViewer.css';
 

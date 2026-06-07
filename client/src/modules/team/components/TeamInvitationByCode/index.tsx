@@ -1,9 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Tag from '@/shared/presentation/primitives/Tag';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Tag, Loader, Row, Heading, Text } from '@voltstack/bravais';
 import {
     TeamInvitationCard,
     TeamInvitationDetailItem,

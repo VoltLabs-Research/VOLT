@@ -1,11 +1,5 @@
 import './AvatarUpload.css';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Loader, Row, Stack, Text } from '@voltstack/bravais';
 import { Camera, User } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';

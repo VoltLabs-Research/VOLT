@@ -1,12 +1,4 @@
-import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
-import Box from '@/shared/presentation/primitives/Box';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatCard from '@/shared/presentation/primitives/StatCard';
-import Surface from '@/shared/presentation/primitives/Surface';
-import Text from '@/shared/presentation/primitives/Text';
+import { AsyncBoundary, Box, Heading, Row, Skeleton, Stack, StatCard, Surface, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import {
     BarChart,
@@ -65,7 +57,7 @@ export default function SecretKeyMetrics() {
                     <Skeleton variant='text' width={240} height={32} />
                     <Skeleton variant='text' width={160} height={20} />
                 </Stack>
-                <div className='secret-key-page-cards gap-1'>
+                <Box gap='1' className='secret-key-page-cards'>
                     {[...Array(4)].map((_, i) => (
                         <Box key={i} radius='lg' transition='normal' className='secret-key-page-card'>
                             <Row gap='05' className='mb-075'>
@@ -75,7 +67,7 @@ export default function SecretKeyMetrics() {
                             <Skeleton variant='rectangular' width={100} height={48} style={{ borderRadius: 4 }} />
                         </Box>
                     ))}
-                </div>
+                </Box>
                 <div className='secret-key-page-charts'>
                     <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
                     <Skeleton variant='rectangular' width='100%' height={340} style={{ borderRadius: 8 }} />
@@ -148,7 +140,7 @@ export default function SecretKeyMetrics() {
                     </Text>
                 </Stack>
 
-                <div className='secret-key-page-cards gap-1'>
+                <Box gap='1' className='secret-key-page-cards'>
                     {cards.map((card) => (
                         <StatCard
                             key={card.title}
@@ -159,7 +151,7 @@ export default function SecretKeyMetrics() {
                             className='glass-bg'
                         />
                     ))}
-                </div>
+                </Box>
 
                 <div className='secret-key-page-charts'>
                     <ChartContainer

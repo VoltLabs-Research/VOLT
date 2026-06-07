@@ -5,12 +5,8 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utilities/screenshot';
-import Button from '@/shared/presentation/primitives/Button';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -168,7 +164,7 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
                     shape='rounded'
                     size='sm'
                     className='font-size-05 canvas-btn-compact'
-                    leftIcon={<span className='d-flex items-center content-center f-shrink-0'><Camera size={12} /></span>}
+                    leftIcon={<Row as='span' justify='center' shrink='0'><Camera size={12} /></Row>}
                     aria-label='Screenshot settings'
                     title='Screenshot settings'
                 >

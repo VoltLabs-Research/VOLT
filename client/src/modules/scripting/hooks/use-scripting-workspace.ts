@@ -17,7 +17,7 @@ import {
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

@@ -1,7 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Row from '@/shared/presentation/primitives/Row';
-import Modal, { resetModal } from '@/shared/presentation/primitives/Modal';
+import { Box, Stack, Row, Modal, resetModal } from '@voltstack/bravais';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';

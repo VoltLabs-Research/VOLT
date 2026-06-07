@@ -1,11 +1,5 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import SegmentedTabs from '@/shared/presentation/primitives/SegmentedTabs';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Row, SegmentedTabs, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import type { SegmentedTabOption } from '@voltstack/bravais';
 import { ArrowLeft, ExternalLink, Play, RefreshCw, Square } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -16,7 +10,6 @@ import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-prim
 import { ContainerAction } from '@/modules/container/api/service';
 import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
-import type { SegmentedTabOption } from '@/shared/presentation/primitives/SegmentedTabs';
 import './ContainerDetailsHeader.css';
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 

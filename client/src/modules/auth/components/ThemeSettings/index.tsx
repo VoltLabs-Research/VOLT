@@ -1,6 +1,6 @@
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Stack } from '@voltstack/bravais';
 import ThemeSelector from '@/modules/auth/components/ThemeSelector';
 
 const ThemeSettings = () => {

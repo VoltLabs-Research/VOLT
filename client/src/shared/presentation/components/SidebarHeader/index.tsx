@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Box, Button, Stack } from '@voltstack/bravais';
 import { LuPanelRight } from 'react-icons/lu';
 
 interface SidebarHeaderProps {
@@ -10,10 +10,10 @@ interface SidebarHeaderProps {
 
 const SidebarHeader = ({ collapsed, onToggle, controlsId, children }: SidebarHeaderProps) => {
     return (
-        <header className='d-flex content-between p-1-5 sm:p-1 editor-sidebar-header-container'>
-            <div className='d-flex column gap-05 editor-sidebar-header-content'>
+        <Box as='header' display='flex' justify='between' p='1-5' className='sm:p-1 editor-sidebar-header-container'>
+            <Stack gap='05' className='editor-sidebar-header-content'>
                 {children}
-            </div>
+            </Stack>
 
             <Button
                 variant='ghost'
@@ -32,7 +32,7 @@ const SidebarHeader = ({ collapsed, onToggle, controlsId, children }: SidebarHea
                     aria-hidden='true'
                 />
             </Button>
-        </header>
+        </Box>
     );
 };
 

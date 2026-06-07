@@ -1,8 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Loader, Row, Stack, Text } from '@voltstack/bravais';
 import { AlertCircle, Download, FileText, ZoomIn, ZoomOut } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -185,9 +181,9 @@ const LatexPdfViewer = ({
             <Stack gap='05' p='1' overflow='y-auto' className='latex-compile-error'>
                 <Row gap='05'>
                     <AlertCircle size={14} className='color-error' />
-                    <span className='font-size-1 color-error latex-compile-error__title'>
+                    <Text as='span' size='sm' className='color-error latex-compile-error__title'>
                         Compilation failed
-                    </span>
+                    </Text>
                 </Row>
                 <pre className='latex-compile-error__log font-mono font-size-1 color-secondary'>
                     {error}
@@ -201,9 +197,9 @@ const LatexPdfViewer = ({
             <Stack gap='05' p='1' overflow='y-auto' className='latex-compile-error'>
                 <Row gap='05'>
                     <AlertCircle size={14} className='color-error' />
-                    <span className='font-size-1 color-error latex-compile-error__title'>
+                    <Text as='span' size='sm' className='color-error latex-compile-error__title'>
                         PDF preview unavailable
-                    </span>
+                    </Text>
                 </Row>
                 <pre className='latex-compile-error__log font-mono font-size-1 color-secondary'>
                     {pdfError}
@@ -229,7 +225,7 @@ const LatexPdfViewer = ({
     return (
         <Stack flex='1' minH='0' className='latex-pdf-shell position-relative'>
             {toolbar}
-            <div ref={stageRef} className='latex-pdf-stage d-flex column flex-1 min-h-0'>
+            <Stack ref={stageRef} flex='1' minH='0' className='latex-pdf-stage'>
                 <Document
                     key={pdfUrl}
                     file={pdfUrl}
@@ -256,7 +252,7 @@ const LatexPdfViewer = ({
                         );
                     })}
                 </Document>
-            </div>
+            </Stack>
         </Stack>
     );
 };

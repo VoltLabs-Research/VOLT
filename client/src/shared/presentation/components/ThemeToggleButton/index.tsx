@@ -1,5 +1,4 @@
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { IconButton, Tooltip } from '@voltstack/bravais';
 import { Theme, useTheme } from '@/shared/presentation/hooks/use-theme';
 import { Moon, Sun } from 'lucide-react';
 

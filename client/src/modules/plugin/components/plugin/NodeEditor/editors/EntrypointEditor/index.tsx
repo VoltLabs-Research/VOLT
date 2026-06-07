@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Box, Button, Row, Stack, Text } from '@voltstack/bravais';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
@@ -103,7 +103,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
     return (
         <>
             <FormSection title={binarySectionTitle}>
-                <div className='d-flex column gap-05 binary-upload-container'>
+                <Stack gap='05' className='binary-upload-container'>
                     <input
                         ref={fileInputRef}
                         type='file'
@@ -112,14 +112,14 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <div className='d-flex items-center content-between binary-uploaded'>
-                            <div className='d-flex items-center gap-05 binary-file-info'>
+                        <Row justify='between' className='binary-uploaded'>
+                            <Row gap='05' className='binary-file-info'>
                                 <File size={20} />
-                                <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>
+                                <Text as='span' size='md' weight='medium' className='binary-filename overflow-hidden'>
                                     {watchedBinaryFileName || watchedBinary}
-                                </span>
+                                </Text>
                                 <Check size={16} className='binary-check-icon' />
-                            </div>
+                            </Row>
                             <Button
                                 variant='ghost'
                                 intent='danger'
@@ -128,7 +128,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                             >
                                 <Trash2 size={16} />
                             </Button>
-                        </div>
+                        </Row>
                     ) : (
                         <Button
                             variant='outline'
@@ -143,24 +143,25 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     )}
 
                     {!currentPluginId && (
-                        <p className='binary-upload-hint font-size-1'>
+                        <Text as='p' size='sm' className='binary-upload-hint'>
                             Save the plugin first (Ctrl+S) to enable binary upload
-                        </p>
+                        </Text>
                     )}
 
                     {uploadError && (
-                        <p className='binary-upload-error font-size-1'>{uploadError}</p>
+                        <Text as='p' size='sm' className='binary-upload-error'>{uploadError}</Text>
                     )}
 
                     {isUploading && (
-                        <div className='binary-upload-progress w-max overflow-hidden'>
-                            <div
-                                className='binary-upload-progress-bar h-max'
+                        <Box width='max' className='binary-upload-progress overflow-hidden'>
+                            <Box
+                                height='max'
+                                className='binary-upload-progress-bar'
                                 style={{ width: `${uploadProgress}%` }}
                             />
-                        </div>
+                        </Box>
                     )}
-                </div>
+                </Stack>
             </FormSection>
 
             <FormSection title='Execution'>
@@ -196,24 +197,24 @@ const EntrypointEditor = ({ node }: EditorProps) => {
 
             {watchedEntrypointType === EntrypointType.PYTHON_SCRIPT && (
                 <FormSection title='Requirements File'>
-                    <div className='d-flex column gap-05'>
-                        <p className='entrypoint-requirements-hint font-size-1 color-secondary'>
+                    <Stack gap='05'>
+                        <Text as='p' size='sm' tone='secondary' className='entrypoint-requirements-hint'>
                             Define the Python dependencies to install into the cached virtual environment.
-                        </p>
+                        </Text>
                         <div className='entrypoint-requirements-editor'>
                             <Editor
                                 height='180px'
                                 language='plaintext'
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
-                                loading={<div className='p-1 color-secondary'>Loading editor...</div>}
+                                loading={<Box p='1' className='color-secondary'>Loading editor...</Box>}
                                 options={monacoOptions}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });
                                 }}
                             />
                         </div>
-                    </div>
+                    </Stack>
                 </FormSection>
             )}
 

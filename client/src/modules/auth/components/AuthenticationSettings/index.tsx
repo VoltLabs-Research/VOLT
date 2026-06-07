@@ -1,13 +1,12 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import Button from '@/shared/presentation/primitives/Button';
+import { Button, Stack } from '@voltstack/bravais';
 import { Activity } from 'lucide-react';
 import PasswordStatusRow from '@/modules/auth/components/PasswordStatusRow';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/presentation/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import Stack from '@/shared/presentation/primitives/Stack';
 import { useState } from 'react';
 import type { ChangePasswordInputDTO } from '@/modules/auth/api/service';
 import { useNavigate } from 'react-router-dom';

@@ -2,15 +2,8 @@ import useLatexWorkspace from '@/modules/latex/hooks/use-latex-workspace';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import EditableTag from '@/shared/presentation/components/EditableTag';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState, Row, Avatar, Box, Button, Loader, SaveStatusIndicator, Stack, Text } from '@voltstack/bravais';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Loader from '@/shared/presentation/primitives/Loader';
-import SaveStatusIndicator from '@/shared/presentation/primitives/SaveStatusIndicator';
-import Stack from '@/shared/presentation/primitives/Stack';
 import '@/shared/presentation/assets/stylesheets/resize-handle.css';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -567,9 +560,9 @@ const LatexDocumentWorkspace = () => {
                     )}
                     {isDirty && <span className='latex-workspace__dirty-dot' title='Unsaved changes' />}
                     {isDirty && !isSaving ? (
-                        <span className='latex-workspace__status-text color-muted' aria-live='polite'>
+                        <Text as='span' tone='muted' className='latex-workspace__status-text' aria-live='polite'>
                             Unsaved changes
-                        </span>
+                        </Text>
                     ) : (
                         <SaveStatusIndicator
                             status={isSaving ? 'saving' : 'saved'}
@@ -698,7 +691,7 @@ const LatexDocumentWorkspace = () => {
                         </div>
 
                         <Stack flex='1' minW='0' className='latex-workspace__main-content'>
-                            <div ref={editorStackRef} className='latex-workspace__editor-stack d-flex column flex-1 min-h-0'>
+                            <Stack ref={editorStackRef} flex='1' minH='0' className='latex-workspace__editor-stack'>
                                 <Stack minH='0' className='latex-workspace__editor-group-shell' style={isEditorSplit ? { height: panelWidths.editorTop, flex: '0 0 auto' } : { flex: '1 1 0%' }}>
                                     <LatexEditorPanel
                                         groupId='primary'
@@ -794,7 +787,7 @@ const LatexDocumentWorkspace = () => {
                                         </Stack>
                                     </>
                                 )}
-                            </div>
+                            </Stack>
 
                             {isAIPanelOpen && (
                                 <>

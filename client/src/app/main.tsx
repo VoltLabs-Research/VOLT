@@ -2,6 +2,7 @@ import '@/shared/presentation/assets/stylesheets/fonts.css';
 import '@/shared/presentation/assets/stylesheets/theme.css';
 import '@/shared/presentation/assets/stylesheets/base.css';
 import '@/shared/presentation/assets/stylesheets/general.css';
+import '@voltstack/bravais/components.css';
 import { initializeCustomScrollbars } from '@/shared/presentation/utilities/custom-scrollbars';
 import App from './App';
 

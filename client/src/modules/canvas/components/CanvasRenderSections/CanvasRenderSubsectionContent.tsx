@@ -1,9 +1,5 @@
-import Slider from '@/shared/presentation/primitives/Slider';
+import { Slider, Box, Row, Stack, Text } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
 import type { Subsection } from './types';
 
 interface CanvasRenderSubsectionContentProps {
@@ -25,9 +21,9 @@ const CanvasRenderSubsectionContent = ({
     return (
         <>
             {isSubDisabled && subDisabledReason && (
-                <Box className="canvas-render-disabled-reason font-size-05">
+                <Text as='div' size='xs' className="canvas-render-disabled-reason">
                     {subDisabledReason}
-                </Box>
+                </Text>
             )}
             <Box className={contentClassName || undefined}>
                 {subsection.sections.map((section) => {
@@ -37,9 +33,9 @@ const CanvasRenderSubsectionContent = ({
                     return (
                         <Stack key={section.key} gap='05' className={`canvas-form-section${isSectionDisabled ? ' canvas-render-disabled' : ''}`}>
                             {sectionDisabledReason && (
-                                <Box className="canvas-render-disabled-reason font-size-05">
+                                <Text as='div' size='xs' className="canvas-render-disabled-reason">
                                     {sectionDisabledReason}
-                                </Box>
+                                </Text>
                             )}
                             {section.onToggle && (
                                 <Row justify='between' className="canvas-form-section-header" role="group" aria-label={`${section.key} toggle`}>

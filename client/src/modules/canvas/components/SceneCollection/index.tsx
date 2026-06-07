@@ -15,7 +15,7 @@ import {
 } from '../../utilities/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Stack } from '@voltstack/bravais';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../utilities/analysis-status';

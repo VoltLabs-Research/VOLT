@@ -1,4 +1,5 @@
 import { cn } from '@/shared/utils/cn';
+import { Row, Text } from '@voltstack/bravais';
 import { forwardRef } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
@@ -37,14 +38,14 @@ const WorkspaceTreeRow = forwardRef<HTMLDivElement, WorkspaceTreeRowProps>(({
                 selected && 'is-selected',
                 className
             )} role='treeitem' tabIndex={0} aria-label={resolvedAriaLabel} aria-level={treeItemLevel} aria-expanded={expanded} aria-selected={selected} style={{ ...style, paddingLeft: `${0.75 + indent / 16}rem` }} {...props}>
-            <div className='d-flex items-center gap-05 flex-1 min-w-0'>
+            <Row gap='05' flex='1' minW='0'>
                 {depth > 0 && <span className='latex-workspace__tree-indent-line' aria-hidden='true' />}
-                <span className='color-muted d-flex items-center f-shrink-0'>{icon}</span>
+                <Row as='span' shrink='0' className='color-muted'>{icon}</Row>
                 {typeof label === 'string' || typeof label === 'number'
-                    ? <span className='latex-workspace__file-name text-truncate'>{label}</span>
+                    ? <Text as='span' truncate className='latex-workspace__file-name'>{label}</Text>
                     : label}
-            </div>
-            {trailing && <div className='d-flex items-center gap-025 f-shrink-0'>{trailing}</div>}
+            </Row>
+            {trailing && <Row gap='025' shrink='0'>{trailing}</Row>}
         </div>
     );
 });

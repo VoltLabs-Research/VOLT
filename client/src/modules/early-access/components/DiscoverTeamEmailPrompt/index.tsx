@@ -6,9 +6,7 @@ import {
 } from '@/modules/early-access/services/discover-team-email-prompt-storage';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { reportError, ErrorSurface } from '@/shared/errors/core';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Text } from '@voltstack/bravais';
 import { Bell, CheckCircle2, Mail, X } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useId, useState } from 'react';

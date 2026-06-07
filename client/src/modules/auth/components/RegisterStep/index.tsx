@@ -1,7 +1,6 @@
 import UserBadge from '../UserBadge';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
+import { Button, Stack } from '@voltstack/bravais';
 import { ArrowLeft } from 'lucide-react';
 import type { FormEventHandler } from 'react';
 import type { Control } from 'react-hook-form';

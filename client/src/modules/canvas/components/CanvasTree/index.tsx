@@ -1,7 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Text from '@/shared/presentation/primitives/Text';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Box, Button, Text, Skeleton } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { RefreshCw } from 'lucide-react';
 
 import type { ReactNode } from 'react';
@@ -54,7 +52,7 @@ export const CanvasTreeRow = ({
         >
             {icon ?? <span className="canvas-tree-spacer" />}
             <span className={isActive ? 'color-primary' : 'color-secondary'}>{label}</span>
-            {trailing !== undefined && <span className="flex-1" />}
+            {trailing !== undefined && <Box as='span' flex='1' />}
             {trailing}
         </button>
     );
@@ -111,7 +109,7 @@ interface AnalysisTreeRetryRowProps {
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
     <div className={`canvas-tree-item d-flex items-center gap-05 color-secondary ${INDENT_CLASSES[indent]}`}>
         <Text size='sm' tone='muted'>Failed to load models</Text>
-        <span className="flex-1" />
+        <Box as='span' flex='1' />
         <Button variant='ghost' intent='neutral' size='sm' onClick={onRetry} aria-label='Retry loading models'>
             <RefreshCw style={{ width: 12, height: 12 }} />
         </Button>

@@ -1,5 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
@@ -197,23 +196,23 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <div className='d-flex column gap-1-5 plugin-builder-palette-list-container p-2'>
+                <Stack gap='1-5' p='2' className='plugin-builder-palette-list-container'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
-                </div>
+                </Stack>
             )
         }
     ], [onDragStart, handleAddNode]);
 
     return (
-        <div className='wh-max vh-max'>
+        <Box width='vw-max' height='vh-max'>
             <Sidebar
                 tags={SIDEBAR_TAGS}
                 activeTag='Palette'
             >
                 <Sidebar.Header>
-                    <div className='d-flex items-center gap-075'>
+                    <Row gap='075'>
                         <Tooltip content='Back' placement='right'>
                             <Button
                                 variant='ghost'
@@ -233,7 +232,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                                 {pluginName}
                             </EditableTag>
                         </Tooltip>
-                    </div>
+                    </Row>
                 </Sidebar.Header>
 
                 <Sidebar.Bottom>
@@ -242,7 +241,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             </Sidebar>
 
             <PluginBuilderCanvas saveStatus={saveStatus} onSave={handleSave} />
-        </div>
+        </Box>
     );
 };
 

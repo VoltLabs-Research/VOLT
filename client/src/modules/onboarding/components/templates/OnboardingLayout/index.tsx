@@ -5,8 +5,7 @@ import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
-import Button from '@/shared/presentation/primitives/Button';
-import { openModal } from '@/shared/presentation/primitives/Modal';
+import { Button, openModal } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
 

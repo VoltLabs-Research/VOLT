@@ -1,7 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Callout from '@/shared/presentation/primitives/Callout';
+import { Box, Button, Stack, Callout } from '@voltstack/bravais';
 import { IoExitOutline } from 'react-icons/io5';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import type { Chat } from '@/modules/chat/api/entities/chat';

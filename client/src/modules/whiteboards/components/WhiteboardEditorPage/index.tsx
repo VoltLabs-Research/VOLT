@@ -1,4 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Box, Button, Row, Stack } from '@voltstack/bravais';
 import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-editor';
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
@@ -157,56 +157,56 @@ const createIdleCallbackHandle = (onIdle: () => void): IdleCallbackHandle => {
 };
 
 const renderLoadingShell = (): ReactNode => (
-    <div className='whiteboard-editor-loading d-flex items-center justify-center p-1'>
+    <Row p='1' className='whiteboard-editor-loading justify-center'>
         <div style={loadingShellStyles.root} role='status' aria-live='polite' aria-label='Loading whiteboard workspace'>
-            <div className='d-flex column gap-1 h-100'>
-                <div className='d-flex items-center justify-between gap-1' style={loadingShellStyles.toolbar}>
-                    <div className='d-flex items-center gap-05 flex-1'>
+            <Stack gap='1' className='h-100'>
+                <Row gap='1' className='justify-between' style={loadingShellStyles.toolbar}>
+                    <Row gap='05' flex='1'>
                         <div style={{ ...loadingShellStyles.chip, width: '8rem' }} />
                         <div style={{ ...loadingShellStyles.chip, width: '5rem' }} />
-                    </div>
-                    <div className='d-flex items-center gap-05'>
+                    </Row>
+                    <Row gap='05'>
                         <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
                         <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
                         <div style={{ ...loadingShellStyles.chip, width: '2.5rem' }} />
-                    </div>
-                </div>
+                    </Row>
+                </Row>
 
-                <div className='d-flex gap-1 flex-1' style={{ flexWrap: 'wrap' }}>
-                    <div className='d-flex column gap-075' style={loadingShellStyles.sidebar}>
+                <Box display='flex' gap='1' flex='1' style={{ flexWrap: 'wrap' }}>
+                    <Stack gap='075' style={loadingShellStyles.sidebar}>
                         <div style={{ ...loadingShellStyles.line, width: '70%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '100%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '88%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '92%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '74%' }} />
-                    </div>
+                    </Stack>
 
-                    <div className='d-flex column justify-between gap-1' style={loadingShellStyles.canvas}>
-                        <div className='d-flex gap-05'>
+                    <Stack gap='1' className='justify-between' style={loadingShellStyles.canvas}>
+                        <Box display='flex' gap='05'>
                             <div style={{ ...loadingShellStyles.chip, width: '6rem' }} />
                             <div style={{ ...loadingShellStyles.chip, width: '4rem' }} />
-                        </div>
-                        <div className='d-flex justify-center'>
+                        </Box>
+                        <Box display='flex' className='justify-center'>
                             <div style={{ ...loadingShellStyles.line, width: '72%', height: '1rem' }} />
-                        </div>
-                        <div className='d-flex justify-between items-end gap-1'>
+                        </Box>
+                        <Box display='flex' align='end' gap='1' className='justify-between'>
                             <div style={{ ...loadingShellStyles.line, width: '28%', height: '9rem', borderRadius: '1rem' }} />
                             <div style={{ ...loadingShellStyles.line, width: '38%', height: '13rem', borderRadius: '1rem' }} />
                             <div style={{ ...loadingShellStyles.line, width: '22%', height: '7rem', borderRadius: '1rem' }} />
-                        </div>
-                    </div>
-                </div>
+                        </Box>
+                    </Stack>
+                </Box>
 
-                <div className='d-flex justify-end'>
-                    <div className='d-flex column gap-05' style={loadingShellStyles.floatingPanel}>
+                <Box display='flex' className='justify-end'>
+                    <Stack gap='05' style={loadingShellStyles.floatingPanel}>
                         <div style={{ ...loadingShellStyles.line, width: '45%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '100%' }} />
                         <div style={{ ...loadingShellStyles.line, width: '82%' }} />
-                    </div>
-                </div>
-            </div>
+                    </Stack>
+                </Box>
+            </Stack>
         </div>
-    </div>
+    </Row>
 );
 
 const WhiteboardEditorPage = () => {
@@ -450,7 +450,7 @@ const WhiteboardEditorPage = () => {
         );
 
         return (
-            <div className='whiteboard-presence-indicator d-flex items-center gap-05'>
+            <Row gap='05' className='whiteboard-presence-indicator'>
                 {users.length > 0 && (
                     <div className='whiteboard-presence-count' aria-label={collaboratorsLabel}>
                         {collaboratorsLabel}
@@ -458,7 +458,7 @@ const WhiteboardEditorPage = () => {
                 )}
                 {insertImageControl}
                 {aiAssistantControl}
-            </div>
+            </Row>
         );
     }, [aiAssistantControl, handleOpenImagePicker, users]);
 

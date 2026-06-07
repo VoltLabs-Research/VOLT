@@ -1,8 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import './AccessDenied.css';
 import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';

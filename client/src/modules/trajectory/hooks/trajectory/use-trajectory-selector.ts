@@ -2,7 +2,7 @@ import { useTrajectoriesInfiniteQuery } from './queries';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import type { SelectOption } from '@voltstack/bravais';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Trajectory } from '../../api/entities/trajectory/trajectory';
 

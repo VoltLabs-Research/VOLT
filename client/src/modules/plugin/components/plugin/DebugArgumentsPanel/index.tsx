@@ -1,5 +1,5 @@
-import Button from '@/shared/presentation/primitives/Button';
-import IconButton from '@/shared/presentation/primitives/IconButton';
+import { Box, Button, IconButton, Row, Stack, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -12,7 +12,6 @@ import {
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {
@@ -96,14 +95,14 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (!showArgumentsPanel) return null;
 
     return (
-        <div className='p-absolute z-10 center-x panel-floating radius-md overflow-hidden d-flex column debug-arguments-panel glass-bg'>
-            <div className='d-flex content-between items-center f-shrink-0 debug-arguments-panel-header'>
-                <div className='d-flex items-center gap-05'>
+        <Stack position='absolute' zIndex='10' radius='md' className='center-x panel-floating overflow-hidden debug-arguments-panel glass-bg'>
+            <Row justify='between' shrink='0' className='debug-arguments-panel-header'>
+                <Row gap='05'>
                     <Settings2 size={14} />
-                    <p className='font-size-2 font-weight-6'>
+                    <Text as='p' size='md' weight='bold'>
                         Debug Arguments
-                    </p>
-                </div>
+                    </Text>
+                </Row>
                 <IconButton
                     variant='ghost'
                     size='sm'
@@ -111,9 +110,9 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                 >
                     <X size={14} />
                 </IconButton>
-            </div>
+            </Row>
 
-            <div className='d-flex column gap-05 y-auto flex-1 min-h-0 debug-arguments-panel-body'>
+            <Stack gap='05' flex='1' minH='0' className='y-auto debug-arguments-panel-body'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -121,9 +120,9 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     frameOptions={frameOptions}
                     emptyMessage='No arguments configured.'
                 />
-            </div>
+            </Stack>
 
-            <div className='f-shrink-0 debug-arguments-panel-footer'>
+            <Box shrink='0' className='debug-arguments-panel-footer'>
                 <Button
                     variant='outline'
                     intent='white'
@@ -135,8 +134,8 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     <Play size={12} />
                     Start Debug
                 </Button>
-            </div>
-        </div>
+            </Box>
+        </Stack>
     );
 };
 

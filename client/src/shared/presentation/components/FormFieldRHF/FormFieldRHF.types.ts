@@ -1,4 +1,4 @@
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import type { SelectOption } from '@voltstack/bravais';
 import type { ChangeEvent, InputHTMLAttributes, ReactNode, RefCallback } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 

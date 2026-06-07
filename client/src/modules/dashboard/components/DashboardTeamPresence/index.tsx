@@ -4,16 +4,7 @@ import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data'
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
-import AsyncBoundary from '@/shared/presentation/primitives/AsyncBoundary';
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { AsyncBoundary, Avatar, Box, Button, Heading, Row, Skeleton, Stack, Text, EmptyState } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';

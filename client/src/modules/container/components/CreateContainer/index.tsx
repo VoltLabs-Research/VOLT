@@ -4,16 +4,10 @@ import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateCont
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Modal, { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Stepper from '@/shared/presentation/primitives/Stepper';
-import Text from '@/shared/presentation/primitives/Text';
+import { Button, Heading, Modal, closeModal, openModal, Row, Stack, Stepper, Text } from '@voltstack/bravais';
+import type { StepIndicator } from '@voltstack/bravais';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import type { StepIndicator } from '@/shared/presentation/primitives/Stepper';
 import './CreateContainer.css';
 import { useNavigate } from 'react-router-dom';
 enum StepKey {

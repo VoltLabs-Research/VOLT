@@ -1,6 +1,6 @@
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
-import Select from '@/shared/presentation/primitives/Select';
+import { Select } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTrajectorySelector from '@/modules/trajectory/hooks/trajectory/use-trajectory-selector';
 import { useQueryClient } from '@tanstack/react-query';

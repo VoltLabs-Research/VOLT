@@ -1,8 +1,8 @@
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Box, Skeleton } from '@voltstack/bravais';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { List } from 'react-window';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';
@@ -223,7 +223,7 @@ const loadingMoreStyle: CSSProperties = {
 };
 
 const CompactTableHeader = ({ columns, columnWidthScale = 1 }: { columns: ColumnConfig[]; columnWidthScale?: number }) => (
-    <div className='plugin-compact-table-header p-sticky'>
+    <Box position='sticky' className='plugin-compact-table-header'>
         {columns.map((col) => {
             const columnWidth = getResolvedColumnWidth(col, columnWidthScale);
 
@@ -240,7 +240,7 @@ const CompactTableHeader = ({ columns, columnWidthScale = 1 }: { columns: Column
                 </div>
             );
         })}
-    </div>
+    </Box>
 );
 
 interface CompactTableFrameProps {
@@ -276,7 +276,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
     return (
         <div className='plugin-exposure-table-compact w-full h-full overflow-hidden'>
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
-                <div className='plugin-compact-table-header p-sticky'>
+                <Box position='sticky' className='plugin-compact-table-header'>
                     {Array.from({ length: 4 }).map((_, index) => (
                         <div
                             key={`skeleton-header-${index}`}
@@ -286,7 +286,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => {
                             <Skeleton variant='text' width='70%' height={18} animation='wave' />
                         </div>
                     ))}
-                </div>
+                </Box>
                 <div className='plugin-compact-table-list-container' style={{ flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' }}>
                     {Array.from({ length: 8 }).map((_, rowIndex) => (
                         <div

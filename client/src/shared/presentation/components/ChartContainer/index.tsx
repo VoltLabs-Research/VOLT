@@ -1,5 +1,5 @@
 import './ChartContainer.css';
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Box, Row, Stack, Heading, Text, Skeleton } from '@voltstack/bravais';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -47,10 +47,10 @@ const ChartContainer = ({
         const skeletonHeight = emphasis === 'primary' ? 28 : 18;
 
         return (
-            <div key={stat.label} className='d-flex column gap-025'>
-                <span className='chart-stat-label text-eyebrow font-size-1'>
+            <Stack key={stat.label} gap='025'>
+                <Text size='sm' className='chart-stat-label text-eyebrow'>
                     {stat.label}
-                </span>
+                </Text>
                 {statsLoading ? (
                     <Skeleton variant='text' width={skeletonWidth} height={skeletonHeight} />
                 ) : (
@@ -58,25 +58,25 @@ const ChartContainer = ({
                         {stat.value}
                     </span>
                 )}
-            </div>
+            </Stack>
         );
     };
 
     return (
-        <div className='d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
-            <div className='d-flex content-between mb-1-5 sm:column sm:gap-1'>
-                <div className='d-flex items-center gap-075'>
+        <Stack height='max' p='1-5' radius='lg' className='chart-container sm:p-1'>
+            <Box display='flex' justify='between' mb='1-5' className='sm:column sm:gap-1'>
+                <Row gap='075'>
                     {renderIcon()}
-                    <h3 className='font-size-3 chart-title font-weight-6 color-primary'>
+                    <Heading level={3} size='lg' weight='bold' className='chart-title'>
                         {title}
-                    </h3>
-                </div>
+                    </Heading>
+                </Row>
                 {stats && (
-                    <div className='d-flex items-end gap-1-5 flex-wrap sm:w-max sm:gap-1'>
+                    <Row align='end' gap='1-5' wrap className='sm:w-max sm:gap-1'>
                         {stats.map(renderStat)}
-                    </div>
+                    </Row>
                 )}
-            </div>
+            </Box>
 
             {isLoading ? (
                 <Skeleton
@@ -88,7 +88,7 @@ const ChartContainer = ({
             ) : (
                 children
             )}
-        </div>
+        </Stack>
     );
 };
 

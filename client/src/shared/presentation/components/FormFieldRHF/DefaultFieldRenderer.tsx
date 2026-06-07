@@ -1,6 +1,4 @@
-import { cn } from '@/shared/utils/cn';
-import LiquidToggle from '@/shared/presentation/primitives/LiquidToggle';
-import Select from '@/shared/presentation/primitives/Select';
+import { LiquidToggle, Select, TextInput, Textarea } from '@voltstack/bravais';
 import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { FieldRendererProps } from './FormFieldRHF.types';
@@ -85,7 +83,7 @@ const DefaultFieldRenderer = ({
 
         if (fieldType === 'textarea') {
             return (
-                <textarea
+                <Textarea
                     ref={field.ref}
                     id={fieldId}
                     name={fieldName}
@@ -93,47 +91,36 @@ const DefaultFieldRenderer = ({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     placeholder={placeholder}
-                    rows={rows}
+                    minRows={rows}
                     autoComplete={inputProps?.autoComplete}
                     inputMode={inputProps?.inputMode}
                     spellCheck={inputProps?.spellCheck}
                     disabled={disabled}
-                    className={cn(
-                        'form-field-input radius-sm w-max',
-                        error && 'has-error',
-                        className
-                    )}
-                    style={{
-                        resize: 'vertical',
-                        minHeight: 80
-                    }}
+                    hasError={!!error}
+                    className={className}
                     {...fieldStatusAriaProps}
                 />
             );
         }
 
+        const { size: _size, ...restInputProps } = inputProps ?? {};
         return (
-            <input
+            <TextInput
                 ref={field.ref}
                 id={fieldId}
                 name={fieldName}
-                {...inputProps}
+                {...restInputProps}
                 type={type ?? 'text'}
                 value={String(field.value ?? '')}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 placeholder={placeholder}
-                autoComplete={inputProps?.autoComplete}
-                inputMode={inputProps?.inputMode}
-                spellCheck={inputProps?.spellCheck}
                 disabled={disabled}
                 autoFocus={autoFocus}
-                className={cn(
-                    'form-field-input radius-sm w-max',
-                    error && 'has-error',
-                    !!icon && 'has-icon',
-                    className
-                )}
+                hasError={!!error}
+                fullWidth
+                leftIcon={icon}
+                className={className}
                 {...fieldStatusAriaProps}
             />
         );
@@ -153,11 +140,6 @@ const DefaultFieldRenderer = ({
 
             <div className='p-relative'>
                 {renderField()}
-                {icon && (
-                    <div className='form-field-icon p-absolute d-flex flex-center'>
-                        {icon}
-                    </div>
-                )}
             </div>
 
             {error && (

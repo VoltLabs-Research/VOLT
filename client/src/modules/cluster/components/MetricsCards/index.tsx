@@ -1,10 +1,7 @@
 import { formatNetworkSpeedWithUnit } from '@/modules/cluster/utilities/format-network';
 import './MetricsCards.css';
 import { Cpu, MemoryStick, Activity, TrendingUp, TrendingDown } from 'lucide-react';
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import StatCard from '@/shared/presentation/primitives/StatCard';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Row, StatCard, Text } from '@voltstack/bravais';
 import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
 import type { ReactNode } from 'react';
 

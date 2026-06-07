@@ -2,10 +2,7 @@ import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-la
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Row, StatusBadge, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { useEffect, useId, useMemo, useState } from 'react';

@@ -28,9 +28,8 @@ import {
 import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from './argument-field.types';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import FormSection from '@/shared/presentation/components/FormSection';
-import DashedActionBox from '@/shared/presentation/primitives/DashedActionBox';
-import Select from '@/shared/presentation/primitives/Select';
-import Tag from '@/shared/presentation/primitives/Tag';
+import { DashedActionBox, Row, Select, Stack, Tag, Text } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type {
@@ -39,8 +38,7 @@ import type {
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/primitives/Select/multi-select-trigger-label';
+import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];
@@ -745,7 +743,7 @@ const ArgumentDefinitionSection = ({
                                     <>
                                         <h4 className='argument-row-subheading text-eyebrow'>Allowed Plugins</h4>
                                         <div className='argument-row-subblock'>
-                                            <div className='d-flex column gap-05'>
+                                            <Stack gap='05'>
                                                 <Select
                                                     id={`plugin-reference-filter-${level}-${index}`}
                                                     options={allowedPluginOptions}
@@ -792,7 +790,7 @@ const ArgumentDefinitionSection = ({
                                                         'keys selected'
                                                     )}
                                                 />
-                                            </div>
+                                            </Stack>
                                         </div>
                                         <FormSection title='Plugin Reference'>
                                             <ArgumentField
@@ -812,7 +810,7 @@ const ArgumentDefinitionSection = ({
                                         </FormSection>
                                         <h4 className='argument-row-subheading text-eyebrow'>Argument Mappings</h4>
                                         <div className='argument-row-subblock'>
-                                            <div className='d-flex column gap-05'>
+                                            <Stack gap='05'>
                                                 {(argument.pluginReferenceMappings ?? []).map((mapping, mappingIndex) => {
                                                     const targetArgumentOptions = getTargetArgumentOptions(mapping);
                                                     const hasCurrentTargetArgument = targetArgumentOptions.some((option) => option.value === mapping.targetArgument);
@@ -826,8 +824,8 @@ const ArgumentDefinitionSection = ({
 
                                                     return (
                                                         <div key={`${level}-${index}-mapping-${mappingIndex}`} className='argument-row-subblock argument-row-nested'>
-                                                            <div className='d-flex content-between items-center gap-05 mb-05'>
-                                                                <span className='font-size-1 color-muted'>Mapping {mappingIndex + 1}</span>
+                                                            <Row justify='between' gap='05' className='mb-05'>
+                                                                <Text as='span' size='sm' tone='muted'>Mapping {mappingIndex + 1}</Text>
                                                                 <button
                                                                     type='button'
                                                                     className='argument-row-delete'
@@ -837,7 +835,7 @@ const ArgumentDefinitionSection = ({
                                                                 >
                                                                     <Trash2 size={14} aria-hidden='true' />
                                                                 </button>
-                                                            </div>
+                                                            </Row>
                                                             <ArgumentField
                                                                 label='Source'
                                                                 name={`plugin-reference-mapping-source-${level}-${index}-${mappingIndex}`}
@@ -890,7 +888,7 @@ const ArgumentDefinitionSection = ({
                                                     block
                                                     onClick={() => handlePluginReferenceMappingAdd(index)}
                                                 />
-                                            </div>
+                                            </Stack>
                                         </div>
                                     </>
                                 )}

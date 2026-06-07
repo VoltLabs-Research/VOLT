@@ -1,5 +1,5 @@
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { closeModal, openModal } from '@/shared/presentation/primitives/Modal';
+import { closeModal, openModal } from '@voltstack/bravais';
 import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useCallback, useState } from 'react';
 

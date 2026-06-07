@@ -1,11 +1,4 @@
-import Button from '@/shared/presentation/primitives/Button';
-import Divider from '@/shared/presentation/primitives/Divider';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import StatusDot from '@/shared/presentation/primitives/StatusDot';
-import Text from '@/shared/presentation/primitives/Text';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Button, Divider, Loader, Row, Stack, StatusDot, Text, Tooltip, Select } from '@voltstack/bravais';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -14,7 +7,6 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utilities/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
-import Select from '@/shared/presentation/primitives/Select';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';

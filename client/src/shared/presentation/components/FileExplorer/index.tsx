@@ -1,4 +1,4 @@
-import Skeleton from '@/shared/presentation/primitives/Skeleton';
+import { Skeleton } from '@voltstack/bravais';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import './FileExplorer.css';

@@ -1,8 +1,7 @@
-import Button from '@/shared/presentation/primitives/Button';
+import { Box, Button, Row, CollapsibleSection } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
-import CollapsibleSection from '@/shared/presentation/primitives/CollapsibleSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/entities/plugin/workflow';
@@ -88,11 +87,11 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                 const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
                 return (
-                    <div key={handleDefinition.id} className='b-soft radius-sm' style={{
+                    <Box key={handleDefinition.id} border='soft' radius='sm' style={{
                             padding: '0.75rem',
                             marginTop: index === 0 ? 0 : '0.75rem'
                         }}>
-                        <div className='d-flex items-center content-between gap-05' style={{ marginBottom: '0.75rem' }}>
+                        <Row justify='between' gap='05' style={{ marginBottom: '0.75rem' }}>
                             <strong>{handleDefinition.label}</strong>
                             <Button
                                 variant='outline'
@@ -102,7 +101,7 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                             >
                                 Reset
                             </Button>
-                        </div>
+                        </Row>
 
                         <FormFieldRHF
                             variant='inline'
@@ -139,7 +138,7 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                                 });
                             }}
                         />
-                    </div>
+                    </Box>
                 );
             })}
         </CollapsibleSection>

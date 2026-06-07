@@ -4,12 +4,7 @@ import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation'
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import TeamSelector from '@/modules/team/components/TeamSelector';
-import Box from '@/shared/presentation/primitives/Box';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Popover from '@/shared/presentation/primitives/Popover';
-import { openModal } from '@/shared/presentation/primitives/Modal';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
+import { Box, IconButton, Popover, openModal, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import './DashboardSidebar.css';
 import { useState } from 'react';
 import { IoAddOutline, IoCloseOutline } from 'react-icons/io5';

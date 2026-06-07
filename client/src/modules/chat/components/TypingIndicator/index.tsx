@@ -1,7 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
-import ThinkingDots from '@/shared/presentation/primitives/ThinkingDots';
+import { Box, Row, Text, ThinkingDots } from '@voltstack/bravais';
 import './TypingIndicator.css';
 import type { TypingUser } from '@/modules/chat/api/entities/shared/chat-events';
 

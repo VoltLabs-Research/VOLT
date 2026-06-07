@@ -6,11 +6,7 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
-import Box from '@/shared/presentation/primitives/Box';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Loader from '@/shared/presentation/primitives/Loader';
-import Row from '@/shared/presentation/primitives/Row';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Heading, Loader, Row, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { sileo } from 'sileo';

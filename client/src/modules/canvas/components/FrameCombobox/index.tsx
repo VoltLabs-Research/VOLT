@@ -1,6 +1,6 @@
-import Select from '@/shared/presentation/primitives/Select';
+import { Select } from '@voltstack/bravais';
+import type { SelectOption } from '@voltstack/bravais';
 import { useMemo, useCallback } from 'react';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
 
 interface FrameComboboxProps {
     value: number | undefined;

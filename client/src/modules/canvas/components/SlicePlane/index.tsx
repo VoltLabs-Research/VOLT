@@ -1,8 +1,6 @@
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useSlicePlane from '../../hooks/use-slice-plane';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Row, Stack, Text } from '@voltstack/bravais';
 
 const SlicePlane = () => {
     const {

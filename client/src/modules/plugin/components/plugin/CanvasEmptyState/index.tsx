@@ -1,11 +1,6 @@
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import Heading from '@/shared/presentation/primitives/Heading';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
 import { PlugZap, ArrowRight, ChevronRight } from 'lucide-react';
 import { useCallback } from 'react';
 

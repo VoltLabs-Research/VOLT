@@ -1,7 +1,4 @@
-import Avatar from '@/shared/presentation/primitives/Avatar';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Avatar, Box, IconButton, Row, Text, Tooltip } from '@voltstack/bravais';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { User } from '@/modules/auth/api/entities/user';
@@ -84,9 +81,9 @@ const WorkspacePeerAvatars = ({
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (
-                <div className='workspace-peer-overflow avatar avatar-xs d-flex flex-center radius-full'>
-                    <span className='font-weight-6 font-size-05'>+{overflow}</span>
-                </div>
+                <Box display='flex' radius='full' className='workspace-peer-overflow avatar avatar-xs flex-center'>
+                    <Text as='span' size='xs' weight='bold'>+{overflow}</Text>
+                </Box>
             )}
         </Row>
     );

@@ -1,6 +1,6 @@
 import type { ChangeEvent, InputHTMLAttributes } from 'react';
 import type { FormFieldChangeHandler } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import type { SelectOption } from '@/shared/presentation/primitives/Select';
+import type { SelectOption } from '@voltstack/bravais';
 
 export type ArgumentFieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
 

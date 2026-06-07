@@ -1,6 +1,4 @@
-import Box from '@/shared/presentation/primitives/Box';
-import StatusBadge from '@/shared/presentation/primitives/StatusBadge';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, StatusBadge, Text } from '@voltstack/bravais';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useCreateTeamRoleMutation, useDeleteTeamRoleMutation, useUpdateTeamRoleMutation } from '@/modules/team/hooks/role/queries';

@@ -1,9 +1,7 @@
 import './PasswordChangeForm.css';
 import { passwordChangeSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import Callout from '@/shared/presentation/primitives/Callout';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
+import { Callout, Box, Button } from '@voltstack/bravais';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';

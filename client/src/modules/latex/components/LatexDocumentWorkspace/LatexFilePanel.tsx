@@ -7,16 +7,10 @@ import {
 } from '@/modules/latex/utilities/workspace-dnd';
 import { joinWorkspacePath, normalizeWorkspaceFolderPath } from '@/modules/latex/utilities/workspace';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ContextMenuPopover from '@/shared/presentation/primitives/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import FileExplorer from '@/shared/presentation/components/FileExplorer';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import Popover from '@/shared/presentation/primitives/Popover';
-import PopoverMenu from '@/shared/presentation/primitives/PopoverMenu';
-import PopoverMenuItem from '@/shared/presentation/primitives/PopoverMenuItem';
-import IconButton from '@/shared/presentation/primitives/IconButton';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Popover, PopoverMenu, PopoverMenuItem, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import FileTreeNode from './FileTreeNode';
 import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import { DndContext, PointerSensor, pointerWithin, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
@@ -585,7 +579,7 @@ const LatexFilePanel = ({
         <Stack id='latex-file-panel' className='latex-workspace__files' style={{ width }}>
             <PanelHeader
                 variant='compact'
-                icon={<span className='d-flex items-center color-muted'>{FOLDER_ICON}</span>}
+                icon={<Row as='span' className='color-muted'>{FOLDER_ICON}</Row>}
                 title='Files'
                 actions={panelActions}
             />

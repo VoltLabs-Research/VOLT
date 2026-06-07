@@ -49,14 +49,8 @@ import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
-import EmptyState from '@/shared/presentation/primitives/EmptyState';
+import { EmptyState, Box, Button, openModal, Row, Stack, Tooltip } from '@voltstack/bravais';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
-import Box from '@/shared/presentation/primitives/Box';
-import Button from '@/shared/presentation/primitives/Button';
-import { openModal } from '@/shared/presentation/primitives/Modal';
-import Row from '@/shared/presentation/primitives/Row';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
 import useMedia from '@/shared/presentation/hooks/use-media';
 import useTip from '@/shared/tips/use-tip';
 
@@ -864,8 +858,9 @@ const CanvasPage = () => {
                         </button>
                     )}
                     {!isNarrowViewport && (
-                        <div
-                            className="canvas-resize-rail canvas-resize-rail--right p-absolute"
+                        <Box
+                            position='absolute'
+                            className="canvas-resize-rail canvas-resize-rail--right"
                             style={{ top: 0, bottom: 0, right: rightPanel.size }}
                         >
                             <ResizeHandle
@@ -875,7 +870,7 @@ const CanvasPage = () => {
                                 controls="canvas-right-panel"
                                 {...rightPanel.handleProps}
                             />
-                        </div>
+                        </Box>
                     )}
                     <Stack
                         id="canvas-right-panel"

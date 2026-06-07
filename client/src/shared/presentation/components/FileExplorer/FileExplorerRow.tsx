@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils/cn';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Tooltip } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import { Copy } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';

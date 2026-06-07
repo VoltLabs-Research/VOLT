@@ -1,9 +1,7 @@
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import DiscoverTeamEmailPrompt from '@/modules/early-access/components/DiscoverTeamEmailPrompt';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import Heading from '@/shared/presentation/primitives/Heading';
-import SearchInput from '@/shared/presentation/primitives/SearchInput';
-import Text from '@/shared/presentation/primitives/Text';
+import { Heading, SearchInput, Text } from '@voltstack/bravais';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import usePaginationParams from '@/shared/presentation/hooks/use-pagination-params';
 import { useCallback, useEffect, useMemo, useState } from 'react';

@@ -9,7 +9,7 @@ import {
 } from '@/modules/dashboard/utilities/layout-events';
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
-import Box from '@/shared/presentation/primitives/Box';
+import { Box } from '@voltstack/bravais';
 import DemoExpirationBanner from '@/modules/cluster/components/DemoExpirationBanner';
 import DemoWelcomeModal from '@/modules/cluster/components/DemoWelcomeModal';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';

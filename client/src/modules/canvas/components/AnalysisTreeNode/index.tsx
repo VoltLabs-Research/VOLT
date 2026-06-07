@@ -34,8 +34,7 @@ import {
     lineSettingsOption,
     transparencyOption
 } from '../../utilities/tree-menus';
-import Button from '@/shared/presentation/primitives/Button';
-import Tooltip from '@/shared/presentation/primitives/Tooltip';
+import { Box, Button, Tooltip } from '@voltstack/bravais';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
 import { ANALYSIS_EXECUTION_METADATA_KEY } from '../../utilities/selected-timestep-analysis';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
@@ -342,7 +341,7 @@ const AnalysisTreeNode = ({
                     </span>
                 )}
             </span>
-            <span className="flex-1" />
+            <Box as='span' flex='1' />
             <Button
                 variant='ghost'
                 intent='neutral'

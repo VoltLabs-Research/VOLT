@@ -1,7 +1,6 @@
 import './SettingsSectionHeader.css';
 import { cn } from '@/shared/utils/cn';
-import Stack from '@/shared/presentation/primitives/Stack';
-import Text from '@/shared/presentation/primitives/Text';
+import { Box, Heading, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
 export interface SettingsSectionHeaderProps {
@@ -19,15 +18,14 @@ const SettingsSectionHeader = ({
     className = '',
     headingAs = 'h2'
 }: SettingsSectionHeaderProps) => {
-    const classes = cn('settings-section-header', 'd-flex', 'items-start', 'content-between', 'gap-1', className);
-    const HeadingTag = headingAs;
+    const level = Number(headingAs.slice(1)) as 2 | 3 | 4 | 5 | 6;
 
     return (
-        <header className={classes}>
+        <Box as='header' display='flex' align='start' justify='between' gap='1' className={cn('settings-section-header', className)}>
             <Stack flex='1' gap='025'>
-                <HeadingTag className='font-size-3 font-weight-6'>
+                <Heading level={level} size='lg' weight='bold'>
                     {title}
-                </HeadingTag>
+                </Heading>
                 {description && (
                     <Text as='p' tone='muted' size='md'>
                         {description}
@@ -35,11 +33,11 @@ const SettingsSectionHeader = ({
                 )}
             </Stack>
             {action && (
-                <div className='f-shrink-0'>
+                <Box shrink='0'>
                     {action}
-                </div>
+                </Box>
             )}
-        </header>
+        </Box>
     );
 };
 
