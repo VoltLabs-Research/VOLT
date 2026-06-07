@@ -3,7 +3,7 @@ import Heading from '@/shared/presentation/primitives/Heading';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import './EmptyState.css';
-import { useId } from 'react';
+import { forwardRef, useId } from 'react';
 import type { ReactNode } from 'react';
 
 interface EmptyStateProps {
@@ -18,7 +18,7 @@ interface EmptyStateProps {
     announce?: boolean;
 };
 
-const EmptyState = ({
+const EmptyState = forwardRef<HTMLElement, EmptyStateProps>(({
     title,
     description,
     icon,
@@ -28,12 +28,12 @@ const EmptyState = ({
     className,
     headingLevel = 'h2',
     announce = false
-}: EmptyStateProps) => {
+}, ref) => {
     const headingId = useId();
     const level = Number(headingLevel.slice(1)) as 1 | 2 | 3;
 
     return (
-        <section aria-labelledby={headingId} className={`d-flex items-center content-center w-max h-max empty-state-container ${className || ''}`}>
+        <section ref={ref} aria-labelledby={headingId} className={`d-flex items-center content-center w-max h-max empty-state-container ${className || ''}`}>
             <Stack align='center' gap='1-5' textAlign='center' className='empty-state-content'>
                 {announce && (
                     <span className='empty-state-live-region' aria-live='polite' aria-atomic='true'>
@@ -68,6 +68,8 @@ const EmptyState = ({
             </Stack>
         </section>
     );
-};
+});
+
+EmptyState.displayName = 'EmptyState';
 
 export default EmptyState;

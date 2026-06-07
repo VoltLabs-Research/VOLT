@@ -45,10 +45,6 @@ const useTip = (tipId: ContextualTipId, options: UseTipOptions = {}): void => {
     const startVisibilityMonitor = useCallback((): void => {
         clearVisibilityMonitor();
 
-        if (typeof document === 'undefined') {
-            return;
-        }
-
         visibilityMonitorRef.current = window.setInterval(() => {
             const toastId = toastIdRef.current;
 

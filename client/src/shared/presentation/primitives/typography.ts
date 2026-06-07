@@ -28,7 +28,7 @@ const toneMap: Record<TextTone, string> = {
 const alignMap: Record<TextAlign, string> = {
     left: '',
     center: 'text-center',
-    right: ''
+    right: 'text-right'
 };
 
 interface TypographyClassOptions {

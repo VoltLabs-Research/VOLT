@@ -3,7 +3,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import './CollapsibleSection.css';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
-import { useState, useEffect, memo, useId } from 'react';
+import { useState, useEffect, memo, useId, forwardRef } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 
 type CollapsibleSectionHeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
@@ -34,7 +34,7 @@ interface CollapsibleSectionProps {
     titleAs?: CollapsibleSectionHeadingTag;
 };
 
-const CollapsibleSection = ({
+const CollapsibleSection = forwardRef<HTMLElement, CollapsibleSectionProps>(({
     title,
     children,
     defaultExpanded = false,
@@ -56,7 +56,7 @@ const CollapsibleSection = ({
     headerAction,
     collapsible = true,
     titleAs = 'h3'
-}: CollapsibleSectionProps) => {
+}, ref) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
     const [height, setHeight] = useState<number | 'auto'>(defaultExpanded ? 'auto' : 0);
@@ -130,7 +130,7 @@ const CollapsibleSection = ({
     );
 
     return (
-        <Stack mb={noSpacing ? undefined : '1-5'} className={className}>
+        <Stack ref={ref} mb={noSpacing ? undefined : '1-5'} className={className}>
             <Row justify='between' gap='05' className={`${headerBaseClass} ${headerClassName}`}>
                 <TitleTag id={headingId} className='collapsible-section-heading'>
                     {collapsible ? (
@@ -194,6 +194,8 @@ const CollapsibleSection = ({
             )}
         </Stack>
     );
-};
+});
+
+CollapsibleSection.displayName = 'CollapsibleSection';
 
 export default memo(CollapsibleSection);

@@ -33,7 +33,7 @@ const buildPropertyCondition = (input: {
 }): ParticleFilterCondition => ({
     property: input.property,
     operator: resolveFilterOperator(input.operator),
-    value: typeof input.value === 'number' ? input.value : input.value,
+    value: input.value,
     ...(input.exposureId ? { exposureId: input.exposureId } : {})
 });
 

@@ -1,5 +1,4 @@
 import { DeleteScriptingSessionUseCase } from '@modules/scripting/application/use-cases/DeleteScriptingSessionUseCase';
-import { scriptingValidation } from '@modules/scripting/infrastructure/http/validation/scripting-schemas';
 import { clearJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
@@ -8,7 +7,6 @@ import type { Response } from 'express';
 import type { DeleteScriptingSessionOutputDTO } from '@modules/scripting/application/dtos/ScriptingSessionDTO';
 
 export default createController(DeleteScriptingSessionUseCase, {
-    validationSchema: scriptingValidation.sessionStatus,
     handleSuccess: (req: AuthenticatedRequest, res: Response, value: DeleteScriptingSessionOutputDTO): void => {
         const { runtimeNotebookId, ...response } = value;
         const teamId = Array.isArray(req.params.teamId) ? req.params.teamId[0] : req.params.teamId;

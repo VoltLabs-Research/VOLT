@@ -20,6 +20,14 @@ const baseAllowedOrigins = new Set<string>(collectAllowedClientOrigins([
     process.env.CLIENT_DEV_HOST
 ]));
 
+// The canonical public client URL this deployment serves. CLIENT_HOST may carry
+// several origins (comma/space separated); we surface the first normalized one so
+// shells like Volt Desktop can validate a server endpoint and then open its client.
+const resolvePublicClientHost = (): string | null =>
+    collectAllowedClientOrigins([process.env.CLIENT_HOST])[0]
+    ?? collectAllowedClientOrigins([process.env.CLIENT_DEV_HOST])[0]
+    ?? null;
+
 const readSingleHeader = (value: string | string[] | undefined): string | undefined => {
     if (Array.isArray(value)) {
         return value[0];
@@ -146,7 +154,7 @@ app.head('/healthz', (_req: Request, res: Response) => {
     res.status(204).end();
 });
 app.get('/healthz', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok' });
+    res.status(200).json({ status: 'ok', clientHost: resolvePublicClientHost() });
 });
 app.use(express.static('static'));
 

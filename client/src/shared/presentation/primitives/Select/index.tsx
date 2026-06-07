@@ -2,7 +2,7 @@ import SearchInput from '@/shared/presentation/primitives/SearchInput';
 import { matchReferenceWidth, useFloatingLayerRoot } from './floating-layer';
 import './Select.css';
 import { useFloating, useClick, useDismiss, useRole, useListNavigation, useTypeahead, useInteractions, FloatingPortal, FloatingFocusManager, offset, flip, shift, autoUpdate } from '@floating-ui/react';
-import { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import React from 'react';
 
 export interface SelectOption {
@@ -51,7 +51,7 @@ export interface SelectProps {
     'aria-errormessage'?: string;
 };
 
-const Select = ({
+const Select = forwardRef<HTMLButtonElement | HTMLInputElement, SelectProps>(({
     options,
     id,
     value = null,
@@ -82,7 +82,7 @@ const Select = ({
     'aria-describedby': ariaDescribedBy,
     'aria-invalid': ariaInvalid,
     'aria-errormessage': ariaErrorMessage
-}: SelectProps) => {
+}, ref) => {
     const uid = useId();
     const { floatingRoot, floatingOwnerIdsAttribute } = useFloatingLayerRoot();
     const [isOpen, setIsOpen] = useState(false);
@@ -241,7 +241,12 @@ const Select = ({
     const setInputReference = useCallback((node: HTMLInputElement | null) => {
         refs.setReference(node);
         (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
-    }, [refs]);
+        if (typeof ref === 'function') {
+            ref(node);
+        } else if (ref) {
+            (ref as React.MutableRefObject<HTMLButtonElement | HTMLInputElement | null>).current = node;
+        }
+    }, [refs, ref]);
 
     const inputDisplayValue = isOpen ? searchQuery : (selectedOption?.title ?? '');
 
@@ -357,13 +362,22 @@ const Select = ({
 
         const label = isMulti ? multiTriggerLabel : (
             selectedOption ? selectedOption.title : (
-                <span className='color-text-muted'>{placeholder}</span>
+                <span className='color-muted'>{placeholder}</span>
             )
         );
 
+        const setButtonReference = (node: HTMLButtonElement | null) => {
+            refs.setReference(node);
+            if (typeof ref === 'function') {
+                ref(node);
+            } else if (ref) {
+                (ref as React.MutableRefObject<HTMLButtonElement | HTMLInputElement | null>).current = node;
+            }
+        };
+
         return (
             <button
-                ref={refs.setReference}
+                ref={setButtonReference}
                 id={id ?? uid}
                 type='button'
                 className={`select-trigger d-flex items-center gap-05 ${onDark ? 'on-dark' : ''} ${className} ${isOpen ? 'open' : ''} overflow-hidden cursor-pointer`}
@@ -435,6 +449,8 @@ const Select = ({
             )}
         </>
     );
-};
+});
+
+Select.displayName = 'Select';
 
 export default Select;

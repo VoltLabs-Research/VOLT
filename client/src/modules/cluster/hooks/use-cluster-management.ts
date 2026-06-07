@@ -120,7 +120,7 @@ const useClusterManagement = (): ClusterManagementResult => {
     const teamClustersQuery = useTeamClustersQuery(selectedTeamId ?? '', {
         enabled: Boolean(selectedTeamId),
         refetchInterval: (query) => {
-            if (typeof document !== 'undefined' && document.hidden) {
+            if (document.hidden) {
                 return false;
             }
 

@@ -1,0 +1,24 @@
+.menu-trigger {
+    display: inline-flex;
+    align-items: center;
+}
+
+.menu-trigger:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring-shadow);
+    border-radius: var(--radius-sm);
+}
+
+.menu-separator {
+    height: 1px;
+    margin: 0.25rem 0.25rem;
+    background: var(--color-border-soft);
+    border: none;
+    flex-shrink: 0;
+}
+
+.menu-empty {
+    padding: 0.625rem 0.75rem;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}

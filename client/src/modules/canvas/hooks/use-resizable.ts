@@ -33,7 +33,7 @@ interface UseResizableReturn {
 }
 
 const readPersistedSize = (storageKey: string | undefined, fallback: number, min: number, max: number): number => {
-    if (!storageKey || typeof window === 'undefined') return fallback;
+    if (!storageKey) return fallback;
     try {
         const raw = window.localStorage.getItem(storageKey);
         if (raw === null) return fallback;
@@ -46,7 +46,7 @@ const readPersistedSize = (storageKey: string | undefined, fallback: number, min
 };
 
 const persistSize = (storageKey: string | undefined, size: number) => {
-    if (!storageKey || typeof window === 'undefined') return;
+    if (!storageKey) return;
     try {
         window.localStorage.setItem(storageKey, String(Math.round(size)));
     } catch {

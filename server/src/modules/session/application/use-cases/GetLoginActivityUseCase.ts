@@ -15,7 +15,7 @@ export default class GetLoginActivityUseCase implements IUseCase<GetLoginActivit
 
     async execute(input: GetLoginActivityInputDTO): Promise<Result<GetLoginActivityOutputDTO, ApplicationError>>{
         const sessions = await this.sessionRepository.findLoginActivity(input.userId, input.limit ?? 20);
-        const activities = sessions.map(toPersistedSessionDTO);
+        const activities = sessions.map((session) => toPersistedSessionDTO(session));
 
         return Result.ok({
             activities,

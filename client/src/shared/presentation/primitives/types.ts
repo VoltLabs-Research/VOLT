@@ -6,7 +6,7 @@
  * Primitives MUST NOT emit classes whose CSS definitions don't exist.
  */
 
-export type Display = 'flex' | 'block' | 'none';
+export type Display = 'flex' | 'grid' | 'block' | 'none';
 
 export type FlexDirection = 'row' | 'column' | 'row-reverse';
 
@@ -65,3 +65,29 @@ export type SurfaceVariant =
     | 'elevated'  // card-elevated
     | 'danger'    // zone-danger
     | 'warning';  // zone-warning
+
+/**
+ * Canonical semantic tone shared by every status/feedback primitive
+ * (Tag, StatusBadge, StatusDot, InlineStatus, IconFrame, Callout, StatCard, Timeline).
+ * Maps 1:1 to the `--status-*` / accent tokens and the `.color-*` text utilities.
+ */
+export type StatusTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
+
+/** Canonical control size scale shared by interactive primitives. */
+export type ControlSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+/** Canonical shape vocabulary shared by button-like / chip-like primitives. */
+export type Shape = 'rounded' | 'pill' | 'square' | 'circle';
+
+/**
+ * Resolves a {@link StatusTone} to the CSS custom properties that express it.
+ * Single source of truth so primitives stop hardcoding per-tone colors.
+ */
+export const STATUS_TONE_VARS: Record<StatusTone, { fg: string; bg: string; border: string }> = {
+    neutral: { fg: 'var(--color-text-secondary)', bg: 'var(--color-surface-2)', border: 'var(--color-border-soft)' },
+    brand: { fg: 'var(--color-brand-primary)', bg: 'color-mix(in srgb, var(--color-brand-primary) 12%, transparent)', border: 'color-mix(in srgb, var(--color-brand-primary) 24%, transparent)' },
+    success: { fg: 'var(--status-success)', bg: 'var(--status-success-bg)', border: 'var(--status-success-border)' },
+    warning: { fg: 'var(--status-warning)', bg: 'var(--status-warning-bg)', border: 'var(--status-warning-border)' },
+    danger: { fg: 'var(--status-error)', bg: 'var(--status-error-bg)', border: 'var(--status-error-border)' },
+    info: { fg: 'var(--status-info)', bg: 'var(--status-info-bg)', border: 'var(--status-info-border)' }
+};

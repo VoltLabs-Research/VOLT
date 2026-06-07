@@ -104,11 +104,11 @@ interface NormalizedConversationMessage extends UIMessage {
 const REMARK_PLUGINS = [remarkGfm];
 
 const isTextPart = (part: UIMessage['parts'][number]): part is TextPart => {
-    return isRecord(part) && part.type === 'text' && typeof part.text === 'string';
+    return part.type === 'text';
 };
 
 const isReasoningPart = (part: UIMessage['parts'][number]): part is ReasoningPart => {
-    return isRecord(part) && part.type === 'reasoning' && typeof part.text === 'string';
+    return part.type === 'reasoning';
 };
 
 const normalizeToolPart = (

@@ -1,5 +1,6 @@
 import type { AppEvents } from '@/types/events';
-import type { DevModeState } from '@/services/AppConfig';
+import type { DevModeState, DeploymentState } from '@/services/AppConfig';
+import type { RemoteProbeResult } from '@/services/RemoteProbe';
 
 declare global{
     interface Window{
@@ -27,6 +28,15 @@ declare global{
             };
             app: {
                 voltUrl: () => Promise<string>;
+            };
+            remote: {
+                probe: (endpoint: string) => Promise<RemoteProbeResult>;
+                connect: (endpoint: string) => Promise<RemoteProbeResult>;
+            };
+            deployment: {
+                get: () => Promise<DeploymentState | null>;
+                setLocal: () => Promise<void>;
+                reset: () => Promise<void>;
             };
             window: {
                 minimize: () => Promise<void>;

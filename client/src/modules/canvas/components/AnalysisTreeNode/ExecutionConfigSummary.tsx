@@ -206,7 +206,7 @@ const formatTimesteps = (selectedTimesteps: number[] | undefined): string | unde
     if (!selectedTimesteps?.length) return undefined;
 
     const sorted = Array.from(new Set(
-        selectedTimesteps.filter((timestep) => typeof timestep === 'number' && Number.isFinite(timestep))
+        selectedTimesteps.filter((timestep) => Number.isFinite(timestep))
     )).sort((left, right) => left - right);
 
     if (sorted.length === 0) return undefined;

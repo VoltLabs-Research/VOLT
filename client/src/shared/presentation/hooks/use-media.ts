@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 const supportsMatchMedia = (): boolean => {
-    return typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+    return typeof window.matchMedia === 'function';
 };
 
 const getInitialMatch = (query: string): boolean => {

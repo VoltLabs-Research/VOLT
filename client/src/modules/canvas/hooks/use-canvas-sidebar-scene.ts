@@ -84,10 +84,6 @@ const sceneBelongsToAnalysis = (scene: SceneObjectType | null | undefined, analy
 };
 
 const scrollRightPanelToTop = (): (() => void) | undefined => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-        return undefined;
-    }
-
     const raf = window.requestAnimationFrame(() => {
         const panel = document.getElementById('canvas-right-panel');
         const targets = [
@@ -459,7 +455,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (status === AnalysisStatus.Failed) {
             pendingStore.remove(analysisId);
 
-            const description = typeof failedFrames === 'number' && failedFrames > 0
+            const description = failedFrames !== undefined && failedFrames > 0
                 ? `${failedFrames} frame${failedFrames === 1 ? '' : 's'} failed. Retry to re-run the failed frames.`
                 : 'The analysis failed. Retry to re-run the failed frames.';
 

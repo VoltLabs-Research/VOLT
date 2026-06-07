@@ -15,11 +15,7 @@ interface BuildOnboardingRedirectPathInput {
     onboardingPath: string;
 }
 
-const getSessionStorage = (): Storage | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+const getSessionStorage = (): Storage => {
     return window.sessionStorage;
 };
 
@@ -33,10 +29,6 @@ export const sanitizePostAuthDestination = (destination: string | null | undefin
     }
 
     try {
-        if (typeof window === 'undefined') {
-            return destination;
-        }
-
         const url = new URL(destination, window.location.origin);
 
         if (url.origin !== window.location.origin) {
@@ -56,10 +48,6 @@ const isOnboardingDestination = (destination: string): boolean => {
     }
 
     try {
-        if (typeof window === 'undefined') {
-            return safeDestination === ONBOARDING_PATH || safeDestination.startsWith(`${ONBOARDING_PATH}/`) || safeDestination.startsWith(`${ONBOARDING_PATH}?`);
-        }
-
         const url = new URL(safeDestination, window.location.origin);
         return url.pathname === ONBOARDING_PATH || url.pathname.startsWith(`${ONBOARDING_PATH}/`);
     } catch {

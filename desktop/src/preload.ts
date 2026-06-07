@@ -26,6 +26,15 @@ contextBridge.exposeInMainWorld('volt', {
     app: {
         voltUrl: () => ipcRenderer.invoke('app:voltUrl')
     },
+    remote: {
+        probe: (endpoint: string) => ipcRenderer.invoke('remote:probe', endpoint),
+        connect: (endpoint: string) => ipcRenderer.invoke('remote:connect', endpoint)
+    },
+    deployment: {
+        get: () => ipcRenderer.invoke('deployment:get'),
+        setLocal: () => ipcRenderer.invoke('deployment:setLocal'),
+        reset: () => ipcRenderer.invoke('deployment:reset')
+    },
     window: {
         minimize: () => ipcRenderer.invoke('window:minimize'),
         maximize: () => ipcRenderer.invoke('window:maximize'),

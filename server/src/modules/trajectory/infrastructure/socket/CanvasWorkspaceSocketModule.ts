@@ -240,10 +240,6 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
                 return;
             }
 
-            if (typeof payload.x !== 'number' || typeof payload.y !== 'number') {
-                return;
-            }
-
             const room = this.workspaceRoom(payload.trajectoryId, payload.ownerId);
             this.emitToRoomExcept(conn.id, room, 'canvas.workspace.cursor', {
                 trajectoryId: payload.trajectoryId,
@@ -265,10 +261,6 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
             }
 
             if (payload.ownerId !== conn.user._id) {
-                return;
-            }
-
-            if (typeof payload.x !== 'number' || typeof payload.y !== 'number' || typeof payload.z !== 'number') {
                 return;
             }
 

@@ -1,7 +1,7 @@
 import './Slider.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, FC } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
 export interface SliderProps {
     min: number;
@@ -26,7 +26,7 @@ const getStepDecimals = (step: number) => {
 const snapToStep = (raw: number, min: number, step: number, decimals: number) =>
     Number((Math.round((raw - min) / step) * step + min).toFixed(decimals));
 
-const Slider: FC<SliderProps> = ({
+const Slider = forwardRef<HTMLDivElement, SliderProps>(({
     min,
     max,
     value,
@@ -35,7 +35,7 @@ const Slider: FC<SliderProps> = ({
     disabled = false,
     className = '',
     style
-}) => {
+}, ref) => {
     const trackRef = useRef<HTMLDivElement | null>(null);
     const auraKeyRef = useRef(0);
 
@@ -168,7 +168,7 @@ const Slider: FC<SliderProps> = ({
     } as CSSProperties;
 
     return (
-        <div className={`slider slider--ios ${disabled ? 'slider--disabled' : ''} ${className || ''} u-select-none`} style={style} aria-disabled={disabled || undefined} data-disabled={disabled || undefined}>
+        <div ref={ref} className={`slider slider--ios ${disabled ? 'slider--disabled' : ''} ${className || ''} u-select-none`} style={style} aria-disabled={disabled || undefined} data-disabled={disabled || undefined}>
             <div
                 ref={trackRef}
                 className='slider__track p-relative w-max overflow-hidden cursor-pointer'
@@ -213,6 +213,8 @@ const Slider: FC<SliderProps> = ({
             </div>
         </div>
     );
-};
+});
+
+Slider.displayName = 'Slider';
 
 export default memo(Slider);

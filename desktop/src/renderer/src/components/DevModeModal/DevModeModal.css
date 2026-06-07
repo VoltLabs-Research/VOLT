@@ -131,7 +131,7 @@
 }
 
 .dm-toggle input:checked ~ .dm-switch{ background: var(--color-brand, #007aff); }
-.dm-toggle input:checked ~ .dm-switch::after{ transform: translateX(16px); }
+.dm-toggle input:checked ~ .dm-switch::after{ transform: translateX(16px); background: var(--color-on-brand); }
 
 /* path fields */
 .dm-paths{
@@ -180,7 +180,7 @@
 .dm-input:focus{
     background: var(--color-surface-3);
     border-color: var(--color-brand, #007aff);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 16%, transparent);
 }
 
 .dm-browse{
@@ -225,12 +225,12 @@
 .dm-btn:hover{ background: var(--color-surface-3); }
 
 .dm-btn-primary{
-    color: #fff;
+    color: var(--color-on-brand);
     background: var(--color-brand, #007aff);
     border-color: transparent;
 }
 
-.dm-btn-primary:hover{ background: #0a6fe0; }
+.dm-btn-primary:hover{ background: color-mix(in srgb, var(--color-brand) 85%, var(--color-on-brand)); }
 
 .dm-btn:disabled{ opacity: 0.4; cursor: default; }
 .dm-btn-primary:disabled:hover{ background: var(--color-brand, #007aff); }

@@ -1,14 +1,9 @@
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
-import { validateRequest, ValidationTarget } from '@shared/infrastructure/http/middleware/validation';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { RequestValidationState, ValidationSchemaInput } from '@shared/infrastructure/http/middleware/validation';
-import type { Response } from 'express';
 
 /**
- * Internal helpers shared by generated controllers so request data merging and
- * validation semantics stay in one place.
+ * Internal helpers shared by generated controllers so request data merging
+ * stays in one place.
  */
 
 export const readUserAgent = (req: AuthenticatedRequest): string => {
@@ -17,67 +12,57 @@ export const readUserAgent = (req: AuthenticatedRequest): string => {
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
 };
 
-export const buildRequestValidationContext = (req: AuthenticatedRequest): Record<string, unknown> => {
-    return {
-        userId: req.userId,
-        token: req.token
-    };
-};
-
 /**
- * Wraps `handle` with an inline validation pass. This is the single source of
- * truth for request validation now that `BaseController.validate()` has been
- * removed. The validation middleware previously exposed via
- * `createValidationMiddleware` is still supported for routes that mount it
- * explicitly; those routes will populate `req.validated` first, and this
- * wrapper will simply re-assert the schema (cheap) or be a no-op when the
- * controller has no `validationSchema`.
+ * Top-level route param / query-string keys that consuming use-cases type as
+ * `number`. Express delivers path params and query params as STRINGS, so we
+ * coerce this known set centrally here — this preserves the behaviour that the
+ * removed `z.coerce.number()` schemas used to provide. Body fields are NOT
+ * touched (JSON already carries proper numbers, and `size`/`value` live nested
+ * inside bodies where blanket coercion would be wrong).
  */
-export const wrapHandleWithValidation = <THandler extends (req: AuthenticatedRequest, res: Response) => Promise<void>>(
-    handler: THandler,
-    validationSchema: ValidationSchemaInput | undefined
-): THandler => {
-    if (!validationSchema) {
-        return handler;
+const NUMERIC_REQUEST_KEYS = [
+    'page',
+    'limit',
+    'timestep',
+    'privatePort',
+    'days',
+    'range',
+    'startValue',
+    'endValue',
+    'maxValues'
+] as const;
+
+const coerceNumericKeys = (source: Record<string, unknown>): Record<string, unknown> => {
+    const coerced: Record<string, unknown> = { ...source };
+
+    for (const key of NUMERIC_REQUEST_KEYS) {
+        const value = coerced[key];
+
+        if (typeof value === 'string' && value.trim() !== '') {
+            const numeric = Number(value);
+
+            if (!Number.isNaN(numeric)) {
+                coerced[key] = numeric;
+            }
+        }
     }
 
-    const wrapped = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const validationResult = validateRequest(
-            req,
-            validationSchema,
-            ValidationTarget.Body,
-            buildRequestValidationContext(req)
-        );
-
-        if (!validationResult.success) {
-            BaseResponse.error(
-                res,
-                validationResult.message,
-                HttpStatus.BadRequest,
-                validationResult.code
-            );
-            return;
-        }
-
-        await handler(req, res);
-    };
-
-    return wrapped as THandler;
+    return coerced;
 };
 
 export const buildControllerParams = (
     req: AuthenticatedRequest,
-    validationState: RequestValidationState,
     extendParams?: (
         req: AuthenticatedRequest,
         params: Record<string, unknown>
     ) => Record<string, unknown>
 ): Record<string, unknown> => {
-    const bodyPayload = asRecord(validationState.body ?? req.body) ?? {};
+    const bodyPayload = asRecord(req.body) ?? {};
+    const paramsPayload = coerceNumericKeys(asRecord(req.params) ?? {});
+    const queryPayload = coerceNumericKeys(asRecord(req.query) ?? {});
     const baseParams: Record<string, unknown> = {
-        ...(asRecord(validationState.params ?? req.params) ?? {}),
-        ...(asRecord(validationState.query ?? req.query) ?? {}),
-        ...(asRecord(validationState.request) ?? {}),
+        ...paramsPayload,
+        ...queryPayload,
         ...bodyPayload,
         data: bodyPayload,
         userId: req.userId,

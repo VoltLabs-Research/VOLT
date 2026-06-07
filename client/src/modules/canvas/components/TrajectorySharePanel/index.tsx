@@ -18,10 +18,6 @@ interface TrajectorySharePanelProps {
 }
 
 const buildCanvasUrl = (trajectoryId: string): string => {
-    if (typeof window === 'undefined') {
-        return `/canvas/${trajectoryId}`;
-    }
-
     return `${window.location.origin}/canvas/${trajectoryId}`;
 };
 

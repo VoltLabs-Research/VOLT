@@ -9,11 +9,7 @@ let sessionTipCount = 0;
 let activeTipId: ContextualTipId | null = null;
 let activeToastId: string | null = null;
 
-const getLocalStorage = (): Storage | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+const getLocalStorage = (): Storage => {
     return window.localStorage;
 };
 

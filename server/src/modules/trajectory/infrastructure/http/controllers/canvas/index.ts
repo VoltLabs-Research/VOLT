@@ -5,7 +5,6 @@ import {
     createStreamController
 } from '@shared/infrastructure/http/controllers/createController';
 import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
-import { canvasValidationSchemas } from '@modules/trajectory/infrastructure/http/validation/canvas';
 import { GetPublicCanvasBootstrapUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasBootstrapUseCase';
 import { GetPublicCanvasDumpUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasDumpUseCase';
 import { GetPublicCanvasGLBUseCase } from '@modules/trajectory/application/use-cases/canvas/GetPublicCanvasGLBUseCase';
@@ -87,19 +86,16 @@ const getPassthroughModelHeaders = (resultValue: {
 };
 
 const GetPublicCanvasBootstrapController = createController(GetPublicCanvasBootstrapUseCase, {
-    validationSchema: canvasValidationSchemas.getBootstrap,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasTrajectoryController = createController(GetPublicCanvasTrajectoryUseCase, {
-    validationSchema: canvasValidationSchemas.getTrajectory,
     extendParams: withOptionalUserId
 });
 
 type GetPublicCanvasPreviewOutput = UseCaseOutput<GetPublicCanvasPreviewUseCase>;
 
 const GetPublicCanvasPreviewController = createController(GetPublicCanvasPreviewUseCase, {
-    validationSchema: canvasValidationSchemas.getPreview,
     extendParams: withOptionalUserId,
     handleSuccess: (_req, res, value: GetPublicCanvasPreviewOutput) => {
         sendTrajectoryPreview(res, value);
@@ -108,22 +104,18 @@ const GetPublicCanvasPreviewController = createController(GetPublicCanvasPreview
 });
 
 const GetPublicCanvasRasterFrameController = createPreparedDownloadStreamController(GetPublicCanvasRasterFrameUseCase, {
-    validationSchema: canvasValidationSchemas.getFrame,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasAnalysisRasterFrameController = createPreparedDownloadStreamController(GetPublicCanvasRasterFrameUseCase, {
-    validationSchema: canvasValidationSchemas.getAnalysisFrame,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasDumpController = createPreparedDownloadStreamController(GetPublicCanvasDumpUseCase, {
-    validationSchema: canvasValidationSchemas.getDump,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasGLBController = createStreamController(GetPublicCanvasGLBUseCase, {
-    validationSchema: canvasValidationSchemas.getGlb,
     extendParams: withGlbRequestContext,
     getHeaders: (resultValue) => {
         const headers: Record<string, string> = {
@@ -145,122 +137,99 @@ const GetPublicCanvasGLBController = createStreamController(GetPublicCanvasGLBUs
 });
 
 const ListPublicCanvasAnalysesController = createPaginatedController(ListPublicCanvasAnalysesUseCase, {
-    validationSchema: canvasValidationSchemas.listAnalyses,
     extendParams: withOptionalUserId
 });
 
 
 const GetPublicCanvasSimulationCellController = createController(GetPublicCanvasSimulationCellUseCase, {
-    validationSchema: canvasValidationSchemas.getSimulationCell,
     extendParams: withOptionalUserId
 });
 
 const ListPublicCanvasSceneArtifactsController = createPaginatedController(ListPublicCanvasSceneArtifactsUseCase, {
-    validationSchema: canvasValidationSchemas.listSceneArtifacts,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasColorCodingPropertiesController = createController(GetPublicCanvasColorCodingPropertiesUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingProperties,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasColorCodingPropertiesByAnalysisController = createController(GetPublicCanvasColorCodingPropertiesUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingPropertiesByAnalysis,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasColorCodingStatsController = createController(GetPublicCanvasColorCodingStatsUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingStats,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasColorCodingStatsByAnalysisController = createController(GetPublicCanvasColorCodingStatsUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingStatsByAnalysis,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasColoredModelStreamController = createStreamController(GetPublicCanvasColoredModelStreamUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingModel,
     extendParams: withOptionalUserId,
     getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasColoredModelStreamByAnalysisController = createStreamController(GetPublicCanvasColoredModelStreamUseCase, {
-    validationSchema: canvasValidationSchemas.getColorCodingModelByAnalysis,
     extendParams: withOptionalUserId,
     getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasParticleFilterPropertiesController = createController(GetPublicCanvasParticleFilterPropertiesUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterProperties,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasParticleFilterPropertiesByAnalysisController = createController(GetPublicCanvasParticleFilterPropertiesUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterPropertiesByAnalysis,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasParticleFilterUniqueValuesController = createController(GetPublicCanvasParticleFilterUniqueValuesUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterUniqueValues,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasParticleFilterUniqueValuesByAnalysisController = createController(GetPublicCanvasParticleFilterUniqueValuesUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterUniqueValuesByAnalysis,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasParticleFilterPreviewController = createController(GetPublicCanvasParticleFilterPreviewUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterPreview,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasParticleFilterPreviewByAnalysisController = createController(GetPublicCanvasParticleFilterPreviewUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterPreviewByAnalysis,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasFilteredModelStreamController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterModel,
     extendParams: withOptionalUserId,
     getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasFilteredModelStreamByAnalysisController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
-    validationSchema: canvasValidationSchemas.getParticleFilterModelByAnalysis,
     extendParams: withOptionalUserId,
     getHeaders: getPassthroughModelHeaders
 });
 
 const GetPublicCanvasPluginController = createController(GetPublicCanvasPluginUseCase, {
-    validationSchema: canvasValidationSchemas.getPlugin,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasPluginListingController = createPaginatedController(GetPublicCanvasPluginListingUseCase, {
-    validationSchema: canvasValidationSchemas.getListing,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasSubListingController = createController(GetPublicCanvasSubListingUseCase, {
-    validationSchema: canvasValidationSchemas.getSubListing,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasPluginExposureGLBController = createPreparedDownloadStreamController(GetPublicCanvasPluginExposureGLBUseCase, {
-    validationSchema: canvasValidationSchemas.getExposureGlb,
     extendParams: withGlbRequestContext
 });
 
 const GetPublicCanvasAnalysisFrameLogController = createController(GetPublicCanvasAnalysisFrameLogUseCase, {
-    validationSchema: canvasValidationSchemas.getFrameLog,
     extendParams: withOptionalUserId
 });
 
 const GetPublicCanvasRasterMetadataController = createController(GetPublicCanvasRasterMetadataUseCase, {
-    validationSchema: canvasValidationSchemas.getRasterMetadata,
     extendParams: withOptionalUserId
 });
 

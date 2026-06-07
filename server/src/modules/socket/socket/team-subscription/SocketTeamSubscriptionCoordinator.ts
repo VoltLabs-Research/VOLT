@@ -30,9 +30,7 @@ export default class SocketTeamSubscriptionCoordinator {
     }
 
     getCurrentTeamId(connection: ISocketConnection): string | undefined {
-        return typeof connection.data.currentTeamId === 'string'
-            ? connection.data.currentTeamId
-            : undefined;
+        return connection.data.currentTeamId;
     }
 
     setCurrentTeamId(connection: ISocketConnection, teamId: string): void {

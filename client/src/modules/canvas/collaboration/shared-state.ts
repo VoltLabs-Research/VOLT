@@ -150,11 +150,11 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.sceneVisualOverrides = patch.sceneVisualOverrides as EditorStore['sceneVisualOverrides'];
         }
 
-        if (typeof patch.showSimulationCell === 'boolean') {
+        if (patch.showSimulationCell !== undefined) {
             next.showSimulationCell = patch.showSimulationCell;
         }
 
-        if (typeof patch.pointSizeMultiplier === 'number') {
+        if (patch.pointSizeMultiplier !== undefined) {
             next.pointSizeMultiplier = patch.pointSizeMultiplier;
         }
 
@@ -162,7 +162,7 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.pointCloudSettings = patch.pointCloudSettings as unknown as EditorStore['pointCloudSettings'];
         }
 
-        if (typeof patch.isPointCloudScene === 'boolean') {
+        if (patch.isPointCloudScene !== undefined) {
             next.isPointCloudScene = patch.isPointCloudScene;
         }
 
@@ -170,11 +170,11 @@ export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
             next.currentTimestep = patch.currentTimestep;
         }
 
-        if (typeof patch.isPlaying === 'boolean') {
+        if (patch.isPlaying !== undefined) {
             next.isPlaying = patch.isPlaying;
         }
 
-        if (typeof patch.playSpeed === 'number') {
+        if (patch.playSpeed !== undefined) {
             next.playSpeed = patch.playSpeed;
         }
 

@@ -102,7 +102,7 @@
     font-size: 13px;
     font-family: inherit;
     font-weight: 500;
-    color: #FFFFFF;
+    color: var(--color-on-brand);
     background: var(--color-brand);
     border: none;
     border-radius: var(--radius-sm);
