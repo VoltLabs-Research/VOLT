@@ -5,6 +5,7 @@ import Row from '@/shared/presentation/primitives/Row';
 import Stack from '@/shared/presentation/primitives/Stack';
 import Text from '@/shared/presentation/primitives/Text';
 import { cn } from '@/shared/utils/cn';
+import { forwardRef } from 'react';
 import type { ReactNode } from 'react';
 
 export type CalloutTone = 'danger' | 'warning' | 'info' | 'success';
@@ -40,7 +41,7 @@ const toneToIntent: Record<CalloutTone, ButtonIntent> = {
     success: 'success'
 };
 
-const Callout = ({
+const Callout = forwardRef<HTMLDivElement, CalloutProps>(({
     tone,
     title,
     description,
@@ -52,7 +53,7 @@ const Callout = ({
     ariaLabel,
     role,
     ariaLive
-}: CalloutProps) => {
+}, ref) => {
     const hasHeaderContent = Boolean(title || description);
     const layout = hasHeaderContent ? 'stacked' : 'inline';
 
@@ -70,6 +71,7 @@ const Callout = ({
     if (layout === 'inline') {
         return (
             <div
+                ref={ref}
                 className={classes}
                 role={resolvedRole}
                 aria-live={resolvedAriaLive}
@@ -87,6 +89,7 @@ const Callout = ({
 
     return (
         <div
+            ref={ref}
             className={classes}
             role={resolvedRole}
             aria-live={resolvedAriaLive}
@@ -122,6 +125,8 @@ const Callout = ({
             </Row>
         </div>
     );
-};
+});
+
+Callout.displayName = 'Callout';
 
 export default Callout;

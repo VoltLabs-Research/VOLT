@@ -18,7 +18,7 @@ export interface LightsSlice {
 }
 
 const resolveDirectionalUpdate = (partial: Partial<DirLight>): Partial<DirLight> => {
-    if (typeof partial.color === 'string') {
+    if (partial.color !== undefined) {
         return {
             ...partial,
             colorFollowsTheme: false
@@ -29,7 +29,7 @@ const resolveDirectionalUpdate = (partial: Partial<DirLight>): Partial<DirLight>
 };
 
 const resolvePointUpdate = (partial: Partial<PointLight>): Partial<PointLight> => {
-    if (typeof partial.color === 'string') {
+    if (partial.color !== undefined) {
         return {
             ...partial,
             colorFollowsTheme: false
@@ -40,7 +40,7 @@ const resolvePointUpdate = (partial: Partial<PointLight>): Partial<PointLight> =
 };
 
 const resolveSpotUpdate = (partial: Partial<SpotLight>): Partial<SpotLight> => {
-    if (typeof partial.color === 'string') {
+    if (partial.color !== undefined) {
         return {
             ...partial,
             colorFollowsTheme: false
@@ -53,11 +53,11 @@ const resolveSpotUpdate = (partial: Partial<SpotLight>): Partial<SpotLight> => {
 const resolveHemisphereUpdate = (partial: Partial<HemiLight>): Partial<HemiLight> => {
     const nextPartial: Partial<HemiLight> = { ...partial };
 
-    if (typeof partial.skyColor === 'string') {
+    if (partial.skyColor !== undefined) {
         nextPartial.skyColorFollowsTheme = false;
     }
 
-    if (typeof partial.groundColor === 'string') {
+    if (partial.groundColor !== undefined) {
         nextPartial.groundColorFollowsTheme = false;
     }
 
@@ -65,7 +65,7 @@ const resolveHemisphereUpdate = (partial: Partial<HemiLight>): Partial<HemiLight
 };
 
 const resolveRectAreaUpdate = (partial: Partial<RectAreaLightCfg>): Partial<RectAreaLightCfg> => {
-    if (typeof partial.color === 'string') {
+    if (partial.color !== undefined) {
         return {
             ...partial,
             colorFollowsTheme: false

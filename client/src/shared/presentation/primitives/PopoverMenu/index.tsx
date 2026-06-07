@@ -1,5 +1,5 @@
 import './PopoverMenu.css';
-import { useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 
 interface PopoverMenuItemElement extends HTMLElement {
@@ -26,8 +26,17 @@ const getMenuItems = (menuElement: HTMLDivElement | null) => {
     });
 };
 
-const PopoverMenu = ({ children, label = 'Menu', onClose }: PopoverMenuProps) => {
+const PopoverMenu = forwardRef<HTMLDivElement, PopoverMenuProps>(({ children, label = 'Menu', onClose }, ref) => {
     const menuRef = useRef<HTMLDivElement | null>(null);
+
+    const setRefs = (node: HTMLDivElement | null) => {
+        (menuRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === 'function') {
+            ref(node);
+        } else if (ref) {
+            (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
+    };
 
     useEffect(() => {
         const focusTimer = window.requestAnimationFrame(() => {
@@ -82,10 +91,12 @@ const PopoverMenu = ({ children, label = 'Menu', onClose }: PopoverMenuProps) =>
     };
 
     return (
-        <div ref={menuRef} className='popover-menu d-flex column gap-025' role='menu' aria-label={label} aria-orientation='vertical' onKeyDown={handleKeyDown}>
+        <div ref={setRefs} className='popover-menu d-flex column gap-025' role='menu' aria-label={label} aria-orientation='vertical' onKeyDown={handleKeyDown}>
             {children}
         </div>
     );
-};
+});
+
+PopoverMenu.displayName = 'PopoverMenu';
 
 export default PopoverMenu;

@@ -1,9 +1,7 @@
 import { Resource } from '@core/constants/resources';
 import type { DeleteWhiteboardFolderInputDTO } from '@modules/whiteboards/application/dtos/DeleteWhiteboardFolderDTO';
 import { DeleteWhiteboardFolderUseCase } from '@modules/whiteboards/application/use-cases/DeleteWhiteboardFolderUseCase';
-import { whiteboardValidation } from '@modules/whiteboards/infrastructure/http/validation/whiteboard-schemas';
 import WhiteboardFolderRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardFolderRepository';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
 import whiteboardControllers from '@modules/whiteboards/infrastructure/http/controllers';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
@@ -33,11 +31,11 @@ export default createHttpModule({
     routes: (router) => {
         router.post('/', whiteboardControllers.createWhiteboard.handle);
         router.get('/', whiteboardControllers.listWhiteboards.handle);
-        router.get('/folders', createValidationMiddleware(whiteboardValidation.listFolders), folderHandlers.list);
-        router.get('/folders/:folderId', createValidationMiddleware(whiteboardValidation.getFolder), folderHandlers.get);
-        router.post('/folders', createValidationMiddleware(whiteboardValidation.createFolder), folderHandlers.create);
-        router.patch('/folders/:folderId', createValidationMiddleware(whiteboardValidation.updateFolder), folderHandlers.update);
-        router.delete('/folders/:folderId', createValidationMiddleware(whiteboardValidation.deleteFolder), folderHandlers.delete);
+        router.get('/folders', folderHandlers.list);
+        router.get('/folders/:folderId', folderHandlers.get);
+        router.post('/folders', folderHandlers.create);
+        router.patch('/folders/:folderId', folderHandlers.update);
+        router.delete('/folders/:folderId', folderHandlers.delete);
         router.get('/:whiteboardId', whiteboardControllers.getWhiteboard.handle);
         router.patch('/:whiteboardId', whiteboardControllers.updateWhiteboard.handle);
         router.delete('/:whiteboardId', whiteboardControllers.deleteWhiteboard.handle);

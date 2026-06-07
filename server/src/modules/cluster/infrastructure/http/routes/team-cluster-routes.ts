@@ -1,6 +1,5 @@
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/cluster/infrastructure/http/controllers';
-import { teamClusterValidation } from '@modules/cluster/infrastructure/http/validation/team-cluster-schemas';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
@@ -11,68 +10,58 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.route('/')
-            .get(teamClusterValidation.listByTeamId, controllers.listByTeamId.handle)
-            .post(teamClusterValidation.create, controllers.create.handle);
+            .get(controllers.listByTeamId.handle)
+            .post(controllers.create.handle);
         router.route('/demo')
-            .post(teamClusterValidation.provisionDemo, controllers.provisionDemo.handle)
-            .delete(teamClusterValidation.deleteDemo, controllers.deleteDemo.handle);
-        router.get('/demo/status', teamClusterValidation.getDemoStatus, controllers.getDemoStatus.handle);
-        router.get('/:teamClusterId', teamClusterValidation.getById, controllers.getById.handle);
-        router.get('/:teamClusterId/runtime-snapshot', teamClusterValidation.getById, controllers.getRuntimeSnapshot.handle);
+            .post(controllers.provisionDemo.handle)
+            .delete(controllers.deleteDemo.handle);
+        router.get('/demo/status', controllers.getDemoStatus.handle);
+        router.get('/:teamClusterId', controllers.getById.handle);
+        router.get('/:teamClusterId/runtime-snapshot', controllers.getRuntimeSnapshot.handle);
         router.patch(
             '/:teamClusterId/queue-concurrency',
-            teamClusterValidation.updateQueueConcurrency,
             controllers.updateQueueConcurrency.handle
         );
         router.patch(
             '/:teamClusterId/role',
-            teamClusterValidation.updateRole,
             controllers.updateRole.handle
         );
         router.route('/:teamClusterId/transfers')
-            .get(teamClusterValidation.listTransferJobs, controllers.listTransferJobs.handle)
-            .post(teamClusterValidation.createTransferRequest, controllers.createTransferRequest.handle);
+            .get(controllers.listTransferJobs.handle)
+            .post(controllers.createTransferRequest.handle);
         router.get(
             '/:teamClusterId/resource-limits',
-            teamClusterValidation.getResourceLimits,
             controllers.getResourceLimits.handle
         );
         router.post(
             '/:teamClusterId/credentials/reveal',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            teamClusterValidation.revealCredentials,
             controllers.revealCredentials.handle
         );
         router.post(
             '/:teamClusterId/remote-access/sessions',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            teamClusterValidation.createRemoteAccessSession,
             controllers.createRemoteAccessSession.handle
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/entries',
-            teamClusterValidation.listRemoteExplorerEntries,
             controllers.listRemoteExplorerEntries.handle
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/node',
-            teamClusterValidation.getRemoteExplorerNode,
             controllers.getRemoteExplorerNode.handle
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/download',
-            teamClusterValidation.downloadRemoteExplorerObject,
             controllers.downloadRemoteExplorerObject.handle
         );
         router.post(
             '/:teamClusterId/enrollment-token/regenerate',
-            teamClusterValidation.regenerateEnrollmentToken,
             controllers.regenerateEnrollmentToken.handle
         );
         router.post(
             '/:teamClusterId/delete-requests',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            teamClusterValidation.deleteById,
             controllers.deleteById.handle
         );
     }

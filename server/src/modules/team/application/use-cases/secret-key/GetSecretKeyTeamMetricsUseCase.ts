@@ -43,7 +43,8 @@ export default class GetSecretKeyTeamMetricsUseCase
     ) {}
 
     async execute(input: GetSecretKeyTeamMetricsInputDTO): Promise<Result<GetSecretKeyTeamMetricsOutputDTO, ApplicationError>> {
-        const { teamId, days = 30 } = input;
+        const { teamId } = input;
+        const days = input.days !== undefined ? Number(input.days) : 30;
 
         const metrics = this.metricsMapper.toTeamMetrics(
             await this.usageLogRepo.getTeamUsageAnalytics(teamId, days)

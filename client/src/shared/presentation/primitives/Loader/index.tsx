@@ -1,5 +1,5 @@
 import './Loader.css';
-import { useId } from 'react';
+import { forwardRef, useId } from 'react';
 
 interface LoaderProps {
     scale: number;
@@ -11,7 +11,7 @@ interface LoaderProps {
     reducedMotionLabel?: string;
 };
 
-const Loader = ({
+const Loader = forwardRef<HTMLDivElement, LoaderProps>(({
     scale,
     isFixed = true,
     fillParent = false,
@@ -19,7 +19,7 @@ const Loader = ({
     label,
     announce = false,
     reducedMotionLabel = 'Loading'
-}: LoaderProps) => {
+}, ref) => {
     const loaderItems = Array.from({ length: 12 }, (_, index) => index + 1);
     const statusId = useId();
     const statusLabel = label ?? 'Loading';
@@ -42,7 +42,7 @@ const Loader = ({
             : '';
 
     return (
-        <div className={`d-flex flex-center ${positioningClass} ${className}`} {...accessibilityProps}>
+        <div ref={ref} className={`d-flex flex-center ${positioningClass} ${className}`} {...accessibilityProps}>
             <div className='d-flex column items-center gap-2 loader-content'>
                 <div className='p-relative loader-visual' style={{ transform: `scale(${scale})` }}>
                     {loaderItems.map((item) => (
@@ -61,6 +61,8 @@ const Loader = ({
             </div>
         </div>
     );
-};
+});
+
+Loader.displayName = 'Loader';
 
 export default Loader;

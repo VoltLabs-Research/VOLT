@@ -24,11 +24,7 @@ const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 };
 
-const getReferrer = (): string | undefined => {
-    if (typeof window === 'undefined') {
-        return undefined;
-    }
-
+const getReferrer = (): string => {
     return window.location.href;
 };
 

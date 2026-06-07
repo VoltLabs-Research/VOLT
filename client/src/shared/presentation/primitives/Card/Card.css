@@ -1,0 +1,99 @@
+/**
+ * Card — a structured surface primitive.
+ *
+ * Builds on the background-only `Surface` primitive and adds container
+ * structure: bordered header/body/footer slots, optional interactivity
+ * (hover + keyboard focus), and a selected ring. Uses only existing tokens
+ * and the shared `.panel-header-bordered` / `.panel-footer-bordered`
+ * utilities for the slot dividers.
+ */
+
+.volt-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-standard);
+}
+
+/* Variant: plain — flat surface with a soft border, no shadow. */
+.volt-card--plain {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+}
+
+/*
+ * `elevated` and `glass` lean on the existing `.card-elevated` / `.glass-bg`
+ * utilities (applied via the Surface variant) for background, border and
+ * shadow, so no per-variant declarations are needed here.
+ */
+
+/* Interactive: clickable / focusable card. */
+.volt-card--interactive {
+    cursor: pointer;
+    text-align: inherit;
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    appearance: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .volt-card--interactive:hover {
+        border-color: var(--color-border-strong);
+    }
+}
+
+.volt-card--interactive:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring-shadow);
+}
+
+/* Selected ring — applies to any variant. */
+.volt-card--selected {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 1px var(--color-brand-primary);
+}
+
+.volt-card--selected.volt-card--interactive:focus-visible {
+    box-shadow: var(--focus-ring-shadow);
+}
+
+/* Padding scale for body / padded variants. */
+.volt-card--pad-sm { padding: 0.75rem; }
+.volt-card--pad-md { padding: 1rem; }
+.volt-card--pad-lg { padding: 1.5rem; }
+
+/* Slots ---------------------------------------------------------------- */
+
+.volt-card__header {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.volt-card__body {
+    flex: 1;
+    min-height: 0;
+}
+
+.volt-card__body--pad-sm { padding: 0.75rem; }
+.volt-card__body--pad-md { padding: 1rem; }
+.volt-card__body--pad-lg { padding: 1.5rem; }
+
+.volt-card__footer {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-card {
+        transition: none;
+    }
+}

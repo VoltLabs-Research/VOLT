@@ -1,5 +1,6 @@
 import { cn } from '@/shared/utils/cn';
 import './StatusDot.css';
+import { forwardRef } from 'react';
 
 export type StatusDotTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'brand';
 
@@ -14,14 +15,14 @@ interface StatusDotProps {
     glow?: boolean;
 };
 
-const StatusDot = ({
+const StatusDot = forwardRef<HTMLSpanElement, StatusDotProps>(({
     tone = 'neutral',
     size = 'sm',
     className = '',
     label,
     pulse = false,
     glow = false
-}: StatusDotProps) => {
+}, ref) => {
     const classes = cn(
         'status-dot',
         'radius-full',
@@ -35,11 +36,14 @@ const StatusDot = ({
 
     return (
         <span
+            ref={ref}
             className={classes}
             role='status'
             aria-label={label ?? `${tone} status`}
         />
     );
-};
+});
+
+StatusDot.displayName = 'StatusDot';
 
 export default StatusDot;

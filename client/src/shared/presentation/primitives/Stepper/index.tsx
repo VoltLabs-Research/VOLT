@@ -1,8 +1,8 @@
 import './Stepper.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useId, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { forwardRef, useEffect, useId, useState } from 'react';
+import type { KeyboardEvent, ReactElement, Ref } from 'react';
 import type { ReactNode } from 'react';
 
 export interface Step<K extends string>{
@@ -64,14 +64,14 @@ const reducedMotionVariants = {
     }
 };
 
-const Stepper = <K extends string>({ 
-    steps, 
-    activeStep, 
+const Stepper = forwardRef(function Stepper<K extends string>({
+    steps,
+    activeStep,
     className = '',
     indicators,
     onStepClick,
     canNavigateTo
-}: StepperProps<K>) => {
+}: StepperProps<K>, ref: Ref<HTMLDivElement>) {
     const [prevStep, setPrevStep] = useState<K>(activeStep);
     const prefersReducedMotion = usePrefersReducedMotion();
     const stepperId = useId();
@@ -182,14 +182,14 @@ const Stepper = <K extends string>({
 
     if(!indicators){
         return (
-            <div className='stepper-standalone'>
+            <div ref={ref} className='stepper-standalone'>
                 {renderStepContent()}
             </div>
         );
     }
 
     return (
-        <div className='stepper-with-sidebar d-flex overflow-hidden flex-1'>
+        <div ref={ref} className='stepper-with-sidebar d-flex overflow-hidden flex-1'>
             <div className='stepper-sidebar d-flex column gap-05' role='tablist' aria-orientation='vertical'>
                 {stepIndicators.map((indicator, index) => {
                     const indicatorIndex = steps.findIndex((s) => s.key === indicator.key);
@@ -235,6 +235,8 @@ const Stepper = <K extends string>({
             </div>
         </div>
     );
-};
+}) as <K extends string>(props: StepperProps<K> & { ref?: Ref<HTMLDivElement> }) => ReactElement;
+
+(Stepper as { displayName?: string }).displayName = 'Stepper';
 
 export default Stepper;

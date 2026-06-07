@@ -1,7 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/team/infrastructure/http/controllers/team-member';
-import { teamMemberValidation } from '@modules/team/infrastructure/http/validation/team-member';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -15,10 +14,10 @@ export default createHttpModule({
     resource: Resource.TEAM_MEMBER,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/', teamMemberValidation.list, controllers.listByTeamId.handle);
+        router.get('/', controllers.listByTeamId.handle);
 
         router.route('/:teamMemberId')
-            .get(teamMemberValidation.getById, async (req, res) => {
+            .get(async (req, res) => {
                 const { teamMemberId } = req.params as { teamMemberId: string };
                 const repository = container.resolve(TeamMemberRepository);
                 const member = await repository.findById(teamMemberId);
@@ -35,8 +34,8 @@ export default createHttpModule({
 
                 BaseResponse.success(res, toPersistedOutput(member));
             })
-            .patch(teamMemberValidation.update, controllers.updateById.handle);
+            .patch(controllers.updateById.handle);
 
-        router.delete('/:memberId', teamMemberValidation.deleteById, controllers.deleteById.handle);
+        router.delete('/:memberId', controllers.deleteById.handle);
     }
 });

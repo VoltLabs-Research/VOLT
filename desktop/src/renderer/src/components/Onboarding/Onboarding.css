@@ -1,0 +1,146 @@
+.onb{
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(24px, 5vw, 64px);
+    background: var(--color-bg);
+}
+
+.onb-card{
+    width: min(420px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.onb-head{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.onb-title{
+    margin: 0;
+    font-size: clamp(1.75rem, 2.4vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--color-text-primary);
+}
+
+.onb-subtitle{
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+.onb-form{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Input matches app/VOLT/client's .form-field-input (FormField.css): a 2.5rem
+   bordered box with a leading icon and a focus ring, mapped to desktop tokens. */
+.onb-field{
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.onb-field-icon{
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+.onb-field:focus-within .onb-field-icon{ color: var(--color-text-primary); }
+
+.onb-input{
+    width: 100%;
+    min-height: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.75rem 0 2.5rem;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    background-color: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.onb-input::placeholder{ color: var(--color-text-muted); }
+.onb-input:hover{ border-color: var(--color-border-strong); }
+.onb-input:focus{ border-color: var(--color-brand); }
+
+.onb-input:focus-visible{
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--color-brand) 30%, transparent);
+}
+
+.onb-input.has-error,
+.onb-input.has-error:focus{ border-color: var(--status-error); }
+
+.onb-error{
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--status-error);
+}
+
+/* Continue button mirrors the client's solid/brand block Button. */
+.onb-continue{
+    width: 100%;
+    height: 2.5rem;
+    margin-top: 12px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-on-brand);
+    background: var(--color-brand);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.onb-continue:hover:not(:disabled){ background: color-mix(in srgb, var(--color-brand) 85%, var(--color-on-brand)); }
+.onb-continue:disabled{ opacity: 0.45; cursor: default; }
+
+/* Local deployment: a quiet line under the input, the action segment highlighted. */
+.onb-local{
+    align-self: center;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.onb-local-strong{
+    color: var(--color-text-secondary);
+    transition: color 0.15s ease;
+}
+
+.onb-local:hover .onb-local-strong{
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .onb-field-icon,
+    .onb-input,
+    .onb-continue,
+    .onb-local-strong{ transition: none; }
+}

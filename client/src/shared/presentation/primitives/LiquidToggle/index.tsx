@@ -1,6 +1,6 @@
 import '../LiquidToggle/LiquidToggle.css';
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { forwardRef, useEffect, useRef, useState, useCallback } from 'react';
 
 interface LiquidToggleProps {
     className?: string;
@@ -17,7 +17,7 @@ interface LiquidToggleProps {
     'aria-errormessage'?: string;
 };
 
-const LiquidToggle = ({
+const LiquidToggle = forwardRef<HTMLDivElement, LiquidToggleProps>(({
     className,
     id,
     pressed,
@@ -30,7 +30,7 @@ const LiquidToggle = ({
     'aria-describedby': ariaDescribedBy,
     'aria-invalid': ariaInvalid,
     'aria-errormessage': ariaErrorMessage
-}: LiquidToggleProps) => {
+}, ref) => {
     const btnRef = useRef<HTMLButtonElement | null>(null);
 
     const isControlled = typeof pressed === 'boolean';
@@ -180,7 +180,7 @@ const LiquidToggle = ({
     void prefersReducedMotion;
 
     return (
-        <div className='liquid-toggle-wrapper'>
+        <div ref={ref} className='liquid-toggle-wrapper'>
             <button
                 ref={btnRef}
                 id={id}
@@ -221,6 +221,8 @@ const LiquidToggle = ({
             </button>
         </div>
     );
-};
+});
+
+LiquidToggle.displayName = 'LiquidToggle';
 
 export default LiquidToggle;

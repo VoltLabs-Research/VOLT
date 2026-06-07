@@ -148,10 +148,6 @@ const LIGHT_LIGHTS_DEFAULTS: LightsThemeDefaults = {
 };
 
 const isDarkTheme = (): boolean => {
-    if (typeof document === 'undefined') {
-        return true;
-    }
-
     return document.documentElement.getAttribute('data-theme') !== 'light';
 };
 

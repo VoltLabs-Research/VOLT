@@ -129,11 +129,7 @@ export const switchSelectedTeam = (teamId: string | null): void => {
     teamState.setSelectedTeamId(teamId);
 };
 
-const getCurrentPathname = (): string | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+const getCurrentPathname = (): string => {
     return window.location.pathname;
 };
 

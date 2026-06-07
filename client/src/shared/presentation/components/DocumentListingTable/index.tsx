@@ -24,7 +24,7 @@ const resolveColumnStyle = <TRow,>(
     col: ColumnConfig<TRow>,
     fallbackMinWidth: number
 ): CSSProperties => {
-    if (typeof col.width === 'number' && col.width > 0) {
+    if (col.width !== undefined && col.width > 0) {
         return {
             flex: `0 0 ${col.width}px`,
             minWidth: col.width,
@@ -32,10 +32,10 @@ const resolveColumnStyle = <TRow,>(
         };
     }
 
-    const minWidth = typeof col.minWidth === 'number' && col.minWidth > 0
+    const minWidth = col.minWidth !== undefined && col.minWidth > 0
         ? col.minWidth
         : fallbackMinWidth;
-    const flex = typeof col.flex === 'number' && col.flex > 0 ? col.flex : 1;
+    const flex = col.flex !== undefined && col.flex > 0 ? col.flex : 1;
 
     return {
         flex: `${flex} 1 ${minWidth}px`,
@@ -141,8 +141,8 @@ const DocumentListingTable = <T extends Identifiable>({
     const minContentWidth = useMemo(() => {
         if (columns.length === 0) return 0;
         const sum = columns.reduce((acc, col) => {
-            if (typeof col.width === 'number' && col.width > 0) return acc + col.width;
-            return acc + (typeof col.minWidth === 'number' && col.minWidth > 0 ? col.minWidth : resolvedMinWidth);
+            if (col.width !== undefined && col.width > 0) return acc + col.width;
+            return acc + (col.minWidth !== undefined && col.minWidth > 0 ? col.minWidth : resolvedMinWidth);
         }, 0);
         return sum + (columns.length - 1) * resolvedGap;
     }, [columns, resolvedMinWidth, resolvedGap]);

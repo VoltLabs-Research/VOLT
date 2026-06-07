@@ -221,7 +221,7 @@ const createThumb = (axis: ScrollAxis) => {
 };
 
 export const initializeCustomScrollbars = () => {
-    if (isInitialized || typeof window === 'undefined') {
+    if (isInitialized) {
         return;
     }
 

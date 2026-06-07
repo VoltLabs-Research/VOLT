@@ -1,7 +1,7 @@
 import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
 import { motion } from 'framer-motion';
-import { useId } from 'react';
-import type { ReactNode } from 'react';
+import { forwardRef, useId } from 'react';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import './SegmentedTabs.css';
 
 export interface SegmentedTabOption<TId extends string = string> {
@@ -22,7 +22,7 @@ interface SegmentedTabsProps<TId extends string = string> {
     className?: string;
 };
 
-const SegmentedTabs = <TId extends string>({
+const SegmentedTabs = forwardRef(function SegmentedTabs<TId extends string>({
     tabs,
     activeTab,
     onChange,
@@ -31,7 +31,7 @@ const SegmentedTabs = <TId extends string>({
     size = 'md',
     fullWidth = false,
     className = ''
-}: SegmentedTabsProps<TId>) => {
+}: SegmentedTabsProps<TId>, ref: Ref<HTMLDivElement>) {
     const prefersReducedMotion = usePrefersReducedMotion();
     const autoLayoutId = useId();
     const resolvedLayoutId = layoutId ?? autoLayoutId;
@@ -44,7 +44,7 @@ const SegmentedTabs = <TId extends string>({
     ].filter(Boolean).join(' ');
 
     return (
-        <div className={`${containerClassName}`} role='tablist' aria-label={ariaLabel}>
+        <div ref={ref} className={`${containerClassName}`} role='tablist' aria-label={ariaLabel}>
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -75,6 +75,8 @@ const SegmentedTabs = <TId extends string>({
             })}
         </div>
     );
-};
+}) as <TId extends string>(props: SegmentedTabsProps<TId> & { ref?: Ref<HTMLDivElement> }) => ReactElement;
+
+(SegmentedTabs as { displayName?: string }).displayName = 'SegmentedTabs';
 
 export default SegmentedTabs;

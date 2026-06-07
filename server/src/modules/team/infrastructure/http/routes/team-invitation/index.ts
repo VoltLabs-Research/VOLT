@@ -2,7 +2,6 @@ import { Resource } from '@core/constants/resources';
 import type { TeamInvitationProps } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
 import { TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
 import controllers from '@modules/team/infrastructure/http/controllers/team-invitation';
-import { teamInvitationValidation } from '@modules/team/infrastructure/http/validation/team-invitation';
 import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
@@ -15,13 +14,15 @@ export default createHttpModule({
     resource: Resource.TEAM_INVITATION,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.post('/', teamInvitationValidation.send, controllers.send.handle);
-        router.get('/', teamInvitationValidation.listPending, async (req, res) => {
+        router.post('/', controllers.send.handle);
+        router.get('/', async (req, res) => {
             const { teamId } = req.params as { teamId: string };
-            const { page = 1, limit = 10 } = req.query as unknown as {
-                page?: number;
-                limit?: number;
+            const { page: pageRaw, limit: limitRaw } = req.query as {
+                page?: string;
+                limit?: string;
             };
+            const page = pageRaw !== undefined ? Number(pageRaw) : 1;
+            const limit = limitRaw !== undefined ? Number(limitRaw) : 10;
             const repository = container.resolve(TeamInvitationRepository);
             const result = await repository.findAll({
                 filter: {
@@ -38,9 +39,9 @@ export default createHttpModule({
                 data: result.data.map((invitation) => toPersistedOutput(invitation))
             });
         });
-        router.delete('/:invitationId', teamInvitationValidation.deleteById, controllers.deleteById.handle);
-        router.patch('/:invitationId', teamInvitationValidation.update, controllers.updateById.handle);
-        router.patch('/:invitationId/status', teamInvitationValidation.statusById, (req, res) => {
+        router.delete('/:invitationId', controllers.deleteById.handle);
+        router.patch('/:invitationId', controllers.updateById.handle);
+        router.patch('/:invitationId/status', (req, res) => {
             const status = req.body?.status;
             if (status === 'accepted') {
                 return controllers.accept.handle(req, res);

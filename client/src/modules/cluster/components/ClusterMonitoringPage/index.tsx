@@ -23,7 +23,7 @@ const ResourceUsage = lazy(() => import('@/modules/cluster/components/ResourceUs
 const NetworkChart = lazy(() => import('@/shared/presentation/components/NetworkChart'));
 
 const createIdleCallbackHandle = (onIdle: () => void, timeoutMs: number): IdleCallbackHandle => {
-    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    if (typeof window.requestIdleCallback === 'function') {
         const idleCallbackId = window.requestIdleCallback(onIdle, { timeout: timeoutMs });
 
         return {

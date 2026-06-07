@@ -2,6 +2,7 @@ import Avatar from '@/shared/presentation/primitives/Avatar';
 import Row from '@/shared/presentation/primitives/Row';
 import Text from '@/shared/presentation/primitives/Text';
 import './AvatarStack.css';
+import { forwardRef } from 'react';
 import type { User } from '@/modules/auth/api/entities/user';
 
 type StackSize = 'xs' | 'sm' | 'md';
@@ -18,14 +19,14 @@ interface AvatarStackProps {
     className?: string;
 };
 
-const AvatarStack = ({ users, maxDisplay = 3, size = 'sm', className = '' }: AvatarStackProps) => {
+const AvatarStack = forwardRef<HTMLElement, AvatarStackProps>(({ users, maxDisplay = 3, size = 'sm', className = '' }, ref) => {
     if(users.length === 0) return null;
 
     const displayedUsers = users.slice(0, maxDisplay);
     const remainingCount = users.length - maxDisplay;
 
     return (
-        <Row className={`avatar-stack ${className}`}>
+        <Row ref={ref} className={`avatar-stack ${className}`}>
             {displayedUsers.map((user, index) => (
                 <Avatar
                     key={user._id ?? user.id ?? index}
@@ -41,6 +42,8 @@ const AvatarStack = ({ users, maxDisplay = 3, size = 'sm', className = '' }: Ava
             )}
         </Row>
     );
-};
+});
+
+AvatarStack.displayName = 'AvatarStack';
 
 export default AvatarStack;

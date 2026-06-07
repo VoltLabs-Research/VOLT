@@ -2,11 +2,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import GetSimulationCellByTrajectoryController from '@modules/simulation-cell/infrastructure/http/controllers/GetSimulationCellByTrajectoryController';
-import { simulationCellValidationSchemas } from '@modules/simulation-cell/infrastructure/http/validation/simulation-cell-schemas';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
 import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
@@ -20,27 +18,29 @@ export default createHttpModule({
     resource: Resource.SIMULATION_CELL,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/', createValidationMiddleware(simulationCellValidationSchemas.listByTeamId), async (req, res) => {
+        router.get('/', async (req, res) => {
             const { teamId } = req.params as { teamId: string };
             const {
-                page = 1,
-                limit = 10,
+                page: pageRaw,
+                limit: limitRaw,
                 trajectoryId,
-                timestep
-            } = req.query as unknown as {
-                page?: number;
-                limit?: number;
+                timestep: timestepRaw
+            } = req.query as {
+                page?: string;
+                limit?: string;
                 trajectoryId?: string;
-                timestep?: number;
+                timestep?: string;
             };
+            const page = pageRaw !== undefined ? Number(pageRaw) : 1;
+            const limit = limitRaw !== undefined ? Number(limitRaw) : 10;
             const filter: Partial<SimulationCellProps> = { team: teamId };
 
             if (trajectoryId) {
                 filter.trajectory = trajectoryId;
             }
 
-            if (timestep !== undefined) {
-                filter.timestep = timestep;
+            if (timestepRaw !== undefined) {
+                filter.timestep = Number(timestepRaw);
             }
 
             const repository = container.resolve(SimulationCellRepository);
@@ -59,11 +59,10 @@ export default createHttpModule({
 
         router.get(
             '/trajectories/:trajectoryId',
-            createValidationMiddleware(simulationCellValidationSchemas.getByTrajectory),
             getByTrajectoryController.handle
         );
 
-        router.get('/:simulationCellId', createValidationMiddleware(simulationCellValidationSchemas.getById), async (req, res) => {
+        router.get('/:simulationCellId', async (req, res) => {
             const { simulationCellId } = req.params as { simulationCellId: string };
             const repository = container.resolve(SimulationCellRepository);
             const simulationCell = await repository.findById(simulationCellId, {

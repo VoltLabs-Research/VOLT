@@ -82,10 +82,6 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     const { data: processes = [], isLoading, isError, error, refetch } = useContainerProcessesQuery(containerId, {
         enabled: !!containerId,
         refetchInterval: () => {
-            if (typeof document === 'undefined') {
-                return 10000;
-            }
-
             return document.hidden ? false : 10000;
         },
         refetchIntervalInBackground: false,

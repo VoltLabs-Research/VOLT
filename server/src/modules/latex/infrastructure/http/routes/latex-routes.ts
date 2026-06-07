@@ -1,10 +1,8 @@
 import { Resource } from '@core/constants/resources';
 import { DeleteLatexFolderUseCase } from '@modules/latex/application/use-cases/DeleteLatexFolderUseCase';
 import latexControllers from '@modules/latex/infrastructure/http/controllers';
-import { latexValidation } from '@modules/latex/infrastructure/http/validation/latex-schemas';
 import LatexFolderRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFolderRepository';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
@@ -41,10 +39,10 @@ export default createHttpModule({
         router.patch('/documents/:documentId/files/:fileId', latexControllers.updateFile.handle);
         router.delete('/documents/:documentId/files/:fileId', latexControllers.deleteFile.handle);
         router.post('/documents/:documentId/files/:fileId/entrypoint', latexControllers.setFileEntrypoint.handle);
-        router.get('/folders', createValidationMiddleware(latexValidation.listFolders), folderHandlers.list);
-        router.get('/folders/:folderId', createValidationMiddleware(latexValidation.getFolder), folderHandlers.get);
-        router.post('/folders', createValidationMiddleware(latexValidation.createFolder), folderHandlers.create);
-        router.patch('/folders/:folderId', createValidationMiddleware(latexValidation.updateFolder), folderHandlers.update);
-        router.delete('/folders/:folderId', createValidationMiddleware(latexValidation.deleteFolder), folderHandlers.delete);
+        router.get('/folders', folderHandlers.list);
+        router.get('/folders/:folderId', folderHandlers.get);
+        router.post('/folders', folderHandlers.create);
+        router.patch('/folders/:folderId', folderHandlers.update);
+        router.delete('/folders/:folderId', folderHandlers.delete);
     }
 });

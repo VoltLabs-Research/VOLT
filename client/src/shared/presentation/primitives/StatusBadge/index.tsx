@@ -1,5 +1,6 @@
 import { cn } from '@/shared/utils/cn';
 import './StatusBadge.css';
+import { forwardRef } from 'react';
 import type { ReactNode } from 'react';
 
 type StatusBadgeVariant = 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning' | 'brand' | 'primary';
@@ -68,7 +69,7 @@ const statusToVariant = (status: string): StatusBadgeVariant => {
     return STATUS_VARIANTS[status.toLowerCase()] ?? 'neutral';
 };
 
-const StatusBadge = ({ status, variant, size = 'default', children, className = '' }: StatusBadgeProps) => {
+const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(({ status, variant, size = 'default', children, className = '' }, ref) => {
     const computedVariant = variant ?? (status ? statusToVariant(status) : 'neutral');
     const content = children ?? status;
 
@@ -84,10 +85,12 @@ const StatusBadge = ({ status, variant, size = 'default', children, className = 
     );
 
     return (
-        <span className={classes}>
+        <span ref={ref} className={classes}>
             {content}
         </span>
     );
-};
+});
+
+StatusBadge.displayName = 'StatusBadge';
 
 export default StatusBadge;

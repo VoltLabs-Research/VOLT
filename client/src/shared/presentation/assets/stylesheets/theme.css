@@ -9,9 +9,16 @@
     --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
 
     --duration-fast: 150ms;
+    --duration-normal: 200ms;
     --duration-base: 250ms;
 
     --z-floating: 99999;
+
+    /* Text color rendered on top of saturated accent/brand/status fills (solid buttons, tags). */
+    --color-on-accent: #ffffff;
+
+    /* Canonical keyboard focus ring. Reference this instead of re-declaring the box-shadow. */
+    --focus-ring-shadow: 0 0 0 1px var(--color-border), 0 0 0 4px color-mix(in srgb, var(--focus-ring) 30%, transparent);
 }
 
 :root[data-theme='dark'] {
@@ -19,6 +26,7 @@
 
     --color-bg: #070708;
     --color-content-bg: #101011;
+    --color-surface-0: var(--color-content-bg);
     --color-surface-1: #171719;
     --color-surface-2: #1D1D20;
     --color-surface-3: #2B2B2E;
@@ -106,6 +114,7 @@
 
     --color-bg: #FFF;
     --color-content-bg: #FFFFFF;
+    --color-surface-0: var(--color-content-bg);
     --color-surface-1: #FFFFFF;
     --color-surface-2: #F6F6FA;
     --color-surface-3: #EFEFF4;
