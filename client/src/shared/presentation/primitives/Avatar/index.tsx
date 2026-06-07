@@ -2,6 +2,7 @@ import { cn } from '@/shared/utils/cn';
 import { getInitialsFromUser } from '@/shared/utils/user';
 import StatusDot from '../StatusDot';
 import './Avatar.css';
+import { forwardRef } from 'react';
 import type { User } from '@/modules/auth/api/entities/user';
 import type { ReactNode } from 'react';
 
@@ -19,23 +20,23 @@ interface AvatarProps {
     icon?: ReactNode;
 };
 
-const Avatar = ({ 
-    src, 
-    alt, 
-    fallback, 
-    user, 
-    size = 'md', 
+const Avatar = forwardRef<HTMLDivElement, AvatarProps>(({
+    src,
+    alt,
+    fallback,
+    user,
+    size = 'md',
     className = '',
     isOnline = false,
     showStatus = false,
     icon
-}: AvatarProps) => {
+}, ref) => {
     const imageSrc = src ?? user?.avatar;
     const initials = fallback ?? (user ? getInitialsFromUser(user) : '?');
     const altText = alt ?? (user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Avatar');
 
     return (
-        <div className={`${cn('avatar', `avatar-${size}`, 'd-flex flex-center radius-full overflow-hidden f-shrink-0 p-relative', className)}`}>
+        <div ref={ref} className={`${cn('avatar', `avatar-${size}`, 'd-flex flex-center radius-full overflow-hidden f-shrink-0 p-relative', className)}`}>
             {icon ? (
                 <div className='avatar-icon d-flex flex-center'>
                     {icon}
@@ -52,6 +53,8 @@ const Avatar = ({
             )}
         </div>
     );
-};
+});
+
+Avatar.displayName = 'Avatar';
 
 export default Avatar;

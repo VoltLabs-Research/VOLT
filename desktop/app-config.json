@@ -22,17 +22,20 @@
   },
   "devMode": {
     "enabled": true,
-    "voltPath": "/home/rodyherrera/Desktop/dev/Volt",
-    "clusterDaemonPath": "/home/rodyherrera/Desktop/dev/ClusterDaemon"
+    "voltPath": "/home/rodyherrera/Desktop/ecosystem/app/VOLT",
+    "clusterDaemonPath": "/home/rodyherrera/Desktop/ecosystem/app/ClusterDaemon"
   },
   "bootstrap": {
     "done": true,
-    "email": "local-643528b8@volt.local",
-    "password": "q3gTfhnl4aJ2UsZwqxoemmf-2zwqa9oM",
-    "userId": "6a24e8b4bf6e9dc04ca66fbb",
-    "teamId": "6a24e8b4bf6e9dc04ca66fc6",
-    "teamClusterId": "6a24e8b4bf6e9dc04ca66fd9",
-    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI0ZThiNGJmNmU5ZGMwNGNhNjZmYmIiLCJ1c2VySWQiOiI2YTI0ZThiNGJmNmU5ZGMwNGNhNjZmYmIiLCJpZCI6IjZhMjRlOGI0YmY2ZTlkYzA0Y2E2NmZiYiIsImlhdCI6MTc4MDgwMzc2NCwiZXhwIjoxNzgxNDA4NTY0fQ.j7LTRVzbaFfH9FNpt3NKyz2AUGdNQ2ZC1x5SYPvKd8Y",
-    "daemonPassword": "a38d1c6fe73caed2142cd1ee0aadae8c7702c7e40001d9f4"
+    "email": "local-2d7ea445@volt.local",
+    "password": "YrpGT-a13s6SjKonPTwVw85Kw-3wRDn_",
+    "userId": "6a25204b8ea8eff9dc2aee38",
+    "teamId": "6a25204c8ea8eff9dc2aee43",
+    "teamClusterId": "6a25204c8ea8eff9dc2aee56",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI1MjA0YjhlYThlZmY5ZGMyYWVlMzgiLCJ1c2VySWQiOiI2YTI1MjA0YjhlYThlZmY5ZGMyYWVlMzgiLCJpZCI6IjZhMjUyMDRiOGVhOGVmZjlkYzJhZWUzOCIsImlhdCI6MTc4MDgxOTQ5OSwiZXhwIjoxNzgxNDI0Mjk5fQ.wYGQuyDGYo3dppFqr8YKVNgEj8hY9SN5MxAW_ONuy4A",
+    "daemonPassword": "daa161d4174fabf3296d6bd1498e226ce2b570ab0f635978"
+  },
+  "deployment": {
+    "mode": "local"
   }
 }

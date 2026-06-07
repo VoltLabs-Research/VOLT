@@ -113,8 +113,8 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
 
     if (artifact.sourceType === 'color-coding') {
         if (
-            typeof artifact.params.property !== 'string'
-            || typeof artifact.params.gradient !== 'string'
+            artifact.params.property === undefined
+            || artifact.params.gradient === undefined
             || artifact.params.startValue === undefined
             || artifact.params.endValue === undefined
         ) {
@@ -138,10 +138,10 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
         const hasCompositeConditions = Array.isArray(rawConditions) && rawConditions.length > 0;
 
         if (
-            (!hasCompositeConditions && typeof artifact.params.property !== 'string')
-            || (!hasCompositeConditions && typeof artifact.params.operator !== 'string')
+            (!hasCompositeConditions && artifact.params.property === undefined)
+            || (!hasCompositeConditions && artifact.params.operator === undefined)
             || (!hasCompositeConditions && artifact.params.value === undefined)
-            || typeof artifact.params.action !== 'string'
+            || artifact.params.action === undefined
         ) {
             return null;
         }

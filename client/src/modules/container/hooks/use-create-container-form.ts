@@ -116,8 +116,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         selectedTeamClusterId,
         onSelectedTeamClusterIdChange: setSelectedTeamClusterId
     });
-    const hasResolvedResourceLimits = typeof clusterResourceLimits?.maxCpus === 'number'
-        && typeof clusterResourceLimits?.maxMemoryMB === 'number';
+    const hasResolvedResourceLimits = clusterResourceLimits?.maxCpus != null
+        && clusterResourceLimits?.maxMemoryMB != null;
 
     const deployStepMessageMap = useMemo<Record<string, string>>(() => ({
         accepted: 'Deployment request accepted.',
@@ -160,10 +160,6 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     }, [customImage]);
 
     useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
         try {
             const rawDraft = window.localStorage.getItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
             if (!rawDraft) {
@@ -204,10 +200,6 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     }, [selectedTeam, selectedTeamId]);
 
     useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
         const savedAt = Date.now();
         const draft: CreateContainerDraft = {
             selectedTemplate,
@@ -361,9 +353,7 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 error: { title: 'Failed to create container' }
             }
         );
-        if (typeof window !== 'undefined') {
-            window.localStorage.removeItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
-        }
+        window.localStorage.removeItem(CREATE_CONTAINER_DRAFT_STORAGE_KEY);
         const nextPath = currentFolderId
             ? `/dashboard/containers?folderId=${encodeURIComponent(currentFolderId)}`
             : '/dashboard/containers';

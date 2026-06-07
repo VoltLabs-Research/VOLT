@@ -1,0 +1,44 @@
+.volt-meter {
+    width: 100%;
+    min-width: 0;
+}
+
+.volt-meter-label {
+    flex-shrink: 0;
+}
+
+.volt-meter-value {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.volt-meter-track {
+    --progress-fill: var(--color-brand-primary);
+    --progress-value: 0%;
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 6px;
+    overflow: hidden;
+    background-color: var(--color-surface-3);
+    border-radius: var(--radius-full);
+}
+
+.volt-meter-fill {
+    height: 100%;
+    width: var(--progress-value);
+    background-color: var(--progress-fill);
+    border-radius: inherit;
+    transition: width var(--duration-normal) var(--ease-standard);
+}
+
+.volt-meter-track:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-meter-fill {
+        transition: none;
+    }
+}

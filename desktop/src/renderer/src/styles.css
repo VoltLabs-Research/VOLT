@@ -10,7 +10,8 @@
     --color-border: rgba(60, 60, 67, 0.12);
     --color-border-strong: rgba(60, 60, 67, 0.18);
     --header-border: rgba(0, 0, 0, 0.06);
-    --color-brand: #007aff;
+    --color-brand: #1D1D1F;
+    --color-on-brand: #FFFFFF;
     --status-error: #ff3b30;
     --glass-bg: rgba(255, 255, 255, 0.72);
     --glass-strong: rgba(255, 255, 255, 0.9);
@@ -36,7 +37,8 @@
         --color-border: rgba(255, 255, 255, 0.12);
         --color-border-strong: rgba(255, 255, 255, 0.2);
         --header-border: rgba(255, 255, 255, 0.05);
-        --color-brand: #0a84ff;
+        --color-brand: #F5F5F7;
+        --color-on-brand: #1D1D1F;
         /* Header matches the pure-black app surface exactly: opaque black, no
            lighter glass tint. (Light mode keeps the translucent glass.) */
         --glass-bg: #000000;

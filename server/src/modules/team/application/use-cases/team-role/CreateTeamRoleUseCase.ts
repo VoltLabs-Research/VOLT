@@ -31,8 +31,8 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
         const newRole = await this.teamRoleRepository.create(TeamRole.create({
             teamId,
             name,
-            permissions,
-            isSystem
+            permissions: permissions ?? [],
+            isSystem: isSystem ?? false
         }));
 
         await this.eventBus.publish(new TeamRoleCreatedEvent({

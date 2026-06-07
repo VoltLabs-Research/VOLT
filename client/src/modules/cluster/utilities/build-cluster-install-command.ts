@@ -30,10 +30,6 @@ const escapePowerShellSingleQuotedString = (value: string): string => {
 };
 
 const detectBrowserInstallPlatform = (): ClusterInstallPlatform => {
-    if (typeof navigator === 'undefined') {
-        return ClusterInstallPlatform.Unknown;
-    }
-
     const userAgent = navigator.userAgent;
     if (userAgent.includes('Windows')) {
         return ClusterInstallPlatform.Windows;

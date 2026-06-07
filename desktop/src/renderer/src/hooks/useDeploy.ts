@@ -17,7 +17,11 @@ const MAX_LINES = 800;
 
 const errMessage = (err: unknown) => (err as any)?.message ?? String(err);
 
-export const useDeploy = () => {
+interface UseDeployOptions{
+    autoStart?: boolean;
+}
+
+export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     const [state, setState] = useState<DeployState>('idle');
     const [phases, setPhases] = useState<PhaseSpec[]>([]);
     const [phaseState, setPhaseState] = useState<Record<string, { status: PhaseStatus; detail?: string }>>({});
@@ -101,7 +105,7 @@ export const useDeploy = () => {
 
         if(!startedRef.current){
             startedRef.current = true;
-            void boot();
+            if(autoStart) void boot();
         }
 
         return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); unsubPreflight(); };
@@ -122,5 +126,5 @@ export const useDeploy = () => {
         setPreflight(null);
     };
 
-    return { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run };
+    return { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run, start: boot };
 };

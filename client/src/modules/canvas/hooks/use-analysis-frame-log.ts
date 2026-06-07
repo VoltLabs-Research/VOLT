@@ -65,7 +65,7 @@ const useAnalysisFrameLog = ({
     }, [state.nextCursor]);
 
     useEffect(() => {
-        if (!active || !analysisId || typeof timestep !== 'number') {
+        if (!active || !analysisId || timestep === undefined) {
             setState(initialState);
             setHasLoadedInitial(false);
             cursorRef.current = null;
@@ -143,11 +143,11 @@ const useAnalysisFrameLog = ({
             nextCursor: event.cursor
         }));
     }, {
-        enabled: active && canCollaborate && hasLoadedInitial && !!analysisId && typeof timestep === 'number'
+        enabled: active && canCollaborate && hasLoadedInitial && !!analysisId && timestep !== undefined
     });
 
-    const liveSubscribeEnabled = active && effectiveLive && hasLoadedInitial && !!analysisId && typeof timestep === 'number';
-    const liveRoomKey = liveSubscribeEnabled && analysisId && typeof timestep === 'number'
+    const liveSubscribeEnabled = active && effectiveLive && hasLoadedInitial && !!analysisId && timestep !== undefined;
+    const liveRoomKey = liveSubscribeEnabled && analysisId && timestep !== undefined
         ? `${analysisId}:${timestep}`
         : null;
 
@@ -155,10 +155,10 @@ const useAnalysisFrameLog = ({
         joinEvent: SOCKET_ANALYSIS_EVENTS.LOG_SUBSCRIBE,
         leaveEvent: SOCKET_ANALYSIS_EVENTS.LOG_UNSUBSCRIBE,
         roomKey: liveRoomKey,
-        buildJoinPayload: () => (analysisId && typeof timestep === 'number')
+        buildJoinPayload: () => (analysisId && timestep !== undefined)
             ? { analysisId, timestep, afterCursor: cursorRef.current ?? undefined }
             : null,
-        buildLeavePayload: () => (analysisId && typeof timestep === 'number')
+        buildLeavePayload: () => (analysisId && timestep !== undefined)
             ? { analysisId, timestep }
             : null,
         enabled: liveSubscribeEnabled,

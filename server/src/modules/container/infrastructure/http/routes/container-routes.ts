@@ -3,9 +3,7 @@ import type { DeleteContainerFolderInputDTO } from '@modules/container/applicati
 import { DeleteContainerFolderUseCase } from '@modules/container/application/use-cases/DeleteContainerFolderUseCase';
 import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
 import { Resource } from '@core/constants/resources';
-import { containerValidation } from '@modules/container/infrastructure/http/validation/container-schemas';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { createValidationMiddleware } from '@shared/infrastructure/http/middleware/validation';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
@@ -35,11 +33,11 @@ export default createHttpModule({
             .post(controllers.create.handle)
             .get(controllers.listByTeamId.handle);
 
-        router.get('/folders', createValidationMiddleware(containerValidation.listFolders), folderHandlers.list);
-        router.get('/folders/:folderId', createValidationMiddleware(containerValidation.getFolder), folderHandlers.get);
-        router.post('/folders', createValidationMiddleware(containerValidation.createFolder), folderHandlers.create);
-        router.patch('/folders/:folderId', createValidationMiddleware(containerValidation.updateFolder), folderHandlers.update);
-        router.delete('/folders/:folderId', createValidationMiddleware(containerValidation.deleteFolder), folderHandlers.delete);
+        router.get('/folders', folderHandlers.list);
+        router.get('/folders/:folderId', folderHandlers.get);
+        router.post('/folders', folderHandlers.create);
+        router.patch('/folders/:folderId', folderHandlers.update);
+        router.delete('/folders/:folderId', folderHandlers.delete);
 
         router.route('/:containerId')
             .get(controllers.getById.handle)

@@ -37,10 +37,6 @@ const LIGHT_ENVIRONMENT_DEFAULTS: EnvironmentThemeDefaults = {
 };
 
 const isDarkTheme = (): boolean => {
-    if (typeof document === 'undefined') {
-        return true;
-    }
-
     return document.documentElement.getAttribute('data-theme') !== 'light';
 };
 

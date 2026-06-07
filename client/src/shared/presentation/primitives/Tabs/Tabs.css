@@ -1,0 +1,119 @@
+.volt-tabs {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* The tablist carries the bottom rule via the .border-bottom-soft utility;
+   each tab's underline indicator sits flush on top of that rule. */
+.volt-tabs__list {
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.volt-tabs__list::-webkit-scrollbar {
+    display: none;
+}
+
+.volt-tabs__tab {
+    position: relative;
+    gap: 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    /* Bottom padding leaves room for the underline indicator. */
+    transition-property: color, background-color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-standard);
+}
+
+.volt-tabs__tab--sm {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+}
+
+.volt-tabs__tab--md {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.volt-tabs__tab--lg {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.volt-tabs__tab:hover:not(.is-selected):not(.is-disabled) {
+    color: var(--color-text-primary);
+}
+
+.volt-tabs__tab:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--focus-ring-shadow);
+}
+
+.volt-tabs__tab.is-selected {
+    color: var(--color-brand-primary);
+}
+
+.volt-tabs__tab.is-disabled {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.volt-tabs__tab-icon {
+    color: currentColor;
+    font-size: 1em;
+}
+
+.volt-tabs__tab-label {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Underline indicator: a 2px brand bar overlapping the list's bottom rule. */
+.volt-tabs__indicator {
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: -1px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-primary);
+    transform: scaleX(0);
+    transform-origin: center;
+    opacity: 0;
+    pointer-events: none;
+    transition-property: transform, opacity;
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--ease-standard);
+}
+
+.volt-tabs__tab.is-selected .volt-tabs__indicator {
+    transform: scaleX(1);
+    opacity: 1;
+}
+
+.volt-tabs__panel {
+    min-width: 0;
+    padding-top: 1rem;
+}
+
+.volt-tabs__panel:focus-visible {
+    outline: none;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--focus-ring-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-tabs__tab,
+    .volt-tabs__indicator {
+        transition: none;
+    }
+}

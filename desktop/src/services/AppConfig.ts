@@ -22,6 +22,14 @@ export interface DevModeState{
     clusterDaemonPath: string;
 }
 
+export interface DeploymentState{
+    mode: 'local' | 'remote';
+    remote?: {
+        serverEndpoint: string;
+        clientUrl: string;
+    };
+}
+
 export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
@@ -85,5 +93,20 @@ export default class AppConfig{
 
     async setDevMode(state: DevModeState){
         await this.#update({ devMode: state });
+    }
+
+    async getDeployment(): Promise<DeploymentState | null>{
+        const config = await this.get();
+        return (config.deployment as DeploymentState | undefined) ?? null;
+    }
+
+    async setDeployment(state: DeploymentState){
+        await this.#update({ deployment: state });
+    }
+
+    async clearDeployment(){
+        const current = await this.get();
+        delete current.deployment;
+        await this.#write(current);
     }
 };

@@ -39,16 +39,12 @@ const FloatingNodePanel = () => {
 
     const computePosition = useCallback((node: Node): PanelPosition => {
         const container = containerRef.current;
-        const containerHeight = container?.getBoundingClientRect().height
-            ?? (typeof window !== 'undefined' ? window.innerHeight : PANEL_MIN_HEIGHT + 2 * PANEL_MARGIN);
-        const containerWidth = container?.getBoundingClientRect().width
-            ?? (typeof window !== 'undefined' ? window.innerWidth : PANEL_WIDTH + 2 * PANEL_MARGIN);
+        const containerHeight = container?.getBoundingClientRect().height ?? window.innerHeight;
+        const containerWidth = container?.getBoundingClientRect().width ?? window.innerWidth;
         const containerTop = container?.getBoundingClientRect().top ?? 0;
         const containerLeft = container?.getBoundingClientRect().left ?? 0;
 
-        const viewportBound = typeof window !== 'undefined'
-            ? Math.floor(window.innerHeight * PANEL_VIEWPORT_RATIO)
-            : containerHeight;
+        const viewportBound = Math.floor(window.innerHeight * PANEL_VIEWPORT_RATIO);
         const maxHeight = Math.max(
             PANEL_MIN_HEIGHT,
             Math.min(viewportBound, containerHeight - 2 * PANEL_MARGIN)

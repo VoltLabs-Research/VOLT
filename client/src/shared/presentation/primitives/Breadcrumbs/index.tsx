@@ -1,6 +1,7 @@
 import './Breadcrumbs.css';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { forwardRef } from 'react';
 import type { ReactNode } from 'react';
 
 export interface BreadcrumbItem {
@@ -32,7 +33,7 @@ const truncateBreadcrumbLabel = (label: string) => {
     return `${label.slice(0, MAX_BREADCRUMB_LABEL_LENGTH - 1)}…`;
 };
 
-const Breadcrumbs = ({
+const Breadcrumbs = forwardRef<HTMLElement, BreadcrumbsProps>(({
     items,
     variant = 'default',
     separator,
@@ -40,7 +41,7 @@ const Breadcrumbs = ({
     title,
     className,
     onItemClick
-}: BreadcrumbsProps) => {
+}, ref) => {
     if (!items.length) {
         return null;
     }
@@ -53,6 +54,7 @@ const Breadcrumbs = ({
 
     return (
         <nav
+            ref={ref}
             className={cn('volt-breadcrumbs', `volt-breadcrumbs--${variant}`, className)}
             aria-label={ariaLabel}
             title={title}
@@ -103,6 +105,8 @@ const Breadcrumbs = ({
             </ol>
         </nav>
     );
-};
+});
+
+Breadcrumbs.displayName = 'Breadcrumbs';
 
 export default Breadcrumbs;

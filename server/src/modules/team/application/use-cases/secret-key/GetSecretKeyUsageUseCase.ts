@@ -26,7 +26,8 @@ export default class GetSecretKeyUsageUseCase
     ) {}
 
     async execute(input: GetSecretKeyUsageInputDTO): Promise<Result<GetSecretKeyUsageOutputDTO, ApplicationError>> {
-        const { teamId, secretKeyId, days = 30 } = input;
+        const { teamId, secretKeyId } = input;
+        const days = input.days !== undefined ? Number(input.days) : 30;
 
         const populate: SecretKeyRolePopulate = {
             path: 'role',

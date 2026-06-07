@@ -1,5 +1,6 @@
 import Button from '../Button';
 import { X } from 'lucide-react';
+import { forwardRef } from 'react';
 
 interface CloseButtonProps {
     onClick?: () => void;
@@ -10,14 +11,15 @@ interface CloseButtonProps {
     'aria-label'?: string;
 };
 
-const CloseButton = ({
+const CloseButton = forwardRef<HTMLButtonElement, CloseButtonProps>(({
     onClick,
     command,
     commandfor,
     'aria-label': ariaLabel = 'Close'
-}: CloseButtonProps) => {
+}, ref) => {
     return (
         <Button
+            ref={ref}
             variant='ghost'
             intent='neutral'
             iconOnly
@@ -30,6 +32,8 @@ const CloseButton = ({
             <X size={20} />
         </Button>
     );
-};
+});
+
+CloseButton.displayName = 'CloseButton';
 
 export default CloseButton;

@@ -1,0 +1,42 @@
+/**
+ * NumberInput — TextInput specialised for numeric entry with an optional
+ * vertical stepper. The stepper hugs the trailing edge of the field surface.
+ */
+.volt-number-input__steppers {
+    display: inline-flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    /* Pull the steppers tight against the field's right padding. */
+    margin-right: -0.375rem;
+}
+
+.volt-number-input__stepper.volt-icon-button {
+    width: 1.25rem;
+    height: 1rem;
+    min-width: 1.25rem;
+    min-height: 1rem;
+    padding: 0;
+    border-radius: var(--radius-xs);
+    color: var(--color-text-muted);
+}
+
+.volt-number-input__stepper.volt-icon-button:hover:not(.volt-icon-button--disabled) {
+    color: var(--color-text-primary);
+}
+
+.volt-number-input__stepper.volt-icon-button svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Hide the native spin buttons — the custom steppers replace them. */
+.volt-number-input .volt-text-input__field::-webkit-outer-spin-button,
+.volt-number-input .volt-text-input__field::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.volt-number-input .volt-text-input__field[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}

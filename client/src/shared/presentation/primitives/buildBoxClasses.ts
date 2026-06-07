@@ -87,6 +87,7 @@ const justifyMap: Record<JustifyContent, string> = {
 
 const displayMap: Record<Display, string> = {
     flex: 'd-flex',
+    grid: 'd-grid',
     block: 'd-block',
     none: 'd-none'
 };
@@ -100,7 +101,7 @@ const directionMap: Record<FlexDirection, string> = {
 const textAlignMap: Record<TextAlign, string> = {
     left: '',
     center: 'text-center',
-    right: ''
+    right: 'text-right'
 };
 
 const borderMap: Record<BorderToken, string> = {

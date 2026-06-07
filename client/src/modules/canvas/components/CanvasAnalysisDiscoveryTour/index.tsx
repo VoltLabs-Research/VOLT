@@ -37,11 +37,7 @@ interface TargetLayout {
     cardStyle: CSSProperties;
 }
 
-const getStorage = (): Storage | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
+const getStorage = (): Storage => {
     return window.localStorage;
 };
 
@@ -76,28 +72,16 @@ const clamp = (value: number, min: number, max: number): number => {
 };
 
 const getTargetElement = (selector: string): HTMLElement | null => {
-    if (typeof document === 'undefined') {
-        return null;
-    }
-
     return document.querySelector<HTMLElement>(selector);
 };
 
 const dispatchAutoAction = (action: 'select-analysis'): void => {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
     if (action === 'select-analysis') {
         window.dispatchEvent(new CustomEvent(TOUR_SELECT_ANALYSIS_EVENT));
     }
 };
 
 const dispatchTimelineTabSelection = (): void => {
-    if (typeof window === 'undefined') {
-        return;
-    }
-
     window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
 };
 

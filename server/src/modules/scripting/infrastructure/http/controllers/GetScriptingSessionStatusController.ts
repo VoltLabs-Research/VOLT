@@ -1,5 +1,4 @@
 import { GetScriptingSessionStatusUseCase } from '@modules/scripting/application/use-cases/GetScriptingSessionStatusUseCase';
-import { scriptingValidation } from '@modules/scripting/infrastructure/http/validation/scripting-schemas';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
 import { setJupyterProxyAccessCookie } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { createController } from '@shared/infrastructure/http/controllers/createController';
@@ -12,7 +11,6 @@ import type { GetScriptingSessionStatusOutputDTO } from '@modules/scripting/appl
 const scriptingJupyterAccessTokenService = container.resolve(ScriptingJupyterAccessTokenService);
 
 export default createController(GetScriptingSessionStatusUseCase, {
-    validationSchema: scriptingValidation.sessionStatus,
     extendParams: (req: AuthenticatedRequest, params: Record<string, unknown>) => ({
         ...params,
         userId: req.userId

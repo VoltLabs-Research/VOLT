@@ -89,7 +89,7 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
             CONTAINER_TERMINAL_EVENTS.INPUT,
             async (conn, data) => {
                 const session = this.getSessionBySocketId(conn.id);
-                if (!session || session.closing || session.attachment.stream.destroyed || typeof data !== 'string') {
+                if (!session || session.closing || session.attachment.stream.destroyed) {
                     return;
                 }
 
@@ -122,7 +122,7 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
     }
 
     private async handleAttach(conn: ISocketConnection, payload: ContainerTerminalAttachPayload): Promise<void> {
-        if (!payload?.containerId || typeof payload.containerId !== 'string') {
+        if (!payload?.containerId) {
             this.emitTerminalError(conn.id, 'INVALID_PAYLOAD', 'containerId is required');
             return;
         }

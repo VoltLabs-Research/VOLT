@@ -2,7 +2,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
 import type { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
 import controllers from '@modules/team/infrastructure/http/controllers/team-role';
-import { teamRoleValidation } from '@modules/team/infrastructure/http/validation/team-role';
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -17,12 +16,14 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.route('/')
-            .get(teamRoleValidation.list, async (req, res) => {
+            .get(async (req, res) => {
                 const { teamId } = req.params as { teamId: string };
-                const { page = 1, limit = 10 } = req.query as unknown as {
-                    page?: number;
-                    limit?: number;
+                const { page: pageRaw, limit: limitRaw } = req.query as {
+                    page?: string;
+                    limit?: string;
                 };
+                const page = pageRaw !== undefined ? Number(pageRaw) : 1;
+                const limit = limitRaw !== undefined ? Number(limitRaw) : 10;
                 const repository = container.resolve(TeamRoleRepository);
                 const result = await repository.findAll({
                     filter: { team: teamId } satisfies Partial<TeamRoleProps>,
@@ -35,11 +36,11 @@ export default createHttpModule({
                     data: result.data.map((role) => toPersistedOutput(role))
                 });
             })
-            .post(teamRoleValidation.create, controllers.create.handle);
+            .post(controllers.create.handle);
 
         router.route('/:roleId')
-            .delete(teamRoleValidation.deleteById, controllers.deleteById.handle)
-            .get(teamRoleValidation.getById, async (req, res) => {
+            .delete(controllers.deleteById.handle)
+            .get(async (req, res) => {
                 const { roleId } = req.params as { roleId: string };
                 const repository = container.resolve(TeamRoleRepository);
                 const role = await repository.findById(roleId);
@@ -56,6 +57,6 @@ export default createHttpModule({
 
                 BaseResponse.success(res, toPersistedOutput(role));
             })
-            .patch(teamRoleValidation.update, controllers.updateById.handle);
+            .patch(controllers.updateById.handle);
     }
 });

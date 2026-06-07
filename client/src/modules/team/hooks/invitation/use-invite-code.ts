@@ -22,10 +22,6 @@ const DELETE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({
 const getTeamInviteLink = (inviteCode: string): string => {
     const invitePath = `/team-invitation/code/${inviteCode}`;
 
-    if (typeof window === 'undefined') {
-        return invitePath;
-    }
-
     return new URL(invitePath, window.location.origin).toString();
 };
 

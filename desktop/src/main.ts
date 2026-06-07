@@ -6,6 +6,7 @@ import Repository from '@/services/Repository';
 import SourceResolver from '@/services/SourceResolver';
 import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
+import RemoteProbe from '@/services/RemoteProbe';
 import AppPaths from '@/services/AppPaths';
 import { registerIpc } from '@/ipc';
 
@@ -87,8 +88,10 @@ app.whenReady().then(async () => {
         docker
     });
 
+    const remote = new RemoteProbe();
+
     const win = createWindow();
-    registerIpc(win, { deploy, appConfig, docker });
+    registerIpc(win, { deploy, appConfig, docker, remote });
 
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

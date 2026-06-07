@@ -1,5 +1,6 @@
 import { cn } from '@/shared/utils/cn';
 import './Skeleton.css';
+import { forwardRef } from 'react';
 import type { CSSProperties } from 'react';
 
 export type SkeletonVariant = 'text' | 'rectangular' | 'rounded' | 'circular';
@@ -20,14 +21,14 @@ const toCssSize = (value: string | number | undefined): string | undefined => {
     return value;
 };
 
-const Skeleton = ({
+const Skeleton = forwardRef<HTMLSpanElement, SkeletonProps>(({
     variant = 'text',
     animation = 'pulse',
     width,
     height,
     className = '',
     style
-}: SkeletonProps) => {
+}, ref) => {
     const classes = cn(
         'volt-skeleton',
         `volt-skeleton--${variant}`,
@@ -43,6 +44,7 @@ const Skeleton = ({
 
     return (
         <span
+            ref={ref}
             className={classes}
             style={resolvedStyle}
             aria-hidden='true'
@@ -50,6 +52,8 @@ const Skeleton = ({
             data-animation={animation}
         />
     );
-};
+});
+
+Skeleton.displayName = 'Skeleton';
 
 export default Skeleton;

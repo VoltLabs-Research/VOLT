@@ -4,9 +4,6 @@ import type { Response } from 'express';
 import type { Result } from '@shared/domain/port/Result';
 import type { IUseCase, UseCaseError, UseCaseInput, UseCaseInstance, UseCaseOutput } from '@shared/application/IUseCase';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { RequestValidationState, ValidatedRequest } from '@shared/infrastructure/http/middleware/validation';
-
-type ValidatedAuthenticatedRequest = AuthenticatedRequest & ValidatedRequest;
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
@@ -15,11 +12,6 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
     ) {}
 
     protected abstract getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase>;
-
-    protected getValidatedRequestData(req: AuthenticatedRequest): RequestValidationState {
-        const validatedRequest: ValidatedAuthenticatedRequest = req;
-        return validatedRequest.validated ?? {};
-    }
 
     /**
      * Writes a domain-level error (use-case failure) to the response. Kept on

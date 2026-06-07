@@ -1,7 +1,8 @@
 import './Table.css';
 import Skeleton from '../Skeleton';
-import { useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 import { formatUnknownValue } from '@/shared/utils/format';
+import type { Ref } from 'react';
 
 export enum TableSortDirection {
     Ascending = 'ascending',
@@ -32,19 +33,22 @@ interface TableProps<T> {
     caption?: string;
 };
 
-const Table = <T,>({
-    columns,
-    data,
-    getRowKey,
-    isLoading = false,
-    skeletonRows = 5,
-    onRowClick,
-    rowClassName,
-    className = '',
-    getAriaSort = () => TableSortDirection.None,
-    onSort,
-    caption
-}: TableProps<T>) => {
+const TableImpl = <T,>(
+    {
+        columns,
+        data,
+        getRowKey,
+        isLoading = false,
+        skeletonRows = 5,
+        onRowClick,
+        rowClassName,
+        className = '',
+        getAriaSort = () => TableSortDirection.None,
+        onSort,
+        caption
+    }: TableProps<T>,
+    ref: Ref<HTMLDivElement>
+) => {
     const getRowClass = useCallback((row: T): string => {
         const base = onRowClick ? 'clickable' : '';
         if (!rowClassName) return base;
@@ -87,7 +91,7 @@ const Table = <T,>({
     };
 
     return (
-        <div className='table-scroll-wrapper'>
+        <div ref={ref} className='table-scroll-wrapper'>
             <table className={`table ${className}`}>
                 {caption && <caption className='table-caption'>{caption}</caption>}
                 <thead>
@@ -120,5 +124,11 @@ const Table = <T,>({
         </div>
     );
 };
+
+const Table = forwardRef(TableImpl) as (<T>(
+    props: TableProps<T> & { ref?: Ref<HTMLDivElement> }
+) => ReturnType<typeof TableImpl>) & { displayName?: string };
+
+Table.displayName = 'Table';
 
 export default Table;

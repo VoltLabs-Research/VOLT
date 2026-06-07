@@ -1,5 +1,4 @@
 import controllers from '@modules/trajectory/infrastructure/http/controllers/canvas';
-import { canvasValidation } from '@modules/trajectory/infrastructure/http/validation/canvas';
 import { authenticateOptional } from '@shared/infrastructure/http/middleware/authentication';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
@@ -8,43 +7,43 @@ export default createHttpModule({
     routes: (router) => {
         router.use(authenticateOptional);
 
-        router.get('/:trajectoryId/bootstrap', canvasValidation.getBootstrap, controllers.bootstrap.handle);
-        router.get('/:trajectoryId', canvasValidation.getTrajectory, controllers.trajectory.handle);
-        router.get('/:trajectoryId/preview', canvasValidation.getPreview, controllers.preview.handle);
-        router.get('/:trajectoryId/analyses', canvasValidation.listAnalyses, controllers.analyses.handle);
-        router.get('/:trajectoryId/dumps/:timestep', canvasValidation.getDump, controllers.dump.handle);
-        router.get('/:trajectoryId/glb/:timestep/:analysisId', canvasValidation.getGlb, controllers.glb.handle);
-        router.get('/:trajectoryId/frames/:timestep', canvasValidation.getFrame, controllers.rasterFrame.handle);
-        router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', canvasValidation.getAnalysisFrame, controllers.analysisRasterFrame.handle);
+        router.get('/:trajectoryId/bootstrap', controllers.bootstrap.handle);
+        router.get('/:trajectoryId', controllers.trajectory.handle);
+        router.get('/:trajectoryId/preview', controllers.preview.handle);
+        router.get('/:trajectoryId/analyses', controllers.analyses.handle);
+        router.get('/:trajectoryId/dumps/:timestep', controllers.dump.handle);
+        router.get('/:trajectoryId/glb/:timestep/:analysisId', controllers.glb.handle);
+        router.get('/:trajectoryId/frames/:timestep', controllers.rasterFrame.handle);
+        router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', controllers.analysisRasterFrame.handle);
 
         // Why: binary transferables — see GetPublicCanvasAtomsBinaryController
         // (F2.S4). Legacy JSON path removed; the Canvas client now decodes the
         // columnar body directly into TypedArrays without a JSON.parse pass.
         router.get('/:trajectoryId/frame/:timestep/atoms', controllers.atomsBinary.handle);
-        router.get('/:trajectoryId/simulation-cell', canvasValidation.getSimulationCell, controllers.simulationCell.handle);
-        router.get('/:trajectoryId/scene-artifacts', canvasValidation.listSceneArtifacts, controllers.sceneArtifacts.handle);
+        router.get('/:trajectoryId/simulation-cell', controllers.simulationCell.handle);
+        router.get('/:trajectoryId/scene-artifacts', controllers.sceneArtifacts.handle);
 
-        router.get('/:trajectoryId/color-coding/properties', canvasValidation.getColorCodingProperties, controllers.colorCodingProperties.handle);
-        router.get('/:trajectoryId/color-coding/properties/:analysisId', canvasValidation.getColorCodingPropertiesByAnalysis, controllers.colorCodingPropertiesByAnalysis.handle);
-        router.get('/:trajectoryId/color-coding/stats', canvasValidation.getColorCodingStats, controllers.colorCodingStats.handle);
-        router.get('/:trajectoryId/color-coding/stats/:analysisId', canvasValidation.getColorCodingStatsByAnalysis, controllers.colorCodingStatsByAnalysis.handle);
-        router.get('/:trajectoryId/color-coding/model', canvasValidation.getColorCodingModel, controllers.colorCodingModel.handle);
-        router.get('/:trajectoryId/color-coding/model/:analysisId', canvasValidation.getColorCodingModelByAnalysis, controllers.colorCodingModelByAnalysis.handle);
+        router.get('/:trajectoryId/color-coding/properties', controllers.colorCodingProperties.handle);
+        router.get('/:trajectoryId/color-coding/properties/:analysisId', controllers.colorCodingPropertiesByAnalysis.handle);
+        router.get('/:trajectoryId/color-coding/stats', controllers.colorCodingStats.handle);
+        router.get('/:trajectoryId/color-coding/stats/:analysisId', controllers.colorCodingStatsByAnalysis.handle);
+        router.get('/:trajectoryId/color-coding/model', controllers.colorCodingModel.handle);
+        router.get('/:trajectoryId/color-coding/model/:analysisId', controllers.colorCodingModelByAnalysis.handle);
 
-        router.get('/:trajectoryId/particle-filter/properties', canvasValidation.getParticleFilterProperties, controllers.particleFilterProperties.handle);
-        router.get('/:trajectoryId/particle-filter/properties/:analysisId', canvasValidation.getParticleFilterPropertiesByAnalysis, controllers.particleFilterPropertiesByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/unique-values', canvasValidation.getParticleFilterUniqueValues, controllers.particleFilterUniqueValues.handle);
-        router.get('/:trajectoryId/particle-filter/unique-values/:analysisId', canvasValidation.getParticleFilterUniqueValuesByAnalysis, controllers.particleFilterUniqueValuesByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/preview', canvasValidation.getParticleFilterPreview, controllers.particleFilterPreview.handle);
-        router.get('/:trajectoryId/particle-filter/preview/:analysisId', canvasValidation.getParticleFilterPreviewByAnalysis, controllers.particleFilterPreviewByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/model', canvasValidation.getParticleFilterModel, controllers.particleFilterModel.handle);
-        router.get('/:trajectoryId/particle-filter/model/:analysisId', canvasValidation.getParticleFilterModelByAnalysis, controllers.particleFilterModelByAnalysis.handle);
+        router.get('/:trajectoryId/particle-filter/properties', controllers.particleFilterProperties.handle);
+        router.get('/:trajectoryId/particle-filter/properties/:analysisId', controllers.particleFilterPropertiesByAnalysis.handle);
+        router.get('/:trajectoryId/particle-filter/unique-values', controllers.particleFilterUniqueValues.handle);
+        router.get('/:trajectoryId/particle-filter/unique-values/:analysisId', controllers.particleFilterUniqueValuesByAnalysis.handle);
+        router.get('/:trajectoryId/particle-filter/preview', controllers.particleFilterPreview.handle);
+        router.get('/:trajectoryId/particle-filter/preview/:analysisId', controllers.particleFilterPreviewByAnalysis.handle);
+        router.get('/:trajectoryId/particle-filter/model', controllers.particleFilterModel.handle);
+        router.get('/:trajectoryId/particle-filter/model/:analysisId', controllers.particleFilterModelByAnalysis.handle);
 
-        router.get('/:trajectoryId/plugins/:pluginId', canvasValidation.getPlugin, controllers.plugin.handle);
-        router.get('/:trajectoryId/plugins/:pluginId/listings', canvasValidation.getListing, controllers.pluginListing.handle);
-        router.get('/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', canvasValidation.getSubListing, controllers.subListing.handle);
-        router.get('/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb', canvasValidation.getExposureGlb, controllers.exposureGlb.handle);
-        router.get('/:trajectoryId/analyses/:analysisId/logs/:timestep', canvasValidation.getFrameLog, controllers.frameLog.handle);
-        router.get('/:trajectoryId/raster-metadata', canvasValidation.getRasterMetadata, controllers.rasterMetadata.handle);
+        router.get('/:trajectoryId/plugins/:pluginId', controllers.plugin.handle);
+        router.get('/:trajectoryId/plugins/:pluginId/listings', controllers.pluginListing.handle);
+        router.get('/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controllers.subListing.handle);
+        router.get('/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb', controllers.exposureGlb.handle);
+        router.get('/:trajectoryId/analyses/:analysisId/logs/:timestep', controllers.frameLog.handle);
+        router.get('/:trajectoryId/raster-metadata', controllers.rasterMetadata.handle);
     }
 });

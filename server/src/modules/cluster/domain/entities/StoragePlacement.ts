@@ -20,7 +20,7 @@ export const normalizeStoragePlacementBuckets = (
     buckets: StoragePlacementBucketRef[]
 ): StoragePlacementBucketRef[] => {
     return buckets
-        .filter((bucketRef) => Boolean(bucketRef.bucket) && typeof bucketRef.prefix === 'string')
+        .filter((bucketRef) => Boolean(bucketRef.bucket))
         .map((bucketRef) => ({
             bucket: bucketRef.bucket,
             prefix: bucketRef.prefix

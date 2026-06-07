@@ -33,10 +33,6 @@ declare global {
     }
 }
 
-const serverDashboardWorkspaceChromeRegistry: DashboardWorkspaceChromeRegistry = {
-    entries: {}
-};
-
 const dashboardWorkspaceChromeListeners = new Set<DashboardWorkspaceChromeListener>();
 
 const buildDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => {
@@ -49,10 +45,6 @@ const buildDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => 
 };
 
 const getDashboardWorkspaceChromeRegistry = (): DashboardWorkspaceChromeRegistry => {
-    if (typeof window === 'undefined') {
-        return serverDashboardWorkspaceChromeRegistry;
-    }
-
     if (!window.__voltDashboardWorkspaceChrome) {
         window.__voltDashboardWorkspaceChrome = {
             entries: {}
@@ -67,10 +59,6 @@ let dashboardWorkspaceChromeStateSnapshot = buildDashboardWorkspaceChromeState()
 const dispatchDashboardWorkspaceChromeChange = (): void => {
     dashboardWorkspaceChromeStateSnapshot = buildDashboardWorkspaceChromeState();
     dashboardWorkspaceChromeListeners.forEach((listener) => listener());
-
-    if (typeof window === 'undefined') {
-        return;
-    }
 
     window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.workspaceChromeChanged, {
         detail: getDashboardWorkspaceChromeState()

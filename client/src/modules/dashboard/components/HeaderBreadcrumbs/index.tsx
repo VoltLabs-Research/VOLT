@@ -70,7 +70,7 @@ const HeaderBreadcrumbs = () => {
 
             {breadcrumbs.map((breadcrumb, index) => (
                 <Row key={`${breadcrumb.label}-${index}`} gap='05'>
-                    <IoChevronForward className='breadcrumb-separator color-text-muted' size={14} />
+                    <IoChevronForward className='breadcrumb-separator color-muted' size={14} />
                     {renderBreadcrumb(breadcrumb)}
                 </Row>
             ))}

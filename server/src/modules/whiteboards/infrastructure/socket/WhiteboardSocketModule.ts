@@ -67,7 +67,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
 
     private registerSubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'subscribe_to_whiteboard', async (conn, payload) => {
-            if (typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0) {
+            if (payload.whiteboardId.length === 0) {
                 return ackError('Invalid whiteboard id');
             }
 
@@ -106,7 +106,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
 
     private registerUnsubscribe(connection: ISocketConnection): void {
         this.on<SubscribePayload>(connection.id, 'unsubscribe_from_whiteboard', async (conn, payload) => {
-            if (typeof payload.whiteboardId !== 'string' || payload.whiteboardId.length === 0) {
+            if (payload.whiteboardId.length === 0) {
                 return;
             }
 
@@ -128,10 +128,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
         this.on<WhiteboardPatchPayload, SocketAck<WhiteboardPatchAck>>(connection.id, 'whiteboard_patch', async (conn, payload) => {
             if (
                 !conn.user
-                || typeof payload.whiteboardId !== 'string'
                 || payload.whiteboardId.length === 0
-                || typeof payload.clientId !== 'string'
-                || typeof payload.baseRevision !== 'number'
                 || !Number.isFinite(payload.baseRevision)
             ) {
                 return ackError('Invalid whiteboard patch payload');
@@ -160,10 +157,10 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
             const mergeResult = await this.realtimeStateService.mergeScene(
                 payload.whiteboardId,
                 Array.isArray(payload.elements) ? payload.elements : [],
-                typeof payload.appState === 'object' && payload.appState !== null ? payload.appState : {},
+                payload.appState,
                 conn.user._id,
                 Array.isArray(payload.elementOrder)
-                    ? payload.elementOrder.filter((id): id is string => typeof id === 'string' && id.length > 0)
+                    ? payload.elementOrder.filter((id) => id.length > 0)
                     : undefined
             );
 

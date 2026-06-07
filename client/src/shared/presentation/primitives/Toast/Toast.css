@@ -1,0 +1,71 @@
+.volt-toast {
+    position: relative;
+    width: 100%;
+    max-width: 24rem;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius-lg);
+    border-left: 3px solid var(--color-border-soft);
+    box-shadow: var(--shadow-elevated);
+    animation: volt-toast-in var(--duration-normal) var(--ease-standard);
+}
+
+.volt-toast--tone-brand {
+    border-left-color: var(--color-brand-primary);
+}
+
+.volt-toast--tone-success {
+    border-left-color: var(--status-success);
+}
+
+.volt-toast--tone-warning {
+    border-left-color: var(--status-warning);
+}
+
+.volt-toast--tone-danger {
+    border-left-color: var(--status-error);
+}
+
+.volt-toast--tone-info {
+    border-left-color: var(--status-info);
+}
+
+.volt-toast__layout {
+    min-width: 0;
+}
+
+.volt-toast__icon {
+    margin-top: 0.0625rem;
+}
+
+.volt-toast__body {
+    min-width: 0;
+    flex: 1;
+}
+
+.volt-toast__actions {
+    margin-top: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.volt-toast__dismiss {
+    flex-shrink: 0;
+    margin: -0.25rem -0.375rem 0 0;
+}
+
+@keyframes volt-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .volt-toast {
+        animation: none;
+    }
+}

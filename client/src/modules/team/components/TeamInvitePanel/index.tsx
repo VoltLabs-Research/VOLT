@@ -24,10 +24,6 @@ enum InviteTab {
 const getPublicTrajectoriesLink = (teamId: string): string => {
     const publicPath = `/discover/teams/${encodeURIComponent(teamId)}`;
 
-    if (typeof window === 'undefined') {
-        return publicPath;
-    }
-
     return new URL(publicPath, window.location.origin).toString();
 };
 

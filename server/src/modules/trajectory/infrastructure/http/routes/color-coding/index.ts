@@ -1,5 +1,4 @@
 import { Resource } from '@core/constants/resources';
-import { colorCodingValidation } from '@modules/trajectory/infrastructure/http/validation/color-coding';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/color-coding';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
@@ -9,16 +8,15 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/:trajectoryId/properties', colorCodingValidation.getProperties, controllers.getProperties.handle);
-        router.get('/:trajectoryId/stats', colorCodingValidation.getStats, controllers.getStats.handle);
-        router.get('/:trajectoryId', colorCodingValidation.getModel, controllers.get.handle);
-        router.post('/:trajectoryId', colorCodingValidation.applyColorCoding, controllers.create.handle);
-        router.get('/:trajectoryId/properties/:analysisId', colorCodingValidation.getPropertiesByAnalysis, controllers.getProperties.handle);
-        router.get('/:trajectoryId/stats/:analysisId', colorCodingValidation.getStatsByAnalysis, controllers.getStats.handle);
-        router.get('/:trajectoryId/:analysisId', colorCodingValidation.getModelByAnalysis, controllers.get.handle);
+        router.get('/:trajectoryId/properties', controllers.getProperties.handle);
+        router.get('/:trajectoryId/stats', controllers.getStats.handle);
+        router.get('/:trajectoryId', controllers.get.handle);
+        router.post('/:trajectoryId', controllers.create.handle);
+        router.get('/:trajectoryId/properties/:analysisId', controllers.getProperties.handle);
+        router.get('/:trajectoryId/stats/:analysisId', controllers.getStats.handle);
+        router.get('/:trajectoryId/:analysisId', controllers.get.handle);
         router.post(
             '/:trajectoryId/:analysisId',
-            colorCodingValidation.applyColorCodingByAnalysis,
             controllers.create.handle
         );
     }

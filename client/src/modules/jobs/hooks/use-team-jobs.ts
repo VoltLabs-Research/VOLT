@@ -82,7 +82,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[], revision?: number) => {
         clearJobsLoadingTimeout();
 
-        if (typeof revision === 'number') {
+        if (revision !== undefined) {
             setLatestAppliedRevision(revision);
         }
 
@@ -95,7 +95,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
         const appliedRevision = useTeamJobsStore.getState().latestAppliedRevision;
         const queued = pendingJobUpdatesRef.current.filter((event) => {
-            if (typeof event.revision !== 'number') {
+            if (event.revision === undefined) {
                 return true;
             }
 
@@ -137,7 +137,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         }, queryClient);
 
         const maxAppliedRevision = queued.reduce((highestRevision, event) => {
-            if (typeof event.revision !== 'number') {
+            if (event.revision === undefined) {
                 return highestRevision;
             }
 
@@ -169,7 +169,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         if (currentTeamId && typeof event.teamId === 'string' && event.teamId !== currentTeamId) {
             return;
         }
-        if (typeof event.revision === 'number' && event.revision <= latestAppliedRevision) {
+        if (event.revision !== undefined && event.revision <= latestAppliedRevision) {
             return;
         }
 
@@ -224,7 +224,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
     useEffect(() => {
         const remainingPendingUpdates = pendingJobUpdatesRef.current.filter((event) => {
-            if (typeof event.revision !== 'number') {
+            if (event.revision === undefined) {
                 return true;
             }
 
