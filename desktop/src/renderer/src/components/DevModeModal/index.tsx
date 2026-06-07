@@ -85,7 +85,7 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
                 <label className='dm-toggle'>
                     <span>
                         <span className='dm-toggle-label'>Use local sources</span>
-                        <span className='dm-toggle-hint'>When off, Volt deploys the latest GitHub releases.</span>
+                        <span className='dm-toggle-hint'>When off, VOLT deploys the latest GitHub releases.</span>
                     </span>
                     <input type='checkbox' checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
                     <span className='dm-switch' aria-hidden='true' />

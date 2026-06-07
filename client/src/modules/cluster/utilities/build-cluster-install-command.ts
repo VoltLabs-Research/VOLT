@@ -1,3 +1,5 @@
+import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
+
 export enum ClusterInstallPlatform {
     Windows = 'windows',
     MacOS = 'macos',
@@ -83,7 +85,7 @@ export const buildClusterInstallCommand = (
     enrollmentToken: string,
     platform: SupportedClusterInstallPlatform = getDefaultClusterInstallPlatform()
 ): string => {
-    const cloudUrl = import.meta.env.VITE_API_URL;
+    const cloudUrl = getBackendOrigin();
     if (platform === ClusterInstallPlatform.Windows) {
         return buildWindowsInstallCommand(teamClusterId, enrollmentToken, cloudUrl);
     }
