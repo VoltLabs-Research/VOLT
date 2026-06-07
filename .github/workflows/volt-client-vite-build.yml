@@ -29,7 +29,7 @@ jobs:
         working-directory: client
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      VITE_API_URL: https://example.invalid
+      VITE_SERVER_ENDPOINT: https://example.invalid
       VITE_ENV: production
 
     steps:

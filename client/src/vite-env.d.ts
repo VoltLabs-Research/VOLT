@@ -2,7 +2,7 @@
 import '@react-three/fiber';
 
 interface ImportMetaEnv {
-    readonly VITE_API_URL: string;
+    readonly VITE_SERVER_ENDPOINT?: string;
     readonly VITE_PROXY_API_URL?: string;
 };
 

@@ -14,6 +14,7 @@ import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorLis
 import queryClient from '@/shared/infrastructure/query/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
+import EndpointGuard from '@/app/routes/EndpointGuard';
 import TrajectoryUploadProgressPanel from '@/modules/trajectory/components/TrajectoryUploadProgressPanel';
 import { useThemeInitialization } from '@/shared/presentation/hooks/use-theme';
 import { useCallback, useEffect } from 'react';
@@ -29,7 +30,7 @@ const DEFAULT_ROOT_FONT_SIZE = 16;
 const MINIMUM_PAGE_SCALE = 0.75;
 
 const shouldMountWorkspaceGlobals = (pathname: string): boolean => {
-    return pathname !== '/error' && !pathname.startsWith('/auth/');
+    return pathname !== '/error' && pathname !== '/connect' && !pathname.startsWith('/auth/');
 };
 
 const getPageScale = () => {
@@ -125,13 +126,15 @@ const AppRoutes = () => {
         <>
             <GlobalErrorListener />
             <ErrorBoundary onError={handleRenderError}>
-                <Routes>
-                    {renderPublicRoutes()}
-                    {renderOptionalAuthRoutes()}
-                    {renderGuestRoutes()}
-                    {renderProtectedRoutes()}
-                    <Route path='*' element={<NotFoundState />} />
-                </Routes>
+                <EndpointGuard>
+                    <Routes>
+                        {renderPublicRoutes()}
+                        {renderOptionalAuthRoutes()}
+                        {renderGuestRoutes()}
+                        {renderProtectedRoutes()}
+                        <Route path='*' element={<NotFoundState />} />
+                    </Routes>
+                </EndpointGuard>
             </ErrorBoundary>
         </>
     );

@@ -22,7 +22,9 @@ import Stepper from '@/shared/presentation/primitives/Stepper';
 import Text from '@/shared/presentation/primitives/Text';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { buildBackendUrl } from '@/app/core/http/utilities/backend-origin';
+import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utilities/backend-origin';
+import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';
+import Button from '@/shared/presentation/primitives/Button';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -196,6 +198,7 @@ const SignInTemplate = () => {
     };
 
     const { title, subtitle } = stepTitles[step];
+    const canChangeServer = !isEndpointPinnedByEnv();
 
     const goBack = () => {
         goTo(SignInStep.Email);
@@ -255,6 +258,18 @@ const SignInTemplate = () => {
                         <Text as='span' className='sign-in-legal-text'>Terms</Text> and{' '}
                         <Text as='span' className='sign-in-legal-text'>Privacy Policy</Text>.
                     </Text>
+
+                    {canChangeServer && (
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            size='sm'
+                            block
+                            onClick={resetBackendEndpoint}
+                        >
+                            Change server
+                        </Button>
+                    )}
                 </Stack>
             </Stack>
         </main>
