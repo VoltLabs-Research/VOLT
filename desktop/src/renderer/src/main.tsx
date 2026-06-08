@@ -8,6 +8,16 @@ import './styles.css';
 
 document.documentElement.dataset.platform = window.volt.platform;
 
+// Flatten the shell's rounded corners while maximized (a rounded corner against the
+// screen edge looks broken). Mirrors the web client's data-volt-maximized handling.
+window.volt.on('window:state', ({ maximized }) => {
+    if(maximized){
+        document.documentElement.dataset.voltMaximized = 'true';
+    }else{
+        delete document.documentElement.dataset.voltMaximized;
+    }
+});
+
 // bravais scopes its design tokens under :root[data-theme]; mirror the OS scheme
 // onto the root so the package's components resolve their colours.
 const themeQuery = window.matchMedia('(prefers-color-scheme: dark)');

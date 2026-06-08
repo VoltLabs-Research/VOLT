@@ -77,6 +77,8 @@ body{
     background: var(--color-bg);
 }
 
+[data-volt-maximized] .app{ border-radius: 0; }
+
 /* Let macOS vibrancy / Windows acrylic show through the chrome by keeping the
    surface transparent there. Linux has no native blur, so it stays solid. */
 [data-platform='darwin'] .app,

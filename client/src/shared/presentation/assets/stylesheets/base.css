@@ -42,6 +42,10 @@ html[data-volt-desktop] #root {
     background-color: var(--color-bg);
 }
 
+html[data-volt-desktop][data-volt-maximized] #root {
+    border-radius: 0;
+}
+
 #root {
     width: 100%;
     max-width: 100%;

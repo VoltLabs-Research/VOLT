@@ -4,7 +4,8 @@ export const CHANNELS = [
     'source:progress',
     'deploy:phases',
     'deploy:phase',
-    'deploy:preflight'
+    'deploy:preflight',
+    'window:state'
 ] as const;
 
 export type Channel = typeof CHANNELS[number];
@@ -58,6 +59,9 @@ export interface AppEvents{
         serverVersion?: string;
         composeVersion?: string;
         detail?: string;
+    },
+    'window:state': {
+        maximized: boolean;
     }
 };
 
