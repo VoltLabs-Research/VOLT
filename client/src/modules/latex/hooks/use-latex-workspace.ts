@@ -15,6 +15,7 @@ import type {
 } from './workspace/types';
 import {
     AUTOSAVE_DELAY,
+    LIVE_COMPILE_DELAY,
     TEX_EXTENSION,
     PRIMARY_EDITOR_GROUP_ID,
     SECONDARY_EDITOR_GROUP_ID,
@@ -70,6 +71,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const applyLocalContentChangeRef = useRef<((fileId: string, content: string) => boolean) | null>(null);
     const compiledPdfUrlRef = useRef<string | null>(null);
     const autosaveTimersRef = useRef<Record<string, number>>({});
+    const liveCompileTimerRef = useRef<number | null>(null);
     const lastTexWorkspaceFingerprintRef = useRef<string | null>(null);
     const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
@@ -301,6 +303,17 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         }
     }, [compileDocument, documentId, hasCompilableTexFile]);
 
+    const scheduleLiveCompile = useCallback((): void => {
+        if (liveCompileTimerRef.current) {
+            window.clearTimeout(liveCompileTimerRef.current);
+        }
+
+        liveCompileTimerRef.current = window.setTimeout(() => {
+            liveCompileTimerRef.current = null;
+            compileSilently();
+        }, LIVE_COMPILE_DELAY);
+    }, [compileSilently]);
+
     const clearAutosaveTimer = useCallback((fileId: string): void => {
         const existingTimer = autosaveTimersRef.current[fileId];
         if (!existingTimer) {
@@ -410,10 +423,13 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         if (!isRemoteEcho && !appliedCollaboratively) sendContentUpdateRef.current?.(content, file._id);
         if (appliedCollaboratively) {
             clearAutosaveTimer(file._id);
+            if (!isRemoteEcho && isTexFile(file.name)) {
+                scheduleLiveCompile();
+            }
         } else {
             scheduleFileAutosave(file._id, content);
         }
-    }, [clearAutosaveTimer, latexFiles, scheduleFileAutosave]);
+    }, [clearAutosaveTimer, isTexFile, latexFiles, scheduleFileAutosave, scheduleLiveCompile]);
 
     const handleInsertAssetRef = useCallback((ref: string): void => {
         if (!selection || selection.type !== 'file') return;
@@ -588,6 +604,11 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
 
         return () => {
             revokePdfUrl();
+
+            if (liveCompileTimerRef.current) {
+                window.clearTimeout(liveCompileTimerRef.current);
+                liveCompileTimerRef.current = null;
+            }
 
             Object.values(autosaveTimers).forEach((timerId) => {
                 window.clearTimeout(timerId);
