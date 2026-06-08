@@ -69,6 +69,14 @@ export default class AppConfig{
         await this.#update({ env });
     }
 
+    async getMode(): Promise<string | undefined>{
+        return (await this.get()).deployMode as string | undefined;
+    }
+
+    async setMode(mode: string){
+        await this.#update({ deployMode: mode });
+    }
+
     async getBootstrap(): Promise<BootstrapState | null>{
         const config = await this.get();
         const bootstrap = config.bootstrap as Partial<BootstrapState> | undefined;
