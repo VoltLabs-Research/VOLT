@@ -14,7 +14,7 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { injectable } from 'tsyringe';
 
-interface ClusterTransferJobFilter extends Record<string, unknown> {
+interface ClusterTransferJobFilter {
     team: string;
     $or: Array<Pick<ClusterTransferJobProps, 'sourceClusterId'> | Pick<ClusterTransferJobProps, 'destinationClusterId'>>;
     state?: ClusterTransferJobProps['state'];

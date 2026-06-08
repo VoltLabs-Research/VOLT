@@ -42,7 +42,7 @@ import type { LatexDocument } from '../api/entities/latex-document';
 import type { LatexFile } from '../api/entities/latex-file';
 import type { LatexFolder } from '../api/entities/latex-folder';
 
-interface LatexQueryKeys extends Record<string, unknown> {
+interface LatexQueryKeys {
     documents: ListLatexDocumentsParams;
     document: GetLatexDocumentParams;
     assets: ListLatexAssetsParams;

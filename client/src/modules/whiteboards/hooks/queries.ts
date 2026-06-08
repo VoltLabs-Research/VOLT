@@ -26,7 +26,7 @@ import type { Whiteboard } from '../api/entities/whiteboard';
 
 const BASE_KEY = 'whiteboards';
 
-interface WhiteboardQueryKeys extends Record<string, unknown> {
+interface WhiteboardQueryKeys {
     single: { whiteboardId: string };
     folders: FolderListParams;
     folder: FolderGetParams;
