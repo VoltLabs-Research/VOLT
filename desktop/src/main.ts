@@ -56,6 +56,8 @@ const createWindow = (): BrowserWindow => {
         }
     });
 
+    win.webContents.openDevTools({ mode: 'detach' });
+
     win.on('ready-to-show', () => win.show());
     loadShell(win);
 
