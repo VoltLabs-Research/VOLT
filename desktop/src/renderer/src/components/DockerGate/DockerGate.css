@@ -44,21 +44,6 @@
     animation: step-spin 0.7s linear infinite;
 }
 
-.dg-title{
-    margin: 0;
-    font-size: clamp(20px, 2.4vw, 26px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: var(--color-text-primary);
-}
-
-.dg-body{
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--color-text-secondary);
-}
-
 .dg-command{
     display: inline-flex;
     align-items: center;
@@ -96,37 +81,6 @@
     gap: 12px;
     margin-top: 8px;
 }
-
-.dg-cta{
-    padding: 9px 22px;
-    font-size: 13px;
-    font-family: inherit;
-    font-weight: 500;
-    color: var(--color-on-brand);
-    background: var(--color-brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: opacity 150ms var(--ease-standard);
-}
-
-.dg-cta:hover{ opacity: 0.9; }
-.dg-cta:disabled{ opacity: 0.5; cursor: default; }
-
-.dg-secondary{
-    padding: 9px 18px;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--color-text-primary);
-    background: transparent;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background 150ms var(--ease-standard);
-}
-
-.dg-secondary:hover{ background: var(--color-surface-3); }
-.dg-secondary:disabled{ opacity: 0.5; cursor: default; }
 
 .dg-detail{
     max-width: 100%;

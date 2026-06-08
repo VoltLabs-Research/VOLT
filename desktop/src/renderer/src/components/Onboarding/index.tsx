@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { LuServer } from 'react-icons/lu';
+import { Heading, Text, TextInput, Button } from '@voltstack/bravais';
 import type { RemoteProbeResult } from '@/services/RemoteProbe';
 import './Onboarding.css';
 
@@ -43,31 +44,30 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
         <main className='onb'>
             <div className='onb-card'>
                 <div className='onb-head'>
-                    <h1 className='onb-title'>Connect to VOLT</h1>
-                    <p className='onb-subtitle'>Enter the server address of your deployment.</p>
+                    <Heading level={1} size='2xl' weight='bold'>Connect to VOLT</Heading>
+                    <Text as='p' size='sm' tone='secondary'>Enter the server address of your deployment.</Text>
                 </div>
 
                 <form className='onb-form' onSubmit={submit}>
-                    <div className='onb-field'>
-                        <LuServer className='onb-field-icon' size={18} aria-hidden='true' />
-                        <input
-                            className={`onb-input ${error ? 'has-error' : ''}`}
-                            value={endpoint}
-                            spellCheck={false}
-                            autoFocus
-                            autoComplete='url'
-                            inputMode='url'
-                            autoCapitalize='none'
-                            placeholder='https://volt.your-lab.org'
-                            onChange={(event) => { setEndpoint(event.target.value); setError(null); }}
-                        />
-                    </div>
+                    <TextInput
+                        leftIcon={<LuServer size={18} aria-hidden='true' />}
+                        hasError={Boolean(error)}
+                        fullWidth
+                        value={endpoint}
+                        spellCheck={false}
+                        autoFocus
+                        autoComplete='url'
+                        inputMode='url'
+                        autoCapitalize='none'
+                        placeholder='https://volt.your-lab.org'
+                        onChange={(event) => { setEndpoint(event.target.value); setError(null); }}
+                    />
 
-                    {error && <span className='onb-error'>{error}</span>}
+                    {error && <Text as='span' size='sm' className='onb-error'>{error}</Text>}
 
-                    <button type='submit' className='onb-continue' disabled={!endpoint.trim() || connecting}>
-                        {connecting ? 'Connecting…' : 'Continue'}
-                    </button>
+                    <Button type='submit' intent='brand' block isLoading={connecting} disabled={!endpoint.trim() || connecting}>
+                        Continue
+                    </Button>
                 </form>
 
                 <button type='button' className='onb-local' onClick={onUseLocal}>

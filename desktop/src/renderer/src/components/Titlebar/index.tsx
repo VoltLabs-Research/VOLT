@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { IoSettingsOutline } from 'react-icons/io5';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { IconButton } from '@voltstack/bravais';
 import './Titlebar.css';
 
 interface TitlebarProps{
@@ -13,14 +14,6 @@ interface TitlebarProps{
     onReset: () => void;
     onSwitchDeployment: () => void;
 }
-
-const ChevronLeft = () => (
-    <svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><path d='M15 18l-6-6 6-6' /></svg>
-);
-
-const ChevronRight = () => (
-    <svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><path d='M9 18l6-6-6-6' /></svg>
-);
 
 const Titlebar = ({ ready, busy, navEnabled, showDeployTools, onBack, onForward, onOpenDevMode, onReset, onSwitchDeployment }: TitlebarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
@@ -36,18 +29,20 @@ const Titlebar = ({ ready, busy, navEnabled, showDeployTools, onBack, onForward,
             </div>
 
             <div className='nav-buttons'>
-                <button className='nav-btn' onClick={onBack} disabled={navDisabled} aria-label='Back'><ChevronLeft /></button>
-                <button className='nav-btn' onClick={onForward} disabled={navDisabled} aria-label='Forward'><ChevronRight /></button>
+                <IconButton variant='ghost' size='sm' onClick={onBack} disabled={navDisabled} aria-label='Back'><ChevronLeft size={15} /></IconButton>
+                <IconButton variant='ghost' size='sm' onClick={onForward} disabled={navDisabled} aria-label='Forward'><ChevronRight size={15} /></IconButton>
             </div>
 
             <div className='settings-wrap'>
-                <button
-                    className={`nav-btn settings-btn ${menuOpen ? 'active' : ''}`}
+                <IconButton
+                    variant='ghost'
+                    size='sm'
+                    className={menuOpen ? 'is-active' : undefined}
                     onClick={() => setMenuOpen((value) => !value)}
                     aria-label='Settings'
                 >
-                    <IoSettingsOutline />
-                </button>
+                    <Settings size={16} />
+                </IconButton>
 
                 {menuOpen && (
                     <>
