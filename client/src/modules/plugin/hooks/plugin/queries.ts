@@ -22,6 +22,7 @@ import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { RegistrySearchResponse } from '@/modules/plugin/api/entities/plugin/registry';
 import type {
     ClonePluginInputDTO,
     DeletePluginInputDTO,
@@ -32,9 +33,11 @@ import type {
     GetPluginInputDTO,
     GetPluginsInputDTO,
     ImportPluginInputDTO,
+    InstallRegistryPluginInputDTO,
     ListPluginTeamClustersInputDTO,
     ListPluginTeamClustersOutputDTO,
     SavePluginInputDTO,
+    SearchRegistryInputDTO,
     UpdatePluginInputDTO,
     UploadBinaryInputDTO,
     UploadBinaryOutputDTO
@@ -64,6 +67,10 @@ const teamClusterKeys = buildKeys<{
     list: ListPluginTeamClustersInputDTO;
 }>(['plugins', 'team-clusters']);
 
+const registrySearchKeys = buildKeys<{
+    list: SearchRegistryInputDTO;
+}>(['plugins', 'registry', 'search']);
+
 // ---------------------------------------------------------------------------
 // PLUGIN_QUERY_KEYS — public facade
 // ---------------------------------------------------------------------------
@@ -79,7 +86,9 @@ export const PLUGIN_QUERY_KEYS = {
     catalogList: catalogKeys.list,
     catalogInfiniteList: catalogInfiniteKeys.list,
     teamClusters: teamClusterKeys.prefix,
-    teamClustersList: teamClusterKeys.list
+    teamClustersList: teamClusterKeys.list,
+    registrySearch: registrySearchKeys.prefix,
+    registrySearchList: registrySearchKeys.list
 };
 
 const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
@@ -141,6 +150,16 @@ export const usePluginTeamClustersQuery = (
     params: ListPluginTeamClustersInputDTO,
     options?: QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO>
 ) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO> | undefined);
+
+const registrySearchQuery = createQuery<SearchRegistryInputDTO, RegistrySearchResponse>(
+    (params) => PLUGIN_QUERY_KEYS.registrySearchList(params),
+    (params) => pluginService.searchRegistry(params)
+);
+
+export const useRegistrySearchQuery = (
+    params: SearchRegistryInputDTO,
+    options?: QueryOptions<RegistrySearchResponse, RegistrySearchResponse>
+) => registrySearchQuery(params, options as QueryOptions<RegistrySearchResponse, RegistrySearchResponse> | undefined);
 
 // ─── Cache sync helpers ──────────────────────────────────────────────────────
 
@@ -214,6 +233,11 @@ export const useExportPluginMutation = createMutation<Blob, ExportPluginInputDTO
 
 export const useImportPluginMutation = managePluginEntityMutation<ImportPluginInputDTO>(
     pluginService.importPlugin,
+    (plugin) => syncPluginEntityCaches(plugin)
+);
+
+export const useInstallRegistryPluginMutation = managePluginEntityMutation<InstallRegistryPluginInputDTO>(
+    pluginService.installRegistryPlugin,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 

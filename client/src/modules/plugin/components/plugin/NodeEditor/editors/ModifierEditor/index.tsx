@@ -2,11 +2,10 @@ import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
-import { MODIFIER_EDITOR_DEFAULT_VALUES, modifierEditorSchema } from './schema';
+import { MODIFIER_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ModifierEditorFormValues } from './schema';
 
 const useModifierEditorForm = createNodeEditorForm<ModifierEditorFormValues, 'modifier'>({
-    schema: modifierEditorSchema,
     defaults: MODIFIER_EDITOR_DEFAULT_VALUES,
     dataKey: 'modifier'
 });

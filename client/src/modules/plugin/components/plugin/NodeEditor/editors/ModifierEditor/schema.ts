@@ -1,16 +1,12 @@
-import { z } from 'zod/v4';
-
-export const modifierEditorSchema = z.object({
-    key: z.string().default(''),
-    name: z.string().default(''),
-    author: z.string().default(''),
-    license: z.string().default(''),
-    version: z.string().default(''),
-    homepage: z.string().default(''),
-    description: z.string().default('')
-}).strict();
-
-export type ModifierEditorFormValues = z.infer<typeof modifierEditorSchema>;
+export interface ModifierEditorFormValues {
+    key: string;
+    name: string;
+    author: string;
+    license: string;
+    version: string;
+    homepage: string;
+    description: string;
+}
 
 export const MODIFIER_EDITOR_DEFAULT_VALUES = {
     key: '',

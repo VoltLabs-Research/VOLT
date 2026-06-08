@@ -17,8 +17,13 @@ export interface RBACConfig {
     actions: RBACAction[];
 }
 
+export interface DeploymentConfig {
+    mode: 'local' | 'cloud';
+}
+
 const endpoints = {
-    getRBACConfig: get<EmptyParams, RBACConfig>('/rbac')
+    getRBACConfig: get<EmptyParams, RBACConfig>('/rbac'),
+    getDeploymentConfig: get<EmptyParams, DeploymentConfig>('/config')
 };
 
 export default createService({

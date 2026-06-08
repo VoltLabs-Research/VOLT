@@ -4,6 +4,7 @@ import SidebarNavigation from '@/modules/dashboard/components/SidebarNavigation'
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import TeamSelector from '@/modules/team/components/TeamSelector';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { Box, IconButton, Popover, openModal, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
 import './DashboardSidebar.css';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ interface DashboardSidebarProps {
 const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse, onExpandSidebar }: DashboardSidebarProps) => {
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
+    const singleTenant = useSingleTenant();
 
     return (
         <Box as='aside' position='fixed' height='vh-max' className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`}>
@@ -34,6 +36,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
 
             <Brand collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
 
+            {!singleTenant && (
             <Box className='sidebar-workspace'>
                 <TeamSelector className='sidebar-workspace-selector' />
                 <Popover
@@ -77,6 +80,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                     )}
                 </Popover>
             </Box>
+            )}
 
             <SidebarNavigation
                 setSidebarOpen={setSidebarOpen}
@@ -91,12 +95,14 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                     collapsed={collapsed}
                 />
 
-                <UserMenuPopover
-                    onSettingsClick={handleSettingsClick}
-                    onSignOut={handleSignOut}
-                    isSigningOut={isSigningOut}
-                    collapsed={collapsed}
-                />
+                {!singleTenant && (
+                    <UserMenuPopover
+                        onSettingsClick={handleSettingsClick}
+                        onSignOut={handleSignOut}
+                        isSigningOut={isSigningOut}
+                        collapsed={collapsed}
+                    />
+                )}
             </Box>
         </Box>
     );

@@ -5,6 +5,7 @@ import { BookOpen, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { Box, Tooltip } from '@voltstack/bravais';
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -17,17 +18,19 @@ const SETTINGS_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigatio
 const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collapsed = false }: SidebarFooterNavigationProps) => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
-    const defaultSettingsPath = SETTINGS_NAVIGATION_ITEMS[0]?.path ?? '/dashboard/settings/general';
+    const singleTenant = useSingleTenant();
+    const settingsItems = singleTenant ? SETTINGS_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SETTINGS_NAVIGATION_ITEMS;
+    const defaultSettingsPath = settingsItems[0]?.path ?? '/dashboard/settings/general';
 
     const handleOpenDocs = () => window.open('https://docs.voltcloud.dev', '_blank', 'noopener,noreferrer');
 
     const settingsSubItems = useMemo(() => {
-        return SETTINGS_NAVIGATION_ITEMS.map((item) => ({
+        return settingsItems.map((item) => ({
             label: item.label,
             isSelected: pathname === item.path,
             onClick: () => navigate(item.path)
         }));
-    }, [pathname, navigate]);
+    }, [pathname, navigate, settingsItems]);
 
     const settingsActive = pathname.startsWith('/dashboard/settings');
 

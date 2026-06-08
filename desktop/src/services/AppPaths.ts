@@ -5,7 +5,6 @@ export default class AppPaths{
     readonly composeFile: string;
     readonly configFile: string;
     readonly downloadDir: string;
-    readonly clientDir: string;
 
     constructor(){
         const resources = app.isPackaged ? process.resourcesPath : process.cwd();
@@ -14,8 +13,5 @@ export default class AppPaths{
         this.composeFile = path.join(resources, 'stack', 'compose.yml');
         this.configFile = path.join(data, 'app-config.json');
         this.downloadDir = path.join(data, 'downloads');
-        // Compiled client SPA served locally by ClientServer. Dev: sibling client/dist.
-        this.clientDir = process.env.VOLT_CLIENT_DIR
-            ?? (app.isPackaged ? path.join(resources, 'client') : path.join(resources, '..', 'client', 'dist'));
     }
 };

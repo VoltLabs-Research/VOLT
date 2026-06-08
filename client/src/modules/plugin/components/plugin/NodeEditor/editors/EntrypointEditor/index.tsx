@@ -9,7 +9,7 @@ import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/ut
 import Editor from '@monaco-editor/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Upload, File, Trash2, Check } from 'lucide-react';
-import { ENTRYPOINT_EDITOR_DEFAULT_VALUES, entrypointEditorSchema } from './schema';
+import { ENTRYPOINT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
 import type { EditorProps } from '../types';
@@ -27,7 +27,6 @@ const ENTRYPOINT_TYPE_OPTIONS = [{
 }];
 
 const useEntrypointEditorForm = createNodeEditorForm<EntrypointEditorFormValues, 'entrypoint'>({
-    schema: entrypointEditorSchema,
     defaults: ENTRYPOINT_EDITOR_DEFAULT_VALUES,
     dataKey: 'entrypoint'
 });

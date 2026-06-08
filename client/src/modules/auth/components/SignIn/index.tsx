@@ -1,5 +1,4 @@
 import './SignIn.css';
-import { signInSchema } from './validation-schema';
 import {
     useCheckEmailMutation,
     useOAuthProvidersQuery,
@@ -19,7 +18,6 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { Heading, Stack, Stepper, Text, Button } from '@voltstack/bravais';
 import type { StepTitles } from '@voltstack/bravais';
 import { useStepper } from '@voltstack/bravais';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utilities/backend-origin';
 import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';
 import { sileo } from 'sileo';
@@ -62,7 +60,6 @@ const SignInTemplate = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { control, getValues, trigger, formState } = useForm<SignInForm>({
-        resolver: zodResolver(signInSchema),
         defaultValues: {
             email: '',
             fullName: '',

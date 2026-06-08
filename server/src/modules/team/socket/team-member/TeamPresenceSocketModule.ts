@@ -9,8 +9,6 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
-import { teamScopedSocketPayloadSchema } from '@modules/socket/utilities/team-subscription-schemas';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
@@ -56,18 +54,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
 
     onConnection(connection: ISocketConnection): void {
         this.on<TeamScopedSocketPayload>(connection.id, 'team:heartbeat', async (_conn, payload) => {
-            const parsed = teamScopedSocketPayloadSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    connection.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
-            const heartbeat = this.teamPresenceService.registerHeartbeat(connection.id, parsed.data.teamId);
+            const heartbeat = this.teamPresenceService.registerHeartbeat(connection.id, payload.teamId);
 
             if (!heartbeat || heartbeat.minutesToPersist <= 0) {
                 return;
@@ -77,24 +64,13 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         });
 
         this.on<TeamScopedSocketPayload>(connection.id, 'leave_team', async (conn, payload) => {
-            const parsed = teamScopedSocketPayloadSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
             const detachedSession = await this.handleDisconnection(conn.id, true);
 
-            if (!detachedSession || detachedSession.teamId !== parsed.data.teamId) {
-                await this.leaveRoom(conn.id, `team:${parsed.data.teamId}`);
+            if (!detachedSession || detachedSession.teamId !== payload.teamId) {
+                await this.leaveRoom(conn.id, `team:${payload.teamId}`);
             }
 
-            if (this.teamSubscriptionService.getCurrentTeamId(conn) === parsed.data.teamId) {
+            if (this.teamSubscriptionService.getCurrentTeamId(conn) === payload.teamId) {
                 this.teamSubscriptionService.clearCurrentTeamId(conn);
             }
         });

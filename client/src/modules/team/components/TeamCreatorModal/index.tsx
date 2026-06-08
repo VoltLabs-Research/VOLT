@@ -5,12 +5,9 @@ import { runAction } from '@/shared/presentation/actions/run-action';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { Modal, resetModal, Text } from '@voltstack/bravais';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { Resolver } from 'react-hook-form';
-import { teamCreatorSchema } from './validation-schema';
 import type { TeamCreatorForm } from './validation-schema';
 import './TeamCreatorModal.css';
 
@@ -40,7 +37,6 @@ export const TeamCreatorModal = ({
     const setSelectedTeamId = useTeamStore((state) => state.setSelectedTeamId);
 
     const form = useForm<TeamCreatorForm>({
-        resolver: zodResolver(teamCreatorSchema) as unknown as Resolver<TeamCreatorForm>,
         defaultValues: {
             name: '',
             description: ''
