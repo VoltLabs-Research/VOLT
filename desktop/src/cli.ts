@@ -11,9 +11,6 @@ import DockerPreflight from '@/services/DockerPreflight';
 import Deploy from '@/services/Deploy';
 import DeployProgress from '@/services/DeployProgress';
 
-// Interactive headless deploy: same Deploy/Bootstrap/compose the desktop uses, driven by
-// terminal prompts. Provisions the account/team/cluster and brings up the stack (+ daemon
-// unless server-only). Reachability host feeds the existing CLIENT_HOST/SERVER_ENDPOINT.
 const moduleDir = typeof __dirname !== 'undefined'
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
@@ -61,9 +58,11 @@ const main = async () => {
     const env = await appConfig.getStackEnv();
     env.SECRET_KEY ||= crypto.randomBytes(32).toString('hex');
     env.SSH_KEY ||= crypto.randomBytes(32).toString('hex');
+    env.WEB_PORT ||= '5273';
+    env.SERVER_PORT ||= '8100';
     env.DEPLOYMENT_MODE = 'cloud';
-    env.CLIENT_HOST = `http://${answers.host}:${env.WEB_PORT ?? '5273'}`;
-    env.SERVER_ENDPOINT = `http://${answers.host}:${env.SERVER_PORT ?? '8100'}`;
+    env.CLIENT_HOST = `http://${answers.host}:${env.WEB_PORT}`;
+    env.SERVER_ENDPOINT = `http://${answers.host}:${env.SERVER_PORT}`;
     await appConfig.setStackEnv(env);
 
     const progress = new DeployProgress();
@@ -93,8 +92,6 @@ const main = async () => {
         withCluster
     });
 
-    // Best-effort: provision a VoltCloud Console account for this user before deploying.
-    // Already-registered (409) is fine; any other failure never blocks the deploy.
     const consoleUrl = process.env.VOLT_CONSOLE_URL ?? 'https://server.console.voltcloud.dev';
     let consoleReady = false;
     const consoleSpinner = p.spinner();
@@ -120,13 +117,29 @@ const main = async () => {
     progress.stop();
 
     const finalEnv = await appConfig.getStackEnv();
-    if (consoleReady) {
+
+    if(consoleReady){
         p.note(
-            `We've set up your VOLT Cloud ID (${answers.email}).\nManage your VOLT cloud services — registry, plugins and access tokens — at\nhttps://console.voltcloud.dev`,
-            'VOLT Cloud'
+            `VOLT Cloud ID  ${answers.email}\nManage your services at console.voltcloud.dev`,
+            'Cloud Services'
         );
     }
-    p.outro(`VOLT is up — Client http://${answers.host}:${finalEnv.WEB_PORT ?? '5273'} · ${answers.email}${withCluster ? ' (+ daemon)' : ' (server only)'}`);
+
+    p.note(
+        [
+            `Client    ${finalEnv.CLIENT_HOST}`,
+            `Server    ${finalEnv.SERVER_ENDPOINT}`,
+            `Cluster   ${withCluster ? 'daemon running' : 'server only'}`,
+            '',
+            'Connect from any device:',
+            '  Web app      app.voltcloud.dev',
+            '  Desktop app  get.voltcloud.dev',
+            `  When asked for the server address, enter ${finalEnv.SERVER_ENDPOINT}`
+        ].join('\n'),
+        'VOLT is up'
+    );
+
+    p.outro('Deployment complete.');
 };
 
 main().catch((error) => {
