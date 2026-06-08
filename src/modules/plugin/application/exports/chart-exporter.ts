@@ -36,7 +36,7 @@ const extractChartData = (
     const xAxis = getNestedValue(decodedPayload, options.xAxisKey);
     const yAxis = getNestedValue(decodedPayload, options.yAxisKey);
 
-    if (!(xAxis instanceof Array) || !(yAxis instanceof Array)) {
+    if (!Array.isArray(xAxis) || !Array.isArray(yAxis)) {
         return [];
     }
 

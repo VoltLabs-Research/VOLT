@@ -102,7 +102,7 @@ const sendCommand = (
             }
 
             const data = response.data as { data?: unknown } | undefined;
-            resolve(data && typeof data === 'object' && 'data' in data ? data.data : response.data);
+            resolve(data && 'data' in data ? data.data : response.data);
         };
 
         activeSocket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
@@ -194,7 +194,7 @@ const stop = (): void => {
 };
 
 process.on('message', (message: ParentMessage) => {
-    if (!message || typeof message !== 'object') return;
+    if (!message) return;
 
     if (message.type === 'emit') {
         socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message.message);

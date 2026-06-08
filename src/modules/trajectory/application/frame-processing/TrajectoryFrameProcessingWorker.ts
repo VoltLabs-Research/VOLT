@@ -56,7 +56,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 
     protected async process(payload: FrameProcessingQueueJobPayload, bullJob: Job<FrameProcessingQueueJobPayload>): Promise<void> {
-        const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
+        const maxAttempts = bullJob.opts.attempts ?? 1;
         const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
 
         await withJobLifecycle(

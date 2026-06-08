@@ -151,7 +151,7 @@ export class WorkflowSession {
             : null;
 
         let selectedFrames: typeof context.trajectoryFrames;
-        if (context.selectedFrameOnly && typeof context.selectedTimestep === 'number') {
+        if (context.selectedFrameOnly && context.selectedTimestep !== undefined) {
             selectedFrames = context.trajectoryFrames.filter((frame) => frame.timestep === context.selectedTimestep);
         } else if (selectedTimesteps) {
             selectedFrames = context.trajectoryFrames.filter((frame) => selectedTimesteps.has(frame.timestep));

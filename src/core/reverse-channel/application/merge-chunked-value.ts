@@ -1,15 +1,12 @@
+import type { JsonObject, JsonValue } from '@/support/types/json';
 import { isRecord } from '@/support/type-guards/is-record';
 
-type ChunkedArray = ChunkedValue[];
-interface ChunkedRecord { [key: string]: ChunkedValue }
-type ChunkedValue = boolean | ChunkedArray | ChunkedRecord | null | number | string;
-
-const mergeChunkedArray = (target: ChunkedArray, incoming: ChunkedArray): ChunkedArray => {
+const mergeChunkedArray = (target: JsonValue[], incoming: JsonValue[]): JsonValue[] => {
     target.push(...incoming);
     return target;
 };
 
-const mergeChunkedRecord = (target: ChunkedRecord, incoming: ChunkedRecord): ChunkedRecord => {
+const mergeChunkedRecord = (target: JsonObject, incoming: JsonObject): JsonObject => {
     for (const [key, incomingValue] of Object.entries(incoming)) {
         target[key] = mergeChunkedValue(target[key] ?? null, incomingValue);
     }
@@ -17,7 +14,7 @@ const mergeChunkedRecord = (target: ChunkedRecord, incoming: ChunkedRecord): Chu
     return target;
 };
 
-const mergeChunkedValue = (target: ChunkedValue, incoming: ChunkedValue): ChunkedValue => {
+const mergeChunkedValue = (target: JsonValue, incoming: JsonValue): JsonValue => {
     if (incoming === null) return target;
     if (target === null) return incoming;
 
@@ -26,7 +23,7 @@ const mergeChunkedValue = (target: ChunkedValue, incoming: ChunkedValue): Chunke
     }
 
     if (isRecord(target) && isRecord(incoming)) {
-        return mergeChunkedRecord(target as ChunkedRecord, incoming);
+        return mergeChunkedRecord(target as JsonObject, incoming);
     }
 
     return incoming;

@@ -39,7 +39,7 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 
     protected async process(payload: RasterQueueJobPayload, bullJob: Job<RasterQueueJobPayload>): Promise<void> {
-        const maxAttempts = typeof bullJob.opts.attempts === 'number' ? bullJob.opts.attempts : 1;
+        const maxAttempts = bullJob.opts.attempts ?? 1;
         const isFinalAttempt = () => bullJob.attemptsMade + 1 >= maxAttempts;
 
         await withJobLifecycle(

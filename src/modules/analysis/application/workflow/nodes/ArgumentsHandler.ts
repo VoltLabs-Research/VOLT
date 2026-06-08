@@ -347,7 +347,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         if (definition.type === 'select' && definition.multipleSelection) {
-            const selectedValues = value instanceof Array ? value : [value];
+            const selectedValues = Array.isArray(value) ? value : [value];
             if (selectedValues.length > 0) {
                 cliArgs.push(`--${argumentKey}`, selectedValues.join(','));
             }
@@ -415,7 +415,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         if (condition.operator === 'in') {
-            if (currentValue instanceof Array) {
+            if (Array.isArray(currentValue)) {
                 return currentValue.some((entry) => comparisonValues.includes(entry as string | number | boolean));
             }
 
@@ -423,7 +423,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
         }
 
         if (condition.operator === 'notIn') {
-            if (currentValue instanceof Array) {
+            if (Array.isArray(currentValue)) {
                 return currentValue.every((entry) => !comparisonValues.includes(entry as string | number | boolean));
             }
 
@@ -487,7 +487,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
             return;
         }
 
-        if (definition.type === 'list' && resolvedValue instanceof Array) {
+        if (definition.type === 'list' && Array.isArray(resolvedValue)) {
             const nestedDefinitions = definition.listArguments ?? [];
             resolvedValue.forEach((entry, index) => {
                 const item = entry as WorkflowNodeOutput;

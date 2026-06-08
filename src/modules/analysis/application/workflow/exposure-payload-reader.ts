@@ -2,7 +2,7 @@ import { Unpackr } from 'msgpackr';
 import mergeChunkedValue from '@/core/reverse-channel/application/merge-chunked-value';
 import type { PerAtomProperties } from '@/modules/plugin/application/properties/PluginAtomProperties';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
-import { isPlainObject } from '@/support/type-guards/is-record';
+import { isRecord } from '@/support/type-guards/is-record';
 import { readFile } from 'node:fs/promises';
 
 export interface WorkflowExposurePayloadReadResult {
@@ -37,7 +37,7 @@ const mergeSelectedKeys = (
     incoming: unknown,
     keyFilter: (key: string) => boolean
 ): MsgpackObject | null => {
-    if (!isPlainObject(incoming)) {
+    if (!isRecord(incoming)) {
         return target;
     }
 
@@ -52,11 +52,8 @@ const mergeSelectedKeys = (
         return target;
     }
 
-    const merged = mergeChunkedValue(
-        target as unknown as Parameters<typeof mergeChunkedValue>[0],
-        filtered as unknown as Parameters<typeof mergeChunkedValue>[1]
-    );
-    return isPlainObject(merged) ? (merged as MsgpackObject) : target;
+    const merged = mergeChunkedValue(target, filtered);
+    return isRecord(merged) ? (merged as MsgpackObject) : target;
 };
 
 export const readWorkflowExposurePayload = async (
@@ -77,18 +74,18 @@ export const readWorkflowExposurePayload = async (
             return key === EXPORT_KEY_PREFIX || key.startsWith(`${EXPORT_KEY_PREFIX}.`);
         });
 
-        if (!isPlainObject(message)) {
+        if (!isRecord(message)) {
             return;
         }
 
         const subListings = message.sub_listings;
-        if (!subListings || !isPlainObject(subListings)) {
+        if (!subListings || !isRecord(subListings)) {
             return;
         }
 
         for (const [name, value] of Object.entries(subListings)) {
             if (Array.isArray(value) && value.length > 0) {
-                const rows = value.filter(isPlainObject) as MsgpackObject[];
+                const rows = value.filter(isRecord) as MsgpackObject[];
                 if (rows.length > 0) {
                     subListingNames.add(name);
                     subListingRows.set(name, [
@@ -99,13 +96,13 @@ export const readWorkflowExposurePayload = async (
                 continue;
             }
 
-            if (value && isPlainObject(value) && Object.keys(value).length > 0) {
+            if (value && isRecord(value) && Object.keys(value).length > 0) {
                 subListingNames.add(name);
                 const merged = mergeChunkedValue(
                     subListingObjectRows.get(name) as unknown as Parameters<typeof mergeChunkedValue>[0],
                     value as unknown as Parameters<typeof mergeChunkedValue>[1]
                 );
-                subListingObjectRows.set(name, isPlainObject(merged) ? (merged as MsgpackObject) : null);
+                subListingObjectRows.set(name, isRecord(merged) ? (merged as MsgpackObject) : null);
             }
         }
     });

@@ -31,20 +31,10 @@ const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
 
 const normalizeQueueConcurrency = (
     queueConcurrency: Partial<TeamClusterDaemonQueueConcurrency> | undefined
-): TeamClusterDaemonQueueConcurrency => {
-    const source = {
-        ...DEFAULT_QUEUE_CONCURRENCY,
-        ...queueConcurrency
-    };
-
-    return {
-        analysis: source.analysis,
-        rasterizer: source.rasterizer,
-        glbPreprocessing: source.glbPreprocessing,
-        artifactUpload: source.artifactUpload,
-        pluginWarmup: source.pluginWarmup
-    };
-};
+): TeamClusterDaemonQueueConcurrency => ({
+    ...DEFAULT_QUEUE_CONCURRENCY,
+    ...queueConcurrency
+});
 
 const normalizeQueueScopeLimits = (
     queueScopeLimits: Partial<TeamClusterDaemonQueueScopeLimits> | undefined

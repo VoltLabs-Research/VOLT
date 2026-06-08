@@ -943,10 +943,6 @@ export class WorkflowRuntime {
 
             await fs.mkdir(path.dirname(targetOutputDir), { recursive: true });
             for (const file of manifest.files) {
-                if (typeof file.cacheName !== 'string' || typeof file.suffix !== 'string') {
-                    return null;
-                }
-
                 const source = path.join(cacheDir, file.cacheName);
                 const target = `${targetOutputDir}${file.suffix}`;
                 await fs.copyFile(source, target);

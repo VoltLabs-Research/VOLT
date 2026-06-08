@@ -19,11 +19,11 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
 
     try {
         const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-        const parsed = JSON.parse(payload);
-        if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
+        const parsed = JSON.parse(payload) as string[];
+        if (!Array.isArray(parsed)) {
             return null;
         }
-        return parsed as string[];
+        return parsed;
     } catch {
         return null;
     }

@@ -15,7 +15,7 @@ import type {
 } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { decodeCliArgumentsToken } from '@/support/serialization/serialization';
-import { isPlainObject } from '@/support/type-guards/is-record';
+import { isRecord } from '@/support/type-guards/is-record';
 import { getSharedWasmRuntime } from '@/modules/plugin/application/runtime/WasmRuntime';
 import type { WasmFrameChunk } from '@/modules/plugin/application/runtime/WasmPluginInstance';
 import type {
@@ -213,7 +213,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         const timestep = context.selectedTimestep
             ?? context.selectedTimesteps?.[0]
             ?? context.trajectoryFrames?.[0]?.timestep;
-        if (typeof timestep !== 'number') {
+        if (timestep === undefined) {
             return this.executePreparedEntrypoint(request, executionRuntime, preparedArgs);
         }
 
@@ -291,7 +291,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         if (!trimmed) return base;
         try {
             const parsed = JSON.parse(trimmed) as unknown;
-            if (isPlainObject(parsed)) {
+            if (isRecord(parsed)) {
                 return { ...base, ...parsed };
             }
             return { ...base, config: parsed };
@@ -533,7 +533,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             types: typesCandidate,
             properties: propertiesCandidate,
             ids: idsCandidate instanceof Uint32Array ? idsCandidate : undefined,
-            timestep: typeof timestepCandidate === 'number' ? timestepCandidate : undefined
+            timestep: timestepCandidate
         };
     }
 

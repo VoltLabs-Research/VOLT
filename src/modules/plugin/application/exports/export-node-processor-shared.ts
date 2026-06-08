@@ -15,7 +15,7 @@ export const getNestedValue = (data: MsgpackObject, key: string): MsgpackValue |
     }
 
     return key.split('.').reduce<MsgpackValue | undefined>((current, segment) => {
-        if (typeof current !== 'object' || current === null || current instanceof Array) {
+        if (typeof current !== 'object' || current === null || Array.isArray(current)) {
             return undefined;
         }
 
@@ -43,18 +43,18 @@ export const resolveExporterEntries = (
 ): ExporterEntry[] => {
     const rawExport = decodedPayload.export;
 
-    if (rawExport instanceof Array) {
+    if (Array.isArray(rawExport)) {
         const entries: ExporterEntry[] = [];
 
         for (let index = 0; index < rawExport.length; index += 1) {
             const element = rawExport[index];
-            if (typeof element !== 'object' || element === null || element instanceof Array) {
+            if (typeof element !== 'object' || element === null || Array.isArray(element)) {
                 logger.warn(`Skipping non-record element in export array for exporter=${exporter}, index=${index}`);
                 continue;
             }
 
             const exporterData = element[exporter];
-            if (typeof exporterData !== 'object' || exporterData === null || exporterData instanceof Array) {
+            if (typeof exporterData !== 'object' || exporterData === null || Array.isArray(exporterData)) {
                 logger.warn(`Exporter key missing from export array element for exporter=${exporter}, index=${index}`);
                 continue;
             }
@@ -70,7 +70,7 @@ export const resolveExporterEntries = (
     }
 
     const exporterData = rawExport[exporter];
-    if (typeof exporterData !== 'object' || exporterData === null || exporterData instanceof Array) {
+    if (typeof exporterData !== 'object' || exporterData === null || Array.isArray(exporterData)) {
         return [];
     }
 

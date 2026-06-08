@@ -39,7 +39,7 @@ export const createAnalysisStageReporter = (
     const startedAtByStageKey = new Map<string, Date>();
 
     const createTimingKey = (stageKey: string, timestep?: number): string => {
-        return `${stageKey}:${typeof timestep === 'number' ? timestep : 'global'}`;
+        return `${stageKey}:${timestep ?? 'global'}`;
     };
 
     const resolveTiming = (input: AnalysisStageReportInput, timestep?: number) => {
@@ -93,15 +93,15 @@ export const createAnalysisStageReporter = (
             await daemonJobReporter.reportAnalysisStageStatus(payload);
 
             if (
-                typeof timestep !== 'number'
-                || typeof basePayload.analysisId !== 'string'
-                || typeof basePayload.trajectoryId !== 'string'
+                timestep === undefined
+                || basePayload.analysisId === undefined
+                || basePayload.trajectoryId === undefined
                 || payload.stageStatus === 'pending'
             ) {
                 return;
             }
 
-            const durationText = typeof payload.durationMs === 'number'
+            const durationText = payload.durationMs !== undefined
                 ? ` (${payload.durationMs}ms)`
                 : '';
             const cacheText = payload.cacheHit ? ' cache hit' : '';

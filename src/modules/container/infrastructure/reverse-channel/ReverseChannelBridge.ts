@@ -608,7 +608,7 @@ export class ReverseChannelBridge {
 
         this.touchSession(payload.sessionId);
         const chunk = Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
-        if (payload.requiresAck && typeof payload.sequence === 'number') {
+        if (payload.requiresAck && payload.sequence !== undefined) {
             let acknowledged = false;
             const acknowledgeDrain = (): void => {
                 if (acknowledged) {

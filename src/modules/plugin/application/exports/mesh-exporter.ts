@@ -118,9 +118,9 @@ const processMesh = (
             const third = vertexIndices.get(facet.vertices[2]);
 
             if (
-                typeof first !== 'number'
-                || typeof second !== 'number'
-                || typeof third !== 'number'
+                first === undefined
+                || second === undefined
+                || third === undefined
             ) {
                 return null;
             }

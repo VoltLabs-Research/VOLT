@@ -48,7 +48,7 @@ export const extractDaemonTraceContext = (payload?: DaemonTracePayload): DaemonT
         traceContext.traceId ??= source.traceId;
     }
 
-    return Object.values(traceContext).some((value) => typeof value === 'string') ? traceContext : undefined;
+    return Object.values(traceContext).some((value) => value !== undefined) ? traceContext : undefined;
 };
 
 export const serializeDaemonTraceContext = (

@@ -5,7 +5,7 @@ import {
     readWorkflowExposurePayload
 } from '@/modules/analysis/application/workflow/exposure-payload-reader';
 import type { MsgpackObject } from '@/support/serialization/msgpack-value';
-import { isPlainObject } from '@/support/type-guards/is-record';
+import { isRecord } from '@/support/type-guards/is-record';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
@@ -179,7 +179,7 @@ async function precomputeListingRows(
     }
 
     const mainListing = decoded.main_listing;
-    if (!isPlainObject(mainListing) || Object.keys(mainListing).length === 0) {
+    if (!isRecord(mainListing) || Object.keys(mainListing).length === 0) {
         // Plugins that don't emit a main_listing (e.g. PTM Analysis exposure
         // emits per-atom data only) hit this path on every timestep — it is a
         // normal case, not a problem worth waking anyone up for.

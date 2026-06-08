@@ -1,6 +1,5 @@
-export type MsgpackScalar = boolean | null | number | string;
-export type MsgpackValue = MsgpackScalar | MsgpackObject | MsgpackValue[];
+import type { JsonObject, JsonPrimitive, JsonValue } from '@/support/types/json';
 
-export interface MsgpackObject {
-    [key: string]: MsgpackValue | undefined;
-}
+export type MsgpackScalar = JsonPrimitive;
+export type MsgpackValue = JsonValue;
+export type MsgpackObject = JsonObject;

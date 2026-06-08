@@ -71,7 +71,7 @@ export const planAnalysisWorkflow = async (
 
     const jobs: AnalysisQueueJobPayload[] = plannedItems.map((item, index) => {
         const timestep = item.timestep ?? item.frame;
-        if (typeof timestep !== 'number') {
+        if (timestep === undefined) {
             throw ApplicationError.unprocessableEntity(
                 'Analysis::Start::MissingTimestep',
                 `Missing timestep for analysis job ${input.analysisId}-${index}`
