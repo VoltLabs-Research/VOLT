@@ -141,6 +141,11 @@ const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
 
 export const fetchPlugins = (params: GetPluginsInputDTO) => pluginsQuery.fetch(params);
 
+export const usePluginsCatalogQuery = (
+    params: GetPluginsInputDTO,
+    options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
+) => pluginsQuery(params, options as QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>> | undefined);
+
 const teamClustersQuery = createQuery<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>(
     (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),
     (params) => pluginService.listTeamClusters(params)

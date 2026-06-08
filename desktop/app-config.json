@@ -36,6 +36,10 @@
     "daemonPassword": "521013f69ff4a952cf71a37062b3cc5f83ddf34f8004f38a"
   },
   "deployment": {
-    "mode": "local"
+    "mode": "remote",
+    "remote": {
+      "serverEndpoint": "http://192.168.101.98:8100",
+      "clientUrl": "http://192.168.101.98:5273"
+    }
   }
 }

@@ -89,7 +89,7 @@ export default class SocketGateway{
 
         this.io = new Server(server, {
             cors: {
-                origin: this.corsOrigins.filter(Boolean),
+                origin: true,
                 methods: ['GET', 'POST']
             },
             transports: ['websocket', 'polling'],
