@@ -537,7 +537,8 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 }
             }
 
-            if (definition.optionsFromArguments !== undefined) {
+            if (definition.optionsFromArguments !== undefined
+                && (!Array.isArray(definition.optionsFromArguments) || definition.optionsFromArguments.length > 0)) {
                 if (!Array.isArray(definition.optionsFromArguments)) {
                     errors.push(`${argumentScope} optionsFromArguments must be an array`);
                 } else if (definition.type !== ArgumentType.Select) {

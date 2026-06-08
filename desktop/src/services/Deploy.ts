@@ -1,7 +1,7 @@
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
 import Stack from '@/services/Stack';
-import Bootstrap from '@/services/Bootstrap';
+import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
 import ProcessRunner from '@/services/ProcessRunner';
 import DockerPreflight, { PreflightError } from '@/services/DockerPreflight';
 import { assertDevPaths } from '@/services/devPaths';
@@ -15,6 +15,8 @@ export interface DeployProps{
     appConfig: AppConfig;
     sources: SourceResolver;
     docker: DockerPreflight;
+    account?: ProvisionAccount;
+    withCluster?: boolean;
 }
 
 type DeployState = AppEvents['deploy:state']['state'];
@@ -85,11 +87,13 @@ export default class Deploy{
             waitForUrl(`${serverOrigin}/api/auth/emails/probe%40volt.local/availability`));
 
         const state = await this.#phase('bootstrap', () =>
-            new Bootstrap({ appConfig: this.props.appConfig, serverOrigin }).ensure());
+            new Bootstrap({ appConfig: this.props.appConfig, serverOrigin, account: this.props.account }).ensure());
 
-        const daemonEnv = this.#withDaemonEnv(baseEnv, state);
-        await this.#phase('daemon', async () =>
-            (await this.#stack(daemonEnv)).up(['enrolled'], changed));
+        if(this.props.withCluster !== false){
+            const daemonEnv = this.#withDaemonEnv(baseEnv, state);
+            await this.#phase('daemon', async () =>
+                (await this.#stack(daemonEnv)).up(['enrolled'], changed));
+        }
 
         await this.#phase('web', () => waitForUrl(webProbe));
     }
