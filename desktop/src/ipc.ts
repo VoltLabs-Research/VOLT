@@ -18,7 +18,7 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     // Docker-served local client, with a one-shot bootstrap token that seeds localStorage.
     const localClientUrl = async (): Promise<string> => {
         const env = await deps.appConfig.getStackEnv();
-        const origin = `http://localhost:${env.WEB_PORT}`;
+        const origin = `http://localhost:${env.WEB_PORT ?? '5273'}`;
         const token = (await deps.appConfig.getBootstrap())?.authToken;
         return token ? `${origin}/__bootstrap.html?token=${encodeURIComponent(token)}` : origin;
     };

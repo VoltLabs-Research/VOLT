@@ -108,7 +108,8 @@
 }
 
 .canvas-timeline--timeline-active .canvas-timeline-ruler-region {
-    flex: 1 1 25px;
+    flex: 0 0 25px;
+    height: 25px;
     min-height: 25px;
 }
 
