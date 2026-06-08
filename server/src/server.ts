@@ -8,7 +8,6 @@ import type { Duplex } from 'node:stream';
 import { container } from 'tsyringe';
 import { registerAllDependencies } from './core/bootstrap/register-deps';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
-import apiDocsRouter from './core/config/api-docs';
 import app from './core/config/express';
 import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
@@ -127,7 +126,6 @@ const startServer = async () => {
         gracefulTerminationTimeout: SERVER_SHUTDOWN_GRACE_PERIOD
     });
 
-    app.use('/api-docs', apiDocsRouter);
     app.use(mountHttpRoutes());
     app.use(httpErrorMiddleware);
 

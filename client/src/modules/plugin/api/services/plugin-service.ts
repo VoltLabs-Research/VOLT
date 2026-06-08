@@ -4,6 +4,7 @@ import { buildFileFormData } from '@/shared/utils/file';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { Plugin } from '../entities/plugin/plugin';
 import type { PluginTeamClusterOption } from '../entities/plugin/team-cluster';
+import type { RegistrySearchResponse } from '../entities/plugin/registry';
 import type { IWorkflow } from '../entities/plugin/workflow';
 import type { PluginStatus } from '../entities/plugin/workflow-enums';
 
@@ -56,6 +57,17 @@ export interface GetPluginsInputDTO {
 
 export interface ImportPluginInputDTO {
     file: File;
+}
+
+export interface SearchRegistryInputDTO {
+    q?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface InstallRegistryPluginInputDTO {
+    name: string;
+    version?: string;
 }
 
 export interface ListPluginTeamClustersInputDTO {
@@ -175,6 +187,14 @@ const endpoints = {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    searchRegistry: get<SearchRegistryInputDTO, RegistrySearchResponse>('/registry/search', {
+        query: ({ q, page, limit }) => ({
+            ...(q?.trim() ? { q: q.trim() } : {}),
+            ...(page ? { page } : {}),
+            ...(limit ? { limit } : {})
+        })
+    }),
+    installRegistryPlugin: post<InstallRegistryPluginInputDTO, Plugin>('/registry/install'),
     execute: post<ExecutePluginInputDTO, ExecutePluginOutputDTO>('/:pluginId/trajectories/:trajectoryId/executions'),
     listTeamClusters: paginated<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>('/:teamId/clusters', {
         client: 'teamClusters'

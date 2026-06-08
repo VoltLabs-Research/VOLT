@@ -7,11 +7,9 @@ import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmi
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
-import { z } from 'zod/v4';
 
 const SOCKET_CHAT_EVENTS = {
     JOIN_CHAT: 'join_chat',
@@ -22,14 +20,6 @@ const SOCKET_CHAT_EVENTS = {
     USER_TYPING: 'user_typing',
     USERS_PRESENCE_INFO: 'users_presence_info'
 } as const;
-
-const chatIdSchema = z.string().trim().min(1);
-const typingPayloadSchema = z.object({
-    chatId: chatIdSchema
-});
-const usersPresencePayloadSchema = z.object({
-    userIds: z.array(chatIdSchema)
-});
 
 type PresenceStatus = 'online' | 'offline';
 
@@ -67,46 +57,34 @@ export default class ChatSocketModule extends BaseSocketModule {
 
     onConnection(connection: ISocketConnection): void {
         this.on<string>(connection.id, SOCKET_CHAT_EVENTS.JOIN_CHAT, async (conn, payload) => {
-            const parsed = chatIdSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                return this.rejectValidation(conn.id, formatSocketValidationError(parsed.error));
-            }
-
             const currentUserId = this.getCurrentUserId(conn);
             if (!currentUserId) {
                 return this.rejectAuthentication(conn.id);
             }
 
-            const chatResult = await resolveAccessibleChat(this.chatRepository, parsed.data, currentUserId);
+            const chatResult = await resolveAccessibleChat(this.chatRepository, payload, currentUserId);
             if (!chatResult.success) {
                 return this.rejectApplicationError(conn.id, chatResult.error);
             }
 
             const previousChatId = this.getCurrentChatId(conn);
-            if (previousChatId && previousChatId !== parsed.data) {
+            if (previousChatId && previousChatId !== payload) {
                 await this.cleanupActiveChat(conn, true);
             }
 
-            await this.joinRoom(conn.id, this.buildChatRoomName(parsed.data));
-            this.setCurrentChatContext(conn, parsed.data, this.resolveTeamId(chatResult.value.props.team));
+            await this.joinRoom(conn.id, this.buildChatRoomName(payload));
+            this.setCurrentChatContext(conn, payload, this.resolveTeamId(chatResult.value.props.team));
 
             return ackOk();
         });
 
         this.on<string>(connection.id, SOCKET_CHAT_EVENTS.LEAVE_CHAT, async (conn, payload) => {
-            const parsed = chatIdSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                return this.rejectValidation(conn.id, formatSocketValidationError(parsed.error));
-            }
-
-            if (this.getCurrentChatId(conn) === parsed.data) {
+            if (this.getCurrentChatId(conn) === payload) {
                 await this.cleanupActiveChat(conn, true);
                 return ackOk();
             }
 
-            await this.leaveRoom(conn.id, this.buildChatRoomName(parsed.data));
+            await this.leaveRoom(conn.id, this.buildChatRoomName(payload));
             return ackOk();
         });
 
@@ -119,18 +97,12 @@ export default class ChatSocketModule extends BaseSocketModule {
         });
 
         this.on<UsersPresencePayload>(connection.id, SOCKET_CHAT_EVENTS.GET_USERS_PRESENCE, async (conn, payload) => {
-            const parsed = usersPresencePayloadSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                return this.rejectValidation(conn.id, formatSocketValidationError(parsed.error));
-            }
-
             const teamId = this.getCurrentChatTeamId(conn);
             if (!teamId) {
                 return this.rejectInactiveChat(conn.id);
             }
 
-            const uniqueUserIds = Array.from(new Set(parsed.data.userIds));
+            const uniqueUserIds = Array.from(new Set(payload.userIds));
             const onlineUserIds = await this.teamRoomPresenceService.getOnlineUserIds(teamId);
             const onlineUserIdsSet = new Set(onlineUserIds);
             const presenceMap = uniqueUserIds.reduce<Record<string, PresenceStatus>>((acc, userId) => {
@@ -152,21 +124,15 @@ export default class ChatSocketModule extends BaseSocketModule {
         payload: TypingPayload,
         isTyping: boolean
     ): Promise<SocketAck> {
-        const parsed = typingPayloadSchema.safeParse(payload);
-
-        if (!parsed.success) {
-            return this.rejectValidation(connection.id, formatSocketValidationError(parsed.error));
-        }
-
         if (!this.getCurrentUserId(connection)) {
             return this.rejectAuthentication(connection.id);
         }
 
-        if (this.getCurrentChatId(connection) !== parsed.data.chatId) {
+        if (this.getCurrentChatId(connection) !== payload.chatId) {
             return this.rejectInactiveChat(connection.id);
         }
 
-        this.emitTypingState(parsed.data.chatId, connection, isTyping, true);
+        this.emitTypingState(payload.chatId, connection, isTyping, true);
         return ackOk();
     }
 
@@ -271,11 +237,6 @@ export default class ChatSocketModule extends BaseSocketModule {
         }
 
         return String(team);
-    }
-
-    private rejectValidation(socketId: string, details: string): SocketAck<never> {
-        this.emitErrorToSocket(socketId, ErrorCodes.VALIDATION_INVALID_INPUT, details);
-        return ackError(details);
     }
 
     private rejectAuthentication(socketId: string): SocketAck<never> {

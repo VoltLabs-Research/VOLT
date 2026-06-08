@@ -4,11 +4,10 @@ import IconPicker from '@/shared/presentation/components/IconPicker';
 import { Controller } from 'react-hook-form';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
-import { EXPOSURE_EDITOR_DEFAULT_VALUES, exposureEditorSchema } from './schema';
+import { EXPOSURE_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ExposureEditorFormValues } from './schema';
 
 const useExposureEditorForm = createNodeEditorForm<ExposureEditorFormValues, 'exposure'>({
-    schema: exposureEditorSchema,
     defaults: EXPOSURE_EDITOR_DEFAULT_VALUES,
     dataKey: 'exposure'
 });

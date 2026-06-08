@@ -9,8 +9,6 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
-import { subscribeToTeamSocketPayloadSchema } from '@modules/socket/utilities/team-subscription-schemas';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
@@ -41,17 +39,6 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
 
     onConnection(connection: ISocketConnection): void {
         this.on<SubscribeToTeamSocketPayload>(connection.id, 'subscribe_to_team', async (conn, payload) => {
-            const parsed = subscribeToTeamSocketPayloadSchema.safeParse(payload);
-
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return ackError(formatSocketValidationError(parsed.error));
-            }
-
             const currentUserId = conn.user?._id ?? conn.userId;
             if (!currentUserId) {
                 this.emitErrorToSocket(
@@ -64,7 +51,7 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
 
             const isMember = await this.teamMemberRepository.exists({
                 user: currentUserId,
-                team: parsed.data.teamId
+                team: payload.teamId
             });
 
             if (!isMember) {
@@ -76,23 +63,23 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return ackError('You are not a member of this team');
             }
 
-            await this.repairMembershipSnapshot(conn, currentUserId, parsed.data.teamId);
+            await this.repairMembershipSnapshot(conn, currentUserId, payload.teamId);
 
-            const previousTeamId = parsed.data.previousTeamId ?? this.teamSubscriptionService.getCurrentTeamId(conn);
+            const previousTeamId = payload.previousTeamId ?? this.teamSubscriptionService.getCurrentTeamId(conn);
             const previousRoomName = previousTeamId ? `team:${previousTeamId}` : undefined;
-            const roomName = `team:${parsed.data.teamId}`;
+            const roomName = `team:${payload.teamId}`;
 
             if (previousRoomName && previousRoomName !== roomName) {
                 await this.leaveRoom(conn.id, previousRoomName);
             }
 
             await this.joinRoom(conn.id, roomName);
-            this.teamSubscriptionService.setCurrentTeamId(conn, parsed.data.teamId);
+            this.teamSubscriptionService.setCurrentTeamId(conn, payload.teamId);
 
             await this.teamSubscriptionService.notify({
                 connection: conn,
                 subscription: {
-                    teamId: parsed.data.teamId,
+                    teamId: payload.teamId,
                     previousTeamId,
                     roomName,
                     previousRoomName

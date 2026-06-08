@@ -1,9 +1,10 @@
-import { Button, Text } from '@voltstack/bravais';
-import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine } from 'react-icons/ri';
+import { Button, Text, openModal, closeModal } from '@voltstack/bravais';
+import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine, RiStore2Line } from 'react-icons/ri';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
 import useImportPlugin from '@/modules/plugin/hooks/plugin/use-import-plugin';
+import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
@@ -57,6 +58,7 @@ const PluginsListing = () => {
     const navigate = useNavigate();
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
+    const [isRegistryOpen, setIsRegistryOpen] = useState(false);
     const selectedTeam = useSelectedTeam()!;
     const { canAccess } = useTeamPermissions();
     const canCreate = canAccess(['plugin:create']);
@@ -136,6 +138,16 @@ const PluginsListing = () => {
 
     const triggerImportFileSelect = useCallback(() => {
         importInputRef.current?.click();
+    }, []);
+
+    const openRegistryBrowser = useCallback(() => {
+        setIsRegistryOpen(true);
+        openModal(REGISTRY_BROWSER_MODAL_ID);
+    }, []);
+
+    const closeRegistryBrowser = useCallback(() => {
+        setIsRegistryOpen(false);
+        closeModal(REGISTRY_BROWSER_MODAL_ID);
     }, []);
 
     const { getMenuOptions: getBaseMenuOptions } = useListingActions<Plugin>({
@@ -245,6 +257,15 @@ const PluginsListing = () => {
                 >
                     Import
                 </Button>
+                <Button
+                    variant='toggle'
+                    intent='neutral'
+                    className='transition-fast'
+                    onClick={openRegistryBrowser}
+                    leftIcon={<RiStore2Line size={18} />}
+                >
+                    Browse registry
+                </Button>
             </>
         );
     }
@@ -289,22 +310,27 @@ const PluginsListing = () => {
     ], [navigate]);
 
     return (
-        <DocumentListing<Plugin>
-            title='Plugins'
-            queryKey={PLUGIN_QUERY_KEYS.catalog()}
-            columns={columns}
-            fetchData={fetchData}
-            defaultLimit={20}
-            getMenuOptions={getMenuOptions}
-            onItemClick={(plugin) => {
-                navigate(`/plugins/builder?id=${plugin._id}`);
-                return true;
-            }}
-            emptyMessage='No plugins found. Create your first plugin!'
-            createNew={createNewConfig}
-            headerActions={headerActions}
-            socketInvalidation={SOCKET_INVALIDATION}
-        />
+        <>
+            <DocumentListing<Plugin>
+                title='Plugins'
+                queryKey={PLUGIN_QUERY_KEYS.catalog()}
+                columns={columns}
+                fetchData={fetchData}
+                defaultLimit={20}
+                getMenuOptions={getMenuOptions}
+                onItemClick={(plugin) => {
+                    navigate(`/plugins/builder?id=${plugin._id}`);
+                    return true;
+                }}
+                emptyMessage='No plugins found. Create your first plugin!'
+                createNew={createNewConfig}
+                headerActions={headerActions}
+                socketInvalidation={SOCKET_INVALIDATION}
+            />
+            {canCreate && (
+                <RegistryBrowserModal isOpen={isRegistryOpen} onClose={closeRegistryBrowser} />
+            )}
+        </>
     );
 };
 

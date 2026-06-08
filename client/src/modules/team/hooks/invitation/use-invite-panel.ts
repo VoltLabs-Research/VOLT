@@ -4,13 +4,11 @@ import type { TeamInvitation } from '@/modules/team/api/entities/invitation/team
 import type { InviteButtonState } from '../../components/InviteButton';
 import { ErrorSurface, getErrorMessage, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { sileo } from 'sileo';
-import { teamInviteSchema } from './invite-panel-schema';
 import type { TeamInviteForm } from './invite-panel-schema';
 
 interface EmailFieldBind {
@@ -49,7 +47,6 @@ export default function useInvitePanel(): UseInvitePanelReturn {
     const cancelInvitation = useCancelInvitationMutation();
 
     const form = useForm<TeamInviteForm>({
-        resolver: zodResolver(teamInviteSchema),
         defaultValues: {
             email: ''
         }

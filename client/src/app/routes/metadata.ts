@@ -24,6 +24,7 @@ export interface DashboardNavigationItem {
     requiredPermissions?: string[];
     permissionMode?: RouteConfig['permissionMode'];
     disabledReason?: string;
+    multiTenantOnly?: boolean;
 };
 
 type RouteCollectionKey = 'public' | 'protected' | 'guest';
@@ -125,7 +126,8 @@ routeManifestEntries.forEach((entry) => {
         icon: entry.route.navigation.icon,
         requiredPermissions: entry.route.requiredPermissions,
         permissionMode: entry.route.permissionMode,
-        disabledReason: entry.route.navigation.disabledReason
+        disabledReason: entry.route.navigation.disabledReason,
+        multiTenantOnly: entry.route.navigation.multiTenantOnly
     });
 });
 

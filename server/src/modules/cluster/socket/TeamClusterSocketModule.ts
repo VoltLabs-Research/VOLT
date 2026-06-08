@@ -7,7 +7,6 @@ import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmi
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import {
     toTeamClusterQueueConcurrencyDTO,
@@ -49,7 +48,6 @@ import type { Result } from '@shared/domain/port/Result';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { z } from 'zod/v4';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -60,83 +58,64 @@ interface ClusterMetricsHistorySocketPayload {
     minutes?: number;
 }
 
-const MAX_CLUSTER_METRICS_HISTORY_MINUTES = 60;
 const TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS',
     60_000
 );
 
-const subscribeToTeamClusterSocketPayloadSchema = z.object({
-    teamClusterIds: z.array(z.string().trim().min(1))
-}).strict();
+interface DaemonStreamLogSegment {
+    stream: 'stdout' | 'stderr' | 'system';
+    text: string;
+    occurredAt: string;
+    nodeId?: string;
+    nodeType?: string;
+    nodeLabel?: string;
+    pluginId?: string;
+    executionPath?: string[];
+}
 
-const clusterMetricsHistorySocketPayloadSchema = z.object({
-    clusterId: z.string().trim().min(1),
-    minutes: z.number().int().min(1).max(MAX_CLUSTER_METRICS_HISTORY_MINUTES).optional()
-}).strict();
+interface DaemonAnalysisLogChunkStreamPayload {
+    type: string;
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep: number;
+    segments: DaemonStreamLogSegment[];
+}
 
-const daemonRegisterPayloadSchema = z.object({
-    teamClusterId: z.string().trim().min(1),
-    daemonPassword: z.string().trim().min(1),
-    channel: z.enum([
-        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat,
-        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control,
-        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.ObjectGateway,
-        TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Events
-    ]).optional()
-}).strict();
+interface DaemonDebugLogChunkStreamPayload {
+    type: string;
+    teamClusterId: string;
+    daemonPassword: string;
+    sessionId: string;
+    nodeId: string;
+    segments: DaemonStreamLogSegment[];
+}
 
-const daemonExecutionLogSegmentSchema = z.object({
-    stream: z.enum(['stdout', 'stderr', 'system']),
-    text: z.string(),
-    occurredAt: z.string(),
-    nodeId: z.string().optional(),
-    nodeType: z.string().optional(),
-    nodeLabel: z.string().optional(),
-    pluginId: z.string().optional(),
-    executionPath: z.array(z.string()).optional()
-}).strict();
+interface DaemonSceneArtifactUpsertItem {
+    trajectory: string;
+    storageClusterId: string;
+    analysis?: string;
+    plugin?: string;
+    sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';
+    timestep: number;
+    objectName: string;
+    storageBucket: string;
+    params: Record<string, unknown>;
+    displayName: string;
+    status: 'ready' | 'failed';
+    metadata?: Record<string, unknown>;
+}
 
-const daemonAnalysisLogChunkStreamPayloadSchema = z.object({
-    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk),
-    teamClusterId: z.string().trim().min(1),
-    daemonPassword: z.string().trim().min(1),
-    jobId: z.string().trim().min(1),
-    analysisId: z.string().trim().min(1),
-    teamId: z.string().trim().min(1),
-    trajectoryId: z.string().trim().min(1),
-    timestep: z.number().int(),
-    segments: z.array(daemonExecutionLogSegmentSchema)
-}).strict();
-
-const daemonDebugLogChunkStreamPayloadSchema = z.object({
-    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk),
-    teamClusterId: z.string().trim().min(1),
-    daemonPassword: z.string().trim().min(1),
-    sessionId: z.string().trim().min(1),
-    nodeId: z.string().trim().min(1),
-    segments: z.array(daemonExecutionLogSegmentSchema)
-}).strict();
-
-const daemonSceneArtifactUpsertBatchStreamPayloadSchema = z.object({
-    type: z.literal(TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch),
-    teamClusterId: z.string().trim().min(1),
-    daemonPassword: z.string().trim().min(1),
-    items: z.array(z.object({
-        trajectory: z.string().trim().min(1),
-        storageClusterId: z.string().trim().min(1),
-        analysis: z.string().trim().min(1).optional(),
-        plugin: z.string().trim().min(1).optional(),
-        sourceType: z.enum(['color-coding', 'particle-filter', 'plugin-exposure']),
-        timestep: z.number().int(),
-        objectName: z.string().trim().min(1),
-        storageBucket: z.string().trim().min(1),
-        params: z.record(z.string(), z.unknown()),
-        displayName: z.string().trim().min(1),
-        status: z.enum(['ready', 'failed']),
-        metadata: z.record(z.string(), z.unknown()).optional()
-    }).strict())
-}).strict();
+interface DaemonSceneArtifactUpsertBatchStreamPayload {
+    type: string;
+    teamClusterId: string;
+    daemonPassword: string;
+    items: DaemonSceneArtifactUpsertItem[];
+}
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -186,21 +165,10 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_SUBSCRIPTION_EVENT,
             async (conn, payload) => {
-                const parsed = subscribeToTeamClusterSocketPayloadSchema.safeParse(payload);
-
-                if (!parsed.success) {
-                    this.emitErrorToSocket(
-                        conn.id,
-                        ErrorCodes.VALIDATION_INVALID_INPUT,
-                        formatSocketValidationError(parsed.error)
-                    );
-                    return;
-                }
-
                 const previousTeamClusterIds = Array.isArray(conn.data.teamClusterIds)
                     ? conn.data.teamClusterIds.filter((value): value is string => typeof value === 'string')
                     : [];
-                const requestedIds = Array.from(new Set(parsed.data.teamClusterIds));
+                const requestedIds = Array.from(new Set(payload.teamClusterIds));
                 const authorizedTeamIds = new Set(conn.user?.teams ?? []);
                 const nextSubscribedIds: string[] = [];
 
@@ -236,18 +204,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_METRICS_HISTORY_EVENT,
             async (conn, payload) => {
-                const parsed = clusterMetricsHistorySocketPayloadSchema.safeParse(payload);
-
-                if (!parsed.success) {
-                    this.emitErrorToSocket(
-                        conn.id,
-                        ErrorCodes.VALIDATION_INVALID_INPUT,
-                        formatSocketValidationError(parsed.error)
-                    );
-                    return;
-                }
-
-                const teamCluster = await this.teamClusterRepository.findById(parsed.data.clusterId);
+                const teamCluster = await this.teamClusterRepository.findById(payload.clusterId);
                 const authorizedTeamIds = new Set(conn.user?.teams ?? []);
 
                 if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
@@ -261,7 +218,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
                 const history = await this.systemMetricsRepository.getHistoryByClusterId(
                     teamCluster.id,
-                    parsed.data.minutes ?? 5
+                    payload.minutes ?? 5
                 );
                 const mappedHistory = history.map((metric) => toTeamClusterClientMetrics(teamCluster, metric));
 
@@ -281,38 +238,27 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
             async (conn, payload) => {
-                const parsed = daemonRegisterPayloadSchema.safeParse(payload);
-
-                if (!parsed.success) {
-                    this.emitErrorToSocket(
-                        conn.id,
-                        ErrorCodes.VALIDATION_INVALID_INPUT,
-                        formatSocketValidationError(parsed.error)
-                    );
-                    return;
-                }
-
                 await this.teamClusterLifecycleService.authenticateDaemonConnection(
-                    parsed.data.teamClusterId,
-                    parsed.data.daemonPassword
+                    payload.teamClusterId,
+                    payload.daemonPassword
                 );
 
-                const channel = parsed.data.channel ?? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
+                const channel = payload.channel ?? TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control;
                 if (
                     channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
                     || channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
                 ) {
-                    this.clearPendingDaemonDisconnect(parsed.data.teamClusterId);
-                    await this.teamClusterLifecycleService.markDaemonConnected(parsed.data.teamClusterId);
+                    this.clearPendingDaemonDisconnect(payload.teamClusterId);
+                    await this.teamClusterLifecycleService.markDaemonConnected(payload.teamClusterId);
                 }
 
                 this.teamClusterReverseChannelService.registerDaemonConnection(
                     conn.id,
-                    parsed.data.teamClusterId,
+                    payload.teamClusterId,
                     channel
                 );
                 this.emitToSocket(conn.id, TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
-                    teamClusterId: parsed.data.teamClusterId,
+                    teamClusterId: payload.teamClusterId,
                     channel
                 });
             }
@@ -377,10 +323,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async handleAnalysisLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload(
-            message,
-            daemonAnalysisLogChunkStreamPayloadSchema
-        );
+        const payload = this.parseInboundStreamPayload<DaemonAnalysisLogChunkStreamPayload>(message);
         if (!payload) {
             return;
         }
@@ -396,10 +339,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async handleDebugLogChunkStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload(
-            message,
-            daemonDebugLogChunkStreamPayloadSchema
-        );
+        const payload = this.parseInboundStreamPayload<DaemonDebugLogChunkStreamPayload>(message);
         if (!payload) {
             return;
         }
@@ -413,10 +353,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     }
 
     private async handleSceneArtifactUpsertBatchStream(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.parseInboundStreamPayload(
-            message,
-            daemonSceneArtifactUpsertBatchStreamPayloadSchema
-        );
+        const payload = this.parseInboundStreamPayload<DaemonSceneArtifactUpsertBatchStreamPayload>(message);
         if (!payload) {
             return;
         }
@@ -448,8 +385,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         type: string;
         teamClusterId: string;
     }>(
-        message: TeamClusterDaemonInboundStreamPayload,
-        schema: z.ZodType<TPayload>
+        message: TeamClusterDaemonInboundStreamPayload
     ): TPayload | null {
         let parsedJson: unknown;
         try {
@@ -462,22 +398,16 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             return null;
         }
 
-        const parsed = schema.safeParse(parsedJson);
-        if (!parsed.success) {
+        const payload = parsedJson as TPayload;
+
+        if (payload.teamClusterId !== message.teamClusterId) {
             logger.warn(
-                `Ignoring invalid daemon stream payload streamId=${message.streamId} requestId=${message.requestId} issues=${parsed.error.issues.length}`
+                `Ignoring daemon stream payload with mismatched cluster streamId=${message.streamId} socketClusterId=${message.teamClusterId} payloadClusterId=${payload.teamClusterId}`
             );
             return null;
         }
 
-        if (parsed.data.teamClusterId !== message.teamClusterId) {
-            logger.warn(
-                `Ignoring daemon stream payload with mismatched cluster streamId=${message.streamId} socketClusterId=${message.teamClusterId} payloadClusterId=${parsed.data.teamClusterId}`
-            );
-            return null;
-        }
-
-        return parsed.data;
+        return payload;
     }
 
     private async emitLatestMetricsToSocket(socketId: string, teamCluster: TeamCluster): Promise<void> {

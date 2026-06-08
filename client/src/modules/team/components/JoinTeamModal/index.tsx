@@ -5,9 +5,7 @@ import { useState } from 'react';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
 import { Modal, resetModal, Text } from '@voltstack/bravais';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { joinTeamSchema } from './validation-schema';
 import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
 import type { JoinTeamForm } from './validation-schema';
 
@@ -28,7 +26,6 @@ export const JoinTeamModal = ({
     const joinByCodeMutation = useJoinByCodeMutation();
 
     const form = useForm<JoinTeamForm>({
-        resolver: zodResolver(joinTeamSchema),
         defaultValues: {
             code: ''
         }

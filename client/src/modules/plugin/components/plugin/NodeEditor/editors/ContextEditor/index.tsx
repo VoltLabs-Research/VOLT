@@ -3,7 +3,7 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import type { EditorProps } from '../types';
-import { contextEditorSchema, CONTEXT_EDITOR_DEFAULT_VALUES } from './schema';
+import { CONTEXT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { ContextEditorFormValues } from './schema';
 
 const CONTEXT_SELECT_OPTIONS = CONTEXT_OPTIONS.map(opt => ({
@@ -12,7 +12,6 @@ const CONTEXT_SELECT_OPTIONS = CONTEXT_OPTIONS.map(opt => ({
 }));
 
 const useContextEditorForm = createNodeEditorForm<ContextEditorFormValues, 'context'>({
-    schema: contextEditorSchema,
     defaults: CONTEXT_EDITOR_DEFAULT_VALUES,
     dataKey: 'context'
 });

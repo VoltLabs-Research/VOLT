@@ -8,7 +8,6 @@ import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmi
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import type {
@@ -18,14 +17,6 @@ import type {
     LatexFileUpdatePayload,
     LatexOpenDocumentPayload,
     LatexUpdateContentPayload
-} from './LatexSocketPayloads';
-import {
-    latexCloseDocumentSchema,
-    latexFileJoinSchema,
-    latexFileLeaveSchema,
-    latexFileUpdateSchema,
-    latexOpenDocumentSchema,
-    latexUpdateContentSchema
 } from './LatexSocketPayloads';
 import * as Y from 'yjs';
 
@@ -114,17 +105,7 @@ export default class LatexSocketModule extends BaseSocketModule {
 
     private registerOpenDocument(connection: ISocketConnection): void {
         this.on<LatexOpenDocumentPayload>(connection.id, 'latex_open_document', async (conn, payload) => {
-            const parsed = latexOpenDocumentSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
-            if (!conn.user?.teams?.includes(parsed.data.teamId)) {
+            if (!conn.user?.teams?.includes(payload.teamId)) {
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -133,7 +114,7 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const { documentId, teamId } = parsed.data;
+            const { documentId, teamId } = payload;
             const prevDocId = conn.data['latexDocumentId'] as string | undefined;
 
             if (prevDocId && prevDocId !== documentId) {
@@ -153,17 +134,7 @@ export default class LatexSocketModule extends BaseSocketModule {
 
     private registerCloseDocument(connection: ISocketConnection): void {
         this.on<LatexCloseDocumentPayload>(connection.id, 'latex_close_document', async (conn, payload) => {
-            const parsed = latexCloseDocumentSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
-            const room = this.buildRoomId(parsed.data.documentId);
+            const room = this.buildRoomId(payload.documentId);
             await this.leaveRoom(conn.id, room);
 
             delete conn.data['latexDocumentId'];
@@ -171,23 +142,13 @@ export default class LatexSocketModule extends BaseSocketModule {
 
             await this.broadcastPresence(room, 'latex_users_update', this.toPresenceUser);
 
-            logger.info(`@latex-socket - user ${conn.user?._id} closed document ${parsed.data.documentId}`);
+            logger.info(`@latex-socket - user ${conn.user?._id} closed document ${payload.documentId}`);
         });
     }
 
     private registerUpdateContent(connection: ISocketConnection): void {
         this.on<LatexUpdateContentPayload>(connection.id, 'latex_update_content', (conn, payload) => {
-            const parsed = latexUpdateContentSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
-            if (!conn.user?.teams?.includes(parsed.data.teamId)) {
+            if (!conn.user?.teams?.includes(payload.teamId)) {
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -196,7 +157,7 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const { documentId, teamId, fileId, content, timestamp } = parsed.data;
+            const { documentId, teamId, fileId, content, timestamp } = payload;
             const room = this.buildRoomId(documentId);
 
             if (!this.roomManager.isInRoom(conn.id, room)) {
@@ -222,17 +183,7 @@ export default class LatexSocketModule extends BaseSocketModule {
 
     private registerFileJoin(connection: ISocketConnection): void {
         this.on<LatexFileJoinPayload, SocketAck<LatexFileJoinAck>>(connection.id, 'latex_file_join', async (conn, payload) => {
-            const parsed = latexFileJoinSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return ackError(formatSocketValidationError(parsed.error));
-            }
-
-            if (!conn.user?.teams?.includes(parsed.data.teamId)) {
+            if (!conn.user?.teams?.includes(payload.teamId)) {
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -242,9 +193,9 @@ export default class LatexSocketModule extends BaseSocketModule {
             }
 
             const session = await this.getOrCreateFileSession(
-                parsed.data.documentId,
-                parsed.data.teamId,
-                parsed.data.fileId
+                payload.documentId,
+                payload.teamId,
+                payload.fileId
             );
 
             if (!session) {
@@ -252,12 +203,12 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return ackError('LaTeX file not found');
             }
 
-            const room = this.buildFileRoomId(parsed.data.documentId, parsed.data.fileId);
+            const room = this.buildFileRoomId(payload.documentId, payload.fileId);
             await this.joinRoom(conn.id, room);
 
             return ackOk({
-                documentId: parsed.data.documentId,
-                fileId: parsed.data.fileId,
+                documentId: payload.documentId,
+                fileId: payload.fileId,
                 content: session.text.toString(),
                 update: Array.from(Y.encodeStateAsUpdate(session.doc))
             });
@@ -266,29 +217,14 @@ export default class LatexSocketModule extends BaseSocketModule {
 
     private registerFileLeave(connection: ISocketConnection): void {
         this.on<LatexFileLeavePayload>(connection.id, 'latex_file_leave', async (conn, payload) => {
-            const parsed = latexFileLeaveSchema.safeParse(payload);
-            if (!parsed.success) {
-                return;
-            }
-
-            await this.leaveRoom(conn.id, this.buildFileRoomId(parsed.data.documentId, parsed.data.fileId));
-            await this.releaseFileSessionIfIdle(parsed.data.documentId, parsed.data.fileId);
+            await this.leaveRoom(conn.id, this.buildFileRoomId(payload.documentId, payload.fileId));
+            await this.releaseFileSessionIfIdle(payload.documentId, payload.fileId);
         });
     }
 
     private registerFileUpdate(connection: ISocketConnection): void {
         this.on<LatexFileUpdatePayload>(connection.id, 'latex_file_update', async (conn, payload) => {
-            const parsed = latexFileUpdateSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return ackError(formatSocketValidationError(parsed.error));
-            }
-
-            if (!conn.user?.teams?.includes(parsed.data.teamId)) {
+            if (!conn.user?.teams?.includes(payload.teamId)) {
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -297,7 +233,7 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return ackError('You are not a member of this team');
             }
 
-            const room = this.buildFileRoomId(parsed.data.documentId, parsed.data.fileId);
+            const room = this.buildFileRoomId(payload.documentId, payload.fileId);
             if (!this.roomManager.isInRoom(conn.id, room)) {
                 this.emitErrorToSocket(
                     conn.id,
@@ -308,9 +244,9 @@ export default class LatexSocketModule extends BaseSocketModule {
             }
 
             const session = await this.getOrCreateFileSession(
-                parsed.data.documentId,
-                parsed.data.teamId,
-                parsed.data.fileId
+                payload.documentId,
+                payload.teamId,
+                payload.fileId
             );
 
             if (!session) {
@@ -318,11 +254,11 @@ export default class LatexSocketModule extends BaseSocketModule {
                 return ackError('LaTeX file not found');
             }
 
-            const update = new Uint8Array(parsed.data.update);
+            const update = new Uint8Array(payload.update);
             Y.applyUpdate(session.doc, update, conn.id);
             return ackOk({
-                documentId: parsed.data.documentId,
-                fileId: parsed.data.fileId
+                documentId: payload.documentId,
+                fileId: payload.fileId
             });
         });
     }

@@ -46,6 +46,7 @@ services:
       start_period: 30s
     environment:
       NODE_ENV: production
+      DEPLOYMENT_MODE: local
       REDIS_HOST: volt-redis
       REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
       MINIO_ENDPOINT: volt-minio

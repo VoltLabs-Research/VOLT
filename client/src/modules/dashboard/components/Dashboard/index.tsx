@@ -7,6 +7,7 @@ import DashboardTeamPresence from '@/modules/dashboard/components/DashboardTeamP
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import { Box, Button, Heading, Row, EmptyState, openModal } from '@voltstack/bravais';
@@ -32,6 +33,7 @@ const DashboardPage = () => {
     usePageTitle('Dashboard');
 
     const selectedTeam = useSelectedTeam();
+    const singleTenant = useSingleTenant();
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
@@ -115,11 +117,13 @@ const DashboardPage = () => {
                 <SimulationGrid />
             </Box>
 
-            <Box className='dashboard-insights-row'>
-                <DashboardOperationsCard />
-                <DashboardActivityCard />
-                <DashboardTeamPresence />
-            </Box>
+            {!singleTenant && (
+                <Box className='dashboard-insights-row'>
+                    <DashboardOperationsCard />
+                    <DashboardActivityCard />
+                    <DashboardTeamPresence />
+                </Box>
+            )}
         </Box>
     );
 };
