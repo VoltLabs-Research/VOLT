@@ -11,7 +11,7 @@
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit",
     "deploy": "tsx src/cli.ts",
-    "cli:build": "npx --yes esbuild src/cli.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/cli.cjs --external:ssh2 --external:cpu-features",
+    "cli:build": "npx --yes esbuild src/cli.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/cli.cjs --alias:ssh2=./scripts/native-stub.cjs --alias:cpu-features=./scripts/native-stub.cjs",
     "package": "electron-vite build && electron-builder"
   },
   "build": {
