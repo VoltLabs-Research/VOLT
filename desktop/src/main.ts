@@ -8,6 +8,7 @@ import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
 import RemoteProbe from '@/services/RemoteProbe';
 import AppPaths from '@/services/AppPaths';
+import ClientServer from '@/services/ClientServer';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -31,6 +32,15 @@ const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     return { transparent: true, backgroundColor: '#00000000' };
 };
 
+const loadShell = (win: BrowserWindow, hash?: string): void => {
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if(devUrl){
+        win.loadURL(hash ? `${devUrl}#${hash}` : devUrl);
+    }else{
+        win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined);
+    }
+};
+
 const createWindow = (): BrowserWindow => {
     const win = new BrowserWindow({
         width: 1400,
@@ -48,13 +58,7 @@ const createWindow = (): BrowserWindow => {
     });
 
     win.on('ready-to-show', () => win.show());
-
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
-    if(devUrl){
-        win.loadURL(devUrl);
-    }else{
-        win.loadFile(path.join(__dirname, '../renderer/index.html'));
-    }
+    loadShell(win);
 
     return win;
 };
@@ -90,8 +94,10 @@ app.whenReady().then(async () => {
 
     const remote = new RemoteProbe();
 
+    const clientServer = new ClientServer(paths.clientDir);
+
     const win = createWindow();
-    registerIpc(win, { deploy, appConfig, docker, remote });
+    registerIpc(win, { deploy, appConfig, docker, remote, clientServer, loadShell: (hash?: string) => loadShell(win, hash) });
 
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

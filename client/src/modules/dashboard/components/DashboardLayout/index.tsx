@@ -18,7 +18,7 @@ import { isTeamClusterUsable } from '@/modules/cluster/utilities/is-team-cluster
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';

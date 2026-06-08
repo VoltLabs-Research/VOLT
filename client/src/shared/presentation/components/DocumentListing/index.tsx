@@ -11,7 +11,7 @@ import DocumentListingGrid from '@/shared/presentation/components/DocumentListin
 import DocumentListingTable from '@/shared/presentation/components/DocumentListingTable';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 

@@ -1,6 +1,6 @@
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import { FrameJobGroupStatus } from '@/modules/jobs/api/entities/job';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { Heading, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';

@@ -1,6 +1,6 @@
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import './Sidebar.css';
 import './SidebarTab.css';
 import { motion, useReducedMotion } from 'framer-motion';

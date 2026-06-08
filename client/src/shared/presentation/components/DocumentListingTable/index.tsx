@@ -4,7 +4,7 @@ import { buildItemMapByGeneratedId } from '@/shared/presentation/components/Docu
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import TableRow from '@/shared/presentation/components/TableRow';
 import { Skeleton } from '@voltstack/bravais';
-import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
+import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingTable.css';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { FileText } from 'lucide-react';

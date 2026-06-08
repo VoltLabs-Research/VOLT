@@ -9,7 +9,7 @@ import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import { useKeyboardShortcut } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

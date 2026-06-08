@@ -11,6 +11,15 @@
     display: block;
 }
 
+/* Desktop shell: the canvas toolbar is the OS titlebar for /canvas/* routes. */
+[data-volt-desktop] .canvas-top-toolbar {
+    -webkit-app-region: drag;
+}
+
+[data-volt-desktop] .canvas-top-toolbar :is(button, input, a, [role='button'], .volt-window-controls) {
+    -webkit-app-region: no-drag;
+}
+
 .canvas-toolbar-main {
     position: relative;
     height: var(--canvas-header-height, 55px);

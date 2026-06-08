@@ -1,6 +1,6 @@
 import { getErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/core';
 import { sileo } from 'sileo';
-import type { PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
 /**
@@ -45,3 +45,9 @@ export const showPromise = <T,>(
     };
     return sileo.promise(promise, sileoOpts);
 };
+
+/** Runs a mutation promise wrapped in standardized CRUD toast feedback. */
+export const runCrudMutation = <T,>(
+    promise: Promise<T> | (() => Promise<T>),
+    crud: Parameters<typeof createCrudToastOptions>[0]
+): Promise<T> => showPromise(promise, createCrudToastOptions(crud));

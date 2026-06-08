@@ -1,24 +1,18 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { IconButton } from '@voltstack/bravais';
 import './Titlebar.css';
 
 interface TitlebarProps{
-    ready: boolean;
     busy: boolean;
-    navEnabled: boolean;
     showDeployTools: boolean;
-    onBack: () => void;
-    onForward: () => void;
     onOpenDevMode: () => void;
     onReset: () => void;
     onSwitchDeployment: () => void;
 }
 
-const Titlebar = ({ ready, busy, navEnabled, showDeployTools, onBack, onForward, onOpenDevMode, onReset, onSwitchDeployment }: TitlebarProps) => {
+const Titlebar = ({ busy, showDeployTools, onOpenDevMode, onReset, onSwitchDeployment }: TitlebarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
-
-    const navDisabled = !ready || !navEnabled;
 
     return (
         <header className='titlebar'>
@@ -26,11 +20,6 @@ const Titlebar = ({ ready, busy, navEnabled, showDeployTools, onBack, onForward,
                 <button className='light close' onClick={() => window.volt.window.close()} aria-label='Close' />
                 <button className='light min' onClick={() => window.volt.window.minimize()} aria-label='Minimize' />
                 <button className='light max' onClick={() => window.volt.window.maximize()} aria-label='Maximize' />
-            </div>
-
-            <div className='nav-buttons'>
-                <IconButton variant='ghost' size='sm' onClick={onBack} disabled={navDisabled} aria-label='Back'><ChevronLeft size={15} /></IconButton>
-                <IconButton variant='ghost' size='sm' onClick={onForward} disabled={navDisabled} aria-label='Forward'><ChevronRight size={15} /></IconButton>
             </div>
 
             <div className='settings-wrap'>

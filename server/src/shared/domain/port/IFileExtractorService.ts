@@ -20,8 +20,5 @@ export interface IFileExtractorService {
      */
     extractFiles(files: UploadedFile[], workingDir: string): Promise<ExtractedFile[]>;
 
-    /**
-     * Recursively gets all files in a directory.
-     */
     getFilesRecursive(dir: string): Promise<string[]>;
 }

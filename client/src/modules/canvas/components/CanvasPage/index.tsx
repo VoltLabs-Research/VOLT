@@ -51,7 +51,7 @@ import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
 import { EmptyState, Box, Button, openModal, Row, Stack, Tooltip } from '@voltstack/bravais';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';

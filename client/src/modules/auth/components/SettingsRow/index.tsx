@@ -4,34 +4,11 @@ import { Row, Stack, Text } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
 
 export interface SettingsRowProps {
-    /**
-     * Left icon or content
-     */
     icon?: ReactNode;
-
-    /**
-     * Row title
-     */
     title: string;
-
-    /**
-     * Row description
-     */
     description?: string;
-
-    /**
-     * Right content (button, badge, toggle, etc.)
-     */
     rightContent?: ReactNode;
-
-    /**
-     * Click handler (makes row interactive)
-     */
     onClick?: () => void;
-
-    /**
-     * Additional CSS classes
-     */
     className?: string;
 }
 

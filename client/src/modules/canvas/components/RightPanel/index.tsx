@@ -18,7 +18,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { Box, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
 import { ArrowLeft } from 'lucide-react';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';

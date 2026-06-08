@@ -3,6 +3,17 @@
     z-index: 50;
 }
 
+/* In the desktop shell this header doubles as the OS titlebar: the bar drags the
+   window (double-click to maximize comes for free), while its interactive children
+   stay clickable. Browsers ignore -webkit-app-region, so the web build is unaffected. */
+[data-volt-desktop] .dashboard-top-header {
+    -webkit-app-region: drag;
+}
+
+[data-volt-desktop] .dashboard-top-header :is(button, input, a, [role='button'], .volt-window-controls) {
+    -webkit-app-region: no-drag;
+}
+
 .dashboard-header-left {
     min-width: 0;
 }
