@@ -52,6 +52,7 @@ services:
       REDIS_HOST: volt-redis
       REDIS_PASSWORD: ${REDIS_PASS:-voltredis}
       MINIO_ENDPOINT: volt-minio
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9100}
       MINIO_ACCESS_KEY: ${MINIO_USER:-voltminio}
       MINIO_SECRET_KEY: ${MINIO_PASS:-voltminiosecret}
       MONGO_URI: mongodb://${MONGO_USER:-volt}:${MONGO_PASS:-volt}@volt-mongodb:27017?authSource=admin
