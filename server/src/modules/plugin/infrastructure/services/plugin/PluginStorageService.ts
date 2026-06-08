@@ -455,7 +455,7 @@ export default class PluginStorageService implements IPluginStorageService {
 
         const workflow = new Workflow('', workflowProps);
         const projection = WorkflowProjectionService.project(workflow, '');
-        const newPlugin = await this.pluginRepo.create({
+        const pluginProps = {
             workflow,
             status: PluginStatus.Draft,
             team: teamId,
@@ -463,7 +463,15 @@ export default class PluginStorageService implements IPluginStorageService {
             exposures: projection.exposures,
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
-        });
+        };
+
+        const existing = projection.modifier?.key
+            ? await this.pluginRepo.findByTeamAndModifierKey(teamId, projection.modifier.key)
+            : null;
+
+        const newPlugin = existing
+            ? (await this.pluginRepo.updateById(existing.id, pluginProps)) ?? existing
+            : await this.pluginRepo.create(pluginProps);
 
         // Pin the binary placement to the cluster that downloaded and stored it.
         await this.storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
