@@ -8,8 +8,23 @@ import type { ParticleFilterConditionDTO } from '@modules/trajectory/application
 
 interface ParticleFilterRequestInputLike {
     combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionDTO[];
+    conditions: ParticleFilterConditionDTO[] | string;
 }
+
+const normalizeConditions = (
+    conditions: ParticleFilterConditionDTO[] | string
+): ParticleFilterConditionDTO[] => {
+    if (typeof conditions !== 'string') {
+        return Array.isArray(conditions) ? conditions : [];
+    }
+
+    try {
+        const parsed = JSON.parse(conditions);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
 
 const resolveFilterOperator = (operator: string | undefined): '==' | '!=' | '>' | '>=' | '<' | '<=' => {
     switch (operator) {
@@ -44,12 +59,14 @@ const resolveCondition = (condition: ParticleFilterConditionDTO): ParticleFilter
 export const buildParticleFilterRequest = (
     input: ParticleFilterRequestInputLike
 ): ParticleFilterRequest => {
-    if (input.conditions.length === 0) {
+    const conditions = normalizeConditions(input.conditions);
+
+    if (conditions.length === 0) {
         throw new Error('Particle filter requires at least one condition');
     }
 
     return {
         combinator: input.combinator,
-        conditions: input.conditions.map(resolveCondition)
+        conditions: conditions.map(resolveCondition)
     };
 };

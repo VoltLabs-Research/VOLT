@@ -88,12 +88,12 @@ export interface GetAtomsInputDTO {
     limit?: number;
 }
 
-export type AtomColumnDType = 'f32' | 'u32' | 'u16';
+export type AtomColumnDType = 'f32' | 'u32' | 'u16' | 'str';
 
 export interface AtomColumnView {
     name: string;
     dtype: AtomColumnDType;
-    values: Float32Array | Uint32Array | Uint16Array;
+    values: Float32Array | Uint32Array | Uint16Array | string[];
 }
 
 export interface GetAtomsOutputDTO {

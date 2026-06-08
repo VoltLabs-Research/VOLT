@@ -6,13 +6,16 @@ import type {
 const DTYPE_ID: Record<AtomColumnDType, number> = {
     f32: 0,
     u32: 1,
-    u16: 2
+    u16: 2,
+    str: 3
 };
 
 const DTYPE_BYTES: Record<AtomColumnDType, number> = {
     f32: 4,
     u32: 4,
-    u16: 2
+    u16: 2,
+    // Length-prefixed UTF-8 blob; byte-addressable, so any length is valid.
+    str: 1
 };
 
 /**
