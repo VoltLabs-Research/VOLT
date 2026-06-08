@@ -1,6 +1,6 @@
 import { RepositoryRelease } from '@/services/Repository';
 import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, readdir, unlink } from 'node:fs/promises';
+import { mkdir, readdir, rm, unlink } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { PassThrough } from 'node:stream';
@@ -47,6 +47,11 @@ export default class SoftwareUpdater{
     }
 
     async #extract(zipPath: string, outputDir: string){
+        // Wipe any previously extracted release first: GitHub zipballs unpack
+        // to a per-commit top-level dir, so without this the root accumulates
+        // stale dirs and resolveExtractedPath() can pick the old source —
+        // making Docker rebuild the web-app from outdated code.
+        await rm(outputDir, { recursive: true, force: true });
         await mkdir(outputDir, { recursive: true }).catch(() => {});
 
         await extractZip(zipPath, {
