@@ -54,4 +54,11 @@ export interface IPluginStorageService {
         teamId: string,
         status?: PluginStatus
     ): Promise<PluginImportResult>;
+
+    createFromRegistry(
+        workflowProps: unknown,
+        binary: { objectPath: string; fileName: string; hash: string; sizeBytes: number },
+        ownerClusterId: string,
+        teamId: string
+    ): Promise<PluginImportResult>;
 }

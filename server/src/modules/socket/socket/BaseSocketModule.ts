@@ -40,23 +40,14 @@ export default abstract class BaseSocketModule implements ISocketModule{
      */
     async onShutdown(): Promise<void>{}
 
-    /**
-     * Join a room with the given socket.
-     */
     protected async joinRoom(socketId: string, room: string): Promise<void>{
         await this.roomManager.join(socketId, room);
     }
 
-    /**
-     * Leave a room with the given socket.
-     */
     protected async leaveRoom(socketId: string, room: string): Promise<void>{
         await this.roomManager.leave(socketId, room);
     }
 
-    /**
-     * Register an event handler for a socket.
-     */
     protected on<T = unknown, TResult = unknown>(
         socketId: string,
         event: string,
@@ -65,9 +56,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.eventRegistry.on(socketId, event, handler);
     }
 
-    /**
-     * Register a disconnect handler for a socket.
-     */
     protected onDisconnect(
         socketId: string,
         handler: (connection: ISocketConnection) => void | Promise<void>
@@ -75,9 +63,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.eventRegistry.onDisconnect(socketId, handler);
     }
 
-    /**
-     * Emit an event to a room.
-     */
     protected emitToRoom(
         room: string,
         event: string,
@@ -86,9 +71,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToRoom(room, event, data);
     }
 
-    /**
-     * Emit an event to a specific socket.
-     */
     protected emitToSocket(
         socketId: string,
         event: string,
@@ -112,9 +94,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitToSocket(socketId, 'error', this.createErrorEnvelope(code, details));
     }
 
-    /**
-     * Emit an event to a room excluding the sender.
-     */
     protected emitToRoomExcept(
         socketId: string,
         room: string,
@@ -124,16 +103,10 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitter.emitToRoomExcept(socketId, room, event, data);
     }
 
-    /**
-     * Broadcast an event to all connected sockets.
-     */
     protected broadcast(event: string, data: unknown): void{
         this.emitter.broadcast(event, data);
     }
 
-    /**
-     * Collect presence information for a room.
-     */
     protected async collectPresence(
         room: string,
         userExtractor: (connection: ISocketConnection) => PresenceUser
@@ -141,9 +114,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         return this.roomManager.collectPresence(room, userExtractor);
     }
 
-    /**
-     * Broadcast presence update to a room.
-     */
     protected async broadcastPresence(
         room: string,
         updateEvent: string,

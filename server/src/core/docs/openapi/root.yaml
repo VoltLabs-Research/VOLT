@@ -290,6 +290,10 @@ paths:
     $ref: paths/plugins/by-teamid__by-pluginid__export.yaml
   /api/plugins/{teamId}/import:
     $ref: paths/plugins/by-teamid__import.yaml
+  /api/plugins/{teamId}/registry/search:
+    $ref: paths/plugins/by-teamid__registry__search.yaml
+  /api/plugins/{teamId}/registry/install:
+    $ref: paths/plugins/by-teamid__registry__install.yaml
   /api/plugins/{teamId}/{pluginId}/binary:
     $ref: paths/plugins/by-teamid__by-pluginid__binary.yaml
   /api/plugins/{teamId}/{pluginId}/binary/commit:

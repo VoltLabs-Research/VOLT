@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld('volt', {
     app: {
         voltUrl: () => ipcRenderer.invoke('app:voltUrl'),
         openClient: () => ipcRenderer.invoke('app:openClient'),
-        openShell: () => ipcRenderer.invoke('app:openShell')
+        openShell: (intent?: string) => ipcRenderer.invoke('app:openShell', intent)
     },
     remote: {
         probe: (endpoint: string) => ipcRenderer.invoke('remote:probe', endpoint),

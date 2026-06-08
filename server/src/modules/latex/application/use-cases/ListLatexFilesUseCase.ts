@@ -21,10 +21,6 @@ const toDTO = (file: LatexFile) => ({
     updatedAt: file.props.updatedAt
 });
 
-/**
- * Returns all LatexFile records for a document.
- *
- */
 @Singleton()
 export class ListLatexFilesUseCase implements IUseCase<ListLatexFilesInputDTO, ListLatexFilesOutputDTO, ApplicationError> {
     constructor(

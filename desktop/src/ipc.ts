@@ -96,10 +96,10 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         void win.loadURL(clientOrigin).catch(() => { /* superseded by a newer navigation */ });
     });
 
-    ipcMain.handle('app:openShell', () => {
+    ipcMain.handle('app:openShell', (_e, intent?: string) => {
         clientToken = null;
         clientOrigin = '';
-        deps.loadShell('launcher');
+        deps.loadShell(intent || 'launcher');
     });
 
     const unsubs = CHANNELS.map((event) =>

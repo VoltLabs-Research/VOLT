@@ -165,8 +165,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         }
     }
 
-    // --- debug:start ---
-
     private registerDebugStart(connection: ISocketConnection): void {
         this.on<DebugStartPayload>(connection.id, 'debug:start', async (conn, payload) => {
             try {
@@ -311,8 +309,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         });
     }
 
-    // --- debug:step ---
-
     private registerDebugStep(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:step', async (conn, payload) => {
             const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
@@ -358,8 +354,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         });
     }
 
-    // --- debug:continue ---
-
     private registerDebugContinue(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:continue', async (conn, payload) => {
             const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
@@ -400,8 +394,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         });
     }
 
-    // --- debug:stop ---
-
     private registerDebugStop(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:stop', async (conn, payload) => {
             const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
@@ -423,8 +415,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
             logger.info(`@plugin-debug-socket: session ${payload.sessionId} stopped by user`);
         });
     }
-
-    // --- Helpers ---
 
     private emitNodeResult(
         socketId: string,
