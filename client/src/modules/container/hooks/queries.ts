@@ -28,7 +28,7 @@ import type { ContainerFolder } from '../api/entities/container-folder';
 
 const BASE_KEY = 'container';
 
-interface ContainerQueryKeys extends Record<string, unknown> {
+interface ContainerQueryKeys {
     detail: string;
     files: GetContainerFilesInputDTO;
     fileContent: ReadContainerFileInputDTO;

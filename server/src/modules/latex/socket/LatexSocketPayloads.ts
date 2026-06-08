@@ -1,13 +1,13 @@
-export interface LatexOpenDocumentPayload extends Record<string, unknown> {
+export interface LatexOpenDocumentPayload {
     documentId: string;
     teamId: string;
 }
 
-export interface LatexCloseDocumentPayload extends Record<string, unknown> {
+export interface LatexCloseDocumentPayload {
     documentId: string;
 }
 
-export interface LatexUpdateContentPayload extends  Record<string, unknown> {
+export interface LatexUpdateContentPayload {
     documentId: string;
     teamId: string;
     fileId: string;
@@ -15,18 +15,18 @@ export interface LatexUpdateContentPayload extends  Record<string, unknown> {
     timestamp: number;
 }
 
-export interface LatexFileJoinPayload extends Record<string, unknown> {
+export interface LatexFileJoinPayload {
     documentId: string;
     teamId: string;
     fileId: string;
 }
 
-export interface LatexFileLeavePayload extends Record<string, unknown> {
+export interface LatexFileLeavePayload {
     documentId: string;
     fileId: string;
 }
 
-export interface LatexFileUpdatePayload extends Record<string, unknown> {
+export interface LatexFileUpdatePayload {
     documentId: string;
     teamId: string;
     fileId: string;

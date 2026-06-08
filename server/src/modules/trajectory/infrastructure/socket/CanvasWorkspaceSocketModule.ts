@@ -10,11 +10,11 @@ import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmi
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 
-interface TrajectoryRoomPayload extends Record<string, unknown> {
+interface TrajectoryRoomPayload {
     trajectoryId: string;
 }
 
-interface WorkspaceRoomPayload extends Record<string, unknown> {
+interface WorkspaceRoomPayload {
     trajectoryId: string;
     ownerId: string;
 }

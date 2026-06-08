@@ -11,11 +11,11 @@ import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmi
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 
-interface SubscribePayload extends Record<string, unknown> {
+interface SubscribePayload {
     whiteboardId: string;
 }
 
-interface WhiteboardPatchPayload extends Record<string, unknown> {
+interface WhiteboardPatchPayload {
     whiteboardId: string;
     clientId: string;
     baseRevision: number;
