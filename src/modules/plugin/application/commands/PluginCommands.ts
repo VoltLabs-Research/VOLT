@@ -18,6 +18,7 @@ import type {
     PluginSubListingFilter
 } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import ApplicationError from '@/app/coordination/ApplicationError';
+import { logger } from '@/core/logger';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import { PLUGIN_WARMUP_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { PluginWarmupJobPayload } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
@@ -34,7 +35,7 @@ import * as tar from 'tar';
 
 interface RegistryEntrypointNode {
     type?: string;
-    data?: { entrypoint?: { binary?: string; binaryFileName?: string } };
+    data?: { entrypoint?: { type?: string; binary?: string; binaryFileName?: string } };
 }
 
 // archiver@8 is ESM with named class exports (ZipArchive); the installed
@@ -42,7 +43,7 @@ interface RegistryEntrypointNode {
 // class through require (Node returns the ESM namespace) with a local type.
 interface ProjectArchive {
     pipe(destination: NodeJS.WritableStream): unknown;
-    directory(dirpath: string, destpath: string | false): unknown;
+    file(filepath: string, data: { name: string }): unknown;
     on(event: 'error', listener: (error: Error) => void): unknown;
     finalize(): Promise<void>;
 }
@@ -119,27 +120,35 @@ export class PluginCommands {
                 : pipeline(archiveStream, tar.x({ cwd: extractDir })));
 
             const workflow = await this.readWorkflow(extractDir);
-            const binaryFileName = this.resolveBinaryFileName(workflow);
-            // The registry ships the unzipped project (bin/, lib/, scripts/); the
-            // workflow entrypoint expects a packaged zip, so repackage it here.
-            const binaryPath = path.join(dir, binaryFileName);
-            await this.packageProjectZip(extractDir, binaryPath);
-            const body = await fs.readFile(binaryPath);
+            const entrypoint = this.resolveEntrypoint(workflow);
+            const fileName = path.basename(entrypoint.binaryFileName ?? entrypoint.binary ?? '');
+            // executable → upload the native binary directly; packaged entrypoints
+            // (e.g. opendxa, which needs bundled data) ship the project as a zip.
+            let body: Buffer;
+            if (entrypoint.type === 'executable') {
+                body = await fs.readFile(await this.locateExecutable(extractDir, fileName));
+            } else {
+                const zipPath = path.join(dir, fileName);
+                await this.packageProjectZip(extractDir, zipPath);
+                body = await fs.readFile(zipPath);
+            }
             const hash = createHash('sha256').update(body).digest('hex');
             const scope = payload.name.replace(/^@/, '').replace(/\//g, '-');
-            const objectPath = `plugin-binaries/registry/${scope}/${payload.version}/${payload.platform}/${binaryFileName}`;
+            const objectPath = `plugin-binaries/registry/${scope}/${payload.version}/${payload.platform}/${fileName}`;
 
+            logger.info({ fileName, type: entrypoint.type, size: body.length, objectPath }, '@plugin-registry-install: uploading binary');
             await this.objectStore.putObject({
                 ownerClusterId: this.config.teamClusterId,
                 bucket: ObjectBucketName.Plugins,
                 objectKey: objectPath,
                 body,
-                metadata: { sha256: hash, 'original-name': binaryFileName }
+                metadata: { sha256: hash, 'original-name': fileName }
             });
+            logger.info({ objectPath }, '@plugin-registry-install: upload complete');
 
             return {
                 workflow,
-                binary: { objectPath, fileName: binaryFileName, hash, sizeBytes: body.length },
+                binary: { objectPath, fileName, hash, sizeBytes: body.length },
                 ownerClusterId: this.config.teamClusterId
             };
         });
@@ -174,15 +183,24 @@ export class PluginCommands {
         return parsed.workflow;
     }
 
-    private resolveBinaryFileName(workflow: unknown): string {
+    private resolveEntrypoint(workflow: unknown): { type?: string; binary?: string; binaryFileName?: string } {
         const nodes = (workflow as { nodes?: RegistryEntrypointNode[] }).nodes ?? [];
         const entrypoint = nodes.find((node) => node.type === 'entrypoint')?.data?.entrypoint;
-        const binaryFileName = entrypoint?.binaryFileName ?? entrypoint?.binary;
-        if (!binaryFileName) {
+        if (!entrypoint || !(entrypoint.binaryFileName ?? entrypoint.binary)) {
             throw new ApplicationError('Plugin::RegistryBinaryMissing', 'Workflow entrypoint does not declare a binary', { statusCode: 422 });
         }
 
-        return path.basename(binaryFileName);
+        return entrypoint;
+    }
+
+    private async locateExecutable(extractDir: string, binaryName: string): Promise<string> {
+        const matches = await fg(`**/bin/${fg.escapePath(binaryName)}`, { cwd: extractDir, absolute: true, dot: true, onlyFiles: true });
+        const found = matches[0] ?? (await fg(`**/${fg.escapePath(binaryName)}`, { cwd: extractDir, absolute: true, dot: true, onlyFiles: true }))[0];
+        if (!found) {
+            throw new ApplicationError('Plugin::RegistryBinaryMissing', `Binary ${binaryName} not found in registry package`, { statusCode: 422 });
+        }
+
+        return found;
     }
 
     private async packageProjectZip(extractDir: string, destPath: string): Promise<void> {
@@ -197,7 +215,13 @@ export class PluginCommands {
         });
 
         archive.pipe(output);
-        archive.directory(extractDir, false);
+        // Dereference symlinks (lib/*.so chains) into real files: the daemon's
+        // unzipper extraction does not restore symlinks, which would leave shared
+        // libraries as short stub files (the link target string).
+        const files = await fg('**/*', { cwd: extractDir, onlyFiles: true, followSymbolicLinks: true, dot: true });
+        for (const relativePath of files) {
+            archive.file(await fs.realpath(path.join(extractDir, relativePath)), { name: relativePath });
+        }
         await archive.finalize();
         await closed;
     }

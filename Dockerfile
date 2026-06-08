@@ -32,8 +32,9 @@ RUN apt-get update \
         libhwloc-plugins \
         libtbb12 \
         libtbbmalloc2 \
-        libgl1-mesa-glx \
-        libegl1-mesa \
+        libgl1 \
+        libglx-mesa0 \
+        libegl-mesa0 \
         libegl1 \
         libglib2.0-0 \
         libopengl0 \
