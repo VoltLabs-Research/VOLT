@@ -24,8 +24,9 @@ fi
 mkdir -p "$WORKDIR"
 
 # Download the prebuilt single-file bundle + compose (no clone, no TS toolchain).
-curl -fsSL "$CLI_URL" -o "$WORKDIR/cli.cjs"
-curl -fsSL "$COMPOSE_URL" -o "$WORKDIR/compose.yml"
+# Retry on transient CDN errors (e.g. GitHub 504) so the pipeline doesn't abort.
+curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "$CLI_URL" -o "$WORKDIR/cli.cjs"
+curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 "$COMPOSE_URL" -o "$WORKDIR/compose.yml"
 
 # Attach the terminal so the interactive prompts work even when piped from curl.
 VOLT_COMPOSE_FILE="$WORKDIR/compose.yml" node "$WORKDIR/cli.cjs" < /dev/tty
