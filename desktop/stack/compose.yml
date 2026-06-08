@@ -200,6 +200,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-volt}
       HOST: 0.0.0.0
       PORT: ${DAEMON_PORT:-18080}
       TEAM_CLUSTER_ID: ${TEAM_CLUSTER_ID}
