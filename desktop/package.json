@@ -41,7 +41,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "artifactName": "VOLT Desktop ${version}.${ext}"
     },
     "linux": {
       "maintainer": "Volt Labs <voltlabs-research@users.noreply.github.com>",
