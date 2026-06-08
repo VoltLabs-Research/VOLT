@@ -67,8 +67,8 @@ export default class Deploy{
         if(!status.ok) throw new PreflightError(status);
 
         const env = await this.props.appConfig.getStackEnv();
-        const serverOrigin = `http://localhost:${env.SERVER_PORT}`;
-        const webProbe = `http://localhost:${env.WEB_PORT}/api/auth/emails/probe%40volt.local/availability`;
+        const serverOrigin = `http://localhost:${env.SERVER_PORT ?? '8100'}`;
+        const webProbe = `http://localhost:${env.WEB_PORT ?? '5273'}/api/auth/emails/probe%40volt.local/availability`;
 
         bus.emit('deploy:phases', { phases: START_PHASES });
 
