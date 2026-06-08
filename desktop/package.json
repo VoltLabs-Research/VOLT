@@ -4,6 +4,7 @@
   "productName": "Volt",
   "description": "Volt desktop — runs the local Volt stack via Docker Compose",
   "author": "Volt Labs",
+  "homepage": "https://github.com/voltlabs-research/volt",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {
@@ -43,6 +44,7 @@
       ]
     },
     "linux": {
+      "maintainer": "Volt Labs <voltlabs-research@users.noreply.github.com>",
       "target": [
         "AppImage",
         "deb"

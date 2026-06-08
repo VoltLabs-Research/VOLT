@@ -20,7 +20,7 @@ const ConnectEndpointTemplate = () => {
 
     const { control, getValues, trigger } = useForm<ConnectEndpointForm>({
         defaultValues: {
-            endpoint: window.location.origin
+            endpoint: ''
         },
         mode: 'onTouched'
     });
