@@ -3,9 +3,18 @@ import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+export interface ProvisionAccount{
+    fullName: string;
+    email: string;
+    password: string;
+    teamName: string;
+    clusterName: string;
+}
+
 export interface BootstrapProps{
     appConfig: AppConfig;
     serverOrigin: string;
+    account?: ProvisionAccount;
 }
 
 interface AuthResponse{
@@ -42,17 +51,19 @@ export default class Bootstrap{
     }
 
     async #fullBootstrap(): Promise<BootstrapState>{
-        const email = `local-${crypto.randomBytes(4).toString('hex')}@volt.local`;
-        const password = crypto.randomBytes(24).toString('base64url');
+        const acc = this.props.account;
+        const email = acc?.email ?? `local-${crypto.randomBytes(4).toString('hex')}@volt.local`;
+        const password = acc?.password ?? crypto.randomBytes(24).toString('base64url');
+        const [firstName, ...rest] = (acc?.fullName ?? 'Local').trim().split(/\s+/);
 
-        bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating local user ${email}` });
-        const auth = await this.#signUp(email, password);
+        bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating user ${email}` });
+        const auth = await this.#signUp(email, password, firstName, rest.join(' '));
 
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating local team' });
-        const team = await this.#createTeam(auth.token, 'Local');
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating team' });
+        const team = await this.#createTeam(auth.token, acc?.teamName ?? 'Local');
 
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating local cluster' });
-        const cluster = await this.#createCluster(auth.token, team._id, 'Local Cluster');
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating cluster' });
+        const cluster = await this.#createCluster(auth.token, team._id, acc?.clusterName ?? 'Local Cluster');
 
         bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] revealing daemon credentials' });
         const daemonPassword = await this.#revealDaemonPassword(auth.token, team._id, cluster.teamCluster._id, password);
@@ -72,11 +83,11 @@ export default class Bootstrap{
         return state;
     }
 
-    async #signUp(email: string, password: string): Promise<AuthResponse>{
+    async #signUp(email: string, password: string, firstName: string, lastName: string): Promise<AuthResponse>{
         return this.#postJson<AuthResponse>('/api/auth/users', {
             email,
-            firstName: 'Local',
-            lastName: '',
+            firstName: firstName || 'Local',
+            lastName,
             password
         });
     }

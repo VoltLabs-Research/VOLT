@@ -362,21 +362,6 @@ export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
     TrajectorySceneArtifactUpsertBatch: 'trajectory-scene-artifact-upsert-batch'
 } as const;
 
-export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
-    trajectory: string;
-    storageClusterId: string;
-    analysis?: string;
-    plugin?: string;
-    sourceType: 'color-coding' | 'particle-filter' | 'plugin-exposure';
-    timestep: number;
-    objectName: string;
-    storageBucket: string;
-    params: Record<string, unknown>;
-    displayName: string;
-    status: 'ready' | 'failed';
-    metadata?: Record<string, unknown>;
-}
-
 type TeamClusterDaemonServerEventMessage =
     | TeamClusterDaemonAnalysisJobCompletionEventPayload
     | TeamClusterDaemonAnalysisJobStatusEventPayload

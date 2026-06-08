@@ -39,8 +39,9 @@ export default class AppConfig{
 
     async get(): Promise<Record<string, any>>{
         if(!existsSync(this.props.configFile)) return {};
-        const configStr = await readFile(this.props.configFile);
-        return JSON.parse(configStr.toString());
+        const text = (await readFile(this.props.configFile)).toString().trim();
+        if(!text) return {};
+        try{ return JSON.parse(text); }catch{ return {}; }
     }
 
     async #update(payload: object){
@@ -62,6 +63,10 @@ export default class AppConfig{
     async getStackEnv(): Promise<Record<string, string>>{
         const config = await this.get();
         return (config.env ?? {}) as Record<string, string>;
+    }
+
+    async setStackEnv(env: Record<string, string>){
+        await this.#update({ env });
     }
 
     async getBootstrap(): Promise<BootstrapState | null>{
