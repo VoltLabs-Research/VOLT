@@ -5,13 +5,21 @@ import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import RemoteProbe from '@/services/RemoteProbe';
+import ClientServer from '@/services/ClientServer';
 
 export interface IpcDeps{
     deploy: Deploy;
     appConfig: AppConfig;
     docker: DockerPreflight;
     remote: RemoteProbe;
+    clientServer: ClientServer;
+    loadShell: (hash?: string) => void;
 };
+
+// Auth token + client origin handed to the locally-served client on its next document
+// load. Set just before navigating to the client and read by the preload (sync channel).
+let clientToken: string | null = null;
+let clientOrigin = '';
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     ipcMain.handle('deploy:start', () => deps.deploy.start());
@@ -62,6 +70,36 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
             return `${origin}/__bootstrap.html?token=${token}`;
         }
         return origin;
+    });
+
+    // Synchronous so the preload can seed localStorage before the client's scripts run.
+    // `endpoint` points the client at the local proxy (same-origin) so it never asks to
+    // connect; the proxy forwards /api + /socket.io to the real (local or remote) server.
+    ipcMain.on('app:clientSession', (event) => { event.returnValue = { token: clientToken, endpoint: clientOrigin || null }; });
+
+    // Point the local client at the active deployment and navigate the window to it.
+    ipcMain.handle('app:openClient', async () => {
+        const deployment = await deps.appConfig.getDeployment();
+        let target: string;
+
+        if(deployment?.mode === 'remote' && deployment.remote){
+            target = deployment.remote.serverEndpoint;
+            clientToken = null;
+        }else{
+            const env = await deps.appConfig.getStackEnv();
+            target = `http://localhost:${env.SERVER_PORT}`;
+            clientToken = (await deps.appConfig.getBootstrap())?.authToken ?? null;
+        }
+
+        deps.clientServer.setTarget(target);
+        clientOrigin = await deps.clientServer.ensureStarted();
+        void win.loadURL(clientOrigin).catch(() => { /* superseded by a newer navigation */ });
+    });
+
+    ipcMain.handle('app:openShell', () => {
+        clientToken = null;
+        clientOrigin = '';
+        deps.loadShell('launcher');
     });
 
     const unsubs = CHANNELS.map((event) =>

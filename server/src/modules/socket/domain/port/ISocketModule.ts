@@ -39,11 +39,7 @@ export interface ISocketConnection {
     nativeSocket?: Socket;
 }
 
-/**
- * Base interface that all socket modules must implement.
- */
 export interface ISocketModule {
-    /** Unique name identifier for this module */
     readonly name: string;
 
     /**
@@ -52,10 +48,6 @@ export interface ISocketModule {
      */
     onInit(): void | Promise<void>;
 
-    /**
-     * Called for each new socket connection.
-     * @param connection - Abstracted socket connection
-     */
     onConnection(connection: ISocketConnection): void;
 
     /**

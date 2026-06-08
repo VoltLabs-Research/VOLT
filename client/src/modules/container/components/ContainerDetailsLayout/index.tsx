@@ -5,7 +5,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useState } from 'react';

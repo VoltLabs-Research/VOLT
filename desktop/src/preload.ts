@@ -1,6 +1,22 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import type { AppEvents } from '@/types/events';
 
+// Seed the client's auth token (local deploy) before its scripts run, and clear it for
+// remote so a stale local session never leaks across deployments. Runs on every document
+// load — harmless for the shell, which never reads this key.
+try{
+    const session = ipcRenderer.sendSync('app:clientSession') as { token?: string | null; endpoint?: string | null } | undefined;
+    if(session?.endpoint){
+        // Pin the client to the local proxy so it never shows the "connect server" screen.
+        window.localStorage.setItem('volt:backend:endpoint', session.endpoint);
+    }
+    // Local deploy hands us a bootstrap token; remote keeps whatever session the client
+    // already persisted (a stale token simply 401s once and the client re-prompts sign-in).
+    if(session?.token){
+        window.localStorage.setItem('authToken', session.token);
+    }
+}catch{ /* handler not registered yet (first shell load) */ }
+
 contextBridge.exposeInMainWorld('volt', {
     platform: process.platform,
     deploy: {
@@ -24,7 +40,9 @@ contextBridge.exposeInMainWorld('volt', {
         pickDirectory: () => ipcRenderer.invoke('dialog:pickDirectory')
     },
     app: {
-        voltUrl: () => ipcRenderer.invoke('app:voltUrl')
+        voltUrl: () => ipcRenderer.invoke('app:voltUrl'),
+        openClient: () => ipcRenderer.invoke('app:openClient'),
+        openShell: () => ipcRenderer.invoke('app:openShell')
     },
     remote: {
         probe: (endpoint: string) => ipcRenderer.invoke('remote:probe', endpoint),

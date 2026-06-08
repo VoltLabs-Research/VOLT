@@ -1,7 +1,7 @@
 import useCreateContainerForm from '../../hooks/use-create-container-form';
 import { getCustomImageValidationError } from '../../utilities/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
-import useStepper from '@/shared/presentation/hooks/use-stepper';
+import { useStepper } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Button, Heading, Modal, closeModal, openModal, Row, Stack, Stepper, Text } from '@voltstack/bravais';

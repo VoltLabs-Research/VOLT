@@ -1,4 +1,4 @@
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 
 const NARROW_MEDIA_QUERY = '(max-width: 1199px)';
 

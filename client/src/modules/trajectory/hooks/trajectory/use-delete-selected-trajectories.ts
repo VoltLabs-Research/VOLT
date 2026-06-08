@@ -1,7 +1,6 @@
 import { trajectoryQuery } from './queries';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { runCrudMutation } from '@/shared/presentation/hooks/toast';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { useCallback } from 'react';
 
@@ -22,14 +21,9 @@ export default function useDeleteSelectedTrajectories() {
             return;
         }
 
-        const toastConfig = createCrudToastOptions({
-            action: 'Deleting',
-            subject: `${selectedIds.length} trajectories`
-        });
-
-        await showPromise(
+        await runCrudMutation(
             Promise.all(selectedIds.map((id) => deleteTrajectoryMutation.mutateAsync(id))).then(clearSelection),
-            toastConfig
+            { action: 'Deleting', subject: `${selectedIds.length} trajectories` }
         );
     }, [clearSelection, confirm, deleteTrajectoryMutation, selectedIds]);
 

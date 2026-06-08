@@ -1,4 +1,4 @@
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import './AutoScrollList.css';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { Key, ReactNode } from 'react';

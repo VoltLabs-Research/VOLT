@@ -34,46 +34,49 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 };
 
 const App = () => {
-    const { state, phases, phaseState, logs, voltUrl, preflight, busy, reset, recheck, run, start } = useDeploy({ autoStart: false });
+    const { state, phases, phaseState, logs, preflight, busy, reset, recheck, run, start } = useDeploy({ autoStart: false });
     const [mode, setMode] = useState<Mode>('loading');
-    const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
-    const [iframeReady, setIframeReady] = useState(false);
     const [devModeOpen, setDevModeOpen] = useState(false);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    // Opened via the in-client gear (openShell adds #launcher): land here and wait for an
+    // explicit action instead of bouncing straight back into the client.
+    const [paused, setPaused] = useState(window.location.hash === '#launcher');
+    const openedRef = useRef(false);
 
-    // The local stack injects __nav-bridge.js (back/forward + auth token); a remote
-    // deployment serves its own client, so the shell just points the frame at it.
-    const url = mode === 'remote' ? remoteUrl : voltUrl;
+    // Hand the window over to the locally-served client (replaces the old iframe).
+    const openClient = () => {
+        if(openedRef.current) return;
+        openedRef.current = true;
+        void window.volt.app.openClient();
+    };
 
     useEffect(() => {
         let cancelled = false;
+        const launcher = window.location.hash === '#launcher';
         window.volt.deployment.get()
             .then((deployment) => {
                 if(cancelled) return;
-                if(deployment?.mode === 'remote' && deployment.remote?.clientUrl){
-                    setRemoteUrl(deployment.remote.clientUrl);
-                    setMode('remote');
-                }else if(deployment?.mode === 'local'){
-                    setMode('local');
-                    void start();
-                }else{
-                    setMode('choose');
-                }
+                const next: Mode = (deployment?.mode === 'remote' && deployment.remote) ? 'remote'
+                    : deployment?.mode === 'local' ? 'local' : 'choose';
+                setMode(next);
+                if(launcher) return;
+                if(next === 'remote') openClient();
+                else if(next === 'local') void start();
             })
             .catch(() => { if(!cancelled) setMode('choose'); });
         return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const postToVolt = (action: 'back' | 'forward') => {
-        const frame = iframeRef.current;
-        if(!frame?.contentWindow || !url) return;
-        frame.contentWindow.postMessage({ source: 'volt-shell', action }, new URL(url).origin);
-    };
+    // Local stack finished provisioning — open the client against it.
+    useEffect(() => {
+        if(mode === 'local' && state === 'up') openClient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, state]);
 
     const resetBoot = () => {
         reset();
-        setIframeReady(false);
+        openedRef.current = false;
+        setPaused(false);
     };
 
     const retry = () => run(() => window.volt.deploy.start(), resetBoot);
@@ -86,6 +89,7 @@ const App = () => {
     const resetAndRedeploy = () => run(() => window.volt.deploy.reset(), resetBoot);
 
     const useLocal = () => {
+        setPaused(false);
         setMode('local');
         void window.volt.deployment.setLocal();
         void start();
@@ -94,9 +98,9 @@ const App = () => {
     const connectRemote = async (endpoint: string) => {
         const result = await window.volt.remote.connect(endpoint);
         if(result.ok){
-            setIframeReady(false);
-            setRemoteUrl(result.clientUrl);
+            setPaused(false);
             setMode('remote');
+            openClient();
         }
         return result;
     };
@@ -104,9 +108,15 @@ const App = () => {
     const switchDeployment = () => {
         void window.volt.deployment.reset();
         reset();
-        setRemoteUrl(null);
-        setIframeReady(false);
+        openedRef.current = false;
+        setPaused(false);
         setMode('choose');
+    };
+
+    const openVolt = () => {
+        setPaused(false);
+        if(mode === 'local') void start();
+        else openClient();
     };
 
     const isLocal = mode === 'local';
@@ -114,27 +124,28 @@ const App = () => {
     return (
         <div className='app'>
             <Titlebar
-                ready={iframeReady}
                 busy={busy}
-                navEnabled={isLocal}
                 showDeployTools={isLocal}
-                onBack={() => postToVolt('back')}
-                onForward={() => postToVolt('forward')}
                 onOpenDevMode={() => setDevModeOpen(true)}
                 onReset={resetAndRedeploy}
                 onSwitchDeployment={switchDeployment}
             />
 
             <div className='body'>
-                {url && (
-                    <iframe ref={iframeRef} className='volt-frame' src={url} onLoad={() => setIframeReady(true)} />
-                )}
-
                 {mode === 'choose' && (
                     <Onboarding onConnectRemote={connectRemote} onUseLocal={useLocal} />
                 )}
 
-                {mode === 'remote' && !iframeReady && (
+                {paused && mode !== 'choose' && mode !== 'loading' && (
+                    <main className='boot'>
+                        <div className='boot-lead'>
+                            <span className='boot-heading'>Volt is ready</span>
+                            <button className='retry' onClick={openVolt}>Open Volt</button>
+                        </div>
+                    </main>
+                )}
+
+                {!paused && mode === 'remote' && (
                     <main className='boot'>
                         <div className='boot-lead'>
                             <span className='boot-heading is-loading'>Connecting…</span>
@@ -142,7 +153,7 @@ const App = () => {
                     </main>
                 )}
 
-                {isLocal && !iframeReady && preflight && (
+                {!paused && isLocal && preflight && (
                     <DockerGate
                         result={preflight}
                         onRecheck={recheck}
@@ -150,7 +161,7 @@ const App = () => {
                     />
                 )}
 
-                {isLocal && !iframeReady && !preflight && (
+                {!paused && isLocal && !preflight && (
                     <main className='boot'>
                         <div className='boot-lead'>
                             <span className={[

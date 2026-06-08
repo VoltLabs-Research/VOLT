@@ -20,9 +20,6 @@ export interface FindActivityByTeamIdOptions {
 }
 
 export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps> {
-    /**
-     * Add daily activity.
-     */
     addDailyActivity(
         teamId: string,
         userId: string,
@@ -30,9 +27,6 @@ export interface IDailyActivityRepository extends IBaseRepository<DailyActivity,
         description: string
     ): Promise<void>;
 
-    /**
-     * Get activity for the specified team.
-     */
     findActivityByTeamId(
         teamId: string,
         range: number,

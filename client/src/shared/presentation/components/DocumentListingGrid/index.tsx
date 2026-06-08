@@ -3,7 +3,7 @@ import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopo
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { buildItemMapByGeneratedId } from '@/shared/presentation/components/DocumentListing/dnd-maps';
-import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
+import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingGrid.css';
 import { CSS } from '@dnd-kit/utilities';
 import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';

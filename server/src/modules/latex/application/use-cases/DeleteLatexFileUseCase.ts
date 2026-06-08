@@ -67,7 +67,7 @@ export class DeleteLatexFileUseCase implements IUseCase<DeleteLatexFileInputDTO,
 
             await this.latexFileRepository.deleteById(input.fileId);
 
-            return Result.ok(undefined as unknown as void);
+            return Result.ok<void>(undefined);
         } catch (error) {
             if (error instanceof ApplicationError) {
                 return Result.fail(error);

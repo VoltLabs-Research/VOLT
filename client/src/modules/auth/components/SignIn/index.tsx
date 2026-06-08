@@ -18,7 +18,7 @@ import RegisterStep from '../RegisterStep';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { Heading, Stack, Stepper, Text, Button } from '@voltstack/bravais';
 import type { StepTitles } from '@voltstack/bravais';
-import useStepper from '@/shared/presentation/hooks/use-stepper';
+import { useStepper } from '@voltstack/bravais';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utilities/backend-origin';
 import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';

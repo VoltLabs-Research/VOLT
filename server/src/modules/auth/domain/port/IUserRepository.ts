@@ -7,9 +7,6 @@ export interface UserWithPassword extends User {
 }
 
 export interface IUserRepository extends IBaseRepository<User, UserProps>{
-    /**
-     * Find user by ID with password included.
-     */
     findByIdWithPassword(
         userId: string
     ): Promise<UserWithPassword | null>;
@@ -22,9 +19,6 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
         teamId: string
     ): Promise<void>;
 
-    /**
-     * Delete the specified team from the user.
-     */
     removeTeamFromUser(
         userId: string,
         teamId: string
@@ -35,33 +29,18 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
      */
     removeUsersFromTeam(teamId: string): Promise<void>;
 
-    /**
-     * Find user by email.
-     */
     findByEmail(email: string): Promise<User | null>;
 
-    /**
-     * Find user by email with password included.
-     */
     findByEmailWithPassword(
         email: string
     ): Promise<UserWithPassword | null>;
 
-    /**
-     * Check if email exists.
-     */
     emailExists(email: string): Promise<boolean>;
 
-    /**
-     * Update user password.
-     */
     updatePassword(
         userId: string,
         hashedPassword: string
     ): Promise<void>;
 
-    /**
-     * Update last login timestamp.
-     */
     updateLastLogin(userId: string): Promise<void>;
 }

@@ -4,7 +4,7 @@ import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
 import { FloatingToolbar } from '@voltstack/bravais';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 
 import './ViewportFloatingControls.css';

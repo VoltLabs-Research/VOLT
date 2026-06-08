@@ -1,6 +1,6 @@
 import { Loader, Row, Stack, Text } from '@voltstack/bravais';
 import './ProcessingLoader.css';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 
 interface ProcessingLoaderProps {
     message?: string;

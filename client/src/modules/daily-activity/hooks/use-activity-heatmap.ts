@@ -205,7 +205,7 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
         [currentUser?._id, data, range, startDate]
     );
 
-    const legendItems = useMemo(() => ACTIVITY_HEATMAP_LEGEND, []);
+    const legendItems = ACTIVITY_HEATMAP_LEGEND;
 
     const handleMouseEnter = (event: MouseEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
         const rect = event.currentTarget.getBoundingClientRect();

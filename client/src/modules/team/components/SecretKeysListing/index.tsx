@@ -8,7 +8,7 @@ import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast
 import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../SecretKeyCreationModal';
 import { useDeleteSecretKeyMutation, useRevokeSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
-import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import { useKeyboardShortcut } from '@voltstack/bravais';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';

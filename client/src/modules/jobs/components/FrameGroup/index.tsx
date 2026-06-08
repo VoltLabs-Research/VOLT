@@ -1,7 +1,7 @@
 import { getFrameGroupStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
-import { usePrefersReducedMotion } from '@/shared/presentation/hooks/use-prefers-reduced-motion';
+import { usePrefersReducedMotion } from '@voltstack/bravais';
 import { Box, Row, StatusBadge, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
