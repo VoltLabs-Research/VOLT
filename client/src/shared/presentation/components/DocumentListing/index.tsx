@@ -153,7 +153,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     const prefersReducedMotion = usePrefersReducedMotion();
     const [searchParams, setSearchParams] = useSearchParams();
     const resolvedTabs = useMemo(() => tabs?.length ? tabs : DEFAULT_TABS, [tabs]);
-    const persistenceKey = useMemo(() => resolvePersistenceKey(queryKey), [queryKey]);
+    const persistenceKey = resolvePersistenceKey(queryKey);
     const tabParamKey = `${persistenceKey}-tab`;
     const sortKeyParamKey = `${persistenceKey}-sort`;
     const sortDirectionParamKey = `${persistenceKey}-dir`;

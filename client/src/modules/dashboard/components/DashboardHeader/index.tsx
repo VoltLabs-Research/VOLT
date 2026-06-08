@@ -5,6 +5,7 @@ import { TeamInvitePanelPopover } from '@/modules/team/components/TeamInvitePane
 import AIFloatingAssistantPanel from '@/modules/ai/components/AIFloatingAssistantPanel';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import { Box, IconButton, Row, Tooltip } from '@voltstack/bravais';
 import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
@@ -22,6 +23,7 @@ const DashboardHeader = ({
     globalSearchBreadcrumb
 }: DashboardHeaderProps) => {
     const { canAccess } = useTeamPermissions();
+    const singleTenant = useSingleTenant();
     const canInvite = canAccess(['team-invitation:create']);
     let inviteAction = (
         <Tooltip content='You must be an admin or owner to invite members' placement='bottom'>
@@ -55,7 +57,7 @@ const DashboardHeader = ({
             </Box>
 
             <Row gap='05' flex='1' justify='end' className='dashboard-header-right'>
-                {inviteAction}
+                {!singleTenant && inviteAction}
 
                 <ThemeToggleButton className='dashboard-theme-toggle' />
                 <AIFloatingAssistantPanel />

@@ -27,6 +27,14 @@
     min-height: 420px;
 }
 
+.dashboard-insights-row--compact {
+    justify-content: flex-start;
+}
+
+.dashboard-insights-row--compact > * {
+    max-width: 460px;
+}
+
 .dashboard-card-state {
     min-height: 100%;
 }

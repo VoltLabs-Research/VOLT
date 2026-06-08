@@ -1,7 +1,6 @@
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
 import Redis from 'ioredis';
-import type { ConnectionOptions } from 'bullmq';
 
 export interface RedisClientConfig {
     host: string;
@@ -28,19 +27,6 @@ export const createRedisClientConfig = (config: RedisClientConfig): RedisClientC
         username: config.username,
         password: config.password,
         db: config.db ?? 0
-    };
-};
-
-export const createBullMQRedisConnectionOptions = (config: RedisClientConfig): ConnectionOptions => {
-    return {
-        host: config.host,
-        port: config.port,
-        username: config.username,
-        password: config.password,
-        db: config.db ?? 0,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: null
     };
 };
 
