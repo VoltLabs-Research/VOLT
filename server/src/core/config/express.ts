@@ -65,37 +65,10 @@ const corsBaseOptions = {
     optionsSuccessStatus: 200
 };
 
-const corsMiddleware = cors((req, callback) => {
-    const allowedOrigins = new Set(baseAllowedOrigins);
-    const requestHost = readSingleHeader(req.headers?.host);
-    const forwardedProtocol = readSingleHeader(req.headers?.['x-forwarded-proto']);
-    const requestOrigin = requestHost
-        ? normalizeOrigin(`${forwardedProtocol || 'http'}://${requestHost}`)
-        : null;
-
-    if (requestOrigin) {
-        allowedOrigins.add(requestOrigin);
-    }
-
-    callback(null, {
-        ...corsBaseOptions,
-        origin: (origin, originCallback) => {
-            if (!origin) {
-                originCallback(null, true);
-                return;
-            }
-
-            const normalizedOrigin = normalizeOrigin(origin);
-            if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) {
-                originCallback(null, true);
-                return;
-            }
-
-            logger.info(`CORS blocked origin origin=${origin}`);
-            originCallback(new Error('Not allowed by CORS'));
-        }
-    });
-});
+// A self-hosted VOLT server is consumed cross-origin by design (app.voltcloud.dev,
+// the desktop shell, LAN clients), so we allow any origin. We reflect the request
+// origin instead of '*' because credentialed requests reject a wildcard.
+const corsMiddleware = cors({ ...corsBaseOptions, origin: true });
 
 const isBinaryLikeResponse = (res: Response): boolean => {
     const contentDisposition = String(res.getHeader('Content-Disposition') || '').toLowerCase();
