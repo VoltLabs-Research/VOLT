@@ -6,6 +6,8 @@ import DashboardOperationsCard from '@/modules/dashboard/components/DashboardOpe
 import DashboardTeamPresence from '@/modules/dashboard/components/DashboardTeamPresence';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
+import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
+import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
@@ -15,7 +17,7 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/componen
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
-import { FlaskConical, FolderPlus } from 'lucide-react';
+import { FlaskConical, FolderPlus, Upload } from 'lucide-react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
 import type { ReactNode } from 'react';
@@ -36,6 +38,8 @@ const DashboardPage = () => {
     const singleTenant = useSingleTenant();
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
+    const { currentFolderId } = useFolderSearchParam();
+    const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, currentFolderId);
     const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
 
     useTip('dashboard-drag-upload', {
@@ -101,29 +105,42 @@ const DashboardPage = () => {
                 <Row justify='between' gap='1' className='dashboard-simulations-header'>
                     <Heading level={3} size='xl' weight='medium' tone='primary'>Trajectories</Heading>
                     {canCreateTrajectoryFolders && (
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            size='sm'
-                            shape='rounded'
-                            className='dashboard-simulations-new-folder-btn'
-                            onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
-                        >
-                            <FolderPlus size={14} />
-                            New folder
-                        </Button>
+                        <Row gap='05'>
+                            <input ref={fileInputRef} type='file' multiple hidden onChange={handlePickerChange} />
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                shape='rounded'
+                                className='dashboard-simulations-new-folder-btn'
+                                onClick={openFilePicker}
+                                disabled={isUploading}
+                            >
+                                <Upload size={14} />
+                                Upload
+                            </Button>
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                shape='rounded'
+                                className='dashboard-simulations-new-folder-btn'
+                                onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
+                            >
+                                <FolderPlus size={14} />
+                                New folder
+                            </Button>
+                        </Row>
                     )}
                 </Row>
                 <SimulationGrid />
             </Box>
 
-            {!singleTenant && (
-                <Box className='dashboard-insights-row'>
-                    <DashboardOperationsCard />
-                    <DashboardActivityCard />
-                    <DashboardTeamPresence />
-                </Box>
-            )}
+            <Box className={`dashboard-insights-row${singleTenant ? ' dashboard-insights-row--compact' : ''}`}>
+                <DashboardOperationsCard />
+                <DashboardActivityCard />
+                {!singleTenant && <DashboardTeamPresence />}
+            </Box>
         </Box>
     );
 };

@@ -362,27 +362,6 @@ export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
     TrajectorySceneArtifactUpsertBatch: 'trajectory-scene-artifact-upsert-batch'
 } as const;
 
-export interface TeamClusterDaemonAnalysisLogChunkStreamPayload {
-    type: 'analysis-log-chunk';
-    teamClusterId: string;
-    daemonPassword: string;
-    jobId: string;
-    analysisId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep: number;
-    segments: TeamClusterDaemonExecutionLogSegment[];
-}
-
-export interface TeamClusterDaemonDebugLogChunkStreamPayload {
-    type: 'debug-log-chunk';
-    teamClusterId: string;
-    daemonPassword: string;
-    sessionId: string;
-    nodeId: string;
-    segments: TeamClusterDaemonExecutionLogSegment[];
-}
-
 export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     trajectory: string;
     storageClusterId: string;
@@ -396,13 +375,6 @@ export interface TeamClusterDaemonSceneArtifactUpsertBatchItem {
     displayName: string;
     status: 'ready' | 'failed';
     metadata?: Record<string, unknown>;
-}
-
-export interface TeamClusterDaemonSceneArtifactUpsertBatchStreamPayload {
-    type: 'trajectory-scene-artifact-upsert-batch';
-    teamClusterId: string;
-    daemonPassword: string;
-    items: TeamClusterDaemonSceneArtifactUpsertBatchItem[];
 }
 
 type TeamClusterDaemonServerEventMessage =

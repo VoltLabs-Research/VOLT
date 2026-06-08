@@ -70,15 +70,6 @@ export const createWorkerFailureEnvelope = (options?: WorkerFailureEnvelopeInput
     };
 };
 
-export const getWorkerFailureErrorMessage = (failure: WorkerFailureEnvelope): string => {
-    const details = resolveStringDetails(failure.details);
-    if (details) {
-        return details;
-    }
-
-    return failure.message;
-};
-
 export const normalizeWorkerFailureEnvelope = (
     options: NormalizeWorkerFailureEnvelopeOptions = {}
 ): WorkerFailureEnvelope => {

@@ -130,16 +130,6 @@ export interface TeamClusterDaemonPluginMongoPurgeResult {
     deletedRows: number;
 }
 
-export interface TeamClusterDaemonRegistryInstallPayload {
-    [key: string]: unknown;
-    downloadUrl: string;
-    sha256: string;
-    fileName: string;
-    name: string;
-    version: string;
-    platform: string;
-}
-
 export interface TeamClusterDaemonRegistryInstallBinary {
     objectPath: string;
     fileName: string;
