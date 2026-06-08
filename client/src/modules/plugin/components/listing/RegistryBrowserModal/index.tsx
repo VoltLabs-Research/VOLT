@@ -32,6 +32,47 @@ const isNewerVersion = (latest: string, installed: string): boolean => {
     return false;
 };
 
+interface RegistryResultCardProps {
+    item: RegistryPackageSummary;
+    installedVersion?: string;
+    isInstalling: boolean;
+    isAnyInstalling: boolean;
+    onInstall: (item: RegistryPackageSummary) => void;
+}
+
+const RegistryResultCard = ({ item, installedVersion, isInstalling, isAnyInstalling, onInstall }: RegistryResultCardProps) => {
+    const updatable = installedVersion !== undefined && !!item.latest && isNewerVersion(item.latest, installedVersion);
+    const isInstalled = installedVersion !== undefined && !updatable;
+
+    return (
+        <div className='registry-card list-item-hoverable'>
+            <span className='registry-card__icon'>
+                <Package size={22} />
+            </span>
+            <div className='registry-card__body'>
+                <Text as='p' size='md' weight='medium' truncate>
+                    {item.name}{item.latest ? ` v${item.latest}` : ''}
+                </Text>
+                {item.description && (
+                    <Text as='p' size='sm' tone='muted' className='registry-card__desc'>
+                        {item.description}
+                    </Text>
+                )}
+            </div>
+            <Button
+                variant='toggle'
+                intent={updatable ? 'brand' : 'neutral'}
+                className='registry-card__action'
+                onClick={() => onInstall(item)}
+                isLoading={isInstalling}
+                disabled={isInstalled || isAnyInstalling}
+            >
+                {isInstalled ? 'Installed' : updatable ? 'Update' : 'Install'}
+            </Button>
+        </div>
+    );
+};
+
 const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) => {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -101,46 +142,14 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                     {!isFetching && items.length > 0 && (
                         <div className='registry-grid'>
                             {items.map((item) => (
-                                <div key={item.fullName} className='registry-card list-item-hoverable'>
-                                    <span className='registry-card__icon'>
-                                        <Package size={22} />
-                                    </span>
-                                    <div className='registry-card__body'>
-                                        <Text as='p' size='md' weight='medium' truncate>
-                                            {item.name}{item.latest ? ` v${item.latest}` : ''}
-                                        </Text>
-                                        {item.description && (
-                                            <Text as='p' size='sm' tone='muted' className='registry-card__desc'>
-                                                {item.description}
-                                            </Text>
-                                        )}
-                                    </div>
-                                    {(() => {
-                                        const installedVersion = installedVersionByKey.get(item.name);
-                                        const updatable = installedVersion !== undefined
-                                            && !!item.latest
-                                            && isNewerVersion(item.latest, installedVersion);
-                                        if (installedVersion !== undefined && !updatable) {
-                                            return (
-                                                <Button variant='toggle' intent='neutral' className='registry-card__action' disabled>
-                                                    Installed
-                                                </Button>
-                                            );
-                                        }
-                                        return (
-                                            <Button
-                                                variant='toggle'
-                                                intent={updatable ? 'brand' : 'neutral'}
-                                                className='registry-card__action'
-                                                onClick={() => handleInstall(item)}
-                                                isLoading={installingName === item.fullName}
-                                                disabled={installingName !== null}
-                                            >
-                                                {updatable ? 'Update' : 'Install'}
-                                            </Button>
-                                        );
-                                    })()}
-                                </div>
+                                <RegistryResultCard
+                                    key={item.fullName}
+                                    item={item}
+                                    installedVersion={installedVersionByKey.get(item.name)}
+                                    isInstalling={installingName === item.fullName}
+                                    isAnyInstalling={installingName !== null}
+                                    onInstall={handleInstall}
+                                />
                             ))}
                         </div>
                     )}
