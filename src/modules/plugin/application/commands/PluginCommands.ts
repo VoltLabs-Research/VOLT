@@ -23,8 +23,9 @@ import { PLUGIN_WARMUP_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { PluginWarmupJobPayload } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
 import type { DaemonConfig } from '@/core/config';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
-import { createReadStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { createZstdDecompress } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -35,6 +36,18 @@ interface RegistryEntrypointNode {
     type?: string;
     data?: { entrypoint?: { binary?: string; binaryFileName?: string } };
 }
+
+// archiver@8 is ESM with named class exports (ZipArchive); the installed
+// @types/archiver@7 only types the legacy callable default, so reach the v8
+// class through require (Node returns the ESM namespace) with a local type.
+interface ProjectArchive {
+    pipe(destination: NodeJS.WritableStream): unknown;
+    directory(dirpath: string, destpath: string | false): unknown;
+    on(event: 'error', listener: (error: Error) => void): unknown;
+    finalize(): Promise<void>;
+}
+
+type ZipArchiveConstructor = new (options?: { zlib?: { level?: number } }) => ProjectArchive;
 
 @CommandGroup('plugin')
 export class PluginCommands {
@@ -97,11 +110,21 @@ export class PluginCommands {
             const extractDir = path.join(dir, 'extracted');
             await fs.writeFile(tgzPath, tarball);
             await fs.mkdir(extractDir, { recursive: true });
-            await pipeline(createReadStream(tgzPath), tar.x({ cwd: extractDir }));
+            // Registry artifacts are tar compressed with zstd (.tar.zst). node-tar
+            // only auto-detects gzip/brotli, so decompress zstd ourselves first.
+            const isZstd = tarball[0] === 0x28 && tarball[1] === 0xb5 && tarball[2] === 0x2f && tarball[3] === 0xfd;
+            const archiveStream = createReadStream(tgzPath);
+            await (isZstd
+                ? pipeline(archiveStream, createZstdDecompress(), tar.x({ cwd: extractDir }))
+                : pipeline(archiveStream, tar.x({ cwd: extractDir })));
 
             const workflow = await this.readWorkflow(extractDir);
             const binaryFileName = this.resolveBinaryFileName(workflow);
-            const body = await fs.readFile(await this.locateBinary(extractDir, binaryFileName));
+            // The registry ships the unzipped project (bin/, lib/, scripts/); the
+            // workflow entrypoint expects a packaged zip, so repackage it here.
+            const binaryPath = path.join(dir, binaryFileName);
+            await this.packageProjectZip(extractDir, binaryPath);
+            const body = await fs.readFile(binaryPath);
             const hash = createHash('sha256').update(body).digest('hex');
             const scope = payload.name.replace(/^@/, '').replace(/\//g, '-');
             const objectPath = `plugin-binaries/registry/${scope}/${payload.version}/${payload.platform}/${binaryFileName}`;
@@ -162,14 +185,21 @@ export class PluginCommands {
         return path.basename(binaryFileName);
     }
 
-    private async locateBinary(extractDir: string, binaryFileName: string): Promise<string> {
-        const matches = await fg(`**/${fg.escapePath(binaryFileName)}`, { cwd: extractDir, absolute: true, dot: true });
-        const found = matches[0] ?? (await fg('**/*.zip', { cwd: extractDir, absolute: true, dot: true }))[0];
-        if (!found) {
-            throw new ApplicationError('Plugin::RegistryBinaryMissing', `Binary ${binaryFileName} not found in registry package`, { statusCode: 422 });
-        }
+    private async packageProjectZip(extractDir: string, destPath: string): Promise<void> {
+        // Exclude the workflow manifest; the zip is the runnable project (bin/lib/scripts).
+        await fs.rm(path.join(extractDir, 'plugin.json'), { force: true });
+        const { ZipArchive } = require('archiver') as { ZipArchive: ZipArchiveConstructor };
+        const output = createWriteStream(destPath);
+        const archive = new ZipArchive({ zlib: { level: 9 } });
+        const closed = new Promise<void>((resolve, reject) => {
+            output.on('close', () => resolve());
+            archive.on('error', reject);
+        });
 
-        return found;
+        archive.pipe(output);
+        archive.directory(extractDir, false);
+        await archive.finalize();
+        await closed;
     }
 
     @Command('listings.list')

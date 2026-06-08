@@ -1,5 +1,3 @@
-import { isRecord } from '@/support/type-guards/is-record';
-
 export type AtomScalar = string | number | boolean | null;
 export type AtomVector = AtomScalar[];
 export type AtomPropertyValue = AtomScalar | AtomVector;
@@ -67,30 +65,4 @@ export const isColumnarPerAtomData = (value: unknown): value is PerAtomColumnarD
     }
 
     return true;
-};
-
-export const normalizePerAtomProperties = (
-    value: PerAtomProperties | null | undefined
-): FlatAtomProperties[] | null => {
-    if (Array.isArray(value)) {
-        return value
-            .filter(isRecord)
-            .map((item) => flattenAtomProperties(item as AtomProperties));
-    }
-
-    if (!isColumnarPerAtomData(value)) {
-        return null;
-    }
-
-    const entries = Object.entries(value);
-    const rowCount = entries[0][1].length;
-    const rows: AtomProperties[] = Array.from({ length: rowCount }, () => ({}));
-
-    for (const [key, column] of entries) {
-        for (let index = 0; index < rowCount; index++) {
-            rows[index][key] = column[index];
-        }
-    }
-
-    return rows.map(flattenAtomProperties);
 };
