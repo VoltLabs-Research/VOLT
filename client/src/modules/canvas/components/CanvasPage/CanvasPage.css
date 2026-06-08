@@ -156,12 +156,12 @@
 }
 
 .canvas-center-timeline > .canvas-timeline {
-    height: 12rem;
+    height: var(--canvas-timeline-size, 12rem);
     max-height: calc(100dvh - 2rem);
 }
 
 .canvas-center-timeline > .canvas-timeline--timeline-active {
-    height: auto;
+    height: var(--canvas-timeline-size, auto);
 }
 
 .canvas-center-timeline.canvas-center-timeline--local {
@@ -286,6 +286,17 @@
     width: 15px;
     height: 100%;
     margin-inline: 0;
+}
+
+.canvas-resize-rail--bottom {
+    height: 15px;
+    transform: translateY(-50%);
+}
+
+.canvas-resize-rail--bottom > .canvas-resize-handle--vertical {
+    height: 15px;
+    width: 100%;
+    margin-block: 0;
 }
 
 .canvas-panel-drawer-toggle {

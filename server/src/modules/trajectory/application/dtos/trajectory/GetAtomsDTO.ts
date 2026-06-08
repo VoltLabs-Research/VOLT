@@ -6,7 +6,7 @@ export interface GetAtomsColumnarInputDTO {
     limit?: number;
 };
 
-export type AtomColumnDType = 'f32' | 'u32' | 'u16';
+export type AtomColumnDType = 'f32' | 'u32' | 'u16' | 'str';
 
 export interface AtomColumn {
     name: string;

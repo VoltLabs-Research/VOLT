@@ -41,6 +41,22 @@ const buildUint32Column = (name: string, values: readonly number[]): AtomColumn 
     return { name, dtype: 'u32', buffer: new Uint8Array(buffer) };
 };
 
+// Per row: [u32 byteLen][utf8 bytes]. Byte-addressable so it needs no
+// alignment; the decoder walks it with a DataView.
+const buildStringColumn = (name: string, values: readonly unknown[]): AtomColumn => {
+    const encoded = values.map((value) => Buffer.from(value == null ? '' : String(value), 'utf8'));
+    const buffer = Buffer.alloc(encoded.reduce((size, bytes) => size + 4 + bytes.byteLength, 0));
+    let offset = 0;
+    for (const bytes of encoded) {
+        offset = buffer.writeUInt32LE(bytes.byteLength, offset);
+        offset += bytes.copy(buffer, offset);
+    }
+    return { name, dtype: 'str', buffer };
+};
+
+const isNonNumericString = (value: unknown): boolean =>
+    typeof value === 'string' && !Number.isFinite(Number(value));
+
 @injectable()
 export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAtomsColumnarOutputDTO, ApplicationError> {
     constructor(
@@ -144,14 +160,14 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             const xs = new Array<number>(rowCount);
             const ys = new Array<number>(rowCount);
             const zs = new Array<number>(rowCount);
-            const extraColumns = new Map<string, number[]>();
+            const extraColumns = new Map<string, unknown[]>();
             for (const prop of allProps) {
                 if (prop === ID_PROPERTY_NAME
                     || prop === TYPE_PROPERTY_NAME
                     || POSITION_PROPERTY_NAMES.includes(prop as (typeof POSITION_PROPERTY_NAMES)[number])) {
                     continue;
                 }
-                extraColumns.set(prop, new Array<number>(rowCount));
+                extraColumns.set(prop, new Array<unknown>(rowCount));
             }
 
             for (let row = 0; row < rowCount; row += 1) {
@@ -165,15 +181,9 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
 
                 for (const [prop, column] of extraColumns) {
                     const nativeValue = atom[prop];
-                    if (typeof nativeValue === 'number') {
-                        column[row] = nativeValue;
-                        continue;
-                    }
-
-                    const analysisValue = perAtomData?.get(atomId)?.[prop];
-                    column[row] = typeof analysisValue === 'number'
-                        ? analysisValue
-                        : Number(analysisValue ?? Number.NaN);
+                    column[row] = typeof nativeValue === 'number'
+                        ? nativeValue
+                        : perAtomData?.get(atomId)?.[prop] ?? nativeValue;
                 }
             }
 
@@ -185,9 +195,19 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
                 buildFloat32Column('z', zs)
             ];
 
+            // String blocks have arbitrary byte lengths and would misalign the
+            // TypedArray views of any numeric column emitted after them, so all
+            // numeric columns are appended first and string columns last.
+            const stringColumns: AtomColumn[] = [];
             for (const [prop, values] of extraColumns) {
-                columns.push(buildFloat32Column(prop, values));
+                if (values.some(isNonNumericString)) {
+                    stringColumns.push(buildStringColumn(prop, values));
+                    continue;
+                }
+                columns.push(buildFloat32Column(prop, values.map((value) =>
+                    typeof value === 'number' ? value : Number(value ?? Number.NaN))));
             }
+            columns.push(...stringColumns);
 
             const totalAtoms = atomsPage.totalAtoms;
             const totalPages = Math.ceil(totalAtoms / limitNum);
