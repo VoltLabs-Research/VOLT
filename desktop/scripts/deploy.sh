@@ -8,7 +8,8 @@ set -euo pipefail
 
 REPO_URL="${VOLT_REPO_URL:-https://github.com/voltlabs-research/volt}"
 WORKDIR="${VOLT_DEPLOY_DIR:-$HOME/.volt-deploy}"
-SRC="$WORKDIR/volt"
+CLI_URL="${VOLT_CLI_URL:-${REPO_URL%/}/releases/latest/download/cli.cjs}"
+COMPOSE_URL="${VOLT_COMPOSE_URL:-${REPO_URL%/}/releases/latest/download/compose.yml}"
 
 need(){ command -v "$1" >/dev/null 2>&1 || { echo "Required command not found: $1" >&2; exit 1; }; }
 need docker; need node; need curl
@@ -22,20 +23,9 @@ fi
 
 mkdir -p "$WORKDIR"
 
-if [ -n "${VOLT_CLI_URL:-}" ]; then
-    # Fast path: download the prebuilt bundle + compose (no clone / install).
-    curl -fsSL "$VOLT_CLI_URL" -o "$WORKDIR/cli.cjs"
-    curl -fsSL "${VOLT_COMPOSE_URL:-${REPO_URL%/}/raw/main/desktop/stack/compose.yml}" -o "$WORKDIR/compose.yml"
-    ENTRY="$WORKDIR/cli.cjs"; COMPOSE="$WORKDIR/compose.yml"
-else
-    # Build the single-file bundle from source once (skips Electron devdeps).
-    need git
-    if [ -d "$SRC/.git" ]; then git -C "$SRC" pull --ff-only; else git clone --depth 1 "$REPO_URL" "$SRC"; fi
-    cd "$SRC/desktop"
-    npm ci --omit=dev
-    npm run cli:build
-    ENTRY="$SRC/desktop/dist/cli.cjs"; COMPOSE="$SRC/desktop/stack/compose.yml"
-fi
+# Download the prebuilt single-file bundle + compose (no clone, no TS toolchain).
+curl -fsSL "$CLI_URL" -o "$WORKDIR/cli.cjs"
+curl -fsSL "$COMPOSE_URL" -o "$WORKDIR/compose.yml"
 
 # Attach the terminal so the interactive prompts work even when piped from curl.
-VOLT_COMPOSE_FILE="$COMPOSE" node "$ENTRY" < /dev/tty
+VOLT_COMPOSE_FILE="$WORKDIR/compose.yml" node "$WORKDIR/cli.cjs" < /dev/tty
