@@ -26,7 +26,7 @@ jobs:
           cache-dependency-path: desktop/package-lock.json
 
       - name: Install desktop dependencies
-        run: npm ci
+        run: npm ci --omit=dev
 
       - name: Build CLI bundle
         run: npm run cli:build
