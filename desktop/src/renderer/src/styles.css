@@ -1,6 +1,19 @@
 :root{
     color-scheme: light dark;
 
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-window: 12px;
+    --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* The desktop's macOS palette. Scoped under [data-theme] (mirrored from the OS
+   scheme in main.tsx) so these win over @voltstack/bravais's same-named tokens,
+   while bravais still provides its component-only tokens (brand, button/input bg). */
+:root[data-theme='light']{
     --color-bg: #FFFFFF;
     --color-surface-2: #F6F6FA;
     --color-surface-3: #EFEFF4;
@@ -15,38 +28,36 @@
     --status-error: #ff3b30;
     --glass-bg: rgba(255, 255, 255, 0.72);
     --glass-strong: rgba(255, 255, 255, 0.9);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-window: 12px;
-    --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
-
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
 }
 
-/* Follow the system appearance. macOS vibrancy / Windows acrylic adapt natively;
-   this is what keeps the renderer chrome in sync with the OS theme. */
-@media (prefers-color-scheme: dark){
-    :root{
-        --color-bg: #000000;
-        --color-surface-2: #1C1C1E;
-        --color-surface-3: #2C2C2E;
-        --color-text-primary: #F5F5F7;
-        --color-text-secondary: #AEAEB2;
-        --color-text-muted: #8E8E93;
-        --color-border: rgba(255, 255, 255, 0.12);
-        --color-border-strong: rgba(255, 255, 255, 0.2);
-        --header-border: rgba(255, 255, 255, 0.05);
-        --color-brand: #F5F5F7;
-        --color-on-brand: #1D1D1F;
-        /* Header matches the pure-black app surface exactly: opaque black, no
-           lighter glass tint. (Light mode keeps the translucent glass.) */
-        --glass-bg: #000000;
-        --glass-strong: #1C1C1E;
-    }
+/* macOS vibrancy / Windows acrylic adapt natively; this keeps chrome in sync. */
+:root[data-theme='dark']{
+    --color-bg: #000000;
+    --color-surface-2: #1C1C1E;
+    --color-surface-3: #2C2C2E;
+    --color-text-primary: #F5F5F7;
+    --color-text-secondary: #AEAEB2;
+    --color-text-muted: #8E8E93;
+    --color-border: rgba(255, 255, 255, 0.12);
+    --color-border-strong: rgba(255, 255, 255, 0.2);
+    --header-border: rgba(255, 255, 255, 0.05);
+    --color-brand: #F5F5F7;
+    --color-on-brand: #1D1D1F;
+    --status-error: #ff3b30;
+    /* Header matches the pure-black app surface exactly: opaque black, no glass tint. */
+    --glass-bg: #000000;
+    --glass-strong: #1C1C1E;
 }
 
 *{ box-sizing: border-box; }
+
+/* bravais ships no CSS reset; zero the default heading/paragraph margins so its
+   Heading/Text primitives are spaced by layout (gap), not browser defaults. */
+h1, h2, h3, h4, h5, h6, p, figure{ margin: 0; }
+
+/* TextInput: keep a plain border on focus; drop bravais's blue focus-ring glow. */
+.volt-text-input--focused{ border-color: var(--color-brand); box-shadow: none; }
+.volt-text-input--error.volt-text-input--focused{ box-shadow: none; }
 
 /* The native window is transparent (glass on macOS/Windows); the rounded surface
    is painted by .app so the corners read as see-through. */

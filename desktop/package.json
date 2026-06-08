@@ -14,26 +14,58 @@
   },
   "build": {
     "appId": "com.voltlabs.volt",
-    "directories": { "output": "dist" },
-    "files": ["out/**/*", "package.json"],
-    "extraResources": [{ "from": "stack", "to": "stack" }],
-    "mac": { "target": ["dmg"], "category": "public.app-category.developer-tools", "identity": null, "hardenedRuntime": false },
-    "win": { "target": ["nsis"] },
-    "linux": { "target": ["AppImage"], "category": "Development" }
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "stack",
+        "to": "stack"
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "hardenedRuntime": false
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    }
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.19",
+    "@voltstack/bravais": "^1.0.0",
     "dockerode": "^5.0.0",
     "extract-zip": "^2.0.1",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
     "octokit": "^5.0.5",
     "p-wait-for": "^6.0.0",
     "react-icons": "^5.6.0",
+    "react-router-dom": "^7.17.0",
+    "recharts": "^3.8.1",
     "sileo": "^0.1.5"
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
     "@types/node": "^22.10.1",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.0",
     "electron-builder": "^26.8.1",

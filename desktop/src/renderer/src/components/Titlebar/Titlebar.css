@@ -64,24 +64,6 @@
     gap: 2px;
 }
 
-.nav-btn{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: background 120ms var(--ease-standard);
-}
-
-.nav-btn:hover:not(:disabled){ background: var(--color-surface-3); color: var(--color-text-primary); }
-.nav-btn:disabled{ opacity: 0.35; cursor: default; }
-
 /* settings (gear) button + menu */
 .settings-wrap{
     position: relative;
@@ -90,8 +72,7 @@
     margin-left: auto;
 }
 
-.settings-btn{ font-size: 16px; }
-.settings-btn.active{ background: var(--color-surface-3); color: var(--color-text-primary); }
+.settings-wrap .is-active{ background: var(--color-surface-3); color: var(--color-text-primary); }
 
 .menu-backdrop{
     position: fixed;

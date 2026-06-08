@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Heading, Text, Button } from '@voltstack/bravais';
 import type { PreflightResult } from '@/renderer/src/hooks/useDeploy';
 import './DockerGate.css';
 
@@ -42,8 +43,8 @@ const DockerGate = ({ result, onRecheck, onOpenUrl }: DockerGateProps) => {
                     {starting ? <span className='dg-spinner' /> : <CrossGlyph />}
                 </span>
 
-                <h1 className='dg-title'>{result.message}</h1>
-                <p className='dg-body'>{result.remediation}</p>
+                <Heading level={1} size='xl' weight='semibold'>{result.message}</Heading>
+                <Text as='p' size='sm' tone='secondary'>{result.remediation}</Text>
 
                 {result.command && (
                     <button type='button' className='dg-command' onClick={copy}>
@@ -55,11 +56,11 @@ const DockerGate = ({ result, onRecheck, onOpenUrl }: DockerGateProps) => {
                 <div className='dg-actions'>
                     {result.docsUrl ? (
                         <>
-                            <button className='dg-cta' onClick={() => result.docsUrl && onOpenUrl(result.docsUrl)}>{result.cta}</button>
-                            <button className='dg-secondary' onClick={recheck} disabled={checking}>{checking ? 'Checking…' : 'Re-check'}</button>
+                            <Button intent='brand' size='sm' onClick={() => result.docsUrl && onOpenUrl(result.docsUrl)}>{result.cta}</Button>
+                            <Button variant='outline' size='sm' isLoading={checking} onClick={recheck}>Re-check</Button>
                         </>
                     ) : (
-                        <button className='dg-cta' onClick={recheck} disabled={checking}>{checking ? 'Checking…' : result.cta}</button>
+                        <Button intent='brand' size='sm' isLoading={checking} onClick={recheck}>{result.cta}</Button>
                     )}
                 </div>
 
