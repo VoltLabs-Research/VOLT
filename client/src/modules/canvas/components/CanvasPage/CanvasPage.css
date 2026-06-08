@@ -161,7 +161,7 @@
 }
 
 .canvas-center-timeline > .canvas-timeline--timeline-active {
-    height: var(--canvas-timeline-size, auto);
+    height: auto;
 }
 
 .canvas-center-timeline.canvas-center-timeline--local {
