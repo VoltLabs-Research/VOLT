@@ -3,6 +3,7 @@ import spatialAssembler from '@voltstack/spatial-assembler';
 import ApplicationError from '@/app/coordination/ApplicationError';
 import { ObjectBucketName } from '@/contracts';
 import { DAEMON_PATHS } from '@/core/paths';
+import { toUint8Array } from '@/core/reverse-channel/contracts/binary-envelope';
 import { Service } from '@/core/decorators/service';
 import {
     createScopedClusterObjectStore,
@@ -298,9 +299,7 @@ export class FilterEvaluator {
     ): Promise<ExportParticleFilterModelResult> {
         const parsed = await this.trajectoryParser.readFrame(toDumpLookup(input));
         const atomCount = parsed.positions.length / 3;
-        const mask = input.mask instanceof Uint8Array
-            ? input.mask
-            : new Uint8Array(input.mask as unknown as ArrayBufferLike);
+        const mask = toUint8Array(input.mask);
 
         if (mask.length !== atomCount) {
             throw ApplicationError.badRequest(
@@ -397,7 +396,7 @@ export class FilterEvaluator {
             }
             const bytes = input.externalValues instanceof Uint8Array
                 ? input.externalValues
-                : new Uint8Array(input.externalValues as unknown as ArrayBufferLike);
+                : toUint8Array(input.externalValues);
             // Why: the sender may align the Float32 data on arbitrary offsets
             // (e.g. inside a binary envelope payload). A typed-array cast is
             // only legal when the byte offset is a multiple of 4; copy once
