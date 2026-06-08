@@ -8,6 +8,7 @@ import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
 import RemoteProbe from '@/services/RemoteProbe';
 import AppPaths from '@/services/AppPaths';
+import bus from '@/services/EventBus';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -57,6 +58,16 @@ const createWindow = (): BrowserWindow => {
     });
 
     win.webContents.openDevTools({ mode: 'detach' });
+
+    // Mirror the window's maximized state to the loaded page (shell or client) so it
+    // can drop the rounded corners when maximized. Re-emitted on every load because
+    // `loadURL` swaps the renderer (shell ↔ local/remote client).
+    const emitWindowState = (): void => {
+        if(!win.isDestroyed()) bus.emit('window:state', { maximized: win.isMaximized() });
+    };
+    win.on('maximize', emitWindowState);
+    win.on('unmaximize', emitWindowState);
+    win.webContents.on('did-finish-load', emitWindowState);
 
     win.on('ready-to-show', () => win.show());
     loadShell(win);
