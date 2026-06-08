@@ -51,14 +51,20 @@ const App = () => {
 
     useEffect(() => {
         let cancelled = false;
-        const launcher = window.location.hash === '#launcher';
+        const intent = window.location.hash.replace('#', '');
         window.volt.deployment.get()
             .then((deployment) => {
                 if(cancelled) return;
                 const next: Mode = (deployment?.mode === 'remote' && deployment.remote) ? 'remote'
                     : deployment?.mode === 'local' ? 'local' : 'choose';
+
+                // Actions chosen from the in-client options menu run straight away here.
+                if(intent === 'switch'){ switchDeployment(); return; }
+                if(intent === 'devmode'){ setMode(next); setPaused(true); setDevModeOpen(true); return; }
+                if(intent === 'reset'){ setMode(next); resetAndRedeploy(); return; }
+
                 setMode(next);
-                if(launcher) return;
+                if(intent === 'launcher'){ setPaused(true); return; }
                 if(next === 'remote') openClient();
                 else if(next === 'local') void start();
             })

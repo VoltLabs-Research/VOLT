@@ -26,6 +26,47 @@
     color: var(--color-text-primary);
 }
 
+.vwc-menu-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.vwc-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    -webkit-app-region: no-drag;
+}
+
+.vwc-menu {
+    position: absolute;
+    top: 32px;
+    right: 0;
+    z-index: 41;
+    min-width: 188px;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-elevated);
+}
+
+.vwc-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vwc-item:hover {
+    background: var(--hover-bg);
+}
+
 .vwc-traffic {
     display: flex;
     align-items: center;

@@ -1,4 +1,4 @@
-import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
+import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import { BinaryUploadResult, BinaryUploadTarget, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
@@ -417,6 +417,70 @@ export default class PluginStorageService implements IPluginStorageService {
         return {
             plugin: persistedPlugin,
             binaryImported
+        };
+    }
+
+    private async publishIfValid(plugin: Plugin): Promise<Plugin> {
+        const validation = await this.workflowValidator.validate(
+            plugin.props.workflow.props,
+            plugin.id,
+            WorkflowValidationMode.Strict
+        );
+
+        if (!validation.isValid) {
+            logger.warn(
+                { pluginId: plugin.id, validationErrors: validation.errors },
+                '@plugin-storage-service: plugin left in draft because it is not ready to publish'
+            );
+            return plugin;
+        }
+
+        const published = await this.pluginRepo.updateById(plugin.id, { status: PluginStatus.Published }) ?? plugin;
+        published.props.status = PluginStatus.Published;
+        return published;
+    }
+
+    async createFromRegistry(
+        workflowProps: unknown,
+        binary: { objectPath: string; fileName: string; hash: string; sizeBytes: number },
+        ownerClusterId: string,
+        teamId: string
+    ): Promise<PluginImportResult> {
+        if (!isWorkflowProps(workflowProps)) {
+            throw ApplicationError.badRequest(
+                ErrorCodes.VALIDATION_INVALID_INPUT,
+                'Invalid plugin workflow from registry'
+            );
+        }
+
+        const workflow = new Workflow('', workflowProps);
+        const projection = WorkflowProjectionService.project(workflow, '');
+        const newPlugin = await this.pluginRepo.create({
+            workflow,
+            status: PluginStatus.Draft,
+            team: teamId,
+            modifier: projection.modifier,
+            exposures: projection.exposures,
+            arguments: projection.arguments,
+            listingExposures: projection.listingExposures
+        });
+
+        // Pin the binary placement to the cluster that downloaded and stored it.
+        await this.storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
+
+        newPlugin.props.workflow.updateEntrypoint({
+            binary: binary.fileName,
+            binaryObjectPath: binary.objectPath,
+            binaryFileName: binary.fileName,
+            binaryHash: binary.hash
+        });
+        await this.persistWorkflow(newPlugin._id, newPlugin.props.workflow);
+
+        const persistedPlugin = await this.publishIfValid(newPlugin);
+        logger.info(`@plugin-storage-service: plugin installed from registry ${newPlugin._id}`);
+        return {
+            plugin: persistedPlugin,
+            binaryImported: true
         };
     }
 }

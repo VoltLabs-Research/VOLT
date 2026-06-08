@@ -1,0 +1,44 @@
+post:
+  tags:
+  - Plugins
+  summary: Install a plugin from the registry
+  description: >-
+    Resolves a workflow package on registry.voltcloud.dev, instructs an automatically
+    selected compute cluster to download it into its object store, and registers the
+    resulting plugin for the team.
+  operationId: installRegistryPlugin
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+          - name
+          properties:
+            name:
+              type: string
+              description: Full package name (@username/name).
+            version:
+              type: string
+              description: Optional version; defaults to the latest published version.
+  responses:
+    '201':
+      description: Plugin installed successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  $ref: ../../components/schemas/plugins.yaml#/Plugin
+    '400':
+      $ref: ../../components/responses/common.yaml#/BadRequest
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

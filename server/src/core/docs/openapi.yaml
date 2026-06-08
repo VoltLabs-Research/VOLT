@@ -4057,6 +4057,112 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/plugins/{teamId}/registry/search:
+    get:
+      tags:
+        - Plugins
+      summary: Search the plugin registry
+      description: Proxies a search against registry.voltcloud.dev, returning installable workflow packages.
+      operationId: searchRegistryPlugins
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registry search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                fullName:
+                                  type: string
+                                name:
+                                  type: string
+                                username:
+                                  type: string
+                                kind:
+                                  type: string
+                                description:
+                                  type: string
+                                latest:
+                                  type: string
+                          page:
+                            type: integer
+                          pageSize:
+                            type: integer
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/plugins/{teamId}/registry/install:
+    post:
+      tags:
+        - Plugins
+      summary: Install a plugin from the registry
+      description: Resolves a workflow package on registry.voltcloud.dev, instructs an automatically selected compute cluster to download it into its object store, and registers the resulting plugin for the team.
+      operationId: installRegistryPlugin
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Full package name (@username/name).
+                version:
+                  type: string
+                  description: Optional version; defaults to the latest published version.
+      responses:
+        '201':
+          description: Plugin installed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Plugin'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/plugins/{teamId}/{pluginId}/binary:
     patch:
       tags:

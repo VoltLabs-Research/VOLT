@@ -80,9 +80,6 @@ export default class SocketGateway{
         return this;
     }
 
-    /**
-     * Initialize Socket.IO on top of the HTTP server.
-     */
     async initialize(server: http.Server): Promise<Server>{
         if(this.initialized && this.io) return this.io;
 
@@ -139,9 +136,6 @@ export default class SocketGateway{
         return this.io;
     }
 
-    /**
-     * Handle new socket connection.
-     */
     private handleConnection(socket: Socket): void{
         const socketData = this.getSocketConnectionData(socket);
 
@@ -226,9 +220,6 @@ export default class SocketGateway{
         this.initialized = false;
     }
 
-    /**
-     * Returns the initialized Socket.IO server.
-     */
     getIO(): Server{
         if(!this.io){
             throw new Error('SocketIO not initialized');
@@ -236,9 +227,6 @@ export default class SocketGateway{
         return this.io;
     }
 
-    /**
-     * Handle socket authentication.
-     */
     private async authenticateSocket(
         socket: AuthenticatedSocket,
         next: (error?: Error) => void

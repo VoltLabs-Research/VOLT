@@ -4,9 +4,6 @@ import type { Response } from 'express';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export default class BaseResponse {
-    /**
-     * Success respones for single item.
-     */
     static success<T>(res: Response, data: T, statusCode: number = 200): void {
         res.status(statusCode).json({
             status: 'success',
@@ -14,9 +11,6 @@ export default class BaseResponse {
         });
     }
 
-    /**
-     * Paginated response.
-     */
     static paginated<T>(res: Response, result: PaginatedResult<T>, metadata?: Record<string, unknown>, statusCode: number = 200): void {
         res.status(statusCode).json({
             status: 'success',

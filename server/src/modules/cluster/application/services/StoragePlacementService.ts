@@ -75,6 +75,26 @@ export default class StoragePlacementService {
         return this.storagePlacementRepository.upsertByScope(scopeType, scopeId, nextPlacementProps);
     }
 
+    /**
+     * Pins a plugin-binary placement to a specific cluster without resolving a
+     * default storage owner. Used by registry installs where the chosen compute
+     * cluster downloads and stores the binary in its own object store.
+     */
+    async assignPluginBinaryPlacement(
+        pluginId: string,
+        team: string,
+        primaryClusterId: string
+    ): Promise<StoragePlacement> {
+        return this.storagePlacementRepository.upsertByScope('plugin-binary', pluginId, createStoragePlacementProps({
+            team,
+            scopeType: 'plugin-binary',
+            scopeId: pluginId,
+            primaryClusterId,
+            buckets: buildPluginBinaryPlacementBuckets(pluginId),
+            updatedAt: new Date()
+        }));
+    }
+
     async switchPrimaryCluster(
         scopeType: StoragePlacementScopeType,
         scopeId: string,

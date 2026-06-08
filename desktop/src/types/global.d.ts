@@ -29,7 +29,7 @@ declare global{
             app: {
                 voltUrl: () => Promise<string>;
                 openClient: () => Promise<void>;
-                openShell: () => Promise<void>;
+                openShell: (intent?: string) => Promise<void>;
             };
             remote: {
                 probe: (endpoint: string) => Promise<RemoteProbeResult>;
