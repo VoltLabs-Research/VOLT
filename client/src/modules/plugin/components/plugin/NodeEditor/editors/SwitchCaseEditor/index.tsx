@@ -1,18 +1,14 @@
-import { z } from 'zod/v4';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
 
-const switchCaseEditorSchema = z.object({
-    value: z.string().default(''),
-    defaultCase: z.boolean().default(false)
-}).strict();
-
-type SwitchCaseEditorFormValues = z.infer<typeof switchCaseEditorSchema>;
+interface SwitchCaseEditorFormValues {
+    value: string;
+    defaultCase: boolean;
+}
 
 const useSwitchCaseEditorForm = createNodeEditorForm<SwitchCaseEditorFormValues, 'switchCase'>({
-    schema: switchCaseEditorSchema,
     defaults: {
         value: '',
         defaultCase: false

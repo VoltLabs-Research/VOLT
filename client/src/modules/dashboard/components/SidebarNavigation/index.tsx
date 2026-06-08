@@ -9,6 +9,7 @@ import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import { Box, Tooltip } from '@voltstack/bravais';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { useMemo } from 'react';
 import {
     BarChart3,
@@ -67,6 +68,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const { canAccess: canAccessPermissions } = useTeamPermissions();
     const { plugins } = usePluginSelectors();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
+    const singleTenant = useSingleTenant();
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
     const handleNavigate = (to: string) => {
@@ -244,7 +246,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     return (
         <nav className='sidebar-nav y-auto'>
-            {MAIN_NAVIGATION_ITEMS.map(renderNavItem)}
+            {(singleTenant ? MAIN_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
             <Tooltip
                 content={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
@@ -290,7 +292,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 />
             </Tooltip>
 
-            {SECONDARY_NAVIGATION_ITEMS.map(renderNavItem)}
+            {(singleTenant ? SECONDARY_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SECONDARY_NAVIGATION_ITEMS).map(renderNavItem)}
 
             {!sidebarClusters.isOnClustersRoute && (
                 <ClusterCredentialsModal

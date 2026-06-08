@@ -12,23 +12,18 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { formatSocketValidationError } from '@modules/socket/utilities/socket-validation-error';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
-import { z } from 'zod/v4';
 
-const subscribeSchema = z.object({
-    analysisId: z.string().trim().min(1),
-    timestep: z.number().int(),
-    afterCursor: z.string().trim().min(1).optional()
-}).strict();
+interface SubscribePayload {
+    analysisId: string;
+    timestep: number;
+    afterCursor?: string;
+}
 
-const unsubscribeSchema = z.object({
-    analysisId: z.string().trim().min(1),
-    timestep: z.number().int()
-}).strict();
-
-type SubscribePayload = z.infer<typeof subscribeSchema>;
-type UnsubscribePayload = z.infer<typeof unsubscribeSchema>;
+interface UnsubscribePayload {
+    analysisId: string;
+    timestep: number;
+}
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -52,23 +47,13 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         }
 
         this.on<SubscribePayload>(connection.id, ANALYSIS_LOG_SOCKET_EVENTS.SUBSCRIBE, async (conn, payload) => {
-            const parsed = subscribeSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
             const currentTeamId = this.teamSubscriptionCoordinator.getCurrentTeamId(conn);
             if (!currentTeamId) {
                 this.emitErrorToSocket(conn.id, ErrorCodes.TEAM_ID_REQUIRED, 'No team selected');
                 return;
             }
 
-            const analysis = await this.analysisRepository.findById(parsed.data.analysisId);
+            const analysis = await this.analysisRepository.findById(payload.analysisId);
             if (!analysis || analysis.props.team !== currentTeamId) {
                 this.emitErrorToSocket(
                     conn.id,
@@ -78,19 +63,19 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const room = getAnalysisLogRoom(parsed.data.analysisId, parsed.data.timestep);
+            const room = getAnalysisLogRoom(payload.analysisId, payload.timestep);
             await this.joinRoom(conn.id, room);
 
-            if (!parsed.data.afterCursor) {
+            if (!payload.afterCursor) {
                 return;
             }
 
             const replay = await this.analysisExecutionLogService.getFrameLog({
-                analysisId: parsed.data.analysisId,
+                analysisId: payload.analysisId,
                 teamId: currentTeamId,
                 trajectoryId: analysis.props.trajectory,
-                timestep: parsed.data.timestep,
-                afterCursor: parsed.data.afterCursor
+                timestep: payload.timestep,
+                afterCursor: payload.afterCursor
             });
 
             if (replay.segments.length === 0 && !replay.sealed) {
@@ -111,19 +96,9 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         });
 
         this.on<UnsubscribePayload>(connection.id, ANALYSIS_LOG_SOCKET_EVENTS.UNSUBSCRIBE, async (conn, payload) => {
-            const parsed = unsubscribeSchema.safeParse(payload);
-            if (!parsed.success) {
-                this.emitErrorToSocket(
-                    conn.id,
-                    ErrorCodes.VALIDATION_INVALID_INPUT,
-                    formatSocketValidationError(parsed.error)
-                );
-                return;
-            }
-
             await this.leaveRoom(
                 conn.id,
-                getAnalysisLogRoom(parsed.data.analysisId, parsed.data.timestep)
+                getAnalysisLogRoom(payload.analysisId, payload.timestep)
             );
         });
     }

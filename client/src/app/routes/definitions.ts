@@ -38,7 +38,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/GeneralSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'General'
+            label: 'General',
+            multiTenantOnly: true
         }
     },
     {
@@ -47,7 +48,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/AuthenticationSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Authentication'
+            label: 'Authentication',
+            multiTenantOnly: true
         }
     },
     {
@@ -74,7 +76,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/session/components/SessionSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Sessions'
+            label: 'Sessions',
+            multiTenantOnly: true
         }
     },
     {
@@ -86,7 +89,8 @@ export const protectedRoutes: RouteConfig[] = [
             section: DashboardNavigationSection.Secondary,
             label: 'My Team',
             icon: DashboardNavigationIconKey.MyTeam,
-            disabledReason: 'You do not have permission to view team details.'
+            disabledReason: 'You do not have permission to view team details.',
+            multiTenantOnly: true
         }
     },
     {
@@ -98,7 +102,8 @@ export const protectedRoutes: RouteConfig[] = [
             section: DashboardNavigationSection.Secondary,
             label: 'Manage Roles',
             icon: DashboardNavigationIconKey.ManageRoles,
-            disabledReason: 'You do not have permission to view role management.'
+            disabledReason: 'You do not have permission to view role management.',
+            multiTenantOnly: true
         }
     },
     {
@@ -289,7 +294,8 @@ export const protectedRoutes: RouteConfig[] = [
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Messages',
-            icon: DashboardNavigationIconKey.Messages
+            icon: DashboardNavigationIconKey.Messages,
+            multiTenantOnly: true
         }
     },
     {

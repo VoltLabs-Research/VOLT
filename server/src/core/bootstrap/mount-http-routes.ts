@@ -25,6 +25,7 @@ import ScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/s
 import ScriptingJupyterHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-jupyter-routes';
 import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/http/routes/simulation-cell-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
+import SystemConfigHttpModule from '@modules/system/infrastructure/http/routes/system-config-routes';
 import JobsHttpModule from '@modules/jobs/infrastructure/http/routes/jobs-routes';
 import TeamAIIntegrationHttpModule from '@modules/team/infrastructure/http/routes/ai-integration';
 import TeamInvitationPublicHttpModule from '@modules/team/infrastructure/http/routes/team-invitation/public';
@@ -66,6 +67,7 @@ const METHOD_ACTION_MAP: Record<string, Action> = {
 };
 
 const HTTP_MODULES: HttpModule[] = [
+    SystemConfigHttpModule,
     AuthHttpModule,
     SessionHttpModule,
     TeamSelfHttpModule,

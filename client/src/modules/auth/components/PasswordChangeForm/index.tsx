@@ -1,8 +1,6 @@
 import './PasswordChangeForm.css';
-import { passwordChangeSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Callout, Box, Button } from '@voltstack/bravais';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -26,7 +24,6 @@ const PasswordChangeForm = ({
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const { control, handleSubmit, reset, watch } = useForm<PasswordChangeFormType>({
-        resolver: zodResolver(passwordChangeSchema),
         defaultValues: {
             currentPassword: '',
             newPassword: '',

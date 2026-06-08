@@ -1,5 +1,5 @@
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import { BookOpen, Braces, FileCode, PlugZap } from 'lucide-react';
+import { BookOpen, Braces, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
@@ -44,11 +44,6 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
                 label: 'Open Source Ecosystem',
                 icon: Braces,
                 onClick: () => openExternalUrl('https://github.com/voltlabs-research')
-            },
-            {
-                label: 'API Spec',
-                icon: FileCode,
-                onClick: () => openExternalUrl('https://server.voltcloud.dev/api-docs')
             }
         ];
     }, [navigate, openExternalUrl]);

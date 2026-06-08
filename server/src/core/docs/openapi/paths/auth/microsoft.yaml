@@ -1,9 +1,0 @@
-get:
-  operationId: oauthMicrosoft
-  tags:
-  - Auth - OAuth
-  summary: Initiate Microsoft OAuth login
-  security: []
-  responses:
-    '302':
-      description: Redirect to Microsoft

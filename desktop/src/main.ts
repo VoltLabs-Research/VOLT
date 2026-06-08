@@ -8,7 +8,6 @@ import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
 import RemoteProbe from '@/services/RemoteProbe';
 import AppPaths from '@/services/AppPaths';
-import ClientServer from '@/services/ClientServer';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -94,10 +93,8 @@ app.whenReady().then(async () => {
 
     const remote = new RemoteProbe();
 
-    const clientServer = new ClientServer(paths.clientDir);
-
     const win = createWindow();
-    registerIpc(win, { deploy, appConfig, docker, remote, clientServer, loadShell: (hash?: string) => loadShell(win, hash) });
+    registerIpc(win, { deploy, appConfig, docker, remote, loadShell: (hash?: string) => loadShell(win, hash) });
 
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

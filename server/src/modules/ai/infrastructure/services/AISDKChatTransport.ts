@@ -31,13 +31,11 @@ import type {
 } from 'ai';
 import {
     convertToModelMessages,
-    modelMessageSchema,
     stepCountIs,
     streamText
 } from 'ai';
 import type { Response } from 'express';
 import { createOllama } from 'ollama-ai-provider-v2';
-import { z } from 'zod';
 
 type ProviderFactoryProvider = Exclude<AIProvider, AIProvider.Ollama>;
 
@@ -133,7 +131,6 @@ export default class AISDKChatTransport implements IAIChatTransport {
 
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream> {
         const modelMessages = await this.toModelMessages(input.messages);
-        this.validateMessages(modelMessages);
 
         const { provider: providerName, model: modelName, apiKey, metadata } =
             await this.resolveProviderConfig(input.teamId, input.provider, input.model);
@@ -251,31 +248,6 @@ export default class AISDKChatTransport implements IAIChatTransport {
             && part.type.startsWith('tool-')
             && typeof part.state === 'string'
             && ORPHANED_TOOL_STATES.has(part.state)
-        );
-    }
-
-    private validateMessages(messages: ModelMessage[]): void {
-        const validation = z.array(modelMessageSchema).safeParse(messages);
-
-        if (validation.success) {
-            return;
-        }
-
-        const issues = validation.error.issues.map((issue) => ({
-            path: issue.path.join('.'),
-            message: issue.message
-        }));
-        const firstIssue = validation.error.issues[0];
-        const path = firstIssue.path.map((segment) => String(segment)).join('.');
-        let message = `messages: ${firstIssue.message}`;
-        if (path) {
-            message = `messages.${path}: ${firstIssue.message}`;
-        }
-
-        logger.error('ModelMessage validation failed. Issues: %j', issues);
-        throw ApplicationError.badRequest(
-            ErrorCodes.VALIDATION_INVALID_INPUT,
-            message
         );
     }
 

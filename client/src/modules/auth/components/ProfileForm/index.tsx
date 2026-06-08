@@ -1,7 +1,5 @@
-import { profileSchema } from './validation-schema';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { InlineStatus, Loader, Stack } from '@voltstack/bravais';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -27,7 +25,6 @@ const ProfileForm = ({
     onUpdate
 }: ProfileFormProps) => {
     const { control, watch, getValues, formState, reset } = useForm<ProfileFormType>({
-        resolver: zodResolver(profileSchema),
         defaultValues: initialValues,
         mode: 'onBlur'
     });

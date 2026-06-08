@@ -1,18 +1,14 @@
-import { z } from 'zod/v4';
 import FormSection from '@/shared/presentation/components/FormSection';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';
 
-const switchStatementEditorSchema = z.object({
-    expression: z.string().default('')
-}).strict();
-
-type SwitchStatementEditorFormValues = z.infer<typeof switchStatementEditorSchema>;
+interface SwitchStatementEditorFormValues {
+    expression: string;
+}
 
 const useSwitchStatementEditorForm = createNodeEditorForm<SwitchStatementEditorFormValues, 'switchStatement'>({
-    schema: switchStatementEditorSchema,
     defaults: {
         expression: ''
     },

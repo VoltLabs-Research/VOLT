@@ -1,5 +1,4 @@
 import './ConnectEndpoint.css';
-import { connectEndpointSchema } from './validation-schema';
 import {
     commitBackendEndpoint
 } from '@/modules/auth/services/endpoint-session';
@@ -13,7 +12,6 @@ import { sileo } from 'sileo';
 import { Server } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { FormEvent } from 'react';
 import type { ConnectEndpointForm } from './validation-schema';
 
@@ -21,7 +19,6 @@ const ConnectEndpointTemplate = () => {
     const [isVerifying, setIsVerifying] = useState(false);
 
     const { control, getValues, trigger } = useForm<ConnectEndpointForm>({
-        resolver: zodResolver(connectEndpointSchema),
         defaultValues: {
             endpoint: window.location.origin
         },

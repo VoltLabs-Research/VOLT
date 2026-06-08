@@ -32,6 +32,7 @@ export interface RouteNavigationConfig {
     label: string;
     icon?: DashboardNavigationIconKey;
     disabledReason?: string;
+    multiTenantOnly?: boolean;
 };
 
 export interface RouteConfig {
