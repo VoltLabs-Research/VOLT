@@ -1,9 +1,9 @@
 import './RegistryBrowserModal.css';
 import { Box, Button, EmptyState, Loader, Modal, SearchInput, Stack, Text } from '@voltstack/bravais';
-import { useInstallRegistryPluginMutation, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
+import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Package } from 'lucide-react';
 import type { RegistryPackageSummary } from '@/modules/plugin/api/entities/plugin/registry';
 
@@ -19,6 +19,18 @@ const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
     success: 'Plugin installed',
     error: 'Failed to install plugin'
 });
+
+const isNewerVersion = (latest: string, installed: string): boolean => {
+    const segments = (version: string): number[] =>
+        version.split('-')[0].split('.').map((part) => Number.parseInt(part, 10) || 0);
+    const left = segments(latest);
+    const right = segments(installed);
+    for (let index = 0; index < Math.max(left.length, right.length); index++) {
+        const diff = (left[index] ?? 0) - (right[index] ?? 0);
+        if (diff !== 0) return diff > 0;
+    }
+    return false;
+};
 
 const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) => {
     const [search, setSearch] = useState('');
@@ -37,6 +49,15 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
     );
 
     const items = data?.items ?? [];
+
+    const installedQuery = usePluginsCatalogQuery({ page: 1, limit: 200 }, { enabled: isOpen });
+    const installedVersionByKey = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const plugin of installedQuery.data?.data ?? []) {
+            if (plugin.modifier?.key) map.set(plugin.modifier.key, plugin.modifier.version ?? '');
+        }
+        return map;
+    }, [installedQuery.data]);
 
     const handleInstall = useCallback(async (item: RegistryPackageSummary) => {
         setInstallingName(item.fullName);
@@ -94,16 +115,31 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                                             </Text>
                                         )}
                                     </div>
-                                    <Button
-                                        variant='toggle'
-                                        intent='neutral'
-                                        className='registry-card__action'
-                                        onClick={() => handleInstall(item)}
-                                        isLoading={installingName === item.fullName}
-                                        disabled={installingName !== null}
-                                    >
-                                        Install
-                                    </Button>
+                                    {(() => {
+                                        const installedVersion = installedVersionByKey.get(item.name);
+                                        const updatable = installedVersion !== undefined
+                                            && !!item.latest
+                                            && isNewerVersion(item.latest, installedVersion);
+                                        if (installedVersion !== undefined && !updatable) {
+                                            return (
+                                                <Button variant='toggle' intent='neutral' className='registry-card__action' disabled>
+                                                    Installed
+                                                </Button>
+                                            );
+                                        }
+                                        return (
+                                            <Button
+                                                variant='toggle'
+                                                intent={updatable ? 'brand' : 'neutral'}
+                                                className='registry-card__action'
+                                                onClick={() => handleInstall(item)}
+                                                isLoading={installingName === item.fullName}
+                                                disabled={installingName !== null}
+                                            >
+                                                {updatable ? 'Update' : 'Install'}
+                                            </Button>
+                                        );
+                                    })()}
                                 </div>
                             ))}
                         </div>
