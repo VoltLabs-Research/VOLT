@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { IoCloseOutline, IoFolderOpenOutline } from 'react-icons/io5';
+import { FolderOpen } from 'lucide-react';
+import { Heading, Text, TextInput, IconButton, CloseButton, LiquidToggle, Button } from '@voltstack/bravais';
 import type { DevModeState } from '@/services/AppConfig';
 import './DevModeModal.css';
 
@@ -24,16 +25,16 @@ const PathField = ({ label, hint, value, onChange }: PathFieldProps) => {
         <label className='dm-field'>
             <span className='dm-field-label'>{label}</span>
             <div className='dm-field-row'>
-                <input
-                    className='dm-input'
+                <TextInput
+                    fullWidth
                     value={value}
                     spellCheck={false}
                     placeholder={hint}
                     onChange={(event) => onChange(event.target.value)}
                 />
-                <button type='button' className='dm-browse' onClick={browse} aria-label='Browse'>
-                    <IoFolderOpenOutline />
-                </button>
+                <IconButton type='button' variant='ghost' size='md' onClick={browse} aria-label='Browse'>
+                    <FolderOpen size={16} />
+                </IconButton>
             </div>
         </label>
     );
@@ -76,20 +77,19 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
             <div className='dm-modal' role='dialog' aria-modal='true' onMouseDown={(event) => event.stopPropagation()}>
                 <header className='dm-header'>
                     <div>
-                        <h2 className='dm-title'>Developer Mode</h2>
-                        <p className='dm-subtitle'>Deploy Volt from local source checkouts instead of published releases.</p>
+                        <Heading level={2} size='lg' weight='semibold'>Developer Mode</Heading>
+                        <Text as='p' size='xs' tone='secondary' className='dm-subtitle'>Deploy Volt from local source checkouts instead of published releases.</Text>
                     </div>
-                    <button className='dm-close' onClick={onClose} aria-label='Close'><IoCloseOutline /></button>
+                    <CloseButton onClick={onClose} aria-label='Close' />
                 </header>
 
-                <label className='dm-toggle'>
+                <div className='dm-toggle'>
                     <span>
                         <span className='dm-toggle-label'>Use local sources</span>
                         <span className='dm-toggle-hint'>When off, VOLT deploys the latest GitHub releases.</span>
                     </span>
-                    <input type='checkbox' checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-                    <span className='dm-switch' aria-hidden='true' />
-                </label>
+                    <LiquidToggle pressed={enabled} onChange={setEnabled} aria-label='Use local sources' />
+                </div>
 
                 <fieldset className='dm-paths' disabled={!enabled}>
                     <PathField
@@ -107,8 +107,8 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
                 </fieldset>
 
                 <footer className='dm-footer'>
-                    <button className='dm-btn' onClick={onClose}>Cancel</button>
-                    <button className='dm-btn dm-btn-primary' onClick={apply} disabled={blockApply}>Apply &amp; Redeploy</button>
+                    <Button variant='outline' onClick={onClose}>Cancel</Button>
+                    <Button intent='brand' onClick={apply} disabled={blockApply}>Apply &amp; Redeploy</Button>
                 </footer>
             </div>
         </div>
