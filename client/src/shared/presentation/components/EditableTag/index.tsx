@@ -1,6 +1,6 @@
 import composeRefs from '@/shared/presentation/utilities/compose-refs';
 import './EditableTag.css';
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 
 interface EditableTagProps {
     as: keyof React.JSX.IntrinsicElements;
@@ -24,7 +24,7 @@ const getTextValue = (children: React.ReactNode): string => {
 const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false, editing, onEditingChange }, ref) => {
     const [internalEditing, setInternalEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
-    const textValue = useMemo(() => getTextValue(children), [children]);
+    const textValue = getTextValue(children);
     const accessibleLabel = textValue
         ? `${textValue}. Press Enter or F2 to edit.`
         : 'Press Enter or F2 to edit.';

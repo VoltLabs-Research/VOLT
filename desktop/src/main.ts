@@ -42,8 +42,8 @@ const loadShell = (win: BrowserWindow, hash?: string): void => {
 
 const createWindow = (): BrowserWindow => {
     const win = new BrowserWindow({
-        width: 1400,
-        height: 900,
+        width: 1600,
+        height: 1000,
         show: false,
         frame: false,
         ...visualChrome(),

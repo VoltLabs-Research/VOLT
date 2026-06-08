@@ -157,7 +157,7 @@ const LatexEditorPanel = ({
     );
 
     const headerTitle = activeFile?.name ?? (activeAsset ? getAssetDisplayName(activeAsset) : 'No file selected');
-    const activeAssetKind = useMemo(() => getAssetKind(activeAsset), [activeAsset]);
+    const activeAssetKind = getAssetKind(activeAsset);
     const dirtyFileIdSet = useMemo(() => new Set(dirtyFileIds), [dirtyFileIds]);
 
     const tabItems = useMemo<EditorTabItem[]>(() => openTabs.reduce<EditorTabItem[]>((items, tab) => {

@@ -69,7 +69,7 @@ const SubListingsPage = () => {
         [...LISTING_QUERY_KEYS.subListingInfinite(), 'page', analysisId, exposureId, timestep]
     ), [analysisId, exposureId, timestep]);
 
-    const persistedTabKey = useMemo(() => `${resolvePersistenceKey(queryKey)}-tab`, [queryKey]);
+    const persistedTabKey = `${resolvePersistenceKey(queryKey)}-tab`;
     const persistedTab = searchParams.get(persistedTabKey);
     const tabFromUrl = searchParams.get('tab');
 

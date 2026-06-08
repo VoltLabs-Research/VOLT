@@ -1,7 +1,6 @@
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
 import { CloseButton, Divider, Heading, Row, Stack, Text } from '@voltstack/bravais';
-import { useMemo } from 'react';
 
 import './TrajectorySharePanel.css';
 
@@ -22,7 +21,7 @@ const TrajectorySharePanel = ({
     canManageVisibility,
     onClose
 }: TrajectorySharePanelProps) => {
-    const shareUrl = useMemo(() => buildCanvasUrl(trajectoryId), [trajectoryId]);
+    const shareUrl = buildCanvasUrl(trajectoryId);
 
     return (
         <Stack className='trajectory-share-panel'>

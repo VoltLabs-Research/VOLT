@@ -1,9 +1,12 @@
+.registry-results {
+    height: 460px;
+    overflow-y: auto;
+}
+
 .registry-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 0.5rem;
-    max-height: 460px;
-    overflow-y: auto;
 }
 
 .registry-card {

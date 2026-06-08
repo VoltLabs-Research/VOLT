@@ -66,47 +66,49 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                     onChange={(e) => setSearch(e.target.value)}
                 />
 
-                {isFetching && (
-                    <Box p='2'>
-                        <Loader scale={0.5} isFixed={false} announce />
-                    </Box>
-                )}
+                <div className='registry-results'>
+                    {isFetching && (
+                        <Box p='2'>
+                            <Loader scale={0.5} isFixed={false} announce />
+                        </Box>
+                    )}
 
-                {!isFetching && items.length === 0 && (
-                    <EmptyState title='No plugins found' description='' announce />
-                )}
+                    {!isFetching && items.length === 0 && (
+                        <EmptyState title='No plugins found' description='' announce />
+                    )}
 
-                {!isFetching && items.length > 0 && (
-                    <div className='registry-grid'>
-                        {items.map((item) => (
-                            <div key={item.fullName} className='registry-card list-item-hoverable'>
-                                <span className='registry-card__icon'>
-                                    <Package size={22} />
-                                </span>
-                                <div className='registry-card__body'>
-                                    <Text as='p' size='md' weight='medium' truncate>
-                                        {item.name}{item.latest ? ` v${item.latest}` : ''}
-                                    </Text>
-                                    {item.description && (
-                                        <Text as='p' size='sm' tone='muted' className='registry-card__desc'>
-                                            {item.description}
+                    {!isFetching && items.length > 0 && (
+                        <div className='registry-grid'>
+                            {items.map((item) => (
+                                <div key={item.fullName} className='registry-card list-item-hoverable'>
+                                    <span className='registry-card__icon'>
+                                        <Package size={22} />
+                                    </span>
+                                    <div className='registry-card__body'>
+                                        <Text as='p' size='md' weight='medium' truncate>
+                                            {item.name}{item.latest ? ` v${item.latest}` : ''}
                                         </Text>
-                                    )}
+                                        {item.description && (
+                                            <Text as='p' size='sm' tone='muted' className='registry-card__desc'>
+                                                {item.description}
+                                            </Text>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant='toggle'
+                                        intent='neutral'
+                                        className='registry-card__action'
+                                        onClick={() => handleInstall(item)}
+                                        isLoading={installingName === item.fullName}
+                                        disabled={installingName !== null}
+                                    >
+                                        Install
+                                    </Button>
                                 </div>
-                                <Button
-                                    variant='toggle'
-                                    intent='neutral'
-                                    className='registry-card__action'
-                                    onClick={() => handleInstall(item)}
-                                    isLoading={installingName === item.fullName}
-                                    disabled={installingName !== null}
-                                >
-                                    Install
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    )}
+                </div>
             </Stack>
         </Modal>
     );
