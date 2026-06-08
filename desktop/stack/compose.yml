@@ -150,6 +150,11 @@ services:
             try_files $$uri /index.html;
           }
 
+          location ~ \.mjs$$ {
+            default_type application/javascript;
+            try_files $$uri =404;
+          }
+
           location /api/ {
             set $$upstream_api http://volt-server:8000;
             proxy_pass $$upstream_api;
