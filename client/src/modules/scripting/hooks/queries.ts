@@ -16,7 +16,7 @@ import type {
 import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
 import type { ScriptingSession } from '../api/entities/scripting-session';
 
-interface ScriptingQueryKeys extends Record<string, unknown> {
+interface ScriptingQueryKeys {
     notebooks: ListScriptingNotebooksParams;
 };
 

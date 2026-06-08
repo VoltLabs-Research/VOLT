@@ -31,9 +31,15 @@ body {
     background-color: var(--color-bg);
 }
 
-html.desktop-window,
-body.desktop-window {
+html[data-volt-desktop],
+html[data-volt-desktop] body {
     background-color: transparent;
+}
+
+html[data-volt-desktop] #root {
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: var(--color-bg);
 }
 
 #root {

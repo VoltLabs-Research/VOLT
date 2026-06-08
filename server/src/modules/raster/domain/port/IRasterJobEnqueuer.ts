@@ -1,4 +1,4 @@
-export interface RasterTriggerConfig extends Record<string, unknown> {
+export interface RasterTriggerConfig {
 }
 
 export interface RasterJobEnqueueResult {

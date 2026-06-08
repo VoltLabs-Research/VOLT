@@ -2,7 +2,7 @@ import service from '../api/service';
 import { buildKeys, createQuery } from '@/shared/infrastructure/query';
 import type { GlobalSearchInputDTO } from '@/modules/dashboard/api/service';
 
-interface DashboardQueryKeys extends Record<string, unknown> {
+interface DashboardQueryKeys {
     globalSearch: GlobalSearchInputDTO;
     metrics: void;
 }

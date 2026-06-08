@@ -15,7 +15,7 @@ interface SubListingRow extends Record<string, unknown> {
     _id: string;
 }
 
-interface SubListingFetchContext extends Record<string, unknown> {
+interface SubListingFetchContext {
     subListingName: string;
     analysisId: string;
     exposureId: string;

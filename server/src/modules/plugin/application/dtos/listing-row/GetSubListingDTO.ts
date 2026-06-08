@@ -13,7 +13,7 @@ export interface SubListingColumn {
     sortable: boolean;
 }
 
-export interface SubListingRowShape extends Record<string, unknown> {
+export interface SubListingRowShape {
     _id: string;
 }
 
