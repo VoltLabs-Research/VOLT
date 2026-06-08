@@ -10,6 +10,8 @@ import GetNodeTypesSchemaUseCase from '@modules/plugin/application/use-cases/plu
 import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
 import { ImportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ImportPluginUseCase';
 import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/ListPluginsUseCase';
+import { SearchRegistryPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/SearchRegistryPluginsUseCase';
+import { RegistryInstallPluginUseCase } from '@modules/plugin/application/use-cases/plugin/RegistryInstallPluginUseCase';
 import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
@@ -45,6 +47,8 @@ const GetNodeTypesSchemaController = createController(GetNodeTypesSchemaUseCase)
 const GetPluginByIdController = createController(GetPluginByIdUseCase);
 const ImportPluginController = createController(ImportPluginUseCase, HttpStatus.Created);
 const ListPluginsController = createController(ListPluginsUseCase);
+const SearchRegistryPluginsController = createController(SearchRegistryPluginsUseCase);
+const RegistryInstallPluginController = createController(RegistryInstallPluginUseCase, HttpStatus.Created);
 const UpdatePluginByIdController = createController(UpdatePluginByIdUseCase);
 const UploadBinaryController = createController(UploadBinaryUseCase);
 const ValidateWorkflowController = createController(ValidateWorkflowUseCase);
@@ -62,6 +66,8 @@ export default createControllerRegistry({
     getPluginById: GetPluginByIdController,
     importPlugin: ImportPluginController,
     listPlugins: ListPluginsController,
+    searchRegistry: SearchRegistryPluginsController,
+    installRegistry: RegistryInstallPluginController,
     updatePluginById: UpdatePluginByIdController,
     uploadBinary: UploadBinaryController,
     validateWorkflow: ValidateWorkflowController

@@ -4,5 +4,6 @@ export const PLUGIN_TOKENS = Object.freeze({
     WorkflowValidatorService: Symbol.for('WorkflowValidatorService'),
     PluginDependencyResolverService: Symbol.for('PluginDependencyResolverService'),
     PluginExecutionRouter: Symbol.for('PluginExecutionRouter'),
-    PluginExposureExportService: Symbol.for('PluginExposureExportService')
+    PluginExposureExportService: Symbol.for('PluginExposureExportService'),
+    RegistryGateway: Symbol.for('RegistryGateway')
 });

@@ -18,6 +18,8 @@ export default createHttpModule({
         router.post('/workflow-validation', controllers.validateWorkflow.handle);
         router.get('/:pluginId/export', controllers.exportPlugin.handle);
         router.post('/import', importUpload.single('file'), controllers.importPlugin.handle);
+        router.get('/registry/search', controllers.searchRegistry.handle);
+        router.post('/registry/install', controllers.installRegistry.handle);
         router.route('/')
             .get(controllers.listPlugins.handle)
             .post(controllers.create.handle);

@@ -32,9 +32,6 @@ export default class Workflow {
         };
     }
 
-    /**
-     * Node lookup map.
-     */
     getNodeMap(): Map<string, WorkflowNode> {
         const map = new Map<string, WorkflowNode>();
         for (const node of this.props.nodes) {

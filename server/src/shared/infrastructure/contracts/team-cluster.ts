@@ -45,6 +45,7 @@ export const ChannelCommands = Object.freeze({
 
     PluginSync: 'plugin.sync',
     PluginWarmup: 'plugin.warmup',
+    PluginRegistryInstall: 'plugin.registry.install',
     PluginListingsList: 'plugin.listings.list',
     PluginSubListingsList: 'plugin.sub-listings.list',
     PluginTransferMongoExport: 'plugin.transfer.mongo.export',
@@ -127,6 +128,29 @@ export interface TeamClusterDaemonPluginMongoImportResult {
 
 export interface TeamClusterDaemonPluginMongoPurgeResult {
     deletedRows: number;
+}
+
+export interface TeamClusterDaemonRegistryInstallPayload {
+    [key: string]: unknown;
+    downloadUrl: string;
+    sha256: string;
+    fileName: string;
+    name: string;
+    version: string;
+    platform: string;
+}
+
+export interface TeamClusterDaemonRegistryInstallBinary {
+    objectPath: string;
+    fileName: string;
+    hash: string;
+    sizeBytes: number;
+}
+
+export interface TeamClusterDaemonRegistryInstallResult {
+    workflow: unknown;
+    binary: TeamClusterDaemonRegistryInstallBinary;
+    ownerClusterId: string;
 }
 
 export type StoragePlacementScopeType = 'trajectory' | 'analysis' | 'plugin-binary';

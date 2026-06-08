@@ -23,9 +23,6 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         private readonly socketMapper: SocketConnectionMapper
     ){}
 
-    /**
-     * Register a socket for event handling.
-     */
     registerConnection(socket: unknown): void{
         this.registerSocket(socket as Socket);
     }
@@ -38,9 +35,6 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         this.sockets.set(socket.id, socket);
     }
 
-    /**
-     * Unregister a socket when disconnected.
-     */
     private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
         this.disconnectHandlers.delete(socketId);
@@ -105,9 +99,6 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         handlers.push(handler);
     }
 
-    /**
-     * Get the ISocketConnection for a socket id.
-     */
     getConnection(socketId: string): ISocketConnection | undefined{
         const socket = this.sockets.get(socketId);
         if(!socket) return undefined;

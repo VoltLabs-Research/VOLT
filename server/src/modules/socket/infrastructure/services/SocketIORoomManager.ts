@@ -18,16 +18,10 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
         private readonly socketMapper: SocketConnectionMapper
     ){}
 
-    /**
-     * Initialize with the Socket.IO server instance.
-     */
     setServer(io: Server): void{
         this.io = io;
     }
 
-    /**
-     * Register a socket for room management.
-     */
     registerConnection(socket: unknown): void{
         this.registerSocket(socket as Socket);
     }
@@ -40,9 +34,6 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
         this.sockets.set(socket.id, socket);
     }
 
-    /**
-     * Unregister a socket when disconnected.
-     */
     private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
     }

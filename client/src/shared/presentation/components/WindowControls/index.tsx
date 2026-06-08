@@ -1,25 +1,50 @@
+import { useEffect, useState } from 'react';
 import { Settings } from 'lucide-react';
 import './WindowControls.css';
 
-// The desktop preload (Electron) injects `window.volt`; in a plain browser it is
-// absent, so the whole control set renders nothing and the header stays a normal header.
-const windowApi = (): { minimize: () => void; maximize: () => void; close: () => void } | undefined =>
-    (window as unknown as { volt?: { window?: any } }).volt?.window;
-
-const launcher = (): (() => void) | undefined =>
-    (window as unknown as { volt?: { app?: { openShell?: () => void } } }).volt?.app?.openShell;
+// The desktop preload (Electron) injects `window.volt`; absent in a plain browser, so the
+// whole control set renders nothing and the header stays a normal header.
+type Volt = {
+    window?: { minimize: () => void; maximize: () => void; close: () => void };
+    app?: { openShell?: (intent?: string) => void };
+    deployment?: { get?: () => Promise<{ mode?: string } | null> };
+};
+const volt = (): Volt | undefined => (window as unknown as { volt?: Volt }).volt;
 
 const WindowControls = () => {
-    const win = windowApi();
+    const win = volt()?.window;
+    const openShell = volt()?.app?.openShell;
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [isLocal, setIsLocal] = useState(false);
+
+    useEffect(() => {
+        volt()?.deployment?.get?.().then((d) => setIsLocal(d?.mode === 'local')).catch(() => {});
+    }, []);
+
     if (!win) return null;
-    const openShell = launcher();
+
+    // Deployment actions need the desktop shell (redeploy progress / onboarding); the menu
+    // itself stays in-place — only the chosen action hands off to the shell.
+    const pick = (intent: string) => { setMenuOpen(false); openShell?.(intent); };
 
     return (
         <div className='volt-window-controls'>
             {openShell && (
-                <button className='vwc-launcher' aria-label='Deployment & tools' title='Deployment & tools' onClick={openShell}>
-                    <Settings size={15} />
-                </button>
+                <div className='vwc-menu-wrap'>
+                    <button className='vwc-launcher' aria-label='Options' title='Options' onClick={() => setMenuOpen((o) => !o)}>
+                        <Settings size={15} />
+                    </button>
+                    {menuOpen && (
+                        <>
+                            <div className='vwc-backdrop' onClick={() => setMenuOpen(false)} />
+                            <ul className='vwc-menu'>
+                                {isLocal && <li className='vwc-item' onClick={() => pick('devmode')}>Dev Mode</li>}
+                                {isLocal && <li className='vwc-item' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>}
+                                <li className='vwc-item' onClick={() => pick('switch')}>Switch deployment</li>
+                            </ul>
+                        </>
+                    )}
+                </div>
             )}
             <span className='vwc-traffic'>
                 <button className='vwc-dot vwc-close' aria-label='Close' onClick={() => win.close()} />

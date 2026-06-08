@@ -1,0 +1,54 @@
+get:
+  tags:
+  - Plugins
+  summary: Search the plugin registry
+  description: Proxies a search against registry.voltcloud.dev, returning installable workflow packages.
+  operationId: searchRegistryPlugins
+  parameters:
+  - $ref: ../../components/parameters/common.yaml#/TeamId
+  - name: q
+    in: query
+    required: false
+    schema:
+      type: string
+  - name: page
+    in: query
+    required: false
+    schema:
+      type: integer
+  - name: limit
+    in: query
+    required: false
+    schema:
+      type: integer
+  responses:
+    '200':
+      description: Registry search results
+      content:
+        application/json:
+          schema:
+            allOf:
+            - $ref: ../../components/schemas/common.yaml#/SuccessResponse
+            - type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          fullName: { type: string }
+                          name: { type: string }
+                          username: { type: string }
+                          kind: { type: string }
+                          description: { type: string }
+                          latest: { type: string }
+                    page: { type: integer }
+                    pageSize: { type: integer }
+                    total: { type: integer }
+    '401':
+      $ref: ../../components/responses/common.yaml#/Unauthorized
+    '403':
+      $ref: ../../components/responses/common.yaml#/Forbidden

@@ -23,9 +23,6 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
         this.io = io;
     }
 
-    /**
-     * Register a socket for direct emission.
-     */
     registerConnection(socket: unknown): void{
         this.registerSocket(socket as Socket);
     }
@@ -38,9 +35,6 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
         this.sockets.set(socket.id, socket);
     }
 
-    /**
-     * Unregister a socket when disconnected.
-     */
     private unregisterSocket(socketId: string): void{
         this.sockets.delete(socketId);
     }
