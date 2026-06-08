@@ -102,7 +102,7 @@ const ConnectEndpointTemplate = () => {
                     </Stack>
 
                     <Text as='p' align='center' className='connect-hint'>
-                        Your workspace data lives on the server you connect to. You can change servers later from the sign in screen.
+                        Need help? Read the <a href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.
                     </Text>
                 </Stack>
             </Stack>
