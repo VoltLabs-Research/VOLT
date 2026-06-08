@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { AppEvents, PhaseSpec } from '@/types/events';
+import { errMessage } from '@/shared/error';
 
 export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
@@ -14,8 +15,6 @@ interface LogLine{
 }
 
 const MAX_LINES = 800;
-
-const errMessage = (err: unknown) => (err as any)?.message ?? String(err);
 
 interface UseDeployOptions{
     autoStart?: boolean;

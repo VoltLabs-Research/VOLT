@@ -12,16 +12,12 @@ interface MaybeParticleFilterCondition {
     exposureId?: string;
 }
 
-interface MaybeScene {
+interface MaybeScene extends MaybeParticleFilterCondition {
     sceneType?: string;
     source?: string;
     analysisId?: string;
     combinator?: string;
     conditions?: MaybeParticleFilterCondition[];
-    exposureId?: string;
-    property?: string;
-    operator?: string;
-    value?: number | string;
     action?: string;
     startValue?: string;
     endValue?: string;

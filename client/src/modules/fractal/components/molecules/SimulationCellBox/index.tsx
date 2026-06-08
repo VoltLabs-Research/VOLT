@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/api/entities/model';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';

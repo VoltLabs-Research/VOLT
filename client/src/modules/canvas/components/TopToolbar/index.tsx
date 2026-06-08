@@ -8,6 +8,7 @@ import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
+import WindowControls from '@/shared/presentation/components/WindowControls';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
@@ -216,6 +217,7 @@ const TopToolbar = ({
                             canManageVisibility={share.canManageVisibility}
                         />
                     )}
+                    <WindowControls />
                 </Row>
             </div>
 

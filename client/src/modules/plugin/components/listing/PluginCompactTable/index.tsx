@@ -8,7 +8,7 @@ import type { MenuOption } from '@/shared/presentation/types/menu';
 import { formatUnknownValue } from '@/shared/utils/format';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
-import useMedia from '@/shared/presentation/hooks/use-media';
+import { useMedia } from '@voltstack/bravais';
 import '@/modules/plugin/components/listing/PluginExposureTable/PluginExposureTable.css';
 import '@/modules/plugin/components/listing/PluginCompactTable/PluginCompactTable.css';
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';

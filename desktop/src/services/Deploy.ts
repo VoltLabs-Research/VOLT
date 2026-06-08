@@ -7,6 +7,7 @@ import DockerPreflight, { PreflightError } from '@/services/DockerPreflight';
 import { assertDevPaths } from '@/services/devPaths';
 import bus from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
+import { errMessage } from '@/shared/error';
 import pWaitFor from 'p-wait-for';
 
 export interface DeployProps{
@@ -29,8 +30,6 @@ const isUp = async (url: string) => {
 
 const waitForUrl = (url: string, timeout = 120_000) =>
     pWaitFor(() => isUp(url), { interval: 500, timeout });
-
-const errMessage = (err: unknown) => (err as any)?.message ?? String(err);
 
 const START_PHASES: PhaseSpec[] = [
     { id: 'sources', label: 'Resolve sources' },
