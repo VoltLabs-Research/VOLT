@@ -423,6 +423,15 @@ const CanvasPage = () => {
         storageKey: 'volt:canvas:right-panel-size'
     });
 
+    const timelinePanel = useResizable({
+        direction: ResizeDirection.Vertical,
+        initialSize: 192,
+        minSize: 120,
+        maxSize: 600,
+        growPositive: false,
+        storageKey: 'volt:canvas:timeline-panel-size'
+    });
+
     const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
         downloadListing(params);
     }, [downloadListing]);
@@ -765,7 +774,23 @@ const CanvasPage = () => {
                     </Box>
 
                     {!isLocalGlbViewer && !isScriptingWorkspace && (
-                        <Stack id="canvas-center-timeline" className="canvas-center-timeline" data-tour-id="canvas-timeline">
+                        <Stack
+                            id="canvas-center-timeline"
+                            className="canvas-center-timeline"
+                            data-tour-id="canvas-timeline"
+                            style={!isNarrowViewport ? { '--canvas-timeline-size': `${timelinePanel.size}px` } as React.CSSProperties : undefined}
+                        >
+                            {!isNarrowViewport && (
+                                <Box position='absolute' className="canvas-resize-rail canvas-resize-rail--bottom" style={{ top: 0, left: 0, right: 0 }}>
+                                    <ResizeHandle
+                                        direction={ResizeDirection.Vertical}
+                                        isDragging={timelinePanel.isDragging}
+                                        label="Resize timeline"
+                                        controls="canvas-center-timeline"
+                                        {...timelinePanel.handleProps}
+                                    />
+                                </Box>
+                            )}
                             <Timeline
                                 sceneRef={sceneRef}
                                 trajectory={trajectory}

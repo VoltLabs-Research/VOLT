@@ -3,11 +3,12 @@ import type { AtomColumnDType, AtomColumnView, AtomData, GetAtomsOutputDTO } fro
 const DTYPE_BY_ID: Record<number, AtomColumnDType> = {
     0: 'f32',
     1: 'u32',
-    2: 'u16'
+    2: 'u16',
+    3: 'str'
 };
 
 const createTypedArrayView = (
-    dtype: AtomColumnDType,
+    dtype: Exclude<AtomColumnDType, 'str'>,
     buffer: ArrayBuffer,
     byteOffset: number,
     byteLength: number
@@ -95,8 +96,22 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
 
     for (let i = 0; i < propsCount; i += 1) {
         const header = headers[i];
-        const values = createTypedArrayView(header.dtype, buffer, offset, header.byteLen);
-        offset += header.byteLen;
+        let values: AtomColumnView['values'];
+
+        if (header.dtype === 'str') {
+            const strings: string[] = [];
+            const end = offset + header.byteLen;
+            while (offset < end) {
+                const strLen = view.getUint32(offset, true);
+                offset += 4;
+                strings.push(textDecoder.decode(new Uint8Array(buffer, offset, strLen)));
+                offset += strLen;
+            }
+            values = strings;
+        } else {
+            values = createTypedArrayView(header.dtype, buffer, offset, header.byteLen);
+            offset += header.byteLen;
+        }
 
         const column: AtomColumnView = {
             name: header.name,
