@@ -117,6 +117,14 @@ export default class Deploy{
         });
     }
 
+    update(){
+        return this.#serialize(async () => {
+            await this.#stage('stopping', 'down', () => this.#teardown(false));
+            await this.resetDepsVolumes();
+            await this.#stage('starting', 'up', () => this.#startCore());
+        });
+    }
+
     async #teardown(volumes: boolean){
         bus.emit('deploy:phases', { phases: STOP_PHASES });
         await this.#phase('down', async () => {

@@ -26,8 +26,68 @@ const detectIp = (): string => {
 
 const required = (value: string | undefined) => (value && value.trim() ? undefined : 'Required');
 
+const printSummary = (env: Record<string, string>, withCluster: boolean, email: string, consoleReady: boolean) => {
+    if(consoleReady){
+        p.note(`VOLT Cloud ID  ${email}\nManage your services at console.voltcloud.dev`, 'Cloud Services');
+    }
+    p.note(
+        [
+            `Client    ${env.CLIENT_HOST}`,
+            `Server    ${env.SERVER_ENDPOINT}`,
+            `Cluster   ${withCluster ? 'daemon running' : 'server only'}`,
+            '',
+            'Connect from any device:',
+            '  Web app      app.voltcloud.dev',
+            '  Desktop app  get.voltcloud.dev',
+            `  When asked for the server address, enter ${env.SERVER_ENDPOINT}`
+        ].join('\n'),
+        'VOLT is up'
+    );
+    p.outro('Deployment complete.');
+};
+
 const main = async () => {
     p.intro('Deploy VOLT');
+
+    const dataDir = process.env.VOLT_DEPLOY_DATA ?? path.join(process.cwd(), '.volt-deploy');
+    const downloadDir = path.join(dataDir, 'downloads');
+    await mkdir(downloadDir, { recursive: true });
+
+    const appConfig = new AppConfig({ configFile: path.join(dataDir, 'app-config.json') });
+    const composeFile = process.env.VOLT_COMPOSE_FILE ?? path.join(moduleDir, '..', 'stack', 'compose.yml');
+    const docker = new DockerPreflight();
+    const progress = new DeployProgress();
+    const sources = new SourceResolver({
+        appConfig,
+        downloadDir,
+        repos: [
+            { repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }), envKey: 'VOLT_SOURCE_DIR' },
+            { repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }), envKey: 'CLUSTER_DAEMON_SOURCE_DIR' }
+        ]
+    });
+
+    const existing = await appConfig.getBootstrap();
+
+    if(existing){
+        const choice = await p.select({
+            message: `Existing deployment found (${existing.email}). What would you like to do?`,
+            options: [
+                { value: 'update', label: 'Update — pull latest and rebuild (keeps your data)' },
+                { value: 'reset', label: 'Reset & re-deploy — wipe all data and start fresh' }
+            ]
+        });
+        if(p.isCancel(choice)){ p.cancel('Deployment cancelled.'); process.exit(1); }
+
+        if(choice === 'update'){
+            const withCluster = (await appConfig.getMode()) !== 'server';
+            const deploy = new Deploy({ composeFile, appConfig, sources, docker, withCluster });
+            progress.start();
+            await deploy.update();
+            progress.stop();
+            printSummary(await appConfig.getStackEnv(), withCluster, existing.email, false);
+            return;
+        }
+    }
 
     const answers = await p.group({
         host: () => p.text({ message: 'Server host or domain', initialValue: detectIp(), validate: required }),
@@ -48,12 +108,7 @@ const main = async () => {
     }, { onCancel: () => { p.cancel('Deployment cancelled.'); process.exit(1); } });
 
     const withCluster = answers.mode !== 'server';
-
-    const dataDir = process.env.VOLT_DEPLOY_DATA ?? path.join(process.cwd(), '.volt-deploy');
-    const downloadDir = path.join(dataDir, 'downloads');
-    await mkdir(downloadDir, { recursive: true });
-
-    const appConfig = new AppConfig({ configFile: path.join(dataDir, 'app-config.json') });
+    await appConfig.setMode(answers.mode);
 
     const env = await appConfig.getStackEnv();
     env.SECRET_KEY ||= crypto.randomBytes(32).toString('hex');
@@ -67,23 +122,11 @@ const main = async () => {
     env.MINIO_PUBLIC_URL = `http://${answers.host}:${env.MINIO_PORT}`;
     await appConfig.setStackEnv(env);
 
-    const progress = new DeployProgress();
-    progress.start();
-
-    const sources = new SourceResolver({
-        appConfig,
-        downloadDir,
-        repos: [
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }), envKey: 'VOLT_SOURCE_DIR' },
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }), envKey: 'CLUSTER_DAEMON_SOURCE_DIR' }
-        ]
-    });
-
     const deploy = new Deploy({
-        composeFile: process.env.VOLT_COMPOSE_FILE ?? path.join(moduleDir, '..', 'stack', 'compose.yml'),
+        composeFile,
         appConfig,
         sources,
-        docker: new DockerPreflight(),
+        docker,
         account: {
             fullName: answers.fullName,
             email: answers.email,
@@ -115,33 +158,12 @@ const main = async () => {
         consoleSpinner.stop('VOLT Cloud sign-up skipped (unreachable)');
     }
 
-    await deploy.start();
+    progress.start();
+    if(existing) await deploy.resetAndRedeploy();
+    else await deploy.start();
     progress.stop();
 
-    const finalEnv = await appConfig.getStackEnv();
-
-    if(consoleReady){
-        p.note(
-            `VOLT Cloud ID  ${answers.email}\nManage your services at console.voltcloud.dev`,
-            'Cloud Services'
-        );
-    }
-
-    p.note(
-        [
-            `Client    ${finalEnv.CLIENT_HOST}`,
-            `Server    ${finalEnv.SERVER_ENDPOINT}`,
-            `Cluster   ${withCluster ? 'daemon running' : 'server only'}`,
-            '',
-            'Connect from any device:',
-            '  Web app      app.voltcloud.dev',
-            '  Desktop app  get.voltcloud.dev',
-            `  When asked for the server address, enter ${finalEnv.SERVER_ENDPOINT}`
-        ].join('\n'),
-        'VOLT is up'
-    );
-
-    p.outro('Deployment complete.');
+    printSummary(await appConfig.getStackEnv(), withCluster, answers.email, consoleReady);
 };
 
 main().catch((error) => {

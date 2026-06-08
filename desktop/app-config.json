@@ -25,9 +25,6 @@
     "voltPath": "/home/rodyherrera/Desktop/ecosystem/app/VOLT",
     "clusterDaemonPath": "/home/rodyherrera/Desktop/ecosystem/app/ClusterDaemon"
   },
-  "deployment": {
-    "mode": "local"
-  },
   "bootstrap": {
     "done": true,
     "email": "local-e95e72e6@volt.local",
@@ -37,5 +34,8 @@
     "teamClusterId": "6a266fe456d6e6e92f471ab1",
     "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI2NmZlNDU2ZDZlNmU5MmY0NzFhOTMiLCJ1c2VySWQiOiI2YTI2NmZlNDU2ZDZlNmU5MmY0NzFhOTMiLCJpZCI6IjZhMjY2ZmU0NTZkNmU2ZTkyZjQ3MWE5MyIsImlhdCI6MTc4MDkwMzkwOCwiZXhwIjoxNzgxNTA4NzA4fQ.3HGB9IeRcd9NPPJkXF5DTUivqK_41qd0-mHRcSlyuu8",
     "daemonPassword": "521013f69ff4a952cf71a37062b3cc5f83ddf34f8004f38a"
+  },
+  "deployment": {
+    "mode": "local"
   }
 }
