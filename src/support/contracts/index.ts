@@ -28,6 +28,7 @@ export * from '@/modules/notebook/contracts/http-notebook';
 export * from '@/modules/plugin/contracts/artifact-upload';
 export * from '@/modules/plugin/contracts/reverse-channel-plugin';
 export * from '@/modules/plugin/contracts/mongo-payloads';
+export * from '@/modules/plugin/contracts/registry-install';
 
 export * from '@/modules/trajectory/contracts/queue-trajectory';
 export * from '@/modules/trajectory/contracts/reverse-channel-trajectory';
