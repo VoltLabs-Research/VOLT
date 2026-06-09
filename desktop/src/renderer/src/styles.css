@@ -240,7 +240,125 @@ body{
 
 .retry:hover{ background: var(--color-surface-3); }
 
+.retry--primary{
+    color: var(--color-on-brand);
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+}
+
+.retry--primary:hover{ background: var(--color-brand); opacity: 0.9; }
+
+/* Centered layouts: loading splash, the paused "ready" card and remote connecting. */
+.boot--center{ justify-content: center; }
+
+.boot-lead--center{ align-items: center; text-align: center; }
+
+/* Initial loading splash */
+.splash{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.splash-mark{
+    font-size: clamp(28px, 3vw, 38px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+}
+
+.splash-spinner{
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, var(--color-text-primary));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+    animation: step-spin 0.7s linear infinite;
+}
+
+/* Paused "Volt is ready" card */
+.ready-card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    max-width: 460px;
+}
+
+.ready-eyebrow{
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.ready-endpoint{
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    word-break: break-all;
+}
+
+.ready-error{
+    max-width: 38ch;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--status-error);
+}
+
+.ready-actions{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.ready-link{
+    padding: 9px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.ready-link:hover{ color: var(--color-text-primary); text-decoration: underline; text-underline-offset: 2px; }
+
+.ready-hint{
+    margin-top: 4px;
+    max-width: 42ch;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+/* Boot actions row (retry / start / copy logs) */
+.boot-actions{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Logs read as ambient texture while running, but become readable and scrollable
+   on failure so the user can diagnose what went wrong. */
+.boot-logs.is-scrollable{
+    overflow-y: auto;
+    -webkit-mask: none;
+            mask: none;
+    user-select: text;
+}
+
+.boot-logs.is-scrollable .term-line{ user-select: text; }
+
 @media (prefers-reduced-motion: reduce){
     .boot-heading,
-    .step-spinner{ animation: none; }
+    .step-spinner,
+    .splash-spinner{ animation: none; }
 }

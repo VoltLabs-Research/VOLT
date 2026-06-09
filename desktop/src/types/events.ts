@@ -37,6 +37,8 @@ export interface AppEvents{
         repoId: string;
         phase: 'download' | 'extract' | 'done';
         bytes?: number;
+        total?: number;
+        pct?: number;
     },
     'deploy:phases': {
         phases: PhaseSpec[];

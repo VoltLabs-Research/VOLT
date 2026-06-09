@@ -7,7 +7,14 @@ export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
 export type PreflightResult = AppEvents['deploy:preflight'];
 
+export interface PhaseProgress{
+    status: PhaseStatus;
+    detail?: string;
+}
+
 const POLL_INTERVAL = 2_000;
+// Docker problems that resolve on their own once the user acts, so we keep polling.
+const SELF_HEALING_REASONS = new Set(['daemon-starting', 'daemon-down']);
 
 interface LogLine{
     stream: 'stdout' | 'stderr';
@@ -23,7 +30,7 @@ interface UseDeployOptions{
 export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     const [state, setState] = useState<DeployState>('idle');
     const [phases, setPhases] = useState<PhaseSpec[]>([]);
-    const [phaseState, setPhaseState] = useState<Record<string, { status: PhaseStatus; detail?: string }>>({});
+    const [phaseState, setPhaseState] = useState<Record<string, PhaseProgress>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
     const [voltUrl, setVoltUrl] = useState<string | null>(null);
     const [preflight, setPreflight] = useState<PreflightResult | null>(null);
@@ -92,9 +99,22 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         });
 
         const unsubProgress = window.volt.on('source:progress', (p) => {
-            const detail = p.phase === 'download' && p.bytes
-                ? `downloading · ${(p.bytes / 1024 / 1024).toFixed(1)} MB`
-                : p.phase;
+            if(p.phase === 'done'){
+                setPhaseState((prev) => ({
+                    ...prev,
+                    sources: { status: prev.sources?.status ?? 'running' }
+                }));
+                return;
+            }
+
+            const detail = p.phase === 'download'
+                ? p.pct != null
+                    ? `downloading · ${p.pct}%`
+                    : p.bytes
+                        ? `downloading · ${(p.bytes / 1024 / 1024).toFixed(1)} MB`
+                        : 'downloading'
+                : 'extracting';
+
             setPhaseState((prev) => ({ ...prev, sources: { status: 'running', detail } }));
         });
 
@@ -111,7 +131,7 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     }, []);
 
     useEffect(() => {
-        if(preflight?.reason !== 'daemon-starting') return;
+        if(!preflight || !SELF_HEALING_REASONS.has(preflight.reason)) return;
         const id = setInterval(() => { void boot(); }, POLL_INTERVAL);
         return () => clearInterval(id);
     }, [preflight?.reason]);
