@@ -5,16 +5,40 @@ import MicrosoftStrategyWrapper from '@modules/auth/infrastructure/http/oauth/st
 import { container } from 'tsyringe';
 import passport from 'passport';
 
-const oauthLoginUseCase = container.resolve(OAuthLoginUseCase);
+let configured = false;
 
-if (process.env.GITHUB_CLIENT_ID) {
-    passport.use(new GithubStrategyWrapper(oauthLoginUseCase).getStrategy());
-}
+/**
+ * Registers the OAuth passport strategies.
+ *
+ * This MUST run after `autoloadModules()` has finished, because resolving
+ * `OAuthLoginUseCase` pulls in `TEAM_TOKENS.DefaultTeamEnroller`, which is only
+ * registered when the team module's `@Singleton(...)` decorator fires during
+ * autoload. The autoloader imports module files in filesystem order, visiting
+ * `auth` before `team`, so resolving at import time crashed the boot with
+ * "Attempted to resolve unregistered dependency token: Symbol(DefaultTeamEnroller)".
+ *
+ * The autoload phase should only fire registration decorators; eager container
+ * consumers like this one run afterwards from the composition root.
+ */
+export const configureOAuthStrategies = (): void => {
+    if (configured) {
+        return;
+    }
+    configured = true;
 
-if (process.env.GOOGLE_CLIENT_ID) {
-    passport.use(new GoogleStrategyWrapper(oauthLoginUseCase).getStrategy());
-}
+    const oauthLoginUseCase = container.resolve(OAuthLoginUseCase);
 
-if (process.env.MICROSOFT_CLIENT_ID) {
-    passport.use(new MicrosoftStrategyWrapper(oauthLoginUseCase).getStrategy());
-}
+    if (process.env.GITHUB_CLIENT_ID) {
+        passport.use(new GithubStrategyWrapper(oauthLoginUseCase).getStrategy());
+    }
+
+    if (process.env.GOOGLE_CLIENT_ID) {
+        passport.use(new GoogleStrategyWrapper(oauthLoginUseCase).getStrategy());
+    }
+
+    if (process.env.MICROSOFT_CLIENT_ID) {
+        passport.use(new MicrosoftStrategyWrapper(oauthLoginUseCase).getStrategy());
+    }
+};
+
+export default configureOAuthStrategies;
