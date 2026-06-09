@@ -198,6 +198,8 @@ services:
       dockerfile: Dockerfile.dev
     image: cluster-daemon:local
     restart: unless-stopped
+    cap_add:
+      - SYS_NICE
     environment:
       NODE_ENV: production
       COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-volt}
