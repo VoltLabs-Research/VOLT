@@ -37,10 +37,20 @@
     "daemonPassword": "0a17209849ca19bf7dc4fa78575a2ca47296c2def19e7eee"
   },
   "windowBounds": {
-    "x": 160,
-    "y": 56,
+    "x": 79,
+    "y": 40,
     "width": 1714,
     "height": 1015,
     "maximized": false
-  }
+  },
+  "deployment": {
+    "mode": "remote",
+    "remote": {
+      "serverEndpoint": "http://192.168.101.98:8100",
+      "clientUrl": "http://192.168.101.98:5273"
+    }
+  },
+  "recentEndpoints": [
+    "http://192.168.101.98:8100"
+  ]
 }
