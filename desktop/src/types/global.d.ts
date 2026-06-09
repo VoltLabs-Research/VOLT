@@ -1,6 +1,15 @@
 import type { AppEvents } from '@/types/events';
-import type { DevModeState, DeploymentState } from '@/services/AppConfig';
+import type { DevModeState, DeploymentState, ThemePreference } from '@/services/AppConfig';
 import type { RemoteProbeResult } from '@/services/RemoteProbe';
+
+export interface ConfirmOptions{
+    title: string;
+    message: string;
+    detail?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    danger?: boolean;
+}
 
 declare global{
     interface Window{
@@ -25,6 +34,7 @@ declare global{
             };
             dialog: {
                 pickDirectory: () => Promise<string | null>;
+                confirm: (options: ConfirmOptions) => Promise<boolean>;
             };
             app: {
                 voltUrl: () => Promise<string>;
@@ -34,6 +44,10 @@ declare global{
             remote: {
                 probe: (endpoint: string) => Promise<RemoteProbeResult>;
                 connect: (endpoint: string) => Promise<RemoteProbeResult>;
+                recent: () => Promise<string[]>;
+            };
+            theme: {
+                set: (theme: ThemePreference) => Promise<void>;
             };
             deployment: {
                 get: () => Promise<DeploymentState | null>;

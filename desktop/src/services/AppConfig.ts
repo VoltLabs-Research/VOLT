@@ -30,6 +30,18 @@ export interface DeploymentState{
     };
 }
 
+export interface WindowBounds{
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+    maximized?: boolean;
+}
+
+export type ThemePreference = 'system' | 'light' | 'dark';
+
+const MAX_RECENT_ENDPOINTS = 5;
+
 export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
@@ -121,5 +133,35 @@ export default class AppConfig{
         const current = await this.get();
         delete current.deployment;
         await this.#write(current);
+    }
+
+    async getWindowBounds(): Promise<WindowBounds | null>{
+        const bounds = (await this.get()).windowBounds as WindowBounds | undefined;
+        if(!bounds || typeof bounds.width !== 'number' || typeof bounds.height !== 'number') return null;
+        return bounds;
+    }
+
+    async setWindowBounds(bounds: WindowBounds){
+        await this.#update({ windowBounds: bounds });
+    }
+
+    async getTheme(): Promise<ThemePreference>{
+        const theme = (await this.get()).theme;
+        return theme === 'light' || theme === 'dark' ? theme : 'system';
+    }
+
+    async setTheme(theme: ThemePreference){
+        await this.#update({ theme });
+    }
+
+    async getRecentEndpoints(): Promise<string[]>{
+        const list = (await this.get()).recentEndpoints;
+        return Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string') : [];
+    }
+
+    async addRecentEndpoint(endpoint: string){
+        const existing = await this.getRecentEndpoints();
+        const next = [endpoint, ...existing.filter((item) => item !== endpoint)].slice(0, MAX_RECENT_ENDPOINTS);
+        await this.#update({ recentEndpoints: next });
     }
 };

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sileo';
-import type { DevModeState } from '@/services/AppConfig';
+import type { DevModeState, DeploymentState } from '@/services/AppConfig';
 import Titlebar from '@/renderer/src/components/Titlebar';
 import DevModeModal from '@/renderer/src/components/DevModeModal';
 import DockerGate from '@/renderer/src/components/DockerGate';
 import Onboarding from '@/renderer/src/components/Onboarding';
 import { useDeploy, type DeployState, type PhaseStatus } from '@/renderer/src/hooks/useDeploy';
+import { getThemePreference, setThemePreference, type ThemePreference } from '@/renderer/src/theme';
 
 type Mode = 'loading' | 'choose' | 'local' | 'remote';
 
@@ -36,7 +37,11 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 const App = () => {
     const { state, phases, phaseState, logs, preflight, busy, reset, recheck, run, start } = useDeploy({ autoStart: false });
     const [mode, setMode] = useState<Mode>('loading');
+    const [deployment, setDeployment] = useState<DeploymentState | null>(null);
     const [devModeOpen, setDevModeOpen] = useState(false);
+    const [bootError, setBootError] = useState<string | null>(null);
+    const [logsCopied, setLogsCopied] = useState(false);
+    const [themePref, setThemePrefState] = useState<ThemePreference>(getThemePreference());
     // Opened via the in-client gear (openShell adds #launcher): land here and wait for an
     // explicit action instead of bouncing straight back into the client.
     const [paused, setPaused] = useState(window.location.hash === '#launcher');
@@ -49,19 +54,121 @@ const App = () => {
         void window.volt.app.openClient();
     };
 
+    const resetBoot = () => {
+        reset();
+        openedRef.current = false;
+        setPaused(false);
+        setBootError(null);
+    };
+
+    const retry = () => run(() => window.volt.deploy.start(), resetBoot);
+
+    const applyDevMode = (payload: DevModeState) => {
+        setDevModeOpen(false);
+        run(() => window.volt.devmode.apply(payload), resetBoot);
+    };
+
+    const resetAndRedeploy = async () => {
+        const confirmed = await window.volt.dialog.confirm({
+            title: 'Reset & redeploy',
+            message: 'Reset the local Volt stack and redeploy from scratch?',
+            detail: 'This stops the stack and deletes its Docker volumes — your local workspace, database and uploaded files will be permanently removed. This cannot be undone.',
+            confirmLabel: 'Reset & wipe data',
+            cancelLabel: 'Cancel',
+            danger: true
+        });
+        if(!confirmed) return;
+        run(() => window.volt.deploy.reset(), resetBoot);
+    };
+
+    const stopStack = () => {
+        setPaused(false);
+        run(() => window.volt.deploy.stop(), () => { openedRef.current = false; setBootError(null); });
+    };
+
+    const useLocal = () => {
+        setPaused(false);
+        setMode('local');
+        void window.volt.deployment.setLocal();
+        void start();
+    };
+
+    const connectRemote = async (endpoint: string) => {
+        const result = await window.volt.remote.connect(endpoint);
+        if(result.ok){
+            setPaused(false);
+            setMode('remote');
+            setDeployment({ mode: 'remote', remote: { serverEndpoint: result.serverEndpoint, clientUrl: result.clientUrl } });
+            openClient();
+        }
+        return result;
+    };
+
+    const switchDeployment = () => {
+        void window.volt.deployment.reset();
+        reset();
+        openedRef.current = false;
+        setPaused(false);
+        setBootError(null);
+        setDeployment(null);
+        setMode('choose');
+    };
+
+    const openVolt = () => {
+        setPaused(false);
+        setBootError(null);
+        if(mode === 'local') void start();
+        else openClient();
+    };
+
+    const changeTheme = (pref: ThemePreference) => {
+        setThemePreference(pref);
+        setThemePrefState(pref);
+        void window.volt.theme.set(pref);
+    };
+
+    const copyLogs = () => {
+        const text = logs.map((line) => line.text).join('\n');
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                setLogsCopied(true);
+                setTimeout(() => setLogsCopied(false), 1500);
+            })
+            .catch(() => {});
+    };
+
     useEffect(() => {
         let cancelled = false;
         const intent = window.location.hash.replace('#', '');
-        window.volt.deployment.get()
-            .then((deployment) => {
+
+        // Reconcile the persisted theme preference with what was applied on first paint.
+        void window.volt.config.get()
+            .then((config) => {
                 if(cancelled) return;
-                const next: Mode = (deployment?.mode === 'remote' && deployment.remote) ? 'remote'
-                    : deployment?.mode === 'local' ? 'local' : 'choose';
+                const pref: ThemePreference = config.theme === 'light' || config.theme === 'dark' ? config.theme : 'system';
+                setThemePreference(pref);
+                setThemePrefState(pref);
+            })
+            .catch(() => {});
+
+        window.volt.deployment.get()
+            .then((current) => {
+                if(cancelled) return;
+                setDeployment(current);
+                const next: Mode = (current?.mode === 'remote' && current.remote) ? 'remote'
+                    : current?.mode === 'local' ? 'local' : 'choose';
 
                 // Actions chosen from the in-client options menu run straight away here.
                 if(intent === 'switch'){ switchDeployment(); return; }
                 if(intent === 'devmode'){ setMode(next); setPaused(true); setDevModeOpen(true); return; }
-                if(intent === 'reset'){ setMode(next); resetAndRedeploy(); return; }
+                if(intent === 'reset'){ setMode(next); setPaused(true); void resetAndRedeploy(); return; }
+                if(intent === 'stop'){ setMode(next); stopStack(); return; }
+                if(intent === 'client-error'){
+                    setMode(next);
+                    setPaused(true);
+                    setBootError('The Volt client failed to load. It may still be starting — give it a moment and try again.');
+                    return;
+                }
 
                 setMode(next);
                 if(intent === 'launcher'){ setPaused(true); return; }
@@ -79,81 +186,62 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode, state]);
 
-    const resetBoot = () => {
-        reset();
-        openedRef.current = false;
-        setPaused(false);
-    };
-
-    const retry = () => run(() => window.volt.deploy.start(), resetBoot);
-
-    const applyDevMode = (payload: DevModeState) => {
-        setDevModeOpen(false);
-        run(() => window.volt.devmode.apply(payload), resetBoot);
-    };
-
-    const resetAndRedeploy = () => run(() => window.volt.deploy.reset(), resetBoot);
-
-    const useLocal = () => {
-        setPaused(false);
-        setMode('local');
-        void window.volt.deployment.setLocal();
-        void start();
-    };
-
-    const connectRemote = async (endpoint: string) => {
-        const result = await window.volt.remote.connect(endpoint);
-        if(result.ok){
-            setPaused(false);
-            setMode('remote');
-            openClient();
-        }
-        return result;
-    };
-
-    const switchDeployment = () => {
-        void window.volt.deployment.reset();
-        reset();
-        openedRef.current = false;
-        setPaused(false);
-        setMode('choose');
-    };
-
-    const openVolt = () => {
-        setPaused(false);
-        if(mode === 'local') void start();
-        else openClient();
-    };
-
     const isLocal = mode === 'local';
+    const deploymentSummary = isLocal
+        ? 'Running locally via Docker on this machine.'
+        : deployment?.remote?.clientUrl ?? deployment?.remote?.serverEndpoint ?? null;
 
     return (
         <div className='app'>
             <Titlebar
                 busy={busy}
                 showDeployTools={isLocal}
+                theme={themePref}
+                onThemeChange={changeTheme}
                 onOpenDevMode={() => setDevModeOpen(true)}
                 onReset={resetAndRedeploy}
+                onStopStack={stopStack}
                 onSwitchDeployment={switchDeployment}
             />
 
             <div className='body'>
+                {mode === 'loading' && (
+                    <main className='boot boot--center'>
+                        <div className='splash'>
+                            <span className='splash-mark'>Volt</span>
+                            <span className='splash-spinner' aria-hidden='true' />
+                        </div>
+                    </main>
+                )}
+
                 {mode === 'choose' && (
                     <Onboarding onConnectRemote={connectRemote} onUseLocal={useLocal} />
                 )}
 
                 {paused && mode !== 'choose' && mode !== 'loading' && (
-                    <main className='boot'>
-                        <div className='boot-lead'>
+                    <main className='boot boot--center'>
+                        <div className='ready-card'>
+                            <span className='ready-eyebrow'>{isLocal ? 'Local deployment' : 'Remote deployment'}</span>
                             <span className='boot-heading'>Volt is ready</span>
-                            <button className='retry' onClick={openVolt}>Open Volt</button>
+                            {deploymentSummary && <span className='ready-endpoint'>{deploymentSummary}</span>}
+                            {bootError && <span className='ready-error'>{bootError}</span>}
+
+                            <div className='ready-actions'>
+                                <button className='retry retry--primary' onClick={openVolt}>Open Volt</button>
+                                {isLocal && <button className='retry' onClick={stopStack}>Stop stack</button>}
+                                <button className='ready-link' onClick={switchDeployment}>Switch deployment</button>
+                            </div>
+
+                            {isLocal && (
+                                <p className='ready-hint'>Closing the window leaves the stack running in the background. Use “Stop stack” to shut it down.</p>
+                            )}
                         </div>
                     </main>
                 )}
 
                 {!paused && mode === 'remote' && (
-                    <main className='boot'>
-                        <div className='boot-lead'>
+                    <main className='boot boot--center'>
+                        <div className='boot-lead boot-lead--center'>
                             <span className='boot-heading is-loading'>Connecting…</span>
                         </div>
                     </main>
@@ -194,12 +282,16 @@ const App = () => {
                                 </ol>
                             )}
 
-                            {state === 'error' && (
-                                <button className='retry' onClick={retry}>Retry</button>
-                            )}
+                            <div className='boot-actions'>
+                                {state === 'error' && <button className='retry' onClick={retry}>Retry</button>}
+                                {state === 'down' && <button className='retry retry--primary' onClick={openVolt}>Start Volt</button>}
+                                {state === 'error' && logs.length > 0 && (
+                                    <button className='retry' onClick={copyLogs}>{logsCopied ? 'Copied' : 'Copy logs'}</button>
+                                )}
+                            </div>
                         </div>
 
-                        <div className='boot-logs'>
+                        <div className={`boot-logs${state === 'error' ? ' is-scrollable' : ''}`}>
                             {logs.map((line, index) => (
                                 <div key={index} className={`term-line term-${line.stream}`}>{line.text}</div>
                             ))}

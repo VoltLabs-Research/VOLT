@@ -21,7 +21,8 @@ contextBridge.exposeInMainWorld('volt', {
         apply: (payload: object) => ipcRenderer.invoke('devmode:apply', payload)
     },
     dialog: {
-        pickDirectory: () => ipcRenderer.invoke('dialog:pickDirectory')
+        pickDirectory: () => ipcRenderer.invoke('dialog:pickDirectory'),
+        confirm: (options: object) => ipcRenderer.invoke('dialog:confirm', options)
     },
     app: {
         voltUrl: () => ipcRenderer.invoke('app:voltUrl'),
@@ -30,7 +31,11 @@ contextBridge.exposeInMainWorld('volt', {
     },
     remote: {
         probe: (endpoint: string) => ipcRenderer.invoke('remote:probe', endpoint),
-        connect: (endpoint: string) => ipcRenderer.invoke('remote:connect', endpoint)
+        connect: (endpoint: string) => ipcRenderer.invoke('remote:connect', endpoint),
+        recent: () => ipcRenderer.invoke('remote:recent')
+    },
+    theme: {
+        set: (theme: string) => ipcRenderer.invoke('theme:set', theme)
     },
     deployment: {
         get: () => ipcRenderer.invoke('deployment:get'),

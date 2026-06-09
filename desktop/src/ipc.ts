@@ -3,7 +3,7 @@ import bus from '@/services/EventBus';
 import { CHANNELS } from '@/types/events';
 import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
-import AppConfig, { DevModeState } from '@/services/AppConfig';
+import AppConfig, { DevModeState, ThemePreference } from '@/services/AppConfig';
 import RemoteProbe from '@/services/RemoteProbe';
 
 export interface IpcDeps{
@@ -13,6 +13,15 @@ export interface IpcDeps{
     remote: RemoteProbe;
     loadShell: (hash?: string) => void;
 };
+
+export interface ConfirmOptions{
+    title: string;
+    message: string;
+    detail?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    danger?: boolean;
+}
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     // Docker-served local client, with a one-shot bootstrap token that seeds localStorage.
@@ -40,9 +49,12 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
                 mode: 'remote',
                 remote: { serverEndpoint: result.serverEndpoint, clientUrl: result.clientUrl }
             });
+            await deps.appConfig.addRecentEndpoint(result.serverEndpoint).catch(() => {});
         }
         return result;
     });
+
+    ipcMain.handle('remote:recent', () => deps.appConfig.getRecentEndpoints());
 
     ipcMain.handle('deployment:get', () => deps.appConfig.getDeployment());
     ipcMain.handle('deployment:setLocal', () => deps.appConfig.setDeployment({ mode: 'local' }));
@@ -54,6 +66,22 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
         return result.canceled ? null : result.filePaths[0];
     });
+
+    ipcMain.handle('dialog:confirm', async (_e, options: ConfirmOptions) => {
+        const { response } = await dialog.showMessageBox(win, {
+            type: options.danger ? 'warning' : 'question',
+            buttons: [options.cancelLabel ?? 'Cancel', options.confirmLabel ?? 'Confirm'],
+            defaultId: options.danger ? 0 : 1,
+            cancelId: 0,
+            title: options.title,
+            message: options.message,
+            detail: options.detail,
+            noLink: true
+        });
+        return response === 1;
+    });
+
+    ipcMain.handle('theme:set', (_e, theme: ThemePreference) => deps.appConfig.setTheme(theme));
 
     ipcMain.handle('devmode:apply', (_e, payload: DevModeState) => deps.deploy.applyDevMode(payload));
 

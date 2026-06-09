@@ -7,9 +7,12 @@ import './WindowControls.css';
 type Volt = {
     window?: { minimize: () => void; maximize: () => void; close: () => void };
     app?: { openShell?: (intent?: string) => void };
+    shell?: { openExternal?: (url: string) => void };
     deployment?: { get?: () => Promise<{ mode?: string } | null> };
 };
 const volt = (): Volt | undefined => (window as unknown as { volt?: Volt }).volt;
+
+const HOMEPAGE = 'https://github.com/voltlabs-research/volt';
 
 const WindowControls = () => {
     const win = volt()?.window;
@@ -26,6 +29,7 @@ const WindowControls = () => {
     // Deployment actions need the desktop shell (redeploy progress / onboarding); the menu
     // itself stays in-place — only the chosen action hands off to the shell.
     const pick = (intent: string) => { setMenuOpen(false); openShell?.(intent); };
+    const openAbout = () => { setMenuOpen(false); volt()?.shell?.openExternal?.(HOMEPAGE); };
 
     return (
         <div className='volt-window-controls'>
@@ -40,7 +44,9 @@ const WindowControls = () => {
                             <ul className='vwc-menu'>
                                 {isLocal && <li className='vwc-item' onClick={() => pick('devmode')}>Dev Mode</li>}
                                 {isLocal && <li className='vwc-item' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>}
+                                {isLocal && <li className='vwc-item' onClick={() => pick('stop')}>Stop stack</li>}
                                 <li className='vwc-item' onClick={() => pick('switch')}>Switch deployment</li>
+                                <li className='vwc-item' onClick={openAbout}>About Volt</li>
                             </ul>
                         </>
                     )}
