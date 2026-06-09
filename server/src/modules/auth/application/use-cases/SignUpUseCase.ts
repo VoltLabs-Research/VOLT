@@ -9,11 +9,14 @@ import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository'
 import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import type { INewMemberDefaultTeamEnroller } from '@modules/team/domain/port/team/INewMemberDefaultTeamEnroller';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -23,7 +26,8 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         @inject(AUTH_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher,
         @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
-        @inject(AUTH_TOKENS.AvatarService) private readonly avatarService: IAvatarService
+        @inject(AUTH_TOKENS.AvatarService) private readonly avatarService: IAvatarService,
+        @inject(TEAM_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
     ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
@@ -56,6 +60,12 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         const avatar = await this.avatarService.generateAndUploadDefaultAvatar(newUser._id, newUser.props.email);
         await this.userRepository.updateById(newUser._id, { avatar });
         newUser.props.avatar = avatar;
+
+        try {
+            await this.defaultTeamEnroller.enrollIfConfigured(newUser._id);
+        } catch (err) {
+            logger.error(err, '[SignUp] default-team enrollment failed');
+        }
 
         await this.eventBus.publish(new UserCreatedEvent({
             userId: newUser._id,

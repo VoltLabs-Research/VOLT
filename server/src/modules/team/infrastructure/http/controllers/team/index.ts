@@ -10,6 +10,7 @@ import PreviewJoinTeamByInviteCodeController from './PreviewJoinTeamByInviteCode
 import UpdateTeamByIdController from './UpdateTeamByIdController';
 import CheckInvitePermissionController from './CheckInvitePermissionController';
 import GetMyTeamPermissionsController from './GetMyTeamPermissionsController';
+import SetDefaultTeamForNewUsersController from './SetDefaultTeamForNewUsersController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 export default createControllerRegistry({
@@ -24,5 +25,6 @@ export default createControllerRegistry({
     previewJoinByCode: PreviewJoinTeamByInviteCodeController,
     updateById: UpdateTeamByIdController,
     checkInvitePermission: CheckInvitePermissionController,
-    getMyPermissions: GetMyTeamPermissionsController
+    getMyPermissions: GetMyTeamPermissionsController,
+    setDefaultForNewUsers: SetDefaultTeamForNewUsersController
 });

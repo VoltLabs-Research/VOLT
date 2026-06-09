@@ -1,9 +1,7 @@
-import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
+import type { ITeamMembershipService } from '@modules/team/domain/port/team/ITeamMembershipService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import { JoinTeamByInviteCodeInputDTO, JoinTeamByInviteCodeOutputDTO } from '@modules/team/application/dtos/team/JoinTeamByInviteCodeDTO';
@@ -18,8 +16,7 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
-        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository
+        @inject(TEAM_TOKENS.TeamMembershipService) private readonly membershipService: ITeamMembershipService
     ) {}
 
     async execute(input: JoinTeamByInviteCodeInputDTO): Promise<Result<JoinTeamByInviteCodeOutputDTO, ApplicationError>> {
@@ -42,23 +39,12 @@ export default class JoinTeamByInviteCodeUseCase implements IUseCase<JoinTeamByI
             ));
         }
 
-        const role = await this.teamRoleRepository.findOne({ name: SystemRoleNames.OWNER, team: team._id });
-        if (!role) {
-            return Result.fail(ApplicationError.notFound(
-                ErrorCodes.TEAM_ROLE_NOT_FOUND,
-                'Owner role not found'
-            ));
+        try {
+            await this.membershipService.addMemberToTeam(userId, team._id, SystemRoleNames.OWNER);
+        } catch (err) {
+            if (err instanceof ApplicationError) return Result.fail(err);
+            throw err;
         }
-
-        const teamMember = await this.teamMemberRepository.create({
-            team: team._id,
-            user: userId,
-            role: role._id,
-            joinedAt: new Date()
-        });
-
-        await this.teamRepository.addMemberToTeam(teamMember._id, team._id);
-        await this.userRepository.addTeamToUser(userId, team._id);
 
         return Result.ok({
             message: 'Successfully joined team',

@@ -9,6 +9,7 @@ export interface ProvisionAccount{
     password: string;
     teamName: string;
     clusterName: string;
+    autoJoinNewUsers?: boolean;
 }
 
 export interface BootstrapProps{
@@ -62,6 +63,11 @@ export default class Bootstrap{
         bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating team' });
         const team = await this.#createTeam(auth.token, acc?.teamName ?? 'Local');
 
+        if(acc?.autoJoinNewUsers){
+            bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] enabling auto-join for new users' });
+            await this.#setDefaultTeamForNewUsers(auth.token, team._id);
+        }
+
         bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating cluster' });
         const cluster = await this.#createCluster(auth.token, team._id, acc?.clusterName ?? 'Local Cluster');
 
@@ -101,6 +107,10 @@ export default class Bootstrap{
         return this.#postJson<TeamResponse>('/api/teams', { name, description: '' }, token);
     }
 
+    async #setDefaultTeamForNewUsers(token: string, teamId: string): Promise<void>{
+        await this.#postJson<unknown>(`/api/teams/${teamId}/default-membership`, { enabled: true }, token, 'PUT');
+    }
+
     async #createCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
         return this.#postJson<TeamClusterResponse>(`/api/teams/${teamId}/clusters`, { name }, token);
     }
@@ -117,7 +127,7 @@ export default class Bootstrap{
         return daemonPassword;
     }
 
-    async #postJson<T>(path: string, body: object, token?: string): Promise<T>{
+    async #postJson<T>(path: string, body: object, token?: string, method: string = 'POST'): Promise<T>{
         const url = `${this.props.serverOrigin}${path}`;
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if(token) headers.Authorization = `Bearer ${token}`;
@@ -130,7 +140,7 @@ export default class Bootstrap{
             let text: string;
             try{
                 res = await fetch(url, {
-                    method: 'POST',
+                    method,
                     headers,
                     body: JSON.stringify(body),
                     signal: AbortSignal.timeout(10_000)
