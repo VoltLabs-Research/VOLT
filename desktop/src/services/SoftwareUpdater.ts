@@ -38,7 +38,9 @@ export default class SoftwareUpdater{
                 bus.emit('source:progress', {
                     repoId: this.props.repoId,
                     phase: 'download',
-                    bytes
+                    bytes,
+                    total: total || undefined,
+                    pct: pct >= 0 ? pct : undefined
                 });
             }
         });
