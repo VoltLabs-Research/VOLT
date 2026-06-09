@@ -21,6 +21,8 @@ export default createHttpModule({
             .patch(controllers.updateById.handle)
             .delete(controllers.deleteById.handle);
 
+        router.put('/:teamId/default-membership', controllers.setDefaultForNewUsers.handle);
+
         router.get('/:teamId/invite-permission', controllers.checkInvitePermission.handle);
 
         router.route('/:teamId/invite-code')

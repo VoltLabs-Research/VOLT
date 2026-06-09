@@ -103,7 +103,8 @@ const main = async () => {
         username: () => p.text({ message: 'Username', validate: (v) => (/^[a-z0-9][a-z0-9-]{1,38}$/.test(v ?? '') ? undefined : 'Lowercase letters, digits and dashes (2-39)') }),
         password: () => p.password({ message: 'Password', validate: (v) => ((v?.length ?? 0) >= 8 ? undefined : 'Min 8 characters') }),
         teamName: () => p.text({ message: 'Team name', validate: required }),
-        clusterName: () => p.text({ message: 'Cluster name', validate: required })
+        clusterName: () => p.text({ message: 'Cluster name', validate: required }),
+        autoJoinNewUsers: () => p.confirm({ message: 'Automatically add everyone who signs up to this team?', initialValue: false })
     }, { onCancel: () => { p.cancel('Deployment cancelled.'); process.exit(1); } });
 
     const withCluster = answers.mode !== 'server';
@@ -131,7 +132,8 @@ const main = async () => {
             email: answers.email,
             password: answers.password,
             teamName: answers.teamName,
-            clusterName: answers.clusterName
+            clusterName: answers.clusterName,
+            autoJoinNewUsers: answers.autoJoinNewUsers
         },
         withCluster
     });

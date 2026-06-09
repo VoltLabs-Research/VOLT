@@ -9,5 +9,6 @@ export const TEAM_TOKENS = Object.freeze({
     TeamAIProviderCatalog: Symbol.for('TeamAIProviderCatalog'),
     SecretKeyUsageMetricsMapper: Symbol.for('SecretKeyUsageMetricsMapper'),
     TeamMembershipService: Symbol.for('TeamMembershipService'),
-    TeamRoomPresenceService: Symbol.for('TeamRoomPresenceService')
+    TeamRoomPresenceService: Symbol.for('TeamRoomPresenceService'),
+    DefaultTeamEnroller: Symbol.for('DefaultTeamEnroller')
 });
