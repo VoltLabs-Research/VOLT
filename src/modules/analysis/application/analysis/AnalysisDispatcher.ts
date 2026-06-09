@@ -1,16 +1,13 @@
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { Service } from '@/core/decorators/service';
-import { logger } from '@/core/logger';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import { ANALYSIS_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { serializeDaemonTraceContext } from '@/core/observability/infrastructure/daemon-instrumentation';
 import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@/support/policies/analysis-execution-data';
-import { WorkflowEngine, type WorkflowExecutionRequest } from '@/modules/analysis/application/workflow/WorkflowEngine';
+import { WorkflowEngine } from '@/modules/analysis/application/workflow/WorkflowEngine';
 import { RuntimeEventBroker } from '@/core/reverse-channel/application/RuntimeEventBroker';
-import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
 import type { AnalysisQueueAdmissionController } from '@/modules/analysis/application/analysis/AnalysisQueueAdmissionController';
 import { planAnalysisWorkflow } from '@/modules/analysis/application/analysis/plan-analysis-workflow';
-import { createHash } from 'node:crypto';
 import type {
     AnalysisStartRequestWithTrace,
     AnalysisStartResponse,
@@ -18,70 +15,14 @@ import type {
 } from '@/modules/analysis/contracts/http-analysis';
 import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storage/AnalysisDataStore';
 
-const PLAN_CACHE_TTL_SECONDS = 600;
-
-type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
-
 @Service('analysisDispatcher')
 export class AnalysisDispatcher {
     constructor(
         private readonly workflowEngine: WorkflowEngine,
         private readonly analysisDataStore: AnalysisDataStore,
         private readonly eventBroker: RuntimeEventBroker,
-        private readonly redisConnection: RedisConnection,
         private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController
     ) {}
-
-    private buildPlanCacheKey(request: WorkflowExecutionRequest): string {
-        const hash = createHash('sha1');
-        const addSection = (name: string, value: unknown): void => {
-            hash.update(name);
-            hash.update('\0');
-            hash.update(JSON.stringify(value) ?? 'undefined');
-            hash.update('\0');
-        };
-
-        addSection('workflow', request.workflow);
-        addSection('userConfig', request.userConfig);
-        addSection('trajectoryFrames', request.trajectoryFrames);
-        addSection('nestedPlugins', request.nestedPlugins);
-        addSection('selectedFrameOnly', request.selectedFrameOnly);
-        addSection('selectedTimesteps', request.selectedTimesteps);
-        addSection('timestep', request.timestep);
-        addSection('trajectoryId', request.trajectoryId);
-
-        return `analysis-plan:${request.pluginId}:${hash.digest('hex')}`;
-    }
-
-    private planCacheIndexKey(trajectoryId: string): string {
-        return `analysis-plan:index:trajectory:${trajectoryId}`;
-    }
-
-    private async loadCachedPlan(cacheKey: string): Promise<WorkflowPlanResult | null> {
-        try {
-            const cached = await this.redisConnection.getValue(cacheKey);
-            if (!cached) return null;
-            return JSON.parse(cached) as WorkflowPlanResult;
-        } catch (error) {
-            logger.warn({ err: error, cacheKey }, '@analysis-dispatcher: plan cache read failed');
-            return null;
-        }
-    }
-
-    private async storeCachedPlan(cacheKey: string, trajectoryId: string, plan: WorkflowPlanResult): Promise<void> {
-        try {
-            await Promise.all([
-                this.redisConnection.setValueWithTtl(cacheKey, JSON.stringify(plan), PLAN_CACHE_TTL_SECONDS),
-                this.redisConnection.addSetMemberWithTtl(
-                    this.planCacheIndexKey(trajectoryId),
-                    cacheKey,
-                    PLAN_CACHE_TTL_SECONDS
-                )
-            ]);
-        } catch (error) {
-            logger.warn({ err: error, cacheKey }, '@analysis-dispatcher: plan cache write failed');
-        }
-    }
 
     async startAnalysis(input: AnalysisStartRequestWithTrace): Promise<AnalysisStartResponse> {
         const serializedTraceContext = serializeDaemonTraceContext(input.traceContext);
@@ -96,23 +37,11 @@ export class AnalysisDispatcher {
             }
         });
 
-        const planRequest: WorkflowExecutionRequest = {
-            ...input,
-            userConfig: input.config
-        };
-        const planCacheKey = this.buildPlanCacheKey(planRequest);
-        const cachedPlan = await this.loadCachedPlan(planCacheKey);
-
-        const { executionData, jobs, plan } = await planAnalysisWorkflow({
+        const { executionData, jobs } = await planAnalysisWorkflow({
             input,
             workflowEngine: this.workflowEngine,
-            serializedTraceContext,
-            cachedPlan
+            serializedTraceContext
         });
-
-        if (!cachedPlan) {
-            await this.storeCachedPlan(planCacheKey, input.trajectoryId, plan);
-        }
 
         const serializedExecutionData = serializeAnalysisExecutionData(executionData);
         const executionDataCompressed = await compressSerializedAnalysisExecutionData(serializedExecutionData);

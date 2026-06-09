@@ -2,7 +2,7 @@ import type { BinaryExecutorService, PersistentPluginInvocationInput } from '@/c
 import type { EntrypointType } from '@/core/runtime/contracts/http-runtime';
 import { EntrypointType as EntrypointTypeEnum } from '@/core/runtime/contracts/http-runtime';
 import type { WorkflowEntrypointData } from '@/contracts';
-import type { WorkflowNodeHandler } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler } from '@/modules/analysis/application/workflow/NodeRegistry';
 import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import { WorkflowValueResolver } from '@/modules/analysis/application/workflow/WorkflowValueResolver';
 import type {
@@ -73,6 +73,7 @@ interface WorkflowEntrypointExecutionRequest {
 
 export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Entrypoint;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.Entrypoint];
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const execution = context.execution?.entrypoint;

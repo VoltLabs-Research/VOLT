@@ -1,7 +1,8 @@
 import { logger } from '@/core/logger';
 import { Service } from '@/core/decorators/service';
 import { WorkflowNodeExecutor } from '@/modules/analysis/application/workflow/WorkflowNodeExecutor';
-import { WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WorkflowPlanner } from '@/modules/analysis/application/workflow/WorkflowPlanner';
+import { WORKFLOW_NODE_PHASE, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition } from '@/contracts';
@@ -24,10 +25,6 @@ export interface WorkflowExecutionRequest {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     timestep?: number;
-}
-
-interface WorkflowForEachPlanOutput extends WorkflowNodeOutput {
-    items: WorkflowNodeOutput[];
 }
 
 interface WorkflowContextPlanOutput extends WorkflowNodeOutput {
@@ -74,12 +71,27 @@ const createContextItemsPlan = (
     };
 };
 
+/**
+ * Control-flow nodes (if/switch) are classified `runtime` in
+ * {@link WORKFLOW_NODE_PHASE}, but the planner must still EVALUATE them rather
+ * than skip them: in the no-ForEach branch their outputs are captured in
+ * `nodeOutputSnapshots`, which later seeds the runtime engine's visited-state.
+ * Only the side-effecting runtime nodes (plugin/entrypoint/exposure/export)
+ * are deferred ("skipped") during planning, so this set is excluded from the
+ * runtime-phase skip rule below to preserve that behavior exactly.
+ */
+const PLANNING_EVALUATED_RUNTIME_NODE_TYPES: ReadonlySet<WorkflowNodeType> = new Set([
+    WorkflowNodeType.IfStatement,
+    WorkflowNodeType.SwitchStatement,
+    WorkflowNodeType.SwitchCase
+]);
+
 @Service('workflowEngine')
 export class WorkflowEngine {
-    private readonly nodeExecutor: WorkflowNodeExecutor;
+    private readonly planner: WorkflowPlanner;
 
     constructor(registry: WorkflowNodeRegistry) {
-        this.nodeExecutor = new WorkflowNodeExecutor(registry);
+        this.planner = new WorkflowPlanner(new WorkflowNodeExecutor(registry));
     }
 
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<WorkflowPlanResult | null> {
@@ -88,46 +100,29 @@ export class WorkflowEngine {
         const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
 
         logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (itemized=true)`);
-        let contextNodeId: string | undefined;
 
-        const results = await this.nodeExecutor.executeOrdered({
+        // Root planning skip-filter: defer the side-effecting runtime nodes
+        // (plugin/entrypoint/exposure/export), but still EVALUATE control-flow
+        // nodes (see PLANNING_EVALUATED_RUNTIME_NODE_TYPES) so their outputs are
+        // captured in `nodeOutputSnapshots`. The shared planner stops once the
+        // ForEach node has executed.
+        const outcome = await this.planner.plan({
             nodes: executionOrder,
             context: session.context,
-            shouldSkipNode: (node) => {
-                return [
-                    WorkflowNodeType.Plugin,
-                    WorkflowNodeType.Entrypoint,
-                    WorkflowNodeType.Exposure,
-                    WorkflowNodeType.Export
-                ].includes(node.type)
-                    ? `Node type "${node.type}" is skipped during planning`
-                    : undefined;
-            },
-            stopAfterNode: (result) => result.status === 'executed' && result.node.type === WorkflowNodeType.ForEach
+            shouldSkipNode: (node) => WORKFLOW_NODE_PHASE[node.type] === 'runtime'
+                && !PLANNING_EVALUATED_RUNTIME_NODE_TYPES.has(node.type)
         });
 
-        for (const result of results) {
-            if (result.status !== 'executed') {
-                continue;
-            }
-
-            if (result.node.type === WorkflowNodeType.Context) {
-                contextNodeId = result.node.id;
-            }
-
-            if (result.node.type === WorkflowNodeType.ForEach) {
-                const items = (result.output as WorkflowForEachPlanOutput).items;
-
-                return {
-                    items,
-                    forEachNodeId: result.node.id,
-                    nodeOutputSnapshots: session.snapshotOutputs()
-                };
-            }
+        if (outcome.forEach) {
+            return {
+                items: outcome.forEach.items,
+                forEachNodeId: outcome.forEach.node.id,
+                nodeOutputSnapshots: session.snapshotOutputs()
+            };
         }
 
-        if (!hasForEachNode && contextNodeId) {
-            return createContextItemsPlan(session, contextNodeId);
+        if (!hasForEachNode && outcome.contextNodeId) {
+            return createContextItemsPlan(session, outcome.contextNodeId);
         }
 
         return null;

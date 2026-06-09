@@ -3,6 +3,7 @@ import { logger } from '@/core/logger';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { pack, unpack } from 'msgpackr';
+import si from 'systeminformation';
 import path from 'node:path';
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
@@ -11,10 +12,20 @@ import type {
     PluginProcessRequest,
     PluginProcessResponse
 } from '@/modules/plugin/contracts/plugin-batch';
-import { getAvailableCpuCount, readPositiveIntegerEnv } from '@/support/policies/runtime-capacity';
+import {
+    getAvailableCpuCount,
+    readPositiveIntegerEnv,
+    resolvePluginProcessEstMemoryMb,
+    resolvePluginProcessMemoryBudgetMb,
+    computePluginProcessMemorySlots,
+    computeEffectivePluginProcessConcurrency,
+    selectAvailableMemoryMb
+} from '@/support/policies/runtime-capacity';
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 const SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS = 60_000;
+const MEM_SAMPLE_CACHE_TTL_MS = 1_000;
+const SPAWN_SLOT_REPOLL_INTERVAL_MS = 1_000;
 const PROCESS_READY_GRACE_PERIOD_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_READY_GRACE_MS') ?? 120_000;
 const MAX_STDERR_BYTES = 256 * 1024;
 const DEFAULT_NATIVE_THREAD_COUNT = readPositiveIntegerEnv('PLUGIN_PROCESS_DEFAULT_NATIVE_THREADS') ?? 1;
@@ -119,14 +130,37 @@ export class PooledProcess {
 export class PluginProcessPool {
     private readonly pools = new Map<string, PluginProcessInternalsGroup>();
     private readonly config: Required<PooledProcessConfig>;
+    private readonly estMemoryMb: number;
+    private readonly maxMemoryMb: number;
+    private readonly memorySlots: number;
+    private readonly effectiveMaxConcurrent: number;
+    private memSampleCache: { freeMb: number; capturedAt: number } | null = null;
+    private memSampleInFlight: Promise<number> | null = null;
     private shuttingDown = false;
 
     constructor() {
+        const cpuMaxConcurrent = readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MAX') ?? Math.max(1, getAvailableCpuCount() - 1);
+        this.estMemoryMb = resolvePluginProcessEstMemoryMb();
+        this.maxMemoryMb = resolvePluginProcessMemoryBudgetMb();
+        this.memorySlots = computePluginProcessMemorySlots(this.maxMemoryMb, this.estMemoryMb);
+        this.effectiveMaxConcurrent = computeEffectivePluginProcessConcurrency(cpuMaxConcurrent, this.memorySlots);
+
         this.config = {
             minIdle: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MIN_IDLE') ?? 1,
-            maxConcurrent: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MAX') ?? Math.max(1, getAvailableCpuCount() - 1),
+            maxConcurrent: cpuMaxConcurrent,
             requestTimeoutMs: readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_REQUEST_TIMEOUT_MS') ?? DEFAULT_REQUEST_TIMEOUT_MS
         };
+
+        logger.info(
+            {
+                cpuMaxConcurrent,
+                pluginProcessMemoryBudgetMb: this.maxMemoryMb,
+                estimatedProcessMemoryMb: this.estMemoryMb,
+                memorySlots: this.memorySlots,
+                effectiveMaxConcurrent: this.effectiveMaxConcurrent
+            },
+            '@plugin-process-pool: resolved process pool concurrency budget'
+        );
     }
 
     async acquire(input: PooledProcessSpawnInput): Promise<PooledProcess> {
@@ -143,12 +177,8 @@ export class PluginProcessPool {
             return new PooledProcess(idleInternals, this);
         }
 
-        if (this.canSpawnProcess()) {
-            const internals = this.spawnInternals(input, group);
-            await this.waitForProcessReady(internals);
-            internals.busy = true;
-            group.active.add(internals);
-            return new PooledProcess(internals, this);
+        if (await this.canSpawnNewProcess()) {
+            return this.spawnAndTrack(input, group);
         }
 
         const waitStartAt = Date.now();
@@ -163,12 +193,8 @@ export class PluginProcessPool {
                 return new PooledProcess(reused, this);
             }
 
-            if (this.canSpawnProcess()) {
-                const internals = this.spawnInternals(input, group);
-                await this.waitForProcessReady(internals);
-                internals.busy = true;
-                group.active.add(internals);
-                return new PooledProcess(internals, this);
+            if (await this.canSpawnNewProcess()) {
+                return this.spawnAndTrack(input, group);
             }
 
             const elapsed = Date.now() - waitStartAt;
@@ -300,7 +326,66 @@ export class PluginProcessPool {
     }
 
     private canSpawnProcess(): boolean {
-        return this.countActiveProcesses() < this.config.maxConcurrent;
+        return this.countActiveProcesses() < this.effectiveMaxConcurrent;
+    }
+
+    /**
+     * Whether a brand-new process may be spawned right now. Combines the static
+     * effective ceiling (min of CPU and memory slots) with a dynamic free-RAM
+     * gate. Reusing an idle process must NOT go through this gate.
+     */
+    private async canSpawnNewProcess(): Promise<boolean> {
+        if (!this.canSpawnProcess()) {
+            return false;
+        }
+        return this.hasFreeMemoryToSpawn();
+    }
+
+    private async hasFreeMemoryToSpawn(): Promise<boolean> {
+        try {
+            const freeMemoryMb = await this.readFreeSystemMemoryMb();
+            return freeMemoryMb >= this.estMemoryMb;
+        } catch (error: unknown) {
+            // Fail open: never let a transient sampling failure stall the pool.
+            logger.warn({ err: error }, '@plugin-process-pool: failed to sample system memory; allowing spawn');
+            return true;
+        }
+    }
+
+    private async readFreeSystemMemoryMb(): Promise<number> {
+        const cached = this.memSampleCache;
+        if (cached && Date.now() - cached.capturedAt < MEM_SAMPLE_CACHE_TTL_MS) {
+            return cached.freeMb;
+        }
+        if (this.memSampleInFlight) {
+            return this.memSampleInFlight;
+        }
+
+        const inFlight = (async (): Promise<number> => {
+            const sample = await si.mem();
+            const freeMb = selectAvailableMemoryMb(sample);
+            this.memSampleCache = { freeMb, capturedAt: Date.now() };
+            return freeMb;
+        })();
+        this.memSampleInFlight = inFlight;
+        try {
+            return await inFlight;
+        } finally {
+            if (this.memSampleInFlight === inFlight) {
+                this.memSampleInFlight = null;
+            }
+        }
+    }
+
+    private async spawnAndTrack(
+        input: PooledProcessSpawnInput,
+        group: PluginProcessInternalsGroup
+    ): Promise<PooledProcess> {
+        const internals = this.spawnInternals(input, group);
+        await this.waitForProcessReady(internals);
+        internals.busy = true;
+        group.active.add(internals);
+        return new PooledProcess(internals, this);
     }
 
     private notifyWaiters(): void {
@@ -615,7 +700,24 @@ export class PluginProcessPool {
 
     private waitForSlot(group: PluginProcessInternalsGroup): Promise<void> {
         return new Promise<void>((resolve) => {
-            group.waiters.push(resolve);
+            let settled = false;
+            const settle = (): void => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                const index = group.waiters.indexOf(settle);
+                if (index >= 0) {
+                    group.waiters.splice(index, 1);
+                }
+                clearTimeout(timer);
+                resolve();
+            };
+            // Wake either on an explicit slot notification or after a short
+            // interval, so a memory-gated wait re-evaluates as RAM frees up.
+            const timer = setTimeout(settle, SPAWN_SLOT_REPOLL_INTERVAL_MS);
+            timer.unref();
+            group.waiters.push(settle);
         });
     }
 

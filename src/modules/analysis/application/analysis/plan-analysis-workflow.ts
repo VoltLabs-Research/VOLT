@@ -20,7 +20,6 @@ export interface PlanAnalysisWorkflowInput {
     input: AnalysisStartRequestWithTrace;
     workflowEngine: WorkflowEngine;
     serializedTraceContext?: Record<string, string>;
-    cachedPlan?: WorkflowPlanResult | null;
 }
 
 export interface PlanAnalysisWorkflowResult {
@@ -30,9 +29,8 @@ export interface PlanAnalysisWorkflowResult {
 }
 
 // Pure planning pipeline used by AnalysisDispatcher. Validates the entrypoint,
-// runs the workflow engine planner (unless a cached plan is supplied),
-// materializes the AnalysisJobExecutionData snapshot and per-item queue
-// payloads.
+// runs the workflow engine planner, materializes the AnalysisJobExecutionData
+// snapshot and per-item queue payloads.
 export const planAnalysisWorkflow = async (
     params: PlanAnalysisWorkflowInput
 ): Promise<PlanAnalysisWorkflowResult> => {
@@ -52,7 +50,7 @@ export const planAnalysisWorkflow = async (
         userConfig: input.config
     };
 
-    const plan = params.cachedPlan ?? await workflowEngine.planExecutionStrategy(planRequest);
+    const plan = await workflowEngine.planExecutionStrategy(planRequest);
 
     if (!plan || plan.items.length === 0) {
         throw ApplicationError.unprocessableEntity(

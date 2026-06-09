@@ -1,4 +1,4 @@
-import type { WorkflowNodeHandler } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler } from '@/modules/analysis/application/workflow/NodeRegistry';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowSession } from '@/modules/analysis/application/workflow/WorkflowSession';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
@@ -14,6 +14,7 @@ interface WorkflowContextOutput extends WorkflowNodeOutput {
 
 export class WorkflowContextHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Context;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.Context];
 
     execute(_node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowContextOutput> {
         const dumps = WorkflowSession.resolveContextDumps(context);

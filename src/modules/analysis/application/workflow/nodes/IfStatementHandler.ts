@@ -1,6 +1,6 @@
 import type { WorkflowIfCondition } from '@/contracts';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler, type WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 
 interface WorkflowIfStatementOutput extends WorkflowNodeOutput {
@@ -10,6 +10,7 @@ interface WorkflowIfStatementOutput extends WorkflowNodeOutput {
 
 export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.IfStatement;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.IfStatement];
     private static readonly INITIAL_CONDITION_RESULT = true;
 
     constructor(private readonly registry: WorkflowNodeRegistry){}

@@ -26,14 +26,10 @@ export class RuntimeStateCleanupControl {
     async cleanupTrajectoryRuntimeState(
         input: TrajectoryRuntimeCleanupRequest
     ): Promise<RuntimeStateCleanupResponse> {
-        const planCacheIndexKey = this.planCacheIndexKey(input.trajectoryId);
-        const planCacheKeys = await this.redisConnection.getSetMembers(planCacheIndexKey);
         const deletedKeys = await this.redisConnection.deleteKeys(this.distinctKeys([
             this.trajectoryFrameRemainingKey(input.trajectoryId),
             this.trajectoryFrameSessionFramesKey(input.trajectoryId),
             this.trajectoryAutoPreviewKey(input.trajectoryId),
-            planCacheIndexKey,
-            ...planCacheKeys,
             ...(input.analysisIds ?? []).map((analysisId) => this.analysisPendingJobsKey(analysisId)),
             ...this.removedAnalysisJobKeys(input.jobIds)
         ]));
@@ -59,10 +55,6 @@ export class RuntimeStateCleanupControl {
 
     private trajectoryAutoPreviewKey(trajectoryId: string): string {
         return `trajectory:${trajectoryId}:auto-preview-raster`;
-    }
-
-    private planCacheIndexKey(trajectoryId: string): string {
-        return `analysis-plan:index:trajectory:${trajectoryId}`;
     }
 
     private distinctKeys(keys: string[]): string[] {

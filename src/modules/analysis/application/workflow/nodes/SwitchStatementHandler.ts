@@ -1,6 +1,6 @@
 import type { WorkflowExecutionContext, WorkflowNode } from '@/modules/analysis/contracts/workflow.types';
 import type { WorkflowSwitchCaseData, WorkflowSwitchStatementData } from '@/modules/analysis/contracts/http-workflow';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler, type WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 
 interface SwitchStatementOutput {
@@ -17,6 +17,7 @@ interface SwitchCaseOutput {
 
 export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.SwitchStatement;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.SwitchStatement];
 
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
@@ -67,6 +68,7 @@ export class WorkflowSwitchStatementHandler implements WorkflowNodeHandler {
 
 export class WorkflowSwitchCaseHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.SwitchCase;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.SwitchCase];
 
     execute(node: WorkflowNode): Promise<SwitchCaseOutput> {
         const switchCaseData = node.data.switchCase as WorkflowSwitchCaseData;

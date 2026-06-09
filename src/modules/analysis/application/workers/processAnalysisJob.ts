@@ -10,6 +10,8 @@ import {
     type AnalysisStageReportInput
 } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 import type { WorkflowRuntime } from '@/modules/analysis/application/workflow/WorkflowRuntime';
+import { readWorkflowTrace, type InlineWorkflowTraceNode } from '@/modules/analysis/application/workflow/WorkflowWalker';
+import { buildTraceLogSegments } from '@/modules/analysis/application/workflow/trace-log-segments';
 import type {
     AnalysisJobMetadata,
     AnalysisQueueJobPayload
@@ -146,37 +148,68 @@ export const processAnalysisJob = async (
                 );
                 await setProgress(10);
 
-                await runStage(
-                    {
-                        stageKey: `${job.jobId}:workflow`,
-                        label: 'Execute workflow',
-                        stageType: 'system'
-                    },
-                    () => deps.workflowRuntime.execute({
+                const emitExecutionTrace = async (
+                    trace: InlineWorkflowTraceNode[],
+                    success: boolean
+                ): Promise<void> => {
+                    const segments = buildTraceLogSegments(trace, { success });
+                    if (segments.length === 0) {
+                        return;
+                    }
+
+                    await deps.daemonJobReporter.reportAnalysisLogChunk({
+                        analysisId: executionData.identity.analysisId,
                         jobId: job.jobId,
-                        executionData,
-                        outputs: runtime!.outputs,
-                        dumpTargets: runtime!.dumpTargets,
-                        outputDir: runtime!.outputDir,
-                        timestep: runtime!.dumpTargets[0]!.timestep,
-                        artifactUploadBatch,
-                        stageReporter,
-                        logSinkFactory: (context) => createAnalysisExecutionLogSink({
-                            reporter: deps.daemonJobReporter,
+                        teamId: job.teamId,
+                        trajectoryId: executionData.identity.trajectoryId,
+                        timestep,
+                        segments
+                    }).catch(
+                        logAndSwallow('warn', { jobId: job.jobId }, 'Failed to report execution trace')
+                    );
+                };
+
+                let workflowOutcome: { trace: InlineWorkflowTraceNode[] };
+                try {
+                    workflowOutcome = await runStage(
+                        {
+                            stageKey: `${job.jobId}:workflow`,
+                            label: 'Execute workflow',
+                            stageType: 'system'
+                        },
+                        () => deps.workflowRuntime.execute({
                             jobId: job.jobId,
-                            analysisId: executionData.identity.analysisId,
-                            teamId: executionData.identity.teamId,
-                            trajectoryId: executionData.identity.trajectoryId,
-                            timesteps: context.timesteps,
-                            metadata: {
-                                nodeId: context.nodeId,
-                                nodeType: context.nodeType,
-                                pluginId: context.pluginId,
-                                executionPath: context.executionPath
-                            }
+                            executionData,
+                            outputs: runtime!.outputs,
+                            dumpTargets: runtime!.dumpTargets,
+                            outputDir: runtime!.outputDir,
+                            timestep: runtime!.dumpTargets[0]!.timestep,
+                            artifactUploadBatch,
+                            stageReporter,
+                            logSinkFactory: (context) => createAnalysisExecutionLogSink({
+                                reporter: deps.daemonJobReporter,
+                                jobId: job.jobId,
+                                analysisId: executionData.identity.analysisId,
+                                teamId: executionData.identity.teamId,
+                                trajectoryId: executionData.identity.trajectoryId,
+                                timesteps: context.timesteps,
+                                metadata: {
+                                    nodeId: context.nodeId,
+                                    nodeType: context.nodeType,
+                                    pluginId: context.pluginId,
+                                    executionPath: context.executionPath
+                                }
+                            })
                         })
-                    })
-                );
+                    );
+                } catch (error) {
+                    // Symmetric observability: surface the always-on execution
+                    // trace in the frame log on FAILURE too, not just success.
+                    await emitExecutionTrace(readWorkflowTrace(error) ?? [], false);
+                    throw error;
+                }
+
+                await emitExecutionTrace(workflowOutcome.trace, true);
                 await setProgress(70);
 
                 await runStage(

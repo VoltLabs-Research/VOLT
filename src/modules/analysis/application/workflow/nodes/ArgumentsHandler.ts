@@ -5,7 +5,7 @@ import type {
     WorkflowPluginReferenceArgumentMapping
 } from '@/contracts';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler, type WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 import type { WorkflowPluginReferenceValueWithSelections } from '@/modules/analysis/application/workflow/WorkflowRuntime';
 import { encodeCliArgumentsToken, stringifyUnknown } from '@/support/serialization/serialization';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
@@ -178,6 +178,7 @@ const isRequiredValueMissing = (
 
 export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Arguments;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.Arguments];
     private static readonly RESERVED_RUNTIME_ARGUMENTS = {
         selectedTimesteps: 'selectedTimesteps'
     } as const;

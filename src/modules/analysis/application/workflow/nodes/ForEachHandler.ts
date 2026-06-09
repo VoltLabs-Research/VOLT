@@ -1,6 +1,6 @@
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
+import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler, type WorkflowNodeRegistry } from '@/modules/analysis/application/workflow/NodeRegistry';
 
 interface WorkflowForEachOutput {
     items: WorkflowNodeOutput[];
@@ -11,6 +11,7 @@ interface WorkflowForEachOutput {
 
 export class WorkflowForEachHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.ForEach;
+    readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.ForEach];
 
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
