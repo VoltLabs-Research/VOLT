@@ -43,14 +43,14 @@
     "height": 1015,
     "maximized": false
   },
+  "recentEndpoints": [
+    "http://192.168.101.98:8100"
+  ],
   "deployment": {
     "mode": "remote",
     "remote": {
       "serverEndpoint": "http://192.168.101.98:8100",
       "clientUrl": "http://192.168.101.98:5273"
     }
-  },
-  "recentEndpoints": [
-    "http://192.168.101.98:8100"
-  ]
+  }
 }

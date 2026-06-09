@@ -7,6 +7,7 @@ import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import type { Duplex } from 'node:stream';
 import { container } from 'tsyringe';
 import { registerAllDependencies } from './core/bootstrap/register-deps';
+import { configureOAuthStrategies } from './modules/auth/infrastructure/http/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
 import { initializeMinio } from './core/config/minio';
@@ -115,6 +116,11 @@ process.on('uncaughtException', (error: Error) => {
 
 const startServer = async () => {
     await registerAllDependencies();
+
+    // Passport strategies resolve OAuthLoginUseCase, whose dependency graph spans
+    // multiple modules (e.g. team/DefaultTeamEnroller). Configure them only after
+    // autoload has registered every module's tokens.
+    configureOAuthStrategies();
 
     await startTempStorageLifecycle();
 
