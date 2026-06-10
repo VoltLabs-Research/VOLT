@@ -1,4 +1,9 @@
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
+import {
+    buildDislocationSceneSourceKey,
+    encodeDislocationSceneSource,
+    DISLOCATION_SCENE_SOURCE_VERSION
+} from '@/modules/plugin/application/exports/dislocation-scene-source';
 import { stageExportBufferUpload, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type {
     DislocationExportData,
@@ -7,8 +12,9 @@ import type {
     ExportExecutionInput
 } from '@/modules/plugin/application/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import path from 'node:path';
 
-interface ProcessedDislocationGeometry {
+export interface ProcessedDislocationGeometry {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
@@ -21,9 +27,16 @@ interface ProcessedDislocationGeometry {
     };
 }
 
+// Styled re-exports (dislocation-model command) plug into the shared geometry
+// builder through these hooks instead of duplicating the tube triangulation.
+export interface DislocationGeometryHooks {
+    includeSegment?: (segment: DislocationSegment, family: string) => boolean;
+    getSegmentColor?: (segment: DislocationSegment, family: string) => [number, number, number, number];
+}
+
 const MAX_DISLOCATION_VERTICES = 5_000_000;
 // OVITO-parity defaults per Burgers family, overridable via options.typeColors.
-const DISLOCATION_TYPE_COLORS: Record<string, [number, number, number, number]> = {
+export const DISLOCATION_TYPE_COLORS: Record<string, [number, number, number, number]> = {
     Other: [0.9, 0.2, 0.2, 1.0],
     '1/2<110>': [0.2, 0.2, 1.0, 1.0],
     '1/6<112>': [0.0, 1.0, 0.0, 1.0],
@@ -82,7 +95,7 @@ const classifyBurgersVectorFallback = (segment: DislocationSegment): string => {
     return 'Other';
 };
 
-const resolveDislocationFamily = (segment: DislocationSegment): string => (
+export const resolveDislocationFamily = (segment: DislocationSegment): string => (
     segment.burgers_family ?? classifyBurgersVectorFallback(segment)
 );
 
@@ -196,9 +209,10 @@ const estimateSegmentGeometry = (
     return { vertexCount: totalVertices, indexCount: totalIndices };
 };
 
-const processDislocations = async (
+export const processDislocations = async (
     data: DislocationExportData,
-    options: Required<DislocationExportOptions>
+    options: Required<DislocationExportOptions>,
+    hooks?: DislocationGeometryHooks
 ): Promise<ProcessedDislocationGeometry | null> => {
     const segments = data.segments;
     const typeColors = { ...DISLOCATION_TYPE_COLORS, ...options.typeColors };
@@ -221,6 +235,11 @@ const processDislocations = async (
             continue;
         }
 
+        const type = resolveDislocationFamily(segment);
+        if (hooks?.includeSegment && !hooks.includeSegment(segment, type)) {
+            continue;
+        }
+
         const geometry = createLineGeometry(segment.points, options.lineWidth, options.tubularSegments);
         if (geometry.positions.length === 0) {
             continue;
@@ -231,7 +250,6 @@ const processDislocations = async (
             break;
         }
 
-        const type = resolveDislocationFamily(segment);
         const positionBase = vertexOffset * 3;
 
         for (let index = 0; index < geometry.positions.length; index += 1) {
@@ -248,7 +266,9 @@ const processDislocations = async (
         indexOffset += geometry.indices.length;
 
         if (options.colorByType && colors) {
-            const color = typeColors[type] || typeColors.Other;
+            const color = hooks?.getSegmentColor
+                ? hooks.getSegmentColor(segment, type)
+                : (typeColors[type] || typeColors.Other);
             const colorBase = vertexOffset * 4;
             for (let index = 0; index < segmentVertexCount; index += 1) {
                 const colorIndex = colorBase + index * 4;
@@ -300,7 +320,7 @@ const processDislocations = async (
     };
 };
 
-const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
+export const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
     lineWidth: 0.08,
     tubularSegments: 12,
     minSegmentPoints: 2,
@@ -314,7 +334,7 @@ const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
     typeColors: {}
 };
 
-const generateEmptyDislocationGLB = (material: Required<DislocationExportOptions>['material']): Buffer => (
+export const generateEmptyDislocationGLB = (material: Required<DislocationExportOptions>['material']): Buffer => (
     spatialAssembler.generateMeshGLB(
         new Float32Array(0),
         new Float32Array(0),
@@ -339,35 +359,14 @@ const generateEmptyDislocationGLB = (material: Required<DislocationExportOptions
     )
 );
 
-export const exportDislocationArtifact = async (
-    input: ExportExecutionInput,
-    exportData: DislocationExportData,
-    objectPath: string,
-    ownerClusterId: string,
-    options: DislocationExportOptions
-): Promise<boolean> => {
-    const resolvedOptions: Required<DislocationExportOptions> = {
-        ...DEFAULT_DISLOCATION_OPTIONS,
-        ...options,
-        material: { ...DEFAULT_DISLOCATION_OPTIONS.material, ...options.material }
-    };
-    const geometry = await processDislocations(exportData, resolvedOptions);
-    if (!geometry) {
-        await stageExportBufferUpload(input, {
-            exporter: 'DislocationExporter',
-            bucket: ObjectBucketName.Models,
-            buffer: generateEmptyDislocationGLB(resolvedOptions.material),
-            contentType: 'model/gltf-binary',
-            objectPath,
-            ownerClusterId
-        });
-        return true;
-    }
-
+export const buildDislocationGlb = (
+    geometry: ProcessedDislocationGeometry,
+    material: Required<DislocationExportOptions>['material']
+): Buffer => {
     const indexBuffer = geometry.vertexCount > 0 && geometry.vertexCount <= 65535
         ? new Uint16Array(geometry.indices)
         : geometry.indices;
-    const buffer = spatialAssembler.generateMeshGLB(
+    return spatialAssembler.generateMeshGLB(
         geometry.positions,
         geometry.normals,
         indexBuffer,
@@ -382,13 +381,74 @@ export const exportDislocationArtifact = async (
             maxZ: geometry.bounds.max[2]
         },
         {
-            baseColor: resolvedOptions.material.baseColor,
-            metallic: resolvedOptions.material.metallic,
-            roughness: resolvedOptions.material.roughness,
-            emissive: resolvedOptions.material.emissive,
+            baseColor: material.baseColor,
+            metallic: material.metallic,
+            roughness: material.roughness,
+            emissive: material.emissive,
             doubleSided: true
         }
     );
+};
+
+const stageSceneSourceUpload = async (
+    input: ExportExecutionInput,
+    exportData: DislocationExportData,
+    options: DislocationExportOptions,
+    ownerClusterId: string
+): Promise<void> => {
+    const objectKey = buildDislocationSceneSourceKey(
+        input.executionData.trajectoryId,
+        input.executionData.analysisId,
+        input.timestep,
+        input.exposure.nodeId
+    );
+
+    // No reportArtifact: the scene-source is an internal restyle input, not a
+    // user-visible scene.
+    await input.artifactUploadBatch.stageBufferUpload({
+        ownerClusterId,
+        bucket: ObjectBucketName.Models,
+        objectKey,
+        buffer: encodeDislocationSceneSource({
+            version: DISLOCATION_SCENE_SOURCE_VERSION,
+            exporter: 'DislocationExporter',
+            options,
+            data: exportData
+        }),
+        contentType: 'application/json',
+        fileName: path.basename(objectKey)
+    });
+};
+
+export const exportDislocationArtifact = async (
+    input: ExportExecutionInput,
+    exportData: DislocationExportData,
+    objectPath: string,
+    ownerClusterId: string,
+    options: DislocationExportOptions
+): Promise<boolean> => {
+    const resolvedOptions: Required<DislocationExportOptions> = {
+        ...DEFAULT_DISLOCATION_OPTIONS,
+        ...options,
+        material: { ...DEFAULT_DISLOCATION_OPTIONS.material, ...options.material }
+    };
+
+    await stageSceneSourceUpload(input, exportData, options, ownerClusterId);
+
+    const geometry = await processDislocations(exportData, resolvedOptions);
+    if (!geometry) {
+        await stageExportBufferUpload(input, {
+            exporter: 'DislocationExporter',
+            bucket: ObjectBucketName.Models,
+            buffer: generateEmptyDislocationGLB(resolvedOptions.material),
+            contentType: 'model/gltf-binary',
+            objectPath,
+            ownerClusterId
+        });
+        return true;
+    }
+
+    const buffer = buildDislocationGlb(geometry, resolvedOptions.material);
 
     await stageExportBufferUpload(input, {
         exporter: 'DislocationExporter',

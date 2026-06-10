@@ -118,7 +118,7 @@ const GRADIENT_BY_NAME: Record<string, GradientCode> = {
 const HIGHLIGHT_COLOR: readonly [number, number, number] = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR: readonly [number, number, number] = [0.8, 0.8, 0.8];
 
-const resolveGradientCode = (gradient: string): GradientCode => (
+export const resolveGradientCode = (gradient: string): GradientCode => (
     GRADIENT_BY_NAME[gradient.toLowerCase()] ?? GradientCode.Viridis
 );
 
