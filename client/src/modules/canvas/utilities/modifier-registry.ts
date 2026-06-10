@@ -1,6 +1,7 @@
 import ColorCoding from '../components/ColorCoding';
 import ParticleFilter from '../components/ParticleFilter';
 import SlicePlane from '../components/SlicePlane';
+import StructureTypeSelect from '../components/StructureTypeSelect';
 
 import type { ResolvedModifier } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { ComponentType } from 'react';
@@ -29,6 +30,12 @@ export const BUILT_IN_MODIFIERS: BuiltInModifierDefinition[] = [
         id: 'color-coding',
         title: 'Color Coding',
         component: ColorCoding,
+        type: 'built-in'
+    },
+    {
+        id: 'select-structure-type',
+        title: 'Select Structure Type',
+        component: StructureTypeSelect,
         type: 'built-in'
     }
 ];

@@ -14,6 +14,25 @@ export interface SourceResolverProps{
     appConfig: AppConfig;
 }
 
+export interface ResolvedSources{
+    env: Record<string, string>;
+    changed: boolean;
+    /**
+     * Records the freshly-downloaded release tags. Call ONLY after the stack has
+     * started successfully — recording earlier means a failed build leaves the tag
+     * marked "installed", so a retry sees installed==latest, skips the download, and
+     * runs `up` without --build against a stale image.
+     */
+    commit: () => Promise<void>;
+}
+
+export interface RepoUpdateStatus{
+    repoId: string;
+    installed: string | null;
+    latest: string;
+    changed: boolean;
+}
+
 export default class SourceResolver{
     constructor(private readonly props: SourceResolverProps){}
 
@@ -30,14 +49,15 @@ export default class SourceResolver{
         };
     }
 
-    async resolve(): Promise<{ env: Record<string, string>; changed: boolean }>{
+    async resolve(): Promise<ResolvedSources>{
         const dev = await this.#devSources();
         if(dev){
             assertDevPaths(dev.VOLT_SOURCE_DIR, dev.CLUSTER_DAEMON_SOURCE_DIR);
-            return { env: dev, changed: true };
+            return { env: dev, changed: true, commit: async () => {} };
         }
 
         const env: Record<string, string> = {};
+        const pending: Array<[string, string]> = [];
         let changed = false;
         for(const { repo, envKey } of this.props.repos){
             const updater = this.#updaterFor(repo);
@@ -47,13 +67,39 @@ export default class SourceResolver{
 
             if(latest.tag !== installed){
                 env[envKey] = await updater.update(latest);
-                await this.props.appConfig.updateRelease(repoId, latest.tag);
+                pending.push([repoId, latest.tag]);
                 changed = true;
             }else{
                 env[envKey] = await updater.resolveExtractedPath();
             }
         }
-        return { env, changed };
+
+        const commit = async () => {
+            for(const [repoId, tag] of pending){
+                await this.props.appConfig.updateRelease(repoId, tag);
+            }
+        };
+
+        return { env, changed, commit };
+    }
+
+    /**
+     * Non-mutating: reports per-repo installed-vs-latest tags without downloading or
+     * recording anything. Powers --check and the idempotent no-op gate. Returns
+     * devMode=true (and no repo statuses) when dev mode short-circuits to local paths.
+     */
+    async checkForUpdates(): Promise<{ devMode: boolean; repos: RepoUpdateStatus[] }>{
+        const dev = await this.#devSources();
+        if(dev) return { devMode: true, repos: [] };
+
+        const repos: RepoUpdateStatus[] = [];
+        for(const { repo } of this.props.repos){
+            const repoId = repo.getId();
+            const latest = await repo.fetchLatestRelease();
+            const installed = await this.props.appConfig.getInstalledReleaseTag(repoId);
+            repos.push({ repoId, installed, latest: latest.tag, changed: latest.tag !== installed });
+        }
+        return { devMode: false, repos };
     }
 
     async resolveExisting(): Promise<Record<string, string>>{
