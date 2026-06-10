@@ -13,6 +13,8 @@ export interface ScriptingNotebookProps {
     trajectory?: string | null;
     createdBy: string;
     content: Record<string, unknown>;
+    secretKeyId?: string;
+    secretKeyEncrypted?: string;
     lastOpenedAt?: Date;
     createdAt: Date;
     updatedAt: Date;

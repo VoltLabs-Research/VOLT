@@ -1,7 +1,3 @@
-export interface DefaultNotebookTemplateContext {
-    trajectoryId?: string;
-}
-
 export interface ScriptingSessionNotebookInput {
     notebookPath: string;
     content?: Record<string, unknown>;
@@ -21,6 +17,8 @@ export interface ScriptingSessionStartInput {
     userId: string;
     notebook?: ScriptingSessionNotebookInput;
     notebookId?: string;
+    secretKey?: string;
+    trajectoryId?: string | null;
 }
 
 export interface ScriptingSessionStartResult {
@@ -31,5 +29,5 @@ export interface ScriptingSessionStartResult {
 export interface IScriptingSessionOrchestrator {
     startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult>;
     deleteSession(trajectoryId: string): Promise<void>;
-    resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>>;
+    resolveNotebookTemplateContent(): Promise<Record<string, unknown>>;
 }

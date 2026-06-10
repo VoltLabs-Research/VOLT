@@ -1,6 +1,7 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type { INotebookCredentialService } from '@modules/scripting/domain/port/INotebookCredentialService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO } from '@modules/scripting/application/dtos/DeleteScriptingNotebookDTO';
 import NotebookDeletedEvent from '@modules/scripting/domain/events/NotebookDeletedEvent';
@@ -19,7 +20,8 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
+        @inject(SCRIPTING_TOKENS.NotebookCredentialService) private readonly notebookCredentialService: INotebookCredentialService
     ) {}
 
     async execute(input: DeleteScriptingNotebookInputDTO): Promise<Result<DeleteScriptingNotebookOutputDTO, ApplicationError>> {
@@ -44,6 +46,8 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
                 } catch {
                 }
             }
+
+            await this.notebookCredentialService.revokeSecretKey(notebook);
 
             await this.scriptingNotebookRepository.deleteById(input.notebookId);
 

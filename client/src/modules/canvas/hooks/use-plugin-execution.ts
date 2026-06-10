@@ -108,10 +108,21 @@ const usePluginExecution = ({
     }, []);
 
     const handleExecutePlugin = useCallback(async (option: ModifierOption): Promise<boolean> => {
-        if (!option.isPlugin || !option.pluginModifierId || !trajectoryId) return false;
+        if (!option.isPlugin || !option.pluginModifierId) return false;
+
+        const pluginName = option.title;
+
+        // Pre-flight: a missing trajectory means there is nothing to run the
+        // analysis against. Tell the user instead of silently no-op'ing.
+        if (!trajectoryId) {
+            sileo.warning({
+                title: `Can't run ${pluginName}`,
+                description: 'No trajectory is loaded to run this analysis against.'
+            });
+            return false;
+        }
 
         const modId = option.modifierId;
-        const pluginName = option.title;
         setExecStates((prev) => new Map(prev).set(modId, ExecState.Loading));
 
         const existing = successTimers.current.get(modId);
@@ -140,7 +151,15 @@ const usePluginExecution = ({
             const config: Record<string, unknown> = {};
 
             if (!selectedTeamClusterId) {
-                throw new Error('Missing team cluster selection');
+                // Pre-flight: without a usable compute cluster the job cannot be
+                // dispatched. Surface a clear, actionable message rather than a
+                // generic "failed to start" toast.
+                sileo.warning({
+                    title: `Can't run ${pluginName}`,
+                    description: 'Connect or select a compute cluster for this team before running analyses.'
+                });
+                setExecStates((prev) => new Map(prev).set(modId, ExecState.Idle));
+                return false;
             }
 
             visibleArgs.forEach((arg) => {

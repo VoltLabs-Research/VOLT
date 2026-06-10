@@ -5,18 +5,23 @@ import {
     useRevokeSessionMutation
 } from './queries';
 import { closeModal, openModal } from '@voltstack/bravais';
+import { confirmAction, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ActiveSession } from '../api/entities/session';
 
-export const REVOKE_MODAL_ID = 'revoke-session-modal';
 export const REVOKE_ALL_MODAL_ID = 'revoke-all-sessions-modal';
 
 const LOGIN_ACTIVITY_LIMIT = 20;
 
-const useSessionData = () => {
-    const [revokeTarget, setRevokeTarget] = useState<ActiveSession | null>(null);
+const buildRevokeImpactDescription = (session: ActiveSession): string => {
+    const device = `${session.browser} on ${session.os}`.trim();
+    const location = session.ip ? ` (${session.ip})` : '';
 
+    return `${device}${location} will be logged out immediately and must authenticate again.`;
+};
+
+const useSessionData = () => {
     const activeSessionsResult = activeSessionsQuery(undefined);
     const loginActivityResult = loginActivityQuery(LOGIN_ACTIVITY_LIMIT);
     const revokeSessionMutation = useRevokeSessionMutation();
@@ -33,16 +38,6 @@ const useSessionData = () => {
 
     const isCurrentSession = (session: ActiveSession) => session.isCurrent;
 
-    const openRevokeSessionModal = (session: ActiveSession) => {
-        setRevokeTarget(session);
-        openModal(REVOKE_MODAL_ID);
-    };
-
-    const closeRevokeSessionModal = () => {
-        closeModal(REVOKE_MODAL_ID);
-        setRevokeTarget(null);
-    };
-
     const openRevokeAllSessionsModal = () => {
         openModal(REVOKE_ALL_MODAL_ID);
     };
@@ -51,16 +46,23 @@ const useSessionData = () => {
         closeModal(REVOKE_ALL_MODAL_ID);
     };
 
-    const revokeSession = async () => {
-        if (!revokeTarget?._id) return;
+    const revokeSession = async (session: ActiveSession) => {
+        if (!session._id) return;
 
-        await showPromise(revokeSessionMutation.mutateAsync({ sessionId: revokeTarget._id }), {
+        const confirmed = await confirmAction({
+            title: 'Revoke this session?',
+            description: buildRevokeImpactDescription(session),
+            confirmText: 'Revoke',
+            tone: ConfirmActionTone.Danger
+        });
+
+        if (!confirmed) return;
+
+        await showPromise(revokeSessionMutation.mutateAsync({ sessionId: session._id }), {
             loading: { title: 'Revoking session...' },
             success: { title: 'Session revoked' },
             error: { title: 'Failed to revoke session' }
         });
-
-        closeRevokeSessionModal();
     };
 
     const revokeAllOtherSessions = async () => {
@@ -76,14 +78,11 @@ const useSessionData = () => {
     return {
         sessions,
         activities,
-        revokeTarget,
         otherSessionsCount,
         isRevoking,
         isCurrentSession,
         loadingSessions: activeSessionsResult.isLoading,
         loadingActivity: loginActivityResult.isLoading,
-        openRevokeSessionModal,
-        closeRevokeSessionModal,
         openRevokeAllSessionsModal,
         closeRevokeAllSessionsModal,
         revokeSession,

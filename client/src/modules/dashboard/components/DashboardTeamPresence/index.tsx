@@ -6,6 +6,7 @@ import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presen
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { AsyncBoundary, Avatar, Box, Button, Heading, Row, Skeleton, Stack, Text, EmptyState } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
@@ -54,6 +55,8 @@ const DashboardTeamPresence = () => {
             title='Access denied'
             description={accessDeniedMessage ?? 'You do not have permission to view team presence.'}
             tone={RecoveryStateTone.AccessDenied}
+            requiredPermissions={toPermissionLabels(['team-member:read'])}
+            contactHint={getTeamOwnerContactHint(selectedTeam)}
             className='dashboard-card-state'
         />
     );

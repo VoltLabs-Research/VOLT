@@ -1,4 +1,4 @@
-import { Button, Divider, FloatingToolbar, Row, SaveStatusIndicator, Text, Tooltip } from '@voltstack/bravais';
+import { Button, Callout, Divider, FloatingToolbar, Row, SaveStatusIndicator, Stack, Text, Tooltip } from '@voltstack/bravais';
 import type { SaveStatus } from '@voltstack/bravais';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
@@ -22,58 +22,79 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     const handleFitView = useCallback(() => { fitView({ padding: 0.2 }); }, [fitView]);
 
     return (
-        <FloatingToolbar placement='bottom' align='center' offset={1.25} className='canvas-toolbar'>
-            <SaveStatusIndicator status={saveStatus} className='canvas-toolbar-status' />
-
+        <>
             {hasErrors && (
-                <Tooltip
-                    content={validationResult!.errors.join(' · ')}
-                    placement='top'
+                <Callout
+                    tone='danger'
+                    title={`${validationResult!.errors.length} ${validationResult!.errors.length === 1 ? 'issue' : 'issues'} to fix before publishing`}
+                    icon={<AlertTriangle size={14} />}
+                    role='alert'
+                    ariaLive='polite'
+                    className='canvas-toolbar-validation'
                 >
-                    <Row gap='05' cursor='pointer' className='canvas-toolbar-status canvas-toolbar-status--error'>
-                        <AlertTriangle size={14} />
-                        <Text as='p' size='sm'>
-                            {validationResult!.errors.length} {validationResult!.errors.length === 1 ? 'issue' : 'issues'}
-                        </Text>
-                    </Row>
-                </Tooltip>
+                    <Stack as='ul' gap='025' className='canvas-toolbar-validation-list'>
+                        {validationResult!.errors.map((error, index) => (
+                            <Text key={index} as='li' size='sm'>
+                                {error}
+                            </Text>
+                        ))}
+                    </Stack>
+                </Callout>
             )}
 
-            <Row gap='025'>
-                <Tooltip content='Zoom out' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
-                        <ZoomOut size={16} />
-                    </Button>
-                </Tooltip>
-                <Text as='p' size='sm' tone='secondary' align='center' className='u-select-none canvas-toolbar-zoom-label tabular-nums'>
-                    {zoomPercent}%
-                </Text>
-                <Tooltip content='Zoom in' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
-                        <ZoomIn size={16} />
-                    </Button>
-                </Tooltip>
-                <Divider orientation='vertical' className='canvas-toolbar-divider' />
-                <Tooltip content='Fit to view' placement='top'>
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
-                        <Maximize size={16} />
-                    </Button>
-                </Tooltip>
-            </Row>
+            <FloatingToolbar placement='bottom' align='center' offset={1.25} className='canvas-toolbar'>
+                <SaveStatusIndicator status={saveStatus} className='canvas-toolbar-status' />
 
-            <Tooltip content='Save (Ctrl+S)' placement='top'>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    onClick={onSave}
-                    disabled={saveStatus === 'saving'}
-                >
-                    <Save size={16} />
-                </Button>
-            </Tooltip>
-        </FloatingToolbar>
+                {hasErrors && (
+                    <Tooltip
+                        content={validationResult!.errors.join(' · ')}
+                        placement='top'
+                    >
+                        <Row gap='05' cursor='pointer' className='canvas-toolbar-status canvas-toolbar-status--error'>
+                            <AlertTriangle size={14} />
+                            <Text as='p' size='sm'>
+                                {validationResult!.errors.length} {validationResult!.errors.length === 1 ? 'issue' : 'issues'}
+                            </Text>
+                        </Row>
+                    </Tooltip>
+                )}
+
+                <Row gap='025'>
+                    <Tooltip content='Zoom out' placement='top'>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
+                            <ZoomOut size={16} />
+                        </Button>
+                    </Tooltip>
+                    <Text as='p' size='sm' tone='secondary' align='center' className='u-select-none canvas-toolbar-zoom-label tabular-nums'>
+                        {zoomPercent}%
+                    </Text>
+                    <Tooltip content='Zoom in' placement='top'>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
+                            <ZoomIn size={16} />
+                        </Button>
+                    </Tooltip>
+                    <Divider orientation='vertical' className='canvas-toolbar-divider' />
+                    <Tooltip content='Fit to view' placement='top'>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
+                            <Maximize size={16} />
+                        </Button>
+                    </Tooltip>
+                </Row>
+
+                <Tooltip content='Save (Ctrl+S)' placement='top'>
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
+                        onClick={onSave}
+                        disabled={saveStatus === 'saving'}
+                    >
+                        <Save size={16} />
+                    </Button>
+                </Tooltip>
+            </FloatingToolbar>
+        </>
     );
 };
 

@@ -33,22 +33,39 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
 };
 
+/**
+ * Maps backend terminal error codes (emitted by ContainerTerminalSocketModule) to
+ * actionable, human-readable guidance. Unknown codes fall back to the raw message.
+ */
+const TERMINAL_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
+    CONTAINER_NOT_FOUND: "This container no longer exists. It may have been deleted — go back to the containers list.",
+    NO_CLUSTER: "This container isn't assigned to a cluster yet. Start or redeploy it, then reopen the terminal.",
+    'Team::AccessDenied': "You don't have access to this container's team.",
+    INVALID_PAYLOAD: 'Could not open a terminal for this container. Refresh the page and try again.',
+    ATTACH_FAILED: "Couldn't attach a terminal. The container may not be running — start it, then try again.",
+    STREAM_ERROR: 'Connection lost — refresh to reconnect.'
+};
+
+const resolveTerminalErrorMessage = (error: unknown): string => {
+    if (typeof error === 'string') {
+        return error;
+    }
+
+    if (isContainerTerminalSocketError(error)) {
+        const mappedMessage = TERMINAL_ERROR_MESSAGE_BY_CODE[error.code];
+        if (mappedMessage) {
+            return mappedMessage;
+        }
+
+        return error.details || error.message;
+    }
+
+    return 'Terminal error';
+};
+
 const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
     const attachPayload = useMemo(() => ({ containerId: container._id }), [container._id]);
-    const resolveErrorMessage = useMemo(() => {
-        return (error: unknown): string => {
-            if (typeof error === 'string') {
-                return error;
-            }
-
-            if (isContainerTerminalSocketError(error)) {
-                return error.details || error.message;
-            }
-
-            return 'Terminal error';
-        };
-    }, []);
     const { handleTerminalData, handleTerminalResize } = useSocketTerminalSession({
         sessionKey: container._id,
         terminalRef,
@@ -60,7 +77,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
         errorEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.ERROR,
         inputEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.INPUT,
         resizeEvent: SOCKET_CONTAINER_TERMINAL_EVENTS.RESIZE,
-        resolveErrorMessage
+        resolveErrorMessage: resolveTerminalErrorMessage
     });
 
     useSocketEvent<ContainerTerminalSizePayload>(SOCKET_CONTAINER_TERMINAL_EVENTS.SIZE, (payload) => {

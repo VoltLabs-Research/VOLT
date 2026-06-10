@@ -33,6 +33,7 @@ import {
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { confirmAction, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -146,7 +147,20 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         setActiveEditorGroupId(groupId);
     }, [updateEditorGroup]);
 
-    const handleCloseTab = useCallback((groupId: LatexEditorGroupId, tabToClose: LatexWorkspaceTab): void => {
+    const handleCloseTab = useCallback(async (groupId: LatexEditorGroupId, tabToClose: LatexWorkspaceTab): Promise<void> => {
+        if (tabToClose.type === 'file' && fileEditorStatesRef.current[tabToClose.id]?.isDirty) {
+            const confirmed = await confirmAction({
+                title: 'Discard unsaved changes?',
+                description: 'This file has changes that have not been saved yet. Closing the tab will discard them.',
+                confirmText: 'Close anyway',
+                tone: ConfirmActionTone.Danger
+            });
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
         updateEditorGroup(groupId, (group) => ({
             ...group,
             openTabs: group.openTabs.filter((currentTab) => !isSameTab(currentTab, tabToClose)),

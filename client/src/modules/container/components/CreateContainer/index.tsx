@@ -58,6 +58,8 @@ const CreateContainer = () => {
         isLoadingResourceLimits,
         isLoading,
         deployProgressMessage,
+        deployProgressRate,
+        deployStartedAt,
         draftLastSavedAt,
         setSelectedTeamId,
         setSelectedTeamClusterId,
@@ -144,6 +146,8 @@ const CreateContainer = () => {
                     draftLastSavedAt={draftLastSavedAt}
                     isLoading={isLoading}
                     deployProgressMessage={deployProgressMessage}
+                    deployProgressRate={deployProgressRate}
+                    deployStartedAt={deployStartedAt}
                     onBack={() => goTo(StepKey.Config)}
                     onCreate={handleCreate}
                 />

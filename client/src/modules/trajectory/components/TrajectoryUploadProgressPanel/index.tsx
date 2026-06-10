@@ -1,4 +1,5 @@
-import { Row, Stack, Text } from '@voltstack/bravais';
+import { Button, Row, Stack, Text } from '@voltstack/bravais';
+import { AlertTriangle, X } from 'lucide-react';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import { formatSize } from '@/shared/utils/format';
 import './TrajectoryUploadProgressPanel.css';
@@ -18,6 +19,7 @@ const buildProgressValueText = (loadedBytes: number, totalBytes: number, percent
 
 const TrajectoryUploadProgressPanel = () => {
     const uploads = useTrajectoryUploadProgressStore((state) => state.uploads);
+    const removeUpload = useTrajectoryUploadProgressStore((state) => state.removeUpload);
 
     if (uploads.length === 0) {
         return null;
@@ -28,15 +30,41 @@ const TrajectoryUploadProgressPanel = () => {
             {uploads.map((upload) => {
                 const percent = toPercent(upload.progress);
                 const valueText = buildProgressValueText(upload.loadedBytes, upload.totalBytes, percent);
+                const hasError = Boolean(upload.error);
 
                 return (
-                    <Stack key={upload.id} gap='035' className='trajectory-upload-progress-item' title={valueText}>
-                        <Row justify='between' gap='075'>
+                    <Stack
+                        key={upload.id}
+                        gap='035'
+                        className={`trajectory-upload-progress-item${hasError ? ' trajectory-upload-progress-item--failed' : ''}`}
+                        title={hasError ? upload.error : valueText}
+                    >
+                        <Row justify='between' gap='075' align='center'>
                             <Text as='span' truncate className='trajectory-upload-progress-name' title={upload.name}>
                                 {upload.name}
                             </Text>
-                            <Text as='span' className='trajectory-upload-progress-value'>{percent}%</Text>
+                            {hasError ? (
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    size='sm'
+                                    shape='rounded'
+                                    aria-label='Dismiss failed upload'
+                                    leftIcon={<X size={14} />}
+                                    onClick={() => removeUpload(upload.id)}
+                                />
+                            ) : (
+                                <Text as='span' className='trajectory-upload-progress-value'>{percent}%</Text>
+                            )}
                         </Row>
+                        {hasError && (
+                            <Row gap='035' align='start' className='trajectory-upload-progress-error'>
+                                <AlertTriangle size={13} aria-hidden='true' />
+                                <Text as='span' size='sm'>
+                                    {upload.error}
+                                </Text>
+                            </Row>
+                        )}
                     </Stack>
                 );
             })}
