@@ -1,7 +1,8 @@
 export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',
-    PluginExposure = 'plugin-exposure'
+    PluginExposure = 'plugin-exposure',
+    DislocationStyle = 'dislocation-style'
 }
 
 export enum SceneArtifactStatus {
@@ -18,6 +19,7 @@ export interface SceneArtifactParams {
     value?: number | string;
     action?: 'delete' | 'highlight';
     exposureId?: string;
+    style?: Record<string, unknown>;
 }
 
 export interface SceneArtifactProps {

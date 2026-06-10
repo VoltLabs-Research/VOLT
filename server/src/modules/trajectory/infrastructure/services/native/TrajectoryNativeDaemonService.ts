@@ -62,6 +62,34 @@ interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest 
     mask: Uint8Array;
 };
 
+export interface DislocationStyleParams {
+    lineWidth?: number;
+    tubularSegments?: number;
+    minLength?: number;
+    colorMode?: 'family' | 'uniform' | 'property';
+    uniformColor?: [number, number, number, number];
+    familyColors?: Record<string, [number, number, number, number]>;
+    familyVisibility?: Record<string, boolean>;
+    property?: 'length' | 'magnitude';
+    gradient?: string;
+    startValue?: number;
+    endValue?: number;
+};
+
+interface TrajectoryNativeDislocationModelRequest extends TrajectoryNativeRequest {
+    objectKey: string;
+    analysisId: string;
+    exposureId: string;
+    style?: DislocationStyleParams;
+};
+
+export interface TrajectoryNativeDislocationModelResponse {
+    objectKey: string;
+    segmentsRendered: number;
+    segmentsTotal: number;
+    familyCounts: Record<string, { count: number; totalLength: number }>;
+};
+
 interface TrajectoryNativeAtomsPageResponse {
     atoms: Array<{
         id: number;
@@ -184,6 +212,16 @@ export default class TrajectoryNativeDaemonService {
             objectKey: input.objectKey,
             action: input.action,
             mask: input.mask
+        });
+    }
+
+    async exportDislocationModel(input: TrajectoryNativeDislocationModelRequest): Promise<TrajectoryNativeDislocationModelResponse> {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeDislocationModel, {
+            ...this.toBaseBody(input),
+            objectKey: input.objectKey,
+            analysisId: input.analysisId,
+            exposureId: input.exposureId,
+            ...(input.style ? { style: input.style } : {})
         });
     }
 

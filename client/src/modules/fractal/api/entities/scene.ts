@@ -37,6 +37,7 @@ export interface SceneRenderMetadata {
 export interface SceneVisualOverride {
     opacity?: number;
     lineWidth?: number;
+    color?: string;
 }
 
 export type SceneVisualOverrides = Record<string, SceneVisualOverride>;
@@ -78,4 +79,26 @@ export type ParticleFilterScene = {
     action?: string;
 };
 
-export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene;
+export interface DislocationStyleSpec {
+    lineWidth?: number;
+    tubularSegments?: number;
+    minLength?: number;
+    colorMode?: 'family' | 'uniform' | 'property';
+    uniformColor?: [number, number, number, number];
+    familyColors?: Record<string, [number, number, number, number]>;
+    familyVisibility?: Record<string, boolean>;
+    property?: 'length' | 'magnitude';
+    gradient?: string;
+    startValue?: number;
+    endValue?: number;
+}
+
+export type DislocationStyleScene = {
+    sceneType: 'dislocation-style';
+    source: 'dislocation-style';
+    analysisId: string;
+    exposureId: string;
+    style: DislocationStyleSpec;
+};
+
+export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene | DislocationStyleScene;

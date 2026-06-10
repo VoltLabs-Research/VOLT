@@ -1,7 +1,7 @@
 import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
 import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
-export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
+export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure' | 'dislocation-style';
 
 export interface SceneArtifactParticleFilterPropertyCondition {
     kind?: 'property';
@@ -23,6 +23,7 @@ export interface SceneArtifactParams {
     exposureId?: string;
     combinator?: 'AND' | 'OR';
     conditions?: SceneArtifactParticleFilterCondition[];
+    style?: Record<string, unknown>;
 }
 
 export interface SceneArtifactTrajectory {

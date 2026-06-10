@@ -1,4 +1,5 @@
 import ColorCoding from '../components/ColorCoding';
+import DislocationStyle from '../components/DislocationStyle';
 import ParticleFilter from '../components/ParticleFilter';
 import SlicePlane from '../components/SlicePlane';
 import StructureTypeSelect from '../components/StructureTypeSelect';
@@ -36,6 +37,12 @@ export const BUILT_IN_MODIFIERS: BuiltInModifierDefinition[] = [
         id: 'select-structure-type',
         title: 'Select Structure Type',
         component: StructureTypeSelect,
+        type: 'built-in'
+    },
+    {
+        id: 'dislocations',
+        title: 'Dislocations',
+        component: DislocationStyle,
         type: 'built-in'
     }
 ];

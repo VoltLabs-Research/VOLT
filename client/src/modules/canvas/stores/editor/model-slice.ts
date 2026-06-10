@@ -225,6 +225,22 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         return get().sceneVisualOverrides[sceneKey]?.lineWidth;
     },
 
+    setSceneColor(sceneKey: string, color: string | undefined) {
+        set((state) => ({
+            sceneVisualOverrides: {
+                ...state.sceneVisualOverrides,
+                [sceneKey]: {
+                    ...state.sceneVisualOverrides[sceneKey],
+                    color
+                }
+            }
+        }));
+    },
+
+    getSceneColor(sceneKey: string): string | undefined {
+        return get().sceneVisualOverrides[sceneKey]?.color;
+    },
+
     setShowSimulationCell(show: boolean) {
         set({ showSimulationCell: show });
     },

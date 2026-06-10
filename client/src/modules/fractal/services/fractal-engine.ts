@@ -154,6 +154,8 @@ export class FractalEngine {
     private lastOpacitySceneKey: string | undefined = undefined;
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
+    private lastColorSceneKey: string | undefined = undefined;
+    private lastColorValue: string | undefined = undefined;
     private lastDislocationBaseLineWidth: number | undefined = undefined;
     private lastDislocationLineWidth: number | undefined = undefined;
     private traversalCache: TraversalCache = { pointClouds: [], meshes: [] };
@@ -301,6 +303,8 @@ export class FractalEngine {
             this.lastOpacitySceneKey = undefined;
             this.lastOpacityValue = -1;
             this.lastPointOpacityValue = -1;
+            this.lastColorSceneKey = undefined;
+            this.lastColorValue = undefined;
             this.lastDislocationBaseLineWidth = undefined;
             this.lastDislocationLineWidth = undefined;
 
@@ -525,6 +529,83 @@ export class FractalEngine {
             mat.opacity = opacity;
             mat.needsUpdate = true;
         });
+        this.surface.invalidate();
+    }
+
+    updateSceneColor(
+        sceneKey: string | undefined,
+        sceneVisualOverrides: SceneVisualOverrides
+    ) {
+        if (!this.state.model || !sceneKey) return;
+        const color = sceneVisualOverrides[sceneKey]?.color;
+
+        if (sceneKey === this.lastColorSceneKey && color === this.lastColorValue) {
+            return;
+        }
+        this.lastColorSceneKey = sceneKey;
+        this.lastColorValue = color;
+
+        const override = color ? new THREE.Color(color) : null;
+
+        // Point cloud shaders read the baked COLOR_0 attribute directly, so a
+        // uniform override rewrites the attribute and stashes the original
+        // values for a lossless restore when the override clears.
+        this.traversalCache.pointClouds.forEach((pointCloud) => {
+            const attribute = pointCloud.geometry.getAttribute('color');
+            if (!attribute) return;
+            const userData = pointCloud.userData as { originalVertexColors?: Float32Array | Uint8Array };
+            const array = attribute.array as Float32Array | Uint8Array;
+
+            if (override) {
+                if (!userData.originalVertexColors) {
+                    userData.originalVertexColors = array.slice() as Float32Array | Uint8Array;
+                }
+                const isByteColor = !(array instanceof Float32Array);
+                const red = isByteColor ? Math.round(override.r * 255) : override.r;
+                const green = isByteColor ? Math.round(override.g * 255) : override.g;
+                const blue = isByteColor ? Math.round(override.b * 255) : override.b;
+                for (let index = 0; index < attribute.count; index += 1) {
+                    const offset = index * attribute.itemSize;
+                    array[offset] = red;
+                    array[offset + 1] = green;
+                    array[offset + 2] = blue;
+                }
+                attribute.needsUpdate = true;
+            } else if (userData.originalVertexColors) {
+                (array as Float32Array).set(userData.originalVertexColors as Float32Array);
+                delete userData.originalVertexColors;
+                attribute.needsUpdate = true;
+            }
+        });
+
+        this.traversalCache.meshes.forEach((mesh) => {
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            materials.forEach((material) => {
+                if (!material || !('color' in material)) return;
+                const colorMaterial = material as THREE.MeshStandardMaterial;
+                const userData = colorMaterial.userData as {
+                    originalColorHex?: number;
+                    originalVertexColors?: boolean;
+                };
+
+                if (override) {
+                    if (userData.originalColorHex === undefined) {
+                        userData.originalColorHex = colorMaterial.color.getHex();
+                        userData.originalVertexColors = colorMaterial.vertexColors;
+                    }
+                    colorMaterial.vertexColors = false;
+                    colorMaterial.color.copy(override);
+                    colorMaterial.needsUpdate = true;
+                } else if (userData.originalColorHex !== undefined) {
+                    colorMaterial.color.setHex(userData.originalColorHex);
+                    colorMaterial.vertexColors = userData.originalVertexColors ?? false;
+                    delete userData.originalColorHex;
+                    delete userData.originalVertexColors;
+                    colorMaterial.needsUpdate = true;
+                }
+            });
+        });
+
         this.surface.invalidate();
     }
 
