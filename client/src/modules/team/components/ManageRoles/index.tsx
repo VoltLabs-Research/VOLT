@@ -11,9 +11,10 @@ import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
-import useTeamRolesListing from '@/modules/team/hooks/role/use-team-roles-listing';
+import { teamRolesResource } from '@/modules/team/hooks/role/queries';
+import type { GetTeamRolesParams } from '@/modules/team/api/services/role-service';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { TeamRole } from '@/modules/team/api/entities/role/team-role';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
@@ -96,7 +97,10 @@ export default function ManageRolesTemplate() {
     const createRoleMutation = useCreateTeamRoleMutation();
     const updateRoleMutation = useUpdateTeamRoleMutation();
     const deleteRoleMutation = useDeleteTeamRoleMutation();
-    const { queryKey, fetchData } = useTeamRolesListing(selectedTeam._id);
+    const { queryKey, fetchData } = useMemo(
+        () => teamRolesResource.createListingAccessors<GetTeamRolesParams>(selectedTeam._id),
+        [selectedTeam._id]
+    );
     const isSaving = createRoleMutation.isPending || updateRoleMutation.isPending;
 
     const rbacConfigResult = rbacConfigQuery(undefined);

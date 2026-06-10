@@ -1,4 +1,4 @@
-import useCreateTrajectory from './use-create-trajectory';
+import { createTrajectoryUploadSessionMutation } from './queries';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/stores/use-trajectory-upload-progress-store';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
@@ -66,7 +66,7 @@ const isRetriableCommitError = (error: unknown): boolean => {
 export default function useTrajectoryUpload(folderId?: string | null): UseTrajectoryUploadResult {
     const [isUploading, setIsUploading] = useState(false);
     const activeUploadsRef = useRef(0);
-    const createTrajectory = useCreateTrajectory();
+    const createTrajectoryMutation = createTrajectoryUploadSessionMutation();
     const addUpload = useTrajectoryUploadProgressStore((state) => state.addUpload);
     const updateUploadProgress = useTrajectoryUploadProgressStore((state) => state.updateUploadProgress);
     const removeUpload = useTrajectoryUploadProgressStore((state) => state.removeUpload);
@@ -92,7 +92,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
         let commitStarted = false;
 
         try {
-            session = await createTrajectory({
+            session = await createTrajectoryMutation.mutateAsync({
                 name: folderName,
                 ...(folderId ? { folderId } : {}),
                 files: files.map(({ file }) => ({
@@ -166,7 +166,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
             activeUploadsRef.current = Math.max(0, activeUploadsRef.current - 1);
             setIsUploading(activeUploadsRef.current > 0);
         }
-    }, [addUpload, createTrajectory, folderId, removeUpload, updateUploadProgress]);
+    }, [addUpload, createTrajectoryMutation, folderId, removeUpload, updateUploadProgress]);
 
     return { uploadTrajectory, isUploading };
 }

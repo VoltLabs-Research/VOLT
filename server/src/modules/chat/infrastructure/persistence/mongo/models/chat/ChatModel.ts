@@ -48,10 +48,6 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
         type: String,
         default: ''
     },
-    groupAvatar: {
-        type: String,
-        default: ''
-    },
     admins: [{
         type: Schema.Types.ObjectId,
         ref: 'User'

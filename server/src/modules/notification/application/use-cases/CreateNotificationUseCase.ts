@@ -1,19 +1,15 @@
 import type { CreateNotificationInputDTO, PersistedNotificationDTO } from '@modules/notification/application/dtos';
 import type { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
-import NotificationCreatedEvent from '@modules/notification/domain/events/NotificationCreatedEvent';
 import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, PersistedNotificationDTO, ApplicationError> {
     constructor(
-        @inject(NOTIFICATION_TOKENS.NotificationRepository) private readonly notificationRepository: INotificationRepository,
-        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
+        @inject(NOTIFICATION_TOKENS.NotificationRepository) private readonly notificationRepository: INotificationRepository
     ) { }
 
     async execute(input: CreateNotificationInputDTO): Promise<Result<PersistedNotificationDTO, ApplicationError>> {
@@ -28,16 +24,6 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
             createdAt: new Date(),
             updatedAt: new Date()
         });
-
-        await this.eventBus.publish(new NotificationCreatedEvent({
-            _id: notification._id,
-            recipient: notification.props.recipient,
-            title: notification.props.title,
-            content: notification.props.content,
-            read: notification.props.read,
-            link: notification.props.link,
-            createdAt: notification.props.createdAt
-        }));
 
         return Result.ok({
             _id: notification._id,

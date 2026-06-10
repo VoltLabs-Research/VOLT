@@ -1,9 +1,7 @@
 import { Heading } from '@voltstack/bravais';
 import useWhiteboardsListing, {
-    MOVE_WHITEBOARD_MODAL_ID,
-    NEW_WHITEBOARD_FOLDER_MODAL_ID,
     RENAME_WHITEBOARD_MODAL_ID,
-    RENAME_WHITEBOARD_FOLDER_MODAL_ID
+    whiteboardsListingResource
 } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
 import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
@@ -53,28 +51,19 @@ const WhiteboardsListing = () => {
     const {
         breadcrumbs,
         currentFolder,
-        getMoveFolder,
-        handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleMoveWhiteboardClose,
-        handleMoveWhiteboardSubmit,
         handleRenameWhiteboardClose,
         handleRenameWhiteboardSubmit,
-        handleRenameFolderClose,
         handleRenameFolderOpen,
-        handleRenameFolderSubmit,
-        listMoveFolders,
-        movingWhiteboard,
         navigateToFolder,
-        renamingWhiteboard,
-        renamingFolder
+        renamingWhiteboard
     } = listing;
 
     useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
 
     const title = <Heading level={3} size='3xl' className='sm:font-size-4'>Whiteboards</Heading>;
 
-    const headerActions = <NewFolderHeaderAction modalId={NEW_WHITEBOARD_FOLDER_MODAL_ID} />;
+    const headerActions = <NewFolderHeaderAction modalId={whiteboardsListingResource.modalIds.newFolder} />;
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
         return getFolderHeaderMenuOptions({
@@ -113,25 +102,7 @@ const WhiteboardsListing = () => {
                 onSubmit={handleRenameWhiteboardSubmit}
                 onClose={handleRenameWhiteboardClose}
             />
-            <FolderedListingModals
-                newFolderModalId={NEW_WHITEBOARD_FOLDER_MODAL_ID}
-                newFolderTitle='New Whiteboard Folder'
-                newFolderDescription='Create a folder in the current whiteboards location.'
-                onCreateFolder={handleCreateFolder}
-                renameFolderModalId={RENAME_WHITEBOARD_FOLDER_MODAL_ID}
-                renameFolderTitle='Rename Whiteboard Folder'
-                renameFolderDescription='Update the current whiteboard folder name.'
-                renamingFolder={renamingFolder}
-                onRenameFolderSubmit={handleRenameFolderSubmit}
-                onRenameFolderClose={handleRenameFolderClose}
-                moveModalId={MOVE_WHITEBOARD_MODAL_ID}
-                movingItem={movingWhiteboard}
-                itemLabel='Whiteboard'
-                listFolders={listMoveFolders}
-                getFolder={getMoveFolder}
-                onMoveSubmit={handleMoveWhiteboardSubmit}
-                onMoveClose={handleMoveWhiteboardClose}
-            />
+            <FolderedListingModals resource={whiteboardsListingResource} listing={listing} />
         </>
     );
 };

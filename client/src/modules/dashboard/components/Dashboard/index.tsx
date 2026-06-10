@@ -5,7 +5,7 @@ import DashboardActivityCard from '@/modules/dashboard/components/DashboardActiv
 import DashboardOperationsCard from '@/modules/dashboard/components/DashboardOperationsCard';
 import DashboardTeamPresence from '@/modules/dashboard/components/DashboardTeamPresence';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
-import { NEW_TRAJECTORY_FOLDER_MODAL_ID } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
+import { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
@@ -125,7 +125,7 @@ const DashboardPage = () => {
                                 size='sm'
                                 shape='rounded'
                                 className='dashboard-simulations-new-folder-btn'
-                                onClick={() => openModal(NEW_TRAJECTORY_FOLDER_MODAL_ID)}
+                                onClick={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
                             >
                                 <FolderPlus size={14} />
                                 New folder

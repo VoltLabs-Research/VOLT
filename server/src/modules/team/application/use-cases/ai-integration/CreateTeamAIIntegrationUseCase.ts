@@ -2,15 +2,12 @@ import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persi
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/CreateTeamAIIntegrationDTO';
 import TeamAIIntegration from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
-import TeamAIIntegrationCreatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationCreatedEvent';
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
@@ -20,9 +17,7 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog,
-        private readonly secretCipher: TeamAIIntegrationSecretCipher,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
     async execute(input: CreateTeamAIIntegrationInputDTO): Promise<Result<CreateTeamAIIntegrationOutputDTO, ApplicationError>> {
@@ -75,14 +70,6 @@ export default class CreateTeamAIIntegrationUseCase implements IUseCase<CreateTe
             enabledModels,
             metadata,
             userId: input.userId
-        }));
-
-        await this.eventBus.publish(new TeamAIIntegrationCreatedEvent({
-            teamAIIntegrationId: persisted._id,
-            teamId: persisted.getTeamId(),
-            provider: persisted.props.provider,
-            isEnabled: persisted.props.isEnabled,
-            defaultModel: persisted.props.defaultModel
         }));
 
         return Result.ok({

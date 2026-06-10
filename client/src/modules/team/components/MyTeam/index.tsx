@@ -12,7 +12,8 @@ import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-conf
 import ActivityHeatmap from '@/modules/daily-activity/components/ActivityHeatmap';
 import ListingUserCell from '@/shared/presentation/components/ListingUserCell';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
-import useTeamMembersListing from '@/modules/team/hooks/member/use-team-members-listing';
+import { teamMembersResource } from '@/modules/team/hooks/member/queries';
+import type { GetTeamMembersParams } from '@/modules/team/api/services/member-service';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
@@ -90,7 +91,10 @@ export default function MyTeamTemplate() {
     const canInvite = canAccess(['team-invitation:create']);
 
     const { roles } = useTeamRoleData({ teamId: selectedTeam._id });
-    const { queryKey, fetchData } = useTeamMembersListing(selectedTeam._id);
+    const { queryKey, fetchData } = useMemo(
+        () => teamMembersResource.createListingAccessors<GetTeamMembersParams>(selectedTeam._id),
+        [selectedTeam._id]
+    );
     const onlineUserIds = useTeamPresenceStore((state) => state.onlineUserIds);
     const hasPresenceSnapshot = useTeamPresenceStore((state) => state.hasPresenceSnapshot);
 

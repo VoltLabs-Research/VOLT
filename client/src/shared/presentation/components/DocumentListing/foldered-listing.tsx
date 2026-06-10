@@ -1,8 +1,7 @@
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import FolderNameModal from '@/shared/presentation/components/FolderNameModal';
 import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
-import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
-import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
 import { Box, Row } from '@voltstack/bravais';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
@@ -16,6 +15,7 @@ import type {
     FolderBreadcrumbEntity,
     FolderBreadcrumbItem
 } from '@/shared/presentation/hooks/use-folder-breadcrumbs';
+import type { FolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { MouseEvent, ReactNode } from 'react';
 import type { QueryKey } from '@tanstack/react-query';
@@ -66,24 +66,21 @@ interface FolderedDocumentListingProps<TRow extends { _id: string }, TContext> {
     onEmptyButtonClick?: () => void;
 };
 
-interface FolderedListingModalsProps<TFolder extends FolderBreadcrumbEntity> {
-    newFolderModalId: string;
-    newFolderTitle: string;
-    newFolderDescription: string;
-    onCreateFolder: (folderName: string) => Promise<void>;
-    renameFolderModalId: string;
-    renameFolderTitle: string;
-    renameFolderDescription: string;
+interface FolderedListingModalsListing<TFolder extends FolderBreadcrumbEntity> {
+    handleCreateFolder: (folderName: string) => Promise<void>;
     renamingFolder: TFolder | null;
-    onRenameFolderSubmit: (folderName: string) => Promise<void>;
-    onRenameFolderClose: () => void;
-    moveModalId: string;
+    handleRenameFolderSubmit: (folderName: string) => Promise<void>;
+    handleRenameFolderClose: () => void;
     movingItem: FolderedListingRow | null;
-    itemLabel: string;
-    listFolders: (parentId: string | null) => Promise<TFolder[]>;
-    getFolder: (folderId: string) => Promise<TFolder>;
-    onMoveSubmit: (folderId: string | null) => Promise<void>;
-    onMoveClose: () => void;
+    listMoveFolders: (parentId: string | null) => Promise<TFolder[]>;
+    getMoveFolder: (folderId: string) => Promise<TFolder>;
+    handleMoveSubmit: (folderId: string | null) => Promise<void>;
+    handleMoveClose: () => void;
+}
+
+interface FolderedListingModalsProps<TFolder extends FolderBreadcrumbEntity> {
+    resource: FolderedListingResource;
+    listing: FolderedListingModalsListing<TFolder>;
 }
 
 export const createFolderedTitleColumn = <TRow,>({
@@ -196,49 +193,34 @@ export const FolderedDocumentListing = <TRow extends { _id: string }, TContext>(
 );
 
 export const FolderedListingModals = <TFolder extends FolderBreadcrumbEntity>({
-    newFolderModalId,
-    newFolderTitle,
-    newFolderDescription,
-    onCreateFolder,
-    renameFolderModalId,
-    renameFolderTitle,
-    renameFolderDescription,
-    renamingFolder,
-    onRenameFolderSubmit,
-    onRenameFolderClose,
-    moveModalId,
-    movingItem,
-    itemLabel,
-    listFolders,
-    getFolder,
-    onMoveSubmit,
-    onMoveClose
+    resource: { modalIds, copy },
+    listing
 }: FolderedListingModalsProps<TFolder>): ReactNode => (
     <>
-        <NewFolderModal
-            id={newFolderModalId}
-            title={newFolderTitle}
-            description={newFolderDescription}
-            onSubmit={onCreateFolder}
+        <FolderNameModal
+            id={modalIds.newFolder}
+            title={copy.newFolderTitle}
+            description={copy.newFolderDescription}
+            onSubmit={listing.handleCreateFolder}
         />
-        <RenameFolderModal
-            id={renameFolderModalId}
-            title={renameFolderTitle}
-            description={renameFolderDescription}
-            folderName={renamingFolder?.title ?? null}
-            onSubmit={onRenameFolderSubmit}
-            onClose={onRenameFolderClose}
+        <FolderNameModal
+            id={modalIds.renameFolder}
+            title={copy.renameFolderTitle}
+            description={copy.renameFolderDescription}
+            initialName={listing.renamingFolder?.title ?? null}
+            onSubmit={listing.handleRenameFolderSubmit}
+            onClose={listing.handleRenameFolderClose}
         />
         <MoveToFolderModal
-            id={moveModalId}
-            itemId={movingItem?._id ?? null}
-            itemName={movingItem?.title ?? movingItem?.name ?? null}
-            itemLabel={itemLabel}
-            sourceFolderId={movingItem?.folder ?? null}
-            listFolders={listFolders}
-            getFolder={getFolder}
-            onSubmit={onMoveSubmit}
-            onClose={onMoveClose}
+            id={modalIds.move}
+            itemId={listing.movingItem?._id ?? null}
+            itemName={listing.movingItem?.title ?? listing.movingItem?.name ?? null}
+            itemLabel={copy.itemLabel}
+            sourceFolderId={listing.movingItem?.folder ?? null}
+            listFolders={listing.listMoveFolders}
+            getFolder={listing.getMoveFolder}
+            onSubmit={listing.handleMoveSubmit}
+            onClose={listing.handleMoveClose}
         />
     </>
 );

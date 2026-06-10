@@ -4,6 +4,7 @@ import {
     TeamClusterServiceExposureStatus,
     type TeamClusterServiceExposure
 } from '@modules/cluster/domain/contracts/TeamClusterServiceExposure';
+import type { AnalysisStageStatus, AnalysisStageType } from '@modules/analysis/domain/entities/Analysis';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
@@ -285,8 +286,8 @@ interface TeamClusterDaemonAnalysisStageStatusEventPayload {
     timestep?: number;
     stageKey: string;
     label: string;
-    stageType: 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
-    stageStatus: 'pending' | 'running' | 'completed' | 'failed' | 'cached';
+    stageType: AnalysisStageType;
+    stageStatus: AnalysisStageStatus;
     pluginId?: string;
     pluginDisplayName?: string;
     nodeId?: string;

@@ -1,9 +1,8 @@
 import { Button, Text, openModal, closeModal } from '@voltstack/bravais';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine, RiCheckLine, RiDraftLine, RiForbidLine, RiStore2Line } from 'react-icons/ri';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
-import useDeletePlugin from '@/modules/plugin/hooks/plugin/use-delete-plugin';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
-import useImportPlugin from '@/modules/plugin/hooks/plugin/use-import-plugin';
+import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
@@ -66,9 +65,9 @@ const PluginsListing = () => {
 
     const clonePluginMutation = useClonePluginMutation();
     const updatePluginMutation = useUpdatePluginMutation();
-    const deletePlugin = useDeletePlugin();
+    const deletePluginMutation = useDeletePluginMutation();
     const exportPlugin = useExportPlugin();
-    const importPlugin = useImportPlugin();
+    const importPluginMutation = useImportPluginMutation();
 
     const fetchData = useCallback(async (params: GetPluginsInputDTO) => {
         return await fetchPlugins(params);
@@ -96,14 +95,14 @@ const PluginsListing = () => {
         setIsImporting(true);
         try{
             await runAction({
-                action: () => importPlugin(file),
+                action: () => importPluginMutation.mutateAsync({ file }),
                 toast: IMPORT_PLUGIN_TOAST_OPTIONS
             });
         }finally{
             setIsImporting(false);
             importInputRef.current!.value = '';
         }
-    }, [importPlugin]);
+    }, [importPluginMutation]);
 
     const handleStatusChange = useCallback(async (plugin: Plugin, newStatus: PluginStatus) => {
         const statusLabels: Record<PluginStatus, string> = {
@@ -175,7 +174,7 @@ const PluginsListing = () => {
             delete: {
                 handler: async ({ item }) => {
                     await runAction({
-                        action: () => deletePlugin(item._id),
+                        action: () => deletePluginMutation.mutateAsync({ _id: item._id }),
                         toast: DELETE_PLUGIN_TOAST_OPTIONS
                     });
                 },

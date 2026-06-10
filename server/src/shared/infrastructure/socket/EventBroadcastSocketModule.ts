@@ -32,8 +32,6 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'plugin.deleted',
         'team.created',
         'team.deleted',
-        'team-member.left',
-        'team-member.created',
         'team-member.deleted',
         'team-role.created',
         'team-role.deleted',

@@ -23,13 +23,9 @@ export interface ChatMessageProps {
     sender: string | ChatUserReference;
     content: string;
     messageType: ChatMessageType;
-    isRead: boolean;
     readBy: string[];
     metadata: ChatMessageMetadata;
-    editedAt: Date;
     deleted: boolean;
-    deletedAt: Date;
-    deletedBy: string;
     reactions: ChatReaction[];
     createdAt: Date;
     updatedAt: Date;
