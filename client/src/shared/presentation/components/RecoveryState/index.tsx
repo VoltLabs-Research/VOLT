@@ -20,6 +20,10 @@ interface RecoveryStateProps {
     onRetry?: () => void;
     showBack?: boolean;
     className?: string;
+    /** Forwarded to AccessDenied when tone is AccessDenied: the permission(s) the user lacks. */
+    requiredPermissions?: string[];
+    /** Forwarded to AccessDenied when tone is AccessDenied: who to ask for access. */
+    contactHint?: string;
 };
 
 const RecoveryState = ({
@@ -31,7 +35,9 @@ const RecoveryState = ({
     isRetrying = false,
     onRetry,
     showBack = false,
-    className
+    className,
+    requiredPermissions,
+    contactHint
 }: RecoveryStateProps) => {
     if (tone === RecoveryStateTone.AccessDenied) {
         return (
@@ -40,6 +46,8 @@ const RecoveryState = ({
                 description={description}
                 showBack={showBack}
                 className={className}
+                requiredPermissions={requiredPermissions}
+                contactHint={contactHint}
             />
         );
     }

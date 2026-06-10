@@ -2,6 +2,7 @@ import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/Scr
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
 import useTip from '@/shared/tips/use-tip';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { AsyncBoundary, Box, Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
@@ -110,26 +111,44 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
 
     const isDeploymentRequired = Boolean(deploymentRequiredMessage);
     const errorValue = error || deploymentRequiredMessage;
-    const errorView = () => renderWorkspaceShell(renderWorkspaceState({
-        title: isDeploymentRequired
-            ? activeNotebook
-                ? 'Notebook deployment required'
-                : 'Create notebook workspace'
-            : 'Unable to start the notebook workspace',
-        description: deploymentRequiredMessage || error || '',
-        liveMode: 'alert',
-        children: !isStartingJupyter ? (
-            <Button
-                variant='outline'
-                intent='neutral'
-                size='sm'
-                shape='rounded'
-                onClick={retryStartJupyter}
-            >
-                {isDeploymentRequired ? 'Configure notebook' : 'Retry starting Jupyter'}
-            </Button>
-        ) : undefined
-    }));
+
+    // A required compute cluster is a setup step, not a failure: guide the user to
+    // connect/select one instead of showing a generic error surface.
+    const deploymentRequiredView = renderWorkspaceShell(
+        <RecoveryState
+            tone={RecoveryStateTone.Info}
+            title={activeNotebook ? 'Connect this notebook to a cluster' : 'Create a notebook workspace'}
+            description={deploymentRequiredMessage
+                || 'Notebooks run on a compute cluster. Connect or select one to start.'}
+            retryLabel={activeNotebook ? 'Configure notebook' : 'Choose a cluster'}
+            onRetry={isStartingJupyter ? undefined : retryStartJupyter}
+            isRetrying={isStartingJupyter}
+            className='w-full h-full'
+        />
+    );
+
+    const errorView = () => {
+        if (isDeploymentRequired) {
+            return deploymentRequiredView;
+        }
+
+        return renderWorkspaceShell(renderWorkspaceState({
+            title: 'Unable to start the notebook workspace',
+            description: error || '',
+            liveMode: 'alert',
+            children: !isStartingJupyter ? (
+                <Button
+                    variant='outline'
+                    intent='neutral'
+                    size='sm'
+                    shape='rounded'
+                    onClick={retryStartJupyter}
+                >
+                    Retry starting Jupyter
+                </Button>
+            ) : undefined
+        }));
+    };
 
     let contentView: ReactNode;
     if (jupyterUrl) {

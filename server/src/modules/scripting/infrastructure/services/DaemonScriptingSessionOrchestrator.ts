@@ -1,6 +1,5 @@
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import type {
-    DefaultNotebookTemplateContext,
     IScriptingSessionOrchestrator,
     ScriptingSessionStartInput,
     ScriptingSessionStartResult
@@ -9,7 +8,7 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
-import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -41,6 +40,9 @@ interface DaemonNotebookSessionRequest {
     [key: string]: unknown;
     requestedBy: string;
     publicBasePath: string;
+    baseUrl: string;
+    secretKey?: string;
+    trajectoryId?: string;
     notebook: DaemonNotebookSessionSnapshot;
 }
 
@@ -71,6 +73,9 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         const request: DaemonNotebookSessionRequest = {
             requestedBy: input.userId,
             publicBasePath: buildJupyterProxyBasePath(input.teamId, runtimeNotebookId),
+            baseUrl: `${resolveServerBaseUrl()}/api`,
+            secretKey: input.secretKey,
+            trajectoryId: input.trajectoryId ?? undefined,
             notebook: {
                 _id: runtimeNotebookId,
                 teamId: input.teamId,
@@ -139,8 +144,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         }
     }
 
-    async resolveNotebookTemplateContent(context: DefaultNotebookTemplateContext): Promise<Record<string, unknown>> {
-        return this.notebookService.resolveNotebookTemplateContent(context);
+    async resolveNotebookTemplateContent(): Promise<Record<string, unknown>> {
+        return this.notebookService.resolveNotebookTemplateContent();
     }
 
     private requireDaemonJupyterResponse(response: DaemonNotebookSessionResponse): DaemonNotebookJupyterResponse {

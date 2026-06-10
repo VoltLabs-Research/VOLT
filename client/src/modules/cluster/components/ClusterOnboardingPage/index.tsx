@@ -12,6 +12,7 @@ import OnboardingLayout from '@/modules/onboarding/components/templates/Onboardi
 import { Box, Button, Heading, Modal, closeModal, openModal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
 import type { StatusDotTone } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ enum OnboardingStep {
 }
 
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
+const ENROLLMENT_WAIT_TIMEOUT_MS = 90_000;
 
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
@@ -43,6 +45,8 @@ const ClusterOnboardingPage = () => {
     const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
+    const [hasWaitTimedOut, setHasWaitTimedOut] = useState(false);
+    const [waitNonce, setWaitNonce] = useState(0);
     const hasRedirected = useRef(false);
     const hadConnectedCluster = useRef(hasConnectedCluster);
 
@@ -100,6 +104,29 @@ const ClusterOnboardingPage = () => {
             setEnrollmentToken(null);
         }
     }, [clusters, createdCluster]);
+
+    const isAwaitingEnrollment = Boolean(createdCluster)
+        && Boolean(enrollmentToken)
+        && !isCreatedClusterConnected;
+
+    useEffect(() => {
+        if (!isAwaitingEnrollment) {
+            setHasWaitTimedOut(false);
+            return;
+        }
+
+        setHasWaitTimedOut(false);
+        const timer = window.setTimeout(() => {
+            setHasWaitTimedOut(true);
+        }, ENROLLMENT_WAIT_TIMEOUT_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [isAwaitingEnrollment, waitNonce]);
+
+    const handleRetryWait = () => {
+        setHasWaitTimedOut(false);
+        setWaitNonce((nonce) => nonce + 1);
+    };
 
     const handleSubmitName = async () => {
         if (!name.trim()) {
@@ -247,18 +274,28 @@ const ClusterOnboardingPage = () => {
                             enrollmentToken={enrollmentToken}
                         />
 
-                        <Row gap='075' className='cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
-                            <Row gap='05'>
-                                <StatusDot
-                                    tone={statusVariant === 'inactive' ? 'neutral' : (statusVariant as StatusDotTone)}
-                                    pulse={statusVariant !== 'inactive'}
-                                    glow={statusVariant !== 'inactive'}
-                                />
-                                <Text as='p' size='md' tone='secondary'>
-                                    {statusLabel}
-                                </Text>
+                        {hasWaitTimedOut ? (
+                            <RecoveryState
+                                tone={RecoveryStateTone.Info}
+                                title='Still waiting for your cluster'
+                                description='No connection yet. Re-copy the command above and run it on your host. Ensure the daemon is running and outbound WebSocket connections are allowed; this can take 30–60s.'
+                                retryLabel='Still waiting / Retry'
+                                onRetry={handleRetryWait}
+                            />
+                        ) : (
+                            <Row gap='075' className='cluster-onboarding-status-row' role='status' aria-live='polite' aria-atomic='true'>
+                                <Row gap='05'>
+                                    <StatusDot
+                                        tone={statusVariant === 'inactive' ? 'neutral' : (statusVariant as StatusDotTone)}
+                                        pulse={statusVariant !== 'inactive'}
+                                        glow={statusVariant !== 'inactive'}
+                                    />
+                                    <Text as='p' size='md' tone='secondary'>
+                                        {statusLabel}
+                                    </Text>
+                                </Row>
                             </Row>
-                        </Row>
+                        )}
                     </Stack>
                 </Modal>
 

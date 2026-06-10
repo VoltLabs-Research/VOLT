@@ -69,6 +69,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
     const createTrajectoryMutation = createTrajectoryUploadSessionMutation();
     const addUpload = useTrajectoryUploadProgressStore((state) => state.addUpload);
     const updateUploadProgress = useTrajectoryUploadProgressStore((state) => state.updateUploadProgress);
+    const failUpload = useTrajectoryUploadProgressStore((state) => state.failUpload);
     const removeUpload = useTrajectoryUploadProgressStore((state) => state.removeUpload);
 
     const uploadTrajectory = useCallback(async (files: FileWithPath[], folderName: string) => {
@@ -148,6 +149,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
 
             updateUploadProgress(uploadId, 1);
             sileo.success({ title: UPLOAD_SUCCESS_TITLE });
+            removeUpload(uploadId);
         } catch (error) {
             if (session && !commitStarted) {
                 await trajectoryService.cancelUploadSession({
@@ -156,17 +158,21 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 }).catch(() => undefined);
             }
 
-            reportError(error, {
+            const userError = reportError(error, {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: UPLOAD_ERROR_TITLE,
                 fallbackDescription: UPLOAD_ERROR_DESCRIPTION
             });
+
+            // Keep the failed upload visible in the progress panel (instead of
+            // auto-removing it) so the user can read the error and dismiss it
+            // on their own terms rather than it vanishing instantly.
+            failUpload(uploadId, userError.description || userError.title || UPLOAD_ERROR_DESCRIPTION);
         } finally {
-            removeUpload(uploadId);
             activeUploadsRef.current = Math.max(0, activeUploadsRef.current - 1);
             setIsUploading(activeUploadsRef.current > 0);
         }
-    }, [addUpload, createTrajectoryMutation, folderId, removeUpload, updateUploadProgress]);
+    }, [addUpload, createTrajectoryMutation, failUpload, folderId, removeUpload, updateUploadProgress]);
 
     return { uploadTrajectory, isUploading };
 }

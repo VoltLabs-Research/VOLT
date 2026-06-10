@@ -1,6 +1,5 @@
 import CreateScriptingJupyterSessionController from './CreateScriptingJupyterSessionController';
 import CreateScriptingNotebookController from './CreateScriptingNotebookController';
-import CreateScriptingNotebookJupyterSessionController from './CreateScriptingNotebookJupyterSessionController';
 import DeleteScriptingNotebookController from './DeleteScriptingNotebookController';
 import DeleteScriptingSessionController from './DeleteScriptingSessionController';
 import GetScriptingSessionStatusController from './GetScriptingSessionStatusController';
@@ -11,7 +10,6 @@ import { createControllerRegistry } from '@shared/infrastructure/di/create-contr
 export default createControllerRegistry({
     createJupyterSession: CreateScriptingJupyterSessionController,
     createNotebook: CreateScriptingNotebookController,
-    createNotebookJupyterSession: CreateScriptingNotebookJupyterSessionController,
     deleteNotebook: DeleteScriptingNotebookController,
     deleteSession: DeleteScriptingSessionController,
     getSessionStatus: GetScriptingSessionStatusController,

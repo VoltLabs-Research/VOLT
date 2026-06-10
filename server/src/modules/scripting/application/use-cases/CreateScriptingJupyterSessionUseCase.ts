@@ -12,6 +12,7 @@ import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@m
 import type ScriptingNotebook from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { IScriptingSessionLock } from '@modules/scripting/domain/port/IScriptingSessionLock';
+import type { INotebookCredentialService } from '@modules/scripting/domain/port/INotebookCredentialService';
 import type {
     IScriptingSessionOrchestrator,
     ScriptingSessionStartInput
@@ -73,6 +74,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator) private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
         @inject(SCRIPTING_TOKENS.ScriptingSessionLock) private readonly scriptingSessionLock: IScriptingSessionLock,
+        @inject(SCRIPTING_TOKENS.NotebookCredentialService) private readonly notebookCredentialService: INotebookCredentialService,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
@@ -106,11 +108,14 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             }
 
             const notebook = await this.resolveNotebookForSession(input, userId);
+            const secretKey = await this.notebookCredentialService.resolveSecretKey(notebook, userId);
             const sessionInput: ScriptingSessionStartInput = {
                 teamId: input.teamId,
                 teamClusterId: await this.resolveNotebookTeamClusterId(notebook, input),
                 userId,
                 notebookId: notebook._id,
+                trajectoryId: notebook.props.trajectory,
+                secretKey,
                 notebook: {
                     notebookPath: notebook.props.notebookPath,
                     content: notebook.props.content
@@ -184,9 +189,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
             return touched || existing;
         }
 
-        const notebookContent = await this.scriptingSessionOrchestrator.resolveNotebookTemplateContent({
-            trajectoryId: input.trajectoryId
-        });
+        const notebookContent = await this.scriptingSessionOrchestrator.resolveNotebookTemplateContent();
         const teamClusterIdInput = this.requireCreateInputTeamClusterId(input);
         const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(
             input.teamId,

@@ -105,10 +105,11 @@ const SignInTemplate = () => {
                 return;
             }
             goTo(SignInStep.Register);
-        } catch {
-            sileo.error({
-                title: 'Something went wrong',
-                description: 'Could not verify email. Please try again.'
+        } catch (err: unknown) {
+            reportError(err, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Could not verify email',
+                fallbackDescription: 'Please check your connection and try again.'
             });
         }
     };

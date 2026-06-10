@@ -2,8 +2,10 @@ import ClusterResourceSelectionPanel from '@/modules/container/components/Cluste
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { Box, Button, Heading, Row, Stack, Text } from '@voltstack/bravais';
+import { Box, Button, CollapsibleSection, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { getCustomFieldValidationError } from '../../utilities/container-form';
 import { ContainerTemplateCustomFieldType } from '../../api/entities/container-template';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
@@ -123,15 +125,66 @@ const getCustomFieldType = (customField: ContainerTemplateCustomField) => {
     return 'text';
 };
 
-const renderCustomFieldsSection = (
+interface OptionalConfigSectionProps {
+    title: string;
+    description: string;
+    defaultExpanded?: boolean;
+    errorCount?: number;
+    children: ReactNode;
+}
+
+/**
+ * Collapsible card for optional configuration. Surfaces an error indicator on the
+ * header and auto-expands when it contains validation errors so problems are never
+ * hidden behind a collapsed section.
+ */
+const OptionalConfigSection = ({
+    title,
+    description,
+    defaultExpanded = false,
+    errorCount = 0,
+    children
+}: OptionalConfigSectionProps) => {
+    const hasError = errorCount > 0;
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded || hasError);
+
+    // Reveal the section automatically when a validation error appears inside it.
+    const expanded = isExpanded || hasError;
+
+    return (
+        <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
+            <CollapsibleSection
+                title={title}
+                expanded={expanded}
+                onExpandedChange={setIsExpanded}
+                useDefaultHeaderStyles={false}
+                headerAction={hasError
+                    ? (
+                        <Tag tone='danger' size='xs' variant='soft'>
+                            {`${errorCount} to fix`}
+                        </Tag>
+                    )
+                    : undefined}
+                bodyClassName='mt-075'
+            >
+                <Stack gap='1'>
+                    <Text as='p' size='md' tone='muted'>{description}</Text>
+                    {children}
+                </Stack>
+            </CollapsibleSection>
+        </Stack>
+    );
+};
+
+const hasRequiredCustomField = (customFields: ContainerTemplateCustomField[]): boolean => {
+    return customFields.some((customField) => customField.required);
+};
+
+const renderCustomFields = (
     customFields: ContainerTemplateCustomField[],
     customFieldValues: ContainerConfig['customFieldValues'],
     onConfigChange: <K extends keyof ContainerConfig>(key: K, value: ContainerConfig[K]) => void
 ) => {
-    if (customFields.length === 0) {
-        return null;
-    }
-
     const handleCustomFieldChange = (customFieldId: string, value: string) => {
         onConfigChange('customFieldValues', {
             ...customFieldValues,
@@ -142,11 +195,12 @@ const renderCustomFieldsSection = (
     const renderCustomField = (customField: ContainerTemplateCustomField) => {
         const fieldValue = customFieldValues[customField.id] ?? '';
         const fieldError = getCustomFieldValidationError(customField, fieldValue) ?? undefined;
+        const fieldLabel = customField.required ? `${customField.label} (required)` : customField.label;
 
         return (
             <Stack key={customField.id} gap='05'>
                 <FormFieldRHF
-                    label={customField.label}
+                    label={fieldLabel}
                     name={customField.id}
                     placeholder={customField.placeholder}
                     value={fieldValue}
@@ -168,15 +222,8 @@ const renderCustomFieldsSection = (
     };
 
     return (
-        <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
-            <SettingsSectionHeader
-                title='Template settings'
-                description='These options come from the selected template.'
-                className='create-container-config-section-header mb-1 pb-075'
-            />
-            <Stack gap='1'>
-                {customFields.map(renderCustomField)}
-            </Stack>
+        <Stack gap='1'>
+            {customFields.map(renderCustomField)}
         </Stack>
     );
 };
@@ -214,6 +261,11 @@ const ConfigurationStep = ({
         Boolean(selectedTeamClusterId && !isLoadingResourceLimits && (!clusterResourceLimits?.maxCpus || !clusterResourceLimits?.maxMemoryMB))
     ].filter(Boolean).length + getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
+    const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
+    const hasCustomFields = config.customFields.length > 0;
+    // Keep template settings open by default when it carries required inputs, so a
+    // collapsed section never hides a field the user must complete before review.
+    const templateSettingsDefaultExpanded = hasRequiredCustomField(config.customFields);
 
     return (
         <Stack className='create-container-step' gap='2'>
@@ -271,12 +323,21 @@ const ConfigurationStep = ({
                     clusterDescription='Choose where this container will be deployed.'
                 />
 
-                <Stack className='create-container-config-card' radius='md' gap='1' p='1-5'>
-                    <SettingsSectionHeader
-                        title='Network'
-                        description='Optional public port mappings.'
-                        className='create-container-config-section-header mb-1 pb-075'
-                    />
+                {hasCustomFields && (
+                    <OptionalConfigSection
+                        title='Template settings'
+                        description='These options come from the selected template.'
+                        defaultExpanded={templateSettingsDefaultExpanded}
+                        errorCount={customFieldErrorCount}
+                    >
+                        {renderCustomFields(config.customFields, config.customFieldValues, onConfigChange)}
+                    </OptionalConfigSection>
+                )}
+
+                <OptionalConfigSection
+                    title='Network'
+                    description='Optional public port mappings.'
+                >
                     <EditableKeyValueCard<PortMappingFormItem>
                         items={portItems}
                         fields={PORT_FIELDS}
@@ -286,14 +347,12 @@ const ConfigurationStep = ({
                         createEmpty={() => ({ private: 80 })}
                         emptyMessage='No port mappings added.'
                     />
-                </Stack>
+                </OptionalConfigSection>
 
-                <Stack className='create-container-config-card' radius='md' gap='1' p='1-5'>
-                    <SettingsSectionHeader
-                        title='Environment variables'
-                        description='Optional runtime values for the container.'
-                        className='create-container-config-section-header mb-1 pb-075'
-                    />
+                <OptionalConfigSection
+                    title='Environment variables'
+                    description='Optional runtime values for the container.'
+                >
                     <EditableKeyValueCard<EnvVariableFormItem>
                         items={envItems}
                         fields={ENV_FIELDS}
@@ -303,16 +362,12 @@ const ConfigurationStep = ({
                         createEmpty={() => ({ key: '', value: '' })}
                         emptyMessage='No environment variables added.'
                     />
-                </Stack>
+                </OptionalConfigSection>
 
-                {renderCustomFieldsSection(config.customFields, config.customFieldValues, onConfigChange)}
-
-                <Stack className='create-container-config-card full-width' radius='md' gap='1' p='1-5'>
-                    <SettingsSectionHeader
-                        title='Advanced'
-                        description='Enable only when the image needs direct access to the host Docker socket.'
-                        className='create-container-config-section-header mb-1 pb-075'
-                    />
+                <OptionalConfigSection
+                    title='Advanced'
+                    description='Enable only when the image needs direct access to the host Docker socket.'
+                >
                     <FormFieldRHF
                         variant='inline'
                         fieldType='checkbox'
@@ -339,7 +394,7 @@ const ConfigurationStep = ({
                             ? 'Disabled in demo mode — connect your own cluster to enable this option.'
                             : 'Mounts /var/run/docker.sock inside the container.'}
                     </Text>
-                </Stack>
+                </OptionalConfigSection>
             </Box>
 
             <Row className='create-container-step-actions mt-2' justify='between' gap='1'>

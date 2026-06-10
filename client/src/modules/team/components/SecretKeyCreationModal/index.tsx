@@ -1,4 +1,4 @@
-import { Box, Stack, Row, Modal, resetModal } from '@voltstack/bravais';
+import { Box, Stack, Row, Modal, resetModal, Callout } from '@voltstack/bravais';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import CopyableField from '@/shared/presentation/components/CopyableField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
@@ -134,6 +134,13 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     <Stack gap='1-5'>
                     {generatedKey ? (
                         <>
+                            <Callout
+                                tone='warning'
+                                role='alert'
+                                ariaLive='polite'
+                                title='Copy this key now'
+                                message="This is the only time you'll see this key. Copy and store it securely now — you won't be able to view it again after closing."
+                            />
                             <CopyableField
                                 value={generatedKey}
                                 successMessage='Secret key copied to clipboard'

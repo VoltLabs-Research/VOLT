@@ -4,13 +4,18 @@ import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import { dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { AnalysisStatus } from '@/modules/fractal/types';
 import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import { StatusBadge } from '@voltstack/bravais';
+import { Button, StatusBadge } from '@voltstack/bravais';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import { useMemo } from 'react';
 import { RiRefreshLine } from 'react-icons/ri';
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, ExternalLink } from 'lucide-react';
 import type { Analysis } from '@/modules/analysis/api/entities/analysis';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -46,7 +51,35 @@ const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
     return message;
 };
 
-const COLUMNS: ColumnConfig<Analysis>[] = [
+// Resolves the trajectory-scoped exposure listing route for a completed analysis,
+// or undefined when the analysis is not viewable yet (still running, no plugin
+// metadata loaded, or no exposure exposes a listing). Prefers the primary
+// expected artifact when it also has a listing, otherwise the first listing.
+const resolveAnalysisListingPath = (analysis: Analysis, plugin: Plugin | undefined): string | undefined => {
+    if (analysis.status !== AnalysisStatus.Completed) {
+        return undefined;
+    }
+
+    const trajectoryId = analysis.trajectory?._id;
+    const pluginId = analysis.plugin;
+    if (!trajectoryId || !pluginId) {
+        return undefined;
+    }
+
+    const listingExposures = getListingRelevantExposures(plugin?.exposures);
+    if (listingExposures.length === 0) {
+        return undefined;
+    }
+
+    const primaryExposureId = analysis.expectedArtifacts?.find((artifact) => artifact.isPrimary)?.exposureId;
+    const exposureId = (primaryExposureId && listingExposures.some((exposure) => exposure.exposureId === primaryExposureId))
+        ? primaryExposureId
+        : listingExposures[0].exposureId;
+
+    return `/dashboard/trajectory/${trajectoryId}/plugins/${pluginId}/exposure/${exposureId}/listing`;
+};
+
+const BASE_COLUMNS: ColumnConfig<Analysis>[] = [
     {
         key: 'trajectory.name',
         title: 'Trajectory',
@@ -84,7 +117,39 @@ const AnalysesListing = () => {
 
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
     const retryFailedFrames = useRetryFailedFrames();
+    const { pluginsById } = usePluginSelectors();
     const fetchAnalysesData: (params: PaginationParams) => Promise<PaginatedResponse<Analysis>> = analysisQuery.useListQuery.fetch;
+
+    // Surface a "View results" action for completed analyses whose plugin exposes a
+    // listing, so users no longer have to hand-type the exposure listing URL.
+    const columns = useMemo<ColumnConfig<Analysis>[]>(() => [
+        ...BASE_COLUMNS,
+        {
+            key: 'results',
+            title: 'Results',
+            sortable: false,
+            width: 140,
+            render: (_value, analysis) => {
+                const listingPath = resolveAnalysisListingPath(analysis, pluginsById[analysis.plugin]);
+                if (!listingPath) {
+                    return '-';
+                }
+
+                return (
+                    <Button
+                        variant='ghost'
+                        intent='brand'
+                        size='sm'
+                        leftIcon={<ExternalLink size={14} />}
+                        onClick={() => { navigate(listingPath); }}
+                    >
+                        View results
+                    </Button>
+                );
+            },
+            skeleton: { variant: 'rounded', width: 110, height: 28 }
+        }
+    ], [pluginsById, navigate]);
 
     const { getMenuOptions } = useListingActions<Analysis>({
         actions: {
@@ -121,7 +186,7 @@ const AnalysesListing = () => {
         <DocumentListing<Analysis>
             title='Analysis Configs'
             queryKey={analysisQuery.QUERY_KEYS.lists()}
-            columns={COLUMNS}
+            columns={columns}
             fetchData={fetchAnalysesData}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}

@@ -2,6 +2,7 @@ import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader'
 import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utilities/container-form';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
 import type { Team } from '@/modules/team/api/entities/team/team';
@@ -18,9 +19,21 @@ interface ReviewStepProps {
     draftLastSavedAt?: number | null;
     isLoading: boolean;
     deployProgressMessage: string | null;
+    deployProgressRate?: number | null;
+    deployStartedAt?: number | null;
     onBack: () => void;
     onCreate: () => void;
 }
+
+const formatElapsed = (totalSeconds: number): string => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes === 0) {
+        return `${seconds}s elapsed`;
+    }
+
+    return `${minutes}m ${seconds.toString().padStart(2, '0')}s elapsed`;
+};
 
 const ReviewStep = ({
     config,
@@ -33,9 +46,30 @@ const ReviewStep = ({
     draftLastSavedAt,
     isLoading,
     deployProgressMessage,
+    deployProgressRate,
+    deployStartedAt,
     onBack,
     onCreate
 }: ReviewStepProps) => {
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+    // Tick a simple seconds counter while a deploy is in flight so the user has a
+    // visible sign of progress even before the first lifecycle step arrives.
+    useEffect(() => {
+        if (!isLoading || !deployStartedAt) {
+            setElapsedSeconds(0);
+            return;
+        }
+
+        const updateElapsed = () => {
+            setElapsedSeconds(Math.max(0, Math.floor((Date.now() - deployStartedAt) / 1000)));
+        };
+
+        updateElapsed();
+        const intervalId = window.setInterval(updateElapsed, 1000);
+        return () => window.clearInterval(intervalId);
+    }, [isLoading, deployStartedAt]);
+
     const selectedTeamName = teams.find((team) => team._id === selectedTeamId)?.name || 'Not selected';
     const selectedClusterName = teamClusters.find((teamCluster) => teamCluster._id === selectedTeamClusterId)?.name || 'Not selected';
     const selectedImage = image || 'Not selected';
@@ -87,8 +121,16 @@ const ReviewStep = ({
             <ProcessingLoader
                 isVisible={isLoading && !!deployProgressMessage}
                 message={deployProgressMessage || 'Deploying container...'}
+                showProgress={typeof deployProgressRate === 'number' && deployProgressRate > 0}
+                completionRate={deployProgressRate ?? 0}
                 className='mt-1'
             />
+
+            {isLoading && deployStartedAt && (
+                <Text as='p' size='md' tone='muted' className='mt-05' aria-live='polite'>
+                    {formatElapsed(elapsedSeconds)}
+                </Text>
+            )}
 
             <Row className='create-container-step-actions' justify='end' gap='1' mt='3'>
                 <Button variant='outline' intent='neutral' onClick={onBack}>Back</Button>

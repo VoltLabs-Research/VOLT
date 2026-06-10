@@ -8,7 +8,11 @@ import {
     FolderedListingModals,
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/presentation/components/DocumentListing/foldered-listing';
-import { Heading, StatusBadge, Text } from '@voltstack/bravais';
+import { Heading, Stack, StatusBadge, Text } from '@voltstack/bravais';
+import {
+    ACCEPTED_TRAJECTORY_FILE_ACCEPT,
+    ACCEPTED_TRAJECTORY_FORMATS_LABEL
+} from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
@@ -85,7 +89,12 @@ export default function TrajectoriesListing() {
     return (
         <>
             <FolderedDocumentListing<TrajectoryListingRow, { folderId: string | null }>
-                title={<Heading level={3} size='3xl' weight='medium' tone='primary' className='sm:font-size-4'>Trajectories</Heading>}
+                title={(
+                    <Stack gap='025'>
+                        <Heading level={3} size='3xl' weight='medium' tone='primary' className='sm:font-size-4'>Trajectories</Heading>
+                        <Text as='p' size='sm' tone='muted'>{`Accepted formats: ${ACCEPTED_TRAJECTORY_FORMATS_LABEL}`}</Text>
+                    </Stack>
+                )}
                 columns={COLUMNS}
                 listing={listing}
                 defaultLimit={20}
@@ -100,6 +109,7 @@ export default function TrajectoriesListing() {
                             type='file'
                             multiple
                             hidden
+                            accept={ACCEPTED_TRAJECTORY_FILE_ACCEPT}
                             onChange={handlePickerChange}
                         />
                         <NewFolderHeaderAction modalId={trajectoriesListingResource.modalIds.newFolder} />

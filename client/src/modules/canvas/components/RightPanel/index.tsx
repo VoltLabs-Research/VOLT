@@ -20,10 +20,12 @@ import { Box, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useMedia } from '@voltstack/bravais';
 import { extractTrajectoryTimesteps, getNearestTimestep, normalizeSelectedTimesteps } from '../../utilities/selected-timestep-analysis';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 import type { ModifierOption } from '../../utilities/modifier-registry';
+import type { PluginExecutionPreflight } from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import type { ComponentType, ReactNode } from 'react';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
@@ -79,6 +81,7 @@ const RightPanel = ({
     const storeCanMutate = useCanvasAccessStore((state) => state.canMutate);
     const canMutate = canMutateCanvas ?? storeCanMutate;
     const usePanelConfigView = useMedia('(max-width: 768px)');
+    const navigate = useNavigate();
     const selectedTeamId = useSelectedTeamId();
     const executePluginMutation = useExecutePluginMutation();
     const { cloneAndRun } = useTrajectoryCloneFlow();
@@ -328,6 +331,37 @@ const RightPanel = ({
         setActiveModifierId(null);
     }, []);
 
+    // Pre-flight: surface (and let the user resolve) the conditions that would
+    // otherwise make the execute button fail silently — no trajectory loaded, or
+    // no usable compute cluster selected. Returns undefined when ready to run.
+    const getPluginPreflight = useCallback((pluginId: string, pluginTeamClusterId?: string | null): PluginExecutionPreflight | undefined => {
+        const issues: string[] = [];
+
+        if (!trajectoryId) {
+            issues.push('No trajectory is loaded. Open this analysis from a trajectory to run it.');
+        }
+
+        if (!hasTeamClusterOptions) {
+            issues.push('No compute cluster is connected to this team. Set one up to run analyses.');
+        } else if (!getSelectedClusterId(pluginId, pluginTeamClusterId)) {
+            issues.push('Select a compute cluster to run this analysis on.');
+        }
+
+        if (issues.length === 0) {
+            return undefined;
+        }
+
+        return {
+            issues,
+            action: hasTeamClusterOptions
+                ? undefined
+                : {
+                    label: 'Set up a cluster',
+                    onClick: () => navigate('/onboarding/cluster/setup')
+                }
+        };
+    }, [trajectoryId, hasTeamClusterOptions, getSelectedClusterId, navigate]);
+
     const renderModifierConfig = useCallback((option: ModifierOption) => {
         let content: ReactNode = null;
         if(option.isPlugin && option.pluginModifierId){
@@ -349,6 +383,7 @@ const RightPanel = ({
                     teamClusterOptions={teamClusterOptions}
                     onSelectedTeamClusterIdChange={(value) => handlePluginClusterChange(option.pluginModifierId!, value)}
                     frameOptions={frameOptions}
+                    preflight={getPluginPreflight(option.pluginModifierId, option.plugin?.teamCluster)}
                 />
             );
         }else{
@@ -374,7 +409,7 @@ const RightPanel = ({
         getPluginArguments,
         getSelectedClusterId,
         getSelectedTimesteps,
-        hasTeamClusterOptions,
+        getPluginPreflight,
         trajectoryId,
         analysisId,
         currentTimestep,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
-import { Button, Heading, Loader, Row, Stack, Text } from '@voltstack/bravais';
+import { Button, Stack } from '@voltstack/bravais';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -12,10 +12,19 @@ import {
     useProvisionDemoTeamClusterMutation,
     useTeamClustersQuery
 } from '@/modules/cluster/hooks/team-cluster/queries';
+import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { sileo } from 'sileo';
 import { reportError, ErrorSurface } from '@/shared/errors/core';
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 120_000;
+
+const formatRemaining = (ms: number): string => {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 const DemoProvisioningPage = () => {
     const navigate = useNavigate();
@@ -27,6 +36,8 @@ const DemoProvisioningPage = () => {
     const [hasTriggered, setHasTriggered] = useState(false);
     const [isWaiting, setIsWaiting] = useState(false);
     const [hasFailed, setHasFailed] = useState(false);
+    const [hasTimedOut, setHasTimedOut] = useState(false);
+    const [remainingMs, setRemainingMs] = useState(POLL_TIMEOUT_MS);
     const startedAtRef = useRef<number | null>(null);
 
     const provisionDemo = useProvisionDemoTeamClusterMutation();
@@ -43,6 +54,7 @@ const DemoProvisioningPage = () => {
         }
         setHasTriggered(true);
         startedAtRef.current = Date.now();
+        setRemainingMs(POLL_TIMEOUT_MS);
         setIsWaiting(true);
 
         provisionDemo.mutate(
@@ -65,15 +77,37 @@ const DemoProvisioningPage = () => {
     }, [user, selectedTeamId, hasTriggered, provisionDemo, setFromCluster]);
 
     useEffect(() => {
-        if (!isWaiting) return;
-        const started = startedAtRef.current ?? Date.now();
-        if (Date.now() - started > POLL_TIMEOUT_MS) {
-            setIsWaiting(false);
-            setHasFailed(true);
-            sileo.error({
-                title: 'Provisioning timed out',
-                description: 'Please try again or connect your own cluster.'
-            });
+        if (!isWaiting) {
+            return;
+        }
+
+        const tick = () => {
+            const started = startedAtRef.current ?? Date.now();
+            const remaining = POLL_TIMEOUT_MS - (Date.now() - started);
+
+            if (remaining <= 0) {
+                setRemainingMs(0);
+                setIsWaiting(false);
+                setHasFailed(true);
+                setHasTimedOut(true);
+                sileo.error({
+                    title: 'Provisioning timed out',
+                    description: 'Please try again or connect your own cluster.'
+                });
+                return;
+            }
+
+            setRemainingMs(remaining);
+        };
+
+        tick();
+        const intervalId = window.setInterval(tick, 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [isWaiting]);
+
+    useEffect(() => {
+        if (!isWaiting) {
             return;
         }
 
@@ -90,36 +124,52 @@ const DemoProvisioningPage = () => {
         }
     }, [isWaiting, teamClustersQuery.data, teamClustersQuery.isSuccess, navigate, setFromCluster]);
 
+    const handleRetry = () => {
+        setHasFailed(false);
+        setHasTimedOut(false);
+        setRemainingMs(POLL_TIMEOUT_MS);
+        setHasTriggered(false);
+    };
+
     if (!isDemoClusterFeatureEnabled()) {
         return <Navigate to='/onboarding/cluster/setup' replace />;
     }
 
     if (hasFailed) {
+        const failureTitle = hasTimedOut ? 'Demo provisioning timed out' : 'Demo provisioning failed';
+        const failureDescription = hasTimedOut
+            ? 'We couldn’t spin up a demo cluster in time. This can happen under load — retry, or connect your own cluster instead.'
+            : 'We couldn’t spin up a demo cluster. You can retry, or connect your own cluster instead.';
+
         return (
             <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
-                <Stack gap='2' align='center' justify='center' textAlign='center'>
-                    <Heading level={1} size='2xl' weight='bold'>Demo provisioning failed</Heading>
-                    <Text tone='secondary'>
-                        We couldn&apos;t spin up a demo cluster. You can retry, or connect your own cluster.
-                    </Text>
-                    <Row gap='1'>
-                        <Button variant='solid' intent='brand' onClick={() => {
-                            setHasFailed(false);
-                            setHasTriggered(false);
-                        }}>Retry</Button>
-                        <Button variant='outline' intent='neutral' onClick={() => navigate('/onboarding/cluster/setup')}>
-                            Connect a Cluster
-                        </Button>
-                    </Row>
+                <Stack gap='1' align='center' justify='center' className='min-h-screen'>
+                    <RecoveryState
+                        tone={RecoveryStateTone.Error}
+                        title={failureTitle}
+                        description={failureDescription}
+                        retryLabel='Try again'
+                        onRetry={handleRetry}
+                    />
+                    <Button variant='ghost' intent='neutral' onClick={() => navigate('/onboarding/cluster/setup')}>
+                        Connect your own cluster instead
+                    </Button>
                 </Stack>
             </OnboardingLayout>
         );
     }
 
+    const elapsedRate = (POLL_TIMEOUT_MS - remainingMs) / POLL_TIMEOUT_MS;
+
     return (
         <OnboardingLayout onSignOut={handleSignOut} onSettingsClick={handleSettingsClick} isSigningOut={isSigningOut}>
             <Stack align='center' justify='center' gap='1-5' className='min-h-screen'>
-                <Loader scale={0.7} isFixed={false} announce label='Provisioning resources' />
+                <ProcessingLoader
+                    isVisible
+                    showProgress
+                    completionRate={elapsedRate}
+                    message={`Provisioning your demo cluster… ${formatRemaining(remainingMs)} remaining`}
+                />
             </Stack>
         </OnboardingLayout>
     );
