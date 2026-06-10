@@ -1,9 +1,5 @@
 import ContainerTerminal from '../ContainerTerminal';
-import useContainersListing, {
-    MOVE_CONTAINER_MODAL_ID,
-    NEW_CONTAINER_FOLDER_MODAL_ID,
-    RENAME_CONTAINER_FOLDER_MODAL_ID
-} from '@/modules/container/hooks/use-containers-listing';
+import useContainersListing, { containersListingResource } from '@/modules/container/hooks/use-containers-listing';
 import type { ContainerListingRow } from '@/modules/container/utilities/listing';
 import { isContainerFolderRow } from '@/modules/container/utilities/listing';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
@@ -71,18 +67,9 @@ const ContainersListing = () => {
         breadcrumbs,
         canCreate,
         currentFolder,
-        getMoveFolder,
-        handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleMoveContainerClose,
-        handleMoveContainerSubmit,
-        handleRenameFolderClose,
         handleRenameFolderOpen,
-        handleRenameFolderSubmit,
-        listMoveFolders,
-        movingContainer,
         navigateToFolder,
-        renamingFolder,
         terminalContainer,
         closeTerminal
     } = listing;
@@ -93,7 +80,7 @@ const ContainersListing = () => {
         currentFolder,
         onRenameFolderOpen: handleRenameFolderOpen,
         onDeleteCurrentFolder: handleDeleteCurrentFolder,
-        newFolderModalId: NEW_CONTAINER_FOLDER_MODAL_ID
+        newFolderModalId: containersListingResource.modalIds.newFolder
     }), [currentFolder, handleDeleteCurrentFolder, handleRenameFolderOpen]);
 
     return (
@@ -103,30 +90,12 @@ const ContainersListing = () => {
                 columns={columns}
                 listing={listing}
                 createButtonTitle={canCreate ? 'New Container' : undefined}
-                headerActions={<NewFolderHeaderAction modalId={NEW_CONTAINER_FOLDER_MODAL_ID} />}
+                headerActions={<NewFolderHeaderAction modalId={containersListingResource.modalIds.newFolder} />}
                 headerMenuOptions={headerMenuOptions}
                 emptyMessage='No containers found in this location.'
             />
 
-            <FolderedListingModals
-                newFolderModalId={NEW_CONTAINER_FOLDER_MODAL_ID}
-                newFolderTitle='New Container Folder'
-                newFolderDescription='Create a folder in the current containers location.'
-                onCreateFolder={handleCreateFolder}
-                renameFolderModalId={RENAME_CONTAINER_FOLDER_MODAL_ID}
-                renameFolderTitle='Rename Container Folder'
-                renameFolderDescription='Update the current container folder name.'
-                renamingFolder={renamingFolder}
-                onRenameFolderSubmit={handleRenameFolderSubmit}
-                onRenameFolderClose={handleRenameFolderClose}
-                moveModalId={MOVE_CONTAINER_MODAL_ID}
-                movingItem={movingContainer}
-                itemLabel='Container'
-                listFolders={listMoveFolders}
-                getFolder={getMoveFolder}
-                onMoveSubmit={handleMoveContainerSubmit}
-                onMoveClose={handleMoveContainerClose}
-            />
+            <FolderedListingModals resource={containersListingResource} listing={listing} />
 
             {terminalContainer && (
                 <ContainerTerminal

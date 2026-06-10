@@ -10,7 +10,6 @@ export type TrajectoryStatus =
     | 'waiting-for-process'
     | 'queued'
     | 'processing'
-    | 'rendering'
     | 'completed'
     | 'failed';
 

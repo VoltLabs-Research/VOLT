@@ -16,15 +16,10 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_LATEX_DOCUMENT_EVENTS } from '@/modules/socket/events/latex';
 import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import {
-    createFolderedResourceFetchers,
-    createFolderResourceDeleteConfirm,
-    FOLDER_RESOURCE_TOASTS
-} from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
+import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
 import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { FileText, FolderInput, Pencil } from 'lucide-react';
 import { useCallback } from 'react';
 import { getDeleteConfirmationMessage } from '../utilities/documents';
@@ -41,42 +36,26 @@ import type { LatexDocument } from '@/modules/latex/api/entities/latex-document'
 import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
 import { useNavigate } from 'react-router-dom';
 
-interface LatexMoveTarget {
-    _id: string;
-    title: string;
-    folder: string | null;
-}
-
-const getLatexMoveTarget = (document: LatexDocument): LatexMoveTarget => ({
-    _id: document._id,
-    title: document.title,
-    folder: document.folder
-});
-
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';
-export const NEW_LATEX_FOLDER_MODAL_ID = 'new-latex-folder-modal';
-export const RENAME_LATEX_FOLDER_MODAL_ID = 'rename-latex-folder-modal';
-export const MOVE_LATEX_DOCUMENT_MODAL_ID = 'move-latex-document-modal';
 
-const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
-    { event: SOCKET_LATEX_DOCUMENT_EVENTS.DELETED, queryKeys: [latexDocumentsQueryKey()] }
-];
-
-const DELETE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Document' });
-const CREATE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Creating', subject: 'Document' });
-const RENAME_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Renaming', subject: 'Document' });
-const MOVE_DOCUMENT_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Document' });
-
-const documentFetchers = createFolderedResourceFetchers({
+export const latexListingResource = createFolderedListingResource({
+    subject: 'Document',
+    singularName: 'document',
+    pluralName: 'documents',
+    permissionPrefix: 'latex',
+    folderLabel: 'LaTeX',
+    folderTitle: 'LaTeX',
+    pluralLabel: 'LaTeX documents',
+    folderModalNoun: 'latex',
+    moveModalNoun: 'latex-document',
     listItems: latexDocumentsQuery.fetch,
     listFolders: latexFoldersQuery.fetch,
     getFolder: latexFolderQuery.fetch
 });
 
-const getDeleteFolderConfirm = createFolderResourceDeleteConfirm({
-    pluralName: 'documents',
-    singularName: 'document'
-});
+const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
+    { event: SOCKET_LATEX_DOCUMENT_EVENTS.DELETED, queryKeys: [latexDocumentsQueryKey()] }
+];
 
 const filterFoldersBySearch = (folders: LatexFolder[], search: string): LatexFolder[] => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -110,7 +89,7 @@ const useLatexDocumentsListing = () => {
         modalId: RENAME_LATEX_DOCUMENT_MODAL_ID,
         updateEntity: updateDocument,
         getUpdateParams: (document: LatexDocument, title) => ({ documentId: document._id, title }),
-        renameToast: RENAME_DOCUMENT_TOAST
+        renameToast: latexListingResource.toasts.rename
     });
 
     const moveDocumentToFolder = useCallback((documentId: string, folderId: string | null) => {
@@ -149,7 +128,7 @@ const useLatexDocumentsListing = () => {
             handler: async ({ item: document }) => {
                 await showPromise(
                     deleteDocument({ documentId: document._id }),
-                    DELETE_DOCUMENT_TOAST
+                    latexListingResource.toasts.delete
                 );
             },
             confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
@@ -157,41 +136,21 @@ const useLatexDocumentsListing = () => {
         }
     }), [deleteDocument, handleRenameOpen, openDocument]);
 
-    const {
-        handleMoveClose,
-        handleMoveSubmit,
-        movingItem,
-        ...folderedListing
-    } = useFolderedResourceListing({
+    const folderedListing = useFolderedResourceListing({
         teamId,
-        ...documentFetchers,
+        ...latexListingResource.listingOptions,
         mapFolderRow: createLatexFolderRow,
         mapItemRow: createLatexDocumentRow,
         filterFolders: filterFoldersBySearch,
-        onFetchErrorTitle: 'Failed to fetch LaTeX documents',
-        invalidFolderMessage: 'This LaTeX folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: FOLDER_RESOURCE_TOASTS.create,
         updateFolder,
-        renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
         deleteFolder,
-        deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
-        getDeleteFolderConfirm,
-        renameFolderModalId: RENAME_LATEX_FOLDER_MODAL_ID,
-        moveModalId: MOVE_LATEX_DOCUMENT_MODAL_ID,
         canMoveItems: canMoveDocuments,
-        activationDistance: 6,
         getDraggableId: getLatexListingDraggableId,
         getDroppableId: getLatexListingDroppableId,
         isItemRow: isLatexDocumentRow,
         isFolderRow: isLatexFolderRow,
-        getMoveTarget: getLatexMoveTarget,
         moveItem: moveDocumentToFolder,
-        moveToast: MOVE_DOCUMENT_TOAST,
-        folderPermissions: {
-            rename: 'latex:update',
-            delete: 'latex:delete'
-        },
         getItemActions: getDocumentActions,
         onOpenItem: openDocument
     });
@@ -206,18 +165,15 @@ const useLatexDocumentsListing = () => {
                 title: 'Untitled Document',
                 folderId: folderedListing.currentFolderId
             }),
-            CREATE_DOCUMENT_TOAST
+            latexListingResource.toasts.create
         );
     }, [createDocument, folderedListing.currentFolderId, teamId]);
 
     return {
         ...folderedListing,
         handleCreate,
-        handleMoveDocumentClose: handleMoveClose,
-        handleMoveDocumentSubmit: handleMoveSubmit,
         handleRenameClose,
         handleRenameSubmit,
-        movingDocument: movingItem,
         queryKey: latexDocumentsQueryKey(),
         renamingDocument,
         socketInvalidation: SOCKET_INVALIDATION

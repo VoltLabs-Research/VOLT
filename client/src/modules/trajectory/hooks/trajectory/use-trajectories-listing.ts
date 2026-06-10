@@ -17,15 +17,10 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import {
-    createFolderedResourceFetchers,
-    createFolderResourceDeleteConfirm,
-    FOLDER_RESOURCE_TOASTS
-} from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
+import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { Download, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';
@@ -41,41 +36,22 @@ import {
     useUpdateTrajectoryFolderMutation
 } from './queries';
 import { useNavigate } from 'react-router-dom';
-export const NEW_TRAJECTORY_FOLDER_MODAL_ID = 'new-trajectory-folder-modal';
-export const RENAME_TRAJECTORY_FOLDER_MODAL_ID = 'rename-trajectory-folder-modal';
-export const MOVE_TRAJECTORY_MODAL_ID = 'move-trajectory-modal';
 
-const DELETE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Trajectory' });
-const MOVE_TRAJECTORY_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Trajectory' });
+export const trajectoriesListingResource = createFolderedListingResource({
+    subject: 'Trajectory',
+    singularName: 'trajectory',
+    pluralName: 'trajectories',
+    permissionPrefix: 'trajectory',
+    listItems: trajectoryQuery.useListQuery.fetch,
+    listFolders: trajectoryFoldersQuery.fetch,
+    getFolder: trajectoryFolderQuery.fetch
+});
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: SOCKET_TRAJECTORY_EVENTS.CREATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
     { event: SOCKET_TRAJECTORY_EVENTS.UPDATED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] },
     { event: SOCKET_TRAJECTORY_EVENTS.DELETED, queryKeys: [trajectoryQuery.QUERY_KEYS.lists()] }
 ];
-
-interface TrajectoryMoveTarget {
-    _id: string;
-    name: string;
-    folder: string | null;
-}
-
-const getTrajectoryMoveTarget = (trajectory: Trajectory): TrajectoryMoveTarget => ({
-    _id: trajectory._id,
-    name: trajectory.name,
-    folder: trajectory.folder
-});
-
-const trajectoryFetchers = createFolderedResourceFetchers({
-    listItems: trajectoryQuery.useListQuery.fetch,
-    listFolders: trajectoryFoldersQuery.fetch,
-    getFolder: trajectoryFolderQuery.fetch
-});
-
-const getDeleteFolderConfirm = createFolderResourceDeleteConfirm({
-    pluralName: 'trajectories',
-    singularName: 'trajectory'
-});
 
 const buildDeleteTrajectoryMenuOption = (
     targets: Trajectory[],
@@ -132,10 +108,10 @@ const useTrajectoriesListing = () => {
         for (const trajectory of targets) {
             await runAction({
                 action: () => deleteTrajectoryMutation.mutateAsync(trajectory._id),
-                toast: DELETE_TRAJECTORY_TOAST
+                toast: trajectoriesListingResource.toasts.delete
             });
         }
-    }, [confirm, deleteTrajectoryMutation]);
+    }, [deleteTrajectoryMutation]);
 
     const getTrajectoryActions = useCallback(({ openMove }: { openMove: (trajectory: TrajectoryItemRow) => void }): Record<string, ActionConfig<TrajectoryItemRow>> => ({
         view: {
@@ -193,42 +169,22 @@ const useTrajectoriesListing = () => {
         ];
     }, [canDeleteTrajectories, handleDeleteTrajectories]);
 
-    const {
-        handleMoveOpen,
-        handleMoveClose,
-        handleMoveSubmit,
-        movingItem,
-        ...folderedListing
-    } = useFolderedResourceListing({
+    const folderedListing = useFolderedResourceListing({
         teamId,
-        ...trajectoryFetchers,
+        ...trajectoriesListingResource.listingOptions,
         mapFolderRow: createTrajectoryFolderRow,
         mapItemRow: createTrajectoryItemRow,
-        onFetchErrorTitle: 'Failed to fetch trajectories',
-        invalidFolderMessage: 'This trajectory folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: FOLDER_RESOURCE_TOASTS.create,
         updateFolder,
-        renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
         deleteFolder,
-        deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
-        getDeleteFolderConfirm,
-        renameFolderModalId: RENAME_TRAJECTORY_FOLDER_MODAL_ID,
-        moveModalId: MOVE_TRAJECTORY_MODAL_ID,
         canMoveItems: canMoveTrajectories,
         activationDistance: 8,
         getDraggableId: getTrajectoryListingDraggableId,
         getDroppableId: getTrajectoryListingDroppableId,
         isItemRow: isTrajectoryItemRow,
         isFolderRow: isTrajectoryFolderRow,
-        getMoveTarget: getTrajectoryMoveTarget,
         moveItem: moveTrajectoryToFolder,
         getMoveFolderIdFromDroppableId: resolveTrajectoryListingDroppableFolderId,
-        moveToast: MOVE_TRAJECTORY_TOAST,
-        folderPermissions: {
-            rename: 'trajectory:update',
-            delete: 'trajectory:delete'
-        },
         getItemActions: getTrajectoryActions,
         mapItemMenuOptions: appendTrajectoryDeleteOption,
         onOpenItem: openTrajectory
@@ -248,12 +204,8 @@ const useTrajectoriesListing = () => {
         canCreate,
         fileInputRef,
         handleCreate,
-        handleMoveTrajectoryOpen: handleMoveOpen,
-        handleMoveTrajectoryClose: handleMoveClose,
-        handleMoveTrajectorySubmit: handleMoveSubmit,
         handlePickerChange,
         isUploading,
-        movingTrajectory: movingItem,
         queryKey: trajectoryQuery.QUERY_KEYS.lists(),
         socketInvalidation: SOCKET_INVALIDATION
     };

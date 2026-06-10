@@ -3,7 +3,6 @@ export enum TrajectoryStatus {
     WaitingForProcess = 'waiting-for-process',
     Processing = 'processing',
     Completed = 'completed',
-    Analyzing = 'analyzing',
     Failed = 'failed'
 }
 

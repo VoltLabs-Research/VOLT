@@ -4,9 +4,7 @@ export const PROCESSING_STAGE_LABELS: Record<string, string> = {
     idle: '',
     'waiting-for-process': 'Waiting...',
     queued: 'Queued...',
-    analyzing: 'Analyzing...',
     processing: 'Processing frames...',
-    rendering: 'Rendering...',
     completed: 'Complete',
     failed: 'Failed'
 };

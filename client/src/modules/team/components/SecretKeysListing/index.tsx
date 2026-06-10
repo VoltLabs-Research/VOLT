@@ -100,7 +100,7 @@ export default function SecretKeysListing() {
             viewUsage: {
                 label: 'View Usage',
                 icon: RiLineChartLine,
-                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}/usage`),
+                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}`),
                 requiredPermission: 'team-secret-key:read'
             },
             copy: {
