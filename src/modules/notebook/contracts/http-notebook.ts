@@ -16,6 +16,9 @@ export interface CreateNotebookSessionRequest {
     notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
+    baseUrl: string;
+    secretKey?: string;
+    trajectoryId?: string;
 }
 
 export interface CreateNotebookSessionResponse {

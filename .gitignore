@@ -4,6 +4,7 @@ server/storage/
 storage/
 
 .ai-workflow/
+CLAUDE.md
 
 # Logs
 logs

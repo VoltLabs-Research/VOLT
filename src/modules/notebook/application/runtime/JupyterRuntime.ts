@@ -22,6 +22,9 @@ interface EnsureNotebookSessionInput {
     notebook: NotebookSessionSnapshot;
     requestedBy: string;
     publicBasePath: string;
+    baseUrl: string;
+    secretKey?: string;
+    trajectoryId?: string;
 }
 
 interface EnsureJupyterServerInput {
@@ -264,6 +267,18 @@ export class JupyterRuntime {
                     key: 'VOLT_REQUESTED_BY',
                     value: input.requestedBy
                 },
+                {
+                    key: 'VOLT_BASE_URL',
+                    value: input.baseUrl
+                },
+                ...(input.secretKey ? [{
+                    key: 'VOLT_SECRET_KEY',
+                    value: input.secretKey
+                }] : []),
+                ...(input.trajectoryId ? [{
+                    key: 'VOLT_TRAJECTORY_ID',
+                    value: input.trajectoryId
+                }] : []),
                 {
                     key: PUBLIC_BASE_PATH_ENV_KEY,
                     value: input.publicBasePath
