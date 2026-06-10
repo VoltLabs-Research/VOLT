@@ -30,7 +30,9 @@ import {
 import {
     buildAddRemoveOption,
     buildLineWidthSubmenu,
+    buildColorSubmenu,
     buildTransparencySubmenu,
+    colorOption,
     lineSettingsOption,
     transparencyOption
 } from '../../utilities/tree-menus';
@@ -73,6 +75,7 @@ interface AnalysisTreeNodeProps {
     sceneVisualOverrides: SceneVisualOverrides;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
+    setSceneColor: (sceneKey: string, color: string | undefined) => void;
     resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
     plugin?: Plugin;
     pluginsById?: Record<string, Plugin>;
@@ -153,6 +156,7 @@ const AnalysisTreeNode = ({
     sceneVisualOverrides,
     setSceneOpacity,
     setSceneLineWidth,
+    setSceneColor,
     resolveSceneRenderMetadata,
     plugin,
     pluginsById,
@@ -444,6 +448,7 @@ const AnalysisTreeNode = ({
                         }
                     },
                     transparencyOption(buildTransparencySubmenu(exposure.name, currentOpacity, (value) => setSceneOpacity(sceneKey, value))),
+                    colorOption(buildColorSubmenu(sceneOverride?.color, (value) => setSceneColor(sceneKey, value))),
                     ...(isDislocationExposure
                         ? [lineSettingsOption(buildLineWidthSubmenu(exposure.name, currentLineWidth, defaultLineWidth, (value) => setSceneLineWidth(sceneKey, value)))]
                         : [])

@@ -1,5 +1,5 @@
-import { Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import { Slider } from '@voltstack/bravais';
+import { Droplet, Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
+import { Button, Row, Slider } from '@voltstack/bravais';
 
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
@@ -68,5 +68,45 @@ export const transparencyOption = (submenuContent: React.ReactNode): MenuOption 
 export const lineSettingsOption = (submenuContent: React.ReactNode): MenuOption => ({
     label: 'Line Settings',
     icon: SlidersHorizontal,
+    submenuContent
+});
+
+interface ColorSubmenuProps {
+    value: string;
+    onChange: (color: string | undefined) => void;
+}
+
+const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
+    <div className="context-menu-transparency">
+        <span className="context-menu-transparency__label">Color</span>
+        <Row gap='05' align='center'>
+            <input
+                type='color'
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                aria-label='Scene color override'
+            />
+            <Button
+                variant='ghost'
+                size='sm'
+                className='font-size-05'
+                onClick={() => onChange(undefined)}
+            >
+                Reset
+            </Button>
+        </Row>
+    </div>
+);
+
+export const buildColorSubmenu = (
+    value: string | undefined,
+    onChange: (color: string | undefined) => void
+) => (
+    <ColorSubmenu value={value ?? '#4d80e6'} onChange={onChange} />
+);
+
+export const colorOption = (submenuContent: React.ReactNode): MenuOption => ({
+    label: 'Color',
+    icon: Droplet,
     submenuContent
 });

@@ -4,6 +4,7 @@ import type {
     SceneObjectType,
     PluginScene,
     ColorCodingScene,
+    DislocationStyleScene,
     ParticleFilterScene,
     ParticleFilterSceneCondition
 } from '@/modules/fractal/api/entities/scene';
@@ -124,6 +125,30 @@ const buildParticleFilterUrl = (
     return buildBackendUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
+const buildDislocationStyleUrl = (
+    mode: CanvasAccessMode,
+    teamId: string,
+    trajectoryId: string,
+    scene: DislocationStyleScene,
+    timestep: number
+): string | null => {
+    const { analysisId, exposureId, style } = scene;
+    if (!analysisId || !exposureId) return null;
+
+    // Public canvases keep showing the baked plugin GLB; styled models are an
+    // authenticated-team feature for now.
+    if (mode === 'public') {
+        return null;
+    }
+
+    const params = new URLSearchParams({
+        timestep: String(timestep),
+        style: JSON.stringify(style ?? {})
+    });
+
+    return buildBackendUrl(`/api/dislocation-styles/${teamId}/${trajectoryId}/${analysisId}/${exposureId}?${params.toString()}`);
+};
+
 export const resolveGlbResource = ({
     teamId,
     trajectoryId,
@@ -156,6 +181,13 @@ export const resolveGlbResource = ({
         }
         case 'particle-filter': {
             const url = buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            return {
+                url,
+                resourceKey: url
+            };
+        }
+        case 'dislocation-style': {
+            const url = buildDislocationStyleUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
             return {
                 url,
                 resourceKey: url

@@ -18,6 +18,16 @@ export const buildColorCodingObjectName = (
     return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
 };
 
+export const buildDislocationStyleObjectName = (
+    trajectoryId: string,
+    analysisId: string,
+    timestep: string | number,
+    exposureId: string,
+    styleHash: string
+): string => {
+    return `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/dislocation-style/${exposureId}/${styleHash}.glb.zst`;
+};
+
 export const buildParticleFilterObjectName = (
     trajectoryId: string,
     analysisSegment: string | undefined,
