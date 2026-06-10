@@ -35,7 +35,7 @@ export class CreateScriptingNotebookUseCase implements IUseCase<CreateScriptingN
         }
 
         try {
-            const notebookContent = await this.jupyterNotebookService.resolveNotebookTemplateContent({});
+            const notebookContent = await this.jupyterNotebookService.resolveNotebookTemplateContent();
             const now = new Date();
             const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
             const createData: ScriptingNotebookProps = {

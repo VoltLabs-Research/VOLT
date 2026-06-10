@@ -8,6 +8,7 @@ export interface TrajectoryUploadProgressItem {
     loadedBytes: number;
     progress: number;
     startedAt: number;
+    error?: string;
 }
 
 interface AddTrajectoryUploadInput {
@@ -21,6 +22,7 @@ interface TrajectoryUploadProgressState {
     uploads: TrajectoryUploadProgressItem[];
     addUpload: (upload: AddTrajectoryUploadInput) => void;
     updateUploadProgress: (id: string, progress: number) => void;
+    failUpload: (id: string, error: string) => void;
     removeUpload: (id: string) => void;
 }
 
@@ -54,6 +56,18 @@ export const useTrajectoryUploadProgressStore = create<TrajectoryUploadProgressS
                 ...upload,
                 progress: nextProgress,
                 loadedBytes: Math.round(upload.totalBytes * nextProgress)
+            };
+        })
+    })),
+    failUpload: (id, error) => set((state) => ({
+        uploads: state.uploads.map((upload) => {
+            if (upload.id !== id) {
+                return upload;
+            }
+
+            return {
+                ...upload,
+                error
             };
         })
     })),

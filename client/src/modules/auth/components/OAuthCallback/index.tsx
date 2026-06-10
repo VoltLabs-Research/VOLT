@@ -6,17 +6,35 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
+import { resolveErrorTitle } from '@/shared/errors/core';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { Box, Heading, Loader, Row, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle } from 'lucide-react';
-import { sileo } from 'sileo';
+import { CheckCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const DEFAULT_OAUTH_ERROR_MESSAGE = 'We could not complete sign in with your provider. Please try again.';
+
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
     const markAuthenticated = useAuthStore((state) => state.markAuthenticated);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+    const [errorMessage, setErrorMessage] = useState(DEFAULT_OAUTH_ERROR_MESSAGE);
     const redirectTimeoutReference = useRef<number | null>(null);
+
+    const params = new URLSearchParams(window.location.search);
+    const next = resolvePostAuthDestination({
+        queryNext: params.get('next')
+    });
+    const signInRedirectPath = `/auth/sign-in?${new URLSearchParams({
+        error: 'oauth_failed',
+        next
+    }).toString()}`;
+
+    const handleBackToSignIn = () => {
+        navigate(signInRedirectPath);
+    };
 
     useEffect(() => {
         let isCancelled = false;
@@ -31,15 +49,6 @@ const OAuthCallbackTemplate = () => {
         };
 
         const handleOAuthCallback = async () => {
-            const params = new URLSearchParams(window.location.search);
-            const next = resolvePostAuthDestination({
-                queryNext: params.get('next')
-            });
-            const signInRedirectPath = `/auth/sign-in?${new URLSearchParams({
-                error: 'oauth_failed',
-                next
-            }).toString()}`;
-
             try{
                 const token = params.get('token');
 
@@ -62,17 +71,13 @@ const OAuthCallbackTemplate = () => {
                     redirectTimeoutReference.current = null;
                     navigate(redirectPath);
                 }, 1500);
-            }catch{
+            }catch(error){
                 if (isCancelled) {
                     return;
                 }
 
-                sileo.error({ title: 'Authentication failed', description: 'Redirecting to login...' });
+                setErrorMessage(resolveErrorTitle(error, DEFAULT_OAUTH_ERROR_MESSAGE));
                 setStatus('error');
-                redirectTimeoutReference.current = window.setTimeout(() => {
-                    redirectTimeoutReference.current = null;
-                    navigate(signInRedirectPath);
-                }, 2000);
             }
         };
 
@@ -83,6 +88,25 @@ const OAuthCallbackTemplate = () => {
             clearRedirectTimeout();
         };
     }, [markAuthenticated, navigate]);
+
+    if (status === 'error') {
+        return (
+            <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
+                <Box position='absolute' inset='0' overflow='hidden'>
+                    <Box position='absolute' radius='full' width='50' className='oauth-background-blob oauth-blob-blue' />
+                    <Box position='absolute' radius='full' className='oauth-background-blob oauth-blob-purple' />
+                </Box>
+
+                <RecoveryState
+                    tone={RecoveryStateTone.Error}
+                    title='Authentication failed'
+                    description={errorMessage}
+                    retryLabel='Back to sign in'
+                    onRetry={handleBackToSignIn}
+                />
+            </Row>
+        );
+    }
 
     return (
         <Row justify='center' position='relative' height='vh-max' overflow='hidden' className='oauth-callback-container'>
@@ -114,20 +138,6 @@ const OAuthCallbackTemplate = () => {
                             <CheckCircle size={48} className='oauth-icon-success' />
                         </motion.div>
                     )}
-
-                    {status === 'error' && (
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 200,
-                                damping: 10
-                            }}
-                        >
-                            <XCircle size={48} className='oauth-icon-error' />
-                        </motion.div>
-                    )}
                 </Row>
 
                 <motion.div
@@ -138,7 +148,6 @@ const OAuthCallbackTemplate = () => {
                     <Heading level={3} size='2xl' weight='bold' tone='primary' className='oauth-title'>
                         {status === 'loading' && 'Authenticating...'}
                         {status === 'success' && 'Successfully Authenticated!'}
-                        {status === 'error' && 'Authentication Failed'}
                     </Heading>
                 </motion.div>
 
@@ -151,7 +160,6 @@ const OAuthCallbackTemplate = () => {
                     <Text as='p' tone='secondary'>
                         {status === 'loading' && 'Please wait while we verify your credentials.'}
                         {status === 'success' && 'Redirecting you to setup...'}
-                        {status === 'error' && 'Something went wrong. Redirecting to login...'}
                     </Text>
                 </motion.div>
             </motion.div>

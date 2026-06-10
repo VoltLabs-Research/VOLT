@@ -71,6 +71,15 @@ const ScriptingNotebookSchema: Schema<ScriptingNotebookDocument> = new Schema({
         type: Schema.Types.Mixed,
         required: true
     },
+    secretKeyId: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    secretKeyEncrypted: {
+        type: String,
+        required: false
+    },
     lastOpenedAt: {
         type: Date
     }

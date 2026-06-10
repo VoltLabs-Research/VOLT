@@ -6,6 +6,12 @@
     max-width: 360px;
 }
 
+.access-denied-permissions{
+    padding: var(--space-075) var(--space-1);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted, var(--status-error-bg));
+}
+
 .access-denied-icon{
     width: 56px;
     height: 56px;

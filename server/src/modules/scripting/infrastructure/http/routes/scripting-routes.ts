@@ -14,7 +14,7 @@ export default createHttpModule({
         router.get('/:trajectoryId/notebooks', scriptingControllers.listNotebooks.handle);
         router.get('/sessions/:notebookId/status', scriptingControllers.getSessionStatus.handle);
         router.delete('/sessions/:notebookId', scriptingControllers.deleteSession.handle);
-        router.post('/sessions', scriptingControllers.createNotebookJupyterSession.handle);
+        router.post('/sessions', scriptingControllers.createJupyterSession.handle);
         router.post('/:trajectoryId/sessions', scriptingControllers.createJupyterSession.handle);
         router.delete('/notebooks/:notebookId', scriptingControllers.deleteNotebook.handle);
     }

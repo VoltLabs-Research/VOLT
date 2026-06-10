@@ -33,6 +33,16 @@ const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 const CREATE_CONTAINER_DRAFT_STORAGE_KEY = 'volt:create-container:draft';
 
+// Deterministic deploy lifecycle emitted by the ClusterDaemon DockerRuntime, in order.
+// Used to derive an honest completion rate for the deploy progress indicator.
+const DEPLOY_STEP_SEQUENCE = [
+    'accepted',
+    'pulling-image',
+    'creating-container',
+    'starting-container',
+    'container-ready'
+] as const;
+
 interface ContainerDeployProgressEvent {
     operationId: string;
     teamClusterId: string;
@@ -78,6 +88,8 @@ export interface UseCreateContainerFormReturn {
     isLoadingResourceLimits: boolean;
     isLoading: boolean;
     deployProgressMessage: string | null;
+    deployProgressRate: number | null;
+    deployStartedAt: number | null;
     draftLastSavedAt: number | null;
     setSelectedTeamId: (id: string | null) => void;
     setSelectedTeamClusterId: (id: string | null) => void;
@@ -106,6 +118,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const [selectedTeamClusterId, setSelectedTeamClusterId] = useState<string | null>(null);
     const [activeCreateOperationId, setActiveCreateOperationId] = useState<string | null>(null);
     const [deployProgressMessage, setDeployProgressMessage] = useState<string | null>(null);
+    const [deployProgressRate, setDeployProgressRate] = useState<number | null>(null);
+    const [deployStartedAt, setDeployStartedAt] = useState<number | null>(null);
     const [draftLastSavedAt, setDraftLastSavedAt] = useState<number | null>(null);
     const {
         teamClusters,
@@ -137,6 +151,15 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
             : 'Deploying container...';
 
         setDeployProgressMessage(nextMessage);
+
+        // Map the current lifecycle step onto a fraction of the known sequence so the
+        // progress bar reflects real backend progress rather than a fabricated value.
+        if (event.step) {
+            const stepIndex = DEPLOY_STEP_SEQUENCE.indexOf(event.step as typeof DEPLOY_STEP_SEQUENCE[number]);
+            if (stepIndex >= 0) {
+                setDeployProgressRate((stepIndex + 1) / DEPLOY_STEP_SEQUENCE.length);
+            }
+        }
     }, {
         enabled: !!activeCreateOperationId
     });
@@ -325,6 +348,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                 const operationId = uuidv4();
                 setActiveCreateOperationId(operationId);
                 setDeployProgressMessage('Preparing deployment...');
+                setDeployProgressRate(null);
+                setDeployStartedAt(Date.now());
 
                 return createContainerMutation.mutateAsync({
                     teamId: selectedTeamId,
@@ -342,6 +367,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
                     cmd: template?.defaultCmd
                 }).finally(() => {
                     setActiveCreateOperationId(null);
+                    setDeployStartedAt(null);
+                    setDeployProgressRate(null);
                 });
             })(),
             {
@@ -373,6 +400,8 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
         isLoadingResourceLimits,
         isLoading: createContainerMutation.isPending,
         deployProgressMessage,
+        deployProgressRate,
+        deployStartedAt,
         draftLastSavedAt,
         setSelectedTeamId,
         setSelectedTeamClusterId,

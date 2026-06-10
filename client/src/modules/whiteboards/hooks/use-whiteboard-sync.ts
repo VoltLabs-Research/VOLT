@@ -10,6 +10,7 @@ import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
 import { useCallback, useEffect, useRef } from 'react';
+import { sileo } from 'sileo';
 import { v4 as uuidv4 } from 'uuid';
 
 type ExcalidrawElement = Record<string, unknown>;
@@ -75,6 +76,9 @@ interface UseWhiteboardSyncProps {
 
 const DELTA_DEBOUNCE_MS = 80;
 
+/** Minimum gap between conflict-sync toasts so a burst of rebases doesn't spam the user. */
+const CONFLICT_TOAST_THROTTLE_MS = 5000;
+
 const useWhiteboardSync = ({
     whiteboardId,
     enabled = true,
@@ -89,6 +93,7 @@ const useWhiteboardSync = ({
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
     const remoteApplyChainRef = useRef(Promise.resolve());
+    const lastConflictToastAtRef = useRef(0);
     const applyRemoteStateRef = useRef<(
         payload: WhiteboardStatePayload | undefined,
         mode: 'snapshot' | 'delta'
@@ -124,6 +129,21 @@ const useWhiteboardSync = ({
                 appState: cloneWhiteboardAppState(filterPersistableAppState(sentState.appState))
             };
         }
+    }, []);
+
+    /**
+     * Surfaces a non-blocking notice when the server rebases our in-flight patch
+     * onto an authoritative snapshot (a concurrent-edit conflict). Throttled so a
+     * burst of rebases during heavy collaboration doesn't spam the user.
+     */
+    const notifyConflictSync = useCallback(() => {
+        const now = Date.now();
+        if (now - lastConflictToastAtRef.current < CONFLICT_TOAST_THROTTLE_MS) {
+            return;
+        }
+
+        lastConflictToastAtRef.current = now;
+        sileo.info({ title: 'Canvas synced — someone else was editing at the same time.' });
     }, []);
 
     const flushQueuedState = useCallback(() => {
@@ -171,6 +191,7 @@ const useWhiteboardSync = ({
                     if (!data.accepted) {
                         queuedStateRef.current = queuedState;
                     }
+                    notifyConflictSync();
                     applyRemoteStateRef.current(data.snapshot, 'snapshot');
                     return;
                 }
@@ -184,7 +205,7 @@ const useWhiteboardSync = ({
                 isSendingPatchRef.current = false;
                 flushQueuedState();
             });
-    }, [applyPatchAck, enabled, readAckData, whiteboardId, socketService]);
+    }, [applyPatchAck, enabled, notifyConflictSync, readAckData, whiteboardId, socketService]);
 
     const sendDelta = useCallback((elements: ExcalidrawElement[], appState: AppState) => {
         if (!enabled || !whiteboardId) {

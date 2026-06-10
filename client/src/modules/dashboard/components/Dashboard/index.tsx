@@ -14,6 +14,7 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import { Box, Button, Heading, Row, EmptyState, openModal } from '@voltstack/bravais';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
@@ -61,6 +62,8 @@ const DashboardPage = () => {
                     title='Access denied'
                     description={accessDeniedMessage ?? 'You do not have permission to view dashboard metrics.'}
                     tone={RecoveryStateTone.AccessDenied}
+                    requiredPermissions={toPermissionLabels(['trajectory:read'])}
+                    contactHint={getTeamOwnerContactHint(selectedTeam)}
                     className='dashboard-card-state'
                 />
             </DashboardCard>

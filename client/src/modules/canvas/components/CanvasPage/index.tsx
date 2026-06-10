@@ -49,6 +49,7 @@ import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import NotFoundState from '@/shared/presentation/components/NotFoundState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { EmptyState, Box, Button, openModal, Row, Stack, Tooltip } from '@voltstack/bravais';
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import { useMedia } from '@voltstack/bravais';
@@ -404,6 +405,7 @@ const CanvasPage = () => {
         && trajectory
         && !hasFrames
     );
+    const isTrajectoryProcessingFailed = trajectory?.status === 'failed';
     const showLoading = useMemo(() =>
         isLocalGlbViewer
             ? false
@@ -436,6 +438,10 @@ const CanvasPage = () => {
     const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
         downloadListing(params);
     }, [downloadListing]);
+
+    const handleBackToTrajectories = useCallback(() => {
+        navigate('/dashboard/trajectories/list');
+    }, [navigate]);
 
     const handleAnalysisDiscoveryTourComplete = useCallback(() => {
         setRightDrawerOpen(false);
@@ -659,6 +665,20 @@ const CanvasPage = () => {
         }
 
         if (showNoFramesState) {
+            if (isTrajectoryProcessingFailed) {
+                return (
+                    <Row justify='center' width='max' height='max' className='canvas-viewport-state'>
+                        <RecoveryState
+                            tone={RecoveryStateTone.Error}
+                            title="Couldn't process this trajectory"
+                            description='Ingestion failed for this file. It may be an unsupported format or contain no readable timesteps. Supported uploads are LAMMPS dump/data files (.dump, .lammpstrj, .data, .lammps).'
+                            retryLabel='Back to trajectories'
+                            onRetry={handleBackToTrajectories}
+                        />
+                    </Row>
+                );
+            }
+
             return (
                 <Row justify='center' width='max' height='max' className='canvas-viewport-state'>
                     <EmptyState

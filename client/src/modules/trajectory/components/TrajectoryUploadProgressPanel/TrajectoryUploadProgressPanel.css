@@ -15,6 +15,17 @@
     padding: 0.625rem 0.75rem;
 }
 
+.trajectory-upload-progress-item--failed {
+    border: 1px solid var(--color-danger-border, rgba(220, 38, 38, 0.4));
+    border-radius: var(--radius-sm);
+    background: var(--color-danger-surface, rgba(220, 38, 38, 0.08));
+}
+
+.trajectory-upload-progress-error {
+    min-width: 0;
+    color: var(--color-danger-text, #dc2626);
+}
+
 .trajectory-upload-progress-name {
     min-width: 0;
     color: var(--color-text-primary);

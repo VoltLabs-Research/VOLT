@@ -1,6 +1,5 @@
 import {
-    REVOKE_ALL_MODAL_ID,
-    REVOKE_MODAL_ID
+    REVOKE_ALL_MODAL_ID
 } from '@/modules/session/hooks/use-session-data';
 import {
     formatSessionRelativeTime,
@@ -33,17 +32,14 @@ const SessionSettings: FC = () => {
     const {
         activities,
         closeRevokeAllSessionsModal,
-        closeRevokeSessionModal,
         isCurrentSession,
         isRevoking,
         loadingActivity,
         loadingSessions,
         openRevokeAllSessionsModal,
-        openRevokeSessionModal,
         otherSessionsCount,
         revokeAllOtherSessions,
         revokeSession,
-        revokeTarget,
         sessions
     } = useSessionData();
 
@@ -66,7 +62,8 @@ const SessionSettings: FC = () => {
                         variant='ghost'
                         intent='danger'
                         size='sm'
-                        onClick={() => openRevokeSessionModal(session)}
+                        onClick={() => { void revokeSession(session); }}
+                        disabled={isRevoking}
                         className='session-row__action'
                     >
                         Revoke
@@ -184,40 +181,6 @@ const SessionSettings: FC = () => {
                 />
                 {renderList(activityContent, activityEmpty)}
             </Stack>
-
-            <Modal
-                id={REVOKE_MODAL_ID}
-                title='Revoke Session'
-                description='This will sign out the device associated with this session.'
-                footer={
-                    <>
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={closeRevokeSessionModal}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant='solid'
-                            intent='danger'
-                            size='sm'
-                            onClick={revokeSession}
-                            isLoading={isRevoking}
-                        >
-                            Revoke session
-                        </Button>
-                    </>
-                }
-            >
-                {revokeTarget && (
-                    <Text as='p' size='md' tone='muted' className='p-1-5'>
-                        Are you sure you want to revoke the session from{' '}
-                        <strong>{revokeTarget.browser}</strong> on{' '}
-                        <strong>{revokeTarget.os}</strong> ({revokeTarget.ip})?
-                    </Text>
-                )}
-            </Modal>
 
             <Modal
                 id={REVOKE_ALL_MODAL_ID}

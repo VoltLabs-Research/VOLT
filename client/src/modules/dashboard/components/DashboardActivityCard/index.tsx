@@ -4,6 +4,8 @@ import { AsyncBoundary, Box, SegmentedTabs, Skeleton, Stack, Text, Timeline, Tim
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { formatDuration } from '@/shared/utils/format';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -183,6 +185,7 @@ const buildInAppActivitySummary = (activityData: DailyActivity[]) => {
 
 const DashboardActivityCard = () => {
     const [activeTab, setActiveTab] = useState<DashboardActivityTabId>('in-app-activity');
+    const selectedTeam = useSelectedTeam();
     const { activityData, isLoading, error, accessDenied, accessDeniedMessage, fetchActivity } = useDailyActivityData({
         range: ACTIVITY_LOOKBACK_DAYS,
         scope: 'self',
@@ -247,6 +250,8 @@ const DashboardActivityCard = () => {
             title='Access denied'
             description={accessDeniedMessage ?? 'You do not have permission to view activity.'}
             tone={RecoveryStateTone.AccessDenied}
+            requiredPermissions={toPermissionLabels(['daily-activity:read'])}
+            contactHint={getTeamOwnerContactHint(selectedTeam)}
             className='dashboard-card-state'
         />
     );

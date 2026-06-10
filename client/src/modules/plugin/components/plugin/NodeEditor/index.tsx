@@ -5,6 +5,7 @@ import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';
 import ContextEditor from './editors/ContextEditor';
@@ -51,6 +52,7 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
 
     const nodeType = node.type as NodeType;
     const EditorComponent = EDITOR_COMPONENTS[nodeType];
+    const nodeDescription = NODE_CONFIGS[nodeType]?.description;
 
     const handleDelete = () => {
         deleteNode(node.id);
@@ -74,7 +76,14 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
             <div className='floating-node-panel-body'>
                 {activeSection === 'details' && (
                     EditorComponent ? (
-                        <EditorComponent node={node} />
+                        <>
+                            {nodeDescription && (
+                                <Text as='p' size='sm' tone='muted' className='floating-node-panel-description'>
+                                    {nodeDescription}
+                                </Text>
+                            )}
+                            <EditorComponent node={node} />
+                        </>
                     ) : (
                         <Text as='p' size='md' tone='muted'>
                             No editor available for this node type.
