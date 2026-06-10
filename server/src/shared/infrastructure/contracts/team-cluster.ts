@@ -86,6 +86,7 @@ export const ChannelCommands = Object.freeze({
     TrajectoryNativeFilterPreview: 'trajectory.native.filter-preview',
     TrajectoryNativeColorModel: 'trajectory.native.color-model',
     TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model',
+    TrajectoryNativeDislocationModel: 'trajectory.native.dislocation-model',
 
     TrajectoryPluginPropertyNames: 'trajectory.plugin.property-names',
     TrajectoryPluginPropertySchema: 'trajectory.plugin.property-schema',

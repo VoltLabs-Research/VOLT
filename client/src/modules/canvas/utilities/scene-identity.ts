@@ -2,7 +2,7 @@ import {
     ParticleFilterSceneCombinator
 } from '@/modules/fractal/api/entities/scene';
 
-import type { SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
+import type { DislocationStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
 interface MaybeParticleFilterCondition {
@@ -22,6 +22,7 @@ interface MaybeScene extends MaybeParticleFilterCondition {
     startValue?: string;
     endValue?: string;
     gradient?: string;
+    style?: unknown;
 }
 
 const normalizeParticleFilterConditionSignature = (condition: MaybeParticleFilterCondition): Record<string, unknown> => {
@@ -93,6 +94,10 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
             && normalizeParticleFilterSignature(left) === normalizeParticleFilterSignature(right);
     }
 
+    if (left.source === 'dislocation-style' || right.source === 'dislocation-style') {
+        return JSON.stringify(left.style ?? {}) === JSON.stringify(right.style ?? {});
+    }
+
     return true;
 };
 
@@ -101,7 +106,9 @@ export const isTimestepScopedScene = (scene?: MaybeScene | null): boolean => {
         return false;
     }
 
-    return scene.source === 'color-coding' || scene.source === 'particle-filter';
+    return scene.source === 'color-coding'
+        || scene.source === 'particle-filter'
+        || scene.source === 'dislocation-style';
 };
 
 export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectType | null => {
@@ -189,6 +196,20 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
             operator: firstPropertyCondition?.operator,
             value: firstPropertyCondition?.value,
             action: artifact.params.action
+        };
+    }
+
+    if (artifact.sourceType === 'dislocation-style') {
+        if (!analysisId || !artifact.params.exposureId) {
+            return null;
+        }
+
+        return {
+            sceneType: 'dislocation-style',
+            source: 'dislocation-style',
+            analysisId,
+            exposureId: String(artifact.params.exposureId),
+            style: (artifact.params.style ?? {}) as DislocationStyleSpec
         };
     }
 

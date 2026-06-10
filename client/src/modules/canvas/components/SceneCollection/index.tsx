@@ -10,7 +10,9 @@ import {
 } from '../CanvasTree';
 import {
     buildAddRemoveOption,
+    buildColorSubmenu,
     buildTransparencySubmenu,
+    colorOption,
     transparencyOption
 } from '../../utilities/tree-menus';
 
@@ -53,6 +55,7 @@ interface SceneCollectionProps {
     sceneVisualOverrides?: SceneVisualOverrides;
     setSceneOpacity?: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
+    setSceneColor?: (sceneKey: string, color: string | undefined) => void;
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -85,6 +88,7 @@ const SceneCollection = ({
     sceneVisualOverrides = {},
     setSceneOpacity,
     setSceneLineWidth,
+    setSceneColor,
     selectionMode = 'default',
     selectedScene,
     onSelectRasterScene,
@@ -109,7 +113,8 @@ const SceneCollection = ({
             onAdd: () => addScene(defaultScene),
             onRemove: () => removeScene(defaultScene)
         }),
-        transparencyOption(buildTransparencySubmenu('trajectory', defaultOpacity, (value) => setSceneOpacity?.(defaultSceneKey, value)))
+        transparencyOption(buildTransparencySubmenu('trajectory', defaultOpacity, (value) => setSceneOpacity?.(defaultSceneKey, value))),
+        colorOption(buildColorSubmenu(sceneVisualOverrides[defaultSceneKey]?.color, (value) => setSceneColor?.(defaultSceneKey, value)))
     ];
 
     const simulationCellOptions: MenuOption[] = [
@@ -182,6 +187,7 @@ const SceneCollection = ({
                     sceneVisualOverrides={sceneVisualOverrides}
                     setSceneOpacity={setSceneOpacity ?? (() => undefined)}
                     setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
+                    setSceneColor={setSceneColor ?? (() => undefined)}
                     resolveSceneRenderMetadata={(pluginId, exposureId) => {
                         return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                     }}

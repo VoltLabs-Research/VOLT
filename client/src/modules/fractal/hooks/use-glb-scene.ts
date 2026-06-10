@@ -122,6 +122,10 @@ export default function useGlbScene(
                             paramsRef.current.sceneVisualOverrides,
                             paramsRef.current.pointCloudSettings
                         );
+                        engine.updateSceneColor(
+                            paramsRef.current.sceneKey,
+                            paramsRef.current.sceneVisualOverrides
+                        );
                         engine.updateDislocationLineWidth(paramsRef.current.dislocationLineSettings);
                     }
                     invalidate();
@@ -169,6 +173,10 @@ export default function useGlbScene(
             paramsRef.current.sceneKey,
             paramsRef.current.sceneVisualOverrides,
             paramsRef.current.pointCloudSettings
+        );
+        engine.updateSceneColor(
+            paramsRef.current.sceneKey,
+            paramsRef.current.sceneVisualOverrides
         );
         engine.updateDislocationLineWidth(paramsRef.current.dislocationLineSettings);
     }, [

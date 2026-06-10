@@ -10,5 +10,6 @@ export const TRAJECTORY_TOKENS = Object.freeze({
     TeamMetricsQueryService: Symbol.for('TeamMetricsQueryService'),
     ColorCodingService: Symbol.for('ColorCodingService'),
     ParticleFilterService: Symbol.for('ParticleFilterService'),
+    DislocationStyleService: Symbol.for('DislocationStyleService'),
     TrajectoryCloneRunner: Symbol.for('TrajectoryCloneRunner')
 });
