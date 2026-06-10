@@ -4,6 +4,8 @@ server/storage/
 .agents/
 out/
 
+CLAUDE.md
+
 downloads/
 
 .ai-workflow/
