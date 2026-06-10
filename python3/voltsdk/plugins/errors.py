@@ -1,21 +1,16 @@
 from __future__ import annotations
 
-
 class PluginError(RuntimeError):
-    """Base error for the Volt plugin hub."""
-
+    pass
 
 class PluginNotFoundError(PluginError):
-    """Raised when a plugin key (or version) is not in the registry."""
-
+    pass
 
 class PluginVerificationError(PluginError):
-    """Raised when a downloaded bundle fails integrity checks (sha256/signature)."""
-
+    pass
 
 class PluginYankedError(PluginError):
-    """Raised when the requested version has been yanked from the registry."""
-
+    pass
 
 class NetworkError(PluginError):
-    """Raised on transport failures while talking to the registry."""
+    pass

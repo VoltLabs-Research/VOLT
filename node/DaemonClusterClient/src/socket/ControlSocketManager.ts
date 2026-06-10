@@ -28,11 +28,21 @@ interface ControlSocketManagerCallbacks {
  * - Implement outbound `sendCommand` with request/response semantics and timeout.
  * - Emit arbitrary outbound messages via `emit`.
  */
+interface PendingCommand {
+    command: string;
+    resolve: (value: unknown) => void;
+    reject: (error: unknown) => void;
+    timer: ReturnType<typeof setTimeout>;
+};
+
 export class ControlSocketManager {
     private socket: Socket | null = null;
     private registered = false;
     private activeSocketId = 0;
     private bridge: ReverseChannelBridge | null = null;
+
+    /** In-flight request/response commands keyed by requestId (single dispatcher). */
+    private readonly pending = new Map<string, PendingCommand>();
 
     constructor(
         private readonly controlSocketUrl: string,
@@ -52,6 +62,7 @@ export class ControlSocketManager {
         this.registered = false;
         this.socket?.removeAllListeners();
         this.socket?.close();
+        this.rejectAllPending(DaemonClientError.socketNotReady());
 
         const socketId = ++this.activeSocketId;
 
@@ -66,6 +77,12 @@ export class ControlSocketManager {
         });
 
         this.socket = socket;
+
+        // Single persistent response dispatcher: routes every inbound response
+        // to its waiting command by requestId, instead of one listener per call.
+        socket.on(DaemonSocketEvent.TeamClusterDaemonMessage, (message: unknown) =>
+            this.dispatchResponse(socketId, message)
+        );
 
         return new Promise<void>((resolve, reject) => {
             let resolved = false;
@@ -102,6 +119,7 @@ export class ControlSocketManager {
 
                 this.registered = false;
                 this.bridge?.cleanup();
+                this.rejectAllPending(DaemonClientError.socketNotReady());
                 this.callbacks.onDisconnected(reason);
             });
 
@@ -138,6 +156,7 @@ export class ControlSocketManager {
         this.socket?.removeAllListeners();
         this.socket?.close();
         this.socket = null;
+        this.rejectAllPending(DaemonClientError.socketNotReady());
     }
 
     /**
@@ -163,38 +182,18 @@ export class ControlSocketManager {
         const effectiveTimeout = timeoutMs ?? 30_000;
 
         return new Promise<T | undefined>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                this.socket?.off(DaemonSocketEvent.TeamClusterDaemonMessage, onMessage);
+            const timer = setTimeout(() => {
+                this.pending.delete(requestId);
                 reject(DaemonClientError.commandTimeout(command));
             }, effectiveTimeout);
 
-            const onMessage = (message: unknown) => {
-                if (
-                    typeof message !== 'object' ||
-                    message === null ||
-                    Array.isArray(message)
-                ) {
-                    return;
-                }
+            this.pending.set(requestId, {
+                command,
+                resolve: (value) => resolve(value as T | undefined),
+                reject,
+                timer
+            });
 
-                const typed = message as TeamClusterDaemonSocketResponsePayload<CommandResponseEnvelope<T>>;
-
-                if (typed.type !== 'response' || typed.requestId !== requestId) {
-                    return;
-                }
-
-                clearTimeout(timeout);
-                this.socket?.off(DaemonSocketEvent.TeamClusterDaemonMessage, onMessage);
-
-                if (!typed.ok) {
-                    reject(DaemonClientError.commandRejected(command, typed.message));
-                    return;
-                }
-
-                resolve(typed.data?.data);
-            };
-
-            this.socket?.on(DaemonSocketEvent.TeamClusterDaemonMessage, onMessage);
             this.socket?.emit(DaemonSocketEvent.TeamClusterDaemonMessage, {
                 type: 'command',
                 requestId,
@@ -203,6 +202,45 @@ export class ControlSocketManager {
                 payload
             });
         });
+    }
+
+    /** Routes a single inbound message to the command waiting on its requestId. */
+    private dispatchResponse(socketId: number, message: unknown): void {
+        if (this.activeSocketId !== socketId) {
+            return;
+        }
+        if (typeof message !== 'object' || message === null || Array.isArray(message)) {
+            return;
+        }
+
+        const typed = message as TeamClusterDaemonSocketResponsePayload<CommandResponseEnvelope<unknown>>;
+        if (typed.type !== 'response') {
+            return;
+        }
+
+        const entry = this.pending.get(typed.requestId);
+        if (!entry) {
+            return;
+        }
+
+        clearTimeout(entry.timer);
+        this.pending.delete(typed.requestId);
+
+        if (!typed.ok) {
+            entry.reject(DaemonClientError.commandRejected(entry.command, typed.message));
+            return;
+        }
+
+        entry.resolve(typed.data?.data);
+    }
+
+    /** Rejects and clears every in-flight command (on disconnect / reconnect). */
+    private rejectAllPending(error: DaemonClientError): void {
+        for (const entry of this.pending.values()) {
+            clearTimeout(entry.timer);
+            entry.reject(error);
+        }
+        this.pending.clear();
     }
 
     /**

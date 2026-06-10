@@ -1,5 +1,3 @@
-"""Volt plugin hub: client for the Volt-Registry API + on-disk bundle cache."""
-
 from __future__ import annotations
 
 from .errors import (

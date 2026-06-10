@@ -17,7 +17,6 @@ from voltsdk.plugins.hub import PluginHub
 from voltsdk.plugins.registry import (
     BundleRef,
     PluginRegistry,
-    _looks_like_range,
     _pick_semver_range,
     _resolve_key,
 )
@@ -112,22 +111,24 @@ class _RegistryServer:
 
 
 class KeyResolutionTests(unittest.TestCase):
-    def test_legacy_form(self) -> None:
-        self.assertEqual(_resolve_key('voltlabs@opendxa'), ('voltlabs', 'opendxa'))
-
     def test_canonical_form(self) -> None:
         self.assertEqual(_resolve_key('@voltlabs/opendxa'), ('voltlabs', 'opendxa'))
 
-    def test_slash_form_without_at(self) -> None:
-        self.assertEqual(_resolve_key('voltlabs/opendxa'), ('voltlabs', 'opendxa'))
+    def test_rejects_legacy_at_form(self) -> None:
+        with self.assertRaises(ValueError):
+            _resolve_key('voltlabs@opendxa')
+
+    def test_rejects_bare_slash_form(self) -> None:
+        with self.assertRaises(ValueError):
+            _resolve_key('voltlabs/opendxa')
 
     def test_rejects_empty(self) -> None:
         with self.assertRaises(ValueError):
             _resolve_key('')
 
-    def test_rejects_double_at(self) -> None:
+    def test_rejects_bare_name(self) -> None:
         with self.assertRaises(ValueError):
-            _resolve_key('voltlabs@open@dxa')
+            _resolve_key('opendxa')
 
 
 class SemverResolutionTests(unittest.TestCase):
@@ -135,23 +136,11 @@ class SemverResolutionTests(unittest.TestCase):
         picked = _pick_semver_range(['1.0.0', '1.2.3', '2.0.0'], '^1.0.0')
         self.assertEqual(picked, '1.2.3')
 
-    def test_tilde(self) -> None:
-        picked = _pick_semver_range(['1.2.0', '1.2.9', '1.3.0'], '~1.2.0')
-        self.assertEqual(picked, '1.2.9')
-
-    def test_explicit_gte(self) -> None:
-        picked = _pick_semver_range(['1.0.0', '1.5.0', '2.0.0'], '>=1.2.0 <2.0.0')
-        self.assertEqual(picked, '1.5.0')
-
     def test_no_match_returns_none(self) -> None:
-        picked = _pick_semver_range(['1.0.0'], '^2.0.0')
-        self.assertIsNone(picked)
+        self.assertIsNone(_pick_semver_range(['1.0.0'], '^2.0.0'))
 
-    def test_looks_like_range(self) -> None:
-        self.assertTrue(_looks_like_range('^1.0.0'))
-        self.assertTrue(_looks_like_range('>=1.0 <2'))
-        self.assertFalse(_looks_like_range('1.0.0'))
-        self.assertFalse(_looks_like_range('latest'))
+    def test_non_caret_returns_none(self) -> None:
+        self.assertIsNone(_pick_semver_range(['1.0.0', '1.5.0'], '>=1.2.0 <2.0.0'))
 
 
 class RegistryHttpTests(unittest.TestCase):
@@ -201,7 +190,7 @@ class RegistryHttpTests(unittest.TestCase):
         )
 
     def test_resolve_latest(self) -> None:
-        ref = self._registry().resolve('voltlabs@demo-plugin')
+        ref = self._registry().resolve('@voltlabs/demo-plugin')
         self.assertIsInstance(ref, BundleRef)
         self.assertEqual(ref.version, '1.2.0')
         self.assertTrue(ref.url.endswith('/packages/voltlabs/demo-plugin/1.2.0/-/linux-x86_64.tgz'))
@@ -212,7 +201,7 @@ class RegistryHttpTests(unittest.TestCase):
 
     def test_install_verifies_sha256(self) -> None:
         registry = self._registry()
-        path = registry.install('voltlabs@demo-plugin')
+        path = registry.install('@voltlabs/demo-plugin')
         self.assertTrue(path.is_dir())
         self.assertTrue((path / 'bin' / 'demo-plugin').is_file())
 
@@ -227,7 +216,7 @@ class RegistryHttpTests(unittest.TestCase):
             default_publisher='voltlabs',
         )
         plugin = hub.get('demo-plugin')
-        self.assertEqual(plugin.key, 'voltlabs@demo-plugin')
+        self.assertEqual(plugin.key, '@voltlabs/demo-plugin')
         self.assertTrue(plugin.root.is_dir())
 
 

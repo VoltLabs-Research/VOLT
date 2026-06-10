@@ -1,5 +1,3 @@
-"""Generic plugin class executed via local subprocess."""
-
 from __future__ import annotations
 
 import json
@@ -13,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 from .errors import PluginError
-
 
 @dataclass(frozen=True)
 class PluginArtifact(os.PathLike[str]):
@@ -71,7 +68,6 @@ class PluginArtifact(os.PathLike[str]):
     def __repr__(self) -> str:
         return f"<PluginArtifact name={self.name!r} path={str(self.path)!r}>"
 
-
 @dataclass
 class PluginRun:
     command: list[str]
@@ -110,13 +106,7 @@ class PluginRun:
                 return artifact
         return None
 
-
 class Plugin:
-    """A single plugin instance backed by a downloaded bundle.
-
-    Plugins are obtained from :class:`voltsdk.plugins.PluginHub`; the user does
-    not instantiate this class directly.
-    """
 
     def __init__(self, key: str, version: str, root: Path) -> None:
         self._key = key
@@ -158,15 +148,16 @@ class Plugin:
             artifacts=self._collect_artifacts(output_prefix),
         )
         if completed.returncode != 0:
-            raise PluginError(
-                f"{self._key} failed (exit {completed.returncode}).\n"
-                f"$ {shlex.join(command)}\n{completed.stderr.strip()}"
-            )
-        return result
 
-    # ------------------------------------------------------------------
-    # Inspection helpers
-    # ------------------------------------------------------------------
+            detail = (completed.stderr or '').strip() or (completed.stdout or '').strip()
+            error = PluginError(
+                f"{self._key} failed (exit {completed.returncode}).\n"
+                f"$ {shlex.join(command)}\n{detail}".rstrip()
+            )
+
+            error.run = result
+            raise error
+        return result
 
     @property
     def key(self) -> str:
@@ -179,16 +170,12 @@ class Plugin:
     def __repr__(self) -> str:
         return f"<Plugin key={self._key!r} version={self._version!r}>"
 
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
-
     def _resolve_entrypoint(self) -> list[str]:
-        binary = self._resolve_binary()
+        binary = self._pick_file(self.root / "bin", prefer_named=True)
         if binary is not None:
             return [str(binary)]
 
-        script = self._resolve_script()
+        script = self._pick_file(self.root / "scripts", prefer_named=False)
         if script is not None:
             if script.suffix.lower() == ".py":
                 return [sys.executable, str(script)]
@@ -196,55 +183,23 @@ class Plugin:
 
         raise PluginError(f"Could not resolve an entrypoint inside {self.root}.")
 
-    def _resolve_binary(self) -> Path | None:
-        bin_dir = self.root / "bin"
-        if not bin_dir.is_dir():
+    def _pick_file(self, directory: Path, *, prefer_named: bool) -> Path | None:
+        if not directory.is_dir():
             return None
-
-        short_key = self._key.rsplit('@', 1)[-1]
-        preferred = [bin_dir / self._key, bin_dir / short_key]
-        if os.name == "nt":
-            preferred.insert(0, bin_dir / f"{self._key}.exe")
-            preferred.insert(1, bin_dir / f"{short_key}.exe")
-        for candidate in preferred:
-            if candidate.is_file():
-                return candidate.resolve()
-
-        candidates = sorted(path for path in bin_dir.iterdir() if path.is_file())
-        if len(candidates) == 1:
-            return candidates[0].resolve()
-        if candidates:
-            executables = [path for path in candidates if os.access(path, os.X_OK) or path.suffix.lower() == ".exe"]
-            if len(executables) == 1:
-                return executables[0].resolve()
-            raise PluginError(
-                f"Multiple binaries found for plugin {self._key!r}: "
-                + ", ".join(path.name for path in executables or candidates)
-            )
-        return None
-
-    def _resolve_script(self) -> Path | None:
-        scripts_dir = self.root / "scripts"
-        if not scripts_dir.is_dir():
+        files = sorted(path for path in directory.iterdir() if path.is_file())
+        if not files:
             return None
-
-        wrappers = sorted(
-            path
-            for path in scripts_dir.iterdir()
-            if path.is_file() and path.suffix.lower() == ".py" and path.name.endswith("_wrapper.py")
+        if len(files) == 1:
+            return files[0].resolve()
+        if prefer_named:
+            short = self._key.rsplit('/', 1)[-1]
+            by_name = {path.name: path for path in files}
+            for name in (short, f'{short}.exe'):
+                if name in by_name:
+                    return by_name[name].resolve()
+        raise PluginError(
+            f"Ambiguous plugin entrypoint in {directory}: " + ", ".join(p.name for p in files)
         )
-        if len(wrappers) == 1:
-            return wrappers[0].resolve()
-
-        candidates = sorted(path for path in scripts_dir.iterdir() if path.is_file())
-        if len(candidates) == 1:
-            return candidates[0].resolve()
-        if candidates:
-            raise PluginError(
-                f"Multiple scripts found for plugin {self._key!r}: "
-                + ", ".join(path.name for path in candidates)
-            )
-        return None
 
     def _run_subprocess(
         self,
@@ -273,7 +228,6 @@ class Plugin:
             result[key] = path
         return result
 
-
 def _argv(options: dict[str, Any]) -> list[str]:
     args: list[str] = []
     for key, value in options.items():
@@ -289,7 +243,6 @@ def _argv(options: dict[str, Any]) -> list[str]:
             continue
         args.extend([flag, str(value)])
     return args
-
 
 def _resolve_output_prefix(
     input_path: Path,
@@ -307,12 +260,10 @@ def _resolve_output_prefix(
     name = output_name or _plugin_output_name(plugin_key)
     return (Path(output_dir).expanduser() / name).resolve()
 
-
 def _plugin_output_name(plugin_key: str) -> str:
-    name = plugin_key.rsplit('@', 1)[-1]
+    name = plugin_key.rsplit('/', 1)[-1]
     normalized = re.sub(r'[^A-Za-z0-9_.-]+', '-', name).strip('-._')
     return normalized or 'plugin'
-
 
 def _coerce_option_value(value: Any) -> Any:
     if isinstance(value, os.PathLike):
@@ -325,14 +276,12 @@ def _coerce_option_value(value: Any) -> Any:
         return {key: _coerce_option_value(item) for key, item in value.items()}
     return value
 
-
 def _prepare_config(options: dict[str, Any]) -> dict[str, Any]:
     config = dict(options)
     value = config.pop("export_as", None)
     if value is not None:
         config["export-as"] = value
     return config
-
 
 def _subprocess_run(
     command: list[str],
@@ -349,7 +298,6 @@ def _subprocess_run(
         timeout=None if timeout is None or timeout < 0 else timeout,
     )
 
-
 def _artifact_lookup_candidates(name: str) -> tuple[str, ...]:
     candidates: list[str] = [name]
     if name.endswith(".msgpack"):
@@ -360,7 +308,6 @@ def _artifact_lookup_candidates(name: str) -> tuple[str, ...]:
         candidates.extend([f"{name}.msgpack", f"{name}.json"])
     return tuple(dict.fromkeys(candidates))
 
-
 def _canonical_artifact_name(prefix: str, filename: str) -> str:
     if filename == prefix:
         return filename
@@ -368,18 +315,15 @@ def _canonical_artifact_name(prefix: str, filename: str) -> str:
         return filename[len(prefix) + 1 :]
     return filename
 
-
 def _is_glb_artifact(path: Path) -> bool:
     suffix = path.suffix.lower()
     return suffix in {'.glb', '.gltf'} or path.name.lower().endswith('.glb.zst')
-
 
 def _default_glb_output_path(path: Path) -> Path:
     suffix = path.suffix.lower()
     if suffix:
         return path.with_suffix('.glb')
     return path.with_name(f'{path.name}.glb')
-
 
 def _artifact_df(path: Path, key: str | None):
     suffix = path.suffix.lower()
@@ -391,38 +335,12 @@ def _artifact_df(path: Path, key: str | None):
         return _json_df(path, key)
     raise PluginError(f'Artifact {path.name!r} is not a supported dataframe source.')
 
-
 def _json_df(path: Path, key: str | None):
-    import pandas as pd
-    from ..io.msgpack import get_nested_value
+    from ..io.msgpack import frame_from_data, get_nested_value
 
     with path.open('r', encoding='utf-8') as fh:
         data = get_nested_value(json.load(fh), key)
-    return _data_as_df(data, pd)
-
-
-def _data_as_df(data: Any, pd):
-    if data is None:
-        return pd.DataFrame()
-    if isinstance(data, list):
-        return pd.DataFrame(data)
-    if _is_columnar_dict(data):
-        return pd.DataFrame(data)
-    if isinstance(data, dict):
-        return pd.DataFrame([data])
-    return pd.DataFrame([{'value': data}])
-
-
-def _is_columnar_dict(value: Any) -> bool:
-    if not isinstance(value, dict) or not value:
-        return False
-    lengths: list[int] = []
-    for item in value.values():
-        if not isinstance(item, list):
-            return False
-        lengths.append(len(item))
-    return len(set(lengths)) == 1
-
+    return frame_from_data(data)
 
 def _env(root: Path) -> dict[str, str]:
     env = os.environ.copy()
@@ -434,14 +352,12 @@ def _env(root: Path) -> dict[str, str]:
     _prepend_env_paths(env, "DYLD_LIBRARY_PATH", plugin_lib_dir, runtime_lib_dir)
     return env
 
-
 def _bundled_runtime_dirs() -> tuple[Path | None, Path | None]:
     try:
         from ..native import bin_dir, lib_dir
     except Exception:
         return None, None
     return bin_dir(), lib_dir()
-
 
 def _prepend_env_paths(env: dict[str, str], key: str, *candidates: Path | None) -> None:
     entries = [str(candidate) for candidate in candidates if candidate is not None and candidate.exists()]

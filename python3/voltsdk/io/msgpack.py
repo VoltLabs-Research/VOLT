@@ -1,13 +1,3 @@
-"""MessagePack parsing utilities.
-
-Provides :func:`msgpack_as_df` for loading Volt analysis result files
-(``*.msgpack``) into pandas DataFrames, with support for chunked
-streaming and nested key extraction.
-
-These functions parse Volt MessagePack result files into pandas-native
-structures for notebook and daemon workflows.
-"""
-
 from __future__ import annotations
 
 import os
@@ -16,13 +6,7 @@ from typing import Any
 import msgpack
 import pandas as pd
 
-
 def get_nested_value(data: Any, path: str | None) -> Any:
-    """Traverse *data* using a dot-separated *path*.
-
-    >>> get_nested_value({'a': {'b': 42}}, 'a.b')
-    42
-    """
     if not path:
         return data
 
@@ -35,13 +19,7 @@ def get_nested_value(data: Any, path: str | None) -> Any:
         current = current[key]
     return current
 
-
 def merged_chunked_value(target: Any, incoming: Any) -> Any:
-    """Merge two chunks produced by iterative msgpack unpacking.
-
-    Lists are concatenated, dicts are recursively merged, and scalars
-    are overwritten.
-    """
     if incoming is None:
         return target
     if target is None:
@@ -64,9 +42,7 @@ def merged_chunked_value(target: Any, incoming: Any) -> Any:
 
     return incoming
 
-
-def _is_columnar_dict(value: Any) -> bool:
-    """Return ``True`` if *value* looks like ``{col: [values], ...}``."""
+def is_columnar_dict(value: Any) -> bool:
     if not isinstance(value, dict) or not value:
         return False
     lengths: list[int] = []
@@ -76,25 +52,10 @@ def _is_columnar_dict(value: Any) -> bool:
         lengths.append(len(item))
     return len(set(lengths)) == 1
 
-
 def msgpack_as_df(
     file_path: str,
     iterable_key: str | None = None,
 ) -> pd.DataFrame:
-    """Load a Volt msgpack file into a pandas DataFrame.
-
-    Parameters
-    ----------
-    file_path:
-        Path to the ``.msgpack`` file.
-    iterable_key:
-        Optional dot-separated path to extract from each chunk before
-        merging (e.g. ``"main_listing"``).
-
-    Returns
-    -------
-    pd.DataFrame
-    """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f'File not found: {file_path}')
 
@@ -105,13 +66,13 @@ def msgpack_as_df(
             chunk = get_nested_value(message, iterable_key)
             data = merged_chunked_value(data, chunk)
 
+    return frame_from_data(data)
+
+def frame_from_data(data: Any) -> pd.DataFrame:
     if data is None:
         return pd.DataFrame()
-
-    if isinstance(data, list) or _is_columnar_dict(data):
+    if isinstance(data, list) or is_columnar_dict(data):
         return pd.DataFrame(data)
-
     if isinstance(data, dict):
         return pd.DataFrame([data])
-
     return pd.DataFrame([{'value': data}])

@@ -1,8 +1,6 @@
-"""Open local or remote GLB assets in the Volt canvas."""
-
 from __future__ import annotations
 
-import base64
+import atexit
 import json
 import os
 import shutil
@@ -19,17 +17,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import quote, urlencode, urljoin, urlparse
 
-import requests
-
 _LOCAL_VIEWER_HOST = '127.0.0.1'
-_LOCAL_JUPYTER_URL = 'http://127.0.0.1:8888'
 _DEFAULT_VOLT_APP_URL = 'https://app.voltcloud.dev'
 _NOTEBOOK_VIEWER_ROOT = PurePosixPath('.voltsdk-viewer')
 
+_local_viewer_server: dict[str, Any] = {}
 
 Pathish = str | os.PathLike[str]
 ViewerSource = Pathish | Sequence[Pathish] | Mapping[int, Pathish]
-
 
 @dataclass(frozen=True)
 class _FrameSource:
@@ -38,14 +33,12 @@ class _FrameSource:
     label: str | None
     timestep: int | None
 
-
 @dataclass(frozen=True)
 class _StagedView:
     root: Path | None = None
     direct_url: str | None = None
     asset_rel_path: PurePosixPath | None = None
     manifest_rel_path: PurePosixPath | None = None
-
 
 def open_in_volt(
     source: ViewerSource,
@@ -54,14 +47,6 @@ def open_in_volt(
     volt_url: str | None = None,
     open_browser: bool = True,
 ) -> str:
-    """Open one GLB or a GLB sequence in the Volt canvas.
-
-    ``source`` can be:
-
-    * a single local path or remote URL
-    * a sequence of local paths / remote URLs
-    * a mapping ``{timestep: path_or_url}``
-    """
 
     frames = _normalize_source(source)
     if _can_use_jupyter_proxy():
@@ -69,7 +54,6 @@ def open_in_volt(
     else:
         route = _build_local_viewer_route(frames, title)
     return _open_browser_url(route, volt_url=volt_url, open_browser=open_browser)
-
 
 def open_canvas_view(
     *,
@@ -87,7 +71,6 @@ def open_canvas_view(
         timestep=timestep,
     )
     return _open_browser_url(route, volt_url=volt_url, open_browser=open_browser)
-
 
 def _build_canvas_route(
     *,
@@ -109,9 +92,9 @@ def _build_canvas_route(
         return base_path
     return f'{base_path}?{urlencode(params)}'
 
-
 def _build_local_viewer_route(frames: list[_FrameSource], title: str | None) -> str:
-    stage_root = Path(tempfile.mkdtemp(prefix='voltsdk-viewer-'))
+    server_root = _session_viewer_root()
+    stage_root = server_root / uuid.uuid4().hex
     staged = _stage_view(frames, title=title, stage_root=stage_root)
     if staged.direct_url:
         return _build_glb_route(url=staged.direct_url)
@@ -119,49 +102,36 @@ def _build_local_viewer_route(frames: list[_FrameSource], title: str | None) -> 
     if staged.root is None:
         raise RuntimeError('Local viewer stage did not produce a root directory.')
 
-    base_url = _start_local_viewer_server(staged.root)
-    if staged.asset_rel_path is not None:
-        return _build_glb_route(url=f'{base_url}/{_encode_posix_path(staged.asset_rel_path)}')
-    if staged.manifest_rel_path is not None:
-        return _build_glb_route(manifest=f'{base_url}/{_encode_posix_path(staged.manifest_rel_path)}')
-    raise RuntimeError('Local viewer stage did not produce a renderable target.')
+    base_url = _ensure_local_viewer_server(server_root)
 
+    prefix = PurePosixPath(stage_root.relative_to(server_root).as_posix())
+    if staged.asset_rel_path is not None:
+        return _build_glb_route(url=f'{base_url}/{_encode_posix_path(prefix / staged.asset_rel_path)}')
+    if staged.manifest_rel_path is not None:
+        return _build_glb_route(manifest=f'{base_url}/{_encode_posix_path(prefix / staged.manifest_rel_path)}')
+    raise RuntimeError('Local viewer stage did not produce a renderable target.')
 
 def _build_notebook_viewer_route(frames: list[_FrameSource], title: str | None) -> str:
     if len(frames) == 1 and frames[0].is_url:
         return _build_glb_route(url=str(frames[0].value))
 
     notebook_root = _infer_notebook_root()
-    if notebook_root is not None:
-        stage_root = notebook_root / _NOTEBOOK_VIEWER_ROOT / uuid.uuid4().hex
-        staged = _stage_view(frames, title=title, stage_root=stage_root, copy_files=True)
-        if staged.direct_url:
-            return _build_glb_route(url=staged.direct_url)
+    if notebook_root is None:
+        raise RuntimeError(
+            'Cannot serve viewer assets in this notebook: set VOLT_NOTEBOOK_PATH to '
+            'the notebook file path (relative to the Jupyter root) so the assets can '
+            'be staged under it.'
+        )
 
-        if staged.asset_rel_path is not None:
-            public_url = _build_jupyter_file_url(stage_root / staged.asset_rel_path, notebook_root)
-            return _build_glb_route(url=public_url)
-
-        if staged.manifest_rel_path is not None:
-            public_url = _build_jupyter_file_url(stage_root / staged.manifest_rel_path, notebook_root)
-            return _build_glb_route(manifest=public_url)
-
-        raise RuntimeError('Notebook viewer stage did not produce a renderable target.')
-
-    temp_root = Path(tempfile.mkdtemp(prefix='voltsdk-notebook-viewer-'))
-    staged = _stage_view(frames, title=title, stage_root=temp_root)
+    stage_root = notebook_root / _NOTEBOOK_VIEWER_ROOT / uuid.uuid4().hex
+    staged = _stage_view(frames, title=title, stage_root=stage_root, copy_files=True)
     if staged.direct_url:
         return _build_glb_route(url=staged.direct_url)
-
-    notebook_prefix = _NOTEBOOK_VIEWER_ROOT / uuid.uuid4().hex
-    _upload_stage_to_jupyter(staged.root or temp_root, notebook_prefix)
-
     if staged.asset_rel_path is not None:
-        return _build_glb_route(url=_build_jupyter_file_url(notebook_prefix / staged.asset_rel_path))
+        return _build_glb_route(url=_build_jupyter_file_url(stage_root / staged.asset_rel_path, notebook_root))
     if staged.manifest_rel_path is not None:
-        return _build_glb_route(manifest=_build_jupyter_file_url(notebook_prefix / staged.manifest_rel_path))
+        return _build_glb_route(manifest=_build_jupyter_file_url(stage_root / staged.manifest_rel_path, notebook_root))
     raise RuntimeError('Notebook viewer stage did not produce a renderable target.')
-
 
 def _build_glb_route(*, url: str | None = None, manifest: str | None = None) -> str:
     params: dict[str, str] = {}
@@ -172,7 +142,6 @@ def _build_glb_route(*, url: str | None = None, manifest: str | None = None) -> 
     else:
         raise ValueError('Either url or manifest must be provided.')
     return f'/canvas/glb?{urlencode(params)}'
-
 
 def _normalize_source(source: ViewerSource) -> list[_FrameSource]:
     if isinstance(source, Mapping):
@@ -194,7 +163,6 @@ def _normalize_source(source: ViewerSource) -> list[_FrameSource]:
 
     raise TypeError('Viewer source must be a path, URL, sequence, or timestep mapping.')
 
-
 def _normalize_frame(value: Pathish, *, timestep: int | None = None) -> _FrameSource:
     if isinstance(value, os.PathLike):
         path = Path(value).expanduser().resolve()
@@ -215,11 +183,9 @@ def _normalize_frame(value: Pathish, *, timestep: int | None = None) -> _FrameSo
 
     raise TypeError(f'Unsupported viewer asset type: {type(value)!r}')
 
-
 def _is_url(value: str) -> bool:
     parsed = urlparse(value)
     return parsed.scheme in {'http', 'https', 'data', 'blob'}
-
 
 def _stage_view(
     frames: list[_FrameSource],
@@ -278,12 +244,10 @@ def _stage_view(
     )
     return _StagedView(root=stage_root, manifest_rel_path=manifest_rel_path)
 
-
 def _build_staged_name(index: int, original_name: str, frame_count: int) -> str:
     if frame_count == 1:
         return original_name
     return f'{index:04d}-{original_name}'
-
 
 def _link_or_copy(source: Path, target: Path, *, copy_files: bool) -> None:
     if copy_files:
@@ -295,6 +259,33 @@ def _link_or_copy(source: Path, target: Path, *, copy_files: bool) -> None:
     except OSError:
         shutil.copy2(source, target)
 
+def _session_viewer_root() -> Path:
+    root = _local_viewer_server.get('root')
+    if root is None:
+        root = Path(tempfile.mkdtemp(prefix='voltsdk-viewer-'))
+        _local_viewer_server['root'] = root
+        atexit.register(_shutdown_local_viewer_server)
+    return root
+
+def _ensure_local_viewer_server(root: Path) -> str:
+    base_url = _local_viewer_server.get('base_url')
+    process = _local_viewer_server.get('process')
+    if base_url and process is not None and process.poll() is None:
+        return base_url
+    return _start_local_viewer_server(root)
+
+def _shutdown_local_viewer_server() -> None:
+    process = _local_viewer_server.get('process')
+    if process is not None and process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=2)
+        except Exception:
+            process.kill()
+    root = _local_viewer_server.get('root')
+    if root is not None:
+        shutil.rmtree(root, ignore_errors=True)
+    _local_viewer_server.clear()
 
 def _start_local_viewer_server(root: Path) -> str:
     port = _find_free_port()
@@ -309,22 +300,23 @@ def _start_local_viewer_server(root: Path) -> str:
         '--port',
         str(port),
     ]
-    subprocess.Popen(
+    process = subprocess.Popen(
         command,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         stdin=subprocess.DEVNULL,
         start_new_session=True,
     )
+    _local_viewer_server['process'] = process
+    base_url = f'http://{_LOCAL_VIEWER_HOST}:{port}'
+    _local_viewer_server['base_url'] = base_url
     _wait_for_port(_LOCAL_VIEWER_HOST, port)
-    return f'http://{_LOCAL_VIEWER_HOST}:{port}'
-
+    return base_url
 
 def _find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind((_LOCAL_VIEWER_HOST, 0))
         return int(sock.getsockname()[1])
-
 
 def _wait_for_port(host: str, port: int, timeout: float = 5.0) -> None:
     deadline = time.time() + timeout
@@ -336,14 +328,11 @@ def _wait_for_port(host: str, port: int, timeout: float = 5.0) -> None:
         time.sleep(0.05)
     raise TimeoutError(f'Viewer server did not start on {host}:{port}.')
 
-
 def _encode_posix_path(path: PurePosixPath | str) -> str:
     return '/'.join(quote(part) for part in PurePosixPath(path).parts if part not in {'', '.'})
 
-
 def _can_use_jupyter_proxy() -> bool:
-    return _in_notebook() and bool(os.environ.get('VOLT_PUBLIC_BASE_PATH')) and bool(os.environ.get('JUPYTER_TOKEN'))
-
+    return _in_notebook() and bool(os.environ.get('VOLT_PUBLIC_BASE_PATH'))
 
 def _in_notebook() -> bool:
     try:
@@ -353,7 +342,6 @@ def _in_notebook() -> bool:
         return shell is not None and shell.__class__.__name__ == 'ZMQInteractiveShell'
     except Exception:
         return False
-
 
 def _infer_notebook_root() -> Path | None:
     notebook_path = os.environ.get('VOLT_NOTEBOOK_PATH')
@@ -367,68 +355,10 @@ def _infer_notebook_root() -> Path | None:
             return candidate_root
     return None
 
-
-def _build_jupyter_file_url(path: Path | PurePosixPath, notebook_root: Path | None = None) -> str:
+def _build_jupyter_file_url(path: Path, notebook_root: Path) -> str:
     public_base = _require_env('VOLT_PUBLIC_BASE_PATH').rstrip('/')
-    if notebook_root is None:
-        rel_path = PurePosixPath(path)
-    else:
-        rel_path = PurePosixPath(Path(path).resolve().relative_to(notebook_root).as_posix())
+    rel_path = PurePosixPath(Path(path).resolve().relative_to(notebook_root).as_posix())
     return f'{public_base}/files/{_encode_posix_path(rel_path)}'
-
-
-def _upload_stage_to_jupyter(stage_root: Path, notebook_prefix: PurePosixPath) -> None:
-    session = requests.Session()
-    session.headers.update({'Authorization': f'token {_require_env("JUPYTER_TOKEN")}'})
-
-    directories = sorted(
-        [path for path in stage_root.rglob('*') if path.is_dir()],
-        key=lambda path: len(path.relative_to(stage_root).parts),
-    )
-    _jupyter_ensure_directory(session, notebook_prefix)
-    for directory in directories:
-        rel_path = notebook_prefix / PurePosixPath(directory.relative_to(stage_root).as_posix())
-        _jupyter_ensure_directory(session, rel_path)
-
-    for file_path in sorted(path for path in stage_root.rglob('*') if path.is_file()):
-        rel_path = notebook_prefix / PurePosixPath(file_path.relative_to(stage_root).as_posix())
-        _jupyter_upload_file(session, rel_path, file_path)
-
-
-def _jupyter_ensure_directory(session: requests.Session, rel_path: PurePosixPath) -> None:
-    parts = [part for part in rel_path.parts if part not in {'', '.'}]
-    current = PurePosixPath('.')
-    for part in parts:
-        current = current / part
-        response = session.put(
-            _jupyter_contents_url(current),
-            json={'type': 'directory'},
-            timeout=30,
-        )
-        if response.status_code not in {200, 201}:
-            raise RuntimeError(f'Could not create notebook directory {current}: {response.text}')
-
-
-def _jupyter_upload_file(session: requests.Session, rel_path: PurePosixPath, source_path: Path) -> None:
-    encoded_content = base64.b64encode(source_path.read_bytes()).decode('ascii')
-    response = session.put(
-        _jupyter_contents_url(rel_path),
-        json={
-            'type': 'file',
-            'format': 'base64',
-            'content': encoded_content,
-        },
-        timeout=120,
-    )
-    if response.status_code not in {200, 201}:
-        raise RuntimeError(f'Could not upload notebook file {rel_path}: {response.text}')
-
-
-def _jupyter_contents_url(rel_path: PurePosixPath) -> str:
-    base_path = _require_env('VOLT_PUBLIC_BASE_PATH').rstrip('/')
-    rel = _encode_posix_path(rel_path)
-    return f'{_LOCAL_JUPYTER_URL}{base_path}/api/contents/{rel}'
-
 
 def _open_browser_url(
     route_or_url: str,
@@ -446,7 +376,6 @@ def _open_browser_url(
         webbrowser.open(browser_url)
     return browser_url
 
-
 def _resolve_browser_url(route_or_url: str, *, volt_url: str | None) -> str:
     if _is_url(route_or_url):
         return route_or_url
@@ -457,22 +386,12 @@ def _resolve_browser_url(route_or_url: str, *, volt_url: str | None) -> str:
     app_url = _resolve_volt_app_url(volt_url)
     return urljoin(app_url.rstrip('/') + '/', route_or_url.lstrip('/'))
 
-
 def _resolve_volt_app_url(volt_url: str | None) -> str:
-    candidates = [
-        volt_url,
-        os.environ.get('VOLT_APP_URL'),
-        os.environ.get('VOLT_BASE_URL'),
-        os.environ.get('VOLT_SERVER_URL'),
-        os.environ.get('SERVER_ENDPOINT'),
-        os.environ.get('JUPYTERHUB_API_URL'),
-    ]
-    for candidate in candidates:
+    for candidate in (volt_url, os.environ.get('VOLT_APP_URL'), os.environ.get('VOLT_BASE_URL')):
         normalized = _normalize_app_url(candidate)
         if normalized:
             return normalized
     return _DEFAULT_VOLT_APP_URL
-
 
 def _normalize_app_url(value: str | None) -> str | None:
     if not value:
@@ -489,7 +408,6 @@ def _normalize_app_url(value: str | None) -> str | None:
         path = path[:-4]
 
     return parsed._replace(path=path or '', params='', query='', fragment='').geturl().rstrip('/')
-
 
 def _open_browser_in_notebook(browser_url: str) -> None:
     try:
@@ -511,7 +429,6 @@ def _open_browser_in_notebook(browser_url: str) -> None:
         return
     except Exception:
         webbrowser.open(browser_url)
-
 
 def _require_env(name: str) -> str:
     value = os.environ.get(name)

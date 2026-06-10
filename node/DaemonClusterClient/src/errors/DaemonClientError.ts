@@ -68,4 +68,13 @@ export class DaemonClientError extends Error {
             'Cannot emit message: control socket is not connected'
         );
     }
+
+    static heartbeatFailed(cause?: unknown): DaemonClientError {
+        const detail = cause instanceof Error ? cause.message : String(cause);
+        return new DaemonClientError(
+            DaemonClientErrorCode.HeartbeatFailed,
+            `Heartbeat failed: ${detail}`,
+            cause
+        );
+    }
 };

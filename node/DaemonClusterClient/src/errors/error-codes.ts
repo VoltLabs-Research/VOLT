@@ -27,5 +27,8 @@ export enum DaemonClientErrorCode {
     HandlerError = 'HANDLER_ERROR',
 
     /** An outbound emit was attempted while the socket was not connected. */
-    EmitFailed = 'EMIT_FAILED'
+    EmitFailed = 'EMIT_FAILED',
+
+    /** A periodic heartbeat send failed for a reason other than a timeout. */
+    HeartbeatFailed = 'HEARTBEAT_FAILED'
 };

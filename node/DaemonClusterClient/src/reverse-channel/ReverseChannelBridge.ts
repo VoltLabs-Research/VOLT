@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type { Socket } from 'socket.io-client';
 import { DaemonSocketEvent, REVERSE_CHANNEL } from '../contracts/index';
 import { DaemonClientError } from '../errors/DaemonClientError';
@@ -216,6 +217,3 @@ export class ReverseChannelBridge {
         }
     }
 };
-
-// Needed for crypto.randomUUID in stream response
-declare const crypto: { randomUUID(): string };

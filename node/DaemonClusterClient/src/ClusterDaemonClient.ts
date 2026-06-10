@@ -3,7 +3,6 @@ import { ControlSocketManager } from './socket/ControlSocketManager';
 import { HeartbeatManager } from './heartbeat/HeartbeatManager';
 import { ReverseChannelBridge } from './reverse-channel/ReverseChannelBridge';
 import { DaemonClientError } from './errors/DaemonClientError';
-import { DaemonClientErrorCode } from './errors/error-codes';
 import type { DaemonCredentials, EnrollmentOptions } from './enrollment/types';
 import type { HeartbeatOptions } from './heartbeat/types';
 import type { SocketOptions } from './socket/types';
@@ -110,11 +109,7 @@ export class ClusterDaemonClient {
             (error) => this.notifyError(
                 error instanceof DaemonClientError
                     ? error
-                    : new DaemonClientError(
-                        DaemonClientErrorCode.CommandTimeout,
-                        `Heartbeat failed: ${error instanceof Error ? error.message : String(error)}`,
-                        error
-                    )
+                    : DaemonClientError.heartbeatFailed(error)
             )
         );
     }

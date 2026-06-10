@@ -6,12 +6,13 @@ import os
 import platform
 import shutil
 import tarfile
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import requests
+import semver
 
 from .errors import (
     NetworkError,
@@ -24,9 +25,6 @@ DEFAULT_REGISTRY_URL = 'https://registry.voltcloud.dev'
 
 _SEARCH_PAGE_SIZE = 100
 _USER_AGENT = 'voltsdk-plugins/3.0'
-_LEGACY_INDEX_SUFFIX = '/plugin-registry/index.json'
-_LEGACY_INDEX_BASE = '/plugin-registry'
-
 
 @dataclass(frozen=True)
 class BundleRef:
@@ -38,9 +36,7 @@ class BundleRef:
     sha256: str | None = None
     size_bytes: int | None = None
 
-
 class PluginRegistry:
-    """HTTP client for the Volt-Registry API (registry.voltcloud.dev)."""
 
     def __init__(
         self,
@@ -50,15 +46,16 @@ class PluginRegistry:
         platform_tag: str | None = None,
         token: str | None = None,
     ) -> None:
-        self.url = _normalize_registry_url(url or os.environ.get('VOLT_PLUGIN_REGISTRY') or DEFAULT_REGISTRY_URL)
+        self.url = (url or os.environ.get('VOLT_PLUGIN_REGISTRY') or DEFAULT_REGISTRY_URL).rstrip('/')
         self.cache_dir = Path(cache_dir or os.environ.get('VOLT_CACHE_DIR') or _default_cache_dir()).expanduser()
         self.platform_tag = platform_tag or _platform_tag()
         self.token = token or os.environ.get('VOLT_REGISTRY_TOKEN') or None
         self._packument_cache: dict[str, dict[str, Any]] = {}
 
-    # ------------------------------------------------------------------
-    # Catalog
-    # ------------------------------------------------------------------
+        self._session = requests.Session()
+        self._session.headers['User-Agent'] = _USER_AGENT
+        if self.token:
+            self._session.headers['Authorization'] = f'Bearer {self.token}'
 
     def list(self, *, kind: str | None = 'engine') -> list[str]:
         page = 1
@@ -77,11 +74,11 @@ class PluginRegistry:
                 if not full_name:
                     continue
                 scope, name = _split_scope_name(full_name)
-                legacy = f'{scope}@{name}'
-                if legacy in seen:
+                canonical = f'@{scope}/{name}'
+                if canonical in seen:
                     continue
-                seen.add(legacy)
-                result.append(legacy)
+                seen.add(canonical)
+                result.append(canonical)
             total = payload.get('total') if isinstance(payload, dict) else None
             if isinstance(total, int) and page * _SEARCH_PAGE_SIZE >= total:
                 break
@@ -145,10 +142,6 @@ class PluginRegistry:
             size_bytes=int(size) if isinstance(size, int) else None,
         )
 
-    # ------------------------------------------------------------------
-    # Bundle download / cache
-    # ------------------------------------------------------------------
-
     def install(self, key: str, version: str | None = None, *, force: bool = False) -> Path:
         ref = self.resolve(key, version)
         target = self._install_dir(ref)
@@ -188,10 +181,6 @@ class PluginRegistry:
                 return candidate
         return None
 
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
-
     def _packument(self, scope: str, name: str) -> dict[str, Any]:
         cache_key = f'{scope}/{name}'
         cached = self._packument_cache.get(cache_key)
@@ -210,7 +199,7 @@ class PluginRegistry:
             manifests_dir.mkdir(parents=True, exist_ok=True)
             (manifests_dir / f'{name}.json').write_text(json.dumps(payload), encoding='utf-8')
         except OSError:
-            # Best-effort offline mirror; refusing to fail install on cache write.
+
             pass
 
     def _select_version(
@@ -236,90 +225,61 @@ class PluginRegistry:
         if requested in versions:
             return requested
 
-        if _looks_like_range(requested):
-            picked = _pick_semver_range(list(versions.keys()), requested)
-            if picked is not None:
-                return picked
-            raise PluginNotFoundError(f'No version satisfies {requested!r}.')
-
-        raise PluginNotFoundError(f'Version {requested!r} is not published.')
+        picked = _pick_semver_range(list(versions.keys()), requested)
+        if picked is not None:
+            return picked
+        raise PluginNotFoundError(f'No version satisfies {requested!r}.')
 
     def _install_dir(self, ref: BundleRef) -> Path:
         return self.cache_dir / 'plugins' / ref.publisher / ref.key / ref.version / ref.platform
 
+    def _abs(self, path: str) -> str:
+        return path if _is_absolute(path) else f'{self.url}/{path.lstrip("/")}'
+
     def _get_json(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
-        url = self._build_url(path, params)
-        request = urllib.request.Request(url, headers=self._headers(accept='application/json'))
+        url = self._abs(path)
+        query = {key: value for key, value in (params or {}).items() if value is not None}
         try:
-            with urllib.request.urlopen(request) as response:
-                body = response.read()
-        except urllib.error.HTTPError as error:
-            if error.code == 404:
-                raise PluginNotFoundError(f'Registry resource {path!r} not found.') from error
-            raise NetworkError(f'Registry request {url!r} failed: HTTP {error.code}') from error
-        except urllib.error.URLError as error:
-            raise NetworkError(f'Registry request {url!r} failed: {error.reason}') from error
-        if not body:
+            response = self._session.get(
+                url, params=query or None, headers={'Accept': 'application/json'}, timeout=30,
+            )
+        except requests.RequestException as error:
+            raise NetworkError(f'Registry request {url!r} failed: {error}') from error
+        if response.status_code == 404:
+            raise PluginNotFoundError(f'Registry resource {path!r} not found.')
+        if response.status_code >= 400:
+            raise NetworkError(f'Registry request {response.url!r} failed: HTTP {response.status_code}')
+        if not response.content:
             return {}
         try:
-            return json.loads(body.decode('utf-8'))
-        except json.JSONDecodeError as error:
-            raise NetworkError(f'Registry returned invalid JSON from {url!r}.') from error
+            return response.json()
+        except ValueError as error:
+            raise NetworkError(f'Registry returned invalid JSON from {response.url!r}.') from error
 
     def _fetch(self, url: str, *, fallback_name: str) -> Path:
-        absolute = url if _is_absolute(url) else f'{self.url}/{url.lstrip("/")}'
+        absolute = self._abs(url)
         downloads = self.cache_dir / 'downloads'
         downloads.mkdir(parents=True, exist_ok=True)
         name = Path(urllib.parse.urlparse(absolute).path).name or fallback_name
         target = downloads / name
-        request = urllib.request.Request(absolute, headers=self._headers(accept='application/octet-stream'))
         try:
-            with urllib.request.urlopen(request) as response, target.open('wb') as out:
-                shutil.copyfileobj(response, out)
-        except urllib.error.HTTPError as error:
-            if error.code == 404:
-                raise PluginNotFoundError(f'Bundle {absolute!r} not found.') from error
-            raise NetworkError(f'Bundle download {absolute!r} failed: HTTP {error.code}') from error
-        except urllib.error.URLError as error:
-            raise NetworkError(f'Bundle download {absolute!r} failed: {error.reason}') from error
+            with self._session.get(
+                absolute, stream=True, timeout=60, headers={'Accept': 'application/octet-stream'},
+            ) as response:
+                if response.status_code == 404:
+                    raise PluginNotFoundError(f'Bundle {absolute!r} not found.')
+                if response.status_code >= 400:
+                    raise NetworkError(f'Bundle download {absolute!r} failed: HTTP {response.status_code}')
+                with target.open('wb') as out:
+                    for chunk in response.iter_content(chunk_size=1 << 16):
+                        out.write(chunk)
+        except requests.RequestException as error:
+            raise NetworkError(f'Bundle download {absolute!r} failed: {error}') from error
         return target
-
-    def _build_url(self, path: str, params: dict[str, Any] | None) -> str:
-        absolute = path if _is_absolute(path) else f'{self.url}/{path.lstrip("/")}'
-        if not params:
-            return absolute
-        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
-        separator = '&' if urllib.parse.urlparse(absolute).query else '?'
-        return f'{absolute}{separator}{query}' if query else absolute
-
-    def _headers(self, *, accept: str) -> dict[str, str]:
-        headers = {'Accept': accept, 'User-Agent': _USER_AGENT}
-        if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
-        return headers
-
-
-# ----------------------------------------------------------------------
-# Module helpers
-# ----------------------------------------------------------------------
-
 
 def _default_cache_dir() -> Path:
     base = os.environ.get('XDG_CACHE_HOME') or str(Path.home() / '.cache')
     return Path(base) / 'volt'
-
-
-def _normalize_registry_url(url: str) -> str:
-    parsed = urllib.parse.urlparse(url)
-    path = parsed.path.rstrip('/')
-    if path.endswith(_LEGACY_INDEX_SUFFIX):
-        # Tolerate users that still have the old env var pointing at index.json.
-        path = path[: -len(_LEGACY_INDEX_SUFFIX)]
-    elif path.endswith(_LEGACY_INDEX_BASE):
-        path = path[: -len(_LEGACY_INDEX_BASE)]
-    normalized = parsed._replace(path=path, params='', query='', fragment='')
-    return urllib.parse.urlunparse(normalized).rstrip('/')
-
 
 def _platform_tag() -> str:
     system = {'Linux': 'linux', 'Darwin': 'darwin', 'Windows': 'windows'}.get(
@@ -329,42 +289,21 @@ def _platform_tag() -> str:
     machine = {'x64': 'x86_64', 'amd64': 'x86_64', 'aarch64': 'arm64'}.get(machine, machine)
     return f'{system}-{machine}'
 
-
 def _resolve_key(value: str) -> tuple[str, str]:
     if not isinstance(value, str):
         raise ValueError('Plugin key must be a string.')
     trimmed = value.strip()
-    if not trimmed:
-        raise ValueError('Plugin key cannot be empty.')
-
-    if trimmed.startswith('@'):
-        rest = trimmed[1:]
-        if '/' not in rest:
-            raise ValueError("Plugin key must use the form '@scope/name' or 'scope@name'.")
-        scope, _, name = rest.partition('/')
-    elif '/' in trimmed and '@' not in trimmed:
-        scope, _, name = trimmed.partition('/')
-    else:
-        scope, separator, name = trimmed.partition('@')
-        if separator != '@' or not scope or not name or '@' in name or '/' in name:
-            raise ValueError("Plugin key must use the form 'scope@name' or '@scope/name'.")
-
-    scope = scope.strip()
-    name = name.strip()
-    if not scope or not name:
-        raise ValueError("Plugin key must use the form 'scope@name' or '@scope/name'.")
+    if not trimmed.startswith('@') or '/' not in trimmed:
+        raise ValueError(f"Plugin key must use the form '@scope/name', got {value!r}.")
+    scope, _, name = trimmed[1:].partition('/')
+    scope, name = scope.strip(), name.strip()
+    if not scope or not name or '/' in name or '@' in name:
+        raise ValueError(f"Plugin key must use the form '@scope/name', got {value!r}.")
     return scope, name
 
-
 def _split_scope_name(full_name: str) -> tuple[str, str]:
-    if full_name.startswith('@') and '/' in full_name:
-        scope, _, name = full_name[1:].partition('/')
-        return scope, name
-    if '/' in full_name:
-        scope, _, name = full_name.partition('/')
-        return scope, name
-    return _resolve_key(full_name)
-
+    scope, _, name = full_name.lstrip('@').partition('/')
+    return scope, name
 
 def _packument_full_name(item: Any) -> str | None:
     if not isinstance(item, dict):
@@ -378,10 +317,8 @@ def _packument_full_name(item: Any) -> str | None:
         return f'@{scope}/{name}'
     return None
 
-
 def _is_absolute(url: str) -> bool:
     return urllib.parse.urlparse(url).scheme in {'http', 'https', 'file'}
-
 
 def _string_or_none(value: Any, key: str) -> str | None:
     if not isinstance(value, dict):
@@ -389,121 +326,46 @@ def _string_or_none(value: Any, key: str) -> str | None:
     inner = value.get(key)
     return inner if isinstance(inner, str) and inner else None
 
-
 def _semver_sort_key(version: str) -> tuple[Any, ...]:
     try:
-        import semver
-
-        try:
-            parsed = semver.Version.parse(version)
-        except ValueError:
-            return (0, version)
-        prerelease = parsed.prerelease or ''
-        return (1, parsed.major, parsed.minor, parsed.patch, prerelease == '', prerelease)
-    except ImportError:
-        parts = version.split('.')
-        coerced: list[int] = []
-        for part in parts:
-            try:
-                coerced.append(int(part))
-            except ValueError:
-                coerced.append(0)
-        return (1, *coerced)
-
-
-def _looks_like_range(value: str) -> bool:
-    stripped = value.strip()
-    if not stripped:
-        return False
-    if any(stripped.startswith(prefix) for prefix in ('^', '~', '>=', '<=', '>', '<', '=')):
-        return True
-    if '||' in stripped or ' - ' in stripped or ' ' in stripped:
-        return True
-    if stripped.endswith('.x') or stripped.endswith('.*'):
-        return True
-    if stripped == '*' or stripped.lower() == 'latest':
-        return False
-    return False
-
+        parsed = semver.Version.parse(version)
+    except ValueError:
+        return (0, version)
+    prerelease = parsed.prerelease or ''
+    return (1, parsed.major, parsed.minor, parsed.patch, prerelease == '', prerelease)
 
 def _pick_semver_range(versions: list[str], spec: str) -> str | None:
+    spec = spec.strip()
+    if not spec.startswith('^'):
+        return None
     try:
-        import semver
-    except ImportError as error:
-        raise PluginNotFoundError(
-            'python-semver is required to resolve a version range. Install with `pip install semver>=3`.'
-        ) from error
+        base = semver.Version.parse(_coerce(spec[1:]))
+    except ValueError:
+        return None
+    if base.major > 0:
+        upper = base.bump_major()
+    elif base.minor > 0:
+        upper = base.bump_minor()
+    else:
+        upper = base.bump_patch()
 
-    parsed: list[tuple[Any, str]] = []
+    matching: list[str] = []
     for raw in versions:
         try:
-            parsed.append((semver.Version.parse(raw), raw))
+            version = semver.Version.parse(raw)
         except ValueError:
             continue
-    if not parsed:
+        if base <= version < upper:
+            matching.append(raw)
+    if not matching:
         return None
-
-    matchers = _compile_range(spec, semver)
-    candidates = [raw for parsed_version, raw in parsed if all(match(parsed_version) for match in matchers)]
-    if not candidates:
-        return None
-    candidates.sort(key=_semver_sort_key, reverse=True)
-    return candidates[0]
-
-
-def _compile_range(spec: str, semver_module: Any):
-    pieces: list[Any] = []
-    for clause in spec.split('||'):
-        clause = clause.strip()
-        if not clause:
-            continue
-        sub: list[Any] = []
-        for token in clause.split():
-            sub.append(_compile_clause(token, semver_module))
-        if sub:
-            pieces.append(lambda version, parts=sub: all(part(version) for part in parts))
-    if not pieces:
-        return [lambda _version: False]
-    return [lambda version: any(piece(version) for piece in pieces)]
-
-
-def _compile_clause(token: str, semver_module: Any):
-    token = token.strip()
-    if token.startswith('^'):
-        base = semver_module.Version.parse(_coerce(token[1:]))
-        if base.major > 0:
-            upper = base.bump_major()
-        elif base.minor > 0:
-            upper = base.bump_minor()
-        else:
-            upper = base.bump_patch()
-        return lambda v: v >= base and v < upper
-    if token.startswith('~'):
-        base = semver_module.Version.parse(_coerce(token[1:]))
-        upper = base.bump_minor()
-        return lambda v: v >= base and v < upper
-    for prefix in ('>=', '<=', '>', '<', '='):
-        if token.startswith(prefix):
-            literal = semver_module.Version.parse(_coerce(token[len(prefix):]))
-            if prefix == '>=':
-                return lambda v: v >= literal
-            if prefix == '<=':
-                return lambda v: v <= literal
-            if prefix == '>':
-                return lambda v: v > literal
-            if prefix == '<':
-                return lambda v: v < literal
-            return lambda v: v == literal
-    literal = semver_module.Version.parse(_coerce(token))
-    return lambda v: v == literal
-
+    return max(matching, key=_semver_sort_key)
 
 def _coerce(raw: str) -> str:
     parts = raw.split('.')
     while len(parts) < 3:
         parts.append('0')
     return '.'.join(parts)
-
 
 def _verify_sha256(archive: Path, expected: str) -> None:
     digest = hashlib.sha256()
@@ -516,6 +378,12 @@ def _verify_sha256(archive: Path, expected: str) -> None:
             f'sha256 mismatch for {archive.name}: expected {expected}, got {actual}.'
         )
 
+def _safe_tar_extractall(tar: tarfile.TarFile, target: Path) -> None:
+
+    if hasattr(tarfile, 'data_filter'):
+        tar.extractall(target, filter='data')
+    else:
+        tar.extractall(target)
 
 def _extract(archive: Path, target: Path) -> None:
     with archive.open('rb') as fh:
@@ -525,11 +393,11 @@ def _extract(archive: Path, target: Path) -> None:
 
         with archive.open('rb') as fh, zstandard.ZstdDecompressor().stream_reader(fh) as reader:
             with tarfile.open(fileobj=reader, mode='r|') as tar:
-                tar.extractall(target)
+                _safe_tar_extractall(tar, target)
         return
     if magic[:2] == b'\x1f\x8b':
         with tarfile.open(archive, 'r:gz') as tar:
-            tar.extractall(target)
+            _safe_tar_extractall(tar, target)
         return
     if magic[:2] == b'PK':
         import zipfile
@@ -539,14 +407,12 @@ def _extract(archive: Path, target: Path) -> None:
         return
     raise ValueError(f'Unsupported bundle archive format: {archive.name}')
 
-
 def _ensure_executable(bin_dir: Path) -> None:
     if not bin_dir.is_dir():
         return
     for entry in bin_dir.iterdir():
         if entry.is_file():
             entry.chmod(entry.stat().st_mode | 0o111)
-
 
 def _installed_bundle(path: Path) -> bool:
     return path.is_dir() and ((path / 'bin').is_dir() or (path / 'scripts').is_dir())

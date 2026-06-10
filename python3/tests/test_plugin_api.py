@@ -39,7 +39,7 @@ class PluginApiTests(unittest.TestCase):
             input_path = root / 'input.txt'
             input_path.write_text('hello', encoding='utf-8')
 
-            run = Plugin('voltlabs@demo-plugin', '1.0.0', plugin_root)(
+            run = Plugin('@voltlabs/demo-plugin', '1.0.0', plugin_root)(
                 input_path,
                 output_dir=root / 'out',
             )
@@ -67,7 +67,7 @@ class PluginApiTests(unittest.TestCase):
             plugin_root = root / 'plugin'
             _write_plugin(plugin_root, 'consumer')
 
-            result = Plugin('voltlabs@consumer', '1.0.0', plugin_root)(
+            result = Plugin('@voltlabs/consumer', '1.0.0', plugin_root)(
                 run['input.txt'],
                 output_dir=root / 'out',
                 related=run['input.txt'],

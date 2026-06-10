@@ -26,8 +26,7 @@ Linux-native workflows.
 Optional extras:
 
 ```bash
-pip install "voltsdk[visualization]"
-pip install "voltsdk[notebook]"
+pip install "voltsdk[ovito]"   # OVITO pipeline integration
 ```
 
 ## Authenticated client
@@ -141,14 +140,14 @@ lets downloaded plugin bundles reuse the libraries installed with the wheel.
 
 ### Pinning versions
 
-Plugin identifiers accept both the canonical npm-style form (`@scope/name`) and
-the legacy `publisher@name` form. Versions may be exact, the literal `latest`,
-or a semver range:
+Plugin identifiers use the npm-style form `@scope/name` (or a bare name when a
+`default_publisher` is set on the hub). Versions may be exact, the literal
+`latest`, or a caret range (`^x.y.z`):
 
 ```python
-hub.get("@voltlabs/opendxa", "1.0.0")  # canonical, explicit version
-hub.get("voltlabs@opendxa", "^1.0.0")  # legacy form + semver range
-hub["voltlabs@opendxa"]                # shorthand for the latest version
+hub.get("@voltlabs/opendxa", "1.0.0")  # explicit version
+hub.get("@voltlabs/opendxa", "^1.0.0")  # caret range
+hub["@voltlabs/opendxa"]               # shorthand for the latest version
 hub.install("@voltlabs/opendxa")       # pre-download the latest bundle
 hub.uninstall("@voltlabs/opendxa")     # drop every cached version
 ```

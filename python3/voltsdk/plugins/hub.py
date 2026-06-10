@@ -1,5 +1,3 @@
-"""High-level entry point: plugin marketplace + instantiation."""
-
 from __future__ import annotations
 
 import os
@@ -9,16 +7,7 @@ from .errors import PluginNotFoundError
 from .plugin import Plugin
 from .registry import PluginRegistry
 
-
 class PluginHub:
-    """Hugging Face-style hub for Volt plugins.
-
-    Usage::
-
-        hub = PluginHub(default_publisher="voltlabs")
-        ptm = hub.get("polyhedral-template-matching")
-        ptm("frame.dump", output_dir="out", rmsd=0.1)
-    """
 
     def __init__(
         self,
@@ -32,10 +21,6 @@ class PluginHub:
         self.registry = registry or PluginRegistry(url=url, cache_dir=cache_dir, token=token)
         self.default_publisher = default_publisher
 
-    # ------------------------------------------------------------------
-    # Marketplace
-    # ------------------------------------------------------------------
-
     def list(self) -> list[str]:
         return self.registry.list()
 
@@ -48,20 +33,13 @@ class PluginHub:
     def uninstall(self, key: str, version: str | None = None) -> None:
         self.registry.uninstall(self._plugin_key(key), version)
 
-    # ------------------------------------------------------------------
-    # Instantiation
-    # ------------------------------------------------------------------
-
     def get(self, key: str, version: str | None = None) -> Plugin:
         plugin_key = self._plugin_key(key)
-        installed = self.registry.installed(plugin_key, version) if not version else None
+
+        installed = self.registry.installed(plugin_key, version)
         root = installed or self.registry.install(plugin_key, version)
         resolved_version = version or root.parent.name
-        return Plugin(_legacy_key(plugin_key), resolved_version, root)
-
-    # ------------------------------------------------------------------
-    # Sugar
-    # ------------------------------------------------------------------
+        return Plugin(_canonical_key(plugin_key), resolved_version, root)
 
     def __getitem__(self, key: str) -> Plugin:
         return self.get(key)
@@ -74,9 +52,9 @@ class PluginHub:
         return True
 
     def _plugin_key(self, key: str) -> str:
-        if '@' in key or '/' in key or not self.default_publisher:
+        if key.startswith('@') or not self.default_publisher:
             return key
-        return f'{self.default_publisher}@{key}'
+        return f'@{self.default_publisher}/{key}'
 
     def __repr__(self) -> str:
         return (
@@ -85,13 +63,8 @@ class PluginHub:
             f'default_publisher={self.default_publisher!r}>'
         )
 
-
-def _legacy_key(key: str) -> str:
-    """Render a normalized publisher@name key from either canonical or legacy input."""
+def _canonical_key(key: str) -> str:
     from .registry import _resolve_key
 
-    try:
-        scope, name = _resolve_key(key)
-    except ValueError:
-        return key
-    return f'{scope}@{name}'
+    scope, name = _resolve_key(key)
+    return f'@{scope}/{name}'

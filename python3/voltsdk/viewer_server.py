@@ -1,12 +1,9 @@
-"""Minimal static file server used by ``voltsdk.open_in_volt``."""
-
 from __future__ import annotations
 
 import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-
 
 class ViewerRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
@@ -28,7 +25,6 @@ class ViewerRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, _format: str, *_args: object) -> None:
         return
 
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description='Serve VoltSDK viewer assets.')
     parser.add_argument('--root', required=True)
@@ -45,7 +41,6 @@ def main(argv: list[str] | None = None) -> int:
         server.serve_forever()
 
     return 0
-
 
 if __name__ == '__main__':
     raise SystemExit(main())

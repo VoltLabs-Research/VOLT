@@ -1,20 +1,7 @@
-"""VoltSDK - Python SDK for the Volt scientific computing platform.
-
-Quick start::
-
-    from voltsdk import VoltClient, PluginHub
-
-    hub = PluginHub(default_publisher="voltlabs")
-    ptm = hub.get("polyhedral-template-matching")
-    run = ptm("frame.dump", output_dir="out", rmsd=0.1)
-    print(run["annotated.dump"].path)
-
-    client = VoltClient.from_env()
-    dxa = client.plugins.get("voltlabs@opendxa")
-    dxa("frame.dump", output_dir="out")
-"""
-
 from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING
 
 from .exceptions import (
     VoltAPIError,
@@ -38,6 +25,20 @@ from .plugins import (
 )
 from .native import root as native_root
 
+_LAZY = {
+    "VoltClient": (".client", "VoltClient"),
+    "msgpack_as_df": (".io.msgpack", "msgpack_as_df"),
+    "open_in_volt": (".viewer", "open_in_volt"),
+    "SpatialAssembler": (".spatial", "SpatialAssembler"),
+}
+
+if TYPE_CHECKING:
+
+    from .client import VoltClient
+    from .io.msgpack import msgpack_as_df
+    from .spatial import SpatialAssembler
+    from .viewer import open_in_volt
+
 __version__ = "3.1.1"
 
 __all__ = [
@@ -52,7 +53,6 @@ __all__ = [
     "msgpack_as_df",
     "open_in_volt",
     "SpatialAssembler",
-    "view_glb",
     "Plugin",
     "PluginArtifact",
     "PluginError",
@@ -65,31 +65,13 @@ __all__ = [
     "native_root",
 ]
 
-
 def __getattr__(name: str):
-    if name == "VoltClient":
-        from .client import VoltClient
+    target = _LAZY.get(name)
+    if target is None:
+        raise AttributeError(name)
+    value = getattr(importlib.import_module(target[0], __name__), target[1])
+    globals()[name] = value
+    return value
 
-        globals()[name] = VoltClient
-        return VoltClient
-    if name == "msgpack_as_df":
-        from .io.msgpack import msgpack_as_df
-
-        globals()[name] = msgpack_as_df
-        return msgpack_as_df
-    if name == "open_in_volt":
-        from .viewer import open_in_volt
-
-        globals()[name] = open_in_volt
-        return open_in_volt
-    if name == "SpatialAssembler":
-        from .spatial import SpatialAssembler
-
-        globals()[name] = SpatialAssembler
-        return SpatialAssembler
-    if name == "view_glb":
-        from .integrations.glb import view_glb
-
-        globals()[name] = view_glb
-        return view_glb
-    raise AttributeError(name)
+def __dir__() -> list[str]:
+    return sorted(__all__)

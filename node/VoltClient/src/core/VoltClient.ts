@@ -26,6 +26,13 @@ export interface VoltClientOptions {
     useRBAC?: boolean;
     /** Provides the current team ID. Required when `useRBAC` is true. */
     getTeamId?: () => string | null;
+    /**
+     * Coalesce concurrent identical GET requests into a single in-flight promise.
+     * Useful in UI contexts that fire the same fetch from multiple components.
+     * Defaults to `true`; set to `false` for server-side callers that want each
+     * `get()` to map 1:1 to a network request.
+     */
+    dedupeGetRequests?: boolean;
 };
 
 export type RequestArgs = Omit<HttpRequest, 'method' | 'url'>;
@@ -64,9 +71,15 @@ function unwrapPaginated<T>(raw: RawPaginatedResponse<T>): PaginatedResponse<T> 
 /**
  * HTTP client scoped to a base path, with:
  * - Optional RBAC `/:teamId` injection
- * - In-flight GET deduplication (one shared promise per unique URL+query key)
- * - Typed envelope unwrappers (`getUnwrapped`, `postUnwrapped`, etc.)
+ * - In-flight GET deduplication (opt out via `dedupeGetRequests: false`)
+ * - Typed envelope unwrappers (`getUnwrapped`, `postUnwrapped`, …)
  * - Paginated response normalization (`getPaginated`)
+ *
+ * Choosing a layer:
+ * - Use {@link request}/{@link get}/{@link post} for raw responses you unwrap yourself.
+ * - Use the `*Unwrapped` helpers when the server wraps payloads in `{ status, data }`.
+ * - For a declarative, typed surface across many endpoints, prefer building a
+ *   service with `createService` rather than calling these methods directly.
  */
 export default class VoltClient {
     private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -97,7 +110,8 @@ export default class VoltClient {
 
     private buildCacheKey(path: string, query?: HttpQuery): string {
         const url = this.buildUrl(path);
-        const queryStr = query ? JSON.stringify(query) : '';
+        // Sort keys so that {a,b} and {b,a} dedupe to the same in-flight request.
+        const queryStr = query ? JSON.stringify(query, Object.keys(query).sort()) : '';
         return `${url}:${queryStr}`;
     }
 
@@ -133,6 +147,10 @@ export default class VoltClient {
 
     async get<T>(path: string, query?: HttpQuery): Promise<T>;
     async get(path: string, query?: HttpQuery): Promise<unknown> {
+        if (this.opts.dedupeGetRequests === false) {
+            return this.request('GET', path, { query });
+        }
+
         const key = this.buildCacheKey(path, query);
 
         const existing = this.inFlight.get(key);
@@ -169,7 +187,11 @@ export default class VoltClient {
         return response.data;
     }
 
-    /** GET + unwrap a specific field from `{ status, data: { [field]: value } }`. */
+    /**
+     * GET + unwrap a specific field from `{ status, data: { [field]: value } }`.
+     * @deprecated Prefer `(await getUnwrapped<T>(path, query))[field]`; the
+     * dedicated field accessors duplicate `*Unwrapped` and will be removed.
+     */
     async getField<T extends object, K extends keyof T>(
         path: string,
         field: K,
@@ -185,7 +207,10 @@ export default class VoltClient {
         return response.data;
     }
 
-    /** POST + unwrap a specific field. */
+    /**
+     * POST + unwrap a specific field.
+     * @deprecated Prefer `(await postUnwrapped<T>(path, body))[field]`.
+     */
     async postField<T extends object, K extends keyof T>(
         path: string,
         field: K,
@@ -201,7 +226,10 @@ export default class VoltClient {
         return response.data;
     }
 
-    /** PATCH + unwrap a specific field. */
+    /**
+     * PATCH + unwrap a specific field.
+     * @deprecated Prefer `(await patchUnwrapped<T>(path, body))[field]`.
+     */
     async patchField<T extends object, K extends keyof T>(
         path: string,
         field: K,

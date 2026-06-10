@@ -1,5 +1,3 @@
-"""Bundled native runtime payload for VoltSDK wheels."""
-
 from __future__ import annotations
 
 from pathlib import Path
