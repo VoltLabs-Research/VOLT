@@ -22,72 +22,69 @@ interface ProcessedDislocationGeometry {
 }
 
 const MAX_DISLOCATION_VERTICES = 5_000_000;
+// OVITO-parity defaults per Burgers family, overridable via options.typeColors.
 const DISLOCATION_TYPE_COLORS: Record<string, [number, number, number, number]> = {
-    Other: [0.95, 0.1, 0.1, 1.0],
-    '1/2<111>': [0.1, 0.9, 0.1, 1.0],
-    '<100>': [1, 0.45, 0.74, 1.0],
-    '<110>': [0.1, 0.7, 0.95, 1.0],
-    '<111>': [0.95, 0.9, 0.1, 1.0],
-    '1/6<112>': [0.9, 0.5, 0.1, 1.0]
+    Other: [0.9, 0.2, 0.2, 1.0],
+    '1/2<110>': [0.2, 0.2, 1.0, 1.0],
+    '1/6<112>': [0.0, 1.0, 0.0, 1.0],
+    '1/6<110>': [1.0, 0.0, 1.0, 1.0],
+    '1/3<100>': [1.0, 1.0, 0.0, 1.0],
+    '1/3<111>': [0.0, 1.0, 1.0, 1.0],
+    '1/2<111>': [0.2, 0.95, 0.2, 1.0],
+    '<100>': [1.0, 0.3, 0.8, 1.0],
+    '<110>': [0.2, 0.5, 1.0, 1.0],
+    '<111>': [1.0, 0.8, 0.2, 1.0],
+    '1/3<1-210>': [0.0, 1.0, 0.0, 1.0],
+    '1/3<1-100>': [1.0, 0.0, 1.0, 1.0],
+    '<0001>': [1.0, 0.3, 0.8, 1.0],
+    '1/2<0001>': [1.0, 1.0, 0.0, 1.0],
+    '1/3<1-213>': [0.0, 1.0, 1.0, 1.0]
 };
 
-const calculateDislocationType = (
-    segment: DislocationSegment,
-    tolerance: number = 1e-6
-): string => {
-    if (!segment.burgers) {
+// Fallback for plugin binaries that predate the in-plugin burgers_family
+// classification. Burgers vectors come in the cluster lattice frame (unit
+// cubic lattice constant); matching on sorted absolute components is
+// permutation/sign invariant. FCC, BCC and SC prototypes do not collide, so a
+// single table is safe without knowing the crystal structure. Hexagonal
+// vectors never match cubic prototypes and stay 'Other' here — binaries new
+// enough to analyze HCP reliably already emit burgers_family themselves.
+const FALLBACK_BURGERS_FAMILIES: Array<{ components: [number, number, number]; family: string }> = [
+    { components: [0.5, 0.5, 0], family: '1/2<110>' },
+    { components: [1 / 3, 1 / 6, 1 / 6], family: '1/6<112>' },
+    { components: [1 / 6, 1 / 6, 0], family: '1/6<110>' },
+    { components: [1 / 3, 0, 0], family: '1/3<100>' },
+    { components: [1 / 3, 1 / 3, 1 / 3], family: '1/3<111>' },
+    { components: [0.5, 0.5, 0.5], family: '1/2<111>' },
+    { components: [1, 0, 0], family: '<100>' },
+    { components: [1, 1, 0], family: '<110>' },
+    { components: [1, 1, 1], family: '<111>' }
+];
+
+const FALLBACK_FAMILY_TOLERANCE = 0.01;
+
+const classifyBurgersVectorFallback = (segment: DislocationSegment): string => {
+    const vector = segment.burgers_vector_local ?? segment.burgers_vector;
+    if (!vector) {
         return 'Other';
     }
 
-    const [bx, by, bz] = segment.burgers.vector.map(Math.abs);
-    const halfComponents = [bx, by, bz].filter((component) => component > tolerance);
-
-    if (halfComponents.length === 3) {
-        const maxComponent = Math.max(...halfComponents);
-        const minComponent = Math.min(...halfComponents);
-        if ((maxComponent - minComponent) / maxComponent < tolerance && maxComponent > 0.4 && maxComponent < 0.6) {
-            return '1/2<111>';
-        }
-    }
-
-    if ([bx, by, bz].filter((component) => component > tolerance).length === 1) {
-        return '<100>';
-    }
-
-    {
-        const sorted = [bx, by, bz].sort((left, right) => right - left);
-        if (Math.abs(sorted[0] - sorted[1]) < tolerance && sorted[2] < tolerance) {
-            return '<110>';
-        }
-    }
-
-    {
-        const maxComponent = Math.max(bx, by, bz);
-        if (maxComponent >= tolerance) {
-            const ratios = [
-                Math.abs(bx / maxComponent - 1),
-                Math.abs(by / maxComponent - 1),
-                Math.abs(bz / maxComponent - 1)
-            ];
-            if (ratios.every((ratio) => ratio < tolerance) && maxComponent >= 0.8) {
-                return '<111>';
-            }
-        }
-    }
-
-    {
-        const sorted = [bx, by, bz].sort((left, right) => right - left);
-        if (sorted[0] >= tolerance && sorted[1] >= tolerance && sorted[2] >= tolerance) {
-            const ratioOne = Math.abs(sorted[0] / sorted[1] - 2);
-            const ratioTwo = Math.abs(sorted[1] / sorted[2] - 1);
-            if (ratioOne < tolerance && ratioTwo < tolerance && sorted[0] < 0.4) {
-                return '1/6<112>';
-            }
+    const sorted = vector.map(Math.abs).sort((left, right) => right - left);
+    for (const candidate of FALLBACK_BURGERS_FAMILIES) {
+        if (
+            Math.abs(sorted[0] - candidate.components[0]) < FALLBACK_FAMILY_TOLERANCE
+            && Math.abs(sorted[1] - candidate.components[1]) < FALLBACK_FAMILY_TOLERANCE
+            && Math.abs(sorted[2] - candidate.components[2]) < FALLBACK_FAMILY_TOLERANCE
+        ) {
+            return candidate.family;
         }
     }
 
     return 'Other';
 };
+
+const resolveDislocationFamily = (segment: DislocationSegment): string => (
+    segment.burgers_family ?? classifyBurgersVectorFallback(segment)
+);
 
 const createLineGeometry = (
     points: [number, number, number][],
@@ -234,7 +231,7 @@ const processDislocations = async (
             break;
         }
 
-        const type = calculateDislocationType(segment);
+        const type = resolveDislocationFamily(segment);
         const positionBase = vertexOffset * 3;
 
         for (let index = 0; index < geometry.positions.length; index += 1) {

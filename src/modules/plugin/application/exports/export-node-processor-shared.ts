@@ -2,19 +2,19 @@ import path from 'node:path';
 import { logger } from '@/core/logger';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@/modules/plugin/contracts/reverse-channel-plugin';
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@/modules/plugin/application/exports/export-node-processor-types';
-import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
+import type { JsonObject, JsonValue } from '@/support/types/json';
 import type { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 
 export const YIELD_INTERVAL = 50_000;
 
 export const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
-export const getNestedValue = (data: MsgpackObject, key: string): MsgpackValue | undefined => {
+export const getNestedValue = (data: JsonObject, key: string): JsonValue | undefined => {
     if (!key) {
         return data;
     }
 
-    return key.split('.').reduce<MsgpackValue | undefined>((current, segment) => {
+    return key.split('.').reduce<JsonValue | undefined>((current, segment) => {
         if (typeof current !== 'object' || current === null || Array.isArray(current)) {
             return undefined;
         }
@@ -38,7 +38,7 @@ export const buildObjectPath = (
 };
 
 export const resolveExporterEntries = (
-    decodedPayload: MsgpackObject,
+    decodedPayload: JsonObject,
     exporter: ExporterName
 ): ExporterEntry[] => {
     const rawExport = decodedPayload.export;

@@ -2,7 +2,6 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { pack, unpack } from 'msgpackr';
 import si from 'systeminformation';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -245,7 +244,7 @@ export class PluginProcessPool {
         const opId = internals.nextOpId;
         internals.nextOpId = (internals.nextOpId + 1) >>> 0;
         const timeoutMs = options.timeoutMs ?? this.config.requestTimeoutMs;
-        const payloadBuffer = pack(request);
+        const payloadBuffer = Buffer.from(JSON.stringify(request), 'utf8');
         const header = Buffer.allocUnsafe(8);
         header.writeUInt32LE(opId, 0);
         header.writeUInt32LE(payloadBuffer.byteLength, 4);
@@ -517,7 +516,7 @@ export class PluginProcessPool {
 
     private writeHandshake(internals: PooledProcessInternals): void {
         const request: PluginProcessRequest = { opcode: 'ping' };
-        const payloadBuffer = pack(request);
+        const payloadBuffer = Buffer.from(JSON.stringify(request), 'utf8');
         const opId = internals.nextOpId;
         internals.nextOpId = (internals.nextOpId + 1) >>> 0;
         const header = Buffer.allocUnsafe(8);
@@ -597,7 +596,7 @@ export class PluginProcessPool {
 
         try {
             const decoded = payload.byteLength > 0
-                ? (unpack(payload) as PluginProcessResponse)
+                ? (JSON.parse(payload.toString('utf8')) as PluginProcessResponse)
                 : ({ ok: true } as PluginProcessResponse);
             void this.flushProcessLogSink(internals.activeLogSink);
             internals.activeLogSink = undefined;

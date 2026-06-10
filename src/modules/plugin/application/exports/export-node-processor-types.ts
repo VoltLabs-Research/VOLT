@@ -1,12 +1,12 @@
 import type { AnalysisExposureDefinition } from '@/modules/analysis/contracts/http-analysis';
 import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-upload';
-import type { MsgpackObject } from '@/support/serialization/msgpack-value';
+import type { JsonObject } from '@/support/types/json';
 import type { JobIdentity } from '@/support/contracts/job-identity';
 
 export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
 
 export interface ExporterEntry {
-    exportData: MsgpackObject;
+    exportData: JsonObject;
     arrayIndex: number | undefined;
 }
 
@@ -26,7 +26,16 @@ export interface MeshInput {
 
 export interface DislocationSegment {
     points: [number, number, number][];
-    burgers?: { vector: [number, number, number] };
+    segment_id?: number;
+    length?: number;
+    num_points?: number;
+    magnitude?: number;
+    burgers_vector?: [number, number, number];
+    burgers_vector_local?: [number, number, number];
+    burgers_vector_global?: [number, number, number];
+    crystal_structure?: string;
+    burgers_family?: string;
+    burgers_family_label?: string;
 }
 
 export interface DislocationExportData {
@@ -88,7 +97,7 @@ export type ExportExecutionData = Required<Pick<JobIdentity, 'analysisId' | 'tra
 export interface ExportExecutionInput {
     executionData: ExportExecutionData;
     exposure: AnalysisExposureDefinition;
-    decodedPayload: MsgpackObject;
+    decodedPayload: JsonObject;
     timestep: number;
     storageClusterId: string;
     artifactUploadBatch: ArtifactUploadBatch;

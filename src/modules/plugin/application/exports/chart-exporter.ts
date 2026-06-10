@@ -4,7 +4,7 @@ import type { BubbleDataPoint, ChartConfiguration, ChartTypeRegistry, Point } fr
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { getNestedValue, stageExportBufferUpload } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import type { ChartExportOptions, ExportExecutionInput } from '@/modules/plugin/application/exports/export-node-processor-types';
-import type { MsgpackObject, MsgpackValue } from '@/support/serialization/msgpack-value';
+import type { JsonObject, JsonValue } from '@/support/types/json';
 
 interface ChartPoint {
     x: string | number;
@@ -15,10 +15,10 @@ type SupportedChartType = 'line' | 'bar' | 'scatter';
 type SupportedChartDatasetValue = number | [number, number] | Point | BubbleDataPoint | null;
 
 const extractChartData = (
-    decodedPayload: MsgpackObject,
+    decodedPayload: JsonObject,
     options: ChartExportOptions
 ): ChartPoint[] => {
-    const readChartPoint = (xValue: MsgpackValue | undefined, yValue: MsgpackValue | undefined): ChartPoint | null => {
+    const readChartPoint = (xValue: JsonValue | undefined, yValue: JsonValue | undefined): ChartPoint | null => {
         if (typeof xValue !== 'string' && typeof xValue !== 'number') {
             return null;
         }

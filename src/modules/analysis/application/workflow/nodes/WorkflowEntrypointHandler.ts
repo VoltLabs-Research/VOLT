@@ -175,7 +175,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         executionRuntime: Awaited<ReturnType<PluginBinaryCache['getExecutionRuntime']>>,
         execution: WorkflowEntrypointExecutionOptions
     ): boolean {
-        // Why: the pool only speaks the msgpack protocol to the Python stub.
+        // Why: the pool only speaks the JSON IPC protocol to the Python stub.
         // Packaged native executables are extracted and invoked directly.
         if (entrypointType !== EntrypointTypeEnum.PythonScript) {
             return false;

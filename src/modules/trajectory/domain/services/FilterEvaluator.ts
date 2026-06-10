@@ -86,18 +86,33 @@ interface ResolvedTrajectoryValues {
     valueType: 'number' | 'string';
 }
 
+// Codes are the wire contract with SpatialAssembler's native GRADIENT_LUT
+// (glb_exporter.cpp GRADIENT_DEFS) — keep both sides in sync.
 enum GradientCode {
     Viridis = 0,
     Plasma = 1,
     BlueRed = 2,
-    Grayscale = 3
+    Grayscale = 3,
+    Magma = 4,
+    Inferno = 5,
+    Cividis = 6,
+    RdBu = 7,
+    Coolwarm = 8,
+    Jet = 9
 }
 
 const GRADIENT_BY_NAME: Record<string, GradientCode> = {
     viridis: GradientCode.Viridis,
     plasma: GradientCode.Plasma,
     bluered: GradientCode.BlueRed,
-    grayscale: GradientCode.Grayscale
+    grayscale: GradientCode.Grayscale,
+    magma: GradientCode.Magma,
+    inferno: GradientCode.Inferno,
+    cividis: GradientCode.Cividis,
+    rdbu: GradientCode.RdBu,
+    coolwarm: GradientCode.Coolwarm,
+    jet: GradientCode.Jet,
+    rainbow: GradientCode.Jet
 };
 
 const HIGHLIGHT_COLOR: readonly [number, number, number] = [1.0, 0.2, 0.6];

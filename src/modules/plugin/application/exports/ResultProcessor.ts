@@ -4,7 +4,7 @@ import {
     createWorkflowExposureOutputFilePath,
     readWorkflowExposurePayload
 } from '@/modules/analysis/application/workflow/exposure-payload-reader';
-import type { MsgpackObject } from '@/support/serialization/msgpack-value';
+import type { JsonObject } from '@/support/types/json';
 import { isRecord } from '@/support/type-guards/is-record';
 import type { PluginListingRepository } from '@/modules/plugin/infrastructure/repositories/plugin-listing-repository-contract';
 import { processExportNode } from '@/modules/plugin/application/exports/ExportNodeProcessor';
@@ -166,7 +166,7 @@ async function precomputeListingRows(
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
-    decoded: MsgpackObject | null,
+    decoded: JsonObject | null,
     subListingNames: string[],
     objectKey: string | undefined,
     propertyOwnerClusterId: string,
@@ -232,7 +232,7 @@ async function precomputeSubListingRows(
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,
     exposure: AnalysisExposureDefinition,
-    subListings: Record<string, MsgpackObject[]>,
+    subListings: Record<string, JsonObject[]>,
     timestep: number
 ): Promise<void> {
     const { analysisId } = executionData.identity;

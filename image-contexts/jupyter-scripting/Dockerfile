@@ -12,7 +12,7 @@ USER ${NB_UID}
 RUN python -m pip install --no-cache-dir --upgrade \
     jupyterlab \
     minio \
-    msgpack \
+    pyarrow \
     pandas \
     vtk \
     voltsdk==2.0.0 \

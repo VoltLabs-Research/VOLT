@@ -3,7 +3,7 @@
 Volt Plugin Host — persistent Python worker.
 
 Protocol (stdin/stdout are binary):
-    [u32 opId LE][u32 payloadLen LE][msgpack bytes]
+    [u32 opId LE][u32 payloadLen LE][json bytes]
 Each request maps to a single response with the same opId.
 
 The stub imports a user-provided module (path passed via --plugin-root and
@@ -27,17 +27,9 @@ import subprocess
 import struct
 import sys
 import traceback
+import json
 import types
 from typing import Any, Callable, Dict, List, Optional
-
-try:
-    import msgpack  # type: ignore
-except ImportError as exc:
-    sys.stderr.write(
-        "volt-plugin-stub: msgpack is required but not installed in the plugin venv: "
-        f"{exc}\n"
-    )
-    sys.exit(2)
 
 try:
     import numpy as _np  # type: ignore
@@ -110,14 +102,14 @@ def _read_request(stream: io.BufferedReader):
     payload = _read_exact(stream, length) if length > 0 else b""
     if payload is None:
         raise EOFError("Unexpected EOF while reading plugin stub payload")
-    decoded = msgpack.unpackb(payload, raw=False, use_list=True) if payload else {}
+    decoded = json.loads(payload.decode("utf-8")) if payload else {}
     if not isinstance(decoded, dict):
         raise ValueError("Plugin stub expected dict payload")
     return op_id, decoded
 
 
 def _write_response(stream: io.BufferedWriter, op_id: int, payload: dict) -> None:
-    packed = msgpack.packb(payload, use_bin_type=True)
+    packed = json.dumps(payload).encode("utf-8")
     stream.write(struct.pack("<II", op_id, len(packed)))
     stream.write(packed)
     stream.flush()

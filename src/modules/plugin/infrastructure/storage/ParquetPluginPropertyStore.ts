@@ -123,7 +123,7 @@ const inferColumnsFromFlatRows = (rows: Iterable<AtomProperties>): PropertyColum
     for (const row of rows) {
         const flattened = flattenAtomProperties(row);
         for (const [key, value] of Object.entries(flattened)) {
-            if (key === 'id') continue;
+            if (BASE_COLUMNS.has(key)) continue;
             updateColumnType(columns, key, value);
         }
     }

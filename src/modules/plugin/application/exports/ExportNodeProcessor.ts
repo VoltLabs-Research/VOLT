@@ -15,7 +15,7 @@ import type {
     MeshExportOptions,
     MeshInput
 } from '@/modules/plugin/application/exports/export-node-processor-types';
-import type { MsgpackObject } from '@/support/serialization/msgpack-value';
+import type { JsonObject } from '@/support/types/json';
 
 const CHART_TYPES = new Set(['line', 'bar', 'scatter', 'area']);
 
@@ -36,7 +36,7 @@ const runEntries = async (
     input: ExportExecutionInput,
     exporter: ExporterName,
     type: string,
-    run: (exportData: MsgpackObject, objectPath: string) => Promise<unknown>
+    run: (exportData: JsonObject, objectPath: string) => Promise<unknown>
 ): Promise<void> => {
     const entries = resolveExporterEntries(input.decodedPayload, exporter);
     for (const { exportData, arrayIndex } of entries) {
