@@ -2,14 +2,48 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import os from 'node:os';
+import { parseArgs } from 'node:util';
 import { mkdir } from 'node:fs/promises';
 import * as p from '@clack/prompts';
 import AppConfig from '@/services/AppConfig';
+import type { DeployMode } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
 import Repository from '@/services/Repository';
 import DockerPreflight from '@/services/DockerPreflight';
 import Deploy from '@/services/Deploy';
 import DeployProgress from '@/services/DeployProgress';
+import { isUp, webProbeUrl } from '@/shared/health';
+
+// Exit-code contract (for cron/CI):
+//   0  success / already up to date
+//   1  runtime failure (unhandled error in main().catch)
+//   2  usage error / no existing deployment to update
+//  10  --check only: an update is available
+const EXIT_USAGE = 2;
+const EXIT_UPDATE_AVAILABLE = 10;
+
+const HELP = `Deploy VOLT — local stack deployer
+
+Usage:
+  deploy.sh                       Fresh interactive deploy (prompts for host/account/team)
+  deploy.sh --update              Update an existing deployment to the latest release
+  deploy.sh --check               Preview whether an update is available (no changes)
+
+Update options:
+  --server-only                   Run server only; stop the cluster daemon (persists the mode)
+  --with-cluster                  Run server + cluster daemon (persists the mode)
+  --force                         Rebuild even if already on the latest release
+  --data-dir <path>               Use a specific deployment data directory
+  -h, --help                      Show this help
+
+Notes:
+  --update keeps your data (mongo/redis/minio); it rebuilds and reinstalls deps.
+  In dev mode (configured app-config.json), --update rebuilds from local checkouts
+  and does not pull from GitHub releases.
+  Set GITHUB_TOKEN to raise the GitHub API rate limit for --update/--check.
+
+Exit codes: 0 ok/up-to-date · 1 failure · 2 usage/no deployment · 10 update available (--check).
+`;
 
 const moduleDir = typeof __dirname !== 'undefined'
     ? __dirname
@@ -45,10 +79,60 @@ const printSummary = (env: Record<string, string>, withCluster: boolean, email: 
     p.outro('Deployment complete.');
 };
 
-const main = async () => {
-    p.intro('Deploy VOLT');
+interface CliFlags{
+    update: boolean;
+    check: boolean;
+    serverOnly: boolean;
+    withCluster: boolean;
+    force: boolean;
+    help: boolean;
+    dataDir?: string;
+}
 
-    const dataDir = process.env.VOLT_DEPLOY_DATA ?? path.join(process.cwd(), '.volt-deploy');
+const parseFlags = (): CliFlags => {
+    // strict:false so an older cached cli.cjs tolerates future flags instead of
+    // crashing, and so unknown args don't abort a curl|bash run.
+    const { values } = parseArgs({
+        args: process.argv.slice(2),
+        strict: false,
+        options: {
+            update: { type: 'boolean' },
+            check: { type: 'boolean' },
+            'server-only': { type: 'boolean' },
+            'with-cluster': { type: 'boolean' },
+            force: { type: 'boolean' },
+            'data-dir': { type: 'string' },
+            help: { type: 'boolean', short: 'h' }
+        }
+    });
+
+    return {
+        update: values.update === true,
+        check: values.check === true,
+        serverOnly: values['server-only'] === true,
+        withCluster: values['with-cluster'] === true,
+        force: values.force === true,
+        help: values.help === true,
+        dataDir: typeof values['data-dir'] === 'string' ? values['data-dir'] : undefined
+    };
+};
+
+const main = async () => {
+    const flags = parseFlags();
+
+    if(flags.help){
+        process.stdout.write(HELP);
+        return;
+    }
+
+    const nonInteractive = flags.update || flags.check;
+
+    // A read-only --check shouldn't announce a deploy; everything else does.
+    if(!flags.check) p.intro('Deploy VOLT');
+
+    const dataDir = flags.dataDir
+        ?? process.env.VOLT_DEPLOY_DATA
+        ?? path.join(process.cwd(), '.volt-deploy');
     const downloadDir = path.join(dataDir, 'downloads');
     await mkdir(downloadDir, { recursive: true });
 
@@ -67,6 +151,79 @@ const main = async () => {
 
     const existing = await appConfig.getBootstrap();
 
+    if(flags.serverOnly && flags.withCluster){
+        p.log.error('--server-only and --with-cluster are mutually exclusive.');
+        process.exit(EXIT_USAGE);
+    }
+
+    // Build + rebuild the stack keeping data, then report. Shared by the
+    // non-interactive --update path and the interactive "update" choice.
+    const runUpdate = async (withCluster: boolean, email: string) => {
+        const deploy = new Deploy({ composeFile, appConfig, sources, docker, withCluster });
+        progress.start();
+        await deploy.update();
+        progress.stop();
+        printSummary(await appConfig.getStackEnv(), withCluster, email, false);
+    };
+
+    // ── Non-interactive --update / --check ──────────────────────────────────────
+    if(nonInteractive){
+        if(!existing){
+            p.log.error(`No existing VOLT deployment found in ${dataDir}.`);
+            p.log.message('Run without --update to deploy first, or pass --data-dir / set VOLT_DEPLOY_DATA to your deployment directory.');
+            process.exit(EXIT_USAGE);
+        }
+
+        if(flags.check){
+            const status = await sources.checkForUpdates();
+            if(status.devMode){
+                p.log.message('Dev mode active: --update rebuilds from local checkouts; no GitHub release to compare.');
+                p.outro('Up to date (dev mode).');
+                return;
+            }
+            for(const repo of status.repos){
+                const line = repo.changed
+                    ? `${repo.repoId}: ${repo.installed ?? 'none'} → ${repo.latest} (update available)`
+                    : `${repo.repoId}: ${repo.latest} (up to date)`;
+                p.log.message(line);
+            }
+            const available = status.repos.some((r) => r.changed);
+            p.outro(available ? 'Update available.' : 'Already up to date.');
+            if(available) process.exit(EXIT_UPDATE_AVAILABLE);
+            return;
+        }
+
+        // Derive the target mode from config, honoring explicit overrides, and persist
+        // an override so subsequent scheduled runs stay consistent.
+        const currentMode = await appConfig.getMode();
+        const withCluster = flags.withCluster ? true
+            : flags.serverOnly ? false
+            : currentMode !== 'server';
+        const desiredMode = withCluster ? 'cluster' : 'server';
+        const modeChanged = (flags.serverOnly || flags.withCluster) && currentMode !== desiredMode;
+        if(flags.serverOnly || flags.withCluster){
+            await appConfig.setMode(desiredMode);
+        }
+
+        // Idempotent no-op: skip the teardown+rebuild when nothing changed and the web
+        // app is already serving. A mode change (e.g. --server-only on a cluster) must
+        // NOT no-op — the topology has to be reconciled. Dev mode always rebuilds (no
+        // release tag to compare); --force bypasses the gate (also covers compose drift).
+        if(!flags.force && !modeChanged){
+            const status = await sources.checkForUpdates();
+            const env = await appConfig.getStackEnv();
+            if(!status.devMode && !status.repos.some((r) => r.changed) && await isUp(webProbeUrl(env))){
+                p.log.success(`Already up to date (${status.repos.map((r) => `${r.repoId.split('/').pop()}@${r.latest}`).join(', ')}).`);
+                p.outro('Nothing to update.');
+                return;
+            }
+        }
+
+        await runUpdate(withCluster, existing.email);
+        return;
+    }
+
+    // ── Interactive: existing deployment → ask update vs reset ──────────────────
     if(existing){
         const choice = await p.select({
             message: `Existing deployment found (${existing.email}). What would you like to do?`,
@@ -78,19 +235,22 @@ const main = async () => {
         if(p.isCancel(choice)){ p.cancel('Deployment cancelled.'); process.exit(1); }
 
         if(choice === 'update'){
-            const withCluster = (await appConfig.getMode()) !== 'server';
-            const deploy = new Deploy({ composeFile, appConfig, sources, docker, withCluster });
-            progress.start();
-            await deploy.update();
-            progress.stop();
-            printSummary(await appConfig.getStackEnv(), withCluster, existing.email, false);
+            await runUpdate((await appConfig.getMode()) !== 'server', existing.email);
             return;
         }
     }
 
+    // A fresh deploy needs prompts; without a terminal (cron/CI with no flags) the
+    // first prompt would hang forever. Fail fast with guidance instead.
+    if(!process.stdin.isTTY){
+        p.log.error('Interactive deployment needs a terminal.');
+        p.log.message('Run with --update to update an existing deployment non-interactively, or --help for usage.');
+        process.exit(EXIT_USAGE);
+    }
+
     const answers = await p.group({
         host: () => p.text({ message: 'Server host or domain', initialValue: detectIp(), validate: required }),
-        mode: () => p.select({
+        mode: () => p.select<DeployMode>({
             message: 'What do you want to deploy on this machine?',
             initialValue: 'cluster',
             options: [

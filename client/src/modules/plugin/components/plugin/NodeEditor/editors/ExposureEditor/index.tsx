@@ -50,7 +50,7 @@ const ExposureEditor = ({ node }: EditorProps) => {
                     fieldType='input'
                     name='results'
                     control={form.control}
-                    placeholder='results.msgpack'
+                    placeholder='results.parquet'
                 />
             </FormSection>
         </>

@@ -6,8 +6,9 @@ export type ColormapName =
     | 'Cividis'
     | 'RdBu'
     | 'Coolwarm'
+    | 'Jet'
     | 'Grayscale';
 
 export const COLORMAP_NAMES: ReadonlyArray<ColormapName> = [
-    'Viridis', 'Plasma', 'Magma', 'Inferno', 'Cividis', 'RdBu', 'Coolwarm', 'Grayscale'
+    'Viridis', 'Plasma', 'Magma', 'Inferno', 'Cividis', 'RdBu', 'Coolwarm', 'Jet', 'Grayscale'
 ];

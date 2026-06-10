@@ -1,9 +1,11 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
+import ColorbarLegend from '../ColorbarLegend';
 import PlaybackTicker from '../PlaybackTicker';
 import ViewportFloatingControls from '../ViewportFloatingControls';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
+import CrystalAxesTripod from '@/modules/fractal/components/atoms/CrystalAxesTripod';
 import FractalScene from '@/modules/fractal/components/organisms/FractalScene';
 import LocalGlbViewer from '@/modules/fractal/components/organisms/LocalGlbViewer';
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
@@ -31,6 +33,7 @@ interface ViewportProps {
     forcedGlbUrl?: string | null;
     showGrid: boolean;
     showGizmo: boolean;
+    showCellAxes?: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
     analysisOverlay?: ReactNode;
@@ -77,6 +80,7 @@ const Viewport = ({
     forcedGlbUrl,
     showGrid,
     showGizmo,
+    showCellAxes = true,
     sceneRef,
     bodyContent,
     analysisOverlay,
@@ -182,6 +186,25 @@ const Viewport = ({
 
     const resolvedTimestep = currentTimestep ?? 0;
     const resolvedBoxBounds = currentFrameBoxBounds;
+    // Prefer real cell vectors (triclinic-aware); orthogonal LAMMPS boxes only
+    // carry bounds, so fall back to the axis-aligned cell they describe.
+    const cellVectors = useMemo<number[][] | null>(() => {
+        const geometryVectors = currentFrame?.simulationCell?.geometry?.cell_vectors;
+        if (geometryVectors && geometryVectors.length >= 3) {
+            return geometryVectors;
+        }
+
+        if (!currentFrameBoxBounds) {
+            return null;
+        }
+
+        const { xlo, xhi, ylo, yhi, zlo, zhi } = currentFrameBoxBounds;
+        return [
+            [xhi - xlo, 0, 0],
+            [0, yhi - ylo, 0],
+            [0, 0, zhi - zlo]
+        ];
+    }, [currentFrame, currentFrameBoxBounds]);
     const canRenderTimestepViewer = Boolean(
         resolvedBoxBounds
         && trajectory?._id
@@ -214,6 +237,9 @@ const Viewport = ({
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
                             <PlaybackTicker />
+                            {showCellAxes && cellVectors && (
+                                <CrystalAxesTripod cellVectors={cellVectors} />
+                            )}
                             {localGlbMode && forcedGlbUrl && (
                                 <LocalGlbViewer
                                     url={forcedGlbUrl}
@@ -250,6 +276,8 @@ const Viewport = ({
                 {!hideGradient && <Box position='absolute' inset='0' className="canvas-viewport-gradient" />}
 
                 {analysisOverlay}
+
+                <ColorbarLegend />
 
                 {showSceneActions && <ViewportFloatingControls />}
             </Box>

@@ -185,6 +185,7 @@ const CanvasPage = () => {
         analysisId,
         showGrid,
         showGizmo,
+        showCellAxes,
         resultsPluginId,
         showWidgets,
         searchParams,
@@ -756,6 +757,7 @@ const CanvasPage = () => {
                                 forcedGlbUrl={forcedGlbUrl}
                                 showGrid={showGrid}
                                 showGizmo={showGizmo}
+                                showCellAxes={showCellAxes}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={!isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
