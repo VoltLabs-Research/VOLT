@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, chmod } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 export interface AppConfigProps{
@@ -40,13 +40,19 @@ export interface WindowBounds{
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+export type DeployMode = 'server' | 'cluster';
+
 const MAX_RECENT_ENDPOINTS = 5;
 
 export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
     async #write(config: object){
-        await writeFile(this.props.configFile, JSON.stringify(config, null, 2));
+        // app-config.json holds plaintext secrets (admin password, authToken,
+        // daemonPassword, SECRET_KEY/SSH_KEY). On a headless server the data dir
+        // is a predictable $HOME/.volt-deploy, so keep the file owner-only.
+        await writeFile(this.props.configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
+        await chmod(this.props.configFile, 0o600).catch(() => {});
     }
 
     async get(): Promise<Record<string, any>>{
@@ -81,11 +87,11 @@ export default class AppConfig{
         await this.#update({ env });
     }
 
-    async getMode(): Promise<string | undefined>{
-        return (await this.get()).deployMode as string | undefined;
+    async getMode(): Promise<DeployMode | undefined>{
+        return (await this.get()).deployMode as DeployMode | undefined;
     }
 
-    async setMode(mode: string){
+    async setMode(mode: DeployMode){
         await this.#update({ deployMode: mode });
     }
 

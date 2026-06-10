@@ -8,6 +8,7 @@ import { assertDevPaths } from '@/services/devPaths';
 import bus from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { errMessage } from '@/shared/error';
+import { isUp, PROBE_PATH, webProbeUrl } from '@/shared/health';
 import pWaitFor from 'p-wait-for';
 
 export interface DeployProps{
@@ -20,15 +21,6 @@ export interface DeployProps{
 }
 
 type DeployState = AppEvents['deploy:state']['state'];
-
-const isUp = async (url: string) => {
-    try{
-        const res = await fetch(url, { signal: AbortSignal.timeout(2_000) });
-        return res.ok || res.status === 404;
-    }catch{
-        return false;
-    }
-};
 
 const waitForUrl = (url: string, timeout = 120_000) =>
     pWaitFor(() => isUp(url), { interval: 500, timeout });
@@ -68,7 +60,7 @@ export default class Deploy{
 
         const env = await this.props.appConfig.getStackEnv();
         const serverOrigin = `http://localhost:${env.SERVER_PORT ?? '8100'}`;
-        const webProbe = `http://localhost:${env.WEB_PORT ?? '5273'}/api/auth/emails/probe%40volt.local/availability`;
+        const webProbe = webProbeUrl(env);
 
         bus.emit('deploy:phases', { phases: START_PHASES });
 
@@ -77,14 +69,14 @@ export default class Deploy{
             return;
         }
 
-        const { env: sources, changed } = await this.#phase('sources', () => this.props.sources.resolve());
+        const { env: sources, changed, commit } = await this.#phase('sources', () => this.props.sources.resolve());
         const baseEnv = await this.#composeEnv(sources);
 
         await this.#phase('build', async () =>
             (await this.#stack(baseEnv)).up([], changed));
 
         await this.#phase('server', () =>
-            waitForUrl(`${serverOrigin}/api/auth/emails/probe%40volt.local/availability`));
+            waitForUrl(`${serverOrigin}${PROBE_PATH}`));
 
         const state = await this.#phase('bootstrap', () =>
             new Bootstrap({ appConfig: this.props.appConfig, serverOrigin, account: this.props.account }).ensure());
@@ -96,6 +88,11 @@ export default class Deploy{
         }
 
         await this.#phase('web', () => waitForUrl(webProbe));
+
+        // Record the new release tags only now that the stack is healthy. Recording
+        // at resolve() time would make a failed build look "installed", so a retry
+        // would skip the rebuild and run stale images.
+        await commit();
     }
 
     stop(){

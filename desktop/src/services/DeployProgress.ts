@@ -6,13 +6,21 @@ type Spinner = ReturnType<typeof p.spinner>;
 type PhaseStatus = AppEvents['deploy:phase']['status'];
 
 /**
- * Renders one clack spinner per deploy phase and surfaces the latest container/build
- * line as the active spinner's sub-message. Keeps event wiring out of the CLI entry.
+ * Renders deploy progress to the terminal. In a TTY it shows one clack spinner per
+ * phase with the latest container/build line as a sub-message. When stdout is NOT a
+ * TTY (curl | bash, cron, systemd, CI) clack spinners emit cursor escape sequences
+ * that garble piped logs, so it falls back to plain, greppable line logging and
+ * suppresses the noisy per-line build output. Keeps event wiring out of the CLI entry.
  */
 export default class DeployProgress {
     #labels: Record<string, string> = {};
     #spinner: Spinner | null = null;
     #offHandlers: Array<() => void> = [];
+    readonly #tty: boolean;
+
+    constructor(){
+        this.#tty = !!process.stdout.isTTY;
+    }
 
     start(): void {
         this.#offHandlers = [
@@ -36,6 +44,13 @@ export default class DeployProgress {
     #renderPhase(id: string, status: PhaseStatus, detail?: string): void {
         const label = this.#labels[id] ?? id;
 
+        if(!this.#tty){
+            if(status === 'running') console.log(`→ ${label}`);
+            else if(status === 'error') console.log(`  ✗ ${label}${detail ? ` — ${detail}` : ''}`);
+            else console.log(`  ✓ ${label}`);
+            return;
+        }
+
         if(status === 'running'){
             this.#spinner = p.spinner();
             this.#spinner.start(label);
@@ -49,7 +64,10 @@ export default class DeployProgress {
 
     #renderLog(line: string): void {
         const text = line.trim();
-        if(this.#spinner && text){
+        if(!text) return;
+        // Plain logs would be drowned by per-line build output; only the spinner
+        // sub-message (TTY) surfaces it.
+        if(this.#tty && this.#spinner){
             this.#spinner.message(text);
         }
     }

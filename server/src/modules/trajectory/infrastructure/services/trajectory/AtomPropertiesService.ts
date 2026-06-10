@@ -216,7 +216,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             return new Float32Array(result);
         }
 
-        // If received as an object map from msgpack/json
+        // If received as an object map from the columnar payload
         const length = Object.keys(result).length;
         const arr = new Float32Array(length);
         for (let i = 0; i < length; i++) {
