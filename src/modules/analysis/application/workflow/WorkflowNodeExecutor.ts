@@ -12,13 +12,6 @@ export interface WorkflowNodeExecutionResult {
     reason?: string;
 }
 
-export interface RunWorkflowNodesParams {
-    nodes: WorkflowNode[];
-    context: WorkflowExecutionContext;
-    shouldSkipNode?: (node: WorkflowNode) => string | undefined;
-    stopAfterNode?: (result: WorkflowNodeExecutionResult) => boolean;
-}
-
 export class WorkflowNodeExecutor {
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
@@ -50,20 +43,5 @@ export class WorkflowNodeExecutor {
             output,
             status: 'executed'
         };
-    }
-
-    async executeOrdered(params: RunWorkflowNodesParams): Promise<WorkflowNodeExecutionResult[]> {
-        const results: WorkflowNodeExecutionResult[] = [];
-
-        for (const node of params.nodes) {
-            const result = await this.executeNode(node, params.context, params.shouldSkipNode);
-            results.push(result);
-
-            if (params.stopAfterNode?.(result)) {
-                break;
-            }
-        }
-
-        return results;
     }
 }

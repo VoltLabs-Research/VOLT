@@ -14,7 +14,6 @@ import ApplicationError from '@/app/coordination/ApplicationError';
 import type { TeamClusterServiceExposure } from '@/core/runtime/contracts/service-exposure';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import type { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
 import type { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
 import { verifyTeamClusterDirectAccessToken } from '@/modules/container/application/access/team-cluster-direct-access-token-verifier';
 import type { Readable } from 'node:stream';
@@ -112,7 +111,6 @@ export class ObjectGatewayServer {
     constructor(
         private readonly config: DaemonConfig,
         private readonly objectStore: LocalClusterObjectStoreGateway,
-        private readonly telemetryService: ObjectGatewayTelemetry,
         private readonly security: ObjectGatewaySecurity = {}
     ) {
         this.allowedBuckets = new Set(this.objectStore.listBuckets());
@@ -238,29 +236,22 @@ export class ObjectGatewayServer {
         response: Response,
         next: NextFunction
     ): Promise<void> {
-        const tracker = this.telemetryService.beginRequest(operation);
-
         try {
             const searchParams = new URL(request.originalUrl, 'http://localhost').searchParams;
             const bucket = this.readAllowedBucket(request.params.bucket);
 
             if (operation === 'list') {
-                await this.handleListCollectionRequest(bucket, searchParams, response, tracker);
+                await this.handleListCollectionRequest(bucket, searchParams, response);
                 return;
             }
 
             if (operation === 'compose') {
-                await this.handleComposeCollectionRequest(bucket, request.body, response, tracker);
+                await this.handleComposeCollectionRequest(bucket, request.body, response);
                 return;
             }
 
-            await this.handleDeletePrefixCollectionRequest(bucket, searchParams, response, tracker);
+            await this.handleDeletePrefixCollectionRequest(bucket, searchParams, response);
         } catch (error) {
-            const statusCode = (error as Partial<StatusCodeError>).statusCode;
-            tracker.complete({
-                statusCode: error instanceof ApplicationError || statusCode !== undefined ? statusCode as number : 500,
-                hasError: true
-            });
             next(error);
         }
     }
@@ -275,36 +266,26 @@ export class ObjectGatewayServer {
         }
 
         const operation = this.readObjectOperation(request.method);
-        const tracker = this.telemetryService.beginRequest(operation);
 
-        try {
-            const bucket = this.readAllowedBucket(request.params.bucket);
-            const objectKey = this.decodePathComponent(objectKeyPath, 'objectKey');
+        const bucket = this.readAllowedBucket(request.params.bucket);
+        const objectKey = this.decodePathComponent(objectKeyPath, 'objectKey');
 
-            if (operation === 'head') {
-                await this.handleHeadObjectRequest(bucket, objectKey, response, tracker);
-                return;
-            }
-
-            if (operation === 'get') {
-                await this.handleGetObjectRequest(request, bucket, objectKey, response, tracker);
-                return;
-            }
-
-            if (operation === 'put') {
-                await this.handlePutObjectRequest(request, bucket, objectKey, response, tracker);
-                return;
-            }
-
-            await this.handleDeleteObjectRequest(bucket, objectKey, response, tracker);
-        } catch (error) {
-            const statusCode = (error as Partial<StatusCodeError>).statusCode;
-            tracker.complete({
-                statusCode: error instanceof ApplicationError || statusCode !== undefined ? statusCode as number : 500,
-                hasError: true
-            });
-            throw error;
+        if (operation === 'head') {
+            await this.handleHeadObjectRequest(bucket, objectKey, response);
+            return;
         }
+
+        if (operation === 'get') {
+            await this.handleGetObjectRequest(request, bucket, objectKey, response);
+            return;
+        }
+
+        if (operation === 'put') {
+            await this.handlePutObjectRequest(request, bucket, objectKey, response);
+            return;
+        }
+
+        await this.handleDeleteObjectRequest(bucket, objectKey, response);
     }
 
     private readAllowedBucket(encodedBucket: string): string {
@@ -348,8 +329,7 @@ export class ObjectGatewayServer {
     private async handleListCollectionRequest(
         bucket: string,
         searchParams: URLSearchParams,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         const limitParam = searchParams.get('limit');
         const limit = limitParam === null ? DEFAULT_LIST_LIMIT : Number(limitParam);
@@ -364,40 +344,29 @@ export class ObjectGatewayServer {
             limit: Math.min(limit, MAX_LIST_LIMIT)
         });
 
-        const bytesOut = this.writeJson(response, 200, result);
-        tracker.complete({
-            statusCode: 200,
-            bytesOut
-        });
+        this.writeJson(response, 200, result);
     }
 
     private async handleDeletePrefixCollectionRequest(
         bucket: string,
         searchParams: URLSearchParams,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         const prefix = searchParams.get('prefix');
         if (!prefix) {
             throw new ApplicationError('ObjectGateway::MissingPrefix', 'prefix query parameter is required', 400);
         }
         const deletedCount = await this.objectStore.deleteByPrefix(bucket, prefix);
-        const bytesOut = this.writeJson(response, 200, {
+        this.writeJson(response, 200, {
             deleted: true,
             deletedCount
-        });
-
-        tracker.complete({
-            statusCode: 200,
-            bytesOut
         });
     }
 
     private async handleComposeCollectionRequest(
         bucket: string,
         body: unknown,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         if (!body || typeof body !== 'object') {
             throw new ApplicationError('ObjectGateway::InvalidComposePayload', 'Compose payload is required', 400);
@@ -430,34 +399,24 @@ export class ObjectGatewayServer {
             metadata
         });
 
-        const bytesOut = this.writeJson(response, 201, { composed: true });
-        tracker.complete({
-            statusCode: 201,
-            bytesOut
-        });
+        this.writeJson(response, 201, { composed: true });
     }
 
     private async handleHeadObjectRequest(
         bucket: string,
         objectKey: string,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         const stat = await this.readObjectStat(bucket, objectKey);
         this.writeObjectHeaders(response, stat);
         response.status(200).end();
-
-        tracker.complete({
-            statusCode: 200
-        });
     }
 
     private async handleGetObjectRequest(
         request: Request<ObjectGatewayRouteParams>,
         bucket: string,
         objectKey: string,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         const skipMetadataHeader = request.get(TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER);
         const skipMetadata = skipMetadataHeader === '1' || skipMetadataHeader === 'true';
@@ -479,8 +438,6 @@ export class ObjectGatewayServer {
         }
 
         response.status(range ? 206 : 200);
-        let bytesOut = 0;
-        let statusCode = range ? 206 : 200;
 
         await new Promise<void>((resolve, reject) => {
             const handleFinish = (): void => {
@@ -489,7 +446,6 @@ export class ObjectGatewayServer {
             };
             const handleClose = (): void => {
                 if (!response.writableEnded) {
-                    statusCode = 499;
                     stream.destroy();
                 }
 
@@ -506,19 +462,10 @@ export class ObjectGatewayServer {
                 response.removeListener('close', handleClose);
             };
 
-            stream.on('data', (chunk) => {
-                bytesOut += chunk.length;
-                tracker.markFirstByte();
-            });
             stream.once('error', handleError);
             response.once('finish', handleFinish);
             response.once('close', handleClose);
             stream.pipe(response);
-        });
-
-        tracker.complete({
-            statusCode,
-            bytesOut
         });
     }
 
@@ -526,8 +473,7 @@ export class ObjectGatewayServer {
         request: Request<ObjectGatewayRouteParams>,
         bucket: string,
         objectKey: string,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         const contentLength = this.readContentLength(request);
 
@@ -540,24 +486,16 @@ export class ObjectGatewayServer {
         });
 
         response.status(201).end();
-        tracker.complete({
-            statusCode: 201,
-            bytesIn: contentLength
-        });
     }
 
     private async handleDeleteObjectRequest(
         bucket: string,
         objectKey: string,
-        response: Response,
-        tracker: ReturnType<ObjectGatewayTelemetry['beginRequest']>
+        response: Response
     ): Promise<void> {
         await this.readObjectStat(bucket, objectKey);
         await this.objectStore.removeObject(bucket, objectKey);
         response.status(204).end();
-        tracker.complete({
-            statusCode: 204
-        });
     }
 
     private readObjectOperation(method: string): ObjectGatewayObjectOperation {
@@ -759,8 +697,7 @@ export const OBJECT_GATEWAY_EXPOSURE = Object.freeze({
 
 export const provideObjectGatewayServer = Factory('objectGatewayServer')((
     config: DaemonConfig,
-    minioService: MinioService,
-    objectGatewayTelemetry: ObjectGatewayTelemetry
-) => new ObjectGatewayServer(config, minioService, objectGatewayTelemetry, {
+    minioService: MinioService
+) => new ObjectGatewayServer(config, minioService, {
     verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
 }));

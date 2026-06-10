@@ -16,8 +16,6 @@ import type {
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { decodeCliArgumentsToken } from '@/support/serialization/serialization';
 import { isRecord } from '@/support/type-guards/is-record';
-import { getSharedWasmRuntime } from '@/modules/plugin/application/runtime/WasmRuntime';
-import type { WasmFrameChunk } from '@/modules/plugin/application/runtime/WasmPluginInstance';
 import type {
     PluginFrameDescriptor,
     PluginProcessResponse
@@ -25,8 +23,6 @@ import type {
 import type { SharedFramePublishInput } from '@/modules/plugin/application/runtime/SharedMemoryBridge';
 import fs from 'node:fs/promises';
 
-const WASM_ENTRYPOINT_TYPE = 'wasm' as const;
-const WASM_DEFAULT_TIMEOUT_MS = 30_000;
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 
 type ProcessExecutionResult = Awaited<ReturnType<BinaryExecutorService['executeProcess']>>;
@@ -132,10 +128,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         request: WorkflowEntrypointExecutionRequest
     ): Promise<WorkflowNodeOutput> {
         const { context, node, entrypoint, execution } = request;
-
-        if (WorkflowEntrypointHandler.isWasmEntrypoint(entrypoint.entrypointType)) {
-            return this.executeWasmEntrypoint(request);
-        }
 
         const executionRuntime = await execution.pluginBinaryCache.getExecutionRuntime({
             binaryObjectPath: entrypoint.binaryObjectPath,
@@ -412,140 +404,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             return value;
         }
         return String(value);
-    }
-
-    private static isWasmEntrypoint(entrypointType: EntrypointType | undefined): boolean {
-        return entrypointType === WASM_ENTRYPOINT_TYPE;
-    }
-
-    private async executeWasmEntrypoint(
-        request: WorkflowEntrypointExecutionRequest
-    ): Promise<WorkflowNodeOutput> {
-        const { context, node, entrypoint, execution } = request;
-        const wasmRuntime = getSharedWasmRuntime();
-        if (!wasmRuntime) {
-            throw new Error(
-                `WASM entrypoint for node ${node.id} cannot run: WasmRuntime singleton not initialized. `
-                + 'Register the @Service(\'wasmRuntime\') via awilix before running wasm plugins.'
-            );
-        }
-
-        const previousNodeOutput = context.outputs.get(node.id);
-        try {
-            const preparedArgs = this.resolveEntrypointArgs(request);
-            try {
-                const frame = WorkflowEntrypointHandler.resolveWasmFrame(context, node.id);
-                const config = WorkflowEntrypointHandler.parseWasmConfig(preparedArgs.resolvedArguments);
-                const startedAt = Date.now();
-                const result = await wasmRuntime.execute({
-                    binaryObjectPath: entrypoint.binaryObjectPath,
-                    ownerClusterId: entrypoint.ownerClusterId,
-                    pluginId: context.pluginId,
-                    frame,
-                    config,
-                    timeoutMs: WASM_DEFAULT_TIMEOUT_MS,
-                    logSink: execution.logSink
-                        ? (level, message) => {
-                            void execution.logSink?.handleChunk({
-                                stream: level === 'error' ? 'stderr' : 'stdout',
-                                text: `${message}\n`,
-                                occurredAt: new Date().toISOString()
-                            });
-                        }
-                        : undefined
-                });
-
-                return {
-                    binaryObjectPath: entrypoint.binaryObjectPath,
-                    commandPath: entrypoint.binaryObjectPath,
-                    artifactPath: entrypoint.binaryObjectPath,
-                    args: preparedArgs.args,
-                    resolvedArguments: preparedArgs.resolvedArguments,
-                    outputPath: execution.outputDir,
-                    exitCode: 0,
-                    stdout: '',
-                    stderr: '',
-                    wasmResult: WorkflowEntrypointHandler.coerceJsonCompatible(result.value),
-                    wasmDurationMs: result.durationMs,
-                    wasmStartupMs: result.startupMs,
-                    wasmTotalMs: Date.now() - startedAt,
-                    ...execution.extraOutput
-                };
-            } finally {
-                preparedArgs.release?.();
-            }
-        } catch (error) {
-            if (!execution.restoreOutputOnError) {
-                throw error;
-            }
-            if (previousNodeOutput) {
-                context.outputs.set(node.id, previousNodeOutput);
-            } else {
-                context.outputs.delete(node.id);
-            }
-            throw error;
-        }
-    }
-
-    private static resolveWasmFrame(context: WorkflowExecutionContext, nodeId: string): WasmFrameChunk {
-        // Why: the WASM entrypoint consumes a FrameChunk. We search upstream
-        // node outputs for the nearest payload exposing positions/types, which
-        // is how modifier/context nodes publish parsed trajectory slices.
-        const visited = new Set<string>();
-        const queue: string[] = [nodeId];
-
-        while (queue.length > 0) {
-            const currentId = queue.shift();
-            if (!currentId || visited.has(currentId)) continue;
-            visited.add(currentId);
-
-            const output = context.outputs.get(currentId);
-            if (output) {
-                const frame = WorkflowEntrypointHandler.extractFrameFromOutput(output);
-                if (frame) return frame;
-            }
-
-            for (const edge of context.workflow.getParentEdges(currentId)) {
-                queue.push(edge.source);
-            }
-        }
-
-        throw new Error(
-            `WASM entrypoint ${nodeId}: no upstream node published a FrameChunk `
-            + '(expected a payload with `positions: Float32Array` and `types: Uint16Array`).'
-        );
-    }
-
-    private static extractFrameFromOutput(output: Record<string, unknown>): WasmFrameChunk | null {
-        const positionsCandidate = output.positions ?? (output.frame as Record<string, unknown> | undefined)?.positions;
-        const typesCandidate = output.types ?? (output.frame as Record<string, unknown> | undefined)?.types;
-        if (!(positionsCandidate instanceof Float32Array) || !(typesCandidate instanceof Uint16Array)) {
-            return null;
-        }
-        const propertiesCandidate = (output.properties ?? (output.frame as Record<string, unknown> | undefined)?.properties) as
-            | Record<string, Float32Array>
-            | undefined;
-        const idsCandidate = (output.ids ?? (output.frame as Record<string, unknown> | undefined)?.ids) as Uint32Array | undefined;
-        const timestepCandidate = (output.timestep ?? (output.frame as Record<string, unknown> | undefined)?.timestep) as number | undefined;
-
-        return {
-            atomCount: typesCandidate.length,
-            positions: positionsCandidate,
-            types: typesCandidate,
-            properties: propertiesCandidate,
-            ids: idsCandidate instanceof Uint32Array ? idsCandidate : undefined,
-            timestep: timestepCandidate
-        };
-    }
-
-    private static parseWasmConfig(resolvedArguments: string): unknown {
-        const trimmed = resolvedArguments.trim();
-        if (!trimmed) return {};
-        try {
-            return JSON.parse(trimmed);
-        } catch {
-            return { raw: trimmed };
-        }
     }
 
     private parseInlineWorkflowArguments(value: string): string[] {

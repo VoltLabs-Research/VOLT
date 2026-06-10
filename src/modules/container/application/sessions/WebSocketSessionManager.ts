@@ -12,9 +12,10 @@ import type {
     BinarySessionInputPayload
 } from '@/core/reverse-channel/contracts/binary-messages';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
-import { assign, createActor, createMachine, type ActorRefFrom } from 'xstate';
 
 type SessionCommandResult = CommandResult<object | null>;
+
+type WebSocketSessionStatus = 'connecting' | 'open' | 'closed';
 
 type WebSocketMessageData = string | ArrayBuffer | Blob | ArrayBufferView | Buffer[];
 type PendingWebSocketMessage = Buffer | string;
@@ -33,72 +34,10 @@ interface ReverseChannelCloseEvent {
     reason: string;
 };
 
-const webSocketSessionMachine = createMachine({
-    types: {} as {
-        context: {
-            pendingMessageBytes: number;
-            transitionId: number;
-        };
-        events:
-            | { type: 'OPENED' }
-            | { type: 'FAILED' }
-            | { type: 'CLOSED' }
-            | { type: 'ENQUEUE_PENDING'; size: number }
-            | { type: 'DEQUEUE_PENDING'; size: number };
-        input: {
-            transitionId: number;
-        };
-    },
-    id: 'reverse-channel-websocket-session',
-    initial: 'connecting',
-    context: ({ input }) => ({
-        pendingMessageBytes: 0,
-        transitionId: input.transitionId
-    }),
-    states: {
-        connecting: {
-            on: {
-                OPENED: 'open',
-                FAILED: 'closed',
-                CLOSED: 'closed',
-                ENQUEUE_PENDING: {
-                    actions: assign({
-                        pendingMessageBytes: ({ context, event }) => context.pendingMessageBytes + event.size
-                    })
-                },
-                DEQUEUE_PENDING: {
-                    actions: assign({
-                        pendingMessageBytes: ({ context, event }) => Math.max(0, context.pendingMessageBytes - event.size)
-                    })
-                }
-            }
-        },
-        open: {
-            on: {
-                FAILED: 'closed',
-                CLOSED: 'closed',
-                ENQUEUE_PENDING: {
-                    actions: assign({
-                        pendingMessageBytes: ({ context, event }) => context.pendingMessageBytes + event.size
-                    })
-                },
-                DEQUEUE_PENDING: {
-                    actions: assign({
-                        pendingMessageBytes: ({ context, event }) => Math.max(0, context.pendingMessageBytes - event.size)
-                    })
-                }
-            }
-        },
-        closed: {
-            type: 'final'
-        }
-    }
-});
-
-type WebSocketSessionActor = ActorRefFrom<typeof webSocketSessionMachine>;
-
 interface ReverseChannelWebSocketState {
-    actor: WebSocketSessionActor;
+    status: WebSocketSessionStatus;
+    pendingMessageBytes: number;
+    transitionId: number;
     socket: WebSocket;
     openTimeout: ReturnType<typeof setTimeout> | null;
     pendingMessages: PendingWebSocketMessage[];
@@ -157,12 +96,6 @@ export class WebSocketSessionManager {
         try {
             const webSocket = new WebSocket(payload.targetUrl);
             const pendingMessages: PendingWebSocketMessage[] = [];
-            const sessionActor = createActor(webSocketSessionMachine, {
-                input: {
-                    transitionId: sessionTransition.transitionId
-                }
-            });
-            sessionActor.start();
 
             return await new Promise<SessionCommandResult>((resolve) => {
                 let openTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -204,7 +137,9 @@ export class WebSocketSessionManager {
                     const webSocketState = this.webSocketStates.get(payload.sessionId);
                     if (webSocketState) {
                         webSocketState.openTimeout = null;
-                        webSocketState.actor.send({ type: 'OPENED' });
+                        if (webSocketState.status === 'connecting') {
+                            webSocketState.status = 'open';
+                        }
                     }
 
                     clearOpenTimeout();
@@ -224,10 +159,7 @@ export class WebSocketSessionManager {
                                 return;
                             }
 
-                            webSocketState.actor.send({
-                                type: 'DEQUEUE_PENDING',
-                                size: messageBytes
-                            });
+                            webSocketState.pendingMessageBytes = Math.max(0, webSocketState.pendingMessageBytes - messageBytes);
                             webSocket.send(nextMessage);
                         }
                     }
@@ -272,7 +204,7 @@ export class WebSocketSessionManager {
                     const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
                     if (webSocketState) {
                         webSocketState.openTimeout = null;
-                        webSocketState.actor.send({ type: 'FAILED' });
+                        webSocketState.status = 'closed';
                     }
 
                     clearOpenTimeout();
@@ -294,7 +226,7 @@ export class WebSocketSessionManager {
                     const isOpen = webSocketState ? this.isSessionOpen(webSocketState) : false;
                     if (webSocketState) {
                         webSocketState.openTimeout = null;
-                        webSocketState.actor.send({ type: 'CLOSED' });
+                        webSocketState.status = 'closed';
                     }
 
                     clearOpenTimeout();
@@ -324,7 +256,9 @@ export class WebSocketSessionManager {
                 webSocket.addEventListener('close', onClose);
 
                 this.webSocketStates.set(payload.sessionId, {
-                    actor: sessionActor,
+                    status: 'connecting',
+                    pendingMessageBytes: 0,
+                    transitionId: sessionTransition.transitionId,
                     socket: webSocket,
                     openTimeout,
                     pendingMessages,
@@ -412,7 +346,7 @@ export class WebSocketSessionManager {
         if (!this.isSessionOpen(webSocketState)) {
             this.options.coordinator.endSessionTransition({
                 sessionId,
-                transitionId: webSocketState.actor.getSnapshot().context.transitionId
+                transitionId: webSocketState.transitionId
             });
         }
 
@@ -432,8 +366,7 @@ export class WebSocketSessionManager {
             webSocketState.socket.close();
         }
 
-        webSocketState.actor.send({ type: 'CLOSED' });
-        webSocketState.actor.stop();
+        webSocketState.status = 'closed';
         this.webSocketStates.delete(sessionId);
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
@@ -490,7 +423,7 @@ export class WebSocketSessionManager {
         }
 
         const messageBytes = this.getWebSocketMessageSize(message);
-        const nextPendingMessageBytes = webSocketState.actor.getSnapshot().context.pendingMessageBytes + messageBytes;
+        const nextPendingMessageBytes = webSocketState.pendingMessageBytes + messageBytes;
 
         if (nextPendingMessageBytes > WEBSOCKET_PENDING_MESSAGE_BYTES_CAP) {
             this.endSessionWithError(
@@ -501,10 +434,7 @@ export class WebSocketSessionManager {
         }
 
         webSocketState.pendingMessages.push(message);
-        webSocketState.actor.send({
-            type: 'ENQUEUE_PENDING',
-            size: messageBytes
-        });
+        webSocketState.pendingMessageBytes += messageBytes;
     }
 
     private ensureWebSocketWithinBufferCap(sessionId: string, socket: WebSocket, messageBytes: number): boolean {
@@ -538,6 +468,6 @@ export class WebSocketSessionManager {
     }
 
     private isSessionOpen(webSocketState: ReverseChannelWebSocketState): boolean {
-        return webSocketState.actor.getSnapshot().matches('open');
+        return webSocketState.status === 'open';
     }
 }

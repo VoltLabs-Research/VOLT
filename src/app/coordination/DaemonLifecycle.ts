@@ -91,7 +91,6 @@ export class DaemonLifecycle {
 
         await this.connectInfrastructure();
 
-        this.commandRegistry.markReady();
         this.heartbeatPlaneProcess.start();
         void this.voltEventChannelConnection.start().catch((error) => {
             logger.warn(`Daemon event channel did not connect during startup: ${error instanceof Error ? error.message : String(error)}`);

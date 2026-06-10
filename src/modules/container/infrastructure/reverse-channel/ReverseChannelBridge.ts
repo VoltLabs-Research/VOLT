@@ -38,7 +38,6 @@ import { OBJECT_GATEWAY_EXPOSURE } from '@/core/storage/infrastructure/gateway/O
 import ApplicationError from '@/app/coordination/ApplicationError';
 import net from 'node:net';
 import type { DaemonExposureRegistry } from '@/modules/container/application/access/DaemonExposureRegistry';
-import type { ObjectGatewayTelemetry } from '@/core/observability/infrastructure/ObjectGatewayTelemetry';
 import type { VoltCloudConnection } from '@/modules/container/infrastructure/connection/VoltCloudConnection';
 import type {
     CommandResult,
@@ -182,7 +181,6 @@ export class ReverseChannelBridge {
 
     constructor(
         private readonly dockerRuntime?: DockerRuntime,
-        private readonly objectGatewayTelemetry?: ObjectGatewayTelemetry,
         private readonly daemonExposureRegistry?: DaemonExposureRegistry
     ) {
         const sharedCoordinator = {
@@ -456,7 +454,6 @@ export class ReverseChannelBridge {
         let targetPort: number;
         const isObjectGatewayTunnel = 'exposureId' in payload
             && payload.exposureId === OBJECT_GATEWAY_EXPOSURE.id;
-        const tunnelOpenStartedAt = Date.now();
 
         this.cleanupInteractiveSession(payload.sessionId);
         this.tunnelTransports.set(payload.sessionId, transport);
@@ -495,9 +492,6 @@ export class ReverseChannelBridge {
 
             tunnelSocket.setTimeout(0);
             this.endSessionTransition(sessionTransition);
-            if (isObjectGatewayTunnel) {
-                this.objectGatewayTelemetry?.recordObjectTunnelOpened(Date.now() - tunnelOpenStartedAt);
-            }
             this.emitTunnelState({
                 type: 'tunnel-state',
                 sessionId: payload.sessionId,
@@ -859,10 +853,6 @@ export class ReverseChannelBridge {
 
         if (!tunnelState.socket.destroyed) {
             tunnelState.socket.destroy();
-        }
-
-        if (tunnelState.isObjectGatewayTunnel && tunnelState.isOpen) {
-            this.objectGatewayTelemetry?.recordObjectTunnelClosed();
         }
 
         this.tunnelStates.delete(sessionId);
