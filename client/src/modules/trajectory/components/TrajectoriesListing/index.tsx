@@ -1,8 +1,4 @@
-import useTrajectoriesListing, {
-    MOVE_TRAJECTORY_MODAL_ID,
-    NEW_TRAJECTORY_FOLDER_MODAL_ID,
-    RENAME_TRAJECTORY_FOLDER_MODAL_ID
-} from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
+import useTrajectoriesListing, { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
@@ -70,21 +66,12 @@ export default function TrajectoriesListing() {
         canCreate,
         currentFolder,
         fileInputRef,
-        getMoveFolder,
         handleCreate,
-        handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleMoveTrajectoryClose,
-        handleMoveTrajectorySubmit,
         handlePickerChange,
-        handleRenameFolderClose,
         handleRenameFolderOpen,
-        handleRenameFolderSubmit,
         isUploading,
-        listMoveFolders,
-        movingTrajectory,
-        navigateToFolder,
-        renamingFolder,
+        navigateToFolder
     } = listing;
 
     useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
@@ -115,32 +102,14 @@ export default function TrajectoriesListing() {
                             hidden
                             onChange={handlePickerChange}
                         />
-                        <NewFolderHeaderAction modalId={NEW_TRAJECTORY_FOLDER_MODAL_ID} />
+                        <NewFolderHeaderAction modalId={trajectoriesListingResource.modalIds.newFolder} />
                     </>
                 )}
                 headerMenuOptions={headerMenuOptions}
                 emptyButtonIsLoading={isUploading}
             />
 
-            <FolderedListingModals
-                newFolderModalId={NEW_TRAJECTORY_FOLDER_MODAL_ID}
-                newFolderTitle='New Trajectory Folder'
-                newFolderDescription='Create a folder in the current trajectories location.'
-                onCreateFolder={handleCreateFolder}
-                renameFolderModalId={RENAME_TRAJECTORY_FOLDER_MODAL_ID}
-                renameFolderTitle='Rename Trajectory Folder'
-                renameFolderDescription='Update the current trajectory folder name.'
-                renamingFolder={renamingFolder}
-                onRenameFolderSubmit={handleRenameFolderSubmit}
-                onRenameFolderClose={handleRenameFolderClose}
-                moveModalId={MOVE_TRAJECTORY_MODAL_ID}
-                movingItem={movingTrajectory}
-                itemLabel='Trajectory'
-                listFolders={listMoveFolders}
-                getFolder={getMoveFolder}
-                onMoveSubmit={handleMoveTrajectorySubmit}
-                onMoveClose={handleMoveTrajectoryClose}
-            />
+            <FolderedListingModals resource={trajectoriesListingResource} listing={listing} />
         </>
     );
 }

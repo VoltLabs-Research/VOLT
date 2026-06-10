@@ -2,12 +2,14 @@ import { closeModal } from '@voltstack/bravais';
 import TextInputModal from '@/shared/presentation/components/RenameEntityModal/TextInputModal';
 import useTextInputModalState from '@/shared/presentation/components/RenameEntityModal/use-text-input-modal-state';
 import { useMedia } from '@voltstack/bravais';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
-interface NewFolderModalProps {
+interface FolderNameModalProps {
     id: string;
     title: string;
     description: string;
+    // When provided (rename), the field is seeded/reset from it; omit for create.
+    initialName?: string | null;
     fieldLabel?: string;
     placeholder?: string;
     submitLabel?: string;
@@ -15,17 +17,20 @@ interface NewFolderModalProps {
     onClose?: () => void;
 };
 
-const NewFolderModal = ({
+const FolderNameModal = ({
     id,
     title,
     description,
+    initialName,
     fieldLabel = 'Folder name',
     placeholder = 'Enter folder name',
-    submitLabel = 'Create Folder',
+    submitLabel,
     onSubmit,
     onClose
-}: NewFolderModalProps) => {
+}: FolderNameModalProps) => {
     const shouldAutoFocus = !useMedia('(pointer: coarse)');
+    const isRename = initialName !== undefined;
+    const initialValue = initialName ?? '';
 
     const handleRequestClose = useCallback(() => {
         closeModal(id);
@@ -40,15 +45,19 @@ const NewFolderModal = ({
         reset
     } = useTextInputModalState({
         requiredMessage: 'Folder name is required',
-        submitErrorTitle: 'Failed to create folder',
+        submitErrorTitle: isRename ? 'Failed to rename folder' : 'Failed to create folder',
         onSubmit,
         onSubmitted: handleRequestClose
     });
 
+    useEffect(() => {
+        reset(initialValue);
+    }, [initialValue, reset]);
+
     const handleModalClose = useCallback(() => {
-        reset();
+        reset(initialValue);
         onClose?.();
-    }, [onClose, reset]);
+    }, [initialValue, onClose, reset]);
 
     return (
         <TextInputModal
@@ -60,7 +69,7 @@ const NewFolderModal = ({
             autoFocus={shouldAutoFocus}
             value={folderName}
             error={error}
-            primaryLabel={submitLabel}
+            primaryLabel={submitLabel ?? (isRename ? 'Rename Folder' : 'Create Folder')}
             submitDisabled={isSubmitting || !folderName.trim()}
             isSubmitting={isSubmitting}
             primaryIsLoading={isSubmitting}
@@ -72,4 +81,4 @@ const NewFolderModal = ({
     );
 };
 
-export default NewFolderModal;
+export default FolderNameModal;

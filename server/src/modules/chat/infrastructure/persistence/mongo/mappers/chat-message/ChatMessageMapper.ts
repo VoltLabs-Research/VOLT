@@ -6,6 +6,5 @@ import type { ChatMessageDocument } from '@modules/chat/infrastructure/persisten
 export default createMongoMapper<ChatMessage, ChatMessageProps, ChatMessageDocument>(ChatMessage, [
     'chat',
     'sender',
-    'readBy',
-    'deletedBy'
+    'readBy'
 ]);

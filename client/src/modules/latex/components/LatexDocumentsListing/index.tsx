@@ -1,9 +1,7 @@
 import useImportLatexDocument from '@/modules/latex/hooks/use-import-latex-document';
 import useLatexDocumentsListing, {
-    MOVE_LATEX_DOCUMENT_MODAL_ID,
-    NEW_LATEX_FOLDER_MODAL_ID,
     RENAME_LATEX_DOCUMENT_MODAL_ID,
-    RENAME_LATEX_FOLDER_MODAL_ID
+    latexListingResource
 } from '@/modules/latex/hooks/use-latex-documents-listing';
 import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
@@ -42,21 +40,12 @@ const LatexDocumentsListing = () => {
         breadcrumbs,
         context,
         currentFolder,
-        getMoveFolder,
-        handleCreateFolder,
         handleDeleteCurrentFolder,
-        handleMoveDocumentClose,
-        handleMoveDocumentSubmit,
         handleRenameClose,
-        handleRenameFolderClose,
         handleRenameFolderOpen,
-        handleRenameFolderSubmit,
         handleRenameSubmit,
-        listMoveFolders,
-        movingDocument,
         navigateToFolder,
-        renamingDocument,
-        renamingFolder
+        renamingDocument
     } = listing;
 
     const { openFilePicker } = useImportLatexDocument(context.folderId);
@@ -64,7 +53,7 @@ const LatexDocumentsListing = () => {
 
     const title = <Heading level={3} size='3xl' weight='medium' className='sm:font-size-4'>LaTeX Documents</Heading>;
 
-    const headerActions = <NewFolderHeaderAction modalId={NEW_LATEX_FOLDER_MODAL_ID} />;
+    const headerActions = <NewFolderHeaderAction modalId={latexListingResource.modalIds.newFolder} />;
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
         return getFolderHeaderMenuOptions({
@@ -101,25 +90,7 @@ const LatexDocumentsListing = () => {
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
             />
-            <FolderedListingModals
-                newFolderModalId={NEW_LATEX_FOLDER_MODAL_ID}
-                newFolderTitle='New LaTeX Folder'
-                newFolderDescription='Create a folder in the current LaTeX documents location.'
-                onCreateFolder={handleCreateFolder}
-                renameFolderModalId={RENAME_LATEX_FOLDER_MODAL_ID}
-                renameFolderTitle='Rename LaTeX Folder'
-                renameFolderDescription='Update the current LaTeX folder name.'
-                renamingFolder={renamingFolder}
-                onRenameFolderSubmit={handleRenameFolderSubmit}
-                onRenameFolderClose={handleRenameFolderClose}
-                moveModalId={MOVE_LATEX_DOCUMENT_MODAL_ID}
-                movingItem={movingDocument}
-                itemLabel='Document'
-                listFolders={listMoveFolders}
-                getFolder={getMoveFolder}
-                onMoveSubmit={handleMoveDocumentSubmit}
-                onMoveClose={handleMoveDocumentClose}
-            />
+            <FolderedListingModals resource={latexListingResource} listing={listing} />
         </>
     );
 };

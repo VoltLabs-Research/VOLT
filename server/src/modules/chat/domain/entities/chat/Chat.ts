@@ -22,7 +22,6 @@ export interface ChatProps {
     isGroup: boolean;
     groupName: string;
     groupDescription: string;
-    groupAvatar: string;
     admins: string[];
     createdBy: string;
 }

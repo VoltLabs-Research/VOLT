@@ -1,14 +1,11 @@
 import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ProviderScopedInputDTO } from '@modules/team/application/dtos/common';
-import TeamAIIntegrationDeletedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationDeletedEvent';
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
@@ -16,9 +13,7 @@ export default class DeleteTeamAIIntegrationUseCase implements IUseCase<Provider
     constructor(
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
-        private readonly providerCatalog: ITeamAIProviderCatalog,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}
 
     async execute(input: ProviderScopedInputDTO): Promise<Result<null, ApplicationError>> {
@@ -40,12 +35,6 @@ export default class DeleteTeamAIIntegrationUseCase implements IUseCase<Provider
         }
 
         await this.integrationRepository.deleteByTeamAndProvider(input.teamId, provider);
-
-        await this.eventBus.publish(new TeamAIIntegrationDeletedEvent({
-            teamAIIntegrationId: integration._id,
-            teamId: integration.getTeamId(),
-            provider: integration.props.provider
-        }));
 
         return Result.ok(null);
     }

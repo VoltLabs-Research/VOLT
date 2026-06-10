@@ -1,5 +1,5 @@
 import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import useGetAtoms from '@/modules/trajectory/hooks/trajectory/use-get-atoms';
+import { fetchTrajectoryAtoms } from '@/modules/trajectory/hooks/trajectory/queries';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
@@ -78,7 +78,6 @@ export default function PerAtomViewer() {
     const analysisId = searchParams.get('analysisId') ?? undefined;
     const requestedTimestep = parseTimestepParam(searchParams.get('timestep'));
 
-    const getAtoms = useGetAtoms();
     const { trajectory } = useGetTrajectoryById({ trajectoryId, enabled: Boolean(trajectoryId) });
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const timestep = useMemo(() => {
@@ -127,7 +126,7 @@ export default function PerAtomViewer() {
     }, [setSearchParams]);
 
     const fetchData = useCallback(async (params: PerAtomViewerFetchParams): Promise<PaginatedResponse<AtomListingRow>> => {
-        const result = await getAtoms({
+        const result = await fetchTrajectoryAtoms({
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
             timestep: params.timestep,
@@ -151,7 +150,7 @@ export default function PerAtomViewer() {
                 hasMore: result.page < result.totalPages
             }
         };
-    }, [getAtoms]);
+    }, []);
 
     const columns = useMemo<ColumnConfig[]>(() => {
         const baseCols: ColumnConfig[] = [

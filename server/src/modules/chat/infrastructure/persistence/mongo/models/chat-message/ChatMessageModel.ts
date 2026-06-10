@@ -7,8 +7,7 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 enum ChatMessageRelation {
     Chat = 'chat',
     Sender = 'sender',
-    ReadBy = 'readBy',
-    DeletedBy = 'deletedBy'
+    ReadBy = 'readBy'
 }
 
 type ChatMessageRelationKey = `${ChatMessageRelation}`;
@@ -47,10 +46,6 @@ const MessageSchema: Schema<ChatMessageDocument> = new Schema({
         enum: Object.values(ChatMessageType),
         default: ChatMessageType.Text
     },
-    isRead: {
-        type: Boolean,
-        default: false
-    },
     readBy: [{
         type: Schema.Types.ObjectId,
         ref: 'User'
@@ -62,22 +57,9 @@ const MessageSchema: Schema<ChatMessageDocument> = new Schema({
         fileUrl: String,
         filePath: String
     },
-    editedAt: {
-        type: Date,
-        default: null
-    },
     deleted: {
         type: Boolean,
         default: false
-    },
-    deletedAt: {
-        type: Date,
-        default: null
-    },
-    deletedBy: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
     },
     reactions: [
         new Schema({

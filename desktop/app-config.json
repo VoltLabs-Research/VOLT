@@ -26,16 +26,6 @@
     "clusterDaemonPath": "/home/rodyherrera/Desktop/ecosystem/app/ClusterDaemon"
   },
   "theme": "system",
-  "bootstrap": {
-    "done": true,
-    "email": "local-5b537c28@volt.local",
-    "password": "tbwxUHm0gT9emwY9CwHpmSwzqDcmrtQK",
-    "userId": "6a275cfa29bab20ff0e28458",
-    "teamId": "6a275cfa29bab20ff0e28466",
-    "teamClusterId": "6a275cfa29bab20ff0e28479",
-    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI3NWNmYTI5YmFiMjBmZjBlMjg0NTgiLCJ1c2VySWQiOiI2YTI3NWNmYTI5YmFiMjBmZjBlMjg0NTgiLCJpZCI6IjZhMjc1Y2ZhMjliYWIyMGZmMGUyODQ1OCIsImlhdCI6MTc4MDk2NTQzMCwiZXhwIjoxNzgxNTcwMjMwfQ.TVFAUlh7hdbgWMy0cr8u7GAMMWdw4vwF1oOzyS-EDJ4",
-    "daemonPassword": "0a17209849ca19bf7dc4fa78575a2ca47296c2def19e7eee"
-  },
   "windowBounds": {
     "x": 79,
     "y": 40,
@@ -47,10 +37,16 @@
     "http://192.168.101.98:8100"
   ],
   "deployment": {
-    "mode": "remote",
-    "remote": {
-      "serverEndpoint": "http://192.168.101.98:8100",
-      "clientUrl": "http://192.168.101.98:5273"
-    }
+    "mode": "local"
+  },
+  "bootstrap": {
+    "done": true,
+    "email": "local-48870341@volt.local",
+    "password": "tuCjyNMT1Y2eYTnY-L-qhsEdVkKRRZh_",
+    "userId": "6a28d235aaf0c8c1ad2e2548",
+    "teamId": "6a28d235aaf0c8c1ad2e2555",
+    "teamClusterId": "6a28d235aaf0c8c1ad2e2568",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2YTI4ZDIzNWFhZjBjOGMxYWQyZTI1NDgiLCJ1c2VySWQiOiI2YTI4ZDIzNWFhZjBjOGMxYWQyZTI1NDgiLCJpZCI6IjZhMjhkMjM1YWFmMGM4YzFhZDJlMjU0OCIsImlhdCI6MTc4MTA2MDE0OSwiZXhwIjoxNzgxNjY0OTQ5fQ.Az3dir5a9z3OKTJgu4p3A4tvlbFkf03O2wZoShfp3cQ",
+    "daemonPassword": "46e22a782f097f12fb5f25568f8358d83cee3dd27f561e49"
   }
 }

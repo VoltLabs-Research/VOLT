@@ -22,7 +22,6 @@ export interface Chat extends BaseEntity {
     isGroup: boolean;
     groupName?: string;
     groupDescription?: string;
-    groupAvatar?: string;
     admins: User[];
     createdBy?: User;
 }

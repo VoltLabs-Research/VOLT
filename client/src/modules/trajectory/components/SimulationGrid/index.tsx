@@ -4,19 +4,13 @@ import SimulationFolderCard from '../SimulationFolderCard';
 import discoverService from '@/modules/trajectory/api/services/discover-service';
 import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
 import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
-import useTrajectoriesListing, {
-    MOVE_TRAJECTORY_MODAL_ID,
-    NEW_TRAJECTORY_FOLDER_MODAL_ID,
-    RENAME_TRAJECTORY_FOLDER_MODAL_ID
-} from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
+import useTrajectoriesListing, { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import {
     getTrajectoryListingFolderDroppableId,
     isTrajectoryFolderRow
 } from '@/modules/trajectory/utilities/listing';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import MoveToFolderModal from '@/shared/presentation/components/MoveToFolderModal';
-import NewFolderModal from '@/shared/presentation/components/NewFolderModal';
-import RenameFolderModal from '@/shared/presentation/components/RenameFolderModal';
+import { FolderedListingModals } from '@/shared/presentation/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { Box } from '@voltstack/bravais';
 import { ChevronRight, Download, Upload } from 'lucide-react';
@@ -239,6 +233,7 @@ function DashboardSimulationGrid() {
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
     const [hasDownloadedSamples, setHasDownloadedSamples] = useState(false);
+    const listing = useTrajectoriesListing();
     const {
         breadcrumbs,
         context,
@@ -246,25 +241,16 @@ function DashboardSimulationGrid() {
         fetchData,
         fileInputRef,
         getMenuOptions,
-        getMoveFolder,
         handleCreate,
-        handleCreateFolder,
-        handleMoveTrajectoryClose,
-        handleMoveTrajectoryOpen,
-        handleMoveTrajectorySubmit,
+        handleMoveOpen,
         handlePickerChange,
-        handleRenameFolderClose,
-        handleRenameFolderSubmit,
         isUploading,
-        listMoveFolders,
-        movingTrajectory,
         navigateToFolder,
         openFolder,
         queryKey,
-        renamingFolder,
         dragAndDrop,
         socketInvalidation
-    } = useTrajectoriesListing();
+    } = listing;
     const simulationDragAndDrop = useMemo(() => dragAndDrop ? ({
         ...dragAndDrop,
         showDragAffordance: false
@@ -312,10 +298,10 @@ function DashboardSimulationGrid() {
             <SimulationCard
                 trajectory={item}
                 isSelected={isSelected(item._id)}
-                onMoveToFolder={handleMoveTrajectoryOpen}
+                onMoveToFolder={handleMoveOpen}
             />
         );
-    }, [getMenuOptions, handleFolderOpen, handleMoveTrajectoryOpen, isSelected]);
+    }, [getMenuOptions, handleFolderOpen, handleMoveOpen, isSelected]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
@@ -412,31 +398,7 @@ function DashboardSimulationGrid() {
                 onEmptyButtonClick={emptyStateConfig.onButtonClick}
                 socketInvalidation={socketInvalidation}
             />
-            <NewFolderModal
-                id={NEW_TRAJECTORY_FOLDER_MODAL_ID}
-                title='New Trajectory Folder'
-                description='Create a folder in the current trajectories location.'
-                onSubmit={handleCreateFolder}
-            />
-            <RenameFolderModal
-                id={RENAME_TRAJECTORY_FOLDER_MODAL_ID}
-                title='Rename Trajectory Folder'
-                description='Update the current trajectory folder name.'
-                folderName={renamingFolder?.title ?? null}
-                onSubmit={handleRenameFolderSubmit}
-                onClose={handleRenameFolderClose}
-            />
-            <MoveToFolderModal
-                id={MOVE_TRAJECTORY_MODAL_ID}
-                itemId={movingTrajectory?._id ?? null}
-                itemName={movingTrajectory?.name ?? null}
-                itemLabel='Trajectory'
-                sourceFolderId={movingTrajectory?.folder ?? null}
-                listFolders={listMoveFolders}
-                getFolder={getMoveFolder}
-                onSubmit={handleMoveTrajectorySubmit}
-                onClose={handleMoveTrajectoryClose}
-            />
+            <FolderedListingModals resource={trajectoriesListingResource} listing={listing} />
         </>
     );
 }

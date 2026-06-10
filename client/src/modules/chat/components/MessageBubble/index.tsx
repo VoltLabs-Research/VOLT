@@ -82,9 +82,6 @@ const MessageBubble = ({
 
                 <Row gap='05' className='message-bubble-time color-muted mt-05 font-size-2'>
                     <Text as='p'>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</Text>
-                    {message.editedAt && (
-                        <Text as='p' className='message-bubble-edited'>(edited)</Text>
-                    )}
                 </Row>
 
                 {!isDeleted && message.reactions && message.reactions.length > 0 && (

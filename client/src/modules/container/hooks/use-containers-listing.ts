@@ -22,11 +22,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
 import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
 import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import {
-    createFolderedResourceFetchers,
-    createFolderResourceDeleteConfirm,
-    FOLDER_RESOURCE_TOASTS
-} from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
+import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
 import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
@@ -37,9 +33,16 @@ import { useCallback, useState } from 'react';
 import { RiTerminalLine } from 'react-icons/ri';
 import { ContainerAction } from '../api/service';
 import { useNavigate } from 'react-router-dom';
-export const NEW_CONTAINER_FOLDER_MODAL_ID = 'new-container-folder-modal';
-export const RENAME_CONTAINER_FOLDER_MODAL_ID = 'rename-container-folder-modal';
-export const MOVE_CONTAINER_MODAL_ID = 'move-container-modal';
+
+export const containersListingResource = createFolderedListingResource({
+    subject: 'Container',
+    singularName: 'container',
+    pluralName: 'containers',
+    permissionPrefix: 'container',
+    listItems: containerQuery.useListQuery.fetch,
+    listFolders: containerFoldersQuery.fetch,
+    getFolder: containerFolderQuery.fetch
+});
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: SOCKET_CONTAINER_EVENTS.CREATED, queryKeys: [containerQuery.QUERY_KEYS.lists()] },
@@ -47,34 +50,9 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     { event: SOCKET_CONTAINER_EVENTS.DELETED, queryKeys: [containerQuery.QUERY_KEYS.lists()] }
 ];
 
-interface ContainerMoveTarget {
-    _id: string;
-    name: string;
-    folder: string | null;
-}
-
-const getContainerMoveTarget = (container: ContainerEntity): ContainerMoveTarget => ({
-    _id: container._id,
-    name: container.name,
-    folder: container.folder
-});
-
-const MOVE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Moving', subject: 'Container' });
 const START_CONTAINER_TOAST = createCrudToastOptions({ action: 'Starting', subject: 'Container' });
 const STOP_CONTAINER_TOAST = createCrudToastOptions({ action: 'Stopping', subject: 'Container' });
 const RESTART_CONTAINER_TOAST = createCrudToastOptions({ action: 'Restarting', subject: 'Container' });
-const DELETE_CONTAINER_TOAST = createCrudToastOptions({ action: 'Deleting', subject: 'Container' });
-
-const containerFetchers = createFolderedResourceFetchers({
-    listItems: containerQuery.useListQuery.fetch,
-    listFolders: containerFoldersQuery.fetch,
-    getFolder: containerFolderQuery.fetch
-});
-
-const getDeleteFolderConfirm = createFolderResourceDeleteConfirm({
-    pluralName: 'containers',
-    singularName: 'container'
-});
 
 const getDeleteConfirmationMessage = (selectedItems: ContainerEntity[]): string => {
     if (selectedItems.length === 1) {
@@ -166,7 +144,7 @@ const useContainersListing = () => {
         delete: {
             variant: 'danger',
             handler: async ({ item: container }) => {
-                await showPromise(deleteContainerMutation.mutateAsync(container._id), DELETE_CONTAINER_TOAST);
+                await showPromise(deleteContainerMutation.mutateAsync(container._id), containersListingResource.toasts.delete);
             },
             confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
             requiredPermission: 'container:delete'
@@ -182,40 +160,20 @@ const useContainersListing = () => {
         });
     }, []);
 
-    const {
-        handleMoveClose,
-        handleMoveSubmit,
-        movingItem,
-        ...folderedListing
-    } = useFolderedResourceListing({
+    const folderedListing = useFolderedResourceListing({
         teamId,
-        ...containerFetchers,
+        ...containersListingResource.listingOptions,
         mapFolderRow: createContainerFolderRow,
         mapItemRow: createContainerItemRow,
-        onFetchErrorTitle: 'Failed to fetch containers',
-        invalidFolderMessage: 'This container folder no longer exists. Showing Root instead.',
         createFolder,
-        createFolderToast: FOLDER_RESOURCE_TOASTS.create,
         updateFolder,
-        renameFolderToast: FOLDER_RESOURCE_TOASTS.rename,
         deleteFolder,
-        deleteFolderToast: FOLDER_RESOURCE_TOASTS.delete,
-        getDeleteFolderConfirm,
-        renameFolderModalId: RENAME_CONTAINER_FOLDER_MODAL_ID,
-        moveModalId: MOVE_CONTAINER_MODAL_ID,
         canMoveItems: canMoveContainers,
-        activationDistance: 6,
         getDraggableId: getContainerListingDraggableId,
         getDroppableId: getContainerListingDroppableId,
         isItemRow: isContainerItemRow,
         isFolderRow: isContainerFolderRow,
-        getMoveTarget: getContainerMoveTarget,
         moveItem: moveContainerToFolder,
-        moveToast: MOVE_CONTAINER_TOAST,
-        folderPermissions: {
-            rename: 'container:update',
-            delete: 'container:delete'
-        },
         getItemActions: getContainerActions,
         mapItemMenuOptions: filterContainerMenuOptions,
         onOpenItem: openContainer
@@ -232,9 +190,6 @@ const useContainersListing = () => {
         ...folderedListing,
         canCreate,
         handleCreate,
-        handleMoveContainerClose: handleMoveClose,
-        handleMoveContainerSubmit: handleMoveSubmit,
-        movingContainer: movingItem,
         queryKey: containerQuery.QUERY_KEYS.lists(),
         socketInvalidation: SOCKET_INVALIDATION,
         terminalContainer,

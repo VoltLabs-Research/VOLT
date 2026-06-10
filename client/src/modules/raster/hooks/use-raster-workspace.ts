@@ -1,6 +1,6 @@
 import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
 import { useRasterFrame } from '@/modules/raster/hooks/use-raster-frame';
-import { useRasterMetadata } from '@/modules/raster/hooks/use-raster-metadata';
+import { rasterMetadataQuery } from '@/modules/raster/hooks/queries';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { isApiError } from '@/shared/errors/core';
@@ -103,12 +103,15 @@ export const useRasterWorkspace = ({
     model,
     onModelChange
 }: UseRasterWorkspaceParams): UseRasterWorkspaceResult => {
-    const metadataQuery = useRasterMetadata({ trajectoryId, enabled: Boolean(trajectoryId) });
+    const metadataQuery = rasterMetadataQuery(
+        { trajectoryId: trajectoryId || '' },
+        { enabled: Boolean(trajectoryId) }
+    );
     const [requestKey, setRequestKey] = useState(0);
     const hasResolvedMetadata = !metadataQuery.isLoading;
-    const analyses = metadataQuery.metadata?.analyses ?? [];
-    const hasTrajectoryRaster = Boolean(metadataQuery.metadata?.trajectory);
-    const trajectoryAvailableTimesteps = metadataQuery.metadata?.trajectory?.availableTimesteps ?? [];
+    const analyses = metadataQuery.data?.metadata?.analyses ?? [];
+    const hasTrajectoryRaster = Boolean(metadataQuery.data?.metadata?.trajectory);
+    const trajectoryAvailableTimesteps = metadataQuery.data?.metadata?.trajectory?.availableTimesteps ?? [];
 
     const selectedAnalysis = useMemo(() => {
         if (!analysisId) {

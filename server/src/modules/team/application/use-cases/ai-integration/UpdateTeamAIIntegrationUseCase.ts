@@ -1,15 +1,12 @@
 import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationOutputDTO } from '@modules/team/application/dtos/ai-integration/UpdateTeamAIIntegrationDTO';
-import TeamAIIntegrationUpdatedEvent from '@modules/team/domain/events/ai-integration/TeamAIIntegrationUpdatedEvent';
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamAIIntegrationSecretCipher from '@modules/team/infrastructure/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject, injectable } from 'tsyringe';
 import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 
@@ -19,9 +16,7 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
         @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog,
-        private readonly secretCipher: TeamAIIntegrationSecretCipher,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}
 
     async execute(input: UpdateTeamAIIntegrationInputDTO): Promise<Result<UpdateTeamAIIntegrationOutputDTO, ApplicationError>> {
@@ -75,14 +70,6 @@ export default class UpdateTeamAIIntegrationUseCase implements IUseCase<UpdateTe
                 'AI integration could not be updated'
             ));
         }
-
-        await this.eventBus.publish(new TeamAIIntegrationUpdatedEvent({
-            teamAIIntegrationId: persisted._id,
-            teamId: persisted.getTeamId(),
-            provider: persisted.props.provider,
-            isEnabled: persisted.props.isEnabled,
-            defaultModel: persisted.props.defaultModel
-        }));
 
         return Result.ok({
             integration: toTeamAIIntegrationItemDTO(persisted, this.providerCatalog)
