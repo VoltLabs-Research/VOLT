@@ -3,15 +3,15 @@ import { logger } from '@/core/logger';
 import { buildObjectPath, resolveExporterEntries } from '@/modules/plugin/application/exports/export-node-processor-shared';
 import { exportAtomisticArtifact } from '@/modules/plugin/application/exports/atomistic-exporter';
 import { exportChartArtifact } from '@/modules/plugin/application/exports/chart-exporter';
-import { exportDislocationArtifact } from '@/modules/plugin/application/exports/dislocation-exporter';
+import { exportLineArtifact } from '@/modules/plugin/application/exports/line-exporter';
 import { exportMeshArtifact } from '@/modules/plugin/application/exports/mesh-exporter';
 import type {
     AtomisticExportData,
     ChartExportOptions,
-    DislocationExportData,
-    DislocationExportOptions,
     ExportExecutionInput,
     ExporterName,
+    LineExportData,
+    LineExportOptions,
     MeshExportOptions,
     MeshInput
 } from '@/modules/plugin/application/exports/export-node-processor-types';
@@ -84,9 +84,9 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<vo
                 exportMeshArtifact(input, exportData as unknown as MeshInput, objectPath, ownerClusterId, options as MeshExportOptions)
             ));
             return;
-        case 'DislocationExporter':
+        case 'LineExporter':
             await runEntries(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportDislocationArtifact(input, exportData as unknown as DislocationExportData, objectPath, ownerClusterId, options as DislocationExportOptions)
+                exportLineArtifact(input, exportData as unknown as LineExportData, objectPath, ownerClusterId, options as LineExportOptions)
             ));
             return;
         default:

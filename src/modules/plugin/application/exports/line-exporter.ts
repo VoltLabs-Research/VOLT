@@ -1,103 +1,50 @@
-import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
-import {
-    buildDislocationSceneSourceKey,
-    encodeDislocationSceneSource,
-    DISLOCATION_SCENE_SOURCE_VERSION
-} from '@/modules/plugin/application/exports/dislocation-scene-source';
-import { stageExportBufferUpload, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
-import type {
-    DislocationExportData,
-    DislocationExportOptions,
-    DislocationSegment,
-    ExportExecutionInput
-} from '@/modules/plugin/application/exports/export-node-processor-types';
-import spatialAssembler from '@voltstack/spatial-assembler';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export interface ProcessedDislocationGeometry {
+import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
+import { resolveCategoryColors } from '@/modules/plugin/application/exports/category-colors';
+import {
+    buildLineRangesSidecarKey,
+    buildLineSceneSourceKey,
+    type LineEntityRange,
+    type LineEntityRangesSidecar
+} from '@/modules/plugin/application/exports/line-scene-source';
+import { stageExportBufferUpload, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
+import type {
+    ExportExecutionInput,
+    LineEntity,
+    LineExportData,
+    LineExportOptions
+} from '@/modules/plugin/application/exports/export-node-processor-types';
+import spatialAssembler from '@voltstack/spatial-assembler';
+
+export interface ProcessedLineGeometry {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
     colors?: Float32Array;
     vertexCount: number;
     triangleCount: number;
+    entityRanges: LineEntityRange[];
     bounds: {
         min: [number, number, number];
         max: [number, number, number];
     };
 }
 
-// Styled re-exports (dislocation-model command) plug into the shared geometry
-// builder through these hooks instead of duplicating the tube triangulation.
-export interface DislocationGeometryHooks {
-    includeSegment?: (segment: DislocationSegment, family: string) => boolean;
-    getSegmentColor?: (segment: DislocationSegment, family: string) => [number, number, number, number];
+// Styled re-exports (line-model command) plug into the shared geometry builder
+// through these hooks instead of duplicating the tube triangulation.
+export interface LineGeometryHooks {
+    includeEntity?: (entity: LineEntity) => boolean;
+    getEntityColor?: (entity: LineEntity) => [number, number, number, number];
 }
 
-const MAX_DISLOCATION_VERTICES = 5_000_000;
-// OVITO-parity defaults per Burgers family, overridable via options.typeColors.
-export const DISLOCATION_TYPE_COLORS: Record<string, [number, number, number, number]> = {
-    Other: [0.9, 0.2, 0.2, 1.0],
-    '1/2<110>': [0.2, 0.2, 1.0, 1.0],
-    '1/6<112>': [0.0, 1.0, 0.0, 1.0],
-    '1/6<110>': [1.0, 0.0, 1.0, 1.0],
-    '1/3<100>': [1.0, 1.0, 0.0, 1.0],
-    '1/3<111>': [0.0, 1.0, 1.0, 1.0],
-    '1/2<111>': [0.2, 0.95, 0.2, 1.0],
-    '<100>': [1.0, 0.3, 0.8, 1.0],
-    '<110>': [0.2, 0.5, 1.0, 1.0],
-    '<111>': [1.0, 0.8, 0.2, 1.0],
-    '1/3<1-210>': [0.0, 1.0, 0.0, 1.0],
-    '1/3<1-100>': [1.0, 0.0, 1.0, 1.0],
-    '<0001>': [1.0, 0.3, 0.8, 1.0],
-    '1/2<0001>': [1.0, 1.0, 0.0, 1.0],
-    '1/3<1-213>': [0.0, 1.0, 1.0, 1.0]
+const MAX_LINE_VERTICES = 5_000_000;
+
+export const resolveEntityCategory = (entity: LineEntity, property: string): string => {
+    const value = entity[property];
+    return value === null || value === undefined ? '' : String(value);
 };
-
-// Fallback for plugin binaries that predate the in-plugin burgers_family
-// classification. Burgers vectors come in the cluster lattice frame (unit
-// cubic lattice constant); matching on sorted absolute components is
-// permutation/sign invariant. FCC, BCC and SC prototypes do not collide, so a
-// single table is safe without knowing the crystal structure. Hexagonal
-// vectors never match cubic prototypes and stay 'Other' here — binaries new
-// enough to analyze HCP reliably already emit burgers_family themselves.
-const FALLBACK_BURGERS_FAMILIES: Array<{ components: [number, number, number]; family: string }> = [
-    { components: [0.5, 0.5, 0], family: '1/2<110>' },
-    { components: [1 / 3, 1 / 6, 1 / 6], family: '1/6<112>' },
-    { components: [1 / 6, 1 / 6, 0], family: '1/6<110>' },
-    { components: [1 / 3, 0, 0], family: '1/3<100>' },
-    { components: [1 / 3, 1 / 3, 1 / 3], family: '1/3<111>' },
-    { components: [0.5, 0.5, 0.5], family: '1/2<111>' },
-    { components: [1, 0, 0], family: '<100>' },
-    { components: [1, 1, 0], family: '<110>' },
-    { components: [1, 1, 1], family: '<111>' }
-];
-
-const FALLBACK_FAMILY_TOLERANCE = 0.01;
-
-const classifyBurgersVectorFallback = (segment: DislocationSegment): string => {
-    const vector = segment.burgers_vector_local ?? segment.burgers_vector;
-    if (!vector) {
-        return 'Other';
-    }
-
-    const sorted = vector.map(Math.abs).sort((left, right) => right - left);
-    for (const candidate of FALLBACK_BURGERS_FAMILIES) {
-        if (
-            Math.abs(sorted[0] - candidate.components[0]) < FALLBACK_FAMILY_TOLERANCE
-            && Math.abs(sorted[1] - candidate.components[1]) < FALLBACK_FAMILY_TOLERANCE
-            && Math.abs(sorted[2] - candidate.components[2]) < FALLBACK_FAMILY_TOLERANCE
-        ) {
-            return candidate.family;
-        }
-    }
-
-    return 'Other';
-};
-
-export const resolveDislocationFamily = (segment: DislocationSegment): string => (
-    segment.burgers_family ?? classifyBurgersVectorFallback(segment)
-);
 
 const createLineGeometry = (
     points: [number, number, number][],
@@ -184,69 +131,85 @@ const createLineGeometry = (
     return { positions, normals, indices };
 };
 
-const estimateSegmentGeometry = (
-    segments: DislocationSegment[],
+const estimateLineGeometry = (
+    lines: LineEntity[],
     tubularSegments: number,
     minSegmentPoints: number
 ): { vertexCount: number; indexCount: number } => {
     let totalVertices = 0;
     let totalIndices = 0;
 
-    for (const segment of segments) {
-        if (segment.points.length < minSegmentPoints) {
+    for (const line of lines) {
+        if (line.points.length < minSegmentPoints) {
             continue;
         }
 
-        const edges = segment.points.length - 1;
+        const edges = line.points.length - 1;
         totalVertices += edges * (tubularSegments + 1) * 2;
         totalIndices += edges * tubularSegments * 6;
 
-        if (totalVertices > MAX_DISLOCATION_VERTICES) {
-            return { vertexCount: MAX_DISLOCATION_VERTICES, indexCount: totalIndices };
+        if (totalVertices > MAX_LINE_VERTICES) {
+            return { vertexCount: MAX_LINE_VERTICES, indexCount: totalIndices };
         }
     }
 
     return { vertexCount: totalVertices, indexCount: totalIndices };
 };
 
-export const processDislocations = async (
-    data: DislocationExportData,
-    options: Required<DislocationExportOptions>,
-    hooks?: DislocationGeometryHooks
-): Promise<ProcessedDislocationGeometry | null> => {
-    const segments = data.segments;
-    const typeColors = { ...DISLOCATION_TYPE_COLORS, ...options.typeColors };
-    const estimate = estimateSegmentGeometry(segments, options.tubularSegments, options.minSegmentPoints);
+// Default categorical colors: explicit plugin colors first, then a
+// deterministic palette over the remaining sorted category values.
+const buildDefaultColorResolver = (
+    lines: LineEntity[],
+    options: Required<LineExportOptions>
+): ((entity: LineEntity) => [number, number, number, number]) | undefined => {
+    const property = options.colorBy;
+    if (!property) {
+        return undefined;
+    }
+
+    const categories = lines.map((line) => resolveEntityCategory(line, property));
+    const colors = resolveCategoryColors(categories, options.propertyColors);
+    return (entity) => colors.get(resolveEntityCategory(entity, property)) ?? [0.9, 0.2, 0.2, 1];
+};
+
+export const processLines = async (
+    data: LineExportData,
+    options: Required<LineExportOptions>,
+    hooks?: LineGeometryHooks
+): Promise<ProcessedLineGeometry | null> => {
+    const lines = data.lines;
+    const estimate = estimateLineGeometry(lines, options.tubularSegments, options.minSegmentPoints);
     if (estimate.vertexCount === 0) {
         return null;
     }
 
+    const getEntityColor = hooks?.getEntityColor ?? buildDefaultColorResolver(lines, options);
     const positions = new Float32Array(estimate.vertexCount * 3);
     const normals = new Float32Array(estimate.vertexCount * 3);
     const indices = new Uint32Array(estimate.indexCount);
-    const colors = options.colorByType ? new Float32Array(estimate.vertexCount * 4) : undefined;
+    const colors = getEntityColor ? new Float32Array(estimate.vertexCount * 4) : undefined;
+    const entityRanges: LineEntityRange[] = [];
 
     let vertexOffset = 0;
     let indexOffset = 0;
     let sinceLastYield = 0;
 
-    for (const segment of segments) {
-        if (segment.points.length < options.minSegmentPoints) {
+    for (const line of lines) {
+        if (line.points.length < options.minSegmentPoints) {
             continue;
         }
 
-        const type = resolveDislocationFamily(segment);
-        if (hooks?.includeSegment && !hooks.includeSegment(segment, type)) {
+        if (hooks?.includeEntity && !hooks.includeEntity(line)) {
             continue;
         }
 
-        const geometry = createLineGeometry(segment.points, options.lineWidth, options.tubularSegments);
+        const geometry = createLineGeometry(line.points, options.lineWidth, options.tubularSegments);
         if (geometry.positions.length === 0) {
             continue;
         }
 
-        const segmentVertexCount = geometry.positions.length / 3;
-        if (vertexOffset + segmentVertexCount > MAX_DISLOCATION_VERTICES) {
+        const entityVertexCount = geometry.positions.length / 3;
+        if (vertexOffset + entityVertexCount > MAX_LINE_VERTICES) {
             break;
         }
 
@@ -263,14 +226,18 @@ export const processDislocations = async (
         for (let index = 0; index < geometry.indices.length; index += 1) {
             indices[indexOffset + index] = geometry.indices[index] + vertexOffset;
         }
+
+        entityRanges.push({
+            id: line.id,
+            triangleStart: indexOffset / 3,
+            triangleCount: geometry.indices.length / 3
+        });
         indexOffset += geometry.indices.length;
 
-        if (options.colorByType && colors) {
-            const color = hooks?.getSegmentColor
-                ? hooks.getSegmentColor(segment, type)
-                : (typeColors[type] || typeColors.Other);
+        if (getEntityColor && colors) {
+            const color = getEntityColor(line);
             const colorBase = vertexOffset * 4;
-            for (let index = 0; index < segmentVertexCount; index += 1) {
+            for (let index = 0; index < entityVertexCount; index += 1) {
                 const colorIndex = colorBase + index * 4;
                 colors[colorIndex] = color[0];
                 colors[colorIndex + 1] = color[1];
@@ -279,7 +246,7 @@ export const processDislocations = async (
             }
         }
 
-        vertexOffset += segmentVertexCount;
+        vertexOffset += entityVertexCount;
         sinceLastYield += 1;
         if (sinceLastYield >= 500) {
             sinceLastYield = 0;
@@ -316,11 +283,12 @@ export const processDislocations = async (
         colors: finalColors,
         vertexCount: vertexOffset,
         triangleCount: finalIndices.length / 3,
+        entityRanges,
         bounds: { min, max }
     };
 };
 
-export const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
+export const DEFAULT_LINE_OPTIONS: Required<LineExportOptions> = {
     lineWidth: 0.08,
     tubularSegments: 12,
     minSegmentPoints: 2,
@@ -330,11 +298,17 @@ export const DEFAULT_DISLOCATION_OPTIONS: Required<DislocationExportOptions> = {
         roughness: 0.3,
         emissive: [0, 0, 0]
     },
-    colorByType: true,
-    typeColors: {}
+    colorBy: '',
+    propertyColors: {}
 };
 
-export const generateEmptyDislocationGLB = (material: Required<DislocationExportOptions>['material']): Buffer => (
+export const resolveLineOptions = (options: LineExportOptions): Required<LineExportOptions> => ({
+    ...DEFAULT_LINE_OPTIONS,
+    ...options,
+    material: { ...DEFAULT_LINE_OPTIONS.material, ...options.material }
+});
+
+export const generateEmptyLineGLB = (material: Required<LineExportOptions>['material']): Buffer => (
     spatialAssembler.generateMeshGLB(
         new Float32Array(0),
         new Float32Array(0),
@@ -359,9 +333,9 @@ export const generateEmptyDislocationGLB = (material: Required<DislocationExport
     )
 );
 
-export const buildDislocationGlb = (
-    geometry: ProcessedDislocationGeometry,
-    material: Required<DislocationExportOptions>['material']
+export const buildLineGlb = (
+    geometry: ProcessedLineGeometry,
+    material: Required<LineExportOptions>['material']
 ): Buffer => {
     const indexBuffer = geometry.vertexCount > 0 && geometry.vertexCount <= 65535
         ? new Uint16Array(geometry.indices)
@@ -390,13 +364,18 @@ export const buildDislocationGlb = (
     );
 };
 
+export const encodeLineRangesSidecar = (entityRanges: LineEntityRange[]): Buffer => {
+    const sidecar: LineEntityRangesSidecar = { version: 1, entities: entityRanges };
+    return Buffer.from(JSON.stringify(sidecar), 'utf8');
+};
+
+// The exposure's line table doubles as the restyle source: persisting it next
+// to the baked GLB means styled re-exports never re-run the analysis.
 const stageSceneSourceUpload = async (
     input: ExportExecutionInput,
-    exportData: DislocationExportData,
-    options: DislocationExportOptions,
     ownerClusterId: string
 ): Promise<void> => {
-    const objectKey = buildDislocationSceneSourceKey(
+    const objectKey = buildLineSceneSourceKey(
         input.executionData.trajectoryId,
         input.executionData.analysisId,
         input.timestep,
@@ -409,38 +388,47 @@ const stageSceneSourceUpload = async (
         ownerClusterId,
         bucket: ObjectBucketName.Models,
         objectKey,
-        buffer: encodeDislocationSceneSource({
-            version: DISLOCATION_SCENE_SOURCE_VERSION,
-            exporter: 'DislocationExporter',
-            options,
-            data: exportData
-        }),
+        buffer: await fs.readFile(input.outputFilePath),
+        contentType: 'application/vnd.apache.parquet',
+        fileName: path.basename(objectKey)
+    });
+};
+
+const stageRangesSidecarUpload = async (
+    input: ExportExecutionInput,
+    glbObjectPath: string,
+    ownerClusterId: string,
+    entityRanges: LineEntityRange[]
+): Promise<void> => {
+    const objectKey = buildLineRangesSidecarKey(glbObjectPath);
+    // No reportArtifact: picking metadata rides next to the GLB.
+    await input.artifactUploadBatch.stageBufferUpload({
+        ownerClusterId,
+        bucket: ObjectBucketName.Models,
+        objectKey,
+        buffer: encodeLineRangesSidecar(entityRanges),
         contentType: 'application/json',
         fileName: path.basename(objectKey)
     });
 };
 
-export const exportDislocationArtifact = async (
+export const exportLineArtifact = async (
     input: ExportExecutionInput,
-    exportData: DislocationExportData,
+    exportData: LineExportData,
     objectPath: string,
     ownerClusterId: string,
-    options: DislocationExportOptions
+    options: LineExportOptions
 ): Promise<boolean> => {
-    const resolvedOptions: Required<DislocationExportOptions> = {
-        ...DEFAULT_DISLOCATION_OPTIONS,
-        ...options,
-        material: { ...DEFAULT_DISLOCATION_OPTIONS.material, ...options.material }
-    };
+    const resolvedOptions = resolveLineOptions(options);
 
-    await stageSceneSourceUpload(input, exportData, options, ownerClusterId);
+    await stageSceneSourceUpload(input, ownerClusterId);
 
-    const geometry = await processDislocations(exportData, resolvedOptions);
+    const geometry = await processLines(exportData, resolvedOptions);
     if (!geometry) {
         await stageExportBufferUpload(input, {
-            exporter: 'DislocationExporter',
+            exporter: 'LineExporter',
             bucket: ObjectBucketName.Models,
-            buffer: generateEmptyDislocationGLB(resolvedOptions.material),
+            buffer: generateEmptyLineGLB(resolvedOptions.material),
             contentType: 'model/gltf-binary',
             objectPath,
             ownerClusterId
@@ -448,16 +436,17 @@ export const exportDislocationArtifact = async (
         return true;
     }
 
-    const buffer = buildDislocationGlb(geometry, resolvedOptions.material);
+    const buffer = buildLineGlb(geometry, resolvedOptions.material);
 
     await stageExportBufferUpload(input, {
-        exporter: 'DislocationExporter',
+        exporter: 'LineExporter',
         bucket: ObjectBucketName.Models,
         buffer,
         contentType: 'model/gltf-binary',
         objectPath,
         ownerClusterId
     });
+    await stageRangesSidecarUpload(input, objectPath, ownerClusterId, geometry.entityRanges);
 
     return true;
 };

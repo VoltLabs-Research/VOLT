@@ -3,7 +3,7 @@ import type { GlbExporter } from '@/modules/trajectory/application/glb/GlbExport
 import type { TrajectoryParser } from '@/modules/trajectory/application/parsing/TrajectoryParser';
 import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import type { FilterEvaluator } from '@/modules/trajectory/domain/services/FilterEvaluator';
-import type { DislocationModelEvaluator } from '@/modules/trajectory/domain/services/DislocationModelEvaluator';
+import type { LineModelEvaluator } from '@/modules/trajectory/domain/services/LineModelEvaluator';
 
 @CommandGroup('trajectory.native')
 export class TrajectoryNativeCommands {
@@ -12,7 +12,7 @@ export class TrajectoryNativeCommands {
         private readonly trajectoryParser: TrajectoryParser,
         private readonly pluginPropertyStore: PluginPropertyStore,
         private readonly filterEvaluator: FilterEvaluator,
-        private readonly dislocationModelEvaluator: DislocationModelEvaluator
+        private readonly lineModelEvaluator: LineModelEvaluator
     ) {}
 
     @Command('preprocess')
@@ -87,8 +87,8 @@ export class TrajectoryNativeCommands {
         return this.filterEvaluator.exportParticleFilterModel(payload);
     }
 
-    @Command('dislocation-model')
-    dislocationModel(payload: any) {
-        return this.dislocationModelEvaluator.exportDislocationModel(payload);
+    @Command('line-model')
+    lineModel(payload: any) {
+        return this.lineModelEvaluator.exportLineModel(payload);
     }
 }

@@ -8,6 +8,9 @@ export interface WorkflowExposurePayloadReadResult {
     subListingNames: string[];
     subListings: Record<string, JsonObject[]>;
     perAtomProperties: PerAtomProperties | null;
+    // Which entity the property rows describe — drives the property-store key
+    // so line-entity rows never merge into per-atom data by id collision.
+    entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
 
@@ -49,7 +52,7 @@ const normalizeValue = (value: unknown): unknown => {
     return value;
 };
 
-const normalizeRow = (row: JsonObject): JsonObject => {
+export const normalizeParquetRow = (row: JsonObject): JsonObject => {
     const out: JsonObject = {};
     for (const [key, value] of Object.entries(row)) {
         out[key] = normalizeValue(value) as JsonObject[string];
@@ -62,6 +65,7 @@ const emptyResult = (): WorkflowExposurePayloadReadResult => ({
     subListingNames: [],
     subListings: {},
     perAtomProperties: null,
+    entityKind: 'atoms',
     exportData: null
 });
 
@@ -101,7 +105,35 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
         subListingNames: Array.from(subListingNames),
         subListings: Object.fromEntries(subListingRows),
         perAtomProperties: (document[PER_ATOM_KEY] as PerAtomProperties | null | undefined) ?? null,
+        entityKind: 'atoms',
         exportData: Object.keys(exportData).length > 0 ? exportData : null
+    };
+};
+
+// Rebuilds the decoded exposure shape from a line entity table (fixed id +
+// points columns; every other column is a per-entity property). Properties
+// feed the same property store as per-atom data — keyed by entity id — so
+// discovery, stats, unique values and id lookups work identically for lines.
+const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
+    const lines: JsonObject[] = [];
+    const propertyRows: JsonObject[] = [];
+    let totalPoints = 0;
+
+    for (const row of rows) {
+        const { points, ...properties } = row;
+        const linePoints = Array.isArray(points) ? points : [];
+        totalPoints += linePoints.length;
+        lines.push({ ...properties, points: linePoints as JsonObject[string] });
+        propertyRows.push(properties);
+    }
+
+    return {
+        listing: { main_listing: { lines: rows.length, total_points: totalPoints } },
+        subListingNames: propertyRows.length > 0 ? ['lines'] : [],
+        subListings: propertyRows.length > 0 ? { lines: propertyRows } : {},
+        perAtomProperties: propertyRows as unknown as PerAtomProperties,
+        entityKind: 'lines',
+        exportData: { export: { LineExporter: { lines } } }
     };
 };
 
@@ -154,6 +186,7 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
         subListingNames: structures.length > 0 ? ['structures'] : [],
         subListings: structures.length > 0 ? { structures } : {},
         perAtomProperties: propertyRows as unknown as PerAtomProperties,
+        entityKind: 'atoms',
         exportData: { export: { AtomisticExporter: atomisticExporter } }
     };
 };
@@ -182,11 +215,20 @@ export const readWorkflowExposurePayload = async (
             return isRecord(document) ? extractFromDocument(document as JsonObject) : emptyResult();
         }
 
+        // Line entity table: fixed id + points geometry column.
+        if (columnNames.includes('points') && columnNames.includes('id')) {
+            const reader = await connection.runAndReadAll(
+                `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY id`
+            );
+            const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
+            return reconstructFromLineTable(rows);
+        }
+
         // Columnar per-atom table.
         const reader = await connection.runAndReadAll(
             `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY atom_index`
         );
-        const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeRow);
+        const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
         return reconstructFromColumnarAtoms(rows);
     } finally {
         connection.closeSync();

@@ -3,7 +3,7 @@ import type { ArtifactUploadBatch } from '@/modules/plugin/contracts/artifact-up
 import type { JsonObject } from '@/support/types/json';
 import type { JobIdentity } from '@/support/contracts/job-identity';
 
-export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'DislocationExporter' | 'ChartExporter';
+export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'ChartExporter';
 
 export interface ExporterEntry {
     exportData: JsonObject;
@@ -24,22 +24,16 @@ export interface MeshInput {
     facets: MeshFacet[];
 }
 
-export interface DislocationSegment {
+// One row of a line entity table: fixed id + points, every other key is a
+// per-entity property column (string/number scalars or numeric vectors).
+export interface LineEntity {
+    id: number;
     points: [number, number, number][];
-    segment_id?: number;
-    length?: number;
-    num_points?: number;
-    magnitude?: number;
-    burgers_vector?: [number, number, number];
-    burgers_vector_local?: [number, number, number];
-    burgers_vector_global?: [number, number, number];
-    crystal_structure?: string;
-    burgers_family?: string;
-    burgers_family_label?: string;
+    [property: string]: unknown;
 }
 
-export interface DislocationExportData {
-    segments: DislocationSegment[];
+export interface LineExportData {
+    lines: LineEntity[];
 }
 
 export interface AtomisticAtom {
@@ -65,13 +59,16 @@ export interface MeshExportOptions {
     material?: ExportMaterial;
 }
 
-export interface DislocationExportOptions {
+export interface LineExportOptions {
     lineWidth?: number;
     tubularSegments?: number;
     minSegmentPoints?: number;
     material?: ExportMaterial;
-    colorByType?: boolean;
-    typeColors?: Record<string, [number, number, number, number]>;
+    // Property whose values drive categorical coloring (e.g. burgers_family).
+    // Values map through propertyColors; unknown values get a deterministic
+    // palette color. When omitted, lines render with the material base color.
+    colorBy?: string;
+    propertyColors?: Record<string, [number, number, number, number]>;
 }
 
 export interface ChartExportOptions {
@@ -98,6 +95,9 @@ export interface ExportExecutionInput {
     executionData: ExportExecutionData;
     exposure: AnalysisExposureDefinition;
     decodedPayload: JsonObject;
+    // Path of the exposure's results Parquet on local disk; line exports upload
+    // it as the restyle scene source.
+    outputFilePath: string;
     timestep: number;
     storageClusterId: string;
     artifactUploadBatch: ArtifactUploadBatch;

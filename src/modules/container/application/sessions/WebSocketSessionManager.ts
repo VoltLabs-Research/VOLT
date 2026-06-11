@@ -13,6 +13,18 @@ import type {
 } from '@/core/reverse-channel/contracts/binary-messages';
 import type { CommandResult } from '@voltstack/daemon-cluster-client';
 
+/**
+ * The published `TeamClusterDaemonSessionAttachPayload` type does not yet carry
+ * `protocols`, but the server emits it on the wire (the daemon receives it
+ * verbatim). Extend locally so we can negotiate the WebSocket subprotocol
+ * (e.g. `v1.kernel.websocket.jupyter.org`) with the upstream — without this the
+ * upstream falls back to text frames while the browser expects binary, breaking
+ * the kernel connection.
+ */
+type WebSocketSessionAttachPayload = TeamClusterDaemonSessionAttachPayload & {
+    protocols?: string[];
+};
+
 type SessionCommandResult = CommandResult<object | null>;
 
 type WebSocketSessionStatus = 'connecting' | 'open' | 'closed';
@@ -71,7 +83,7 @@ export class WebSocketSessionManager {
 
     constructor(private readonly options: WebSocketSessionManagerOptions) {}
 
-    async attachSession(payload: TeamClusterDaemonSessionAttachPayload): Promise<SessionCommandResult> {
+    async attachSession(payload: WebSocketSessionAttachPayload): Promise<SessionCommandResult> {
         if (!payload.targetUrl) {
             const message = 'targetUrl is required';
             this.options.coordinator.emitSessionEnd({
@@ -94,7 +106,9 @@ export class WebSocketSessionManager {
         }
 
         try {
-            const webSocket = new WebSocket(payload.targetUrl);
+            const webSocket = payload.protocols && payload.protocols.length > 0
+                ? new WebSocket(payload.targetUrl, payload.protocols)
+                : new WebSocket(payload.targetUrl);
             const pendingMessages: PendingWebSocketMessage[] = [];
 
             return await new Promise<SessionCommandResult>((resolve) => {
@@ -160,7 +174,7 @@ export class WebSocketSessionManager {
                             }
 
                             webSocketState.pendingMessageBytes = Math.max(0, webSocketState.pendingMessageBytes - messageBytes);
-                            webSocket.send(nextMessage);
+                            webSocket.send(nextMessage, { binary: typeof nextMessage !== 'string' });
                         }
                     }
 
@@ -171,7 +185,10 @@ export class WebSocketSessionManager {
                     attachSettled = true;
                     resolve({
                         status: 200,
-                        data: { attached: true }
+                        data: {
+                            attached: true,
+                            selectedProtocol: webSocket.protocol || undefined
+                        }
                     });
                 };
 
@@ -332,7 +349,7 @@ export class WebSocketSessionManager {
             return true;
         }
 
-        webSocketState.socket.send(message);
+        webSocketState.socket.send(message, { binary: payload.isBinary });
         return true;
     }
 

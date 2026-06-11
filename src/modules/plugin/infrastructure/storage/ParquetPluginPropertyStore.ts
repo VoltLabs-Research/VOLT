@@ -211,7 +211,8 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 input.trajectoryId,
                 input.analysisId,
                 input.exposureId,
-                input.timestep
+                input.timestep,
+                input.entityKind ?? 'atoms'
             );
             const outputPath = path.join(tempDirectory, `${createHash('sha1').update(objectKey).digest('hex')}.parquet`);
             const connection = await DuckDBConnection.create();
@@ -263,19 +264,12 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 
     public async discoverPerAtomPropertySchemas(request: PluginPropertyNamesRequest): Promise<PluginPropertySchema[]> {
-        const objectKey = request.timestep === undefined
-            ? await this.findFirstExposureObjectKey(request)
-            : toPluginExposureParquetObjectKey(
-                request.trajectoryId,
-                request.analysisId,
-                request.exposureId,
-                request.timestep
-            );
-        if (!objectKey) return [];
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = request.timestep === undefined
+                ? await this.resolveFirstExposureLocalParquet(request)
+                : await this.resolveExposureLocalParquet({ ...request, timestep: request.timestep });
+            if (!parquetPath) return [];
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `DESCRIBE SELECT * FROM read_parquet(${sqlString(parquetPath)})`
@@ -296,16 +290,9 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     public async getModifierAnalysisData(
         request: PluginModifierAnalysisRequest
     ): Promise<FlatAtomProperties[] | null> {
-        const objectKey = toPluginExposureParquetObjectKey(
-            request.trajectoryId,
-            request.analysisId,
-            request.exposureId,
-            request.timestep
-        );
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ORDER BY atom_index`
@@ -319,16 +306,9 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 
     public async getModifierValues(request: PluginModifierValuesRequest): Promise<Float32Array | null> {
-        const objectKey = toPluginExposureParquetObjectKey(
-            request.trajectoryId,
-            request.analysisId,
-            request.exposureId,
-            request.timestep
-        );
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `SELECT id, TRY_CAST(${quoteIdentifier(request.property)} AS DOUBLE) AS value ` +
@@ -360,16 +340,9 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             return null;
         }
 
-        const objectKey = toPluginExposureParquetObjectKey(
-            request.trajectoryId,
-            request.analysisId,
-            request.exposureId,
-            request.timestep
-        );
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `SELECT MIN(TRY_CAST(${quoteIdentifier(request.property)} AS DOUBLE)) AS min, ` +
@@ -400,7 +373,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
 
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             if (schema?.type === 'string') {
                 const reader = await connection.runAndReadAll(
@@ -431,16 +404,9 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 
     private async getModifierStringValues(request: PluginModifierValuesRequest): Promise<{ type: 'string'; values: Array<string | null> } | null> {
-        const objectKey = toPluginExposureParquetObjectKey(
-            request.trajectoryId,
-            request.analysisId,
-            request.exposureId,
-            request.timestep
-        );
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `SELECT id, ${quoteIdentifier(request.property)} AS value ` +
@@ -465,16 +431,9 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         ));
         if (targetIds.length === 0) return null;
 
-        const objectKey = toPluginExposureParquetObjectKey(
-            request.trajectoryId,
-            request.analysisId,
-            request.exposureId,
-            request.timestep
-        );
-
         let connection: DuckDBConnection | null = null;
         try {
-            const parquetPath = await this.resolveLocalParquet(request.ownerClusterId, objectKey);
+            const parquetPath = await this.resolveExposureLocalParquet(request);
             connection = await DuckDBConnection.create();
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ` +
@@ -759,6 +718,37 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             propertyNames: allDisplayNames,
             atoms: Array.from(mergedAtoms.values()).sort((left, right) => Number(left.id) - Number(right.id))
         };
+    }
+
+    // Resolves an exposure's property table trying the atoms key first, then
+    // the line-entity key — callers address an exposure without knowing which
+    // entity kind it produced.
+    private async resolveExposureLocalParquet(request: PluginModifierAnalysisRequest): Promise<string> {
+        const atomsKey = toPluginExposureParquetObjectKey(
+            request.trajectoryId,
+            request.analysisId,
+            request.exposureId,
+            request.timestep,
+            'atoms'
+        );
+        try {
+            return await this.resolveLocalParquet(request.ownerClusterId, atomsKey);
+        } catch {
+            const linesKey = toPluginExposureParquetObjectKey(
+                request.trajectoryId,
+                request.analysisId,
+                request.exposureId,
+                request.timestep,
+                'lines'
+            );
+            return this.resolveLocalParquet(request.ownerClusterId, linesKey);
+        }
+    }
+
+    private async resolveFirstExposureLocalParquet(request: PluginPropertyNamesRequest): Promise<string | null> {
+        const objectKey = await this.findFirstExposureObjectKey(request);
+        if (!objectKey) return null;
+        return this.resolveLocalParquet(request.ownerClusterId, objectKey);
     }
 
     private async findFirstExposureObjectKey(request: PluginPropertyNamesRequest): Promise<string | null> {

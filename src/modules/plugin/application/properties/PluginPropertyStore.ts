@@ -30,6 +30,9 @@ export interface PluginAnalysisAllAtomsResponse {
 
 export interface PluginPropertyStoreWriteInput extends PluginModifierAnalysisRequest {
     rows: PerAtomProperties | null | undefined;
+    // Line-entity exposures store their per-entity rows under a kind-specific
+    // key so analysis-wide per-atom merges never mix them in by id collision.
+    entityKind?: 'atoms' | 'lines';
 }
 
 export interface PluginPropertyStoreWriteResult {

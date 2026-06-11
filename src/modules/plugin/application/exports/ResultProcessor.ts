@@ -71,6 +71,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                 subListingNames,
                 subListings,
                 perAtomProperties,
+                entityKind,
                 exportData: exportPayload
             } = await readWorkflowExposurePayload(outputFilePath);
 
@@ -82,7 +83,8 @@ export class DefaultResultProcessor implements ResultProcessorService {
                     exposureId: exposure.nodeId,
                     timestep,
                     ownerClusterId: storageOwnerClusterId,
-                    rows: perAtomProperties
+                    rows: perAtomProperties,
+                    entityKind
                 });
                 const propertyObjectKey = propertyStorage?.objectKey;
                 if (propertyStorage) {
@@ -125,6 +127,7 @@ export class DefaultResultProcessor implements ResultProcessorService {
                     },
                     exposure,
                     decodedPayload: exportPayload,
+                    outputFilePath,
                     timestep,
                     storageClusterId: storageOwnerClusterId,
                     artifactUploadBatch

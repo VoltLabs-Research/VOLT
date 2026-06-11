@@ -105,10 +105,19 @@ export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWit
 export const toTrajectoryParquetObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/trajectory.parquet`;
 
+// Property tables are keyed per entity kind: atoms keep the historical name,
+// line entities get a `.lines.parquet` suffix. The distinct names keep
+// analysis-wide per-atom merges (which glob `timestep-N.parquet`) from mixing
+// line-entity rows in by id collision.
+export type PluginExposureEntityKind = 'atoms' | 'lines';
+
 export const toPluginExposureParquetObjectKey = (
     trajectoryId: string,
     analysisId: string,
     exposureId: string,
-    timestep: number
-): string =>
-    `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.parquet`;
+    timestep: number,
+    entityKind: PluginExposureEntityKind = 'atoms'
+): string => {
+    const suffix = entityKind === 'lines' ? 'lines.parquet' : 'parquet';
+    return `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.${suffix}`;
+};

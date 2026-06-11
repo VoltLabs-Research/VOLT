@@ -6,6 +6,9 @@ import type { EventDispatcher } from '@/core/events/EventDispatcher';
 import { logger } from '@/core/logger';
 import {
     HTTP_PORTS_LABEL_KEY,
+    READINESS_HTTP_PATH_LABEL_KEY,
+    READINESS_HTTP_PORT_LABEL_KEY,
+    READINESS_HTTP_QUERY_LABEL_KEY,
     TEAM_CLUSTER_ID_LABEL_KEY,
     TEAM_ID_LABEL_KEY,
     VOLT_MANAGED_CONTAINER_LABEL_KEY,
@@ -21,6 +24,12 @@ import type { VoltCloudConnection } from '@/modules/container/infrastructure/con
 type ContainerInfo = Dockerode.ContainerInfo;
 type ContainerInspection = Awaited<ReturnType<DockerRuntime['getContainer']>>;
 
+interface ContainerReadinessProbe {
+    path: string;
+    query?: string;
+    port?: number;
+}
+
 interface ContainerExposureContext {
     container: ContainerInfo;
     containerName: string;
@@ -35,6 +44,7 @@ interface ContainerExposureContext {
 }
 
 const EXPOSURE_SYNC_INTERVAL_MS = 5_000;
+const READINESS_PROBE_TIMEOUT_MS = 2_000;
 
 const readPortSet = (value: string | undefined): Set<number> => {
     if (!value) {
@@ -47,6 +57,20 @@ const readPortSet = (value: string | undefined): Set<number> => {
         .filter((entry) => entry > 0);
 
     return new Set(ports);
+};
+
+const readReadinessProbe = (labels: Record<string, string>): ContainerReadinessProbe | null => {
+    const path = labels[READINESS_HTTP_PATH_LABEL_KEY]?.trim();
+    if (!path) {
+        return null;
+    }
+
+    const rawPort = Number(labels[READINESS_HTTP_PORT_LABEL_KEY]);
+    return {
+        path: path.startsWith('/') ? path : `/${path}`,
+        query: labels[READINESS_HTTP_QUERY_LABEL_KEY]?.trim() || undefined,
+        port: Number.isFinite(rawPort) && rawPort > 0 ? rawPort : undefined
+    };
 };
 
 const readInspectionInternalIp = (inspection: ContainerInspection): string | null => {
@@ -113,6 +137,14 @@ export class DaemonExposureRegistry {
     private lastCloudConnectionState = false;
     private inFlightSync: Promise<void> | null = null;
     private inFlightSyncStartedAt: number | null = null;
+
+    /**
+     * Containers (by id) whose readiness probe has already succeeded. Once a
+     * container is ready it stays ready for its lifetime — mirrors the previous
+     * JupyterRuntime behaviour of caching the readiness origin once found and
+     * avoids re-probing (and flapping Active→Unavailable) on every 5s sync.
+     */
+    private readonly readyContainerIds = new Set<string>();
 
     constructor(
         private readonly config: DaemonConfig,
@@ -188,6 +220,7 @@ export class DaemonExposureRegistry {
         const containers = await this.dockerRuntime.listContainers(includeStoppedContainers, {
             label: [`${VOLT_MANAGED_CONTAINER_LABEL_KEY}=${VOLT_MANAGED_CONTAINER_LABEL_VALUE}`]
         });
+        this.forgetReadinessForMissingContainers(containers);
         const exposureContexts = await Promise.all(containers.map((container) => this.readContainerExposureContext(container)));
         const nextExposures = exposureContexts.flatMap((context) => {
             if (!context) {
@@ -197,6 +230,15 @@ export class DaemonExposureRegistry {
             return context.publishedPorts.map((containerPort) => this.createContainerExposure(context, containerPort));
         });
         this.publishExposures(nextExposures);
+    }
+
+    private forgetReadinessForMissingContainers(containers: ContainerInfo[]): void {
+        const liveContainerIds = new Set(containers.map((container) => container.Id));
+        for (const containerId of this.readyContainerIds) {
+            if (!liveContainerIds.has(containerId)) {
+                this.readyContainerIds.delete(containerId);
+            }
+        }
     }
 
     private publishExposures(containerExposures: TeamClusterServiceExposure[]): TeamClusterServiceExposure[] {
@@ -232,6 +274,11 @@ export class DaemonExposureRegistry {
             }
 
             const containerName = (inspection.Name || container.Names[0] || container.Image || container.Id).replace(/^\/+/, '');
+            const targetHost = readInspectionInternalIp(inspection) || containerName;
+            const isRunning = inspection.State.Running;
+            const status = isRunning
+                ? await this.resolveReadinessGatedStatus(container.Id, labels, targetHost)
+                : TeamClusterServiceExposureStatus.Unavailable;
 
             return {
                 container,
@@ -239,16 +286,67 @@ export class DaemonExposureRegistry {
                 httpPorts: readPortSet(labels[HTTP_PORTS_LABEL_KEY]),
                 labels,
                 publishedPorts: readPublishedTcpPorts(inspection),
-                status: inspection.State.Running
-                    ? TeamClusterServiceExposureStatus.Active
-                    : TeamClusterServiceExposureStatus.Unavailable,
-                targetHost: readInspectionInternalIp(inspection) || containerName,
+                status,
+                targetHost,
                 teamClusterId,
                 teamId,
                 websocketPorts: readPortSet(labels[WEBSOCKET_PORTS_LABEL_KEY])
             };
         } catch {
             return null;
+        }
+    }
+
+    /**
+     * Returns `Active` for a running container unless it declares a readiness
+     * probe that has not yet passed. Once a container's probe succeeds it is
+     * cached as ready for its lifetime (see `readyContainerIds`).
+     */
+    private async resolveReadinessGatedStatus(
+        containerId: string,
+        labels: Record<string, string>,
+        targetHost: string
+    ): Promise<TeamClusterServiceExposureStatus> {
+        const probe = readReadinessProbe(labels);
+        if (!probe) {
+            return TeamClusterServiceExposureStatus.Active;
+        }
+
+        if (this.readyContainerIds.has(containerId)) {
+            return TeamClusterServiceExposureStatus.Active;
+        }
+
+        const probePort = probe.port
+            ?? readPortSet(labels[HTTP_PORTS_LABEL_KEY]).values().next().value;
+        if (!probePort) {
+            return TeamClusterServiceExposureStatus.Unavailable;
+        }
+
+        const ready = await this.probeHttpReadiness(targetHost, probePort, probe);
+        if (ready) {
+            this.readyContainerIds.add(containerId);
+            return TeamClusterServiceExposureStatus.Active;
+        }
+
+        return TeamClusterServiceExposureStatus.Unavailable;
+    }
+
+    private async probeHttpReadiness(
+        host: string,
+        port: number,
+        probe: ContainerReadinessProbe
+    ): Promise<boolean> {
+        const normalizedHost = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
+        const query = probe.query ? (probe.query.startsWith('?') ? probe.query : `?${probe.query}`) : '';
+        const url = `http://${normalizedHost}:${port}${probe.path}${query}`;
+
+        try {
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(READINESS_PROBE_TIMEOUT_MS)
+            });
+            return response.ok;
+        } catch {
+            return false;
         }
     }
 

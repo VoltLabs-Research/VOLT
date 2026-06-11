@@ -652,6 +652,7 @@ export class DebugSessionManager {
             },
             exposure,
             decodedPayload: inspection.exportPayload,
+            outputFilePath: inspection.outputFilePath,
             timestep: session.context.selectedTimestep ?? preparedExecution.selectedDump.timestep,
             storageClusterId,
             artifactUploadBatch: artifactBatch
