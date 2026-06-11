@@ -1,6 +1,6 @@
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import { DEFAULT_DISLOCATION_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
+import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -9,7 +9,7 @@ import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { RefObject } from 'react';
@@ -143,13 +143,13 @@ const TimestepViewer = ({
             {scenesToRender.map((scene, index) => {
                 const sceneKey = getSceneKey(scene);
                 const sceneOverride = sceneVisualOverrides[sceneKey];
-                const dislocationLineSettings: DislocationLineSceneSettings | undefined = scene.source === 'plugin'
-                    && scene.sceneRenderMetadata?.exporter === Exporter.DISLOCATION
+                const lineSettings: LineSceneSettings | undefined = scene.source === 'plugin'
+                    && scene.sceneRenderMetadata?.exporter === Exporter.LINE
                     ? {
-                        baseLineWidth: scene.sceneRenderMetadata.defaultLineWidth ?? DEFAULT_DISLOCATION_LINE_WIDTH,
+                        baseLineWidth: scene.sceneRenderMetadata.defaultLineWidth ?? DEFAULT_LINE_WIDTH,
                         lineWidth: sceneOverride?.lineWidth
                             ?? scene.sceneRenderMetadata.defaultLineWidth
-                            ?? DEFAULT_DISLOCATION_LINE_WIDTH
+                            ?? DEFAULT_LINE_WIDTH
                     }
                     : undefined;
                 const scenePosition = resolveSpawnPosition(scene);
@@ -173,7 +173,7 @@ const TimestepViewer = ({
                             boxBounds={boxBounds}
                             pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
                             pointCloudSettings={pointCloudSettings}
-                            dislocationLineSettings={dislocationLineSettings}
+                            lineSettings={lineSettings}
                             sceneVisualOverrides={sceneVisualOverrides}
                             setModelWorldBounds={setModelWorldBounds}
                             activeModelBounds={activeModelBounds}

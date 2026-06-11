@@ -16,7 +16,7 @@ import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entitie
 import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FC, RefObject } from 'react';
 
@@ -62,7 +62,7 @@ interface SingleModelViewerProps {
     boxBounds: BoxBounds;
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
-    dislocationLineSettings?: DislocationLineSceneSettings;
+    lineSettings?: LineSceneSettings;
     sceneVisualOverrides: SceneVisualOverrides;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
@@ -91,7 +91,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     boxBounds,
     pointSizeMultiplier,
     pointCloudSettings,
-    dislocationLineSettings,
+    lineSettings,
     sceneVisualOverrides,
     setModelWorldBounds,
     activeModelBounds,
@@ -244,7 +244,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         boxBounds,
         pointSizeMultiplier,
         pointCloudSettings,
-        dislocationLineSettings,
+        lineSettings,
         sceneVisualOverrides,
         activeModelBounds,
         onModelBoundsChanged,

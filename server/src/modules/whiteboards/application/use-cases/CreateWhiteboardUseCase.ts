@@ -1,7 +1,7 @@
-import type WhiteboardFolderRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardFolderRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { inject, injectable } from 'tsyringe';
+import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -23,7 +23,7 @@ const EMPTY_STATE = Buffer.from(JSON.stringify({ revision: 0, elements: [], appS
 export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO, ApplicationError> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
-        @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) private readonly whiteboardFolderRepository: WhiteboardFolderRepository,
+        @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)

@@ -1,6 +1,7 @@
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import jwt from 'jsonwebtoken';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { ITeamClusterDirectAccessTokenService } from '@modules/cluster/domain/port/ITeamClusterDirectAccessTokenService';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 
 type DirectAccessRequesterKind = 'daemon' | 'server';
@@ -22,7 +23,7 @@ const SIGN_OPTIONS: SignOptions = {
 };
 
 @Singleton()
-export default class TeamClusterDirectAccessTokenService {
+export default class TeamClusterDirectAccessTokenService implements ITeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
         return jwt.sign(claims, secret as Secret, SIGN_OPTIONS);
     }

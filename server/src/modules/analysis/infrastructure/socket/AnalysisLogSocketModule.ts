@@ -1,6 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import AnalysisExecutionLogService, {
+import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisExecutionLogService } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
     type AnalysisLogChunkEventPayload
@@ -13,6 +15,7 @@ import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketI
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface SubscribePayload {
     analysisId: string;
@@ -35,8 +38,8 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        private readonly analysisRepository: AnalysisRepository,
-        private readonly analysisExecutionLogService: AnalysisExecutionLogService
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService
     ) {
         super(emitter, roomManager, eventRegistry);
     }

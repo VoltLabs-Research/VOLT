@@ -1,4 +1,4 @@
-import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamInvitationProps } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
@@ -19,7 +19,7 @@ interface UpdateTeamInvitationByIdInput {
 @injectable()
 export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInput, PersistedOutput<TeamInvitationProps>, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly repository: TeamInvitationRepository
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly repository: ITeamInvitationRepository
     ) {}
 
     async execute(input: UpdateTeamInvitationByIdInput): Promise<Result<PersistedOutput<TeamInvitationProps>, ApplicationError>> {

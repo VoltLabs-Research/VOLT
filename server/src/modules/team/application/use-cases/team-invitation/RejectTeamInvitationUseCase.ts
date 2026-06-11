@@ -1,4 +1,4 @@
-import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/RejectTeamInvitationDTO';
@@ -10,7 +10,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamInvitationInputDTO, RejectTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: TeamInvitationRepository
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository
     ){}
 
     async execute(input: RejectTeamInvitationInputDTO): Promise<Result<RejectTeamInvitationOutputDTO, ApplicationError>> {

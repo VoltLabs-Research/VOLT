@@ -1,20 +1,21 @@
-import { invalidateConversationsQueries, invalidateConversationMessagesQuery, resolveConversationStreamTransport } from '@/modules/ai/hooks/queries';
+import { createConversationStreamTransport } from '@/modules/ai/services/stream-transport';
+import { invalidateConversationsQueries, invalidateConversationMessagesQuery } from '@/modules/ai/hooks/queries';
 import { useChat } from '@ai-sdk/react';
 import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIConversationMessage } from '@/modules/ai/api/entities/ai-conversation';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { UIMessage } from 'ai';
+import type { ChatTransport, UIMessage } from 'ai';
 import type { RefObject } from 'react';
 
 interface ChatMessagesPayload {
     messages: UIMessage[];
 }
 
-const createDeferredTransport = () => ({
+const createDeferredTransport = (): ChatTransport<UIMessage> => ({
     sendMessages: async () => {
         throw new Error('teamId and conversationId are required to send a message');
     },
@@ -76,8 +77,8 @@ const useAIChatStream = ({
     messagesResult,
     skipNextMessageLoadRef
 }: UseAIChatStreamOptions) => {
-    const [sendMessageError, setSendMessageError] = useState<string | null>(null);
     const isMountedRef = useRef(true);
+    const hydratedConversationRef = useRef<string | null>(null);
 
     const chatTransport = useMemo(() => {
         if (!teamId || !conversationId) {
@@ -86,7 +87,7 @@ const useAIChatStream = ({
 
         const getModelSelection = () => selectedModelRef.current ?? {};
 
-        return resolveConversationStreamTransport({
+        return createConversationStreamTransport({
             teamId,
             conversationId,
             getModelSelection
@@ -118,80 +119,48 @@ const useAIChatStream = ({
         onFinish: () => {
             if (!isMountedRef.current) return;
 
-            // Small delay to let streamStatus settle to 'ready' so that
-            // the setMessages sync effect does not skip the update due
-            // to the isSendingMessage guard.
-            setTimeout(() => {
-                if (!isMountedRef.current) return;
+            invalidateConversationsQueries().catch(console.warn);
 
-                invalidateConversationsQueries().catch(console.warn);
-
-                if (messagesQueryParams) {
-                    invalidateConversationMessagesQuery(messagesQueryParams).catch(console.warn);
-                }
-            }, 100);
+            if (messagesQueryParams) {
+                invalidateConversationMessagesQuery(messagesQueryParams).catch(console.warn);
+            }
         }
     });
 
     const isSendingMessage = streamStatus === 'submitted' || streamStatus === 'streaming';
 
-    // Sync server-loaded messages into the stream state
+    // `useChat` owns message state during a live session; the server query is
+    // only the initial loader. Hydrate the stream from server messages once per
+    // conversation (and once they actually arrive), so we never fight the stream
+    // by re-syncing on every query settle. A fresh conversation created locally
+    // sets `skipNextMessageLoadRef`, so we mark it hydrated without clobbering
+    // the just-sent message.
     useEffect(() => {
-        if (messagesResult.isSuccess && !skipNextMessageLoadRef.current) {
-            setMessages((currentMessages) => {
-                const lastMessage = currentMessages[currentMessages.length - 1];
-                if (lastMessage?.role === 'assistant') {
-                    const hasPendingApproval = lastMessage.parts.some((part) => (
-                        isToolUIPart(part) && part.state === 'approval-requested'
-                    ));
+        const targetConversationId = conversationId ?? null;
 
-                    if (hasPendingApproval) {
-                        return currentMessages;
-                    }
-                }
-
-                if (currentMessages.length === 0) {
-                    return conversationMessages;
-                }
-
-                if (conversationMessages.length === 0) {
-                    return currentMessages;
-                }
-
-                if (conversationMessages.length < currentMessages.length) {
-                    return currentMessages;
-                }
-
-                if (isSendingMessage && conversationMessages.length === currentMessages.length) {
-                    return currentMessages;
-                }
-
-                return conversationMessages;
-            });
+        if (hydratedConversationRef.current === targetConversationId) {
+            return;
         }
-    }, [conversationMessages, isSendingMessage, messagesResult.isSuccess, setMessages]);
 
-    // Reset messages when conversation changes
-    useEffect(() => {
-        if (!conversationId) {
+        if (!targetConversationId) {
+            hydratedConversationRef.current = null;
             setMessages([]);
             return;
         }
 
         if (skipNextMessageLoadRef.current) {
             skipNextMessageLoadRef.current = false;
-        }
-    }, [conversationId, setMessages]);
-
-    // Sync stream errors to local state
-    useEffect(() => {
-        if (streamError) {
-            setSendMessageError(streamError.message);
+            hydratedConversationRef.current = targetConversationId;
             return;
         }
 
-        setSendMessageError(null);
-    }, [streamError]);
+        if (messagesResult.isSuccess) {
+            setMessages(conversationMessages);
+            hydratedConversationRef.current = targetConversationId;
+        }
+    }, [conversationId, conversationMessages, messagesResult.isSuccess, setMessages, skipNextMessageLoadRef]);
+
+    const sendMessageError = streamError?.message ?? null;
 
     // Cleanup on unmount
     useEffect(() => {
@@ -207,18 +176,17 @@ const useAIChatStream = ({
         const normalizedText = text.trim();
         if (!normalizedText || !canSendMessage || isSendingMessage || !conversationId) return;
 
-        setSendMessageError(null);
-
+        // Rethrow so callers can restore the draft / re-queue a pending message
+        // on failure. The error message itself is surfaced via `sendMessageError`
+        // (derived from useChat's `error`), so we don't mirror it into state here.
         try {
             await sendMessage({ text: normalizedText });
         } catch (error) {
-            let streamFailure = new Error('Failed to send message');
             if (error instanceof Error) {
-                streamFailure = error;
+                throw error;
             }
 
-            setSendMessageError(streamFailure.message);
-            throw streamFailure;
+            throw new Error('Failed to send message');
         }
     }, [canSendMessage, conversationId, isSendingMessage, sendMessage]);
 

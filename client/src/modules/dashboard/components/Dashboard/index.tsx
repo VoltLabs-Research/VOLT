@@ -1,15 +1,12 @@
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
 import DashboardOverviewCard from '@/modules/dashboard/components/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/DashboardOverviewSkeleton';
-import DashboardActivityCard from '@/modules/dashboard/components/DashboardActivityCard';
-import DashboardOperationsCard from '@/modules/dashboard/components/DashboardOperationsCard';
-import DashboardTeamPresence from '@/modules/dashboard/components/DashboardTeamPresence';
+import DashboardActivityTile from '@/modules/dashboard/components/DashboardActivityTile';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import { Box, Button, Heading, Row, EmptyState, openModal } from '@voltstack/bravais';
@@ -36,7 +33,6 @@ const DashboardPage = () => {
     usePageTitle('Dashboard');
 
     const selectedTeam = useSelectedTeam();
-    const singleTenant = useSingleTenant();
     const { canAccess } = useTeamPermissions();
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { currentFolderId } = useFolderSearchParam();
@@ -54,6 +50,10 @@ const DashboardPage = () => {
             icon={getCardIcon(card.key)}
         />
     ));
+
+    if (!accessDenied && !error && !loading) {
+        statCards.push(<DashboardActivityTile key='activity-tile' />);
+    }
 
     if (accessDenied) {
         statCards = [
@@ -137,12 +137,6 @@ const DashboardPage = () => {
                     )}
                 </Row>
                 <SimulationGrid />
-            </Box>
-
-            <Box className={`dashboard-insights-row${singleTenant ? ' dashboard-insights-row--compact' : ''}`}>
-                <DashboardOperationsCard />
-                <DashboardActivityCard />
-                {!singleTenant && <DashboardTeamPresence />}
             </Box>
         </Box>
     );

@@ -43,15 +43,6 @@ export interface TeamClusterDaemonSemanticCommandResult<T> {
     timeoutClass: NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>;
 }
 
-export interface TeamClusterDaemonNotebookRuntime {
-    tunnelTargetHost: string;
-    tunnelTargetPort: number;
-}
-
-interface TeamClusterDaemonNotebookRuntimeLookupResponse {
-    runtime: TeamClusterDaemonNotebookRuntime | null;
-}
-
 /** Structured error payload emitted by the daemon's `adaptHandler` catch block. */
 interface DaemonErrorPayload {
     status: 'error';
@@ -305,15 +296,6 @@ export default class TeamClusterDaemonClient {
             retryClass: resolvedOptions.retryClass,
             timeoutClass: resolvedOptions.timeoutClass
         };
-    }
-
-    async getNotebookRuntime(
-        teamClusterId: string,
-        notebookId: string
-    ): Promise<TeamClusterDaemonNotebookRuntimeLookupResponse> {
-        return this.command<TeamClusterDaemonNotebookRuntimeLookupResponse>(teamClusterId, ChannelCommands.NotebookRuntimeGet, {
-            notebookId
-        });
     }
 
     async commandStream(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Readable> {

@@ -2,6 +2,7 @@ import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRep
 import { inject } from 'tsyringe';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateAIConversationInputDTO, CreateAIConversationOutputDTO } from '@modules/ai/application/dtos/CreateAIConversationDTO';
 import type { AIConversationProps } from '@modules/ai/domain/entities/AIConversation';
 import type { AIMessageProps } from '@modules/ai/domain/entities/AIMessage';
@@ -26,7 +27,7 @@ export default class CreateAIConversationUseCase implements IUseCase<CreateAICon
 
         if (normalizedMessage && title !== normalizedMessage) {
             return Result.fail(ApplicationError.badRequest(
-                'Validation::InvalidInput',
+                ErrorCodes.VALIDATION_INVALID_INPUT,
                 'title must match the first message'
             ));
         }

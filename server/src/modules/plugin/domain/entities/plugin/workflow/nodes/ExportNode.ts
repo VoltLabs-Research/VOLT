@@ -1,7 +1,7 @@
 export enum Exporter {
     Atomistic = 'AtomisticExporter',
     Mesh = 'MeshExporter',
-    Dislocation = 'DislocationExporter',
+    Line = 'LineExporter',
     Chart = 'ChartExporter'
 }
 

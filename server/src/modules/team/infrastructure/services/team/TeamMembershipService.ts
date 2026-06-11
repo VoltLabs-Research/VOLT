@@ -11,10 +11,11 @@ import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 
 const logMembershipWarning = (context: Record<string, string>, message: string) => {
-    console.warn('[TeamMembershipService]', message, context);
+    logger.warn(context, `[TeamMembershipService] ${message}`);
 };
 
 @Singleton(TEAM_TOKENS.TeamMembershipService)

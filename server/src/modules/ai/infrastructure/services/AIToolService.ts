@@ -1,3 +1,4 @@
+import type { IAIToolService } from '@modules/ai/domain/port/IAIToolService';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { AITool } from '@shared/application/ai/AITool';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -9,8 +10,8 @@ export interface AIToolScope {
     userId: string;
 }
 
-@Singleton()
-export default class AIToolService {
+@Singleton(AI_TOKENS.AIToolService)
+export default class AIToolService implements IAIToolService {
     constructor(
         @injectAll(AI_TOKENS.AITool)
         private readonly aiTools: AITool[] = []

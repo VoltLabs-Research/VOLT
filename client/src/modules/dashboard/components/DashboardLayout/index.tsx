@@ -1,5 +1,10 @@
 import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
 import DashboardSidebar from '@/modules/dashboard/components/DashboardSidebar';
+import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
+import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
+import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
+import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
+import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/TrajectoryUploaderContainer';
 import {
@@ -38,7 +43,11 @@ interface DashboardLocationState {
 // keeps the outlet mounted across tab switches — the nested layout fades
 // its own child instead.
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
-    /^\/dashboard\/containers\/[^/]+/
+    /^\/dashboard\/containers\/[^/]+/,
+    // /dashboard/ai and /dashboard/ai/:conversationId must share one mounted
+    // page: creating a conversation navigates draft -> conversation mid-send,
+    // and a remount would drop the optimistic message and pending-send state.
+    /^\/dashboard\/ai(?=\/|$)/
 ];
 
 const getOutletTransitionKey = (pathname: string): string => {
@@ -207,8 +216,16 @@ const DashboardLayout = () => {
                         </motion.div>
                     </TrajectoryUploaderContainer>
                 </Box>
+
+                {!headerHidden && <DashboardBottomBar />}
+
                 <DemoWelcomeModal />
             </Box>
+
+            <JobsDrawer />
+            <ClustersDrawer />
+            <ActivityDrawer />
+            <PresenceDrawer />
         </Box>
     );
 };

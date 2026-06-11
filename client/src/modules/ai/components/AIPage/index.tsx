@@ -94,6 +94,12 @@ const AIPage = () => {
         };
     }, []);
 
+    // The page stays mounted across /dashboard/ai/* navigations, so an artifact
+    // opened in one conversation must not linger when switching to another.
+    useEffect(() => {
+        handleCloseArtifactPanel();
+    }, [conversationId, handleCloseArtifactPanel]);
+
     const handleCreate = () => {
         handleCreateConversation().catch(console.warn);
     };
@@ -128,8 +134,16 @@ const AIPage = () => {
         }
     };
 
-    const shouldRenderStarterInput = !isMessagesLoading && messages.length === 0;
     const noProviderConfigured = availableModelsForProvider.length === 0 && !isProviderCatalogLoading;
+    const isThreadEmpty = !isMessagesLoading && messages.length === 0;
+
+    // Row renders `items-center` by default. Only the empty/starter state may
+    // center vertically; with messages the pane must stretch so the thread
+    // starts at the top and the composer pins to the bottom.
+    let workspaceClassName = 'ai-page-workspace';
+    if (isThreadEmpty) {
+        workspaceClassName += ' is-empty';
+    }
 
     const handleRetry = () => {
         if (conversationId) {
@@ -165,26 +179,9 @@ const AIPage = () => {
         );
     }
 
-    let starterInput: ReactNode = null;
-    if (shouldRenderStarterInput) {
-        starterInput = (
-            <AIComposer
-                value={messageDraft}
-                modelOptions={modelOptions}
-                selectedModel={selectedModel}
-                onChange={setMessageDraft}
-                onModelChange={setSelectedModel}
-                onSend={handleSend}
-                disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                isSending={isSendingMessage}
-                error={sendMessageError}
-            />
-        );
-    }
-
     let workspaceContent: ReactNode = (
         <>
-            <Row flex='1' className='ai-page-workspace'>
+            <Row flex='1' className={workspaceClassName}>
                 <Stack flex='1' className='ai-page-chat-pane'>
                     <AIConversationThread
                         conversationId={conversationId}
@@ -194,23 +191,20 @@ const AIPage = () => {
                         error={messagesError}
                         onOpenTableArtifact={handleOpenTableArtifact}
                         addToolApprovalResponse={addToolApprovalResponse}
-                        starterInput={starterInput}
                         onRetry={handleRetry}
                     />
 
-                    {!shouldRenderStarterInput && (
-                        <AIComposer
-                            value={messageDraft}
-                            modelOptions={modelOptions}
-                            selectedModel={selectedModel}
-                            onChange={setMessageDraft}
-                            onModelChange={setSelectedModel}
-                            onSend={handleSend}
-                            disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                            isSending={isSendingMessage}
-                            error={sendMessageError}
-                        />
-                    )}
+                    <AIComposer
+                        value={messageDraft}
+                        modelOptions={modelOptions}
+                        selectedModel={selectedModel}
+                        onChange={setMessageDraft}
+                        onModelChange={setSelectedModel}
+                        onSend={handleSend}
+                        disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
+                        isSending={isSendingMessage}
+                        error={sendMessageError}
+                    />
                 </Stack>
 
                 {openArtifact && (

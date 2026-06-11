@@ -3,40 +3,39 @@ import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
+import type { IScriptingJupyterProxyService } from '@modules/scripting/domain/port/IScriptingJupyterProxyService';
 import {
     buildJupyterProxyBasePath,
+    findNotebookExposure,
     JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME,
     JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM,
     JUPYTER_PROXY_BASE_PATH,
     matchJupyterProxyPath,
     setJupyterProxyAccessCookie
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
-import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import {
     TeamClusterServiceExposureAccessMode
 } from '@modules/cluster/utilities/teamClusterSocket';
+import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import type { TeamClusterDaemonNotebookRuntime } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
+import { ReverseWsHttpRelay } from '@shared/infrastructure/services/ReverseWsHttpRelay';
+import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
-    normalizeWebSocketCloseCode,
-    normalizeWebSocketPayload,
-    writeUpgradeError
-} from '@shared/infrastructure/utilities/proxy-relay';
+    applyEmbeddableHeadersToProxyResponse,
+    applyEmbeddableHeadersToResponse
+} from '@shared/infrastructure/utilities/response-security-headers';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import { parse as parseCookie } from 'cookie';
 import type { Request, Response } from 'express';
-import httpProxy from 'http-proxy';
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
 import http from 'node:http';
-import { Duplex, Readable } from 'node:stream';
-import { WebSocket, WebSocketServer } from 'ws';
+import { Duplex } from 'node:stream';
 
 interface ProxyableRequest extends Request {
     rawBody?: Buffer;
@@ -47,6 +46,16 @@ interface AuthorizedProxyContext {
     runtimeNotebookId: string;
     teamClusterId: string;
     userId: string;
+}
+
+/**
+ * Resolved tunnel target for a notebook's runtime container, read from the
+ * cluster exposure snapshot (a notebook is a `volt.managed` container exposure).
+ * Replaces the former daemon `notebook.runtime.get` RPC response shape.
+ */
+interface NotebookRuntimeTarget {
+    tunnelTargetHost: string;
+    tunnelTargetPort: number;
 }
 
 interface TeamMemberRolePopulate {
@@ -63,12 +72,6 @@ interface AuthorizedProxyCacheEntry {
     expiresAt: number;
     contextPromise?: Promise<AuthorizedProxyContext>;
     contextValue?: AuthorizedProxyContext;
-}
-
-interface NotebookRuntimeCacheEntry {
-    expiresAt: number;
-    runtimePromise?: Promise<TeamClusterDaemonNotebookRuntime>;
-    runtimeValue?: TeamClusterDaemonNotebookRuntime;
 }
 
 interface HttpProxySessionEntry {
@@ -93,7 +96,6 @@ const DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES = [
     'team cluster daemon connection is not ready yet'
 ];
 const AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS = 30_000;
-const NOTEBOOK_RUNTIME_CACHE_TTL_MS = 30_000;
 const HTTP_PROXY_SESSION_TTL_MS = 15_000;
 const MAX_HTTP_PROXY_SESSIONS_PER_RUNTIME = 2;
 
@@ -114,32 +116,6 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-const buildFrameAncestorsDirective = (): string => {
-    const frameAncestors = new Set<string>(['\'self\'']);
-
-    for (const origin of collectAllowedClientOrigins([process.env.CLIENT_HOST, process.env.CLIENT_DEV_HOST])) {
-        frameAncestors.add(origin);
-    }
-
-    return `frame-ancestors ${Array.from(frameAncestors).join(' ')}`;
-};
-
-const rewriteFrameAncestorsDirective = (contentSecurityPolicy?: string): string => {
-    const frameAncestorsDirective = buildFrameAncestorsDirective();
-    if (!contentSecurityPolicy?.trim()) {
-        return frameAncestorsDirective;
-    }
-
-    const directives = contentSecurityPolicy
-        .split(';')
-        .map((directive) => directive.trim())
-        .filter(Boolean)
-        .filter((directive) => !directive.toLowerCase().startsWith('frame-ancestors'));
-
-    directives.push(frameAncestorsDirective);
-    return directives.join('; ');
-};
-
 const readJupyterNativeToken = (): string => {
     const token = process.env.JUPYTER_TOKEN?.trim();
     return token || 'volt-scripting';
@@ -156,17 +132,18 @@ const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<st
 };
 
 @Singleton()
-export class ScriptingJupyterProxyService {
+export class ScriptingJupyterProxyService implements IScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
-    private readonly notebookRuntimeCache = new Map<string, NotebookRuntimeCacheEntry>();
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
         private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService
+        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
+        private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
+        private readonly exposureRegistryService: TeamClusterExposureRegistryService
     ) {
         this.startHttpProxySessionSweep();
     }
@@ -180,76 +157,39 @@ export class ScriptingJupyterProxyService {
             this.persistAccessTokenCookie(req, res, context);
             const target = this.extractProxyTarget(req.originalUrl);
             httpProxySession = await this.acquireHttpProxySession(context, runtime);
-            const proxy = httpProxy.createProxyServer();
             const requestBody = this.readProxyRequestBuffer(req);
-            const originalUrl = req.url;
-            let releasedSession = false;
+            const session = httpProxySession;
 
-            const finalizeHttpProxySession = (destroySession = false): void => {
-                if (releasedSession || !httpProxySession) {
-                    return;
+            this.reverseWsHttpRelay.proxyHttp({
+                req,
+                res,
+                agent: session.agent,
+                upstreamOrigin: `http://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`,
+                rewrittenUrl: `${target.proxiedPath}${target.rawQuery}`,
+                requestBody,
+                onProxyRes: (proxyResponse) => {
+                    this.prepareProxyResponse(req.originalUrl, res, proxyResponse.headers, context);
+                },
+                onSettled: (destroy) => {
+                    this.releaseHttpProxySession(session, destroy);
+                },
+                onError: (error: Error) => {
+                    const mappedError = this.mapNotebookProxyError(error);
+                    if (!res.headersSent) {
+                        applyEmbeddableHeadersToResponse(res);
+                        BaseResponse.fromError(res, mappedError);
+                        return;
+                    }
+
+                    res.destroy(mappedError instanceof Error ? mappedError : error);
                 }
-
-                releasedSession = true;
-                this.releaseHttpProxySession(httpProxySession, destroySession);
-            };
-            const cleanupProxy = (): void => {
-                proxy.removeAllListeners();
-                req.url = originalUrl;
-            };
-
-            proxy.once('proxyReq', (proxyRequest) => {
-                if (requestBody) {
-                    proxyRequest.setHeader('content-length', String(requestBody.length));
-                }
-            });
-            proxy.once('proxyRes', (proxyResponse) => {
-                this.prepareProxyResponse(req.originalUrl, res, proxyResponse.headers, context);
-                proxyResponse.once('end', () => {
-                    finalizeHttpProxySession(false);
-                    cleanupProxy();
-                });
-                proxyResponse.once('close', () => {
-                    finalizeHttpProxySession(!res.writableEnded);
-                    cleanupProxy();
-                });
-            });
-            proxy.once('error', (error: Error) => {
-                finalizeHttpProxySession(true);
-                cleanupProxy();
-                const mappedError = this.mapNotebookProxyError(error);
-                if (!res.headersSent) {
-                    this.applyProxyResponseSecurityHeaders(res);
-                    BaseResponse.fromError(res, mappedError);
-                    return;
-                }
-
-                res.destroy(mappedError instanceof Error ? mappedError : error);
-            });
-
-            req.once('aborted', () => {
-                finalizeHttpProxySession(true);
-                cleanupProxy();
-            });
-            res.once('close', () => {
-                finalizeHttpProxySession(!res.writableEnded);
-                cleanupProxy();
-            });
-
-            req.url = `${target.proxiedPath}${target.rawQuery}`;
-            proxy.web(req, res, {
-                target: `http://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`,
-                agent: httpProxySession.agent,
-                changeOrigin: true,
-                xfwd: true,
-                buffer: requestBody ? Readable.from(requestBody) : undefined
             });
         } catch (error: unknown) {
             if (httpProxySession) {
                 this.releaseHttpProxySession(httpProxySession, true);
             }
             const mappedError = this.mapNotebookProxyError(error);
-            this.applyProxyResponseSecurityHeaders(res);
+            applyEmbeddableHeadersToResponse(res);
             BaseResponse.fromError(res, mappedError);
         }
     };
@@ -276,14 +216,14 @@ export class ScriptingJupyterProxyService {
 
             logger.info(logContext, 'Opening proxied Jupyter websocket');
 
-            await this.handleReverseChannelWebSocketUpgrade(
+            await this.reverseWsHttpRelay.proxyWebSocketUpgrade({
+                teamClusterId: context.teamClusterId,
                 request,
                 socket,
                 head,
-                context,
                 upstreamWebSocketUrl,
                 requestedProtocols
-            );
+            });
         } catch (error: unknown) {
             const mappedError = this.mapNotebookProxyError(error);
             const statusCode = mappedError instanceof ApplicationError ? mappedError.statusCode : 500;
@@ -294,77 +234,6 @@ export class ScriptingJupyterProxyService {
             writeUpgradeError(socket, statusCode, message);
         }
     };
-
-    private async handleReverseChannelWebSocketUpgrade(
-        request: IncomingMessage,
-        socket: Duplex,
-        head: Buffer,
-        context: AuthorizedProxyContext,
-        upstreamWebSocketUrl: string,
-        requestedProtocols: string[] | undefined
-    ): Promise<void> {
-        const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(
-            context.teamClusterId,
-            upstreamWebSocketUrl,
-            requestedProtocols
-        );
-        const negotiatedProtocol = upstreamWebSocket.protocol || requestedProtocols?.[0];
-        logger.info(`Attached reverse-channel Jupyter websocket session upstreamMode=${'reverse-websocket'} negotiatedProtocol=${negotiatedProtocol}`);
-        let upgradeSettled = false;
-
-        const cleanupPendingUpgrade = (): void => {
-            upstreamWebSocket.removeAllListeners('error');
-            upstreamWebSocket.removeAllListeners('end');
-            socket.off('close', onClientSocketCloseBeforeReady);
-        };
-
-        const finalizePendingUpgrade = (): boolean => {
-            if (upgradeSettled) {
-                return false;
-            }
-
-            upgradeSettled = true;
-            cleanupPendingUpgrade();
-            return true;
-        };
-
-        const failPendingUpgrade = (statusCode: number, message: string, error?: Error): void => {
-            if (!finalizePendingUpgrade()) {
-                return;
-            }
-
-            logger.warn(`Jupyter websocket upgrade failed before client handshake statusCode=${statusCode} upstreamError=${error?.message} upstreamMode=${'reverse-websocket'}`);
-
-            upstreamWebSocket.destroy();
-            writeUpgradeError(socket, statusCode, message);
-        };
-
-        const onClientSocketCloseBeforeReady = (): void => {
-            if (!finalizePendingUpgrade()) {
-                return;
-            }
-
-            upstreamWebSocket.destroy();
-        };
-
-        upstreamWebSocket.on('error', (error) => {
-            failPendingUpgrade(502, error.message || 'Upstream WebSocket connection failed', error);
-        });
-        upstreamWebSocket.on('end', (payload) => {
-            failPendingUpgrade(502, payload.message || 'Upstream WebSocket connection failed');
-        });
-        socket.once('close', onClientSocketCloseBeforeReady);
-
-        this.completeClientWebSocketUpgrade(request, socket, head, (webSocket) => {
-            if (!finalizePendingUpgrade()) {
-                webSocket.close(1011, 'Jupyter websocket upgrade already settled');
-                return;
-            }
-
-            logger.info(`Completed client Jupyter websocket upgrade upstreamMode=${'reverse-websocket'} negotiatedProtocol=${negotiatedProtocol}`);
-            this.bindReverseChannelWebSocketProxy(webSocket, upstreamWebSocket);
-        }, negotiatedProtocol);
-    }
 
     private mapNotebookProxyError(error: unknown): unknown {
         if (!this.isDaemonProxyUnavailableError(error)) {
@@ -562,74 +431,8 @@ export class ScriptingJupyterProxyService {
         );
     }
 
-    private bindReverseChannelWebSocketProxy(
-        webSocket: WebSocket,
-        upstreamWebSocket: TeamClusterReverseWebSocketStream
-    ): void {
-        upstreamWebSocket.on('data', ({ data, isBinary }) => {
-            if (webSocket.readyState !== WebSocket.OPEN) {
-                return;
-            }
-
-            webSocket.send(data, {
-                binary: isBinary
-            });
-        });
-        upstreamWebSocket.on('end', ({ code, message }) => {
-            logger.info(`Reverse-channel Jupyter websocket ended upstreamMode=${'reverse-websocket'} closeCode=${code} closeMessage=${message}`);
-
-            if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
-                return;
-            }
-
-            const normalizedCloseCode = normalizeWebSocketCloseCode(code);
-            if (normalizedCloseCode === undefined) {
-                webSocket.close();
-                return;
-            }
-
-            webSocket.close(normalizedCloseCode, message || undefined);
-        });
-        upstreamWebSocket.on('error', (error) => {
-            logger.warn(`Reverse-channel Jupyter websocket failed upstreamMode=${'reverse-websocket'} upstreamError=${error.message}`);
-
-            if (webSocket.readyState === WebSocket.CLOSING || webSocket.readyState === WebSocket.CLOSED) {
-                return;
-            }
-
-            webSocket.close(1011, 'Remote Jupyter websocket failed');
-        });
-
-        webSocket.on('message', (data, isBinary) => {
-            const payload = normalizeWebSocketPayload(data);
-            upstreamWebSocket.send(payload, isBinary);
-        });
-        webSocket.on('close', () => {
-            upstreamWebSocket.destroy();
-        });
-        webSocket.on('error', () => {
-            upstreamWebSocket.destroy();
-        });
-    }
-
-    private completeClientWebSocketUpgrade(
-        request: IncomingMessage,
-        socket: Duplex,
-        head: Buffer,
-        onReady: (webSocket: WebSocket) => void,
-        negotiatedProtocol?: string
-    ): void {
-        const webSocketServer = new WebSocketServer({
-            noServer: true,
-            handleProtocols: negotiatedProtocol
-                ? () => negotiatedProtocol
-                : undefined
-        });
-        webSocketServer.handleUpgrade(request, socket, head, onReady);
-    }
-
     private buildUpstreamWebSocketUrl(
-        runtime: TeamClusterDaemonNotebookRuntime,
+        runtime: NotebookRuntimeTarget,
         target: ProxyTarget
     ): string {
         return `ws://${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}${target.proxiedPath}${target.rawQuery}`;
@@ -638,7 +441,7 @@ export class ScriptingJupyterProxyService {
     private buildUpgradeLogContext(
         requestUrl: string,
         context: AuthorizedProxyContext,
-        runtime: TeamClusterDaemonNotebookRuntime,
+        runtime: NotebookRuntimeTarget,
         upstreamWebSocketUrl: string,
         requestedProtocols?: string[]
     ): Record<string, unknown> {
@@ -660,9 +463,7 @@ export class ScriptingJupyterProxyService {
         headers: IncomingHttpHeaders,
         context: AuthorizedProxyContext
     ): void {
-        const upstreamContentSecurityPolicy = this.readHeaderValue(headers['content-security-policy']);
-        headers['content-security-policy'] = rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy);
-        delete headers['x-frame-options'];
+        applyEmbeddableHeadersToProxyResponse(headers);
 
         const location = this.readHeaderValue(headers.location);
         if (location) {
@@ -677,12 +478,6 @@ export class ScriptingJupyterProxyService {
                 delete headers['set-cookie'];
             }
         }
-    }
-
-    private applyProxyResponseSecurityHeaders(res: Response, upstreamContentSecurityPolicy?: string): void {
-        res.removeHeader('x-frame-options');
-        res.removeHeader('content-security-policy');
-        res.setHeader('Content-Security-Policy', rewriteFrameAncestorsDirective(upstreamContentSecurityPolicy));
     }
 
     private readProxyRequestBuffer(req: ProxyableRequest): Buffer | undefined {
@@ -715,79 +510,27 @@ export class ScriptingJupyterProxyService {
 
     private async requireNotebookRuntime(
         context: AuthorizedProxyContext
-    ): Promise<TeamClusterDaemonNotebookRuntime> {
-        const cacheKey = this.buildNotebookRuntimeCacheKey(context.teamClusterId, context.runtimeNotebookId);
-        const cachedRuntime = this.readNotebookRuntimeCache(cacheKey);
-        if (cachedRuntime) {
-            return cachedRuntime;
+    ): Promise<NotebookRuntimeTarget> {
+        const exposures = this.exposureRegistryService.listTeamClusterExposures(context.teamClusterId);
+        const match = findNotebookExposure(exposures, context.runtimeNotebookId);
+
+        if (!match || !match.ready) {
+            throw new ApplicationError(
+                'Scripting::JupyterUnavailable',
+                'Jupyter runtime is not ready yet',
+                503
+            );
         }
 
-        logger.info(`Resolving Jupyter notebook runtime teamClusterId=${context.teamClusterId} runtimeNotebookId=${context.runtimeNotebookId}`);
-
-        pruneExpiredCacheEntries(this.notebookRuntimeCache);
-
-        const runtimePromise = this.teamClusterDaemonClient.getNotebookRuntime(context.teamClusterId, context.runtimeNotebookId)
-            .then(({ runtime }) => {
-                if (!runtime) {
-                    throw new ApplicationError(
-                        'Scripting::JupyterUnavailable',
-                        'Jupyter runtime is not ready yet',
-                        503
-                    );
-                }
-
-                this.notebookRuntimeCache.set(cacheKey, {
-                    expiresAt: Date.now() + NOTEBOOK_RUNTIME_CACHE_TTL_MS,
-                    runtimeValue: runtime
-                });
-
-                return runtime;
-            })
-            .catch((error: unknown) => {
-                this.notebookRuntimeCache.delete(cacheKey);
-                throw error;
-            });
-
-        this.notebookRuntimeCache.set(cacheKey, {
-            expiresAt: Date.now() + NOTEBOOK_RUNTIME_CACHE_TTL_MS,
-            runtimePromise
-        });
-
-        return runtimePromise;
-    }
-
-    private buildNotebookRuntimeCacheKey(teamClusterId: string, runtimeNotebookId: string): string {
-        return `${teamClusterId}:${runtimeNotebookId}`;
-    }
-
-    private readNotebookRuntimeCache(cacheKey: string): Promise<TeamClusterDaemonNotebookRuntime> | TeamClusterDaemonNotebookRuntime | undefined {
-        const cachedEntry = this.notebookRuntimeCache.get(cacheKey);
-        const now = Date.now();
-        if (!cachedEntry) {
-            return undefined;
-        }
-
-        if (cachedEntry.expiresAt <= now) {
-            this.notebookRuntimeCache.delete(cacheKey);
-            return undefined;
-        }
-
-        if (cachedEntry.runtimeValue) {
-            logger.debug(`Serving cached Jupyter notebook runtime cacheKey=${cacheKey} source=${'value'}`);
-            return cachedEntry.runtimeValue;
-        }
-
-        if (cachedEntry.runtimePromise) {
-            logger.debug(`Joining in-flight Jupyter notebook runtime lookup cacheKey=${cacheKey} source=${'in-flight'}`);
-            return cachedEntry.runtimePromise;
-        }
-
-        return undefined;
+        return {
+            tunnelTargetHost: match.exposure.targetHost,
+            tunnelTargetPort: match.exposure.targetPort
+        };
     }
 
     private openNotebookTunnel(
         teamClusterId: string,
-        runtime: TeamClusterDaemonNotebookRuntime,
+        runtime: NotebookRuntimeTarget,
         accessMode: TeamClusterServiceExposureAccessMode
     ): Promise<Duplex> {
         return this.teamClusterDaemonClient.openTunnel(teamClusterId, {
@@ -800,14 +543,14 @@ export class ScriptingJupyterProxyService {
     private buildHttpProxySessionKey(
         teamClusterId: string,
         runtimeNotebookId: string,
-        runtime: TeamClusterDaemonNotebookRuntime
+        runtime: NotebookRuntimeTarget
     ): string {
         return `${teamClusterId}:${runtimeNotebookId}:${runtime.tunnelTargetHost}:${runtime.tunnelTargetPort}`;
     }
 
     private async acquireHttpProxySession(
         context: AuthorizedProxyContext,
-        runtime: TeamClusterDaemonNotebookRuntime
+        runtime: NotebookRuntimeTarget
     ): Promise<HttpProxySessionEntry> {
         const sessionKey = this.buildHttpProxySessionKey(context.teamClusterId, context.runtimeNotebookId, runtime);
         this.pruneExpiredHttpProxySessions(sessionKey);

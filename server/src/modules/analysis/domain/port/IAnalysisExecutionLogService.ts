@@ -1,10 +1,8 @@
+import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+
 export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
 
-export interface AnalysisExecutionLogSegment {
-    text: string;
-    stream?: string;
-    timestamp?: string;
-}
+export type AnalysisExecutionLogSegment = TeamClusterDaemonExecutionLogSegment;
 
 export interface AnalysisFrameLogSnapshot {
     analysisId: string;

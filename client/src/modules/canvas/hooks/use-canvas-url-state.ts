@@ -55,7 +55,6 @@ const useCanvasUrlState = () => {
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
-    const showCellAxes = searchParams.get('cellAxes') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
     const requestedWorkspace = searchParams.get('workspace');
     const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
@@ -117,7 +116,6 @@ const useCanvasUrlState = () => {
         showWidgets,
         showGrid,
         showGizmo,
-        showCellAxes,
         renderConfigOpen,
         activeModifiers,
         activeWorkspace,

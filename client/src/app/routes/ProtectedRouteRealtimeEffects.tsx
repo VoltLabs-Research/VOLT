@@ -1,4 +1,5 @@
 import useAnalysisStatusSocketSync from '@/modules/analysis/hooks/use-analysis-status-socket-sync';
+import useTeamClusterMetricsSync from '@/modules/cluster/hooks/use-team-cluster-metrics-sync';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
 import useSocketPageLifecycle from '@/modules/socket/hooks/use-socket-page-lifecycle';
 import useSocketConnectionToast from '@/modules/socket/hooks/use-socket-connection-toast';
@@ -9,6 +10,7 @@ import useTeamRoomSubscription from '@/modules/team/hooks/team/use-team-room-sub
 const ProtectedRouteRealtimeEffects = () => {
     useSocketPageLifecycle();
     useTeamJobs();
+    useTeamClusterMetricsSync();
     useAnalysisStatusSocketSync();
     useSocketConnectionToast();
     useTeamPresenceSocket();

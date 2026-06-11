@@ -33,6 +33,14 @@ export const PluginSchema = new Schema({
             results: { type: String, required: true },
             icon: { type: String },
             hasListing: { type: Boolean, default: true },
+            properties: {
+                type: [{
+                    key: { type: String, required: true },
+                    label: { type: String },
+                    type: { type: String }
+                }],
+                default: []
+            },
             export: { type: ExportDataSchema, default: null }
         }],
         default: []

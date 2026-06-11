@@ -97,21 +97,6 @@ const AIConversationPanelContent = ({
         );
     }
 
-    const shouldRenderStarterInput = !isMessagesLoading && messages.length === 0;
-    const composer = (
-        <AIComposer
-            value={messageDraft}
-            modelOptions={modelOptions}
-            selectedModel={selectedModel}
-            onChange={onMessageDraftChange}
-            onModelChange={onModelChange}
-            onSend={onSend}
-            disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
-            isSending={isSendingMessage}
-            error={sendMessageError}
-        />
-    );
-
     return (
         <>
             <AIConversationThread
@@ -122,11 +107,20 @@ const AIConversationPanelContent = ({
                 error={messagesError}
                 onOpenTableArtifact={onOpenTableArtifact}
                 addToolApprovalResponse={addToolApprovalResponse}
-                starterInput={shouldRenderStarterInput ? composer : null}
                 onRetry={onRetry}
             />
 
-            {!shouldRenderStarterInput && composer}
+            <AIComposer
+                value={messageDraft}
+                modelOptions={modelOptions}
+                selectedModel={selectedModel}
+                onChange={onMessageDraftChange}
+                onModelChange={onModelChange}
+                onSend={onSend}
+                disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
+                isSending={isSendingMessage}
+                error={sendMessageError}
+            />
         </>
     );
 };

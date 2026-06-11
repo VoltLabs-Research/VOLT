@@ -11,7 +11,7 @@ import {
     UploadCloud
 } from 'lucide-react';
 import {
-    DEFAULT_DISLOCATION_LINE_WIDTH,
+    DEFAULT_LINE_WIDTH,
     buildPluginScene,
     buildSceneRenderMetadata,
     isRenderableSceneExport,
@@ -425,8 +425,8 @@ const AnalysisTreeNode = ({
                 const sceneKey = getSceneKey(scene);
                 const sceneOverride = sceneVisualOverrides[sceneKey];
                 const currentOpacity = sceneOverride?.opacity ?? 1;
-                const isDislocationExposure = sceneRenderMetadata?.exporter === Exporter.DISLOCATION;
-                const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_DISLOCATION_LINE_WIDTH;
+                const isLineExposure = sceneRenderMetadata?.exporter === Exporter.LINE;
+                const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_LINE_WIDTH;
                 const currentLineWidth = sceneOverride?.lineWidth ?? defaultLineWidth;
 
                 const exposureMenuOptions: MenuOption[] = [
@@ -449,7 +449,7 @@ const AnalysisTreeNode = ({
                     },
                     transparencyOption(buildTransparencySubmenu(exposure.name, currentOpacity, (value) => setSceneOpacity(sceneKey, value))),
                     colorOption(buildColorSubmenu(sceneOverride?.color, (value) => setSceneColor(sceneKey, value))),
-                    ...(isDislocationExposure
+                    ...(isLineExposure
                         ? [lineSettingsOption(buildLineWidthSubmenu(exposure.name, currentLineWidth, defaultLineWidth, (value) => setSceneLineWidth(sceneKey, value)))]
                         : [])
                 ];

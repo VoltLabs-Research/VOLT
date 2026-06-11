@@ -11,12 +11,6 @@ import { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-interface ListAIConversationMessagesLookup {
-    _id: string;
-    teamId: string;
-    userId: string;
-}
-
 @Singleton()
 export default class ListAIConversationMessagesUseCase implements IUseCase<ListAIConversationMessagesInputDTO, PaginatedResult<AIMessageDTO>, ApplicationError> {
     constructor(
@@ -29,11 +23,11 @@ export default class ListAIConversationMessagesUseCase implements IUseCase<ListA
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
-        const conversation = await this.conversationRepository.findOne({
-            _id: input.conversationId,
-            teamId: input.teamId,
-            userId: input.userId
-        } as ListAIConversationMessagesLookup);
+        const conversation = await this.conversationRepository.findOwnedByUser(
+            input.conversationId,
+            input.teamId,
+            input.userId
+        );
 
         if (!conversation) {
             return Result.fail(ApplicationError.notFound(

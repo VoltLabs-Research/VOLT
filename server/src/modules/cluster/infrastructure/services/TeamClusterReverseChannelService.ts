@@ -40,6 +40,7 @@ import {
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
 import logger from '@shared/infrastructure/logger';
 import {
     EnvelopeKind,
@@ -53,7 +54,7 @@ import TeamClusterExposureRegistryService from './TeamClusterExposureRegistrySer
 
 type TeamClusterDaemonCommandData = Record<string, unknown> | TeamClusterDaemonSessionAttachPayload;
 
-interface TeamClusterDaemonCommandPayload {
+export interface TeamClusterDaemonCommandPayload {
     command: string;
     payload?: TeamClusterDaemonCommandData;
     responseType: TeamClusterDaemonResponseType;
@@ -64,7 +65,7 @@ interface TeamClusterExposureTunnelOpenRequest {
     accessMode: TeamClusterServiceExposureAccessMode;
 }
 
-interface TeamClusterCommandOptions {
+export interface TeamClusterCommandOptions {
     timeoutMs?: number;
 }
 
@@ -74,7 +75,7 @@ interface TeamClusterDirectTunnelOpenRequest {
     accessMode: TeamClusterServiceExposureAccessMode;
 }
 
-interface TeamClusterDaemonSocketRegistration {
+export interface TeamClusterDaemonSocketRegistration {
     teamClusterId: string;
     channel: TeamClusterDaemonSocketChannel;
 }
@@ -183,7 +184,7 @@ export interface TeamClusterDaemonInboundStreamPayload {
     chunk: Buffer;
 }
 
-type TeamClusterDaemonInboundStreamConsumer = (payload: TeamClusterDaemonInboundStreamPayload) => void | Promise<void>;
+export type TeamClusterDaemonInboundStreamConsumer = (payload: TeamClusterDaemonInboundStreamPayload) => void | Promise<void>;
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
 
@@ -225,7 +226,7 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
 @Singleton()
-export default class TeamClusterReverseChannelService {
+export default class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();

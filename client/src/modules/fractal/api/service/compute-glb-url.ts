@@ -4,7 +4,7 @@ import type {
     SceneObjectType,
     PluginScene,
     ColorCodingScene,
-    DislocationStyleScene,
+    LineStyleScene,
     ParticleFilterScene,
     ParticleFilterSceneCondition
 } from '@/modules/fractal/api/entities/scene';
@@ -125,11 +125,11 @@ const buildParticleFilterUrl = (
     return buildBackendUrl(`/api/particle-filters/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`);
 };
 
-const buildDislocationStyleUrl = (
+const buildLineStyleUrl = (
     mode: CanvasAccessMode,
     teamId: string,
     trajectoryId: string,
-    scene: DislocationStyleScene,
+    scene: LineStyleScene,
     timestep: number
 ): string | null => {
     const { analysisId, exposureId, style } = scene;
@@ -146,7 +146,7 @@ const buildDislocationStyleUrl = (
         style: JSON.stringify(style ?? {})
     });
 
-    return buildBackendUrl(`/api/dislocation-styles/${teamId}/${trajectoryId}/${analysisId}/${exposureId}?${params.toString()}`);
+    return buildBackendUrl(`/api/line-styles/${teamId}/${trajectoryId}/${analysisId}/${exposureId}?${params.toString()}`);
 };
 
 export const resolveGlbResource = ({
@@ -186,8 +186,8 @@ export const resolveGlbResource = ({
                 resourceKey: url
             };
         }
-        case 'dislocation-style': {
-            const url = buildDislocationStyleUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+        case 'line-style': {
+            const url = buildLineStyleUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
             return {
                 url,
                 resourceKey: url

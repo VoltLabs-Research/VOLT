@@ -18,14 +18,14 @@ export const buildColorCodingObjectName = (
     return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
 };
 
-export const buildDislocationStyleObjectName = (
+export const buildLineStyleObjectName = (
     trajectoryId: string,
     analysisId: string,
     timestep: string | number,
     exposureId: string,
     styleHash: string
 ): string => {
-    return `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/dislocation-style/${exposureId}/${styleHash}.glb.zst`;
+    return `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/line-style/${exposureId}/${styleHash}.glb.zst`;
 };
 
 export const buildParticleFilterObjectName = (

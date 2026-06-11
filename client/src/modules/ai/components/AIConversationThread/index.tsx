@@ -34,7 +34,6 @@ interface AIConversationThreadProps {
     messages: UIMessage[];
     onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
     addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
-    starterInput?: ReactNode;
     onRetry?: () => void;
 }
 
@@ -472,7 +471,6 @@ const AIConversationThread = ({
     messages,
     onOpenTableArtifact,
     addToolApprovalResponse,
-    starterInput,
     onRetry
 }: AIConversationThreadProps) => {
     const normalizedMessages = useMemo<NormalizedConversationMessage[]>(() => {
@@ -584,27 +582,16 @@ const AIConversationThread = ({
         return !last || last.role === AIMessageRole.User;
     }, [isResponding, normalizedMessages]);
 
-    const renderPromptStarter = () => {
-        let starterContent: ReactNode = null;
-        if (starterInput) {
-            starterContent = (
-                <Box className='ai-thread-starter-input'>
-                    {starterInput}
-                </Box>
-            );
-        }
-
-        return (
-            <Box display='flex' flex='1' className='flex-center ai-thread-starter'>
-                <Stack align='center' gap='2' className='ai-thread-starter-content'>
-                    <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
-                        Ready when you are.
-                    </Text>
-                    {starterContent}
-                </Stack>
-            </Box>
-        );
-    };
+    // The composer always lives below the thread, so the starter is only the
+    // title. The page centers it via the workspace Row (items-center on the
+    // empty state); in fixed-height hosts (floating panel) it centers itself.
+    const renderPromptStarter = () => (
+        <Stack flex='1' align='center' justify='center' className='ai-thread-starter'>
+            <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
+                Ready when you are.
+            </Text>
+        </Stack>
+    );
 
     const renderMessageItem = (message: NormalizedConversationMessage, index: number) => (
         <AIMessageItem
@@ -652,22 +639,32 @@ const AIConversationThread = ({
         autoScrollDependency = 'typing';
     }
 
+    // Render the empty state ourselves instead of via `renderEmpty`:
+    // AutoScrollList centers its empty slot, while the starter must stay
+    // top-aligned with the composer pinned below.
+    let threadContent: ReactNode = (
+        <AutoScrollList
+            items={normalizedMessages}
+            isLoading={isLoading}
+            className='ai-thread-list'
+            getItemKey={(message) => message.id}
+            autoScrollDependency={autoScrollDependency}
+            autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
+            renderLoading={Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} variant='text' width='100%' height='3.5rem' />
+            ))}
+            renderAfter={renderAfter}
+            renderItem={renderMessageItem}
+        />
+    );
+
+    if (!isLoading && normalizedMessages.length === 0 && !showStandaloneTyping) {
+        threadContent = renderPromptStarter();
+    }
+
     return (
         <Stack as='section' flex='1' className='ai-thread-region' aria-label='Conversation messages'>
-            <AutoScrollList
-                items={normalizedMessages}
-                isLoading={isLoading}
-                className='ai-thread-list'
-                getItemKey={(message) => message.id}
-                autoScrollDependency={autoScrollDependency}
-                autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
-                renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} variant='text' width='100%' height='3.5rem' />
-                ))}
-                renderEmpty={renderPromptStarter()}
-                renderAfter={renderAfter}
-                renderItem={renderMessageItem}
-            />
+            {threadContent}
 
             <VisuallyHidden
                 role='log'

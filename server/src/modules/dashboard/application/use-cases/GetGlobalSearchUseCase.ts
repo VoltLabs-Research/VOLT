@@ -1,5 +1,4 @@
 import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import type { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
@@ -8,6 +7,7 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
@@ -89,7 +89,7 @@ export default class GetGlobalSearchUseCase
 implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: ContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,

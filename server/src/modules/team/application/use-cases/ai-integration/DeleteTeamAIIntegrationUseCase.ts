@@ -1,4 +1,4 @@
-import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ProviderScopedInputDTO } from '@modules/team/application/dtos/common';
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
@@ -11,7 +11,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class DeleteTeamAIIntegrationUseCase implements IUseCase<ProviderScopedInputDTO, null, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
+        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}

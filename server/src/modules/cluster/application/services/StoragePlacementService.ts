@@ -22,6 +22,7 @@ import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Traj
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { IStoragePlacementService } from '@modules/cluster/domain/port/IStoragePlacementService';
 import { inject } from 'tsyringe';
 
 interface ResolvedPlacementDefinition {
@@ -31,7 +32,7 @@ interface ResolvedPlacementDefinition {
 }
 
 @Singleton()
-export default class StoragePlacementService {
+export default class StoragePlacementService implements IStoragePlacementService {
     constructor(
         private readonly storagePlacementRepository: StoragePlacementRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,

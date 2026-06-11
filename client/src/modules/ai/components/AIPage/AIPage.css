@@ -12,8 +12,16 @@
     min-height: 0;
 }
 
+/* Counter the Row default (items-center): with at least one message the chat
+   pane stretches to full height — messages flow from the top, composer pinned
+   at the bottom. The starter state (.is-empty) keeps the centered block. */
+.ai-page-workspace:not(.is-empty) {
+    align-items: stretch;
+}
+
 .ai-page-chat-pane {
     min-width: 0;
+    min-height: 0;
 }
 
 .ai-page-inline-alert {

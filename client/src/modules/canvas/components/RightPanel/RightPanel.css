@@ -85,6 +85,25 @@
     transform-origin: right top;
 }
 
+/* Popover mode only: cap the height so long argument lists scroll instead of
+   pushing the execute button (footer) out of view. The panel/mobile mode
+   (.canvas-plugin-panel-config) already scrolls via .canvas-plugin-config-view__body. */
+.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) {
+    max-height: min(70vh, 32rem);
+    overflow: hidden;
+}
+
+.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) .canvas-modifier-config-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.canvas-plugin-popover-content:not(.canvas-plugin-panel-config) .canvas-plugin-popover-footer {
+    flex-shrink: 0;
+}
+
 .canvas-plugin-popover-content--closing {
     animation: canvas-plugin-config-content-close 160ms ease-in forwards;
 }

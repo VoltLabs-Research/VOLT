@@ -201,7 +201,7 @@ const PluginConfigField = ({
                         key={`${selection.pluginId}-${index}`}
                         title={getSelectionTitle(selection, pluginOptions)}
                         defaultExpanded={index === 0}
-                        className='mb-0'
+                        noSpacing
                         bodyClassName='mt-05'
                     >
                         <ArgumentFieldsRenderer

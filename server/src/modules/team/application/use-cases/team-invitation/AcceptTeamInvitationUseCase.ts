@@ -1,5 +1,5 @@
-import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
@@ -16,10 +16,10 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: TeamInvitationRepository,
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
-        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
+        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository
     ){}
 

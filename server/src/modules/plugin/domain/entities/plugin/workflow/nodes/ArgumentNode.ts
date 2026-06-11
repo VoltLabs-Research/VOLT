@@ -51,6 +51,7 @@ export interface ArgumentDefinition {
     value?: unknown;
     options?: ArgumentOption[];
     optionsFromArguments?: ArgumentOptionSource[];
+    optionsFromPluginReference?: string;
     listArguments?: ArgumentDefinition[];
     listItemLabelArgument?: string;
     required?: boolean;

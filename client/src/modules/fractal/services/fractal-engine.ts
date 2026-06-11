@@ -15,7 +15,7 @@ import {
 import MortonSortWorker from '@/modules/fractal/workers/morton-sort.worker?worker';
 import { computeBoundingBox } from '@/modules/fractal/utilities/morton-sort';
 
-import type { DislocationLineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 interface FractalSurface {
     scene: THREE.Scene;
@@ -39,9 +39,9 @@ interface TraversalCache {
     meshes: THREE.Mesh[];
 }
 
-interface DislocationGeometryUserData {
+interface LineGeometryUserData {
     basePositionArray?: Float32Array;
-    dislocationLineWidthOffset?: number;
+    lineWidthOffset?: number;
 }
 
 export type FractalParams = {
@@ -58,7 +58,7 @@ export type FractalParams = {
     sceneKey?: string;
     boxBounds?: BoxBounds;
     pointCloudSettings?: PointCloudSceneSettings;
-    dislocationLineSettings?: DislocationLineSceneSettings;
+    lineSettings?: LineSceneSettings;
 };
 
 type EngineCallbacks = {
@@ -156,8 +156,8 @@ export class FractalEngine {
     private lastPointOpacityValue: number = 1;
     private lastColorSceneKey: string | undefined = undefined;
     private lastColorValue: string | undefined = undefined;
-    private lastDislocationBaseLineWidth: number | undefined = undefined;
-    private lastDislocationLineWidth: number | undefined = undefined;
+    private lastBaseLineWidth: number | undefined = undefined;
+    private lastLineWidth: number | undefined = undefined;
     private traversalCache: TraversalCache = { pointClouds: [], meshes: [] };
 
     private mortonWorker: Worker | null = null;
@@ -305,11 +305,11 @@ export class FractalEngine {
             this.lastPointOpacityValue = -1;
             this.lastColorSceneKey = undefined;
             this.lastColorValue = undefined;
-            this.lastDislocationBaseLineWidth = undefined;
-            this.lastDislocationLineWidth = undefined;
+            this.lastBaseLineWidth = undefined;
+            this.lastLineWidth = undefined;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
-            this.updateDislocationLineWidth(this.params.dislocationLineSettings);
+            this.updateLineWidth(this.params.lineSettings);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -609,16 +609,16 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    updateDislocationLineWidth(settings?: DislocationLineSceneSettings) {
+    updateLineWidth(settings?: LineSceneSettings) {
         if (!this.state.model || this.traversalCache.meshes.length === 0) return;
         const baseLineWidth = settings?.baseLineWidth;
         const lineWidth = settings?.lineWidth;
 
-        if (baseLineWidth === this.lastDislocationBaseLineWidth && lineWidth === this.lastDislocationLineWidth) {
+        if (baseLineWidth === this.lastBaseLineWidth && lineWidth === this.lastLineWidth) {
             return;
         }
-        this.lastDislocationBaseLineWidth = baseLineWidth;
-        this.lastDislocationLineWidth = lineWidth;
+        this.lastBaseLineWidth = baseLineWidth;
+        this.lastLineWidth = lineWidth;
 
         const hasValidSettings = Number.isFinite(baseLineWidth)
             && Number.isFinite(lineWidth)
@@ -634,7 +634,7 @@ export class FractalEngine {
                 return;
             }
             processedGeometries.add(mesh.geometry);
-            this.applyDislocationLineWidthToGeometry(mesh.geometry, lineWidthOffset);
+            this.applyLineWidthToGeometry(mesh.geometry, lineWidthOffset);
         });
 
         this.surface.invalidate();
@@ -684,12 +684,12 @@ export class FractalEngine {
         this.surface.gl.localClippingEnabled = enabled;
     }
 
-    private applyDislocationLineWidthToGeometry(geometry: THREE.BufferGeometry, lineWidthOffset: number) {
+    private applyLineWidthToGeometry(geometry: THREE.BufferGeometry, lineWidthOffset: number) {
         const positionAttribute = geometry.getAttribute('position');
         const normalAttribute = geometry.getAttribute('normal');
 
         if (!(positionAttribute instanceof THREE.BufferAttribute) || !(normalAttribute instanceof THREE.BufferAttribute)) {
-            warnFractal('engine.dislocation-line-width-missing-attributes', {
+            warnFractal('engine.line-width-missing-attributes', {
                 sceneKey: this.params.sceneKey,
                 hasPositionAttribute: positionAttribute instanceof THREE.BufferAttribute,
                 hasNormalAttribute: normalAttribute instanceof THREE.BufferAttribute,
@@ -699,7 +699,7 @@ export class FractalEngine {
         }
 
         if (positionAttribute.itemSize < 3 || normalAttribute.itemSize < 3) {
-            warnFractal('engine.dislocation-line-width-invalid-item-size', {
+            warnFractal('engine.line-width-invalid-item-size', {
                 sceneKey: this.params.sceneKey,
                 positionItemSize: positionAttribute.itemSize,
                 normalItemSize: normalAttribute.itemSize
@@ -707,11 +707,11 @@ export class FractalEngine {
             return;
         }
 
-        const userData = geometry.userData as THREE.BufferGeometry['userData'] & DislocationGeometryUserData;
+        const userData = geometry.userData as THREE.BufferGeometry['userData'] & LineGeometryUserData;
         if (!userData.basePositionArray || userData.basePositionArray.length !== positionAttribute.array.length) {
             userData.basePositionArray = Float32Array.from(positionAttribute.array as ArrayLike<number>);
         }
-        if (userData.dislocationLineWidthOffset === lineWidthOffset) return;
+        if (userData.lineWidthOffset === lineWidthOffset) return;
 
         const basePositions = userData.basePositionArray;
         const positions = positionAttribute.array as Float32Array;
@@ -722,7 +722,7 @@ export class FractalEngine {
         positionAttribute.needsUpdate = true;
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
-        userData.dislocationLineWidthOffset = lineWidthOffset;
+        userData.lineWidthOffset = lineWidthOffset;
     }
 
     private applyClippingToModel(root: THREE.Object3D, planes: Plane[]) {

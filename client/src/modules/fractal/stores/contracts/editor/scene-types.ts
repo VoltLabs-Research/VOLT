@@ -26,7 +26,7 @@ interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
     interface_mesh: string;
-    dislocations: string;
+    lines: string;
     core_atoms: string;
     atoms_colored_by_type: string;
 }
