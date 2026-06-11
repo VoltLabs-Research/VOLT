@@ -2,7 +2,7 @@ import {
     ParticleFilterSceneCombinator
 } from '@/modules/fractal/api/entities/scene';
 
-import type { DislocationStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
+import type { LineStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 
 interface MaybeParticleFilterCondition {
@@ -94,7 +94,7 @@ export const isSameScene = (left?: MaybeScene | null, right?: MaybeScene | null)
             && normalizeParticleFilterSignature(left) === normalizeParticleFilterSignature(right);
     }
 
-    if (left.source === 'dislocation-style' || right.source === 'dislocation-style') {
+    if (left.source === 'line-style' || right.source === 'line-style') {
         return JSON.stringify(left.style ?? {}) === JSON.stringify(right.style ?? {});
     }
 
@@ -108,7 +108,7 @@ export const isTimestepScopedScene = (scene?: MaybeScene | null): boolean => {
 
     return scene.source === 'color-coding'
         || scene.source === 'particle-filter'
-        || scene.source === 'dislocation-style';
+        || scene.source === 'line-style';
 };
 
 export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectType | null => {
@@ -199,17 +199,17 @@ export const toSceneObjectFromArtifact = (artifact: SceneArtifact): SceneObjectT
         };
     }
 
-    if (artifact.sourceType === 'dislocation-style') {
+    if (artifact.sourceType === 'line-style') {
         if (!analysisId || !artifact.params.exposureId) {
             return null;
         }
 
         return {
-            sceneType: 'dislocation-style',
-            source: 'dislocation-style',
+            sceneType: 'line-style',
+            source: 'line-style',
             analysisId,
             exposureId: String(artifact.params.exposureId),
-            style: (artifact.params.style ?? {}) as DislocationStyleSpec
+            style: (artifact.params.style ?? {}) as LineStyleSpec
         };
     }
 

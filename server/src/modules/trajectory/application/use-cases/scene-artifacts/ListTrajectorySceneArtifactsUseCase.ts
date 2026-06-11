@@ -38,7 +38,7 @@ const toOutput = (artifact: SceneArtifact): SceneArtifactOutput => ({
 const RENDERABLE_SCENE_EXPORTERS = new Set([
     'AtomisticExporter',
     'MeshExporter',
-    'DislocationExporter'
+    'LineExporter'
 ]);
 
 const projectRenderableExposures = (artifacts: SceneArtifact[]) => {

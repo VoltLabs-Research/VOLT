@@ -11,6 +11,53 @@ interface AIResponseMessagePartsMappingResult {
 @Singleton(AI_TOKENS.AIResponseMessagePartsMapper)
 export default class AIResponseMessagePartsMapper {
     /**
+     * Finds a persisted tool part by its `tool-<name>` type and tool-call id.
+     */
+    private findToolPart(
+        parts: AIConversationMessageParts,
+        type: unknown,
+        toolCallId: unknown
+    ): Record<string, unknown> | undefined {
+        for (const candidate of parts) {
+            const candidateRecord = asRecord(candidate);
+            if (
+                candidateRecord
+                && candidateRecord.type === type
+                && candidateRecord.toolCallId === toolCallId
+            ) {
+                return candidateRecord;
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Patches a tool part in place with its result output, promoting it to the
+     * terminal `output-available` state. When `preserveDenial` is set, an
+     * existing `approved: false` is left untouched (the user denied the action);
+     * otherwise the approval is marked approved.
+     */
+    private applyToolResult(
+        target: Record<string, unknown>,
+        output: unknown,
+        preserveDenial: boolean
+    ): void {
+        target.output = output;
+        target.state = 'output-available';
+
+        if (isRecord(target.approval) && typeof target.approval.id === 'string') {
+            const approval = target.approval;
+            if (!preserveDenial || approval.approved !== false) {
+                target.approval = {
+                    id: approval.id,
+                    approved: true
+                };
+            }
+        }
+    }
+
+    /**
      * Merges new assistant response parts into an existing set of parts.
      *
      * Tool-result parts that match an existing tool-call (by type and toolCallId)
@@ -34,28 +81,9 @@ export default class AIResponseMessagePartsMapper {
                 && typeof newRecord.toolCallId === 'string'
                 && newRecord.state === 'output-available'
             ) {
-                const matchIndex = merged.findIndex((existing) => {
-                    const existingRecord = asRecord(existing);
-                    return (
-                        existingRecord
-                        && existingRecord.type === newRecord.type
-                        && existingRecord.toolCallId === newRecord.toolCallId
-                    );
-                });
-
-                if (matchIndex !== -1) {
-                    const target = asRecord(merged[matchIndex]);
-                    if (target) {
-                        target.output = newRecord.output;
-                        target.state = 'output-available';
-
-                        if (isRecord(target.approval) && typeof target.approval.id === 'string') {
-                            target.approval = {
-                                id: target.approval.id,
-                                approved: true
-                            };
-                        }
-                    }
+                const target = this.findToolPart(merged, newRecord.type, newRecord.toolCallId);
+                if (target) {
+                    this.applyToolResult(target, newRecord.output, false);
                     continue;
                 }
             }
@@ -138,31 +166,10 @@ export default class AIResponseMessagePartsMapper {
                             break;
                         }
                         const typedPartType = `tool-${part.toolName}`;
-                        const existingInvocation = parts.find(
-                            (candidate) => {
-                                const candidateRecord = asRecord(candidate);
-                                if (!candidateRecord) return false;
-                                return (
-                                    candidateRecord.type === typedPartType
-                                    && candidateRecord.toolCallId === part.toolCallId
-                                );
-                            }
-                        );
+                        const existingInvocation = this.findToolPart(parts, typedPartType, part.toolCallId);
 
-                        const invocationRecord = asRecord(existingInvocation);
-                        if (invocationRecord) {
-                            invocationRecord.output = part.output;
-                            invocationRecord.state = 'output-available';
-
-                            if (isRecord(invocationRecord.approval) && typeof invocationRecord.approval.id === 'string') {
-                                const approvalRecord = invocationRecord.approval;
-                                if (approvalRecord.approved !== false) {
-                                    invocationRecord.approval = {
-                                        id: approvalRecord.id,
-                                        approved: true
-                                    };
-                                }
-                            }
+                        if (existingInvocation) {
+                            this.applyToolResult(existingInvocation, part.output, true);
                         } else {
                             const toolResultPart = {
                                 type: typedPartType,

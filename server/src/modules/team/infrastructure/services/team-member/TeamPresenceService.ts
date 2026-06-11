@@ -1,3 +1,4 @@
+import type { ITeamPresenceService } from '@modules/team/domain/port/team-member/ITeamPresenceService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 
@@ -33,7 +34,7 @@ export interface AttachTeamPresenceResult {
 };
 
 @Singleton()
-export default class TeamPresenceService {
+export default class TeamPresenceService implements ITeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();
     private readonly connectionsByUser = new Map<string, Set<string>>();

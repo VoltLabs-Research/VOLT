@@ -1,4 +1,4 @@
-import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO } from '@modules/team/application/dtos/ai-integration/GetTeamAIIntegrationsDTO';
 import type { ITeamAIProviderCatalog } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
@@ -10,7 +10,7 @@ import { toTeamAIIntegrationItemDTO } from './toTeamAIIntegrationItemDTO';
 @injectable()
 export default class GetTeamAIIntegrationsUseCase implements IUseCase<GetTeamAIIntegrationsInputDTO, GetTeamAIIntegrationsOutputDTO> {
     constructor(
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
+        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}

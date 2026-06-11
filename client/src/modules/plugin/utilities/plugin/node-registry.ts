@@ -76,8 +76,8 @@ export const EXPORTER_OPTIONS: NodeOption<Exporter>[] = [{
     value: Exporter.MESH,
     label: 'Mesh Exporter'
 }, {
-    value: Exporter.DISLOCATION,
-    label: 'Dislocation Exporter'
+    value: Exporter.LINE,
+    label: 'Line Exporter'
 }, {
     value: Exporter.CHART,
     label: 'Chart Exporter'

@@ -564,6 +564,25 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 }
             }
 
+            if (definition.optionsFromPluginReference !== undefined) {
+                const referenceArgument = typeof definition.optionsFromPluginReference === 'string'
+                    ? definition.optionsFromPluginReference.trim()
+                    : '';
+                if (definition.type !== ArgumentType.Select) {
+                    errors.push(`${argumentScope} optionsFromPluginReference can only be used with select arguments`);
+                } else if (!referenceArgument) {
+                    errors.push(`${argumentScope} optionsFromPluginReference cannot be empty`);
+                } else {
+                    const referenced = definitions.find((candidate) => candidate.argument === referenceArgument)
+                        ?? rootDefinitions.find((candidate) => candidate.argument === referenceArgument);
+                    if (!referenced) {
+                        errors.push(`${argumentScope} optionsFromPluginReference references unknown argument "${referenceArgument}"`);
+                    } else if (referenced.type !== ArgumentType.PluginReference) {
+                        errors.push(`${argumentScope} optionsFromPluginReference must reference a pluginReference argument`);
+                    }
+                }
+            }
+
             if (definition.type === ArgumentType.List && definition.listItemLabelArgument !== undefined) {
                 const listItemLabelArgument = definition.listItemLabelArgument.trim();
                 if (!listItemLabelArgument) {

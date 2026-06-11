@@ -1,6 +1,6 @@
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
-import type LatexAssetRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexAssetRepository';
-import type LatexFileRepository from '@modules/latex/infrastructure/persistence/mongo/repositories/LatexFileRepository';
+import type { ILatexAssetRepository } from '@modules/latex/domain/port/ILatexAssetRepository';
+import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFileRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -18,8 +18,8 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 @Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     constructor(
-        @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: LatexAssetRepository,
-        @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: LatexFileRepository,
+        @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
+        @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: ILatexFileRepository,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

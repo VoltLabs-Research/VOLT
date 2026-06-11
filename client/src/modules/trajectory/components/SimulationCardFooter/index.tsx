@@ -6,11 +6,12 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
-import { IconButton, Loader, Popover, Row, Stack, Text, PopoverMenu, PopoverMenuItem } from '@voltstack/bravais';
+import { IconButton, Loader, Popover, Row, Stack, Text, PopoverMenu, PopoverMenuItem, openModal } from '@voltstack/bravais';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { formatDistanceToNow } from 'date-fns';
-import { Download, FolderInput, Play, ScanSearch } from 'lucide-react';
+import { Download, FolderInput, ListChecks, Play, ScanSearch } from 'lucide-react';
 import { sileo } from 'sileo';
 import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
@@ -163,6 +164,7 @@ export default function SimulationCardFooter({
     const { downloadTrajectory, isDownloading: isExporting } = useDownloadTrajectory();
     const { data: jobGroups = [] } = teamJobsGroups();
     const requestedRasterTrajectoryIds = useTeamJobsStore((state) => state.requestedRasterTrajectoryIds);
+    const setJobsScope = useJobsDrawerStore((state) => state.setScope);
     const [isDeleting, setIsDeleting] = useState(false);
     const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
     const isRasterizing = triggerRasterizationMutation.isPending;
@@ -180,6 +182,11 @@ export default function SimulationCardFooter({
     const handleViewRaster = useCallback(() => {
         navigate(`/canvas/${trajectoryId}?workspace=raster`);
     }, [navigate, trajectoryId]);
+
+    const handleOpenComputeJobs = useCallback(() => {
+        setJobsScope({ trajectoryId, trajectoryName: name });
+        openModal(DASHBOARD_DRAWER_IDS.jobs);
+    }, [setJobsScope, trajectoryId, name]);
 
     const handleExport = useCallback(() => {
         void downloadTrajectory({
@@ -245,6 +252,10 @@ export default function SimulationCardFooter({
         onClick: handleViewRaster,
         label: 'Open raster workspace',
         icon: <ScanSearch />
+    }, {
+        onClick: handleOpenComputeJobs,
+        label: 'Compute jobs',
+        icon: <ListChecks />
     }, {
         onClick: handleExport,
         label: 'Export',

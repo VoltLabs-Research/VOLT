@@ -24,7 +24,8 @@ import ClusterTransferJob, {
 import StoragePlacement from '@modules/cluster/domain/entities/StoragePlacement';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@modules/cluster/domain/port/ITeamClusterObjectGatewayClient';
+import type { IClusterTransferCoordinator } from '@modules/cluster/domain/port/IClusterTransferCoordinator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import {
@@ -63,7 +64,7 @@ interface ObjectListEntry {
     lastModified?: Date;
 }
 
-interface TransferRequestInput {
+export interface TransferRequestInput {
     teamId: string;
     scopeType: StoragePlacementScopeType;
     scopeId: string;
@@ -182,7 +183,7 @@ const compareObjectListingEntries = (
 };
 
 @Singleton()
-export default class ClusterTransferCoordinator {
+export default class ClusterTransferCoordinator implements IClusterTransferCoordinator {
     constructor(
         private readonly storagePlacementService: StoragePlacementService,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
@@ -191,7 +192,7 @@ export default class ClusterTransferCoordinator {
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

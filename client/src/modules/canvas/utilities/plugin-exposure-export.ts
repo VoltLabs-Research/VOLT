@@ -3,11 +3,11 @@ import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import type { PluginScene, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 
-export const DEFAULT_DISLOCATION_LINE_WIDTH = 0.08;
+export const DEFAULT_LINE_WIDTH = 0.08;
 const RENDERABLE_SCENE_EXPORTERS = new Set<string>([
     Exporter.ATOMISTIC,
     Exporter.MESH,
-    Exporter.DISLOCATION
+    Exporter.LINE
 ]);
 
 type ExposureExportLike = {

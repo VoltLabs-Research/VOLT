@@ -1,6 +1,7 @@
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import DemoClusterDeploymentService from '@modules/cluster/infrastructure/services/DemoClusterDeploymentService';
 import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
+import type { ITeamClusterHeartbeatMonitor } from '@modules/cluster/domain/port/ITeamClusterHeartbeatMonitor';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
@@ -9,7 +10,7 @@ const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEA
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
 @Singleton()
-export default class TeamClusterHeartbeatMonitor {
+export default class TeamClusterHeartbeatMonitor implements ITeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
 
     constructor(

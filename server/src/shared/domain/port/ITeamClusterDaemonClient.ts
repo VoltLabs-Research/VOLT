@@ -15,15 +15,6 @@ export interface TeamClusterDaemonSemanticCommandResult<T> {
     timeoutClass: NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>;
 }
 
-export interface TeamClusterDaemonNotebookRuntime {
-    tunnelTargetHost: string;
-    tunnelTargetPort: number;
-}
-
-export interface TeamClusterDaemonNotebookRuntimeLookupResponse {
-    runtime: TeamClusterDaemonNotebookRuntime | null;
-}
-
 export interface ITeamClusterDaemonClient {
     command<T>(
         teamClusterId: string,
@@ -38,11 +29,6 @@ export interface ITeamClusterDaemonClient {
         payload?: Record<string, unknown>,
         options?: TeamClusterDaemonCommandOptions
     ): Promise<TeamClusterDaemonSemanticCommandResult<T>>;
-
-    getNotebookRuntime(
-        teamClusterId: string,
-        notebookId: string
-    ): Promise<TeamClusterDaemonNotebookRuntimeLookupResponse>;
 
     commandStream(
         teamClusterId: string,

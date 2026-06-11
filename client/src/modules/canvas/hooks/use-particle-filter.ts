@@ -554,6 +554,9 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     }, [isLoadingPreview, isApplying, isLoadingProperties, conditions]);
 
     return {
+        trajectoryId,
+        analysisId,
+        currentTimestep,
         conditions,
         addCondition,
         removeCondition,

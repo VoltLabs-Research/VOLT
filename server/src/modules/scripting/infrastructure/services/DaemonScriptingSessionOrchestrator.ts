@@ -8,11 +8,11 @@ import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/Scripting
 import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
 import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
+import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 
 type NotebookContainerStage = 'creating' | 'starting' | 'ready';
@@ -57,7 +57,8 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
         private readonly notebookService: JupyterNotebookService,
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService
+        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
+        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
     ) {}
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
@@ -127,20 +128,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
                 continue;
             }
 
-            try {
-                await this.teamClusterDaemonClient.command(
-                    notebookTeamClusterId,
-                    ChannelCommands.NotebookDelete,
-                    {
-                        notebookId: notebook.props.runtimeNotebookId
-                    }
-                );
-            } catch (error: unknown) {
-                logger.warn(
-                    { err: error, notebookId: notebook._id, runtimeNotebookId: notebook.props.runtimeNotebookId, trajectoryId },
-                    '[Scripting] Failed to delete Jupyter session on daemon'
-                );
-            }
+            await this.notebookRuntimeTerminator.terminate(notebookTeamClusterId, notebook.props.runtimeNotebookId);
         }
     }
 

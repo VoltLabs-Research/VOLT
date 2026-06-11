@@ -56,11 +56,16 @@ const isAIProvider = (value: string): value is AIProvider => {
     return AI_PROVIDER_VALUES.some((provider) => provider === value);
 };
 
-const resolveOllamaBaseUrl = (metadata?: Record<string, unknown>): string => {
+/**
+ * The saved custom endpoint for a provider, if any. Ollama always shows its
+ * default base URL (it has no public API); every other provider leaves the
+ * field blank, meaning "use the provider's default endpoint".
+ */
+const resolveEndpoint = (provider: AIProvider | string | null, metadata?: Record<string, unknown>): string => {
     if (typeof metadata?.baseUrl === 'string') {
         return metadata.baseUrl;
     }
-    return OLLAMA_DEFAULT_BASE_URL;
+    return provider === 'ollama' ? OLLAMA_DEFAULT_BASE_URL : '';
 };
 
 const getSaveIntegrationToastOptions = (integration?: TeamAIIntegration) => createPromiseToastOptions({
@@ -104,7 +109,7 @@ export default function IntegrationsSettings() {
     const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
     const [modalProvider, setModalProvider] = useState<AIProvider | null>(null);
     const [modalApiKey, setModalApiKey] = useState('');
-    const [modalEndpoint, setModalEndpoint] = useState(OLLAMA_DEFAULT_BASE_URL);
+    const [modalEndpoint, setModalEndpoint] = useState('');
     const [modalDefaultModel, setModalDefaultModel] = useState<string | null>(null);
     const [modalEnabledModels, setModalEnabledModels] = useState<TeamAIModelMetadata[]>([]);
     const [modalEnabled, setModalEnabled] = useState(true);
@@ -165,7 +170,7 @@ export default function IntegrationsSettings() {
         setEditingProvider(preset.editingProvider ?? null);
         setModalProvider(preset.provider ?? null);
         setModalApiKey(preset.apiKey ?? '');
-        setModalEndpoint(preset.endpoint ?? OLLAMA_DEFAULT_BASE_URL);
+        setModalEndpoint(preset.endpoint ?? '');
         setModalDefaultModel(preset.defaultModel ?? null);
         setModalEnabledModels(preset.enabledModels ?? []);
         setModalEnabled(preset.enabled ?? true);
@@ -188,19 +193,18 @@ export default function IntegrationsSettings() {
             return;
         }
 
-        applyModalState({ provider: firstProviderId });
+        applyModalState({
+            provider: firstProviderId,
+            endpoint: resolveEndpoint(firstProviderId)
+        });
         openModal(TEAM_AI_INTEGRATION_MODAL_ID);
     };
 
     const openEditProviderModal = (integration: TeamAIIntegration) => {
-        const ollamaBaseUrl = integration.provider === 'ollama'
-            ? resolveOllamaBaseUrl(integration.metadata)
-            : OLLAMA_DEFAULT_BASE_URL;
-
         applyModalState({
             editingProvider: integration.provider,
             provider: integration.provider,
-            endpoint: ollamaBaseUrl,
+            endpoint: resolveEndpoint(integration.provider, integration.metadata),
             enabled: integration.isEnabled,
             enabledModels: integration.enabledModels ?? [],
             defaultModel: integration.defaultModel ?? null
@@ -214,14 +218,11 @@ export default function IntegrationsSettings() {
         }
 
         const nextIntegration = integrationsByProvider.get(provider);
-        const ollamaBaseUrl = provider === 'ollama'
-            ? resolveOllamaBaseUrl(nextIntegration?.metadata)
-            : OLLAMA_DEFAULT_BASE_URL;
 
         applyModalState({
             editingProvider,
             provider,
-            endpoint: ollamaBaseUrl,
+            endpoint: resolveEndpoint(provider, nextIntegration?.metadata),
             enabled: modalEnabled,
             enabledModels: modalEnabledModels,
             defaultModel: modalDefaultModel
@@ -311,11 +312,11 @@ export default function IntegrationsSettings() {
             payload.apiKey = apiKey;
         }
 
-        if (modalProvider === 'ollama') {
-            payload.metadata = {
-                baseUrl: modalEndpoint.trim()
-            };
-        }
+        // A custom endpoint points the provider at a self-hosted gateway. Send
+        // `{ baseUrl }` when set; send `{}` to clear a previously-saved endpoint
+        // (the server keeps existing metadata when this field is undefined).
+        const customEndpoint = toOptionalString(modalEndpoint);
+        payload.metadata = customEndpoint ? { baseUrl: customEndpoint } : {};
 
         setIsSaving(true);
         try {
@@ -538,7 +539,7 @@ export default function IntegrationsSettings() {
                             />
                         )}
 
-                        {modalProvider === 'ollama' && (
+                        {modalProvider === 'ollama' ? (
                             <FormFieldRHF
                                 label='Endpoint'
                                 type='text'
@@ -546,6 +547,15 @@ export default function IntegrationsSettings() {
                                 value={modalEndpoint}
                                 onChange={(event) => setModalEndpoint(event.target.value)}
                                 placeholder={OLLAMA_DEFAULT_BASE_URL}
+                            />
+                        ) : (
+                            <FormFieldRHF
+                                label='Custom endpoint (optional)'
+                                type='text'
+                                inputProps={{ autoComplete: 'off' }}
+                                value={modalEndpoint}
+                                onChange={(event) => setModalEndpoint(event.target.value)}
+                                placeholder='Use a self-hosted gateway, e.g. https://my-gateway.example.com/v1'
                             />
                         )}
 

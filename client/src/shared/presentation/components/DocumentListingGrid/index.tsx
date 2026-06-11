@@ -6,11 +6,11 @@ import { buildItemMapByGeneratedId } from '@/shared/presentation/components/Docu
 import { useInfiniteScroll } from '@voltstack/bravais';
 import './DocumentListingGrid.css';
 import { CSS } from '@dnd-kit/utilities';
-import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, PointerSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { FileText, GripVertical } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 
 interface DocumentListingGridProps<T extends { _id: string }> {
@@ -195,6 +195,14 @@ const DocumentListingGrid = <T extends { _id: string },>({
             }
         })
     );
+    // Prefer the droppable under the pointer so small targets (e.g. folder
+    // breadcrumbs) win over the large grid cards, falling back to area
+    // intersection for keyboard dragging and when the pointer is outside any
+    // droppable.
+    const collisionDetection = useCallback<CollisionDetection>((args) => {
+        const pointerCollisions = pointerWithin(args);
+        return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+    }, []);
     const { sentinelRef } = useInfiniteScroll({
         rootRef: containerRef,
         hasMore,
@@ -355,6 +363,7 @@ const DocumentListingGrid = <T extends { _id: string },>({
     return (
         <DndContext
             sensors={sensors}
+            collisionDetection={collisionDetection}
             onDragStart={handleDragStart}
             onDragCancel={handleDragCancel}
             onDragEnd={handleDragEnd}

@@ -5,9 +5,13 @@ import useParticleFilter, {
     FilterAction,
     FilterOperator
 } from '../../hooks/use-particle-filter';
+import { uniqueValuesQuery } from '@/modules/trajectory/hooks/particle-filter/queries';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { ParticleFilterCombinator } from '@/modules/trajectory/api/services/particle-filter-service';
+import { useMemo } from 'react';
+
+import type { ReactElement } from 'react';
 
 import './ParticleFilter.css';
 
@@ -29,8 +33,89 @@ const isParticleFilterCombinator = (value: string): value is ParticleFilterCombi
     return MATCH_MODES.some((option) => option.value === value);
 };
 
+interface StringEqualityValueFieldProps {
+    conditionId: string;
+    property: string;
+    exposureId: string | null;
+    valueInput: string;
+    trajectoryId?: string;
+    analysisId?: string;
+    currentTimestep?: number;
+    onValueChange: (conditionId: string, value: string) => void;
+    renderFallback: () => ReactElement;
+}
+
+// String-typed equality conditions get a dropdown of the property's unique
+// values (the structure_name flow that "Select Structure Type" used to
+// hardcode). Falls back to free text when no values come back.
+const StringEqualityValueField = ({
+    conditionId,
+    property,
+    exposureId,
+    valueInput,
+    trajectoryId,
+    analysisId,
+    currentTimestep,
+    onValueChange,
+    renderFallback
+}: StringEqualityValueFieldProps) => {
+    const queryParams = useMemo(() => {
+        if (!property || !trajectoryId || currentTimestep === undefined) {
+            return null;
+        }
+        return {
+            trajectoryId,
+            analysisId,
+            timestep: currentTimestep,
+            property,
+            exposureId: exposureId ?? undefined,
+            maxValues: 50
+        };
+    }, [property, exposureId, trajectoryId, analysisId, currentTimestep]);
+
+    const valuesResult = uniqueValuesQuery(
+        queryParams ?? { trajectoryId: '', timestep: 0, property: '' },
+        {
+            enabled: Boolean(queryParams),
+            retry: false,
+            staleTime: 5 * 60 * 1000
+        }
+    );
+
+    const values = useMemo(() => {
+        return (valuesResult.data?.values ?? []).map(String);
+    }, [valuesResult.data]);
+
+    if (values.length === 0) {
+        return renderFallback();
+    }
+
+    const valueOptions = values.includes(valueInput)
+        ? values.map((value) => ({ value, title: value }))
+        : [
+            { value: valueInput, title: valueInput === '' ? 'Select value' : valueInput },
+            ...values.map((value) => ({ value, title: value }))
+        ];
+
+    return (
+        <FormFieldRHF
+            fieldKey={`value-${conditionId}`}
+            fieldType='select'
+            label='Value'
+            fieldValue={valueInput}
+            onFieldChange={(_fieldKey, value) => onValueChange(conditionId, String(value))}
+            options={valueOptions}
+            isLoading={valuesResult.isFetching}
+            variant='canvas'
+        />
+    );
+};
+
 const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleFilterProps) => {
     const {
+        trajectoryId: effectiveTrajectoryId,
+        analysisId: effectiveAnalysisId,
+        currentTimestep: effectiveTimestep,
         conditions,
         addCondition,
         removeCondition,
@@ -82,6 +167,23 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
     const renderConditionRow = (condition: typeof conditions[number], index: number) => {
         const isRemovable = conditions.length > 1;
         const operatorOptions = getOperatorOptions(condition.id);
+        const isStringEquality = condition.propertyType === 'string'
+            && (condition.operator === FilterOperator.Equal || condition.operator === FilterOperator.NotEqual);
+
+        const renderFreeTextValueField = () => (
+            <FormFieldRHF
+                fieldKey={`value-${condition.id}`}
+                fieldType='input'
+                onFieldChange={(_fieldKey, value) => handleValueChange(condition.id, String(value))}
+                fieldValue={condition.valueInput}
+                label='Value'
+                suggestions={getValueSuggestions(condition.id)}
+                onFetchSuggestions={() => fetchValueSuggestions(condition.id)}
+                isLoading={isLoadingValueSuggestions}
+                inputProps={{ inputMode: condition.propertyType === 'string' ? 'text' : 'decimal' }}
+                variant='canvas'
+            />
+        );
 
         return (
             <Stack key={condition.id} gap='05' className='canvas-filter-condition'>
@@ -128,18 +230,19 @@ const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleF
                     variant='canvas'
                 />
 
-                <FormFieldRHF
-                    fieldKey={`value-${condition.id}`}
-                    fieldType='input'
-                    onFieldChange={(_fieldKey, value) => handleValueChange(condition.id, String(value))}
-                    fieldValue={condition.valueInput}
-                    label='Value'
-                    suggestions={getValueSuggestions(condition.id)}
-                    onFetchSuggestions={() => fetchValueSuggestions(condition.id)}
-                    isLoading={isLoadingValueSuggestions}
-                    inputProps={{ inputMode: condition.propertyType === 'string' ? 'text' : 'decimal' }}
-                    variant='canvas'
-                />
+                {isStringEquality ? (
+                    <StringEqualityValueField
+                        conditionId={condition.id}
+                        property={condition.property}
+                        exposureId={condition.exposureId}
+                        valueInput={condition.valueInput}
+                        trajectoryId={effectiveTrajectoryId}
+                        analysisId={effectiveAnalysisId}
+                        currentTimestep={effectiveTimestep}
+                        onValueChange={handleValueChange}
+                        renderFallback={renderFreeTextValueField}
+                    />
+                ) : renderFreeTextValueField()}
             </Stack>
         );
     };

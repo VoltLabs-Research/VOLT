@@ -400,7 +400,7 @@ const RightPanel = ({
         }
 
         return (
-            <Stack gap='05'>
+            <Stack gap='05' className='canvas-modifier-config-body'>
                 {content}
             </Stack>
         );

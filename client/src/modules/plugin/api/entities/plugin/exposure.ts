@@ -7,12 +7,19 @@ export interface IComputedArgumentOption {
     label: string;
 }
 
+export interface IExposureProperty {
+    key: string;
+    label?: string;
+    type?: string;
+}
+
 export interface IExposureComputed {
     _id: string;
     name: string;
     icon?: string;
     results: string;
     hasListing?: boolean;
+    properties?: IExposureProperty[];
     export: IExposureExport | null;
 }
 

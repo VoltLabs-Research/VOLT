@@ -1,5 +1,3 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import { inject } from 'tsyringe';
@@ -8,17 +6,17 @@ import type {
     DeleteScriptingSessionInputDTO,
     DeleteScriptingSessionOutputDTO
 } from '@modules/scripting/application/dtos/ScriptingSessionDTO';
+import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 @Singleton()
 export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSessionInputDTO, DeleteScriptingSessionOutputDTO, ApplicationError> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
+        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
     ) {}
 
     async execute(input: DeleteScriptingSessionInputDTO): Promise<Result<DeleteScriptingSessionOutputDTO, ApplicationError>> {
@@ -35,14 +33,7 @@ export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSe
         const teamClusterId = notebook.props.teamCluster;
 
         if (runtimeNotebookId && teamClusterId) {
-            try {
-                await this.teamClusterDaemonClient.command(
-                    teamClusterId,
-                    ChannelCommands.NotebookDelete,
-                    { notebookId: runtimeNotebookId }
-                );
-            } catch {
-            }
+            await this.notebookRuntimeTerminator.terminate(teamClusterId, runtimeNotebookId);
         }
 
         await this.scriptingNotebookRepository.updateById(notebook._id, {

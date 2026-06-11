@@ -13,14 +13,15 @@ import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { ReverseWsHttpRelay } from '@shared/infrastructure/services/ReverseWsHttpRelay';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
     resolveRelayAdvertisedHost
 } from '@shared/infrastructure/utilities/relay-network';
+import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
-import httpProxy from 'http-proxy';
 import type {
     IncomingMessage,
     ServerResponse
@@ -70,7 +71,8 @@ export class ContainerPortProxyRelayService implements IContainerPortProxyRelayS
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly accessTokenService: ContainerPortProxyAccessTokenService
+        private readonly accessTokenService: ContainerPortProxyAccessTokenService,
+        private readonly reverseWsHttpRelay: ReverseWsHttpRelay
     ) {}
 
     async createAccessUrl(input: CreateContainerPortAccessUrlInput): Promise<{ url: string; expiresAt: string; }> {
@@ -205,85 +207,54 @@ export class ContainerPortProxyRelayService implements IContainerPortProxyRelayS
             targetPort: relay.privatePort,
             accessMode: TeamClusterServiceExposureAccessMode.Http
         });
-        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
-        const proxy = httpProxy.createProxyServer();
-        const originalUrl = req.url;
+        const agent = this.reverseWsHttpRelay.createSingleUseTunnelHttpAgent(tunnel);
 
-        const cleanup = (): void => {
-            agent.destroy();
-            proxy.removeAllListeners();
-        };
-
-        proxy.once('proxyRes', (proxyResponse) => {
-            const location = proxyResponse.headers.location;
-            if (typeof location === 'string') {
-                proxyResponse.headers.location = this.rewriteLocationHeader(location, relay);
-            }
-
-            if (accessTokenFromUrl) {
-                proxyResponse.headers['set-cookie'] = this.appendAccessTokenCookie(
-                    proxyResponse.headers['set-cookie'],
-                    accessTokenFromUrl
-                );
-            }
-
-            proxyResponse.once('close', cleanup);
-        });
-
-        proxy.once('error', (error) => {
-            cleanup();
-            if (!res.headersSent) {
-                this.writeHttpError(res, error);
-                return;
-            }
-
-            res.destroy(error);
-        });
-
-        res.once('close', cleanup);
-        req.url = `${target.proxiedPath}${target.rawQuery}`;
-        proxy.web(req, res, {
-            target: `http://${relay.internalIp}:${relay.privatePort}`,
+        this.reverseWsHttpRelay.proxyHttp({
+            req,
+            res,
             agent,
-            changeOrigin: true,
-            xfwd: true
+            upstreamOrigin: `http://${relay.internalIp}:${relay.privatePort}`,
+            rewrittenUrl: `${target.proxiedPath}${target.rawQuery}`,
+            onProxyRes: (proxyResponse) => {
+                const location = proxyResponse.headers.location;
+                if (typeof location === 'string') {
+                    proxyResponse.headers.location = this.rewriteLocationHeader(location, relay);
+                }
+
+                if (accessTokenFromUrl) {
+                    proxyResponse.headers['set-cookie'] = this.appendAccessTokenCookie(
+                        proxyResponse.headers['set-cookie'],
+                        accessTokenFromUrl
+                    );
+                }
+            },
+            onSettled: () => {
+                agent.destroy();
+            },
+            onError: (error) => {
+                if (!res.headersSent) {
+                    this.writeHttpError(res, error);
+                    return;
+                }
+
+                res.destroy(error);
+            }
         });
-        req.url = originalUrl;
     }
 
     private async handleUpgrade(publicPort: number, request: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
         const relay = this.requireAuthorizedRelay(publicPort, request.url || '/', this.readHeaderValue(request.headers.cookie));
         const target = this.extractProxyTarget(request.url || '/');
-        const tunnel = await this.teamClusterDaemonClient.openTunnel(relay.teamClusterId, {
-            targetHost: relay.internalIp,
-            targetPort: relay.privatePort,
-            accessMode: TeamClusterServiceExposureAccessMode.WebSocket
-        });
-        const agent = this.createSingleUseTunnelHttpAgent(tunnel);
-        const proxy = httpProxy.createProxyServer({
-            ws: true
-        });
-        const originalUrl = request.url;
+        const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
 
-        const cleanup = (): void => {
-            agent.destroy();
-            proxy.removeAllListeners();
-        };
-
-        proxy.once('error', (error) => {
-            cleanup();
-            writeUpgradeError(socket, 502, error.message || 'Upstream WebSocket connection failed');
+        await this.reverseWsHttpRelay.proxyWebSocketUpgrade({
+            teamClusterId: relay.teamClusterId,
+            request,
+            socket,
+            head,
+            upstreamWebSocketUrl: `ws://${relay.internalIp}:${relay.privatePort}${target.proxiedPath}${target.rawQuery}`,
+            requestedProtocols
         });
-
-        socket.once('close', cleanup);
-        request.url = `${target.proxiedPath}${target.rawQuery}`;
-        proxy.ws(request, socket, head, {
-            target: `ws://${relay.internalIp}:${relay.privatePort}`,
-            agent,
-            changeOrigin: true,
-            xfwd: true
-        });
-        request.url = originalUrl;
     }
 
     private requireAuthorizedRelay(
@@ -338,16 +309,6 @@ export class ContainerPortProxyRelayService implements IContainerPortProxyRelayS
         }
 
         return [ourCookie];
-    }
-
-    private createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
-        const agent = new http.Agent({
-            keepAlive: false,
-            maxSockets: 1
-        });
-
-        agent.createConnection = (): Duplex => tunnel;
-        return agent;
     }
 
     private extractProxyTarget(requestUrl: string): ProxyTarget {

@@ -1,5 +1,4 @@
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
-import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
 import {
     useCreateTeamClusterTransferRequestMutation,
     useCreateTeamClusterMutation,
@@ -147,12 +146,6 @@ const useClusterManagement = (): ClusterManagementResult => {
     const waitingCluster = useMemo(() => {
         return clusters.find((cluster) => isTeamClusterWaiting(cluster.status)) ?? null;
     }, [clusters]);
-
-    const allClusterIds = useMemo(() => {
-        return clusters.map((cluster) => cluster._id);
-    }, [clusters]);
-
-    useTeamClusterSocket(allClusterIds);
 
     const createCluster = async (name: string) => {
         const result = await showPromise(createMutation.mutateAsync({

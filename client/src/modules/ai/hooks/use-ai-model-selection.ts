@@ -20,13 +20,18 @@ const useAIModelSelection = (teamId: string | null) => {
         enabled: Boolean(teamId)
     });
 
-    const integrations = teamAIIntegrationsQuery.data?.integrations.map((integration) => ({
-        provider: integration.provider,
-        isEnabled: integration.isEnabled,
-        hasApiKey: integration.hasApiKey
-    })) ?? [];
+    const integrations = useMemo(() => {
+        return teamAIIntegrationsQuery.data?.integrations.map((integration) => ({
+            provider: integration.provider,
+            isEnabled: integration.isEnabled,
+            hasApiKey: integration.hasApiKey
+        })) ?? [];
+    }, [teamAIIntegrationsQuery.data]);
 
-    const providerCatalog: TeamAIProviderModelsCatalog[] = teamAIIntegrationModelsQuery.data?.providers ?? [];
+    const providerCatalog: TeamAIProviderModelsCatalog[] = useMemo(() => {
+        return teamAIIntegrationModelsQuery.data?.providers ?? [];
+    }, [teamAIIntegrationModelsQuery.data]);
+
     const isProviderCatalogLoading = teamAIIntegrationsQuery.isLoading || teamAIIntegrationModelsQuery.isLoading;
     let providerCatalogError: string | null = null;
     if (teamAIIntegrationsQuery.error || teamAIIntegrationModelsQuery.error) {

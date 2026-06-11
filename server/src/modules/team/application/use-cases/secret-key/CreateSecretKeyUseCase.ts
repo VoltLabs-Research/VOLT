@@ -1,5 +1,5 @@
-import type TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
-import type SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
+import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO } from '@modules/team/application/dtos/secret-key/CreateSecretKeyDTO';
@@ -15,8 +15,8 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyInputDTO, CreateSecretKeyOutputDTO, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: SecretKeyRepository,
-        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: TeamRoleRepository,
+        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepository: ISecretKeyRepository,
+        @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

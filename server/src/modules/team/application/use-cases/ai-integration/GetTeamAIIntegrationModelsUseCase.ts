@@ -1,4 +1,4 @@
-import type TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/ai-integration/TeamAIIntegrationRepository';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import type {
     GetTeamAIIntegrationModelsInputDTO,
     GetTeamAIIntegrationModelsOutputDTO,
@@ -14,7 +14,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export default class GetTeamAIIntegrationModelsUseCase implements IUseCase<GetTeamAIIntegrationModelsInputDTO, GetTeamAIIntegrationModelsOutputDTO> {
     constructor(
-        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: TeamAIIntegrationRepository,
+        @inject(TEAM_TOKENS.TeamAIIntegrationRepository) private readonly integrationRepository: ITeamAIIntegrationRepository,
         @inject(TEAM_TOKENS.TeamAIProviderCatalog)
         private readonly providerCatalog: ITeamAIProviderCatalog
     ) {}

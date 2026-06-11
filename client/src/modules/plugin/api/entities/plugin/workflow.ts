@@ -89,6 +89,7 @@ export interface IArgumentDefinition {
     value?: unknown;
     options?: IArgumentOption[];
     optionsFromArguments?: IArgumentOptionSource[];
+    optionsFromPluginReference?: string;
     listArguments?: IArgumentDefinition[];
     listItemLabelArgument?: string;
     required?: boolean;

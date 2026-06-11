@@ -43,10 +43,10 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         { enabled: !!trajectoryId }
     );
 
-    const dislocationStyleQuery = sceneArtifactsQuery(
+    const lineStyleQuery = sceneArtifactsQuery(
         {
             trajectoryId: trajectoryId ?? '',
-            sourceType: 'dislocation-style',
+            sourceType: 'line-style',
             page: 1,
             limit: 200
         },
@@ -65,37 +65,37 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             .filter(isSupportedParticleFilterArtifact);
     }, [particleFilterQuery.data]);
 
-    const dislocationStyleArtifacts = useMemo(() => {
-        if (!dislocationStyleQuery.data) return [];
-        return dislocationStyleQuery.data.data.filter(isSceneArtifact);
-    }, [dislocationStyleQuery.data]);
+    const lineStyleArtifacts = useMemo(() => {
+        if (!lineStyleQuery.data) return [];
+        return lineStyleQuery.data.data.filter(isSceneArtifact);
+    }, [lineStyleQuery.data]);
 
-    const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading || dislocationStyleQuery.isLoading;
+    const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading || lineStyleQuery.isLoading;
 
     const error = useMemo(() => {
-        const queryError = colorCodingQuery.error || particleFilterQuery.error || dislocationStyleQuery.error;
+        const queryError = colorCodingQuery.error || particleFilterQuery.error || lineStyleQuery.error;
         if (!queryError) return null;
         return reportError(queryError, {
             surface: ErrorSurface.Silent,
             fallbackTitle: 'Failed to load scene artifacts'
         }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error, dislocationStyleQuery.error]);
+    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
 
     const accessDenied = useMemo(() => {
         return isAccessDeniedError(colorCodingQuery.error)
             || isAccessDeniedError(particleFilterQuery.error)
-            || isAccessDeniedError(dislocationStyleQuery.error);
-    }, [colorCodingQuery.error, particleFilterQuery.error, dislocationStyleQuery.error]);
+            || isAccessDeniedError(lineStyleQuery.error);
+    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
 
     const accessDeniedMessage = useMemo(() => {
-        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error, dislocationStyleQuery.error]
+        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]
             .find((queryError) => isAccessDeniedError(queryError));
         if (!firstAccessDeniedError) {
             return undefined;
         }
 
         return reportError(firstAccessDeniedError, { surface: ErrorSurface.Silent }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error, dislocationStyleQuery.error]);
+    }, [colorCodingQuery.error, particleFilterQuery.error, lineStyleQuery.error]);
 
     useEffect(() => {
         const onArtifactsChanged = (event: Event) => {
@@ -111,8 +111,8 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
     }, [trajectoryId]);
 
     const totalArtifacts = useMemo(
-        () => colorCodingArtifacts.length + particleFilterArtifacts.length + dislocationStyleArtifacts.length,
-        [colorCodingArtifacts.length, particleFilterArtifacts.length, dislocationStyleArtifacts.length]
+        () => colorCodingArtifacts.length + particleFilterArtifacts.length + lineStyleArtifacts.length,
+        [colorCodingArtifacts.length, particleFilterArtifacts.length, lineStyleArtifacts.length]
     );
 
     const reload = () => {
@@ -127,7 +127,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         totalArtifacts,
         colorCodingArtifacts,
         particleFilterArtifacts,
-        dislocationStyleArtifacts,
+        lineStyleArtifacts,
         reload
     };
 };

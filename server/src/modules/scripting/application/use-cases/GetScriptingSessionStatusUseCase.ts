@@ -1,5 +1,3 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import { inject } from 'tsyringe';
@@ -9,7 +7,8 @@ import type {
     GetScriptingSessionStatusOutputDTO
 } from '@modules/scripting/application/dtos/ScriptingSessionDTO';
 import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/domain/port/IScriptingJupyterAccessTokenService';
-import { buildJupyterProxyUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -20,7 +19,7 @@ export class GetScriptingSessionStatusUseCase implements IUseCase<GetScriptingSe
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly scriptingJupyterAccessTokenService: IScriptingJupyterAccessTokenService,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
+        private readonly exposureRegistryService: TeamClusterExposureRegistryService
     ) {}
 
     async execute(input: GetScriptingSessionStatusInputDTO): Promise<Result<GetScriptingSessionStatusOutputDTO, ApplicationError>> {
@@ -70,19 +69,17 @@ export class GetScriptingSessionStatusUseCase implements IUseCase<GetScriptingSe
             });
         }
 
-        const { runtime } = await this.teamClusterDaemonClient.getNotebookRuntime(
-            notebook.props.teamCluster,
-            runtimeNotebookId
-        );
+        const exposures = this.exposureRegistryService.listTeamClusterExposures(notebook.props.teamCluster);
+        const match = findNotebookExposure(exposures, runtimeNotebookId);
 
         return Result.ok({
             notebookId: notebook._id,
             runtimeNotebookId,
             accessToken,
             jupyter: {
-                ready: Boolean(runtime),
+                ready: Boolean(match?.ready),
                 url,
-                containerStage: runtime ? 'ready' : 'starting'
+                containerStage: match?.ready ? 'ready' : 'starting'
             }
         });
     }
