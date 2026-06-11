@@ -146,7 +146,12 @@ export class ReverseWsHttpRelay {
             options.upstreamWebSocketUrl,
             options.requestedProtocols
         );
-        const negotiatedProtocol = upstreamWebSocket.protocol || options.requestedProtocols?.[0];
+        // Only confirm a subprotocol to the browser when the UPSTREAM actually
+        // negotiated one. Falling back to the requested protocol here would tell
+        // the browser e.g. `v1.kernel.websocket.jupyter.org` (binary deserializer)
+        // even when the upstream is speaking text frames — which throws
+        // `DataView must be ArrayBuffer` and loops the kernel connection.
+        const negotiatedProtocol = upstreamWebSocket.protocol || undefined;
         let upgradeSettled = false;
 
         const cleanupPendingUpgrade = (): void => {

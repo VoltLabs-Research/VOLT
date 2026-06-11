@@ -5,6 +5,8 @@ import TrajectoryCloneJobModel, { TrajectoryCloneJobDocument } from '@modules/tr
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseClaimableJobRepository } from '@shared/infrastructure/persistence/mongo/MongooseClaimableJobRepository';
 
+import type { ITrajectoryCloneJobRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryCloneJobRepository';
+
 
 const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
     'queued',
@@ -14,7 +16,8 @@ const OPEN_CLONE_JOB_STATES: TrajectoryCloneJobState[] = [
 
 @Singleton(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository)
 export default class TrajectoryCloneJobRepository
-    extends MongooseClaimableJobRepository<TrajectoryCloneJob, TrajectoryCloneJobProps, TrajectoryCloneJobDocument> {
+    extends MongooseClaimableJobRepository<TrajectoryCloneJob, TrajectoryCloneJobProps, TrajectoryCloneJobDocument>
+    implements ITrajectoryCloneJobRepository {
 
     constructor() {
         super(TrajectoryCloneJobModel, trajectoryCloneJobMapper, OPEN_CLONE_JOB_STATES);

@@ -1,0 +1,34 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { SearchRegistryPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/SearchRegistryPluginsUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOKENS.AITool)
+export class SearchRegistryPluginsAITool extends AITool {
+    readonly name = 'search_registry_plugins';
+    readonly description = 'Search the public registry for installable plugins.';
+    readonly parameters = z.object({
+        q: z.string().optional(),
+        page: z.number().optional().default(1),
+        limit: z.number().optional().default(20)
+    });
+
+    constructor(
+        protected readonly useCase: SearchRegistryPluginsUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const result = await this.useCase.execute({
+            teamId: scope.teamId,
+            q: params.q,
+            page: params.page,
+            limit: params.limit
+        });
+        if (!result.success) throw result.error;
+        return { summary: `Found ${result.value.total} registry plugins.`, data: result.value.items };
+    }
+}

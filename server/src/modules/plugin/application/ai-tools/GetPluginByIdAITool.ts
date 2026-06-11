@@ -1,0 +1,25 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOKENS.AITool)
+export class GetPluginByIdAITool extends AITool {
+    readonly name = 'get_plugin';
+    readonly description = 'Get detailed metadata about a specific plugin.';
+    readonly parameters = z.object({ pluginId: z.string() });
+
+    constructor(
+        protected readonly useCase: GetPluginByIdUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const result = await this.useCase.execute({ pluginId: params.pluginId });
+        if (!result.success) throw result.error;
+        return { summary: `Plugin "${result.value.modifier?.name ?? result.value._id}" (${result.value.status}).`, data: result.value };
+    }
+}

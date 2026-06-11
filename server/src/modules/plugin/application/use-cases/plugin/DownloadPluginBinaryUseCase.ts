@@ -1,5 +1,5 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
@@ -21,7 +21,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 @Singleton()
 export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO, ApplicationError> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         private readonly storagePlacementService: StoragePlacementService,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}

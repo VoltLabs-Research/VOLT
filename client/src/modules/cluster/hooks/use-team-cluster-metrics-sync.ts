@@ -41,6 +41,8 @@ export default function useTeamClusterMetricsSync(): void {
         return (teamClustersQuery.data?.data ?? []).map((cluster) => cluster._id);
     }, [teamClustersQuery.data]);
 
+    const hasClusters = teamClusterIds.length > 0;
+
     useTeamClusterSocket(teamClusterIds);
 
     useSocketConnectionEffect((connected) => {
@@ -52,9 +54,9 @@ export default function useTeamClusterMetricsSync(): void {
 
     useSocketEvent<ClusterMetrics[]>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_ALL, (clusters) => {
         setClusterMetricsQueryData(queryClient, clusters);
-    });
+    }, { enabled: hasClusters });
 
     useSocketEvent<ClusterMetricsHistoryEvent>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, ({ clusterId, history }) => {
         setClusterHistoryQueryData(queryClient, history, clusterId);
-    });
+    }, { enabled: hasClusters });
 }

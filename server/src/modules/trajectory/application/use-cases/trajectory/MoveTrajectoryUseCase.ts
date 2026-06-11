@@ -1,4 +1,4 @@
-import type TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
 import { inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -17,7 +17,7 @@ export default class MoveTrajectoryUseCase
     implements IUseCase<MoveTrajectoryInputDTO, MoveTrajectoryOutputDTO, ApplicationError> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) trajectoryRepository: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) trajectoryFolderRepository: TrajectoryFolderRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) trajectoryFolderRepository: ITrajectoryFolderRepository
     ) {
         super(trajectoryRepository, trajectoryFolderRepository, {
             folderLabel: 'Trajectory folder',

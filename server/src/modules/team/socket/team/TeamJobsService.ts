@@ -1,5 +1,5 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import type { TeamJobSnapshot, TeamJobStatus } from '@modules/jobs/domain/contracts/TeamJobSnapshot';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';

@@ -7,6 +7,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { IContainerProps } from '@modules/container/domain/entities/Container';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import type { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import type { FindOptions } from '@shared/domain/port/IBaseRepository';
 import mongoose from 'mongoose';
@@ -15,7 +16,7 @@ const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const PLACEHOLDER_PUBLIC_PORT = 0;
 
 @Singleton(CONTAINER_TOKENS.ContainerRepository)
-export class ContainerRepository extends MongooseBaseRepository<Container, IContainerProps, IContainerDoc> {
+export class ContainerRepository extends MongooseBaseRepository<Container, IContainerProps, IContainerDoc> implements IContainerRepository {
     constructor() {
         super(ContainerModel, containerMapper);
     }

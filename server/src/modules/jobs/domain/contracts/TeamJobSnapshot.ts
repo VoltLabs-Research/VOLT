@@ -1,6 +1,5 @@
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 
-// TODO: This should live in port
 export type TeamJobStatus = JobStatus | 'partial';
 
 export interface TeamJobSnapshot {

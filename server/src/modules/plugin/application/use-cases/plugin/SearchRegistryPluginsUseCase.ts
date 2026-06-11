@@ -1,4 +1,4 @@
-import type RegistryGateway from '@modules/plugin/infrastructure/services/plugin/RegistryGateway';
+import type { IRegistryGateway } from '@modules/plugin/domain/port/plugin/IRegistryGateway';
 import { inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
@@ -13,7 +13,7 @@ import { Result } from '@shared/domain/port/Result';
 @Singleton()
 export class SearchRegistryPluginsUseCase implements IUseCase<SearchRegistryPluginsInputDTO, SearchRegistryPluginsOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: RegistryGateway
+        @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: IRegistryGateway
     ) {}
 
     async execute(input: SearchRegistryPluginsInputDTO): Promise<Result<SearchRegistryPluginsOutputDTO>> {

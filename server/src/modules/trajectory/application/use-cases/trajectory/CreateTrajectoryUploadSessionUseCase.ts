@@ -1,7 +1,7 @@
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
-import type TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
+import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
+import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -95,10 +95,10 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
 > {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) private readonly trajectoryFolderRepository: TrajectoryFolderRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) private readonly trajectoryFolderRepository: ITrajectoryFolderRepository,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         private readonly storagePlacementService: StoragePlacementService,
-        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
         @inject(CLUSTER_TOKENS.ClusterObjectSignedUrlService)
         private readonly signedUrlService: IClusterObjectSignedUrlService,
         @inject(SHARED_TOKENS.EventBus)

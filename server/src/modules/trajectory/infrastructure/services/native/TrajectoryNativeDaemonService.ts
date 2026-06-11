@@ -1,5 +1,6 @@
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
+import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/domain/port/native/ITrajectoryNativeDaemonService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -131,7 +132,7 @@ interface TrajectoryNativeFilterPreviewResponse {
 };
 
 @Singleton()
-export default class TrajectoryNativeDaemonService {
+export default class TrajectoryNativeDaemonService implements ITrajectoryNativeDaemonService {
     constructor(
         
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,

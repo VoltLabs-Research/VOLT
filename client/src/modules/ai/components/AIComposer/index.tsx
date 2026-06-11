@@ -1,7 +1,7 @@
 import { IconButton, Select, VisuallyHidden, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useId } from 'react';
-import { IoAddOutline, IoArrowUpOutline } from 'react-icons/io5';
+import { IoArrowUpOutline } from 'react-icons/io5';
 import type { KeyboardEvent } from 'react';
 import './AIComposer.css';
 
@@ -74,17 +74,6 @@ const AIComposer = ({
             </VisuallyHidden>
 
             <Row gap='05' className='ai-composer-input-wrapper'>
-                <Tooltip content='Attachments coming soon'>
-                    <IconButton
-                        className='ai-composer-side-icon'
-                        aria-label='Attachments coming soon'
-                        title='Attachments coming soon'
-                        disabled
-                    >
-                        <IoAddOutline size={18} />
-                    </IconButton>
-                </Tooltip>
-
                 <input
                     id={inputId}
                     value={value}

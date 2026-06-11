@@ -4,7 +4,7 @@ import type { ITeamJobProjectionService } from '@modules/jobs/domain/port/ITeamJ
 import { inject } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import type { TeamJobSnapshot } from '@modules/jobs/infrastructure/projections/TeamJobSnapshot';
+import type { TeamJobSnapshot } from '@modules/jobs/domain/contracts/TeamJobSnapshot';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 

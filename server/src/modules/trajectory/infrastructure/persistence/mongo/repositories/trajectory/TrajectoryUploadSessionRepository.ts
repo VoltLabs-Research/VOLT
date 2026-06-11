@@ -7,6 +7,7 @@ import type {
     TrajectoryUploadSessionFileProps,
     TrajectoryUploadSessionStatus
 } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
+import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
 
 export interface CreateTrajectoryUploadSessionInput {
     team: string;
@@ -20,7 +21,7 @@ export interface CreateTrajectoryUploadSessionInput {
 }
 
 @Singleton(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository)
-export default class TrajectoryUploadSessionRepository {
+export default class TrajectoryUploadSessionRepository implements ITrajectoryUploadSessionRepository {
     async create(input: CreateTrajectoryUploadSessionInput): Promise<TrajectoryUploadSessionDocument> {
         return TrajectoryUploadSessionModel.create(input);
     }

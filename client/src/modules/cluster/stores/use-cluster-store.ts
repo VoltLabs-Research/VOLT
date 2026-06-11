@@ -25,5 +25,5 @@ export const useClusterStore = create<ClusterStore>((set) => ({
 
     setConnected: (isConnected) => set({ isConnected }),
 
-    reset: () => set(initialState)
+    reset: () => set({ selectedClusterId: null })
 }));
