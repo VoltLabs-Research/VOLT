@@ -1,5 +1,5 @@
-import type TrajectoryCloneJobRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryCloneJobRepository';
-import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import type { ITrajectoryCloneJobRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryCloneJobRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
@@ -41,13 +41,13 @@ export default class CloneTrajectoryUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
 
 
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository) private readonly cloneJobRepository: TrajectoryCloneJobRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository) private readonly cloneJobRepository: ITrajectoryCloneJobRepository,
 
 
         private readonly cloneCoordinator: TrajectoryCloneCoordinator,

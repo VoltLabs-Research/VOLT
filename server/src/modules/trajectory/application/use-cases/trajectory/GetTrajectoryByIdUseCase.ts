@@ -1,4 +1,4 @@
-import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import { inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -24,7 +24,7 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly repository: ITrajectoryRepository,
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: TrajectoryFrameRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: ITrajectoryFrameRepository
     ) {}
 
     async execute(input: GetTrajectoryByIdInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {

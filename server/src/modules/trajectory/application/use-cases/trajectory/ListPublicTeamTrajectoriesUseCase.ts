@@ -1,4 +1,4 @@
-import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import { inject } from 'tsyringe';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
@@ -29,7 +29,7 @@ export default class ListPublicTeamTrajectoriesUseCase implements IUseCase<
     constructor(
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: TrajectoryFrameRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameRepository
     ) {}
 
     async execute(input: ListPublicTeamTrajectoriesInputDTO): Promise<Result<ListPublicTeamTrajectoriesOutputDTO, ApplicationError>> {

@@ -55,7 +55,6 @@ const AutoScrollList = <T,>({
     autoScrollBottomThreshold = 120
 }: AutoScrollListProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const bottomRef = useRef<HTMLDivElement>(null);
     const previousItemsLengthRef = useRef(items.length);
     const previousFirstItemKeyRef = useRef<Key | null>(items.length > 0 ? (getItemKey ? getItemKey(items[0], 0) : 0) : null);
     const previousLastItemKeyRef = useRef<Key | null>(items.length > 0 ? (getItemKey ? getItemKey(items[items.length - 1], items.length - 1) : items.length - 1) : null);
@@ -88,13 +87,22 @@ const AutoScrollList = <T,>({
     }, [autoScrollBottomThreshold]);
 
     const scrollToBottom = useCallback((smooth: boolean) => {
+        const container = containerRef.current;
+
+        if (!container) {
+            return;
+        }
+
         let behavior: ScrollBehavior = 'auto';
 
         if (smooth && !prefersReducedMotion) {
             behavior = 'smooth';
         }
 
-        bottomRef.current?.scrollIntoView({ behavior });
+        // Scroll only this container. scrollIntoView would also scroll every
+        // scrollable ancestor (e.g. the dashboard content area), shifting the
+        // whole page each time new items stream in.
+        container.scrollTo({ top: container.scrollHeight, behavior });
     }, [prefersReducedMotion]);
 
     useLayoutEffect(() => {
@@ -180,7 +188,7 @@ const AutoScrollList = <T,>({
                 </Fragment>
             ))}
             {renderAfter}
-            <div ref={bottomRef} className='auto-scroll-list-anchor' aria-hidden={hasItems} />
+            <div className='auto-scroll-list-anchor' aria-hidden={hasItems} />
         </div>
     );
 };

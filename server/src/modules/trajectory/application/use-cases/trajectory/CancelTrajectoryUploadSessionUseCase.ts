@@ -1,5 +1,5 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
+import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
 import { inject } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
@@ -20,7 +20,7 @@ export default class CancelTrajectoryUploadSessionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}

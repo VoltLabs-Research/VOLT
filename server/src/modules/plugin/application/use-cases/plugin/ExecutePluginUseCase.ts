@@ -4,7 +4,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
@@ -162,7 +162,7 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
 @Singleton()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, ExecutePluginOutputDTO, ApplicationError> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepo: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepo: IPluginRepository,
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,

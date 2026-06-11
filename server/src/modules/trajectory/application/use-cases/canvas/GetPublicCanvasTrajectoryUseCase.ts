@@ -1,4 +1,4 @@
-import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
@@ -30,7 +30,7 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly repository: ITrajectoryRepository,
 
 
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: TrajectoryFrameRepository
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: ITrajectoryFrameRepository
     ) {}
 
     async execute(input: GetPublicCanvasTrajectoryInput): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {

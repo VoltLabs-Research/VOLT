@@ -1,4 +1,8 @@
 import type { ITeamPresenceService } from '@modules/team/domain/port/team-member/ITeamPresenceService';
+import type {
+    AttachTeamPresenceResult,
+    DetachedTeamPresenceSession
+} from '@modules/team/domain/contracts/team-member/TeamPresenceTypes';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 
@@ -18,20 +22,10 @@ interface HeartbeatResult {
     minutesToPersist: number;
 };
 
-export interface DetachedTeamPresenceSession {
-    teamId: string;
-    userId: string;
-    endedAt: Date;
-    minutesToPersist: number;
-    userWentOfflineCompletely: boolean;
-    userWentOffline: boolean;
-};
-
-export interface AttachTeamPresenceResult {
-    onlineUserIds: string[];
-    userBecameOnline: boolean;
-    detachedSession: DetachedTeamPresenceSession | null;
-};
+export type {
+    AttachTeamPresenceResult,
+    DetachedTeamPresenceSession
+} from '@modules/team/domain/contracts/team-member/TeamPresenceTypes';
 
 @Singleton()
 export default class TeamPresenceService implements ITeamPresenceService {

@@ -1,4 +1,5 @@
 import ContainerFolder, { type ContainerFolderProps } from '@modules/container/domain/entities/ContainerFolder';
+import type { IContainerFolderRepository } from '@modules/container/domain/port/IContainerFolderRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import containerFolderMapper from '@modules/container/infrastructure/persistence/mongo/mappers/ContainerFolderMapper';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
@@ -9,7 +10,8 @@ import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastr
 
 @Singleton(CONTAINER_TOKENS.ContainerFolderRepository)
 export class ContainerFolderRepository
-    extends MongooseCatalogFolderRepository<ContainerFolder, ContainerFolderProps, CatalogFolderDocument> {
+    extends MongooseCatalogFolderRepository<ContainerFolder, ContainerFolderProps, CatalogFolderDocument>
+    implements IContainerFolderRepository {
     constructor() {
         super(CatalogFolderModel, containerFolderMapper, CatalogFolderKind.Container);
     }

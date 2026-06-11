@@ -1,4 +1,4 @@
-import type { RegistrySearchResult } from '@modules/plugin/infrastructure/services/plugin/RegistryGateway';
+import type { RegistrySearchResult } from '@modules/plugin/domain/contracts/plugin/RegistryGateway';
 
 export interface SearchRegistryPluginsInputDTO {
     teamId: string;

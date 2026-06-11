@@ -1,4 +1,5 @@
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Container } from '@modules/container/domain/entities/Container';
@@ -6,7 +7,7 @@ import { ContainerRepository } from '@modules/container/infrastructure/persisten
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 @Singleton(CONTAINER_TOKENS.ContainerOwnershipService)
-export class ContainerOwnershipService {
+export class ContainerOwnershipService implements IContainerOwnershipService {
     constructor(
         private readonly repository: ContainerRepository
     ) {}

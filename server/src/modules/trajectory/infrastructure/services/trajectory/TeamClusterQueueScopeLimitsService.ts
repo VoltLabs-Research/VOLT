@@ -5,14 +5,15 @@ import type {
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-export type TeamClusterScopedQueueLimitKey =
-    | 'analysisProcessing'
-    | 'artifactUpload'
-    | 'trajectoryRasterization'
-    | 'trajectoryGlbConversion';
+import type {
+    ITeamClusterQueueScopeLimitsService,
+    TeamClusterScopedQueueLimitKey
+} from '@modules/trajectory/domain/port/trajectory/ITeamClusterQueueScopeLimitsService';
+
+export type { TeamClusterScopedQueueLimitKey } from '@modules/trajectory/domain/port/trajectory/ITeamClusterQueueScopeLimitsService';
 
 @Singleton()
-export default class TeamClusterQueueScopeLimitsService {
+export default class TeamClusterQueueScopeLimitsService implements ITeamClusterQueueScopeLimitsService {
     constructor(
         
         private readonly teamClusterRepository: TeamClusterRepository

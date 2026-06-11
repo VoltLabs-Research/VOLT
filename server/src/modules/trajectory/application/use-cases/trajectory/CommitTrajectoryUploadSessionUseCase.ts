@@ -1,6 +1,6 @@
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type TrajectoryUploadSessionRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
+import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
@@ -58,7 +58,7 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: TrajectoryUploadSessionRepository,
+        @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository) private readonly simulationCellRepo: ISimulationCellRepository,
