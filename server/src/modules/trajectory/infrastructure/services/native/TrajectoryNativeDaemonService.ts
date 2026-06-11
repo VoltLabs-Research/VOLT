@@ -1,6 +1,14 @@
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/domain/port/native/ITrajectoryNativeDaemonService';
+import type {
+    LineExportBaseOptions,
+    LineStyleFilterParam,
+    LineStyleParams,
+    TrajectoryNativeLineModelResponse,
+    TrajectoryNativeObjectStreamResponse
+} from '@modules/trajectory/domain/contracts/native';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -8,11 +16,16 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
 
-export interface TrajectoryNativeObjectStreamResponse {
-    stream: Readable;
-    contentEncoding?: string;
-    contentLength?: number;
-}
+// Re-exported for infrastructure consumers that historically imported these
+// daemon contracts from this service. Canonical home is
+// `@modules/trajectory/domain/contracts/native`.
+export type {
+    LineExportBaseOptions,
+    LineStyleFilterParam,
+    LineStyleParams,
+    TrajectoryNativeLineModelResponse,
+    TrajectoryNativeObjectStreamResponse
+} from '@modules/trajectory/domain/contracts/native';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -63,51 +76,12 @@ interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest 
     mask: Uint8Array;
 };
 
-export interface LineStyleFilterParam {
-    property: string;
-    operator: 'gte' | 'lte' | 'eq' | 'neq';
-    value: number | string;
-};
-
-// Property-generic line styling: every knob names a discovered per-entity
-// property of the exposure's line table.
-export interface LineStyleParams {
-    lineWidth?: number;
-    tubularSegments?: number;
-    colorMode?: 'category' | 'uniform' | 'gradient';
-    colorProperty?: string;
-    categoryColors?: Record<string, [number, number, number, number]>;
-    categoryVisibility?: Record<string, boolean>;
-    uniformColor?: [number, number, number, number];
-    gradient?: string;
-    startValue?: number;
-    endValue?: number;
-    filters?: LineStyleFilterParam[];
-};
-
-// Export-node options from the plugin definition (colorBy, propertyColors,
-// material); the style overlays them on the daemon.
-export interface LineExportBaseOptions {
-    lineWidth?: number;
-    tubularSegments?: number;
-    colorBy?: string;
-    propertyColors?: Record<string, [number, number, number, number]>;
-    material?: Record<string, unknown>;
-};
-
 interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
     objectKey: string;
     analysisId: string;
     exposureId: string;
     baseOptions?: LineExportBaseOptions;
     style?: LineStyleParams;
-};
-
-export interface TrajectoryNativeLineModelResponse {
-    objectKey: string;
-    entitiesRendered: number;
-    entitiesTotal: number;
-    categoryCounts: Record<string, number>;
 };
 
 interface TrajectoryNativeAtomsPageResponse {
@@ -131,7 +105,7 @@ interface TrajectoryNativeFilterPreviewResponse {
     totalAtoms: number;
 };
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
 export default class TrajectoryNativeDaemonService implements ITrajectoryNativeDaemonService {
     constructor(
         

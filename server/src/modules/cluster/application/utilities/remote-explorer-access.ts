@@ -1,4 +1,4 @@
-import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import { requireOwnedTeamCluster } from '@modules/cluster/application/utilities/team-cluster-ownership';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';

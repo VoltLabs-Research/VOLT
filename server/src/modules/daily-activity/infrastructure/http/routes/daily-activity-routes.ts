@@ -1,5 +1,6 @@
 import { Resource } from '@core/constants/resources';
-import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
@@ -15,7 +16,7 @@ export default createHttpModule({
             const { teamId } = req.params as { teamId: string };
             const { range: rangeRaw, scope } = req.query as { range?: string; scope?: 'team' | 'self' };
             const range = rangeRaw !== undefined ? Number(rangeRaw) : 7;
-            const repository = container.resolve(DailyActivityRepository);
+            const repository = container.resolve<IDailyActivityRepository>(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);
             const userId = scope === 'self'
                 ? (req as AuthenticatedRequest).userId
                 : undefined;

@@ -1,3 +1,12 @@
+/**
+ * Cluster object-gateway signed-access domain vocabulary.
+ *
+ * Describes the signed-access claims and signed-URL result that the
+ * `IClusterObjectSignedUrlService` domain port mints and verifies. These are
+ * domain concepts (the authorization payload for object access), not HTTP
+ * transport shapes, so they live in the domain layer.
+ */
+
 export type ClusterObjectOperation = 'read' | 'write';
 
 export interface ClusterObjectAccessClaims {

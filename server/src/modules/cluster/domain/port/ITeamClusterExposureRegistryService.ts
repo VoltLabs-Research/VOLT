@@ -1,5 +1,5 @@
 import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
-import type { ExposureRegistryChangeEvent } from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
+import type { ExposureRegistryChangeEvent } from '@modules/cluster/domain/contracts/ExposureRegistryChangeEvent';
 
 export interface ITeamClusterExposureRegistryService {
     replaceTeamClusterExposures(teamClusterId: string, exposures: TeamClusterServiceExposure[]): void;

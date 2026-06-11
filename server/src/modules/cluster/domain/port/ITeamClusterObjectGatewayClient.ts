@@ -7,7 +7,7 @@ import type {
     TeamClusterObjectGatewayComposeRequest,
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayPutStreamRequest
-} from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+} from '@modules/cluster/domain/contracts/TeamClusterObjectGateway';
 
 interface TeamClusterObjectGatewayReadOptions {
     skipMetadata?: boolean;

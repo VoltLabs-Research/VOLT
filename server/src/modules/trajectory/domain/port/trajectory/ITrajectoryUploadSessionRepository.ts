@@ -1,17 +1,15 @@
 import type {
-    CreateTrajectoryUploadSessionInput
-} from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryUploadSessionRepository';
-import type {
-    TrajectoryUploadSessionDocument,
+    CreateTrajectoryUploadSessionInput,
+    TrajectoryUploadSession,
     TrajectoryUploadSessionStatus
-} from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
+} from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 
 export interface ITrajectoryUploadSessionRepository {
-    create(input: CreateTrajectoryUploadSessionInput): Promise<TrajectoryUploadSessionDocument>;
-    findById(id: string): Promise<TrajectoryUploadSessionDocument | null>;
+    create(input: CreateTrajectoryUploadSessionInput): Promise<TrajectoryUploadSession>;
+    findById(id: string): Promise<TrajectoryUploadSession | null>;
     markStatus(
         id: string,
         status: TrajectoryUploadSessionStatus,
-        extra?: Partial<Pick<TrajectoryUploadSessionDocument, 'committedAt'>>
+        extra?: Partial<Pick<TrajectoryUploadSession, 'committedAt'>>
     ): Promise<void>;
 }

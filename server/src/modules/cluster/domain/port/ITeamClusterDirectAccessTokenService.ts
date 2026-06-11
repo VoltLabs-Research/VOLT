@@ -1,4 +1,4 @@
-import type { TeamClusterDirectAccessTokenClaims } from '@modules/cluster/infrastructure/services/TeamClusterDirectAccessTokenService';
+import type { TeamClusterDirectAccessTokenClaims } from '@modules/cluster/domain/contracts/TeamClusterDirectAccessToken';
 
 export interface ITeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string;

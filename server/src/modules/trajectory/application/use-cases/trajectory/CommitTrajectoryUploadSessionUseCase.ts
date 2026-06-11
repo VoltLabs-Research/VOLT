@@ -10,7 +10,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
-import type { TrajectoryUploadSessionDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
+import type { TrajectoryUploadSession } from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -167,7 +167,7 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
     }
 
     private validateSession(
-        session: TrajectoryUploadSessionDocument,
+        session: TrajectoryUploadSession,
         input: CommitTrajectoryUploadSessionInputDTO
     ): ApplicationError | null {
         if (session.status !== 'pending') {

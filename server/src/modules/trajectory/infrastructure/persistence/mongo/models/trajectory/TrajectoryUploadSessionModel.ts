@@ -1,22 +1,18 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-export type TrajectoryUploadSessionStatus = 'pending' | 'committed' | 'cancelled' | 'failed';
+import type {
+    TrajectoryUploadSessionStatus,
+    TrajectoryUploadSessionPartProps,
+    TrajectoryUploadSessionFileProps
+} from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 
-export interface TrajectoryUploadSessionPartProps {
-    partNumber: number;
-    objectKey: string;
-    offset: number;
-    size: number;
-}
-
-export interface TrajectoryUploadSessionFileProps {
-    index: number;
-    originalName: string;
-    contentType?: string;
-    size: number;
-    finalObjectKey: string;
-    parts: TrajectoryUploadSessionPartProps[];
-}
+// Plain vocabulary lives in the domain contract (single source of truth);
+// re-exported here for existing infra importers that reference the ODM module.
+export type {
+    TrajectoryUploadSessionStatus,
+    TrajectoryUploadSessionPartProps,
+    TrajectoryUploadSessionFileProps
+} from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 
 export interface TrajectoryUploadSessionDocument extends Document {
     team: mongoose.Types.ObjectId;

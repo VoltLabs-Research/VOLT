@@ -5,8 +5,9 @@ import { TeamClusterSelectionService } from '@modules/container/infrastructure/s
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import { IColorCodingService } from '@modules/trajectory/domain/port/color-coding/IColorCodingService';
-import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
-import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import type { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/domain/port/native/ITrajectoryNativeDaemonService';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/domain/contracts/native';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
@@ -14,11 +15,11 @@ import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajec
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import { Readable } from 'node:stream';
 
@@ -44,26 +45,28 @@ const buildPluginPropertyUnavailableError = (
 @Singleton(TRAJECTORY_TOKENS.ColorCodingService)
 export default class ColorCodingService implements IColorCodingService {
     constructor(
-        
-        private readonly atomProps: AtomPropertiesService,
 
-        
+        @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
+        private readonly atomProps: IAtomPropertiesService,
+
+
         private readonly dumpStorage: TrajectoryDumpStorageService,
 
-        
+
         private readonly sceneArtifactRepository: SceneArtifactRepository,
 
-        
+
         private readonly trajectoryRepository: TrajectoryRepository,
 
-        
+
         private readonly analysisRepository: AnalysisRepository,
 
-        
+
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        
-        private readonly trajectoryNativeDaemonService: TrajectoryNativeDaemonService
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
+        private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
     ) { }
 
     async getProperties(

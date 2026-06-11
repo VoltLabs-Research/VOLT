@@ -1,9 +1,9 @@
-import type { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import type { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type {
     TeamClusterRemoteExplorerEntryDTO,
     TeamClusterRemoteExplorerNodeDTO
-} from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
-import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+} from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
+import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/domain/contracts/TeamClusterReverseChannel';
 
 export interface RemoteExplorerDaemonRequest {
     teamClusterId: string;

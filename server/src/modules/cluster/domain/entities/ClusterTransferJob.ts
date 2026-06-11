@@ -1,7 +1,7 @@
 import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/domain/contracts/team-cluster';
 
 export type ClusterTransferJobState =
     | 'queued'

@@ -3,11 +3,8 @@ import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus 
 import type { ITeamClusterExposureRegistryService } from '@modules/cluster/domain/port/ITeamClusterExposureRegistryService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { EventEmitter } from 'node:events';
-
-export interface ExposureRegistryChangeEvent {
-    teamClusterId: string;
-    exposures: TeamClusterServiceExposure[];
-}
+import type { ExposureRegistryChangeEvent } from '@modules/cluster/domain/contracts/ExposureRegistryChangeEvent';
+export type { ExposureRegistryChangeEvent };
 
 const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
     return `${teamClusterId}:${exposureId}`;

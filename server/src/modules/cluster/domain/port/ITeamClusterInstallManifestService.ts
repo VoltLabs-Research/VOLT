@@ -1,7 +1,7 @@
 import type {
     TeamClusterInstallManifestDTO,
     TeamClusterInstallManifestPortsDTO
-} from '@modules/cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
+} from '@modules/cluster/domain/contracts/TeamClusterInstallManifest';
 
 export interface ITeamClusterInstallManifestService {
     generateInstallManifest(
