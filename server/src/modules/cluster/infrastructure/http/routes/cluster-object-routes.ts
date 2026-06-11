@@ -6,7 +6,7 @@ import { pipeline } from 'node:stream/promises';
 import { container } from 'tsyringe';
 
 import type { Request, Response } from 'express';
-import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster/application/dtos/ClusterObjectGatewayDTO';
+import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster/domain/contracts/ClusterObjectGateway';
 
 const signedUrlService = (): ClusterObjectSignedUrlService => container.resolve(ClusterObjectSignedUrlService);
 const objectGatewayClient = (): TeamClusterObjectGatewayClient => container.resolve(TeamClusterObjectGatewayClient);

@@ -41,6 +41,32 @@ import {
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
+import type {
+    TeamClusterDaemonCommandData,
+    TeamClusterDaemonCommandPayload,
+    TeamClusterCommandOptions,
+    TeamClusterDaemonSocketRegistration,
+    TeamClusterExposureTunnelOpenRequest,
+    TeamClusterDirectTunnelOpenRequest,
+    TeamClusterTunnelOpenRequest,
+    TeamClusterTunnelOpenOptions,
+    TeamClusterReverseChannelStreamAttachment,
+    TeamClusterDaemonInboundStreamPayload,
+    TeamClusterDaemonInboundStreamConsumer
+} from '@modules/cluster/domain/contracts/TeamClusterReverseChannel';
+export type {
+    TeamClusterDaemonCommandData,
+    TeamClusterDaemonCommandPayload,
+    TeamClusterCommandOptions,
+    TeamClusterDaemonSocketRegistration,
+    TeamClusterExposureTunnelOpenRequest,
+    TeamClusterDirectTunnelOpenRequest,
+    TeamClusterTunnelOpenRequest,
+    TeamClusterTunnelOpenOptions,
+    TeamClusterReverseChannelStreamAttachment,
+    TeamClusterDaemonInboundStreamPayload,
+    TeamClusterDaemonInboundStreamConsumer
+};
 import logger from '@shared/infrastructure/logger';
 import {
     EnvelopeKind,
@@ -51,41 +77,6 @@ import {
 import { randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
 import TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
-
-type TeamClusterDaemonCommandData = Record<string, unknown> | TeamClusterDaemonSessionAttachPayload;
-
-export interface TeamClusterDaemonCommandPayload {
-    command: string;
-    payload?: TeamClusterDaemonCommandData;
-    responseType: TeamClusterDaemonResponseType;
-}
-
-interface TeamClusterExposureTunnelOpenRequest {
-    exposureId: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-export interface TeamClusterCommandOptions {
-    timeoutMs?: number;
-}
-
-interface TeamClusterDirectTunnelOpenRequest {
-    targetHost: string;
-    targetPort: number;
-    accessMode: TeamClusterServiceExposureAccessMode;
-}
-
-export interface TeamClusterDaemonSocketRegistration {
-    teamClusterId: string;
-    channel: TeamClusterDaemonSocketChannel;
-}
-
-export type TeamClusterTunnelOpenRequest = TeamClusterExposureTunnelOpenRequest | TeamClusterDirectTunnelOpenRequest;
-
-export interface TeamClusterTunnelOpenOptions {
-    timeoutMs?: number;
-    timeoutMessage?: string;
-}
 
 interface TeamClusterDaemonExposureTunnelOpenMessage {
     type: 'tunnel-open';
@@ -169,22 +160,6 @@ interface PendingTunnelWriteAck {
     bytes: number;
     timeout: NodeJS.Timeout;
 }
-
-export interface TeamClusterReverseChannelStreamAttachment {
-    status: number;
-    headers: TeamClusterDaemonSocketHeaders;
-    stream: PassThrough;
-}
-
-export interface TeamClusterDaemonInboundStreamPayload {
-    socketId: string;
-    teamClusterId: string;
-    requestId: string;
-    streamId: string;
-    chunk: Buffer;
-}
-
-export type TeamClusterDaemonInboundStreamConsumer = (payload: TeamClusterDaemonInboundStreamPayload) => void | Promise<void>;
 
 type PendingEntry = PendingResponseEntry | PendingStreamEntry | PendingTerminalEntry | PendingWebSocketEntry | PendingTunnelEntry;
 

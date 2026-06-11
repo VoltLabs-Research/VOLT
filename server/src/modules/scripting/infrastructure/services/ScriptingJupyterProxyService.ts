@@ -1,8 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/domain/port/IScriptingJupyterAccessTokenService';
 import type { IScriptingJupyterProxyService } from '@modules/scripting/domain/port/IScriptingJupyterProxyService';
 import {
     buildJupyterProxyBasePath,
@@ -18,9 +19,11 @@ import {
 } from '@modules/cluster/utilities/teamClusterSocket';
 import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -139,9 +142,9 @@ export class ScriptingJupyterProxyService implements IScriptingJupyterProxyServi
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
         private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
         private readonly exposureRegistryService: TeamClusterExposureRegistryService
     ) {

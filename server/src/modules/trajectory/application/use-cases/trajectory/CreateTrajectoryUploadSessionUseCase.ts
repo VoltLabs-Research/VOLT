@@ -14,7 +14,7 @@ import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory
 import type {
     TrajectoryUploadSessionFileProps,
     TrajectoryUploadSessionPartProps
-} from '@modules/trajectory/infrastructure/persistence/mongo/models/trajectory/TrajectoryUploadSessionModel';
+} from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';

@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import type {
     LineStyleParams,
     TrajectoryNativeLineModelResponse
-} from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+} from '@modules/trajectory/domain/contracts/native';
 
 // Property-generic styling spec for any LineExporter exposure. Every knob
 // names a per-entity property discovered from the exposure's line table —

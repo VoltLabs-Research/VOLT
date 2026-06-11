@@ -1,4 +1,4 @@
-import type { TeamClusterRemoteAccessSessionDTO, TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import type { TeamClusterRemoteAccessSessionDTO, TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 
 export interface CreateRemoteAccessSessionParams {

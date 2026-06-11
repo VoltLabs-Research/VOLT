@@ -1,15 +1,16 @@
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type { IContainerOwnershipService } from '@modules/container/domain/port/IContainerOwnershipService';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Container } from '@modules/container/domain/entities/Container';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { inject } from 'tsyringe';
 
 @Singleton(CONTAINER_TOKENS.ContainerOwnershipService)
 export class ContainerOwnershipService implements IContainerOwnershipService {
     constructor(
-        private readonly repository: ContainerRepository
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly repository: IContainerRepository
     ) {}
 
     async getOwnedByTeam(containerId: string, teamId: string): Promise<Container> {

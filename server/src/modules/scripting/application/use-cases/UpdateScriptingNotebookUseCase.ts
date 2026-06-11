@@ -8,7 +8,7 @@ import type { ScriptingNotebookDTO } from '@modules/scripting/application/dtos/S
 import type { UpdateScriptingNotebookInputDTO } from '@modules/scripting/application/dtos/UpdateScriptingNotebookDTO';
 import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities/to-scripting-notebook-dto';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
-import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
+import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -19,7 +19,7 @@ export class UpdateScriptingNotebookUseCase implements IUseCase<UpdateScriptingN
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
+        @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
     async execute(input: UpdateScriptingNotebookInputDTO): Promise<Result<ScriptingNotebookDTO, ApplicationError>> {

@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -26,7 +27,7 @@ const KEY_PREFIX = 'canvas:workspace';
 const INDEX_PREFIX = 'canvas:workspace:index';
 const TTL_SECONDS = 60 * 60;
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService)
 export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorkspaceRealtimeStateService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)

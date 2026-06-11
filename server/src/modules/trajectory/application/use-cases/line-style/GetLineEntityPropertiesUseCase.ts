@@ -2,11 +2,13 @@ import {
     GetLineEntityPropertiesInputDTO,
     GetLineEntityPropertiesOutputDTO
 } from '@modules/trajectory/application/dtos/line-style';
-import AtomPropertiesService from '@modules/trajectory/infrastructure/services/trajectory/AtomPropertiesService';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { IAtomPropertiesService } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 // Line entities share the per-id property pipeline with atoms: the exposure's
 // property table is keyed by entity id, so one store lookup serves the
@@ -14,7 +16,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 @Singleton()
 export class GetLineEntityPropertiesUseCase implements IUseCase<GetLineEntityPropertiesInputDTO, GetLineEntityPropertiesOutputDTO, ApplicationError> {
     constructor(
-        private readonly atomPropertiesService: AtomPropertiesService
+        @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
+        private readonly atomPropertiesService: IAtomPropertiesService
     ) { }
 
     async execute(input: GetLineEntityPropertiesInputDTO): Promise<Result<GetLineEntityPropertiesOutputDTO, ApplicationError>> {

@@ -6,7 +6,7 @@ import type {
     DeleteScriptingSessionInputDTO,
     DeleteScriptingSessionOutputDTO
 } from '@modules/scripting/application/dtos/ScriptingSessionDTO';
-import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
+import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -16,7 +16,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 export class DeleteScriptingSessionUseCase implements IUseCase<DeleteScriptingSessionInputDTO, DeleteScriptingSessionOutputDTO, ApplicationError> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
-        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
+        @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
     async execute(input: DeleteScriptingSessionInputDTO): Promise<Result<DeleteScriptingSessionOutputDTO, ApplicationError>> {

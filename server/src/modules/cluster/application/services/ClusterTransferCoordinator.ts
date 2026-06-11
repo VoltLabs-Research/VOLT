@@ -26,12 +26,15 @@ import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 import type { ITeamClusterObjectGatewayClient } from '@modules/cluster/domain/port/ITeamClusterObjectGatewayClient';
 import type { IClusterTransferCoordinator } from '@modules/cluster/domain/port/IClusterTransferCoordinator';
+import type { TransferRequestInput } from '@modules/cluster/domain/port/IClusterTransferCoordinator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import type {
+    StoragePlacementBucketRef,
+    StoragePlacementScopeType
+} from '@shared/domain/contracts/team-cluster';
 import {
     ChannelCommands,
-    type StoragePlacementBucketRef,
-    type StoragePlacementScopeType,
     type TeamClusterDaemonPluginMongoDocumentType,
     type TeamClusterDaemonPluginMongoExportResult,
     type TeamClusterDaemonPluginMongoImportResult,
@@ -62,15 +65,6 @@ interface ObjectListEntry {
     contentLength?: number;
     etag?: string;
     lastModified?: Date;
-}
-
-export interface TransferRequestInput {
-    teamId: string;
-    scopeType: StoragePlacementScopeType;
-    scopeId: string;
-    destinationClusterId: string;
-    requestedBy: string;
-    reason?: ClusterTransferJobReason;
 }
 
 const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [

@@ -4,12 +4,12 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import TrajectoryNativeDaemonService from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { buildLineStyleObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
@@ -24,7 +24,8 @@ import type {
     LineStyleSpec,
     LineStyleStreamResponse
 } from '@modules/trajectory/domain/port/line-style/ILineStyleService';
-import type { LineExportBaseOptions } from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/domain/port/native/ITrajectoryNativeDaemonService';
+import type { LineExportBaseOptions } from '@modules/trajectory/domain/contracts/native';
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(
@@ -69,7 +70,8 @@ export default class LineStyleService implements ILineStyleService {
 
         private readonly teamClusterSelectionService: TeamClusterSelectionService,
 
-        private readonly trajectoryNativeDaemonService: TrajectoryNativeDaemonService
+        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
+        private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
     ) { }
 
     async createStyledModel(

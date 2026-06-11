@@ -1,5 +1,5 @@
-import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { deleteManyOnTeamDeleted, deleteManyOnUserDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
 
-deleteManyOnTeamDeleted(DailyActivityRepository);
-deleteManyOnUserDeleted(DailyActivityRepository);
+deleteManyOnTeamDeleted(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);
+deleteManyOnUserDeleted(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);

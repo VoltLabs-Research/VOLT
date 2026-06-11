@@ -1,32 +1,7 @@
-import ClusterTransferJob, {
-    type ClusterTransferJobCursor,
-    type ClusterTransferJobReason,
-    type ClusterTransferJobState,
-    type ClusterTransferJobStats
-} from '@modules/cluster/domain/entities/ClusterTransferJob';
-import type { StoragePlacementBucketRef, StoragePlacementScopeType } from '@shared/infrastructure/contracts/team-cluster';
+import ClusterTransferJob from '@modules/cluster/domain/entities/ClusterTransferJob';
+import type { ClusterTransferJobDTO } from '@modules/cluster/domain/contracts/ClusterTransferJobView';
 
-export interface ClusterTransferJobDTO {
-    _id: string;
-    team: string;
-    scopeType: StoragePlacementScopeType;
-    scopeId: string;
-    sourceClusterId: string;
-    destinationClusterId: string;
-    buckets: StoragePlacementBucketRef[];
-    state: ClusterTransferJobState;
-    reason: ClusterTransferJobReason;
-    cleanupSource: boolean;
-    requestedBy: string;
-    cursor: ClusterTransferJobCursor;
-    stats: ClusterTransferJobStats;
-    errorCode: string | null;
-    errorMessage: string | null;
-    startedAt: Date | null;
-    finishedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-}
+export type { ClusterTransferJobDTO } from '@modules/cluster/domain/contracts/ClusterTransferJobView';
 
 export const toClusterTransferJobDTO = (
     clusterTransferJob: ClusterTransferJob

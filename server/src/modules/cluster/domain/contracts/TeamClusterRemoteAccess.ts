@@ -1,4 +1,15 @@
 /**
+ * Remote-access / remote-explorer domain vocabulary.
+ *
+ * These enums and shapes describe the protected cluster resources and the
+ * explorer entities (entries, nodes, sessions) that the remote-access ports
+ * (`IRemoteExplorerDaemonGateway`, `ITeamClusterRemoteAccessSessionService`)
+ * operate over. They are domain concepts, not HTTP transport shapes, so they
+ * live in the domain layer where both ports and application code can depend on
+ * them without breaking the dependency rule.
+ */
+
+/**
  * Enumerates the protected remote resources available from the cluster explorer.
  */
 export enum TeamClusterRemoteAccessTargetDTO {

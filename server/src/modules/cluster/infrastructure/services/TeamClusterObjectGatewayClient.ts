@@ -26,63 +26,17 @@ type ObjectGatewayOperationName =
     | 'delete'
     | 'delete-prefix';
 
-interface TeamClusterObjectGatewayListRequest {
-    bucket: string;
-    prefix?: string;
-    cursor?: string;
-    limit?: number;
-}
-
-export interface TeamClusterObjectGatewayListEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: Date;
-}
-
-export interface TeamClusterObjectGatewayListResponse {
-    keys: string[];
-    objects: TeamClusterObjectGatewayListEntry[];
-    nextCursor?: string;
-}
-
-export interface TeamClusterObjectGatewayHeadResponse {
-    contentLength?: number;
-    contentType?: string;
-    contentEncoding?: string;
-    etag?: string;
-    lastModified?: Date;
-    metadata: Record<string, string>;
-}
-
-export interface TeamClusterObjectGatewayStreamResponse extends TeamClusterObjectGatewayHeadResponse {
-    headers: Record<string, string>;
-    stream: NodeReadable;
-}
-
-interface TeamClusterObjectGatewayPutRequest {
-    bucket: string;
-    objectKey: string;
-    contentLength: number;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
-
-interface TeamClusterObjectGatewayPutStreamRequest extends TeamClusterObjectGatewayPutRequest {
-    stream: NodeReadable;
-}
-
-interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGatewayPutRequest {
-    buffer: Buffer;
-}
-
-interface TeamClusterObjectGatewayComposeRequest {
-    bucket: string;
-    objectKey: string;
-    sourceObjectKeys: string[];
-    metadata?: Record<string, string>;
-}
+import type {
+    TeamClusterObjectGatewayListRequest,
+    TeamClusterObjectGatewayListEntry,
+    TeamClusterObjectGatewayListResponse,
+    TeamClusterObjectGatewayHeadResponse,
+    TeamClusterObjectGatewayStreamResponse,
+    TeamClusterObjectGatewayPutRequest,
+    TeamClusterObjectGatewayPutStreamRequest,
+    TeamClusterObjectGatewayPutBufferRequest,
+    TeamClusterObjectGatewayComposeRequest
+} from '@modules/cluster/domain/contracts/TeamClusterObjectGateway';
 
 interface TeamClusterObjectGatewayReadOptions {
     skipMetadata?: boolean;
@@ -828,6 +782,11 @@ export default class TeamClusterObjectGatewayClient implements ITeamClusterObjec
 
 export type {
     TeamClusterObjectGatewayListRequest,
+    TeamClusterObjectGatewayListEntry,
+    TeamClusterObjectGatewayListResponse,
+    TeamClusterObjectGatewayHeadResponse,
+    TeamClusterObjectGatewayStreamResponse,
+    TeamClusterObjectGatewayPutRequest,
     TeamClusterObjectGatewayComposeRequest,
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayPutStreamRequest

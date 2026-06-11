@@ -17,7 +17,7 @@ import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,
     TeamClusterTunnelOpenRequest
-} from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+} from '@modules/cluster/domain/contracts/TeamClusterReverseChannel';
 import type { PassThrough } from 'node:stream';
 
 export interface ITeamClusterReverseChannelService {

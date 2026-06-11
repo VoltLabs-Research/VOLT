@@ -1,7 +1,7 @@
 import type {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
-} from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+} from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type { PasswordConfirmedTeamClusterInputDTO } from './common';
 
 /**
