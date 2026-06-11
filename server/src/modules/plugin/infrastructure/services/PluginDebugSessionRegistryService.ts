@@ -1,14 +1,11 @@
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+import type { IPluginDebugSessionRegistryService } from '@modules/plugin/domain/port/plugin/IPluginDebugSessionRegistryService';
+import type { PluginDebugSessionRegistryEntry } from '@modules/plugin/domain/contracts/plugin/PluginDebugSessionRegistry';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-export interface PluginDebugSessionRegistryEntry {
-    socketId: string;
-    teamClusterId: string;
-}
-
 @Singleton()
-export default class PluginDebugSessionRegistryService {
+export default class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryService {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(

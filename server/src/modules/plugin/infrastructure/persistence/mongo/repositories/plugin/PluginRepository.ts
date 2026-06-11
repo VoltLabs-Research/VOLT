@@ -1,5 +1,6 @@
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import Plugin, { PluginProps } from '@modules/plugin/domain/entities/plugin/Plugin';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import pluginMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/plugin/PluginMapper';
 import PluginModel, { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/plugin/PluginModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -8,7 +9,8 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 
 @Singleton(PLUGIN_TOKENS.PluginRepository)
 export default class PluginRepository
-    extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument> {
+    extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument>
+    implements IPluginRepository {
     constructor() {
         super(PluginModel, pluginMapper);
     }

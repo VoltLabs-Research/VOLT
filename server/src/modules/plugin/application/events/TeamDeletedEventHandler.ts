@@ -1,4 +1,4 @@
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
@@ -11,7 +11,7 @@ import { inject } from 'tsyringe';
 @Subscribe('team.deleted')
 export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Plugin> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) protected readonly repository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) protected readonly repository: IPluginRepository,
         private readonly deletePluginByIdUseCase: DeletePluginByIdUseCase
     ) {
         super();

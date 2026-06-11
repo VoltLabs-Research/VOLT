@@ -1,0 +1,22 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import UpdateTrajectoryByIdUseCase from '@modules/trajectory/application/use-cases/trajectory/UpdateTrajectoryByIdUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOKENS.AITool)
+export class UpdateTrajectoryAITool extends AITool {
+    readonly name = 'update_trajectory';
+    readonly description = 'Rename a trajectory or change its public visibility.';
+    readonly parameters = z.object({
+        trajectoryId: z.string(),
+        name: z.string(),
+        isPublic: z.boolean()
+    });
+
+    constructor(
+        protected readonly useCase: UpdateTrajectoryByIdUseCase
+    ) {
+        super();
+    }
+}

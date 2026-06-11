@@ -1,4 +1,4 @@
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '@modules/plugin/application/dtos/plugin/ListPluginsDTO';
@@ -12,7 +12,7 @@ import { Result } from '@shared/domain/port/Result';
 @Singleton()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository
     ) {}
 
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {

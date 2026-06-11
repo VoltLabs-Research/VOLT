@@ -110,6 +110,11 @@ export interface ClusterManagementResult {
     ) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
 }
 
+// Live metrics socket subscription is centralized in useTeamClusterMetricsSync
+// (mounted once in ProtectedRouteRealtimeEffects) so it survives navigation
+// across the dashboard/canvas route branches. Do NOT add useTeamClusterSocket
+// here — this hook is per-page CRUD/state and would create a second, duplicate
+// room subscription that dies whenever its consumer unmounts.
 const useClusterManagement = (): ClusterManagementResult => {
     const selectedTeamId = useSelectedTeamId();
     const requireSelectedTeamId = useRequiredSelectedTeamId();

@@ -50,7 +50,7 @@
     align-self: center;
 }
 
-.dashboard-bottom-bar-dot {
+.dashboard-bottom-bar-presence-dot {
     display: inline-block;
     width: 6px;
     height: 6px;
@@ -59,11 +59,11 @@
     vertical-align: middle;
 }
 
-.dashboard-bottom-bar-dot.is-online {
+.dashboard-bottom-bar-presence-dot.is-online {
     background: var(--accent-green);
 }
 
-.dashboard-bottom-bar-dot.is-offline {
+.dashboard-bottom-bar-presence-dot.is-offline {
     background: var(--color-text-muted);
 }
 

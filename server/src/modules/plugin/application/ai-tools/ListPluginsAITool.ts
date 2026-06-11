@@ -1,0 +1,34 @@
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/ListPluginsUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOKENS.AITool)
+export class ListPluginsAITool extends AITool {
+    readonly name = 'list_plugins';
+    readonly description = 'List analysis plugins installed in the team.';
+    readonly parameters = z.object({
+        page: z.number().optional().default(1),
+        limit: z.number().optional().default(50),
+        status: z.string().optional()
+    });
+
+    constructor(
+        protected readonly useCase: ListPluginsUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const result = await this.useCase.execute({
+            teamId: scope.teamId,
+            page: params.page,
+            limit: params.limit,
+            status: params.status
+        });
+        if (!result.success) throw result.error;
+        return { summary: `Found ${result.value.total} plugins.`, data: result.value.data };
+    }
+}

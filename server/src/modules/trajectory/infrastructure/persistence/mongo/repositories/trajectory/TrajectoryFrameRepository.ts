@@ -8,13 +8,8 @@ import mongoose from 'mongoose';
 
 
 import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-
-export interface GetFramesOptions {
-    from?: number;
-    to?: number;
-    limit?: number;
-    skip?: number;
-}
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
+import type { GetFramesOptions } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 
 const toObjectId = (value: string): mongoose.Types.ObjectId => (
     new mongoose.Types.ObjectId(value)
@@ -65,7 +60,7 @@ const mapLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFrame => 
 });
 
 @Singleton(TRAJECTORY_TOKENS.TrajectoryFrameRepository)
-export default class TrajectoryFrameRepository {
+export default class TrajectoryFrameRepository implements ITrajectoryFrameRepository {
     async getFrames(trajectoryId: string, options: GetFramesOptions = {}): Promise<TrajectoryFrame[]> {
         const filter: Record<string, unknown> = {
             trajectoryId: toObjectId(trajectoryId)

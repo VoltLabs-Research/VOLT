@@ -1,7 +1,7 @@
 import type {
     AttachTeamPresenceResult,
     DetachedTeamPresenceSession
-} from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
+} from '@modules/team/domain/contracts/team-member/TeamPresenceTypes';
 
 export interface TeamPresenceHeartbeatResult {
     teamId: string;

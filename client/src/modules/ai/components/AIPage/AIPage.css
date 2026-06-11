@@ -1,6 +1,11 @@
 .ai-page {
     border-top: 1px solid var(--color-border-soft);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* The page must scroll inside the thread list, never in the dashboard
+       content area: pin the page to its parent's height and clip, so inner
+       growth can't propagate scrollable overflow upward. */
+    height: 100%;
+    overflow: hidden;
 }
 
 .ai-page-main {

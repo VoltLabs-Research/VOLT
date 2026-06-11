@@ -1,7 +1,7 @@
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { inject } from 'tsyringe';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetPluginExposureExportInputDTO,
@@ -25,7 +25,7 @@ export class GetPluginExposureExportUseCase implements IUseCase<
 > {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginExposureExportService) private readonly pluginExposureExportService: IPluginExposureExportService
     ) {}
 

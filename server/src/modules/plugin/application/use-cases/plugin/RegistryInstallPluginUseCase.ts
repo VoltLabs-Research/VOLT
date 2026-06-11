@@ -1,4 +1,4 @@
-import type RegistryGateway from '@modules/plugin/infrastructure/services/plugin/RegistryGateway';
+import type { IRegistryGateway } from '@modules/plugin/domain/port/plugin/IRegistryGateway';
 import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
 import type { IPluginStorageService } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
@@ -28,7 +28,7 @@ const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 export class RegistryInstallPluginUseCase implements IUseCase<RegistryInstallPluginInputDTO, RegistryInstallPluginOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginStorageService) private readonly storageService: IPluginStorageService,
-        @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: RegistryGateway,
+        @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: IRegistryGateway,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly clusterSelectionService: ITeamClusterSelectionService,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus

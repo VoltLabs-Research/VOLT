@@ -63,9 +63,11 @@ const DashboardBottomBar = () => {
     const { clusters: liveClusters, isConnected } = useClusterMetrics();
     const teamClusters = clusterManagement.clusters;
 
-    const clusterAggregate = useMemo(() => {
+    // Averaged across clusters that are currently reporting live metrics; null
+    // when none are (segment is hidden rather than rendering an empty button).
+    // Network is summed — total fleet throughput, not a per-cluster average.
+    const clusterMetrics = useMemo(() => {
         const metricsByClusterId = new Map(liveClusters.map((cluster) => [resolveClusterMetricId(cluster), cluster]));
-        let onlineCount = 0;
         let cpuSum = 0;
         let memorySum = 0;
         let diskSum = 0;
@@ -80,7 +82,6 @@ const DashboardBottomBar = () => {
                 continue;
             }
 
-            onlineCount += 1;
             cpuSum += liveMetrics.cpu.usage;
             memorySum += liveMetrics.memory.usagePercent;
             diskSum += liveMetrics.disk.usagePercent;
@@ -93,16 +94,16 @@ const DashboardBottomBar = () => {
             }
         }
 
-        const hasSamples = samples > 0;
+        if (samples === 0) {
+            return null;
+        }
 
         return {
-            total: teamClusters.length,
-            onlineCount,
-            avgCpu: hasSamples ? Math.round(cpuSum / samples) : null,
-            avgMemory: hasSamples ? Math.round(memorySum / samples) : null,
-            avgDisk: hasSamples ? Math.round(diskSum / samples) : null,
-            incoming: hasSamples ? incomingSum : null,
-            outgoing: hasSamples ? outgoingSum : null,
+            avgCpu: Math.round(cpuSum / samples),
+            avgMemory: Math.round(memorySum / samples),
+            avgDisk: Math.round(diskSum / samples),
+            incoming: incomingSum,
+            outgoing: outgoingSum,
             hasCritical
         };
     }, [teamClusters, liveClusters, isConnected]);
@@ -122,9 +123,10 @@ const DashboardBottomBar = () => {
     }, [members, onlineUserIds, hasPresenceSnapshot]);
 
     // Jobs are always surfaced — the queued/running/success/failed icons stay
-    // visible even at 0 so the workspace status is always legible.
-    const showJobs = true;
-    const showClusters = clusterAggregate.total > 0;
+    // visible even at 0 so the workspace status is always legible. Clusters and
+    // presence only appear when there's something to show, so every divider sits
+    // after the always-present jobs segment and only needs its own guard.
+    const showClusters = clusterMetrics !== null;
     const showPresence = !singleTenant && presenceCounts.total > 0;
 
     const openJobsDrawer = () => {
@@ -135,50 +137,37 @@ const DashboardBottomBar = () => {
     return (
         <Box as='footer' className='dashboard-bottom-bar glass-bg' aria-label='Workspace status'>
             <Row gap='05' className='dashboard-bottom-bar-inner'>
-                {showJobs && (
-                    <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
-                        <StatusCounts
-                            queued={jobCounts.queued}
-                            running={jobCounts.running}
-                            completed={jobCounts.completed}
-                            failed={jobCounts.failed}
-                        />
-                    </BottomBarSegment>
-                )}
+                <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
+                    <StatusCounts
+                        queued={jobCounts.queued}
+                        running={jobCounts.running}
+                        completed={jobCounts.completed}
+                        failed={jobCounts.failed}
+                    />
+                </BottomBarSegment>
 
-                {showJobs && showClusters && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
+                {showClusters && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
 
                 {showClusters && (
                     <BottomBarSegment label='clusters' onClick={() => openModal(DASHBOARD_DRAWER_IDS.clusters)}>
-                        {clusterAggregate.avgCpu !== null && (
-                            <BottomBarMetric
-                                icon={<Cpu size={13} />}
-                                value={`${clusterAggregate.avgCpu}%`}
-                                critical={clusterAggregate.hasCritical}
-                            />
-                        )}
-                        {clusterAggregate.avgMemory !== null && (
-                            <BottomBarMetric icon={<MemoryStick size={13} />} value={`${clusterAggregate.avgMemory}%`} />
-                        )}
-                        {clusterAggregate.avgDisk !== null && (
-                            <BottomBarMetric icon={<HardDrive size={13} />} value={`${clusterAggregate.avgDisk}%`} />
-                        )}
-                        {clusterAggregate.incoming !== null && (
-                            <BottomBarMetric icon={<ArrowDown size={13} />} value={formatNetworkSpeed(clusterAggregate.incoming)} />
-                        )}
-                        {clusterAggregate.outgoing !== null && (
-                            <BottomBarMetric icon={<ArrowUp size={13} />} value={formatNetworkSpeed(clusterAggregate.outgoing)} />
-                        )}
+                        <BottomBarMetric
+                            icon={<Cpu size={13} />}
+                            value={`${clusterMetrics.avgCpu}%`}
+                            critical={clusterMetrics.hasCritical}
+                        />
+                        <BottomBarMetric icon={<MemoryStick size={13} />} value={`${clusterMetrics.avgMemory}%`} />
+                        <BottomBarMetric icon={<HardDrive size={13} />} value={`${clusterMetrics.avgDisk}%`} />
+                        <BottomBarMetric icon={<ArrowDown size={13} />} value={formatNetworkSpeed(clusterMetrics.incoming)} />
+                        <BottomBarMetric icon={<ArrowUp size={13} />} value={formatNetworkSpeed(clusterMetrics.outgoing)} />
                     </BottomBarSegment>
                 )}
 
-                {showClusters && showPresence && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
-                {!showClusters && showJobs && showPresence && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
+                {showPresence && <Divider orientation='vertical' className='dashboard-bottom-bar-divider' />}
 
                 {showPresence && (
                     <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => openModal(DASHBOARD_DRAWER_IDS.presence)}>
                         <Text as='span' size='sm' tone='secondary'>
-                            <span className={`dashboard-bottom-bar-dot ${presenceCounts.online > 0 ? 'is-online' : 'is-offline'}`} aria-hidden='true' />
+                            <span className={`dashboard-bottom-bar-presence-dot ${presenceCounts.online > 0 ? 'is-online' : 'is-offline'}`} aria-hidden='true' />
                             {presenceCounts.online} / {presenceCounts.total} online
                         </Text>
                     </BottomBarSegment>

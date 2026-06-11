@@ -2,32 +2,11 @@ import { getRegistryUrl } from '@core/config/registry';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-
-export interface RegistryPackageSummary {
-    fullName: string;
-    name: string;
-    username: string;
-    kind: string;
-    description?: string;
-    keywords?: string[];
-    latest?: string;
-    downloads?: { total: number; last30d: number };
-    updatedAt?: string;
-}
-
-export interface RegistrySearchResult {
-    items: RegistryPackageSummary[];
-    page: number;
-    pageSize: number;
-    total: number;
-}
-
-export interface ResolvedRegistryTarball {
-    downloadUrl: string;
-    sha256: string;
-    fileName: string;
-    version: string;
-}
+import type { IRegistryGateway } from '@modules/plugin/domain/port/plugin/IRegistryGateway';
+import type {
+    RegistrySearchResult,
+    ResolvedRegistryTarball
+} from '@modules/plugin/domain/contracts/plugin/RegistryGateway';
 
 interface ParsedPackageName {
     username: string;
@@ -47,7 +26,7 @@ const parsePackageName = (fullName: string): ParsedPackageName => {
 };
 
 @Singleton(PLUGIN_TOKENS.RegistryGateway)
-export default class RegistryGateway {
+export default class RegistryGateway implements IRegistryGateway {
     private readonly baseUrl = getRegistryUrl();
 
     async search(q: string, page: number, pageSize: number): Promise<RegistrySearchResult> {

@@ -1,4 +1,4 @@
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { ClonePluginInputDTO, ClonePluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ClonePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
@@ -19,7 +19,7 @@ import { inject, injectable } from 'tsyringe';
 @injectable()
 export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePluginOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

@@ -4,6 +4,8 @@ import logger from '@shared/infrastructure/logger';
 import IORedis from 'ioredis';
 import { inject } from 'tsyringe';
 
+import type { ICanvasWorkspaceRealtimeStateService } from '@modules/trajectory/domain/port/canvas/ICanvasWorkspaceRealtimeStateService';
+
 type WorkspaceStatePatch = Record<string, unknown>;
 
 export interface CanvasWorkspaceSnapshot {
@@ -25,7 +27,7 @@ const INDEX_PREFIX = 'canvas:workspace:index';
 const TTL_SECONDS = 60 * 60;
 
 @Singleton()
-export default class CanvasWorkspaceRealtimeStateService {
+export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorkspaceRealtimeStateService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis
