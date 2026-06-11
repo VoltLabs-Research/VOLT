@@ -3,11 +3,12 @@ import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamReposi
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team/TeamMapper';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/team/TeamModel';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { inject } from 'tsyringe';
 
 interface TeamMembersPushUpdate {
     $push: {
@@ -45,8 +46,8 @@ export default class TeamRepository
     implements ITeamRepository {
 
     constructor(
-        
-        private readonly teamMemberRepository: TeamMemberRepository
+        @inject(TEAM_TOKENS.TeamMemberRepository)
+        private readonly teamMemberRepository: ITeamMemberRepository
     ) {
         super(TeamModel, teamMapper);
     }

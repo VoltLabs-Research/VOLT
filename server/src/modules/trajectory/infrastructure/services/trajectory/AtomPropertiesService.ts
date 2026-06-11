@@ -1,3 +1,4 @@
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Analysis from '@modules/analysis/domain/entities/Analysis';
 import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
@@ -20,7 +21,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
 
-@Singleton()
+@Singleton(TRAJECTORY_TOKENS.AtomPropertiesService)
 export default class AtomPropertiesService implements IAtomPropertiesService {
     constructor(
         

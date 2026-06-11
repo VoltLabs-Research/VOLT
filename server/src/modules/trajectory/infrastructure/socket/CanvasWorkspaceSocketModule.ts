@@ -1,11 +1,13 @@
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import CanvasWorkspaceRealtimeStateService from '@modules/trajectory/infrastructure/services/canvas/CanvasWorkspaceRealtimeStateService';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
+import type { ICanvasWorkspaceRealtimeStateService } from '@modules/trajectory/domain/port/canvas/ICanvasWorkspaceRealtimeStateService';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -57,7 +59,8 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        private readonly realtimeState: CanvasWorkspaceRealtimeStateService
+        @inject(TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService)
+        private readonly realtimeState: ICanvasWorkspaceRealtimeStateService
     ) {
         super(emitter, roomManager, eventRegistry);
     }

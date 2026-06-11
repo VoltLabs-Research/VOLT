@@ -8,7 +8,7 @@ import {
     DownloadTeamClusterRemoteExplorerObjectInputDTO,
     DownloadTeamClusterRemoteExplorerObjectOutputDTO
 } from '@modules/cluster/application/dtos/DownloadTeamClusterRemoteExplorerObjectDTO';
-import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import { preflightRemoteExplorerAccess } from '@modules/cluster/application/utilities/remote-explorer-access';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';

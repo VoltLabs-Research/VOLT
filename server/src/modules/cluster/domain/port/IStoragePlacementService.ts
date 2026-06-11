@@ -2,7 +2,7 @@ import type StoragePlacement from '@modules/cluster/domain/entities/StoragePlace
 import type {
     StoragePlacementScopeType,
     StoragePlacementState
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/domain/contracts/team-cluster';
 
 export interface IStoragePlacementService {
     findByScope(

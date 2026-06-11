@@ -7,7 +7,7 @@ import type {
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+} from '@modules/trajectory/domain/contracts/native';
 
 export type {
     LineExportBaseOptions,
@@ -15,7 +15,7 @@ export type {
     LineStyleParams,
     TrajectoryNativeLineModelResponse,
     TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/infrastructure/services/native/TrajectoryNativeDaemonService';
+} from '@modules/trajectory/domain/contracts/native';
 
 export interface TrajectoryNativeRequestInput {
     teamClusterId: string;

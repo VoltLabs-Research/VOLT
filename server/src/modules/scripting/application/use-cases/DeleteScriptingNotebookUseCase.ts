@@ -4,7 +4,7 @@ import type { INotebookCredentialService } from '@modules/scripting/domain/port/
 import { ErrorCodes } from '@core/constants/error-codes';
 import { DeleteScriptingNotebookInputDTO, DeleteScriptingNotebookOutputDTO } from '@modules/scripting/application/dtos/DeleteScriptingNotebookDTO';
 import NotebookDeletedEvent from '@modules/scripting/domain/events/NotebookDeletedEvent';
-import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
+import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -20,7 +20,7 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
         @inject(SCRIPTING_TOKENS.NotebookCredentialService) private readonly notebookCredentialService: INotebookCredentialService,
-        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
+        @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
     async execute(input: DeleteScriptingNotebookInputDTO): Promise<Result<DeleteScriptingNotebookOutputDTO, ApplicationError>> {

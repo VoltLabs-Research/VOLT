@@ -1,4 +1,4 @@
-import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type { IRemoteExplorerDaemonGateway } from '@modules/cluster/domain/port/IRemoteExplorerDaemonGateway';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -7,7 +7,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import type {
     TeamClusterRemoteExplorerEntryDTO,
     TeamClusterRemoteExplorerNodeDTO
-} from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+} from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
 
 interface RemoteExplorerDaemonRequest {

@@ -1,12 +1,14 @@
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { ContainerPortProxyRelayService } from '@modules/container/infrastructure/services/ContainerPortProxyRelayService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 @Singleton()
 export class ContainerPortRelayLifecycleService {
     constructor(
-        private readonly containerRepository: ContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         private readonly relayService: ContainerPortProxyRelayService
     ) {}
 

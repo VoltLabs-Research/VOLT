@@ -1,4 +1,4 @@
-import type StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import type { IStoragePlacementRepository } from '@modules/cluster/domain/port/IStoragePlacementRepository';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
@@ -18,7 +18,7 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
-        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: StoragePlacementRepository,
+        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ) {}

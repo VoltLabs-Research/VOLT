@@ -2,9 +2,11 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
-import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 
+import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import type {
     IWhiteboardRealtimeStateService,
     MergeSceneResult,
@@ -154,7 +156,7 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
     constructor(
-        private readonly whiteboardRepository: WhiteboardRepository,
+        @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         private readonly objectGatewayClient: TeamClusterObjectGatewayClient
     ) {}
 

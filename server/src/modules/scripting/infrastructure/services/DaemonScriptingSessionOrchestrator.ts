@@ -1,19 +1,22 @@
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import type {
     IScriptingSessionOrchestrator,
     ScriptingSessionStartInput,
     ScriptingSessionStartResult
 } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
-import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persistence/mongo/repositories/ScriptingNotebookRepository';
-import { JupyterNotebookService } from '@modules/scripting/infrastructure/services/JupyterNotebookService';
-import { ScriptingJupyterAccessTokenService } from '@modules/scripting/infrastructure/services/ScriptingJupyterAccessTokenService';
-import { NotebookRuntimeTerminator } from '@modules/scripting/infrastructure/services/NotebookRuntimeTerminator';
+import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
+import type { IJupyterNotebookService } from '@modules/scripting/domain/port/IJupyterNotebookService';
+import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/domain/port/IScriptingJupyterAccessTokenService';
+import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { inject } from 'tsyringe';
 
 type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
@@ -53,12 +56,12 @@ const getNotebookTeamClusterId = (teamCluster: string | null | undefined): strin
 @Singleton(SCRIPTING_TOKENS.ScriptingSessionOrchestrator)
 export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
     constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly scriptingNotebookRepository: ScriptingNotebookRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
-        private readonly notebookService: JupyterNotebookService,
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
-        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(SCRIPTING_TOKENS.JupyterNotebookService) private readonly notebookService: IJupyterNotebookService,
+        @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
+        @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
     ) {}
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {

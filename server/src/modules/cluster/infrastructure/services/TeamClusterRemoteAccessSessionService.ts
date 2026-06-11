@@ -1,7 +1,7 @@
 import {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
-} from '@modules/cluster/application/dtos/TeamClusterRemoteAccessDTO';
+} from '@modules/cluster/domain/contracts/TeamClusterRemoteAccess';
 import type { ITeamClusterRemoteAccessSessionService } from '@modules/cluster/domain/port/ITeamClusterRemoteAccessSessionService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';

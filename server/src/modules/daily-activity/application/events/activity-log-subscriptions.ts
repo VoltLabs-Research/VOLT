@@ -1,5 +1,5 @@
 import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
-import DailyActivityRepository from '@modules/daily-activity/infrastructure/persistence/mongo/repositories/DailyActivityRepository';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
 import { container, injectable } from 'tsyringe';
 import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
@@ -26,7 +26,7 @@ const registerDailyActivityLog = <TPayload extends DailyActivityPayload>({
 }: DailyActivityLogOptions<TPayload>): void => {
     @injectable()
     class DailyActivityLogHandler implements IEventHandler<IDomainEvent<TPayload>> {
-        private readonly activityRepo: IDailyActivityRepository = container.resolve(DailyActivityRepository);
+        private readonly activityRepo: IDailyActivityRepository = container.resolve<IDailyActivityRepository>(DAILY_ACTIVITY_TOKENS.DailyActivityRepository);
 
         async handle(event: IDomainEvent<TPayload>): Promise<void> {
             const { teamId, userId } = event.payload;

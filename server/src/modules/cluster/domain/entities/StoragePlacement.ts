@@ -3,7 +3,7 @@ import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType,
     StoragePlacementState
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/domain/contracts/team-cluster';
 
 export interface StoragePlacementProps extends Omit<StoragePlacementContract, 'lastVerifiedAt' | 'bytesUsed'> {
     team: string;

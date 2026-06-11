@@ -1,9 +1,13 @@
+import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
+import type { INotebookRuntimeTerminator } from '@modules/scripting/domain/port/INotebookRuntimeTerminator';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
+import { inject } from 'tsyringe';
 
 /**
  * Tears down a notebook's runtime by deleting its `volt.managed` container
@@ -15,10 +19,10 @@ import { findNotebookExposure } from '@modules/scripting/infrastructure/utilitie
  * published yet) are logged and swallowed, matching the previous behaviour where
  * session teardown never blocked notebook/trajectory deletion.
  */
-@Singleton()
-export class NotebookRuntimeTerminator {
+@Singleton(SCRIPTING_TOKENS.NotebookRuntimeTerminator)
+export class NotebookRuntimeTerminator implements INotebookRuntimeTerminator {
     constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         private readonly exposureRegistryService: TeamClusterExposureRegistryService
     ) {}
 

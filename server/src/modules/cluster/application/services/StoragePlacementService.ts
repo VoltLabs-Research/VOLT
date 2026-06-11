@@ -5,7 +5,8 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { resolveAnalysisStorageClusterId, resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import {
     buildAnalysisPlacementBuckets,
@@ -17,10 +18,11 @@ import StoragePlacement, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps
 } from '@modules/cluster/domain/entities/StoragePlacement';
-import StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { IStoragePlacementRepository } from '@modules/cluster/domain/port/IStoragePlacementRepository';
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/infrastructure/contracts/team-cluster';
+import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { IStoragePlacementService } from '@modules/cluster/domain/port/IStoragePlacementService';
 import { inject } from 'tsyringe';
@@ -34,10 +36,10 @@ interface ResolvedPlacementDefinition {
 @Singleton()
 export default class StoragePlacementService implements IStoragePlacementService {
     constructor(
-        private readonly storagePlacementRepository: StoragePlacementRepository,
+        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        private readonly pluginRepository: PluginRepository,
+        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}

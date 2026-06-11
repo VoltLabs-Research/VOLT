@@ -1,22 +1,12 @@
-import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import jwt from 'jsonwebtoken';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ITeamClusterDirectAccessTokenService } from '@modules/cluster/domain/port/ITeamClusterDirectAccessTokenService';
-import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
-
-type DirectAccessRequesterKind = 'daemon' | 'server';
-
-export interface TeamClusterDirectAccessTokenClaims extends JwtPayload {
-    requesterKind: DirectAccessRequesterKind;
-    requesterId: string;
-    ownerClusterId: string;
-    teamId: string;
-    exposureId: string;
-    exposureName: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-    iat: number;
-    exp: number;
-}
+import type { Secret, SignOptions } from 'jsonwebtoken';
+import type {
+    DirectAccessRequesterKind,
+    TeamClusterDirectAccessTokenClaims
+} from '@modules/cluster/domain/contracts/TeamClusterDirectAccessToken';
+export type { DirectAccessRequesterKind, TeamClusterDirectAccessTokenClaims };
 
 const SIGN_OPTIONS: SignOptions = {
     algorithm: 'HS256'

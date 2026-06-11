@@ -100,8 +100,23 @@ const isBinaryLikeResponse = (res: Response): boolean => {
     ]).has(contentType);
 };
 
+// Streaming responses (Server-Sent Events / the AI SDK's UI-message stream)
+// must reach the client chunk-by-chunk. The compression middleware buffers
+// chunks in its zlib stream and only flushes on `res.flush()` — which the AI
+// SDK never calls — so compressing them makes the whole reply land at once,
+// when the model finishes. `text/event-stream` and the SDK's own
+// `x-accel-buffering: no` hint both signal "do not buffer this".
+const isStreamingResponse = (res: Response): boolean => {
+    const contentType = String(res.getHeader('Content-Type') || '').toLowerCase();
+    if (contentType.includes('text/event-stream')) {
+        return true;
+    }
+
+    return String(res.getHeader('X-Accel-Buffering') || '').toLowerCase() === 'no';
+};
+
 const shouldCompressResponse = (req: Request, res: Response): boolean => {
-    if (isBinaryLikeResponse(res)) {
+    if (isBinaryLikeResponse(res) || isStreamingResponse(res)) {
         return false;
     }
 

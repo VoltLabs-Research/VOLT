@@ -1,5 +1,5 @@
-import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/application/dtos/RecordTeamClusterHeartbeatDTO';
-import type { TeamClusterDTO } from '@modules/cluster/application/dtos/TeamClusterDTO';
+import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/domain/contracts/TeamClusterHeartbeat';
+import type { TeamClusterDTO } from '@modules/cluster/domain/contracts/TeamClusterView';
 import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
 import type { TeamClusterRuntimeRoleConfigProps, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
 

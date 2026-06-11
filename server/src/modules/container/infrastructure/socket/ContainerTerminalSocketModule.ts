@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@modules/container/domain/port/IContainerService';
-import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
@@ -10,6 +11,7 @@ import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketI
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 interface ContainerTerminalAttachPayload {
     containerId: string;
@@ -61,7 +63,7 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        private readonly containerRepository: ContainerRepository,
+        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         private readonly containerRuntimeService: DaemonContainerRuntimeService
     ) {
         super(emitter, roomManager, eventRegistry);
