@@ -1,5 +1,6 @@
 import { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import { ExportNodeData } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
+import { ExposureProperty } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExposureNode';
 import { ModifierNodeData } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ModifierNode';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
@@ -10,6 +11,7 @@ interface ComputedExposure {
     results: string;
     icon?: string;
     hasListing: boolean;
+    properties: ExposureProperty[];
     export: ExportNodeData | null;
 }
 
@@ -50,7 +52,8 @@ export default class WorkflowProjectionService {
                 name: exposure?.name ?? '',
                 icon: exposure?.icon,
                 results: exposure?.results ?? '',
-                hasListing: exposure?.hasListing !== false
+                hasListing: exposure?.hasListing !== false,
+                properties: exposure?.properties ?? []
             };
         });
 

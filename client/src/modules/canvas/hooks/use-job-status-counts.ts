@@ -7,12 +7,14 @@ interface JobStatusCounts {
     queued: number;
     running: number;
     completed: number;
+    failed: number;
 }
 
 const INITIAL_COUNTS: JobStatusCounts = {
     queued: 0,
     running: 0,
-    completed: 0
+    completed: 0,
+    failed: 0
 };
 
 const useJobStatusCounts = (trajectoryId?: string) => {
@@ -40,6 +42,11 @@ const useJobStatusCounts = (trajectoryId?: string) => {
 
                     if (job.status === JobStatus.Completed) {
                         counts.completed += 1;
+                        continue;
+                    }
+
+                    if (job.status === JobStatus.Failed) {
+                        counts.failed += 1;
                     }
                 }
             }

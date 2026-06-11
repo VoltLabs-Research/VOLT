@@ -1,5 +1,5 @@
-import type SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
-import type SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO } from '@modules/team/application/dtos/secret-key/GetSecretKeyUsageDTO';
 import type { ISecretKeyUsageMetricsMapper } from '@modules/team/domain/port/secret-key/ISecretKeyUsageMetricsMapper';
@@ -19,8 +19,8 @@ export default class GetSecretKeyUsageUseCase
     implements IUseCase<GetSecretKeyUsageInputDTO, GetSecretKeyUsageOutputDTO, ApplicationError> {
 
     constructor(
-        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepo: SecretKeyRepository,
-        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository) private readonly usageLogRepo: SecretKeyUsageLogRepository,
+        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepo: ISecretKeyRepository,
+        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository) private readonly usageLogRepo: ISecretKeyUsageLogRepository,
         @inject(TEAM_TOKENS.SecretKeyUsageMetricsMapper)
         private readonly metricsMapper: ISecretKeyUsageMetricsMapper
     ) {}

@@ -56,7 +56,12 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
         }
 
-        const exposureNodes = this.getExposureNodes(plugin);
+        // Line-entity exposures carry per-LINE properties keyed by line id, not
+        // atom id — they must not surface as per-atom coloring/filter options.
+        // Line-specific consumers query their exposure directly instead.
+        const lineExposureIds = this.getLineExposureIds(plugin);
+        const exposureNodes = this.getExposureNodes(plugin)
+            .filter((node) => !lineExposureIds.has(String(node.id)));
         const configs: ExposureAtomConfig[] = [];
 
         for (const exposureNode of exposureNodes) {
@@ -297,6 +302,18 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
     private getExposureNodes(plugin: Plugin) {
         return plugin.props.workflow.props.nodes.filter((node) => node.type === WorkflowNodeType.Exposure);
+    }
+
+    private getLineExposureIds(plugin: Plugin): Set<string> {
+        const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
+        const ids = new Set<string>();
+        for (const exposure of exposures) {
+            const candidate = exposure as { _id?: unknown; export?: { exporter?: string } | null };
+            if (candidate?.export?.exporter === 'LineExporter' && candidate._id !== undefined) {
+                ids.add(String(candidate._id));
+            }
+        }
+        return ids;
     }
 
     private getExposureName(exposureNode: Plugin['props']['workflow']['props']['nodes'][number]): string {

@@ -50,7 +50,7 @@ const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 const CONTEXT_MENU_ID_PREFIX = {
     colorCoding: 'canvas-ctx-color-coding',
     particleFilter: 'canvas-ctx-particle-filter',
-    dislocationStyle: 'canvas-ctx-dislocation-style'
+    lineStyle: 'canvas-ctx-line-style'
 } as const;
 
 const COLLAPSIBLE_PRESET = {
@@ -111,13 +111,13 @@ const ObjectsPanel = ({
     const [pluginsOpen, setPluginsOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(false);
     const [particleFilterOpen, setParticleFilterOpen] = useState(false);
-    const [dislocationStyleOpen, setDislocationStyleOpen] = useState(false);
+    const [lineStyleOpen, setLineStyleOpen] = useState(false);
     const [expandedColorCodingTimesteps, setExpandedColorCodingTimesteps] = useState<Set<number>>(new Set());
     const [expandedParticleFilterTimesteps, setExpandedParticleFilterTimesteps] = useState<Set<number>>(new Set());
-    const [expandedDislocationStyleTimesteps, setExpandedDislocationStyleTimesteps] = useState<Set<number>>(new Set());
+    const [expandedLineStyleTimesteps, setExpandedLineStyleTimesteps] = useState<Set<number>>(new Set());
     const [colorCodingVisibleCount, setColorCodingVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
     const [particleFilterVisibleCount, setParticleFilterVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
-    const [dislocationStyleVisibleCount, setDislocationStyleVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
+    const [lineStyleVisibleCount, setLineStyleVisibleCount] = useState(TIMESTEP_PAGE_SIZE);
     const { activeWorkspace } = useCanvasUrlState();
     const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
     const isAnalysisCompact = mode === 'analysis-compact';
@@ -147,7 +147,7 @@ const ObjectsPanel = ({
         isLoading: sceneArtifactsLoading,
         colorCodingArtifacts,
         particleFilterArtifacts,
-        dislocationStyleArtifacts
+        lineStyleArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
 
     const particleFilterTimesteps = useMemo(() => {
@@ -158,9 +158,9 @@ const ObjectsPanel = ({
         return [...new Set(colorCodingArtifacts.map((artifact) => artifact.timestep))].sort((left, right) => right - left);
     }, [colorCodingArtifacts]);
 
-    const dislocationStyleTimesteps = useMemo(() => {
-        return [...new Set(dislocationStyleArtifacts.map((artifact) => artifact.timestep))].sort((left, right) => right - left);
-    }, [dislocationStyleArtifacts]);
+    const lineStyleTimesteps = useMemo(() => {
+        return [...new Set(lineStyleArtifacts.map((artifact) => artifact.timestep))].sort((left, right) => right - left);
+    }, [lineStyleArtifacts]);
 
     const {
         showSimulationCell,
@@ -415,8 +415,8 @@ const ObjectsPanel = ({
         (timestep: number) => toggleExpandedTimestep(setExpandedColorCodingTimesteps, timestep),
         []
     );
-    const toggleDislocationStyleTimestep = useCallback(
-        (timestep: number) => toggleExpandedTimestep(setExpandedDislocationStyleTimesteps, timestep),
+    const toggleLineStyleTimestep = useCallback(
+        (timestep: number) => toggleExpandedTimestep(setExpandedLineStyleTimesteps, timestep),
         []
     );
 
@@ -433,14 +433,14 @@ const ObjectsPanel = ({
             if (list) list.push(artifact);
             else particleIndex.set(artifact.timestep, [artifact]);
         });
-        const dislocationIndex = new Map<number, SceneArtifact[]>();
-        dislocationStyleArtifacts.forEach((artifact) => {
-            const list = dislocationIndex.get(artifact.timestep);
+        const lineIndex = new Map<number, SceneArtifact[]>();
+        lineStyleArtifacts.forEach((artifact) => {
+            const list = lineIndex.get(artifact.timestep);
             if (list) list.push(artifact);
-            else dislocationIndex.set(artifact.timestep, [artifact]);
+            else lineIndex.set(artifact.timestep, [artifact]);
         });
-        return { colorIndex, particleIndex, dislocationIndex };
-    }, [colorCodingArtifacts, particleFilterArtifacts, dislocationStyleArtifacts]);
+        return { colorIndex, particleIndex, lineIndex };
+    }, [colorCodingArtifacts, particleFilterArtifacts, lineStyleArtifacts]);
 
     const renderArtifactTreeSection = useCallback((params: {
         artifactsByTimestep: Map<number, SceneArtifact[]>;
@@ -519,12 +519,12 @@ const ObjectsPanel = ({
         const hasAnalyses = sceneCollectionSections.length > 0;
         const hasColorCodingArtifacts = colorCodingArtifacts.length > 0;
         const hasParticleFilterArtifacts = particleFilterArtifacts.length > 0;
-        const hasDislocationStyleArtifacts = dislocationStyleArtifacts.length > 0;
+        const hasLineStyleArtifacts = lineStyleArtifacts.length > 0;
         const compactSectionCount = (hasAnalyses ? 1 : 0)
             + (hasSelectedTimestepAnalyses ? 1 : 0)
             + (hasColorCodingArtifacts ? 1 : 0)
             + (hasParticleFilterArtifacts ? 1 : 0)
-            + (hasDislocationStyleArtifacts ? 1 : 0);
+            + (hasLineStyleArtifacts ? 1 : 0);
 
         return (
             <Stack minH='0' className="canvas-objects-panel canvas-objects-panel--analysis-compact">
@@ -610,23 +610,23 @@ const ObjectsPanel = ({
                         </RightCollapsible>
                     )}
 
-                    {hasDislocationStyleArtifacts && (
+                    {hasLineStyleArtifacts && (
                         <RightCollapsible
-                            title="Dislocations"
+                            title="Line Styles"
                             icon={<Spline style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                            expanded={dislocationStyleOpen}
-                            onExpandedChange={setDislocationStyleOpen}
+                            expanded={lineStyleOpen}
+                            onExpandedChange={setLineStyleOpen}
                         >
                             {renderArtifactTreeSection({
-                                artifactsByTimestep: artifactsByTimestep.dislocationIndex,
-                                timesteps: dislocationStyleTimesteps,
-                                expandedSet: expandedDislocationStyleTimesteps,
-                                toggleTimestep: toggleDislocationStyleTimestep,
+                                artifactsByTimestep: artifactsByTimestep.lineIndex,
+                                timesteps: lineStyleTimesteps,
+                                expandedSet: expandedLineStyleTimesteps,
+                                toggleTimestep: toggleLineStyleTimestep,
                                 icon: Spline,
-                                menuIdPrefix: CONTEXT_MENU_ID_PREFIX.dislocationStyle,
-                                ariaLabel: 'Dislocation styles hierarchy',
-                                visibleCount: dislocationStyleVisibleCount,
-                                onShowMore: () => setDislocationStyleVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
+                                menuIdPrefix: CONTEXT_MENU_ID_PREFIX.lineStyle,
+                                ariaLabel: 'Line styles hierarchy',
+                                visibleCount: lineStyleVisibleCount,
+                                onShowMore: () => setLineStyleVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
                             })}
                         </RightCollapsible>
                     )}
@@ -732,21 +732,21 @@ const ObjectsPanel = ({
                 </RightCollapsible>
 
                 <RightCollapsible
-                    title="Dislocations"
+                    title="Line Styles"
                     icon={<Spline style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                    expanded={dislocationStyleOpen}
-                    onExpandedChange={setDislocationStyleOpen}
+                    expanded={lineStyleOpen}
+                    onExpandedChange={setLineStyleOpen}
                 >
                     {renderArtifactTreeSection({
-                        artifactsByTimestep: artifactsByTimestep.dislocationIndex,
-                        timesteps: dislocationStyleTimesteps,
-                        expandedSet: expandedDislocationStyleTimesteps,
-                        toggleTimestep: toggleDislocationStyleTimestep,
+                        artifactsByTimestep: artifactsByTimestep.lineIndex,
+                        timesteps: lineStyleTimesteps,
+                        expandedSet: expandedLineStyleTimesteps,
+                        toggleTimestep: toggleLineStyleTimestep,
                         icon: Spline,
-                        menuIdPrefix: CONTEXT_MENU_ID_PREFIX.dislocationStyle,
-                        ariaLabel: 'Dislocation styles hierarchy',
-                        visibleCount: dislocationStyleVisibleCount,
-                        onShowMore: () => setDislocationStyleVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
+                        menuIdPrefix: CONTEXT_MENU_ID_PREFIX.lineStyle,
+                        ariaLabel: 'Line styles hierarchy',
+                        visibleCount: lineStyleVisibleCount,
+                        onShowMore: () => setLineStyleVisibleCount((current) => current + TIMESTEP_PAGE_SIZE)
                     })}
                 </RightCollapsible>
             </div>

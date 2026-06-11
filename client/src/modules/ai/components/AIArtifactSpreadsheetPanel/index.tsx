@@ -1,5 +1,5 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
-import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils/file';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 import { Box, Divider, IconButton, Row, Stack, Text, Tooltip, VisuallyHidden } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
@@ -247,8 +247,10 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
             const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-            const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            const blob = base64ToBlob(buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as Uint8Array;
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
             triggerBrowserDownload(blob, `${artifact.title || 'table'}.xlsx`);
             updateStatusMessage('Downloaded Excel file.');
         } catch {

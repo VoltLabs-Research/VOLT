@@ -35,12 +35,6 @@ interface TeamMemberLookupFilter extends Partial<TeamMemberProps> {
     user: string;
 }
 
-interface AIConversationLookup {
-    _id: string;
-    teamId: string;
-    userId: string;
-}
-
 interface LastAssistantMessageFilter extends Partial<AIMessageProps> {
     conversationId: string;
     role: AIMessageRole;
@@ -80,11 +74,11 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
             ));
         }
 
-        const conversation = await this.conversationRepository.findOne({
-            _id: input.conversationId,
-            teamId: input.teamId,
-            userId: input.userId
-        } as AIConversationLookup);
+        const conversation = await this.conversationRepository.findOwnedByUser(
+            input.conversationId,
+            input.teamId,
+            input.userId
+        );
 
         if (!conversation) {
             return Result.fail(ApplicationError.notFound(

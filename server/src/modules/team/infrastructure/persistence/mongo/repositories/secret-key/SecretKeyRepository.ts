@@ -1,4 +1,5 @@
 import SecretKey, { SecretKeyProps } from '@modules/team/domain/entities/secret-key/SecretKey';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import secretKeyMapper from '@modules/team/infrastructure/persistence/mongo/mappers/secret-key/SecretKeyMapper';
 import SecretKeyModel, { SecretKeyDocument } from '@modules/team/infrastructure/persistence/mongo/models/secret-key/SecretKeyModel';
@@ -9,7 +10,8 @@ import crypto from 'node:crypto';
 
 @Singleton(TEAM_TOKENS.SecretKeyRepository)
 export default class SecretKeyRepository
-    extends MongooseBaseRepository<SecretKey, SecretKeyProps, SecretKeyDocument> {
+    extends MongooseBaseRepository<SecretKey, SecretKeyProps, SecretKeyDocument>
+    implements ISecretKeyRepository {
 
     constructor() {
         super(SecretKeyModel, secretKeyMapper);

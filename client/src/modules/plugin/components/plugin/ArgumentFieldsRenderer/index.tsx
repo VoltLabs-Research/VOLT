@@ -1,4 +1,4 @@
-import { Button, CollapsibleSection, Select, Stack, Text } from '@voltstack/bravais';
+import { Button, CollapsibleSection, Row, Select, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
@@ -17,9 +17,12 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
 import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 import { isRecord } from '@/shared/utils/type-guards';
+import './ArgumentFieldsRenderer.css';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];
@@ -117,9 +120,61 @@ const readDynamicOptionField = (value: unknown, field?: string): string => {
     return normalizeDynamicOptionValue(value);
 };
 
+const readSelectedPluginIds = (referenceValue: unknown): string[] => {
+    if (!isRecord(referenceValue)) {
+        return [];
+    }
+
+    const selections = referenceValue.selections;
+    if (!Array.isArray(selections)) {
+        return [];
+    }
+
+    const ids: string[] = [];
+    for (const selection of selections) {
+        if (isRecord(selection) && typeof selection.pluginId === 'string' && selection.pluginId) {
+            ids.push(selection.pluginId);
+        }
+    }
+    return ids;
+};
+
+const resolvePluginReferenceOptions = (
+    argument: IArgumentDefinition,
+    rootValues: Record<string, unknown>,
+    pluginsById: Record<string, Plugin>
+): SelectOption[] => {
+    const referenceArgument = argument.optionsFromPluginReference?.trim();
+    if (!referenceArgument) {
+        return [];
+    }
+
+    const selectedPluginIds = readSelectedPluginIds(rootValues[referenceArgument]);
+    const options: SelectOption[] = [];
+    for (const pluginId of selectedPluginIds) {
+        const plugin = pluginsById[pluginId];
+        if (!plugin?.exposures) {
+            continue;
+        }
+
+        for (const exposure of plugin.exposures) {
+            for (const property of exposure.properties ?? []) {
+                const value = typeof property.key === 'string' ? property.key.trim() : '';
+                if (!value) {
+                    continue;
+                }
+
+                options.push({ value, title: property.label?.trim() || value });
+            }
+        }
+    }
+    return options;
+};
+
 const resolveSelectOptions = (
     argument: IArgumentDefinition,
-    rootValues: Record<string, unknown>
+    rootValues: Record<string, unknown>,
+    pluginsById: Record<string, Plugin>
 ): SelectOption[] => {
     const staticOptions = (argument.options ?? []).map((option) => ({
         value: option.key,
@@ -149,8 +204,10 @@ const resolveSelectOptions = (
         }
     }
 
+    const pluginReferenceOptions = resolvePluginReferenceOptions(argument, rootValues, pluginsById);
+
     const dedupedOptions = new Map<string, SelectOption>();
-    for (const option of [...staticOptions, ...dynamicOptions]) {
+    for (const option of [...staticOptions, ...dynamicOptions, ...pluginReferenceOptions]) {
         if (!dedupedOptions.has(option.value)) {
             dedupedOptions.set(option.value, option);
         }
@@ -186,6 +243,8 @@ const ArgumentFieldsRenderer = ({
     allowTemplateReferenceMode = false
 }: ArgumentFieldsRendererProps) => {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+    const { publishedPluginsById } = usePluginSelectors();
 
     const resolvedFrameOptions = useMemo(() => frameOptions ?? [], [frameOptions]);
     const resolvedRootValues = useMemo(() => rootValues ?? values, [rootValues, values]);
@@ -252,7 +311,8 @@ const ArgumentFieldsRenderer = ({
                     onExpandedChange={(nextValue) => setSectionExpanded(itemPath, nextValue)}
                     onDelete={() => handleListItemRemove(argument, items, itemIndex)}
                     deleteActionLabel={`Remove ${argument.label || argument.argument} item ${itemIndex + 1}`}
-                    className='mb-0'
+                    noSpacing
+                    className='canvas-argument-list-item'
                     bodyClassName='mt-05'
                 >
                     <ArgumentFieldsRenderer
@@ -276,13 +336,14 @@ const ArgumentFieldsRenderer = ({
         handleListItemChange,
         handleListItemRemove,
         resolvedFrameOptions,
+        resolvedRootValues,
         setSectionExpanded
     ]);
 
     const renderArgument = useCallback((argument: IArgumentDefinition, index: number) => {
         const argumentValue = values[argument.argument];
         const fieldKey = `${path}.${argument.argument}.${index}`;
-        const selectOptions = resolveSelectOptions(argument, resolvedRootValues);
+        const selectOptions = resolveSelectOptions(argument, resolvedRootValues, publishedPluginsById);
 
         if (isPluginReferenceArgumentType(argument.type)) {
             return (
@@ -313,7 +374,7 @@ const ArgumentFieldsRenderer = ({
                         variant='outline'
                         intent='neutral'
                         size='sm'
-                        className='w-max'
+                        className='w-max canvas-argument-list-add'
                         leftIcon={<Plus size={12} />}
                         onClick={() => handleListItemAdd(argument, fieldKey, items)}
                     >
@@ -328,26 +389,30 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <Stack key={fieldKey} gap='05'>
+                <Row key={fieldKey} justify='between' gap='1' className='form-field-canvas'>
                     <p className='canvas-form-label'>
                         {argument.label || argument.argument}
                     </p>
-                    <Select
-                        id={`${fieldKey}-multi-select`}
-                        options={selectOptions}
-                        isMulti
-                        selectedValues={selectValues}
-                        onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
-                        placeholder='Select options'
-                        renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
-                            selectedCount,
-                            selectValues,
-                            selectOptions,
-                            'Select options',
-                            'selected'
-                        )}
-                    />
-                </Stack>
+                    <Row justify='end' width='max' position='relative' className='render-input-container'>
+                        <Select
+                            id={`${fieldKey}-multi-select`}
+                            options={selectOptions}
+                            isMulti
+                            selectedValues={selectValues}
+                            onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
+                            placeholder='Select options'
+                            className='form-field-canvas-select labeled-input'
+                            aria-label={argument.label || argument.argument}
+                            renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
+                                selectedCount,
+                                selectValues,
+                                selectOptions,
+                                'Select options',
+                                'selected'
+                            )}
+                        />
+                    </Row>
+                </Row>
             );
         }
 
@@ -403,6 +468,7 @@ const ArgumentFieldsRenderer = ({
         handlePrimitiveChange,
         onChange,
         path,
+        publishedPluginsById,
         renderListItem,
         resolvedFrameOptions,
         resolvedRootValues,

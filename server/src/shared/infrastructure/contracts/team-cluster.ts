@@ -39,8 +39,6 @@ export const ChannelCommands = Object.freeze({
     JobsRetry: 'jobs.retry',
     JobsRemoveRunning: 'jobs.remove-running',
 
-    NotebookDelete: 'notebook.delete',
-    NotebookRuntimeGet: 'notebook.runtime.get',
     NotebookSessionCreate: 'notebook.session.create',
 
     PluginSync: 'plugin.sync',
@@ -86,7 +84,7 @@ export const ChannelCommands = Object.freeze({
     TrajectoryNativeFilterPreview: 'trajectory.native.filter-preview',
     TrajectoryNativeColorModel: 'trajectory.native.color-model',
     TrajectoryNativeParticleFilterModel: 'trajectory.native.particle-filter-model',
-    TrajectoryNativeDislocationModel: 'trajectory.native.dislocation-model',
+    TrajectoryNativeLineModel: 'trajectory.native.line-model',
 
     TrajectoryPluginPropertyNames: 'trajectory.plugin.property-names',
     TrajectoryPluginPropertySchema: 'trajectory.plugin.property-schema',

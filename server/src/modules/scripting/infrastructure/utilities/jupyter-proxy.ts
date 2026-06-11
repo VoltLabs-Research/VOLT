@@ -1,5 +1,7 @@
 import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
+import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
+import { TeamClusterServiceExposureStatus } from '@modules/cluster/utilities/teamClusterSocket';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;
@@ -17,6 +19,38 @@ interface JupyterProxyPathMatch {
 export const JUPYTER_PROXY_BASE_PATH = '/api/jupyter';
 export const JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM = 'access_token';
 export const JUPYTER_PROXY_ACCESS_TOKEN_COOKIE_NAME = 'voltScriptingJupyterAccessToken';
+
+/**
+ * Label a notebook container carries (set by the daemon's JupyterRuntime) so its
+ * exposure can be found in the cluster exposure snapshot. A notebook is just a
+ * `volt.managed` container; we match its exposure by this label instead of a
+ * bespoke `notebook.runtime.get` RPC.
+ */
+export const NOTEBOOK_ID_EXPOSURE_LABEL_KEY = 'volt.notebook.id';
+
+/**
+ * Finds the HTTP exposure published for a notebook's runtime container and
+ * whether it is ready (exposure status === Active, which the daemon's exposure
+ * registry gates on the Jupyter readiness probe). Returns null when no exposure
+ * exists yet (container still being created / discovered).
+ */
+export const findNotebookExposure = (
+    exposures: TeamClusterServiceExposure[],
+    runtimeNotebookId: string
+): { exposure: TeamClusterServiceExposure; ready: boolean } | null => {
+    const exposure = exposures.find(
+        (candidate) => candidate.labels?.[NOTEBOOK_ID_EXPOSURE_LABEL_KEY] === runtimeNotebookId
+    );
+
+    if (!exposure) {
+        return null;
+    }
+
+    return {
+        exposure,
+        ready: exposure.status === TeamClusterServiceExposureStatus.Active
+    };
+};
 
 const PROXY_URL_ORIGIN = 'http://volt.local';
 

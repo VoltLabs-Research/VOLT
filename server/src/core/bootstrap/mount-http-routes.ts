@@ -41,7 +41,7 @@ import TeamClusterObjectStoreProxyHttpModule from '@modules/cluster/infrastructu
 import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http/routes/team-cluster-lifecycle-routes';
 import ClusterObjectHttpModule from '@modules/cluster/infrastructure/http/routes/cluster-object-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
-import DislocationStyleHttpModule from '@modules/trajectory/infrastructure/http/routes/dislocation-style';
+import LineStyleHttpModule from '@modules/trajectory/infrastructure/http/routes/line-style';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import DiscoverHttpModule from '@modules/trajectory/infrastructure/http/routes/discover';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
@@ -105,7 +105,7 @@ const HTTP_MODULES: HttpModule[] = [
     DiscoverHttpModule,
     CanvasHttpModule,
     ColorCodingHttpModule,
-    DislocationStyleHttpModule,
+    LineStyleHttpModule,
     ParticleFilterHttpModule,
     AIConversationHttpModule,
     LatexHttpModule,

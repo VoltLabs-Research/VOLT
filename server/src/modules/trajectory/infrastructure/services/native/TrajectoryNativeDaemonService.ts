@@ -62,32 +62,51 @@ interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest 
     mask: Uint8Array;
 };
 
-export interface DislocationStyleParams {
+export interface LineStyleFilterParam {
+    property: string;
+    operator: 'gte' | 'lte' | 'eq' | 'neq';
+    value: number | string;
+};
+
+// Property-generic line styling: every knob names a discovered per-entity
+// property of the exposure's line table.
+export interface LineStyleParams {
     lineWidth?: number;
     tubularSegments?: number;
-    minLength?: number;
-    colorMode?: 'family' | 'uniform' | 'property';
+    colorMode?: 'category' | 'uniform' | 'gradient';
+    colorProperty?: string;
+    categoryColors?: Record<string, [number, number, number, number]>;
+    categoryVisibility?: Record<string, boolean>;
     uniformColor?: [number, number, number, number];
-    familyColors?: Record<string, [number, number, number, number]>;
-    familyVisibility?: Record<string, boolean>;
-    property?: 'length' | 'magnitude';
     gradient?: string;
     startValue?: number;
     endValue?: number;
+    filters?: LineStyleFilterParam[];
 };
 
-interface TrajectoryNativeDislocationModelRequest extends TrajectoryNativeRequest {
+// Export-node options from the plugin definition (colorBy, propertyColors,
+// material); the style overlays them on the daemon.
+export interface LineExportBaseOptions {
+    lineWidth?: number;
+    tubularSegments?: number;
+    colorBy?: string;
+    propertyColors?: Record<string, [number, number, number, number]>;
+    material?: Record<string, unknown>;
+};
+
+interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
     objectKey: string;
     analysisId: string;
     exposureId: string;
-    style?: DislocationStyleParams;
+    baseOptions?: LineExportBaseOptions;
+    style?: LineStyleParams;
 };
 
-export interface TrajectoryNativeDislocationModelResponse {
+export interface TrajectoryNativeLineModelResponse {
     objectKey: string;
-    segmentsRendered: number;
-    segmentsTotal: number;
-    familyCounts: Record<string, { count: number; totalLength: number }>;
+    entitiesRendered: number;
+    entitiesTotal: number;
+    categoryCounts: Record<string, number>;
 };
 
 interface TrajectoryNativeAtomsPageResponse {
@@ -215,12 +234,13 @@ export default class TrajectoryNativeDaemonService {
         });
     }
 
-    async exportDislocationModel(input: TrajectoryNativeDislocationModelRequest): Promise<TrajectoryNativeDislocationModelResponse> {
-        return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeDislocationModel, {
+    async exportLineModel(input: TrajectoryNativeLineModelRequest): Promise<TrajectoryNativeLineModelResponse> {
+        return this.teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeLineModel, {
             ...this.toBaseBody(input),
             objectKey: input.objectKey,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
+            ...(input.baseOptions ? { baseOptions: input.baseOptions } : {}),
             ...(input.style ? { style: input.style } : {})
         });
     }

@@ -1,4 +1,4 @@
-import type TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -17,7 +17,7 @@ interface DeleteTeamInvitationByIdOutput {
 @injectable()
 export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteTeamInvitationByIdInput, DeleteTeamInvitationByIdOutput, ApplicationError> {
     constructor(
-        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly repository: TeamInvitationRepository
+        @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly repository: ITeamInvitationRepository
     ) {}
 
     async execute(input: DeleteTeamInvitationByIdInput): Promise<Result<DeleteTeamInvitationByIdOutput, ApplicationError>> {

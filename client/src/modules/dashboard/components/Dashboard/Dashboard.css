@@ -18,23 +18,6 @@
     gap: 1rem;
 }
 
-.dashboard-insights-row {
-    grid-column: span 12;
-    display: flex;
-    align-items: stretch;
-    gap: 1rem;
-    max-height: 420px;
-    min-height: 420px;
-}
-
-.dashboard-insights-row--compact {
-    justify-content: flex-start;
-}
-
-.dashboard-insights-row--compact > * {
-    max-width: 460px;
-}
-
 .dashboard-card-state {
     min-height: 100%;
 }
@@ -67,12 +50,6 @@
 }
 
 @media screen and (max-width: 900px) {
-    .dashboard-insights-row {
-        flex-direction: column;
-        min-height: 0;
-        max-height: none;
-    }
-
     .dashboard-bottom-row {
         height: auto;
     }

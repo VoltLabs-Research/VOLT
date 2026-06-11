@@ -58,7 +58,7 @@ export enum PluginNodeOutputPathMode {
 export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',
-    DISLOCATION = 'DislocationExporter',
+    LINE = 'LineExporter',
     CHART = 'ChartExporter'
 }
 

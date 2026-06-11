@@ -255,20 +255,16 @@
     margin: 0.15rem 0;
 }
 
+.ai-thread-region {
+    min-height: 0;
+}
+
 .ai-thread-starter {
     padding: 1.5rem 1rem;
 }
 
-.ai-thread-starter-content {
-    width: min(780px, 100%);
-}
-
 .ai-thread-starter-title {
     text-align: center;
-}
-
-.ai-thread-starter-input {
-    width: 100%;
 }
 
 .ai-thinking-bubble {

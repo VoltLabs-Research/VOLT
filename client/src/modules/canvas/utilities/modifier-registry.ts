@@ -1,8 +1,7 @@
 import ColorCoding from '../components/ColorCoding';
-import DislocationStyle from '../components/DislocationStyle';
+import LineStyle from '../components/LineStyle';
 import ParticleFilter from '../components/ParticleFilter';
 import SlicePlane from '../components/SlicePlane';
-import StructureTypeSelect from '../components/StructureTypeSelect';
 
 import type { ResolvedModifier } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { ComponentType } from 'react';
@@ -34,15 +33,9 @@ export const BUILT_IN_MODIFIERS: BuiltInModifierDefinition[] = [
         type: 'built-in'
     },
     {
-        id: 'select-structure-type',
-        title: 'Select Structure Type',
-        component: StructureTypeSelect,
-        type: 'built-in'
-    },
-    {
-        id: 'dislocations',
-        title: 'Dislocations',
-        component: DislocationStyle,
+        id: 'line-style',
+        title: 'Line Style',
+        component: LineStyle,
         type: 'built-in'
     }
 ];

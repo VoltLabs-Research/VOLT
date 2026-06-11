@@ -1,5 +1,5 @@
 import { useAllTeamMembersQuery } from '@/modules/team/hooks/member/queries';
-import useTeamQueryState from '@/modules/team/hooks/use-team-query-state';
+import useTeamQueryState from '@/shared/presentation/hooks/use-query-state';
 import { useMemo } from 'react';
 
 interface UseTeamMemberDataOptions {

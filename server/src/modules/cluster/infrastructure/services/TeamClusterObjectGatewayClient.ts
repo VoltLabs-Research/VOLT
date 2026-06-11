@@ -10,6 +10,7 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { ITeamClusterObjectGatewayClient } from '@modules/cluster/domain/port/ITeamClusterObjectGatewayClient';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
@@ -298,7 +299,7 @@ const resolveOperationTimeouts = (operation: ObjectGatewayOperationName): Object
 };
 
 @Singleton(SHARED_TOKENS.TeamClusterObjectGatewayClient)
-export default class TeamClusterObjectGatewayClient {
+export default class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();

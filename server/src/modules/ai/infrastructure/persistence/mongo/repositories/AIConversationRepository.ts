@@ -15,4 +15,8 @@ export default class AIConversationRepository
     constructor() {
         super(AIConversationModel, aiConversationMapper);
     }
+
+    findOwnedByUser(conversationId: string, teamId: string, userId: string): Promise<AIConversation | null> {
+        return this.findOne({ _id: conversationId, teamId, userId });
+    }
 };

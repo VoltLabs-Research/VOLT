@@ -2,7 +2,7 @@ export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',
     PluginExposure = 'plugin-exposure',
-    DislocationStyle = 'dislocation-style'
+    LineStyle = 'line-style'
 }
 
 export enum SceneArtifactStatus {

@@ -79,26 +79,32 @@ export type ParticleFilterScene = {
     action?: string;
 };
 
-export interface DislocationStyleSpec {
+export interface LineStyleFilter {
+    property: string;
+    operator: 'gte' | 'lte' | 'eq' | 'neq';
+    value: number | string;
+}
+
+export interface LineStyleSpec {
     lineWidth?: number;
     tubularSegments?: number;
-    minLength?: number;
-    colorMode?: 'family' | 'uniform' | 'property';
+    colorMode?: 'category' | 'uniform' | 'gradient';
+    colorProperty?: string;
+    categoryColors?: Record<string, [number, number, number, number]>;
+    categoryVisibility?: Record<string, boolean>;
     uniformColor?: [number, number, number, number];
-    familyColors?: Record<string, [number, number, number, number]>;
-    familyVisibility?: Record<string, boolean>;
-    property?: 'length' | 'magnitude';
     gradient?: string;
     startValue?: number;
     endValue?: number;
+    filters?: LineStyleFilter[];
 }
 
-export type DislocationStyleScene = {
-    sceneType: 'dislocation-style';
-    source: 'dislocation-style';
+export type LineStyleScene = {
+    sceneType: 'line-style';
+    source: 'line-style';
     analysisId: string;
     exposureId: string;
-    style: DislocationStyleSpec;
+    style: LineStyleSpec;
 };
 
-export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene | DislocationStyleScene;
+export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene | ParticleFilterScene | LineStyleScene;

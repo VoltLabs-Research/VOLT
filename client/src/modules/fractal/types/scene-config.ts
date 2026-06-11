@@ -9,7 +9,7 @@ export interface PointCloudSceneSettings extends PointCloudSettingsState {
     pointSizeMultiplier: number;
 }
 
-export interface DislocationLineSceneSettings {
+export interface LineSceneSettings {
     baseLineWidth: number;
     lineWidth: number;
 }

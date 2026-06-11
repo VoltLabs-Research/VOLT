@@ -5,8 +5,13 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import WhiteboardRepository from '@modules/whiteboards/infrastructure/persistence/mongo/repositories/WhiteboardRepository';
 
-type WhiteboardElement = Record<string, unknown>;
-type WhiteboardAppState = Record<string, unknown>;
+import type {
+    IWhiteboardRealtimeStateService,
+    MergeSceneResult,
+    WhiteboardAppState,
+    WhiteboardElement,
+    WhiteboardSceneSnapshot
+} from '@modules/whiteboards/domain/port/IWhiteboardRealtimeStateService';
 
 interface StoredWhiteboardScene {
     revision?: number;
@@ -28,27 +33,6 @@ interface WhiteboardRoomState {
     persistTimer: ReturnType<typeof setTimeout> | null;
     lastEditedBy: string | null;
     lastPersistedRevision: number;
-}
-
-interface WhiteboardSceneSnapshot {
-    whiteboardId: string;
-    revision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
-}
-
-interface WhiteboardSceneDelta {
-    whiteboardId: string;
-    revision: number;
-    elements: WhiteboardElement[];
-    appState: WhiteboardAppState;
-    elementOrder?: string[];
-}
-
-interface MergeSceneResult {
-    changed: boolean;
-    revision: number;
-    delta?: WhiteboardSceneDelta;
 }
 
 const PERSIST_DEBOUNCE_MS = 500;
@@ -165,7 +149,7 @@ const areStringArraysEqual = (left: string[], right: string[]): boolean => {
 };
 
 @Singleton()
-export default class WhiteboardRealtimeStateService {
+export default class WhiteboardRealtimeStateService implements IWhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 

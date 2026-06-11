@@ -89,6 +89,9 @@ export const ArgumentDefinitionSchema = new Schema({
     },
     options: [ArgumentOptionSchema],
     optionsFromArguments: [ArgumentOptionSourceSchema],
+    optionsFromPluginReference: {
+        type: String
+    },
     listItemLabelArgument: {
         type: String
     },

@@ -50,7 +50,7 @@ const SELECTED_TIMESTEPS_RUNTIME_ARGUMENT_KEY = 'selectedTimesteps';
 const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'AtomisticExporter',
     'MeshExporter',
-    'DislocationExporter',
+    'LineExporter',
     'ChartExporter'
 ]);
 
@@ -148,13 +148,9 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
             status: 'pending'
         }));
 
-    const primaryIndex = artifacts.findIndex((artifact) => {
-        const name = artifact.name.toLowerCase();
-        const exporter = artifact.exporter?.toLowerCase() ?? '';
-        return name === 'dislocations'
-            || name.includes('dislocation')
-            || exporter.includes('dislocation');
-    });
+    // The primary artifact is the plugin's first declared renderable scene; a
+    // plugin orders its exposures, VOLT does not second-guess them by name.
+    const primaryIndex = artifacts.findIndex((artifact) => artifact.exportType === 'glb');
     const selectedPrimaryIndex = primaryIndex >= 0 ? primaryIndex : 0;
 
     return artifacts.map((artifact, index) => ({

@@ -1,23 +1,12 @@
-import { createConversationStreamTransport } from '../services/stream-transport';
 import service from '../api/service';
-import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
+import { buildKeys, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query';
 import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
 import type {
     CreateAIConversationParams,
-    CreateAIConversationResult,
-    CreateConversationStreamTransportParams,
-    CreateConversationStreamTransportResult,
     ListAIConversationMessagesParams,
     ListAIConversationsParams,
     UpdateAIConversationParams
 } from '@/modules/ai/api/service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { MutationOptions } from '@/shared/infrastructure/query';
-
-export interface ConversationsQueryParams {
-    teamId: string;
-    params?: ListAIConversationsParams;
-}
 
 export interface ConversationMessagesQueryParams {
     teamId: string;
@@ -25,60 +14,50 @@ export interface ConversationMessagesQueryParams {
     params?: ListAIConversationMessagesParams;
 }
 
-interface AIQueryKeyMap {
-    conversations: ConversationsQueryParams;
+interface AIMessagesKeyMap {
     messages: ConversationMessagesQueryParams;
 }
 
-interface DeleteConversationVariables {
-    conversationId: string;
-}
+const MESSAGE_KEYS = buildKeys<AIMessagesKeyMap>('ai');
 
-type UpdateConversationVariables = DeleteConversationVariables & UpdateAIConversationParams;
+const CONVERSATIONS_BASE_KEY = 'ai-conversations';
 
-export interface ConversationMutationOptions {
-    conversationsQueryParams?: ConversationsQueryParams;
-}
+/**
+ * Conversations use the shared paginated-query helper: it owns list/detail
+ * cache maintenance (upsert/remove across every list variant), so we no longer
+ * hand-roll prepend/filter/map patching here. teamId is not part of the cache
+ * key — it is injected into the request path by the RBAC client, and all
+ * `ai-conversations` queries are purged on team switch.
+ */
+export const conversationQuery = createPaginatedQuery<
+    AIConversation,
+    ListAIConversationsParams,
+    CreateAIConversationParams,
+    UpdateAIConversationParams
+>({
+    baseKey: CONVERSATIONS_BASE_KEY,
+    detailKey: (id) => [CONVERSATIONS_BASE_KEY, 'detail', id],
+    service: {
+        list: service.listConversations,
+        create: (params) => service.createConversation(params).then((result) => result.conversation),
+        update: (id, params) => service.updateConversation({ conversationId: id, ...params }),
+        delete: async (id) => {
+            await service.deleteConversation({ conversationId: id });
+        }
+    }
+});
 
-const KEYS = buildKeys<AIQueryKeyMap>('ai');
+export const invalidateConversationsQueries = (): Promise<void> => conversationQuery.cache.invalidate();
 
-export const conversationsQuery = createQuery(
-    KEYS.conversations,
-    ({ params }: ConversationsQueryParams) => service.listConversations(params)
-);
-
+/**
+ * Messages are read-only on the client — they are written exclusively by the
+ * chat stream and only ever listed/invalidated here, so a plain query (no CRUD
+ * machinery) is the right fit.
+ */
 export const messagesQuery = createQuery(
-    KEYS.messages,
+    MESSAGE_KEYS.messages,
     ({ conversationId, params }: ConversationMessagesQueryParams) => service.listMessages({ conversationId, ...params })
 );
-
-const patchConversations = (
-    queryParams: ConversationsQueryParams | undefined,
-    updater: (current: PaginatedResponse<AIConversation>) => PaginatedResponse<AIConversation>
-) => {
-    if (!queryParams) return;
-
-    queryClient.setQueryData<PaginatedResponse<AIConversation>>(
-        KEYS.conversations(queryParams),
-        (current) => {
-            let nextValue = current;
-
-            if (current) {
-                nextValue = updater(current);
-            }
-
-            return nextValue;
-        }
-    );
-};
-
-export const buildConversationsQueryParams = (
-    teamId: string,
-    params?: ListAIConversationsParams
-): ConversationsQueryParams => ({
-    teamId,
-    params
-});
 
 export const buildConversationMessagesQueryParams = (
     teamId: string,
@@ -91,69 +70,3 @@ export const buildConversationMessagesQueryParams = (
 });
 
 export const invalidateConversationMessagesQuery = messagesQuery.invalidate;
-
-export const invalidateConversationsQueries = () => {
-    return queryClient.invalidateQueries({ queryKey: KEYS.conversations() });
-};
-
-export const useCreateConversationMutation = (
-    { conversationsQueryParams }: ConversationMutationOptions = {},
-    options?: MutationOptions<CreateAIConversationResult, CreateAIConversationParams>
-) => createMutation<CreateAIConversationResult, CreateAIConversationParams>(
-    service.createConversation,
-    ({ conversation }) => {
-        patchConversations(conversationsQueryParams, (current) => ({
-            ...current,
-            data: [
-                conversation,
-                ...current.data.filter((item) => item._id !== conversation._id)
-            ]
-        }));
-    }
-)(options);
-
-export const useDeleteConversationMutation = (
-    { conversationsQueryParams }: ConversationMutationOptions = {},
-    options?: MutationOptions<void, DeleteConversationVariables>
-) => createMutation<void, DeleteConversationVariables>(
-    service.deleteConversation,
-    (_data, variables) => {
-        patchConversations(conversationsQueryParams, (current) => ({
-            ...current,
-            data: current.data.filter((conversation) => conversation._id !== variables.conversationId)
-        }));
-    }
-)(options);
-
-export const useRenameConversationMutation = (
-    { conversationsQueryParams }: ConversationMutationOptions = {},
-    options?: MutationOptions<AIConversation, UpdateConversationVariables>
-) => createMutation<AIConversation, UpdateConversationVariables>(
-    service.updateConversation,
-    (updatedConversation, variables) => {
-        const updatedConversations = (current: PaginatedResponse<AIConversation>) => {
-            const conversations = current.data.map((conversation) => {
-                if (conversation._id === variables.conversationId) {
-                    return updatedConversation;
-                }
-
-                return conversation;
-            });
-
-            return {
-                ...current,
-                data: conversations
-            };
-        };
-
-        patchConversations(conversationsQueryParams, (current) => ({
-            ...updatedConversations(current)
-        }));
-    }
-)(options);
-
-export const resolveConversationStreamTransport = (
-    params: CreateConversationStreamTransportParams
-): CreateConversationStreamTransportResult => {
-    return createConversationStreamTransport(params);
-};

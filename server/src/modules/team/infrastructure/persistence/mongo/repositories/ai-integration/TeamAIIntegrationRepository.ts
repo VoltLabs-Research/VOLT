@@ -1,4 +1,5 @@
 import TeamAIIntegration, { TeamAIIntegrationProps, TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
+import type { ITeamAIIntegrationRepository } from '@modules/team/domain/port/ai-integration/ITeamAIIntegrationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamAIIntegrationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/ai-integration/TeamAIIntegrationMapper';
 import TeamAIIntegrationModel, { TeamAIIntegrationDocument } from '@modules/team/infrastructure/persistence/mongo/models/ai-integration/TeamAIIntegrationModel';
@@ -8,7 +9,8 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 
 @Singleton(TEAM_TOKENS.TeamAIIntegrationRepository)
 export default class TeamAIIntegrationRepository
-    extends MongooseBaseRepository<TeamAIIntegration, TeamAIIntegrationProps, TeamAIIntegrationDocument> {
+    extends MongooseBaseRepository<TeamAIIntegration, TeamAIIntegrationProps, TeamAIIntegrationDocument>
+    implements ITeamAIIntegrationRepository {
 
     constructor() {
         super(TeamAIIntegrationModel, teamAIIntegrationMapper);

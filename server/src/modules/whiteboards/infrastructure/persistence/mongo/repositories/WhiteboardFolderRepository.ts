@@ -1,6 +1,7 @@
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import type WhiteboardFolder from '@modules/whiteboards/domain/entities/WhiteboardFolder';
 import type { WhiteboardFolderProps } from '@modules/whiteboards/domain/entities/WhiteboardFolder';
+import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
 import whiteboardFolderMapper from '@modules/whiteboards/infrastructure/persistence/mongo/mappers/WhiteboardFolderMapper';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -10,7 +11,8 @@ import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastr
 
 @Singleton(WHITEBOARD_TOKENS.WhiteboardFolderRepository)
 export default class WhiteboardFolderRepository
-    extends MongooseCatalogFolderRepository<WhiteboardFolder, WhiteboardFolderProps, CatalogFolderDocument> {
+    extends MongooseCatalogFolderRepository<WhiteboardFolder, WhiteboardFolderProps, CatalogFolderDocument>
+    implements IWhiteboardFolderRepository {
     constructor() {
         super(CatalogFolderModel, whiteboardFolderMapper, CatalogFolderKind.Whiteboard);
     }

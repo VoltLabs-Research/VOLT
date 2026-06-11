@@ -9,12 +9,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
-interface DeleteAIConversationLookup {
-    _id: string;
-    teamId: string;
-    userId: string;
-}
-
 @Singleton()
 export default class DeleteAIConversationUseCase implements IUseCase<DeleteAIConversationInputDTO, null, ApplicationError> {
     constructor(
@@ -23,11 +17,11 @@ export default class DeleteAIConversationUseCase implements IUseCase<DeleteAICon
     ) {}
 
     async execute(input: DeleteAIConversationInputDTO): Promise<Result<null, ApplicationError>> {
-        const conversation = await this.conversationRepository.findOne({
-            _id: input.conversationId,
-            teamId: input.teamId,
-            userId: input.userId
-        } as DeleteAIConversationLookup);
+        const conversation = await this.conversationRepository.findOwnedByUser(
+            input.conversationId,
+            input.teamId,
+            input.userId
+        );
 
         if (!conversation) {
             return Result.fail(ApplicationError.notFound(

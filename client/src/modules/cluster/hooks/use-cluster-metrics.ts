@@ -2,56 +2,33 @@ import { useClusterStore } from '../stores/use-cluster-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import teamSocketRoomService from '@/modules/socket/services/team-room-service';
-import useSocketConnectionEffect from '@/modules/socket/hooks/use-socket-connection-effect';
-import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import {
     clusterHistoryLoadedQuery,
     clusterHistoryQuery,
-    clusterMetricsQuery,
-    resetClusterHistoryQuery,
-    setClusterHistoryQueryData,
-    setClusterMetricsQueryData
+    clusterMetricsQuery
 } from './queries';
 import { requestClusterHistory } from '../api/service';
 import { resolveClusterMetricId } from '../utilities/resolve-cluster-metric-id';
-import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback } from 'react';
-import type { ClusterMetrics, ClusterHistoryMetric } from '../api/entities/cluster-metrics';
 
 interface UseClusterMetricsOptions {
     clusterId?: string | null;
 }
 
-interface ClusterMetricsHistoryEvent {
-    clusterId: string;
-    history: ClusterHistoryMetric[];
-}
-
+/**
+ * Read-only view over the live cluster metrics cache. The stream subscription
+ * and socket listeners that fill that cache live in useTeamClusterMetricsSync
+ * (mounted once per session) so metrics keep flowing regardless of which
+ * components are mounted. This hook just reads the cache and exposes the
+ * on-demand history request.
+ */
 const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
-    const queryClient = useQueryClient();
     const selectedTeamId = useSelectedTeamId();
 
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
     const isConnected = useClusterStore((state) => state.isConnected);
     const setSelectedClusterId = useClusterStore((state) => state.setSelectedClusterId);
-    const setConnected = useClusterStore((state) => state.setConnected);
     const targetClusterId = options.clusterId ?? selectedClusterId;
-
-    useSocketConnectionEffect((connected) => {
-        setConnected(connected);
-        if (!connected) {
-            resetClusterHistoryQuery(queryClient);
-        }
-    }, { runOnMount: true });
-
-    useSocketEvent<ClusterMetrics[]>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_ALL, (clusters) => {
-        setClusterMetricsQueryData(queryClient, clusters);
-    });
-
-    useSocketEvent<ClusterMetricsHistoryEvent>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, ({ clusterId, history }) => {
-        setClusterHistoryQueryData(queryClient, history, clusterId);
-    });
 
     const { data: clusters = [] } = clusterMetricsQuery(undefined);
     const historyClusterId = targetClusterId ?? '';

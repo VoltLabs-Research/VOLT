@@ -1,4 +1,5 @@
 import TeamInvitation, { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/team-invitation/TeamInvitation';
+import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import teamInvitationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/team-invitation/TeamInvitationMapper';
 import TeamInvitationModel, { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/team-invitation/TeamInvitationModel';
@@ -8,7 +9,8 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 
 @Singleton(TEAM_TOKENS.TeamInvitationRepository)
 export default class TeamInvitationRepository
-    extends MongooseBaseRepository<TeamInvitation, TeamInvitationProps, TeamInvitationDocument>{
+    extends MongooseBaseRepository<TeamInvitation, TeamInvitationProps, TeamInvitationDocument>
+    implements ITeamInvitationRepository {
     
     constructor(){
         super(TeamInvitationModel, teamInvitationMapper);

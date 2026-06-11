@@ -129,6 +129,7 @@ const AIConversationSidebar = ({
 
     const renderConversationItem = (conversation: AIConversation) => {
         const isActive = conversation._id === activeConversationId;
+        const isEditing = editingConversationId === conversation._id;
         let itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer';
         if (isActive) {
             itemClassName = 'd-flex column gap-025 ai-conversation-item cursor-pointer is-active';
@@ -144,12 +145,29 @@ const AIConversationSidebar = ({
             deleteTooltip = 'Delete conversation';
         }
 
+        // The row is clickable, but while editing it hosts a text input and
+        // action buttons — nesting those inside a real <button> is invalid HTML.
+        // We expose it as role="button" only when not editing, so interactive
+        // descendants stay valid.
+        const interactiveProps = isEditing
+            ? {}
+            : {
+                role: 'button' as const,
+                tabIndex: 0,
+                onClick: () => onSelectConversation(conversation._id),
+                onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectConversation(conversation._id);
+                    }
+                }
+            };
+
         return (
-            <button
+            <div
                 key={conversation._id}
-                type='button'
                 className={itemClassName}
-                onClick={() => onSelectConversation(conversation._id)}
+                {...interactiveProps}
             >
                 <Row justify='between' gap='05'>
                     {renderConversationTitle(conversation)}
@@ -184,7 +202,7 @@ const AIConversationSidebar = ({
                 <Text as='p' size='sm' tone='muted'>
                     {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
                 </Text>
-            </button>
+            </div>
         );
     };
 
