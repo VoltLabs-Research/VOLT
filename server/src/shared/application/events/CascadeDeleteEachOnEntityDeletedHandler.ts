@@ -1,6 +1,6 @@
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { getPayloadValue } from '@shared/application/events/getPayloadValue';
 import logger from '@shared/infrastructure/logger';
 
 interface IdentifiableEntity {
@@ -10,14 +10,6 @@ interface IdentifiableEntity {
 interface IterableRepository<T extends IdentifiableEntity> {
     export(options: { filter: Record<string, string>; select?: string[] }): Promise<T[]>;
 }
-
-const getPayloadValue = (payload: unknown, key: string): string => {
-    if (!isRecord(payload) || typeof payload[key] !== 'string') {
-        throw new Error(`Event payload is missing string field: ${key}`);
-    }
-
-    return payload[key];
-};
 
 const runWithConcurrency = async <T>(
     tasks: Array<() => Promise<T>>,

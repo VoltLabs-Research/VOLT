@@ -16,6 +16,7 @@ const folderHandlers = createCatalogFolderRouteHandlers({
 });
 
 export default createHttpModule({
+    moduleKey: 'trajectory',
     basePath: '/api/trajectories/:teamId',
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,

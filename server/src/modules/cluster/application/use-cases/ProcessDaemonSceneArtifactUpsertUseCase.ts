@@ -15,7 +15,7 @@ import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens
 // neutral GenericDomainEvent; the owner event class is no longer imported. Its
 // payload artifact type is taken from the neutral contract.
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';

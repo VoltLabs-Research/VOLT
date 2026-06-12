@@ -6,7 +6,7 @@ import type { RuntimeContainerInfo } from '@modules/container/domain/port/IConta
 import type { ITeamClusterContainerRuntimeService, RuntimeContainerSummary } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import type { IContainerAccessiblePortResolver } from '@modules/container/domain/port/IContainerAccessiblePortResolver';
 import { IUseCase } from '@shared/application/IUseCase';
-import { CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import { CLUSTER_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';

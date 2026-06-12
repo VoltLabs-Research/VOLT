@@ -49,7 +49,6 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
             return { ok: true, summary: 'Undid the last viewer change.', data: { action } };
         }
 
-        // redo
         if (temporal.futureStates.length === 0) {
             return {
                 ok: false,

@@ -2,7 +2,7 @@ import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ListSecretKeysByTeamIdInputDTO, ListSecretKeysByTeamIdOutputDTO, SecretKeyListItemDTO } from '@modules/team/application/dtos/secret-key/ListSecretKeysByTeamIdDTO';
 import { IUseCase } from '@shared/application/IUseCase';
-import { ROLE_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import { ROLE_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 

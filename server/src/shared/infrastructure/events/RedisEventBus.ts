@@ -3,7 +3,7 @@ import logger from '@shared/infrastructure/logger';
 import { Redis } from 'ioredis';
 import { inject, singleton } from 'tsyringe';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @singleton()

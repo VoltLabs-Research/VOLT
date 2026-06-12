@@ -8,6 +8,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import { container } from 'tsyringe';
 
 export default createHttpModule({
+    moduleKey: 'team',
     basePath: '/api/teams/invitations',
     protected: true,
     routes: (router) => {

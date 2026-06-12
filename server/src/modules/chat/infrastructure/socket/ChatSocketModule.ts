@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ChatRepository from '@modules/chat/infrastructure/persistence/mongo/repositories/chat/ChatRepository';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -41,7 +41,7 @@ const ackOk = <T>(data?: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';
 

@@ -1,5 +1,5 @@
 import { TrajectoryStatus, TrajectoryStats, TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 
 import type { ErrorCode } from '@core/constants/error-codes';
 

@@ -25,10 +25,6 @@ const DeploymentSettingsSchema: Schema<DeploymentSettingsDocument> = new Schema(
     autoJoinNewMembers: {
         type: Boolean,
         default: false
-    },
-    enabledModules: {
-        type: [String],
-        default: null
     }
 }, {
     timestamps: true

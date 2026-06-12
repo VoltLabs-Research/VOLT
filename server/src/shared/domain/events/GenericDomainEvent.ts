@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from './BaseDomainEvent';
 
 /**
  * Neutral, generic domain event for CROSS-MODULE emission.

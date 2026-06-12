@@ -7,6 +7,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
+    moduleKey: 'auth',
     basePath: '/api/auth',
     routes: (router) => {
         router.post('/sessions', RATE_LIMIT_POLICIES.authPublic, controllers.signIn.handle);

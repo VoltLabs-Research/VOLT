@@ -3,9 +3,5 @@ import { CreateLatexFileUseCase } from '@modules/latex/application/use-cases/Cre
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(CreateLatexFileUseCase, {
-    statusCode: HttpStatus.Created,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.Created
 });

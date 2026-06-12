@@ -1,4 +1,4 @@
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 
 export interface InvitationSentIntegrationEventPayload {
     teamName: string;

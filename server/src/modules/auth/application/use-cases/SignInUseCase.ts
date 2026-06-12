@@ -7,7 +7,7 @@ import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository'
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -18,7 +18,7 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
     constructor(
         @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher,
-        @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository,
+        @inject(SESSION_CONTRACT_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository,
         @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService
     ) {}
 

@@ -8,5 +8,6 @@
  * deployment-settings repository) without importing `@modules/system`.
  */
 export const SYSTEM_CONTRACT_TOKENS = Object.freeze({
-    DeploymentSettingsRepository: Symbol.for('DeploymentSettingsRepository')
+    DeploymentSettingsRepository: Symbol.for('DeploymentSettingsRepository'),
+    SystemMetricsRepository: Symbol.for('SystemMetricsRepository')
 });

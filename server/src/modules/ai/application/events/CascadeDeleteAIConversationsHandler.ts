@@ -1,6 +1,6 @@
 import type { IAIConversationRepository } from '@modules/ai/domain/port/IAIConversationRepository';
 import type { IAIMessageRepository } from '@modules/ai/domain/port/IAIMessageRepository';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 /**

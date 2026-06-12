@@ -75,7 +75,6 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
             };
         }
 
-        // Navigate to the board if it is not the one currently open in the editor.
         const current = readSnapshot();
         if (current.whiteboardId !== whiteboardId) {
             ctx.navigate(`/dashboard/whiteboard/${encodeURIComponent(whiteboardId)}`);

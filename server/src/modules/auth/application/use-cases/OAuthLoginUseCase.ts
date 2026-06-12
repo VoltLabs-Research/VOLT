@@ -6,7 +6,7 @@ import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository'
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import type { INewMemberDefaultTeamEnroller } from '@modules/team/domain/port/team/INewMemberDefaultTeamEnroller';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -22,7 +22,7 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
         @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
-        @inject(TEAM_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
+        @inject(TEAM_CONTRACT_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
     ) {}
 
     async execute(input: OAuthLoginInputDTO): Promise<Result<OAuthLoginOutputDTO, ApplicationError>>{

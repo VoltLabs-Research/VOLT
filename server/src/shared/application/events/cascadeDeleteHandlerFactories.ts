@@ -5,7 +5,7 @@ import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/Delet
 import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
 import { DeleteManyOnTrajectoryDeletedHandler } from '@shared/application/events/DeleteManyOnTrajectoryDeletedHandler';
 import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 interface DeletableRepository {

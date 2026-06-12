@@ -3,11 +3,7 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import JoinTeamByInviteCodeUseCase from '@modules/team/application/use-cases/team/JoinTeamByInviteCodeUseCase';
 
 const JoinTeamByInviteCodeController = createController(JoinTeamByInviteCodeUseCase, {
-    statusCode: HttpStatus.OK,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.OK
 });
 
 export default JoinTeamByInviteCodeController;

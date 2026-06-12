@@ -2,7 +2,7 @@ import { container, injectable } from 'tsyringe';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type { InjectionToken } from 'tsyringe';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 

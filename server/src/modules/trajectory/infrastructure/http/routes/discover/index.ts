@@ -2,6 +2,7 @@ import controllers from '@modules/trajectory/infrastructure/http/controllers/dis
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
+    moduleKey: 'trajectory',
     basePath: '/api/discover/teams',
     protected: false,
     routes: (router) => {

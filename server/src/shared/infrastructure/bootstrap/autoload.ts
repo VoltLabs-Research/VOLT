@@ -93,8 +93,9 @@ const isDirectory = (path: string): boolean => {
 /**
  * Imports every class-carrying source file under `src/{shared,modules}` so
  * that every `@Singleton`, `@Transient`, `@AliasOf`, `@CollectionMember` and
- * `@Subscribe` decorator runs and self-registers. Replaces the 22 hand-written
- * module manifests and the 18 subscriber manifests.
+ * `@Subscribe` decorator runs and self-registers. This replaces the old
+ * hand-written DI-registration and subscriber manifests; module DEFINITIONS
+ * (keys, tiers, dependencies) still come from `module-state.ts`.
  */
 export const autoloadModules = async (): Promise<void> => {
     const srcDir = resolve(__dirname, '..', '..', '..');

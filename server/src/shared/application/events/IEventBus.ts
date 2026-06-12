@@ -1,4 +1,4 @@
-import type { IDomainEvent } from './IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from './IEventHandler';
 
 export interface IEventBus {

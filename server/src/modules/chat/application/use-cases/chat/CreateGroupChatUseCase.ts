@@ -4,10 +4,10 @@ import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatReposi
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
@@ -18,9 +18,9 @@ import { inject, injectable } from 'tsyringe';
 export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
-        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepo: ITeamRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepo: ITeamMemberRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
+        @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepo: ITeamRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepo: ITeamMemberRepository,
+        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {

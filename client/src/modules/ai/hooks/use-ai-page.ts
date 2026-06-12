@@ -53,7 +53,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         accessDenied,
         accessDeniedMessage,
 
-        // Model selection
         configuredProviderCatalog: modelSelection.configuredProviderCatalog,
         availableModelsForProvider: modelSelection.availableModelsForProvider,
         selectedProvider: modelSelection.selectedProvider,
@@ -66,7 +65,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         setSelectedProvider: modelSelection.setSelectedProvider,
         setSelectedModel: modelSelection.setSelectedModel,
 
-        // Conversations
         activeConversation: conversationsHook.activeConversation,
         conversations: conversationsHook.conversations,
         isConversationsLoading: conversationsHook.isConversationsLoading,
@@ -77,12 +75,10 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         handleDeleteConversation: conversationsHook.handleDeleteConversation,
         handleRenameConversation: conversationsHook.handleRenameConversation,
 
-        // Messages
         isMessagesLoading,
         messagesError,
         loadConversationMessages,
 
-        // Chat stream
         messages: chatStream.messages,
         isSendingMessage: chatStream.isSendingMessage,
         sendMessageError: chatStream.sendMessageError,

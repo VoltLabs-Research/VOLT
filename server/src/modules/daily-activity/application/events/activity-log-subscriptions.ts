@@ -3,7 +3,7 @@ import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di
 import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
 import { container, injectable } from 'tsyringe';
 import type { IDailyActivityRepository } from '@modules/daily-activity/domain/port/IDailyActivityRepository';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 type DailyActivityPayload = {

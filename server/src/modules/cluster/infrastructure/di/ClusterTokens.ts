@@ -11,5 +11,6 @@ export const CLUSTER_TOKENS = Object.freeze({
     TeamClusterLifecycleService: Symbol.for('TeamClusterLifecycleService'),
     TeamClusterRemoteAccessSessionService: Symbol.for('TeamClusterRemoteAccessSessionService'),
     ClusterObjectArchiveService: Symbol.for('ClusterObjectArchiveService'),
-    ClusterObjectSignedUrlService: Symbol.for('ClusterObjectSignedUrlService')
+    ClusterObjectSignedUrlService: Symbol.for('ClusterObjectSignedUrlService'),
+    TeamClusterReverseChannelService: Symbol.for('TeamClusterReverseChannelService')
 });

@@ -3,7 +3,7 @@ import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
 import type { IPluginDebugSessionRegistryService } from '@shared/contracts/ports';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -26,6 +26,7 @@ import TeamClusterLifecycleService from '@modules/cluster/infrastructure/service
 import TeamClusterReverseChannelService, {
     type TeamClusterDaemonInboundStreamPayload
 } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,
@@ -139,7 +140,7 @@ interface DaemonSceneArtifactUpsertBatchStreamPayload {
 }
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
@@ -151,6 +152,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         eventRegistry: SocketIOEventRegistry,
         private readonly teamClusterHeartbeatMonitor: TeamClusterHeartbeatMonitor,
         private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
+        @inject(CLUSTER_TOKENS.TeamClusterReverseChannelService)
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
         private readonly teamClusterRepository: TeamClusterRepository,
         private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,

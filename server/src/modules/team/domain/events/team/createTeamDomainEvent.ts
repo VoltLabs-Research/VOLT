@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 
 type TeamDomainEventConstructor<TPayload> = new (payload: TPayload) => BaseDomainEvent<TPayload>;
 
