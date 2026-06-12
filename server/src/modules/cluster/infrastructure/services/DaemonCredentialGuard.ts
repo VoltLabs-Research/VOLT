@@ -19,10 +19,10 @@ export interface DecryptedTeamClusterServiceCredentials {
 @Singleton()
 export default class DaemonCredentialGuard {
     constructor(
-        
+
         private readonly teamClusterRepository: TeamClusterRepository,
 
-        
+
         private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher
     ) {}
 

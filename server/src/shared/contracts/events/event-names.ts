@@ -35,6 +35,7 @@ export const DOMAIN_EVENTS = Object.freeze({
     // latex
     LatexDocumentCreated: 'latex-document.created',
     LatexDocumentDeleted: 'latex-document.deleted',
+    LatexFileContentUpdated: 'latex-file.content.updated',
     // plugin
     PluginCreated: 'plugin.created',
     PluginDeleted: 'plugin.deleted',

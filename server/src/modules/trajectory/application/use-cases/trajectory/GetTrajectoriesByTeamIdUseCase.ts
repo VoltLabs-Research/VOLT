@@ -5,7 +5,7 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
-import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 

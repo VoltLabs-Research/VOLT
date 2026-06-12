@@ -1,4 +1,4 @@
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
@@ -21,7 +21,7 @@ export default class GetClusterResourceLimitsUseCase
 
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository
+        @inject(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository
     ){}
 
     async execute(

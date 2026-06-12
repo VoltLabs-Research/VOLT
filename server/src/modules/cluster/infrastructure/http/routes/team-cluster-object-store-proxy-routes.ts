@@ -4,7 +4,7 @@ import TeamClusterObjectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
 } from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import DaemonCredentialGuard from '@modules/cluster/infrastructure/services/DaemonCredentialGuard';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,

@@ -6,7 +6,7 @@ import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';

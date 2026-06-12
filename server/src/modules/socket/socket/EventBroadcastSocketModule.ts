@@ -9,7 +9,7 @@ import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 type BroadcastableEvent = IDomainEvent<Record<string, unknown>>;

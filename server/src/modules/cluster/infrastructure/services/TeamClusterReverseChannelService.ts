@@ -41,6 +41,7 @@ import {
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import { inject } from 'tsyringe';
 import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
 import type {
@@ -202,7 +203,7 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
 );
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
-@Singleton()
+@Singleton(CLUSTER_TOKENS.TeamClusterReverseChannelService)
 export default class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();

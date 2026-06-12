@@ -52,7 +52,6 @@ const humanizeToolName = (toolName: string): string => {
     return cleaned.length > 0 ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : 'tool';
 };
 
-/** Pulls a `summary` string out of a tool result if present. */
 const extractResultSummary = (result: unknown): string | null => {
     if (!isRecord(result)) {
         return null;

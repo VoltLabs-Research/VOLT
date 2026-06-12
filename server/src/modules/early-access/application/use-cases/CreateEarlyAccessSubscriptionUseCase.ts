@@ -9,7 +9,7 @@ import type { IEarlyAccessSubscriptionRepository } from '@modules/early-access/d
 import { EARLY_ACCESS_TOKENS } from '@modules/early-access/infrastructure/di/EarlyAccessTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -22,7 +22,7 @@ export default class CreateEarlyAccessSubscriptionUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(EARLY_ACCESS_TOKENS.EarlyAccessSubscriptionRepository) private readonly earlyAccessSubscriptionRepository: IEarlyAccessSubscriptionRepository
     ) {}
 

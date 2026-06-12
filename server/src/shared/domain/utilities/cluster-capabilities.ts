@@ -1,14 +1,14 @@
 /**
  * Pure, cross-module TeamCluster capability resolution. Canonical home in the
- * neutral `shared` layer (detachable-modules migration) so consumers (e.g. the
- * container module's role-aware selection service) can derive a cluster's
- * effective capabilities from its role config without importing
- * `@modules/cluster`.
+ * neutral `shared/domain` layer (detachable-modules migration) so consumers
+ * (the cluster domain entity, the container module's role-aware selection
+ * service) can derive a cluster's effective capabilities from its role config
+ * without importing `@modules/cluster`.
  *
  * These are pure functions over the neutral role-config data shapes
  * (`@shared/contracts/types/TeamCluster`) — no entity class, no module coupling.
- * The original `@modules/cluster/domain/entities/TeamCluster` re-exports them so
- * existing importers (and the `TeamCluster` class itself) compile unchanged.
+ * Living in `shared/domain` keeps the cluster domain entity's import of them
+ * inward-pointing (domain → domain), not domain → application.
  */
 import type {
     TeamClusterRole,

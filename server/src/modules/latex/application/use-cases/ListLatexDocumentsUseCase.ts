@@ -3,7 +3,7 @@ import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatex
 import type { ListLatexDocumentsInputDTO, ListLatexDocumentsOutputDTO } from '@modules/latex/application/dtos/ListLatexDocumentsDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';

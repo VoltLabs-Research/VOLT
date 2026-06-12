@@ -9,7 +9,7 @@ import { toScriptingNotebookDTO } from '@modules/scripting/application/utilities
 import { ScriptingNotebookScope } from '@modules/scripting/domain/entities/ScriptingNotebookScope';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/application/PopulatePresets';
+import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 

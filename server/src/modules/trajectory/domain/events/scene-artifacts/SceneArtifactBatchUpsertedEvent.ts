@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 import type { SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 
 export interface SceneArtifactBatchUpsertedArtifact {

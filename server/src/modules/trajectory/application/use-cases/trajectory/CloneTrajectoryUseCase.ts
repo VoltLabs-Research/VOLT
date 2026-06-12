@@ -8,7 +8,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/application/utilities/cluster-capabilities';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import {
     CloneTrajectoryInputDTO,

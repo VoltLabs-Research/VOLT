@@ -10,7 +10,7 @@ import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import { SessionActivityType } from '@modules/session/domain/entities/Session';
 import type { INewMemberDefaultTeamEnroller } from '@modules/team/domain/port/team/INewMemberDefaultTeamEnroller';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { IUseCase } from '@shared/application/IUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -27,7 +27,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         @inject(AUTH_TOKENS.AuthSessionService) private readonly authSessionService: IAuthSessionService,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus,
         @inject(AUTH_TOKENS.AvatarService) private readonly avatarService: IAvatarService,
-        @inject(TEAM_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
+        @inject(TEAM_CONTRACT_TOKENS.DefaultTeamEnroller) private readonly defaultTeamEnroller: INewMemberDefaultTeamEnroller
     ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {

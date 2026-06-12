@@ -20,7 +20,7 @@ import {
 import type { ITeamClusterExposureRegistryService } from '@shared/contracts/ports';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -144,7 +144,7 @@ export class ScriptingJupyterProxyService implements IScriptingJupyterProxyServi
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
         private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
         @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService

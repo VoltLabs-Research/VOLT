@@ -39,7 +39,6 @@ const seekFrame: ClientToolHandler<SeekFrameInput> = {
         let target: number | undefined;
 
         if (typeof input.frame === 'number' && Number.isFinite(input.frame)) {
-            // Exact match if present, otherwise clamp to the nearest timestep.
             if (timesteps.includes(input.frame)) {
                 target = input.frame;
             } else {

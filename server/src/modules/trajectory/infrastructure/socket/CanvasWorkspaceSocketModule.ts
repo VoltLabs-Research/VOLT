@@ -1,4 +1,4 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
@@ -51,7 +51,7 @@ const LOBBY_PREFIX = 'trajectory-canvas-lobby';
 const WORKSPACE_PREFIX = 'trajectory-canvas-workspace';
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
     public readonly name = 'CanvasWorkspaceSocketModule';
 

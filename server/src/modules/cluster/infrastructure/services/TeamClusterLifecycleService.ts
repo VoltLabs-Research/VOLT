@@ -17,7 +17,7 @@ import {
 } from '@modules/cluster/utilities/teamClusterMetricsSocket';
 import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import DaemonCredentialGuard from '@modules/cluster/infrastructure/services/DaemonCredentialGuard';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 

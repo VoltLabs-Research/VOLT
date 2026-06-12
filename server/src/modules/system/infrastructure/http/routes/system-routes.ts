@@ -18,6 +18,7 @@ const RBAC_CONFIG = {
 };
 
 export default createHttpModule({
+    moduleKey: 'system',
     basePath: '/api/system',
     protected: true,
     routes: (router) => {

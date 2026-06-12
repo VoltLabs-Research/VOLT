@@ -3,9 +3,5 @@ import { CreateWhiteboardUseCase } from '@modules/whiteboards/application/use-ca
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(CreateWhiteboardUseCase, {
-    statusCode: HttpStatus.Created,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.Created
 });

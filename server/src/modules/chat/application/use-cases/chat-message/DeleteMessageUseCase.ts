@@ -3,7 +3,7 @@ import { DeleteMessageInputDTO } from '@modules/chat/application/dtos/chat-messa
 import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -14,7 +14,7 @@ import { inject } from 'tsyringe';
 export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository) private readonly messageRepo: IChatMessageRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
+        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: DeleteMessageInputDTO): Promise<Result<null, ApplicationError>> {

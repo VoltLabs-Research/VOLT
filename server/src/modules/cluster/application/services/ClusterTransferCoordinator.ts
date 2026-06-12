@@ -1,6 +1,6 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
@@ -10,7 +10,7 @@ import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamC
 // projection onto the team jobs history) via the neutral GenericDomainEvent,
 // so it no longer imports the jobs event class. JobStatus enum is neutral.
 import { JobStatus } from '@shared/contracts/types';
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import {
     HARD_STORAGE_LIMIT_PCT,
@@ -186,7 +186,7 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
+        @inject(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)

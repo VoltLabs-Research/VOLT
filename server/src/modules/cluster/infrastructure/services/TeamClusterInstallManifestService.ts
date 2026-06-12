@@ -15,7 +15,7 @@ import {
 } from '@modules/cluster/infrastructure/services/install-manifest/TeamClusterInstallManifestFiles';
 import { normalizeTeamClusterInstallRoot } from '@modules/cluster/utilities/installRoot';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import DaemonCredentialGuard from '@modules/cluster/infrastructure/services/DaemonCredentialGuard';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import path from 'node:path';
 import type {

@@ -12,7 +12,7 @@ import {
     STORAGE_CLUSTER_POPULATE,
     TRAJECTORY_POPULATE,
     USER_POPULATE
-} from '@shared/application/PopulatePresets';
+} from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 

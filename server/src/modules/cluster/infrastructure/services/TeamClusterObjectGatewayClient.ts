@@ -2,7 +2,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@shared/application/team-cluster/DaemonCredentialGuard';
+import DaemonCredentialGuard from '@modules/cluster/infrastructure/services/DaemonCredentialGuard';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,

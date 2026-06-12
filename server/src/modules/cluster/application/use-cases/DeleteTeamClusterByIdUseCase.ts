@@ -2,7 +2,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import { inject, injectable } from 'tsyringe';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
@@ -34,8 +34,8 @@ const shouldRequireManualUninstall = (status: TeamClusterStatus, installedVersio
 export default class DeleteTeamClusterByIdUseCase implements IUseCase<DeleteTeamClusterByIdInputDTO, DeleteTeamClusterByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher,
+        @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_CONTRACT_TOKENS.PasswordHasher) private readonly passwordHasher: IPasswordHasher,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ){}

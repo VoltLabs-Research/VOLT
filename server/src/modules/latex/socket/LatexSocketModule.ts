@@ -3,7 +3,7 @@ import { ListLatexFilesUseCase } from '@modules/latex/application/use-cases/List
 import { UpdateLatexFileUseCase } from '@modules/latex/application/use-cases/UpdateLatexFileUseCase';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -27,6 +27,55 @@ const PERSIST_DEBOUNCE_MS = 500;
 const buildSaveKey = (documentId: string, fileId: string): string => `${documentId}:${fileId}`;
 const LATEX_Y_TEXT_NAME = 'content';
 const SERVER_INIT_ORIGIN = 'server:init';
+
+/**
+ * Origin marker for AI-authored edits applied server-side. Deliberately a
+ * Symbol (a NON-string origin): the doc `update` handler routes string origins
+ * through `emitToRoomExcept` (assumed to be a sender socket id, a no-op for a
+ * non-socket string), whereas a non-string origin broadcasts to ALL editors in
+ * the file room via `emitToRoom` — which is what an AI edit needs.
+ */
+const AI_ORIGIN: unique symbol = Symbol('latex:ai');
+
+interface TextSplice {
+    index: number;
+    deleteCount: number;
+    insertText: string;
+}
+
+/**
+ * Minimal common-prefix/suffix splice between two strings (mirrors the client's
+ * `computeTextSplice`). Applying the AI edit as a small Yjs delta — rather than
+ * replacing the whole text — keeps collaborators' cursors and selections stable.
+ */
+const computeTextSplice = (currentText: string, nextText: string): TextSplice => {
+    let prefixLength = 0;
+    const minLength = Math.min(currentText.length, nextText.length);
+
+    while (
+        prefixLength < minLength
+        && currentText.charCodeAt(prefixLength) === nextText.charCodeAt(prefixLength)
+    ) {
+        prefixLength += 1;
+    }
+
+    let currentSuffixIndex = currentText.length - 1;
+    let nextSuffixIndex = nextText.length - 1;
+    while (
+        currentSuffixIndex >= prefixLength
+        && nextSuffixIndex >= prefixLength
+        && currentText.charCodeAt(currentSuffixIndex) === nextText.charCodeAt(nextSuffixIndex)
+    ) {
+        currentSuffixIndex -= 1;
+        nextSuffixIndex -= 1;
+    }
+
+    return {
+        index: prefixLength,
+        deleteCount: currentSuffixIndex - prefixLength + 1,
+        insertText: nextText.slice(prefixLength, nextSuffixIndex + 1)
+    };
+};
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -53,7 +102,7 @@ const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
@@ -101,6 +150,49 @@ export default class LatexSocketModule extends BaseSocketModule {
         }
         this.saveTimers.clear();
         this.fileSessions.clear();
+    }
+
+    /**
+     * Applies an AI-authored full-content edit into the LIVE Yjs session for a
+     * file so that open editors merge it in real time. Content is persisted to
+     * Mongo separately by the AI use-case (and this method skips the redundant
+     * auto-save via the AI_ORIGIN guard in the doc `update` handler).
+     *
+     * Best-effort live delivery: if no editor currently has the file open there
+     * is no in-memory session, and we do nothing — the next time someone opens
+     * the file it loads the already-persisted content fresh. We do NOT spin up a
+     * standalone session just to broadcast to an empty room (that would leak a
+     * Y.Doc with no `latex_file_leave` to release it).
+     */
+    public async applyAiContentToFile(
+        documentId: string,
+        teamId: string,
+        fileId: string,
+        content: string
+    ): Promise<void> {
+        const key = buildSaveKey(documentId, fileId);
+        const session = this.fileSessions.get(key);
+
+        // No live session → nobody is editing this file; the persisted content
+        // (written by the use-case) will be loaded on next open. Nothing to do.
+        if (!session || session.teamId !== teamId) {
+            return;
+        }
+
+        const currentText = session.text.toString();
+        if (currentText === content) {
+            return;
+        }
+
+        const splice = computeTextSplice(currentText, content);
+        session.doc.transact(() => {
+            if (splice.deleteCount > 0) {
+                session.text.delete(splice.index, splice.deleteCount);
+            }
+            if (splice.insertText.length > 0) {
+                session.text.insert(splice.index, splice.insertText);
+            }
+        }, AI_ORIGIN);
     }
 
     private registerOpenDocument(connection: ISocketConnection): void {
@@ -320,6 +412,14 @@ export default class LatexSocketModule extends BaseSocketModule {
                     fileId,
                     update: Array.from(update)
                 });
+            }
+
+            // AI edits are already persisted to Mongo by the use-case that
+            // triggered them; re-persisting here would be a redundant write
+            // (and could race the use-case's own write). Editor/collab edits
+            // still auto-save through the debounced path.
+            if (origin === AI_ORIGIN) {
+                return;
             }
 
             this.schedulePersist(documentId, teamId, fileId, text.toString());

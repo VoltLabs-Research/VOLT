@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { isPopulatedSecretKeyRole } from '@modules/team/domain/entities/secret-key/SecretKey';
+import { isPopulatedSecretKeyRole } from '@shared/contracts/types/SecretKey';
 import {
     HttpRequestAuthType,
     setHttpRequestContextAuth,
@@ -10,11 +10,14 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { container } from 'tsyringe';
 
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import JwtTokenService from '@modules/auth/infrastructure/services/JwtTokenService';
-import SessionRepository from '@modules/session/infrastructure/persistence/mongo/repositories/SessionRepository';
-import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyRepository';
-import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/secret-key/SecretKeyUsageLogRepository';
+import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
+import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
+import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
+import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
+import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
+import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
 import type { NextFunction, Request, Response } from 'express';
 
 export enum AuthenticationType {
@@ -67,7 +70,7 @@ const authenticateWithSecretKey = async (
     token: string
 ): Promise<boolean> => {
     const startTime = Date.now();
-    const secretKeyRepository = container.resolve(SecretKeyRepository);
+    const secretKeyRepository = container.resolve<ISecretKeyRepository>(TEAM_CONTRACT_TOKENS.SecretKeyRepository);
     const secretKey = await secretKeyRepository.findActiveByRawKey(token);
 
     if (!secretKey) {
@@ -103,7 +106,7 @@ const authenticateWithSecretKey = async (
     logger.info(`@authentication traceId=${req.requestContext?.traceId} authType=${AuthenticationType.SecretKey} secretKeyId=${secretKey.id} teamId=${req.secretKeyTeamId}`);
 
     res.on('finish', () => {
-        const usageLogRepository = container.resolve(SecretKeyUsageLogRepository);
+        const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_CONTRACT_TOKENS.SecretKeyUsageLogRepository);
         const userAgentHeader = req.headers['user-agent'];
         usageLogRepository.logRequest({
             secretKey: secretKey.id,
@@ -128,15 +131,15 @@ const authenticateWithUserToken = async (
     token: string
 ): Promise<boolean> => {
     const startTime = Date.now();
-    const tokenService = container.resolve(JwtTokenService);
+    const tokenService = container.resolve<ITokenService>(AUTH_CONTRACT_TOKENS.TokenService);
     const decoded = tokenService.verify(token);
     if (!decoded) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         return false;
     }
 
-    const userRepository = container.resolve(UserRepository);
-    const sessionRepository = container.resolve(SessionRepository);
+    const userRepository = container.resolve<IUserRepository>(AUTH_CONTRACT_TOKENS.UserRepository);
+    const sessionRepository = container.resolve<ISessionRepository>(SESSION_CONTRACT_TOKENS.SessionRepository);
     const user = await userRepository.findById(decoded.id);
     if (!user) {
         BaseResponse.error(res, ErrorCodes.USER_NOT_FOUND, 401, ErrorCodes.USER_NOT_FOUND);

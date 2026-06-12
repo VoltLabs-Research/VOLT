@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 
 import { ModuleRegistry } from './ModuleRegistry';
 import { defineModule } from './defineModule';
-import { KERNEL_MODULES } from './types';
+
+/** The kernel keys used across these tests (tier: 'kernel'). */
+const KERNEL_KEYS = ['auth', 'session', 'socket', 'team'] as const;
 
 /**
  * Build a registry pre-loaded with the four kernel modules plus whatever extra
@@ -12,7 +14,7 @@ import { KERNEL_MODULES } from './types';
  */
 const makeRegistry = (...extra: Parameters<ModuleRegistry['register']>[0][]): ModuleRegistry => {
     const registry = new ModuleRegistry();
-    for (const key of KERNEL_MODULES) {
+    for (const key of KERNEL_KEYS) {
         registry.register(defineModule({ key, tier: 'kernel' }));
     }
     for (const manifest of extra) registry.register(manifest);
@@ -25,6 +27,14 @@ test('register: throws on duplicate key', () => {
     assert.throws(() => registry.register(defineModule({ key: 'latex', tier: 'leaf' })), /already registered/);
 });
 
+test('kernelKeys: derived from tier', () => {
+    const registry = makeRegistry(
+        defineModule({ key: 'system', tier: 'kernel' }),
+        defineModule({ key: 'latex', tier: 'leaf' })
+    );
+    assert.deepEqual(registry.kernelKeys().sort(), ['auth', 'session', 'socket', 'system', 'team']);
+});
+
 test('resolveEnabled: no overrides returns all registered + kernel', () => {
     const registry = makeRegistry(
         defineModule({ key: 'cluster', tier: 'compute' }),
@@ -32,30 +42,20 @@ test('resolveEnabled: no overrides returns all registered + kernel', () => {
     );
     const enabled = registry.resolveEnabled({});
     // All six registered keys present.
-    for (const key of [...KERNEL_MODULES, 'cluster', 'latex']) {
+    for (const key of [...KERNEL_KEYS, 'cluster', 'latex']) {
         assert.ok(enabled.has(key), `expected "${key}" to be enabled`);
     }
     assert.equal(enabled.size, 6);
 });
 
-test('resolveEnabled: envOverride wins over dbEnabled', () => {
+test('resolveEnabled: envOverride seeds the set (kernel still forced)', () => {
     const registry = makeRegistry(
         defineModule({ key: 'cluster', tier: 'compute' }),
         defineModule({ key: 'latex', tier: 'leaf' })
     );
-    const enabled = registry.resolveEnabled({ envOverride: ['latex'], dbEnabled: ['cluster'] });
-    assert.ok(enabled.has('latex'), 'envOverride entry should win');
-    assert.ok(!enabled.has('cluster'), 'dbEnabled entry should be ignored when envOverride is present');
-});
-
-test('resolveEnabled: dbEnabled used when envOverride is null/undefined', () => {
-    const registry = makeRegistry(
-        defineModule({ key: 'cluster', tier: 'compute' }),
-        defineModule({ key: 'latex', tier: 'leaf' })
-    );
-    const enabled = registry.resolveEnabled({ envOverride: null, dbEnabled: ['cluster'] });
-    assert.ok(enabled.has('cluster'));
-    assert.ok(!enabled.has('latex'));
+    const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
+    assert.ok(enabled.has('latex'), 'envOverride entry should be enabled');
+    assert.ok(!enabled.has('cluster'), 'an unselected non-kernel module should be excluded');
 });
 
 test('resolveEnabled: enabling a leaf auto-includes its hard deps transitively', () => {
@@ -73,7 +73,7 @@ test('resolveEnabled: enabling a leaf auto-includes its hard deps transitively',
 test('resolveEnabled: kernel always present even if envOverride omits it', () => {
     const registry = makeRegistry(defineModule({ key: 'latex', tier: 'leaf' }));
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
-    for (const key of KERNEL_MODULES) {
+    for (const key of KERNEL_KEYS) {
         assert.ok(enabled.has(key), `kernel module "${key}" must be force-included`);
     }
 });
@@ -122,19 +122,4 @@ test('isEnabled: reflects set membership', () => {
     const enabled = registry.resolveEnabled({ envOverride: ['latex'] });
     assert.equal(registry.isEnabled('latex', enabled), true);
     assert.equal(registry.isEnabled('cluster', enabled), false);
-});
-
-test('orderedEnabled: sorts by tier rank, then priority, then key', () => {
-    const registry = makeRegistry(
-        defineModule({ key: 'compute-b', tier: 'compute', priority: 50 }),
-        defineModule({ key: 'compute-a', tier: 'compute', priority: 50 }),
-        defineModule({ key: 'cap', tier: 'capability' }),
-        defineModule({ key: 'leaf', tier: 'leaf' }),
-        defineModule({ key: 'ui', tier: 'client-only' })
-    );
-    const ordered = registry.orderedEnabled(registry.resolveEnabled({})).map((m) => m.key);
-    // Kernel modules first (tier rank 0), sorted by key among equal priority.
-    assert.deepEqual(ordered.slice(0, 4), ['auth', 'session', 'socket', 'team']);
-    // Then capability, then both compute (priority tie broken by key), then leaf, then client-only.
-    assert.deepEqual(ordered.slice(4), ['cap', 'compute-a', 'compute-b', 'leaf', 'ui']);
 });

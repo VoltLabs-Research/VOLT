@@ -51,7 +51,6 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
             return { ok: true, summary: 'Started trajectory playback.', data: { action, isPlaying: true } };
         }
 
-        // pause | stop
         ctx.markViewerActing();
         store.stopPlayback();
         return {

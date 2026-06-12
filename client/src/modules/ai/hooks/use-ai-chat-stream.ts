@@ -189,7 +189,6 @@ const useAIChatStream = ({
 
     const sendMessageError = streamError?.message ?? null;
 
-    // Cleanup on unmount
     useEffect(() => {
         isMountedRef.current = true;
 

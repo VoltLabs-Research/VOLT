@@ -6,17 +6,14 @@ import {
     type TeamClusterDaemonExecutionLogSegment
 } from '@shared/contracts/types/TeamClusterExposure';
 import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
+import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT
 } from '@shared/infrastructure/contracts/team-cluster';
 
-export enum TeamClusterDaemonResponseType {
-    Json = 'json',
-    Buffer = 'buffer',
-    Stream = 'stream'
-}
+export { TeamClusterDaemonResponseType };
 
 export enum TeamClusterDaemonSessionKind {
     Terminal = 'terminal',

@@ -1,6 +1,6 @@
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -11,7 +11,7 @@ import logger from '@shared/infrastructure/logger';
 import TeamJobsService from './TeamJobsService';
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;

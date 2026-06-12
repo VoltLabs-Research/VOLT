@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 import type { AnalysisStageChangedEventPayload } from '@shared/contracts/events/AnalysisStageChangedPayload';
 
 export type { AnalysisStageChangedEventPayload };

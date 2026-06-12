@@ -3,7 +3,7 @@ import type {
     TeamClusterInstallManifestFileDTO,
     TeamClusterInstallManifestPortsDTO
 } from '@modules/cluster/application/dtos/GenerateTeamClusterInstallManifestDTO';
-import type { DecryptedTeamClusterServiceCredentials } from '@shared/application/team-cluster/DaemonCredentialGuard';
+import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/infrastructure/services/DaemonCredentialGuard';
 
 export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 

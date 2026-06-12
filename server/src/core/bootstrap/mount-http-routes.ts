@@ -49,6 +49,7 @@ import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { getEnabledModules } from '@core/bootstrap/module-state';
+import { moduleRegistry } from '@shared/infrastructure/modules/ModuleRegistry';
 import { Router } from 'express';
 import type {
     NextFunction,
@@ -113,61 +114,8 @@ const HTTP_MODULES: HttpModule[] = [
     WhiteboardHttpModule
 ];
 
-/**
- * Maps each HTTP route group to its detachable-module key. Route groups whose
- * key is NOT in the resolved enabled set are skipped at mount time, so a
- * disabled module's REST surface returns 404 (its code stays resident until the
- * physical-detachment phases land). Modules absent from this map (none today)
- * would be treated as always-on. During the migration this central map is the
- * single owner; later each route group carries its own `moduleKey`.
- */
-const HTTP_MODULE_KEYS = new Map<HttpModule, string>([
-    [SystemConfigHttpModule, 'system'],
-    [AuthHttpModule, 'auth'],
-    [SessionHttpModule, 'session'],
-    [TeamSelfHttpModule, 'team'],
-    [TeamHttpModule, 'team'],
-    [TeamMemberHttpModule, 'team'],
-    [TeamInvitationHttpModule, 'team'],
-    [TeamInvitationPublicHttpModule, 'team'],
-    [TeamRoleHttpModule, 'team'],
-    [TeamSecretKeyHttpModule, 'team'],
-    [TeamSecretKeySelfHttpModule, 'team'],
-    [TeamAIIntegrationHttpModule, 'team'],
-    [TeamClusterHttpModule, 'cluster'],
-    [ClusterObjectHttpModule, 'cluster'],
-    [TeamClusterObjectStoreProxyHttpModule, 'cluster'],
-    [TeamClusterLifecycleHttpModule, 'cluster'],
-    [DashboardHttpModule, 'dashboard'],
-    [ChatHttpModule, 'chat'],
-    [ChatMessageHttpModule, 'chat'],
-    [NotificationHttpModule, 'notification'],
-    [EarlyAccessHttpModule, 'early-access'],
-    [PluginListingRowHttpModule, 'plugin'],
-    [PluginExposureHttpModule, 'plugin'],
-    [ScriptingHttpModule, 'scripting'],
-    [ScriptingJupyterHttpModule, 'scripting'],
-    [ContainerHttpModule, 'container'],
-    [TrajectoryHttpModule, 'trajectory'],
-    [JobsHttpModule, 'jobs'],
-    [AnalysisHttpModule, 'analysis'],
-    [PluginHttpModule, 'plugin'],
-    [RasterHttpModule, 'raster'],
-    [SimulationCellHttpModule, 'simulation-cell'],
-    [DailyActivityHttpModule, 'daily-activity'],
-    [SystemHttpModule, 'system'],
-    [DiscoverHttpModule, 'trajectory'],
-    [CanvasHttpModule, 'trajectory'],
-    [ColorCodingHttpModule, 'trajectory'],
-    [LineStyleHttpModule, 'trajectory'],
-    [ParticleFilterHttpModule, 'trajectory'],
-    [AIConversationHttpModule, 'ai'],
-    [LatexHttpModule, 'latex'],
-    [WhiteboardHttpModule, 'whiteboards']
-]);
-
 const resolveModuleKey = (module: HttpModule): string | undefined =>
-    module.moduleKey ?? HTTP_MODULE_KEYS.get(module);
+    module.moduleKey;
 
 const assertUniqueModuleBasePaths = (modules: HttpModule[]): void => {
     const basePathResources = new Map<string, string | undefined>();
@@ -259,6 +207,18 @@ const mountHttpRoutes = (): Router => {
     const router = Router();
 
     const enabled = getEnabledModules();
+
+    // Drift guard: getEnabledModules() above ensures the registry is populated
+    // (it calls ensureRegistered()). Every route module's inline moduleKey must
+    // correspond to a registered module, or the central manifest and the routes
+    // have drifted apart.
+    const knownKeys = new Set(moduleRegistry.all().map((m) => m.key));
+    for (const module of HTTP_MODULES) {
+        if (module.moduleKey !== undefined && !knownKeys.has(module.moduleKey)) {
+            throw new Error(`@http-bootstrap: route moduleKey "${module.moduleKey}" (basePath ${module.basePath}) is not a registered module`);
+        }
+    }
+
     const modulesToMount = HTTP_MODULES.filter((module) => {
         const key = resolveModuleKey(module);
         // No key → always-on (kernel/shared). Keyed → only if enabled.

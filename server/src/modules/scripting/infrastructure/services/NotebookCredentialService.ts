@@ -1,4 +1,4 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { isPopulatedTeamMemberRole } from '@modules/team/domain/entities/team-member/TeamMember';
 import CreateSecretKeyUseCase from '@modules/team/application/use-cases/secret-key/CreateSecretKeyUseCase';
@@ -24,7 +24,7 @@ import { inject } from 'tsyringe';
 export class NotebookCredentialService implements INotebookCredentialService {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         private readonly createSecretKeyUseCase: CreateSecretKeyUseCase,
         private readonly deleteSecretKeyByIdUseCase: DeleteSecretKeyByIdUseCase
     ) {}

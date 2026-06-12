@@ -1,5 +1,5 @@
 import { CascadeDeleteEachOnEntityDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnEntityDeletedHandler';
-import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
+import type TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 
 interface IdentifiableEntity {
     readonly _id: string;

@@ -1,11 +1,6 @@
 import { createController } from '@shared/infrastructure/http/controllers/createController';
 import AcceptTeamInvitationUseCase from '@modules/team/application/use-cases/team-invitation/AcceptTeamInvitationUseCase';
 
-const AcceptTeamInvitationController = createController(AcceptTeamInvitationUseCase, {
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
-});
+const AcceptTeamInvitationController = createController(AcceptTeamInvitationUseCase);
 
 export default AcceptTeamInvitationController;

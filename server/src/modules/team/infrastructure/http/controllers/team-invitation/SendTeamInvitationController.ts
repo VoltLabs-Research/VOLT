@@ -3,10 +3,6 @@ import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import SendTeamInvitationUseCase from '@modules/team/application/use-cases/team-invitation/SendTeamInvitationUseCase';
 
 const SendTeamInvitationController = createController(SendTeamInvitationUseCase, {
-    statusCode: HttpStatus.Created,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.Created
 });
 export default SendTeamInvitationController;

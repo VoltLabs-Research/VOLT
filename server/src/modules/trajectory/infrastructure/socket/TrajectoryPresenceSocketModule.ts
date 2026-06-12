@@ -1,6 +1,6 @@
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import type { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -12,7 +12,7 @@ interface TrajectoryPresencePayload extends Record<string, unknown> {
 }
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TrajectoryPresenceSocketModule';
 

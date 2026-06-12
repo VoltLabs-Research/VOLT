@@ -12,7 +12,7 @@
  *
  * Prints PASS/FAIL per config and exits non-zero if ANY config fails.
  *
- * NOTE: `resolveEnabledModules(null)` re-reads `process.env.VOLT_MODULES` and
+ * NOTE: `resolveEnabledModules()` re-reads `process.env.VOLT_MODULES` and
  * re-resolves on EVERY call (only `getEnabledModules()` consults the cache), and
  * the underlying `moduleRegistry` is a process-wide singleton whose `register()`
  * throws on a duplicate key. So we import the module exactly ONCE and simply
@@ -84,7 +84,7 @@ function runCase(testCase: SmokeCase): { ok: boolean; reasons: string[] } {
     let enabled: Set<string>;
     try {
         // resolveEnabledModules throws if validate() fails — that is itself a FAIL.
-        enabled = resolveEnabledModules(null);
+        enabled = resolveEnabledModules();
     } catch (error) {
         return { ok: false, reasons: [`resolveEnabledModules threw: ${(error as Error).message}`] };
     }
