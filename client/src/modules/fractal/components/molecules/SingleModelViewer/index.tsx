@@ -4,11 +4,13 @@ import SimulationCellBox from '@/modules/fractal/components/molecules/Simulation
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
-import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
+import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utilities/scene-utils';
 import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access';
+import { useLineEntityPick } from '@/modules/canvas/hooks/use-line-entity-selection';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fit';
 import { useThree } from '@react-three/fiber';
+import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useEffect, useCallback, useRef } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
@@ -16,7 +18,7 @@ import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entitie
 import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { FC, RefObject } from 'react';
 
@@ -63,6 +65,7 @@ interface SingleModelViewerProps {
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
+    lineHighlight?: LineEntityHighlight;
     sceneVisualOverrides: SceneVisualOverrides;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
@@ -92,6 +95,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     pointSizeMultiplier,
     pointCloudSettings,
     lineSettings,
+    lineHighlight,
     sceneVisualOverrides,
     setModelWorldBounds,
     activeModelBounds,
@@ -214,6 +218,20 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
 
+    // Reverse picking: clicking a tube resolves the hit triangle to its line
+    // entity (via the ranges sidecar) and toggles the selection — the same one
+    // the listing rows drive. Only line scenes register the handler (point
+    // clouds never pay the raycast), and only on team canvases — the ranges
+    // endpoint is RBAC-scoped.
+    const canPickLineEntities = canvasMode !== 'public' && resolveLineSceneSource(sceneConfig) !== null;
+    const pickLineEntity = useLineEntityPick(trajectoryId, currentTimestep);
+    const handleLineEntityClick = useCallback((event: ThreeEvent<MouseEvent>) => {
+        // An orbit drag released over the model still emits a click; the
+        // pointer-travel delta separates it from an intentional pick.
+        if (event.delta > 4 || typeof event.faceIndex !== 'number') return;
+        void pickLineEntity(sceneConfig, event.faceIndex);
+    }, [pickLineEntity, sceneConfig]);
+
     const {
         modelBounds,
         loadError,
@@ -245,6 +263,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         pointSizeMultiplier,
         pointCloudSettings,
         lineSettings,
+        lineHighlight,
         sceneVisualOverrides,
         activeModelBounds,
         onModelBoundsChanged,
@@ -383,8 +402,14 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             onHoverChange={onHoverChange}
         >
             {/* Imperative model container — the loaded 3D model is attached via
-                scene.add() in useGlbScene, never through React reconciliation. */}
-            <group ref={modelContainerRef} userData={{ isScreenshotCaptureTarget: true }} />
+                scene.add() in useGlbScene, never through React reconciliation.
+                R3F raycasts handler-bearing groups recursively, so the click
+                still reaches the imperatively-added line mesh. */}
+            <group
+                ref={modelContainerRef}
+                userData={{ isScreenshotCaptureTarget: true }}
+                onClick={canPickLineEntities ? handleLineEntityClick : undefined}
+            />
         </SimulationCellBox>
     );
 };

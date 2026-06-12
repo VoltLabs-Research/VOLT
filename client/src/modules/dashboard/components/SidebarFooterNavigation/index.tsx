@@ -6,6 +6,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
+import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
+import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
 import { Box, Tooltip } from '@voltstack/bravais';
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -19,7 +21,19 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
     const { pathname } = useLocation();
     const navigate = useNavigate();
     const singleTenant = useSingleTenant();
-    const settingsItems = singleTenant ? SETTINGS_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SETTINGS_NAVIGATION_ITEMS;
+    const enabledModules = useEnabledModules();
+    const { hidden: hiddenModules } = useHiddenModules();
+    const isModuleEnabled = (moduleKey?: string): boolean => {
+        if (!moduleKey) {
+            return true;
+        }
+
+        const serverEnabled = enabledModules === null || enabledModules.includes(moduleKey);
+
+        return serverEnabled && !hiddenModules.includes(moduleKey);
+    };
+    const tenantSettingsItems = singleTenant ? SETTINGS_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SETTINGS_NAVIGATION_ITEMS;
+    const settingsItems = tenantSettingsItems.filter((item) => isModuleEnabled(item.moduleKey));
     const defaultSettingsPath = settingsItems[0]?.path ?? '/dashboard/settings/general';
 
     const handleOpenDocs = () => window.open('https://docs.voltcloud.dev', '_blank', 'noopener,noreferrer');

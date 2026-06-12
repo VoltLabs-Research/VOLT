@@ -1,30 +1,13 @@
-export interface GetSubListingInputDTO {
-    analysisId: string;
-    exposureId: string;
-    timestep: number;
-    subListingName: string;
-    teamId: string;
-    page?: number;
-    limit?: number;
-}
-
-export interface SubListingColumn {
-    label: string;
-    sortable: boolean;
-}
-
-export interface SubListingRowShape {
-    _id: string;
-}
-
-export type SubListingRowData = SubListingRowShape;
-
-export interface GetSubListingOutputDTO {
-    subListingName: string;
-    columns: SubListingColumn[];
-    rows: SubListingRowData[];
-    total: number;
-    page: number;
-    totalPages: number;
-    limit: number;
-}
+/**
+ * Re-export shim. The canonical get-sub-listing DTOs now live in the neutral
+ * `@shared/contracts/dtos/GetSubListingDTO` (detachable-modules migration).
+ * Existing `@modules/plugin/application/dtos/listing-row/GetSubListingDTO`
+ * importers keep working unchanged.
+ */
+export type {
+    GetSubListingInputDTO,
+    SubListingColumn,
+    SubListingRowShape,
+    SubListingRowData,
+    GetSubListingOutputDTO
+} from '@shared/contracts/dtos/GetSubListingDTO';

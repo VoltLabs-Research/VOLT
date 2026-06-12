@@ -1,4 +1,6 @@
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+
+import type { LineStyleSpec, SceneObjectType } from '@/modules/fractal/api/entities/scene';
 
 export interface SceneKeyConfig {
     source: string;
@@ -25,4 +27,23 @@ export const isChartScene = (scene: SceneObjectType) => {
 export const getRenderableScenes = (scenes: SceneObjectType[], forceDefaultScene: boolean) => {
     if (forceDefaultScene) return [DEFAULT_SCENE];
     return scenes.filter((scene) => !isChartScene(scene));
+};
+
+// A scene rendering LineExporter tubes — the exposure's baked GLB or a styled
+// re-export — with the identity needed to query its line entities.
+export interface LineSceneSource {
+    scene: SceneObjectType;
+    analysisId: string;
+    exposureId: string;
+    style?: LineStyleSpec;
+}
+
+export const resolveLineSceneSource = (scene: SceneObjectType): LineSceneSource | null => {
+    if (scene.source === 'plugin' && scene.sceneRenderMetadata?.exporter === Exporter.LINE) {
+        return { scene, analysisId: scene.analysisId, exposureId: scene.exposureId };
+    }
+    if (scene.source === 'line-style') {
+        return { scene, analysisId: scene.analysisId, exposureId: scene.exposureId, style: scene.style };
+    }
+    return null;
 };

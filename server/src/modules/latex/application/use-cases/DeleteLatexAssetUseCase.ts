@@ -4,7 +4,7 @@ import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import type { DeleteLatexAssetInputDTO, DeleteLatexAssetOutputDTO } from '@modules/latex/application/dtos/DeleteLatexAssetDTO';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -18,7 +18,7 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: DeleteLatexAssetInputDTO): Promise<Result<DeleteLatexAssetOutputDTO, ApplicationError>> {

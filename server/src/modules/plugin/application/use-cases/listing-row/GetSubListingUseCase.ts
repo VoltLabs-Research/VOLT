@@ -1,19 +1,22 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import {
     GetSubListingInputDTO,
     GetSubListingOutputDTO,
     SubListingColumn
 } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
 import { resolveListingPagination } from '@modules/plugin/application/use-cases/listing-row/listing-row-pagination';
-import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
+import { AliasOf } from '@shared/infrastructure/di/decorators';
+import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
+import type { IGetSubListingUseCase } from '@shared/contracts/ports/IGetSubListingUseCase';
 
 interface DaemonSubListingRow {
     _id: string;
@@ -39,10 +42,15 @@ const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
     limit: 0
 });
 
+// `@AliasOf(...)` additively exposes the neutral `Symbol.for('GetSubListingUseCase')`
+// token (delegating to the same class) so the trajectory module can inject the
+// `IGetSubListingUseCase` port without importing `@modules/plugin`.
+// `@injectable()` preserves the existing by-class transient resolution.
 @injectable()
-export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO> {
+@AliasOf(PLUGIN_USECASE_TOKENS.GetSubListingUseCase)
+export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO>, IGetSubListingUseCase {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 

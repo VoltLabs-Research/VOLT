@@ -1,5 +1,5 @@
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import type { AnalysisStageStatus, AnalysisStageType } from '@modules/analysis/domain/entities/Analysis';
+import { JobStatus } from '@shared/contracts/types';
+import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
 import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
 import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';

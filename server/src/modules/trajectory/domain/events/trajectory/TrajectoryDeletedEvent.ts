@@ -1,14 +1,7 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events/TrajectoryDeletedPayload';
 
-export interface TrajectoryDeletedEventPayload {
-    trajectoryId: string;
-    teamId: string;
-    storageClusterId?: string;
-    userId: string;
-    trajectoryName: string;
-    analysisIds?: string[];
-    analysisComputeClusterIds?: string[];
-}
+export type { TrajectoryDeletedEventPayload };
 
 export default class TrajectoryDeletedEvent extends BaseDomainEvent<TrajectoryDeletedEventPayload> {
     constructor(payload: TrajectoryDeletedEventPayload) {

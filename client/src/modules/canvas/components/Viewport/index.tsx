@@ -1,4 +1,6 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
+import { useLineEntityHighlight } from '../../hooks/use-line-entity-selection';
+import AIViewerActivityBadge from './AIViewerActivityBadge';
 import ColorbarLegend from '../ColorbarLegend';
 import PlaybackTicker from '../PlaybackTicker';
 import ViewportFloatingControls from '../ViewportFloatingControls';
@@ -111,6 +113,8 @@ const Viewport = ({
         setModelLoadingState: s.setModelLoadingState,
         setIsPointCloudScene: s.setIsPointCloudScene
     })));
+
+    const lineHighlight = useLineEntityHighlight(trajectory?._id, currentTimestep);
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -232,6 +236,7 @@ const Viewport = ({
                                     slicePlaneConfig={slicePlaneConfig}
                                     boxBounds={resolvedBoxBounds}
                                     sceneVisualOverrides={sceneVisualOverrides}
+                                    lineHighlight={lineHighlight}
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}
                                     onModelBoundsChanged={setModelBounds}
@@ -253,6 +258,8 @@ const Viewport = ({
                 {analysisOverlay}
 
                 <ColorbarLegend />
+
+                <AIViewerActivityBadge />
 
                 {showSceneActions && <ViewportFloatingControls />}
             </Box>

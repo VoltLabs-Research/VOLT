@@ -1,6 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import type { Analysis } from '@shared/contracts/types';
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type {
     IPluginExecutionRouter,
@@ -8,10 +8,15 @@ import type {
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type {
+    IDaemonAnalysisCompletionService,
+    IStoragePlacementService,
+    ITeamClusterObjectGatewayClient,
+    ITeamClusterRepository
+} from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -261,11 +266,15 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
 @Singleton(PLUGIN_TOKENS.PluginExecutionRouter)
 export default class PluginExecutionRouter implements IPluginExecutionRouter {
     constructor(
-        private readonly storagePlacementService: StoragePlacementService,
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(COMPUTE_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: IStoragePlacementService,
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService,
+        @inject(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService)
+        private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService,
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis
     ) {}

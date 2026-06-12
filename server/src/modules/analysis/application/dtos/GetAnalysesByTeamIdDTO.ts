@@ -1,5 +1,14 @@
-import type { AnalysisConfig } from '@modules/analysis/domain/entities/Analysis';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+// The cross-consumed analysis list item view (+ its nested cluster/trajectory/
+// user shapes) MOVED to the neutral contracts layer (detachable-modules
+// migration). Canonical home: `@shared/contracts/dtos`. Re-exported here so
+// existing in-module importers compile unchanged.
+export type {
+    GetAnalysesByTeamIdItemDTO,
+    AnalysisListTeamCluster,
+    AnalysisListTrajectory,
+    AnalysisListUser
+} from '@shared/contracts/dtos';
 
 export interface GetAnalysesByTeamIdInputDTO {
     teamId: string;
@@ -8,41 +17,4 @@ export interface GetAnalysesByTeamIdInputDTO {
     search?: string;
 }
 
-export interface AnalysisListTeamCluster {
-    _id: string;
-    name?: string;
-}
-
-export interface AnalysisListTrajectory {
-    _id: string;
-    name?: string;
-}
-
-export interface AnalysisListUser {
-    _id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatar?: string;
-}
-
-export interface GetAnalysesByTeamIdItemDTO {
-    _id: string;
-    plugin: string;
-    pluginDisplayName: string;
-    computeClusterId?: string | AnalysisListTeamCluster;
-    storageClusterId?: string | AnalysisListTeamCluster;
-    config: AnalysisConfig;
-    trajectory: string | AnalysisListTrajectory;
-    createdBy: string | AnalysisListUser;
-    totalFrames?: number;
-    completedFrames?: number;
-    startedAt?: Date;
-    finishedAt?: Date;
-    team: string;
-    status: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-export interface GetAnalysesByTeamIdOutputDTO extends PaginatedResult<GetAnalysesByTeamIdItemDTO> {}
+export interface GetAnalysesByTeamIdOutputDTO extends PaginatedResult<import('@shared/contracts/dtos').GetAnalysesByTeamIdItemDTO> {}

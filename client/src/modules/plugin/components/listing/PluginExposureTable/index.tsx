@@ -28,6 +28,10 @@ export interface PluginExposureTableProps {
     inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
+    // Row interaction (compact mode only) — e.g. selecting a line entity to
+    // highlight its rendered segment in the canvas.
+    onRowClick?: (row: ListingRow) => void;
+    isRowSelected?: (row: ListingRow) => boolean;
 }
 
 interface InlineSubListingState {
@@ -61,7 +65,9 @@ const CompactPluginExposureTable = ({
     analysisId,
     teamId,
     showTrajectoryColumn,
-    inlineSubListings
+    inlineSubListings,
+    onRowClick,
+    isRowSelected
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
     const pageSize = 20;
@@ -136,6 +142,17 @@ const CompactPluginExposureTable = ({
             fetchNextPage();
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const handleRowClick = useMemo(() => {
+        if (!onRowClick) return undefined;
+        return (row: Record<string, unknown>) => onRowClick(row as ListingRow);
+    }, [onRowClick]);
+
+    const selectedRowId = useMemo(() => {
+        if (!isRowSelected) return null;
+        const selectedRow = compactRows.find((row) => isRowSelected(row));
+        return selectedRow ? String(selectedRow._id) : null;
+    }, [compactRows, isRowSelected]);
 
     const getMenuOptions = useCallback((row: Record<string, unknown>): MenuOption[] => {
         const item = row as Record<string, unknown> & { _id?: string; trajectoryId?: string; analysisId?: string; exposureId?: string; timestep?: number };
@@ -238,6 +255,8 @@ const CompactPluginExposureTable = ({
             onLoadMore={handleLoadMore}
             error={compactErrorMessage}
             getMenuOptions={getMenuOptions}
+            onRowClick={handleRowClick}
+            selectedRowId={selectedRowId}
         />
     );
 };

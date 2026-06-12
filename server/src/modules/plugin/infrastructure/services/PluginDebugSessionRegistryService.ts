@@ -1,11 +1,20 @@
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import type { IPluginDebugSessionRegistryService } from '@modules/plugin/domain/port/plugin/IPluginDebugSessionRegistryService';
+import type { IPluginDebugSessionRegistryService as IPluginDebugSessionRegistryServicePort } from '@shared/contracts/ports';
 import type { PluginDebugSessionRegistryEntry } from '@modules/plugin/domain/contracts/plugin/PluginDebugSessionRegistry';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
+// `@Singleton()` keeps the class self-registered under its own constructor so
+// the plugin-internal positional injection (PluginDebugSocketModule) keeps
+// resolving the same shared singleton. `@AliasOf(...)` adds the neutral
+// cross-module token the cluster socket module injects against. A bare
+// `@Singleton(token)` would register ONLY under the token (see decorators.ts)
+// and break the by-class injection — hence the Singleton + AliasOf idiom.
 @Singleton()
-export default class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryService {
+@AliasOf(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService)
+export default class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryService, IPluginDebugSessionRegistryServicePort {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(

@@ -5,6 +5,7 @@ import { container } from 'tsyringe';
 const proxyService = container.resolve(ScriptingJupyterProxyService);
 
 export default createHttpModule({
+    moduleKey: 'scripting',
     basePath: '/api/jupyter',
     routerOptions: { mergeParams: false },
     routes: (router) => {

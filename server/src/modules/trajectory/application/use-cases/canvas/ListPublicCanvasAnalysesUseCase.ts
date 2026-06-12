@@ -1,7 +1,7 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { GetAnalysesByTrajectoryIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysesByTrajectoryIdDTO';
-import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
+import type { GetAnalysesByTrajectoryIdOutputDTO } from '@shared/contracts/dtos/GetAnalysesByTrajectoryIdDTO';
+import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -28,7 +28,7 @@ export class ListPublicCanvasAnalysesUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async execute(input: ListPublicCanvasAnalysesInput): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {

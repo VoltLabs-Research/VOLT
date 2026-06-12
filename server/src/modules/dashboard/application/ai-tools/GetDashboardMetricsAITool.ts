@@ -1,0 +1,44 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import { TRAJECTORY_CONTRACT_TOKENS } from '@shared/contracts/tokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+// Detached from `@modules/trajectory`: instead of the concrete
+// `GetTeamMetricsUseCase`, this tool injects the neutral
+// `ITeamMetricsQueryService` contract via the shared
+// `TRAJECTORY_CONTRACT_TOKENS.TeamMetricsQueryService` token. The trajectory
+// `TeamMetricsQueryService` is already registered under that same global
+// `Symbol.for('TeamMetricsQueryService')`, so resolution is unchanged. The
+// dropped use-case was a pure pass-through (`Result.ok(getTeamMetrics(...))`)
+// that this tool immediately unwrapped, so calling the query service directly
+// preserves behaviour.
+import type { ITeamMetricsQueryService } from '@shared/contracts/ports';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOOL_TOKENS.AITool)
+export class GetDashboardMetricsAITool extends AITool {
+    readonly name = 'get_dashboard_metrics';
+    readonly description =
+        'Get the dashboard overview metrics for the current team: total counts, last-month counts, '
+        + 'and weekly time-series for the main resources (trajectories, analyses, etc.).';
+    readonly parameters = z.object({});
+
+    constructor(
+        @inject(TRAJECTORY_CONTRACT_TOKENS.TeamMetricsQueryService)
+        private readonly teamMetricsQueryService: ITeamMetricsQueryService
+    ) {
+        super();
+    }
+
+    async execute(_params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const metrics = await this.teamMetricsQueryService.getTeamMetrics(scope.teamId);
+
+        const totalCount = Object.values(metrics.totals).reduce((sum, value) => sum + value, 0);
+
+        return {
+            summary: `Team dashboard metrics: ${totalCount} total resource(s) across ${Object.keys(metrics.totals).length} categor(ies).`,
+            data: metrics
+        };
+    }
+}

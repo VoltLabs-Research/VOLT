@@ -1,12 +1,10 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 import {
     AnalysisListingExportOptionDTO,
@@ -22,7 +20,7 @@ import {
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
 import { enrichDaemonListingRows } from '@modules/plugin/application/use-cases/listing-row/listing-row-enrichment';
 import { Exporter } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
-import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
@@ -114,8 +112,8 @@ const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 @Singleton()
 export class AnalysisListingExportCatalogService {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
     ) {}

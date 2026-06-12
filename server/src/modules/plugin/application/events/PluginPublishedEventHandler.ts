@@ -1,12 +1,12 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
-import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import type { ITeamClusterRepository, IStoragePlacementService } from '@shared/contracts/ports';
 import PluginPublishedEvent from '@modules/plugin/domain/events/PluginPublishedEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
@@ -29,8 +29,8 @@ interface PluginWarmupCommandResponse {
 export default class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        private readonly storagePlacementService: StoragePlacementService
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService
     ) {}
 
     async handle(event: PluginPublishedEvent): Promise<void> {

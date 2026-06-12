@@ -1,6 +1,7 @@
-export interface ITeamClusterSelectionService {
-    resolveTeamClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string>;
-    resolveConnectedClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string>;
-    resolveComputeClusterId(teamId: string, requestedTeamClusterId?: string, preferredStorageClusterId?: string): Promise<string>;
-    resolveStorageClusterId(teamId: string, requestedTeamClusterId?: string, preferredComputeClusterId?: string): Promise<string>;
-}
+/**
+ * Re-export shim. Canonical port now lives in the neutral `shared/contracts`
+ * layer (detachable-modules migration). Existing
+ * `@modules/container/domain/port/ITeamClusterSelectionService` importers keep
+ * working unchanged.
+ */
+export type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';

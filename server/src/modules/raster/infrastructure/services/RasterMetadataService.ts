@@ -1,5 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type {
     RasterAnalysisMetadata,
     RasterFrameMetadata, RasterMetadata, RasterTrajectoryMetadata
@@ -10,14 +9,15 @@ import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raste
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+} from '@shared/application/utilities/cluster-location';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
 import type { IRasterMetadataService } from '@modules/raster/domain/port/IRasterMetadataService';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 interface RasterFramesByTimestep {
     [timestep: number]: Set<string>;
@@ -28,13 +28,21 @@ interface ResolvedTrajectoryRasterMetadata {
     trajectory: RasterTrajectoryMetadata | null;
 }
 
+// Minimal structural view of the trajectory-frame repository: raster only needs
+// the frame count. No neutral `ITrajectoryFrameRepository` port exists in
+// `@shared/contracts/ports` yet (see follow-up), so we inject via the neutral
+// COMPUTE token and annotate with this structural type to stay decoupled.
+interface ITrajectoryFrameCounter {
+    countFrames(trajectoryId: string): Promise<number>;
+}
+
 @Singleton(RASTER_TOKENS.RasterMetadataService)
 export class RasterMetadataService implements IRasterMetadataService {
     constructor(
         private readonly rasterStorage: RasterStorageService,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
-        private readonly analysisRepository: AnalysisRepository
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameCounter,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async getRasterMetadata(trajectoryId: string, teamId: string): Promise<RasterMetadata | null> {

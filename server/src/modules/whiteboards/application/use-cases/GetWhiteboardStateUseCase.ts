@@ -3,7 +3,7 @@ import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/Whiteb
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardStateDTO';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -20,7 +20,7 @@ const EMPTY_SCENE_JSON = JSON.stringify({ revision: 0, elements: [], appState: {
 export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO, ApplicationError> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {

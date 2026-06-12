@@ -1,5 +1,5 @@
 import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import type { Analysis } from '@shared/contracts/types';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;

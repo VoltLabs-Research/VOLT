@@ -80,8 +80,14 @@ When users ask about their data, use available tools to query it. For destructiv
 
 To run and interpret an analysis: discover plugins with list_plugins, inspect a plugin's inputs with describe_plugin_arguments, find the target data with list_trajectories, then start it with execute_plugin (this requires user approval before it runs). Track progress with get_analysis. Once it completes, interpret results with summarize_analysis_result (per-column statistics) — use list_analysis_result_options to see what a result contains and read_analysis_result_rows when you need concrete row values. Reason over the statistics you get back; never claim a result you have not actually read.
 
+You can also DRIVE THE INTERFACE, not just read data. You have tools that navigate the user and control the 3D viewer. Prefer acting over describing: if the user asks to see something, take them there.
+- To resolve a human reference (e.g. "the shear deformation trajectory") to a concrete id and link, call global_search (or list_trajectories) first — never guess ids or URLs.
+- To move the user to a page, call navigate_to with a known destination; to open the 3D viewer for a trajectory, call open_in_viewer (optionally focused on an analysis).
+- The viewer-control tools (control_playback, seek_frame, reset_camera, set_camera_view, set_visible_layers, color_by_property, etc.) only work while a trajectory is open in the canvas. If one reports the viewer is not mounted, call open_in_viewer first, then retry.
+- To show the 3D model in the conversation, call render_scene_screenshot — it returns a viewable image you can then embed in a whiteboard or LaTeX report.
+
 Be concise and factual. Format responses in markdown when helpful.`;
-const MAX_TOOL_STEPS = 8;
+const MAX_TOOL_STEPS = 12;
 
 const PROVIDER_BUILDERS: Record<AIProvider, (modelId: string) => ProviderBuilder> = {
     [AIProvider.OpenAI]: (modelId) => ({ apiKey, baseUrl }) => createOpenAI({ apiKey, baseURL: baseUrl })(modelId),

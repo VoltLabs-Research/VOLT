@@ -1,9 +1,11 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TeamMetricsSnapshot } from '@modules/trajectory/domain/contracts/trajectory';
 import { ITeamMetricsQueryService } from '@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 
 const MAX_QUERY_LIMIT = 10000;
@@ -82,7 +84,8 @@ const toMonthChange = (current: number, previous: number): number => {
 export default class TeamMetricsQueryService implements ITeamMetricsQueryService {
     constructor(
         private readonly trajectoryRepo: TrajectoryRepository,
-        private readonly analysisRepo: AnalysisRepository
+        @inject(COMPUTE_TOKENS.AnalysisRepository)
+        private readonly analysisRepo: IAnalysisRepository
     ) {}
 
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {

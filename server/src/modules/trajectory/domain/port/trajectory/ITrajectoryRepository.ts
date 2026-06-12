@@ -1,7 +1,7 @@
-import { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-
-export interface ITrajectoryRepository extends IBaseRepository<Trajectory, TrajectoryProps> {
-    createWithId(id: string, data: Partial<TrajectoryProps>): Promise<Trajectory>;
-    searchIdsByTeamAndName(teamId: string, search: string): Promise<string[]>;
-};
+/**
+ * The canonical definition now lives in the neutral contracts layer
+ * (`@shared/contracts/ports/ITrajectoryRepository`) for the detachable-modules
+ * migration. Re-exported here so existing importers of this module path keep
+ * compiling unchanged.
+ */
+export type { ITrajectoryRepository } from '@shared/contracts/ports/ITrajectoryRepository';

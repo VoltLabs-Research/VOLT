@@ -28,6 +28,7 @@ export default createHttpModule({
     basePath: '/api/whiteboards/:teamId',
     resource: Resource.WHITEBOARD,
     teamScope: HttpModuleTeamScope.BasePath,
+    moduleKey: 'whiteboards',
     routes: (router) => {
         router.post('/', whiteboardControllers.createWhiteboard.handle);
         router.get('/', whiteboardControllers.listWhiteboards.handle);

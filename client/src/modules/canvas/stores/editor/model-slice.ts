@@ -64,7 +64,8 @@ const createInitialState = (): ModelState => ({
     modelWorldBounds: null,
     modelDragOffsets: {},
     showSimulationCell: true,
-    isPointCloudScene: false
+    isPointCloudScene: false,
+    lineEntitySelection: null
 });
 
 export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (set, get) => ({
@@ -270,5 +271,15 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
 
     getModelDragOffsetForScene(sceneKey: string): ModelDragOffset {
         return get().modelDragOffsets[sceneKey] ?? MODEL_DRAG_OFFSET_ZERO;
+    },
+
+    toggleLineEntitySelection(selection) {
+        set((state) => {
+            const current = state.lineEntitySelection;
+            const isSameEntity = current !== null
+                && current.exposureId === selection.exposureId
+                && current.entityId === selection.entityId;
+            return { lineEntitySelection: isSameEntity ? null : selection };
+        });
     }
 });

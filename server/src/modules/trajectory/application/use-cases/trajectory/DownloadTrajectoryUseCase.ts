@@ -1,13 +1,13 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { inject } from 'tsyringe';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type { IClusterObjectArchiveService } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { DownloadTrajectoryInputDTO, DownloadTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/DownloadTrajectoryDTO';
 import type { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/trajectory/ITrajectoryDumpStorageService';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
@@ -29,8 +29,8 @@ export default class DownloadTrajectoryUseCase implements IUseCase<DownloadTraje
 
         @inject(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
         private readonly dumpStorage: ITrajectoryDumpStorageService,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        @inject(CLUSTER_TOKENS.ClusterObjectArchiveService)
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 

@@ -1,9 +1,11 @@
 import type {
     TeamClusterQueueScopeLimitProps,
     TeamClusterQueueScopeLimitsProps
-} from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+} from '@shared/contracts/types';
+import type { ITeamClusterRepository } from '@shared/contracts/ports';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 import type {
     ITeamClusterQueueScopeLimitsService,
@@ -15,8 +17,9 @@ export type { TeamClusterScopedQueueLimitKey } from '@modules/trajectory/domain/
 @Singleton()
 export default class TeamClusterQueueScopeLimitsService implements ITeamClusterQueueScopeLimitsService {
     constructor(
-        
-        private readonly teamClusterRepository: TeamClusterRepository
+
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository)
+        private readonly teamClusterRepository: ITeamClusterRepository
     ) {}
 
     async getLimits(

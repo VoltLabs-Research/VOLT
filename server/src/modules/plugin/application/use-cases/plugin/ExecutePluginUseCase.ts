@@ -1,12 +1,14 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type {
+    ITrajectoryRepository,
+    IAnalysisRepository,
+    ITeamClusterSelectionService,
+    ITrajectoryFrameRepository,
+    IStoragePlacementService
+} from '@shared/contracts/ports';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
 import { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
@@ -16,15 +18,17 @@ import type { IPluginExecutionRouter } from '@modules/plugin/domain/port/plugin/
 import type { IWorkflowValidatorService } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
 import PluginDisplayNameResolver from '@modules/plugin/utilities/plugin/PluginDisplayNameResolver';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
-import type { AnalysisExpectedArtifact } from '@modules/analysis/domain/entities/Analysis';
+// plugin EMITS the analysis-owned `analysis.created` event via the neutral
+// GenericDomainEvent; the owner event class is no longer imported.
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
+import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
 import type { WorkflowNode } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -165,14 +169,14 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepo: IPluginRepository,
         @inject(SHARED_TOKENS.EventBus)
         private eventBus: IEventBus,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepo: TrajectoryFrameRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepo: ITrajectoryFrameRepository,
         @inject(PLUGIN_TOKENS.PluginExecutionRouter) private readonly pluginExecutionRouter: IPluginExecutionRouter,
         @inject(PLUGIN_TOKENS.WorkflowValidatorService) private readonly workflowValidator: IWorkflowValidatorService,
         @inject(PLUGIN_TOKENS.PluginDependencyResolverService) private readonly pluginDependencyResolverService: IPluginDependencyResolverService,
-        private readonly storagePlacementService: StoragePlacementService
+        @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService
     ) {}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<ExecutePluginOutputDTO, ApplicationError>> {
@@ -315,7 +319,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, Exe
         try {
             await this.storagePlacementService.ensurePlacement('analysis', analysis._id);
 
-            await this.eventBus.publish(new AnalysisCreatedEvent({
+            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisCreated, {
                 analysisId: analysis._id,
                 trajectoryId: input.trajectoryId,
                 pluginId: plugin._id,

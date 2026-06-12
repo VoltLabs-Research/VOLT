@@ -3,7 +3,7 @@ import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type {
     GetLatexAssetContentInputDTO,
     GetLatexAssetContentOutputDTO
@@ -26,7 +26,7 @@ export class GetLatexAssetContentUseCase implements IUseCase<
 > {
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: GetLatexAssetContentInputDTO): Promise<Result<GetLatexAssetContentOutputDTO, ApplicationError>> {

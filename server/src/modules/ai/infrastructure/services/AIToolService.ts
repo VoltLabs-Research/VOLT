@@ -1,14 +1,14 @@
 import type { IAIToolService } from '@modules/ai/domain/port/IAIToolService';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import type { AITool } from '@shared/application/ai/AITool';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ToolSet } from 'ai';
 import { injectAll } from 'tsyringe';
 
-export interface AIToolScope {
-    teamId: string;
-    userId: string;
-}
+// Re-export for backward compatibility: the canonical AIToolScope now lives in
+// the neutral shared/contracts layer (detachable-modules migration).
+export type { AIToolScope };
 
 @Singleton(AI_TOKENS.AIToolService)
 export default class AIToolService implements IAIToolService {

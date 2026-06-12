@@ -1,13 +1,12 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { CLUSTER_SERVICE_TOKENS, SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
+import type { ISimulationCellRepository } from '@shared/contracts/ports';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
+import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import type { TrajectoryUploadSession } from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
@@ -18,7 +17,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject, injectable } from 'tsyringe';
 
-import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import type { SimulationCellProps } from '@shared/contracts/types';
 import type { TrajectoryFrame } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type {
     CommitTrajectoryUploadSessionInputDTO,
@@ -61,8 +60,8 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
-        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository) private readonly simulationCellRepo: ISimulationCellRepository,
-        @inject(CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+        @inject(SIMULATION_CELL_CONTRACT_TOKENS.SimulationCellRepository) private readonly simulationCellRepo: ISimulationCellRepository,
+        @inject(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService)
         private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

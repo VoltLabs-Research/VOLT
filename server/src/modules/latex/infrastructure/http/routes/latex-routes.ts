@@ -15,6 +15,7 @@ const folderHandlers = createCatalogFolderRouteHandlers({
 });
 
 export default createHttpModule({
+    moduleKey: 'latex',
     basePath: '/api/latex/:teamId',
     resource: Resource.LATEX,
     teamScope: HttpModuleTeamScope.BasePath,

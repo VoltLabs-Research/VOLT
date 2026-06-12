@@ -1,9 +1,9 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/port/IScriptingNotebookRepository';
 import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import {
     CreateScriptingJupyterSessionInputDTO,
     CreateScriptingJupyterSessionOutputDTO
@@ -75,7 +75,7 @@ export class CreateScriptingJupyterSessionUseCase implements IUseCase<CreateScri
         @inject(SCRIPTING_TOKENS.ScriptingSessionOrchestrator) private readonly scriptingSessionOrchestrator: IScriptingSessionOrchestrator,
         @inject(SCRIPTING_TOKENS.ScriptingSessionLock) private readonly scriptingSessionLock: IScriptingSessionLock,
         @inject(SCRIPTING_TOKENS.NotebookCredentialService) private readonly notebookCredentialService: INotebookCredentialService,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async execute(input: CreateScriptingJupyterSessionInputDTO): Promise<Result<CreateScriptingJupyterSessionOutputDTO, ApplicationError>> {

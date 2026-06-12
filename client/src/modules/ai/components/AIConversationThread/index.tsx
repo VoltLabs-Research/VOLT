@@ -5,13 +5,16 @@ import {
 import {
     parseTableFromChildren
 } from '@/modules/ai/utilities/message-content';
+import { resolveImagePayload } from '@/modules/ai/utilities/message-artifacts';
+import { presentToolCall } from '@/modules/ai/utilities/tool-presentation';
+import type { ToolActionPhase } from '@/modules/ai/utilities/tool-presentation';
 import { isRecord } from '@/shared/utils/type-guards';
 import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
 import RecoveryState from '@/shared/presentation/components/RecoveryState';
-import { Box, Button, Row, SectionLabel, Skeleton, Stack, StatusDot, Text, ThinkingDots, VisuallyHidden } from '@voltstack/bravais';
+import { Box, Button, IconButton, Row, SectionLabel, Skeleton, Stack, StatusDot, Text, ThinkingDots, Tooltip, VisuallyHidden } from '@voltstack/bravais';
 import { isToolUIPart } from 'ai';
-import { IoExpandOutline } from 'react-icons/io5';
-import { memo, useMemo } from 'react';
+import { IoCheckmarkOutline, IoCopyOutline, IoExpandOutline } from 'react-icons/io5';
+import { memo, useCallback, useMemo, useState } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
@@ -214,6 +217,47 @@ const OpenSpreadsheetButton = ({
     );
 };
 
+interface CopyMessageButtonProps {
+    getText: () => string;
+}
+
+const CopyMessageButton = ({ getText }: CopyMessageButtonProps) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = useCallback(() => {
+        const text = getText();
+        if (!text) return;
+
+        const markCopied = () => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+        };
+
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).then(markCopied).catch(() => undefined);
+        }
+    }, [getText]);
+
+    let icon = <IoCopyOutline size={13} />;
+    if (copied) {
+        icon = <IoCheckmarkOutline size={13} />;
+    }
+
+    return (
+        <Tooltip content={copied ? 'Copied' : 'Copy message'} placement='top'>
+            <IconButton
+                variant='ghost'
+                size='sm'
+                className='ai-message-action'
+                aria-label='Copy message'
+                onClick={handleCopy}
+            >
+                {icon}
+            </IconButton>
+        </Tooltip>
+    );
+};
+
 interface AIMessageItemProps {
     message: NormalizedConversationMessage;
     messageIndex: number;
@@ -320,35 +364,33 @@ const AIMessageItem = memo(({
             || actionState === 'approval-responded';
         const isApprovalRequested = actionState === 'approval-required'
             || actionState === 'approval-requested';
-        const isApprovalFlow = isApprovalRequested
-            || actionState === 'approval-responded'
-            || actionState === 'output-denied';
         const isExecuting = !isComplete && !isApprovalRequested;
         const statusClass = `is-${actionState}`;
 
-        let actionLabel = 'AI used tool: ';
-        if (toolInvocation.toolName === 'navigate_to') {
-            actionLabel = 'Navigation requested';
-        } else if (toolInvocation.toolName === 'open_trajectory') {
-            actionLabel = 'Trajectory open requested';
-        } else if (isApprovalFlow) {
-            actionLabel = 'AI requested action for tool: ';
+        let actionPhase: ToolActionPhase = 'running';
+        if (isApprovalRequested) {
+            actionPhase = 'requested';
+        } else if (actionState === 'rejected' || actionState === 'failed' || actionState === 'output-denied') {
+            actionPhase = 'failed';
+        } else if (isComplete) {
+            actionPhase = 'done';
         }
 
+        const presentation = presentToolCall(toolInvocation.toolName, actionPhase, toolInvocation.result);
+
         let dotTone: 'warning' | 'success' | 'danger' = 'warning';
-        if (actionState === 'approved') {
+        if (actionState === 'approved' || (isComplete && actionPhase === 'done')) {
             dotTone = 'success';
         } else if (actionState === 'rejected' || actionState === 'failed' || actionState === 'output-denied') {
             dotTone = 'danger';
         }
 
         return (
-            <Box key={`${toolCallId}-${index}`} className={`ai-action-request-card ${statusClass}`}>
+            <Box key={`${toolCallId}-${index}`} className={`ai-action-request-card ${statusClass} ai-tool-group-${presentation.group}`}>
                 <Row gap='05' className='ai-action-request-header'>
                     <StatusDot tone={dotTone} size='sm' />
                     <Text as='p' size='sm' tone='muted'>
-                        {actionLabel}
-                        {toolInvocation.toolName}
+                        {presentation.label}
                     </Text>
                 </Row>
 
@@ -380,6 +422,28 @@ const AIMessageItem = memo(({
                         </Text>
                     </Row>
                 )}
+
+                {isComplete && (() => {
+                    const image = resolveImagePayload(toolInvocation.result);
+                    if (!image) {
+                        return null;
+                    }
+                    return (
+                        <a
+                            href={image.url}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='ai-tool-image-link'
+                        >
+                            <img
+                                src={image.url}
+                                alt={image.summary ?? 'Rendered scene'}
+                                className='ai-tool-image'
+                                loading='lazy'
+                            />
+                        </a>
+                    );
+                })()}
             </Box>
         );
     };
@@ -448,6 +512,7 @@ const AIMessageItem = memo(({
     }
 
     const showThinkingBubble = !isUser && message.segments.length === 0;
+    const showActions = !isUser && message.preview.trim().length > 0;
 
     return (
         <article
@@ -459,6 +524,11 @@ const AIMessageItem = memo(({
             </VisuallyHidden>
             {segmentElements}
             {showThinkingBubble && renderThinkingBubble()}
+            {showActions && (
+                <Row gap='025' className='ai-message-actions'>
+                    <CopyMessageButton getText={() => message.preview} />
+                </Row>
+            )}
         </article>
     );
 });
@@ -586,7 +656,7 @@ const AIConversationThread = ({
     // title. The page centers it via the workspace Row (items-center on the
     // empty state); in fixed-height hosts (floating panel) it centers itself.
     const renderPromptStarter = () => (
-        <Stack flex='1' align='center' justify='center' className='ai-thread-starter'>
+        <Stack flex='1' align='center' justify='center' gap='1' className='ai-thread-starter'>
             <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
                 Ready when you are.
             </Text>

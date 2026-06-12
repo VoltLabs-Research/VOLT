@@ -1,32 +1,42 @@
-import type PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+// Dashboard global-search is a cross-module AGGREGATOR. Its repositories are
+// injected via the neutral `@shared/contracts` ports/tokens; the generic contract
+// ports/DTOs are bound to this module's own structural "search view" types
+// (defined in `GetGlobalSearchDTO`) so it never imports the concrete
+// `@modules/{chat,container,plugin}` entity/repo classes.
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { CHAT_CONTRACT_TOKENS, CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
+import type {
+    IAnalysisRepository,
+    IChatRepository,
+    IContainerRepository,
+    IPluginRepository,
+    ITrajectoryRepository,
+    PersistedChatDTO
+} from '@shared/contracts/ports';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
-import type { Analysis } from '@modules/analysis/domain/entities/Analysis';
+import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
+import type { Analysis, ChatParticipant } from '@shared/contracts/types';
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     GetGlobalSearchInputDTO,
     GetGlobalSearchOutputDTO
 } from '@modules/dashboard/application/dtos/GetGlobalSearchDTO';
-import { mapPluginToPersistedDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
+import type {
+    ChatSearchView,
+    ContainerSearchView,
+    PluginSearchDTO
+} from '@modules/dashboard/application/dtos/GetGlobalSearchDTO';
+// Neutral plugin→DTO mapper (generic over the structural plugin shape) so
+// dashboard maps plugins without importing the concrete `@modules/plugin` entity.
+import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
-import type { ChatParticipant } from '@modules/chat/domain/entities/chat/Chat';
-import type { PersistedChatDTO } from '@modules/chat/domain/port/chat/IChatRepository';
-import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
+type PluginEntity = Parameters<typeof mapPluginToPersistedDTO>[0];
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 10;
@@ -74,7 +84,7 @@ const getParticipantSearchTokens = (participant: ChatParticipant): string[] => {
     return searchTokens;
 };
 
-const getLastMessageContent = (chat: PersistedChatDTO): string | undefined => {
+const getLastMessageContent = (chat: PersistedChatDTO<ChatSearchView>): string | undefined => {
     const lastMessage = chat.lastMessage;
     if (typeof lastMessage !== 'object' || lastMessage === null) {
         return undefined;
@@ -88,12 +98,12 @@ const getLastMessageContent = (chat: PersistedChatDTO): string | undefined => {
 export default class GetGlobalSearchUseCase
 implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: PluginRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(CONTAINER_CONTRACT_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository<ContainerSearchView>,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository<PluginEntity>,
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
-        @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepository: IChatRepository
+        @inject(CHAT_CONTRACT_TOKENS.ChatRepository) private readonly chatRepository: IChatRepository<unknown, ChatSearchView>
     ) {}
 
     async execute(input: GetGlobalSearchInputDTO): Promise<Result<GetGlobalSearchOutputDTO>> {
@@ -199,7 +209,7 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
                     team.description
                 ))
                 .slice(0, limit),
-            plugins: pluginsResult.data.map((plugin): PersistedPluginDTO => mapPluginToPersistedDTO(plugin)),
+            plugins: pluginsResult.data.map((plugin): PluginSearchDTO => mapPluginToPersistedDTO(plugin)),
             chats: chats
                 .filter((chat) => {
                     return matchesNormalizedQuery(

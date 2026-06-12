@@ -1,0 +1,150 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import GetAnalysisByIdUseCase from '@modules/analysis/application/use-cases/GetAnalysisByIdUseCase';
+import type { GetAnalysisByIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisByIdDTO';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+interface ConfigDelta {
+    added: Record<string, unknown>;
+    removed: Record<string, unknown>;
+    changed: Record<string, { a: unknown; b: unknown }>;
+    unchangedKeys: string[];
+}
+
+@CollectionMember(AI_TOOL_TOKENS.AITool)
+export class CompareAnalysesAITool extends AITool {
+    readonly name = 'compare_analyses';
+    readonly description = 'Compare two analysis runs side by side (config, status, frame progress, expected artifacts, stages, child analyses, timestamps) to tell which run is more complete or cleaner — useful for resolving duplicate-run confusion.';
+    readonly parameters = z.object({
+        analysisIdA: z.string(),
+        analysisIdB: z.string()
+    });
+
+    constructor(
+        protected readonly useCase: GetAnalysisByIdUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const [resultA, resultB] = await Promise.all([
+            this.useCase.execute({ analysisId: params.analysisIdA, teamId: scope.teamId }),
+            this.useCase.execute({ analysisId: params.analysisIdB, teamId: scope.teamId })
+        ]);
+        if (!resultA.success) throw resultA.error;
+        if (!resultB.success) throw resultB.error;
+
+        const a = resultA.value;
+        const b = resultB.value;
+
+        const configDelta = this.diffConfig(a.config, b.config);
+        const statusDelta = {
+            a: a.status,
+            b: b.status,
+            same: a.status === b.status
+        };
+        const frameDelta = {
+            a: { completedFrames: a.completedFrames ?? 0, totalFrames: a.totalFrames ?? 0 },
+            b: { completedFrames: b.completedFrames ?? 0, totalFrames: b.totalFrames ?? 0 },
+            completedDifference: (a.completedFrames ?? 0) - (b.completedFrames ?? 0)
+        };
+        const artifactDelta = {
+            a: this.summarizeArtifacts(a),
+            b: this.summarizeArtifacts(b)
+        };
+
+        const summary = this.buildSummary(params.analysisIdA, params.analysisIdB, a, b);
+
+        return {
+            summary,
+            data: {
+                configDelta,
+                statusDelta,
+                frameDelta,
+                artifactDelta,
+                a: this.snapshot(params.analysisIdA, a),
+                b: this.snapshot(params.analysisIdB, b)
+            }
+        };
+    }
+
+    private diffConfig(a: Record<string, unknown>, b: Record<string, unknown>): ConfigDelta {
+        const added: Record<string, unknown> = {};
+        const removed: Record<string, unknown> = {};
+        const changed: Record<string, { a: unknown; b: unknown }> = {};
+        const unchangedKeys: string[] = [];
+
+        const keys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+        for (const key of keys) {
+            const hasA = Object.prototype.hasOwnProperty.call(a ?? {}, key);
+            const hasB = Object.prototype.hasOwnProperty.call(b ?? {}, key);
+            if (hasA && !hasB) {
+                removed[key] = a[key];
+            } else if (!hasA && hasB) {
+                added[key] = b[key];
+            } else if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
+                changed[key] = { a: a[key], b: b[key] };
+            } else {
+                unchangedKeys.push(key);
+            }
+        }
+
+        return { added, removed, changed, unchangedKeys };
+    }
+
+    private summarizeArtifacts(analysis: GetAnalysisByIdOutputDTO) {
+        const artifacts = analysis.expectedArtifacts ?? [];
+        const ready = artifacts.filter((artifact) => artifact.status === 'ready').length;
+        const failed = artifacts.filter((artifact) => artifact.status === 'failed').length;
+        return {
+            total: artifacts.length,
+            ready,
+            failed,
+            artifactStatus: analysis.artifactStatus
+        };
+    }
+
+    private snapshot(id: string, analysis: GetAnalysisByIdOutputDTO) {
+        return {
+            _id: id,
+            plugin: analysis.plugin,
+            pluginDisplayName: analysis.pluginDisplayName,
+            status: analysis.status,
+            completedFrames: analysis.completedFrames ?? 0,
+            totalFrames: analysis.totalFrames ?? 0,
+            stageCount: analysis.stages?.length ?? 0,
+            childAnalysisCount: analysis.childAnalyses?.length ?? 0,
+            startedAt: analysis.startedAt,
+            finishedAt: analysis.finishedAt,
+            createdAt: analysis.createdAt,
+            updatedAt: analysis.updatedAt
+        };
+    }
+
+    private completeness(analysis: GetAnalysisByIdOutputDTO): number {
+        const total = analysis.totalFrames ?? 0;
+        const completed = analysis.completedFrames ?? 0;
+        if (total <= 0) return completed > 0 ? 1 : 0;
+        return completed / total;
+    }
+
+    private buildSummary(idA: string, idB: string, a: GetAnalysisByIdOutputDTO, b: GetAnalysisByIdOutputDTO): string {
+        const completenessA = this.completeness(a);
+        const completenessB = this.completeness(b);
+        const failedA = (a.expectedArtifacts ?? []).filter((artifact) => artifact.status === 'failed').length;
+        const failedB = (b.expectedArtifacts ?? []).filter((artifact) => artifact.status === 'failed').length;
+
+        let verdict: string;
+        if (completenessA > completenessB || (completenessA === completenessB && failedA < failedB)) {
+            verdict = `Run A (${idA}) looks more complete/clean`;
+        } else if (completenessB > completenessA || (completenessA === completenessB && failedB < failedA)) {
+            verdict = `Run B (${idB}) looks more complete/clean`;
+        } else {
+            verdict = 'Both runs look equivalent';
+        }
+
+        return `${verdict}: A is ${(completenessA * 100).toFixed(0)}% complete (status ${a.status}, ${failedA} failed artifacts), B is ${(completenessB * 100).toFixed(0)}% complete (status ${b.status}, ${failedB} failed artifacts).`;
+    }
+}

@@ -9,7 +9,7 @@ import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { RefObject } from 'react';
@@ -30,6 +30,7 @@ interface TimestepViewerProps {
     boxBounds: BoxBounds;
     pointCloudSettings: PointCloudSceneSettings;
     sceneVisualOverrides: SceneVisualOverrides;
+    lineHighlight?: LineEntityHighlight;
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
@@ -84,6 +85,7 @@ const TimestepViewer = ({
     boxBounds,
     pointCloudSettings,
     sceneVisualOverrides,
+    lineHighlight,
     setModelWorldBounds,
     activeModelBounds,
     onModelBoundsChanged,
@@ -174,6 +176,7 @@ const TimestepViewer = ({
                             pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
                             pointCloudSettings={pointCloudSettings}
                             lineSettings={lineSettings}
+                            lineHighlight={lineHighlight?.sceneKey === sceneKey ? lineHighlight : undefined}
                             sceneVisualOverrides={sceneVisualOverrides}
                             setModelWorldBounds={setModelWorldBounds}
                             activeModelBounds={activeModelBounds}

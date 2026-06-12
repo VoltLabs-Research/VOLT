@@ -1,22 +1,7 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
-import type {
-    AnalysisArtifactStatus,
-    AnalysisConfig,
-    AnalysisExpectedArtifact
-} from '@modules/analysis/domain/entities/Analysis';
+import type { AnalysisCreatedEventPayload } from '@shared/contracts/events/AnalysisCreatedPayload';
 
-export interface AnalysisCreatedEventPayload {
-    analysisId: string;
-    trajectoryId: string;
-    pluginId: string;
-    pluginDisplayName: string;
-    teamId: string;
-    config: AnalysisConfig;
-    status: string;
-    artifactStatus?: AnalysisArtifactStatus;
-    expectedArtifacts?: AnalysisExpectedArtifact[];
-    createdAt: Date;
-}
+export type { AnalysisCreatedEventPayload };
 
 export default class AnalysisCreatedEvent extends BaseDomainEvent<AnalysisCreatedEventPayload> {
     constructor(payload: AnalysisCreatedEventPayload) {

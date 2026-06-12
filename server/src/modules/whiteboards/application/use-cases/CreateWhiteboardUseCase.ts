@@ -1,12 +1,11 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IWhiteboardFolderRepository } from '@modules/whiteboards/domain/port/IWhiteboardFolderRepository';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { ITeamClusterObjectGatewayClient, ITeamClusterSelectionService } from '@shared/contracts/ports';
 import type { CreateWhiteboardInputDTO, CreateWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/CreateWhiteboardDTO';
 import Whiteboard from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardCreatedEvent from '@modules/whiteboards/domain/events/WhiteboardCreatedEvent';
@@ -24,8 +23,8 @@ export class CreateWhiteboardUseCase implements IUseCase<CreateWhiteboardInputDT
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(WHITEBOARD_TOKENS.WhiteboardFolderRepository) private readonly whiteboardFolderRepository: IWhiteboardFolderRepository,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

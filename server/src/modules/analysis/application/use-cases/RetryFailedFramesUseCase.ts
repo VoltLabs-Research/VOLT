@@ -2,8 +2,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { RetryFailedFramesInputDTO, RetryFailedFramesOutputDTO } from '@modules/analysis/application/dtos/RetryFailedFramesDTO';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -15,7 +15,7 @@ export default class RetryFailedFramesUseCase implements IUseCase<RetryFailedFra
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         private readonly teamJobsService: TeamJobsService,
-        @inject(JOBS_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+        @inject(COMPUTE_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 
     async execute(input: RetryFailedFramesInputDTO): Promise<Result<RetryFailedFramesOutputDTO, ApplicationError>> {

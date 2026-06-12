@@ -1,4 +1,3 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
@@ -11,8 +10,9 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IStoragePlacementService, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -22,8 +22,8 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinaryInputDTO, DownloadPluginBinaryOutputDTO, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
-        private readonly storagePlacementService: StoragePlacementService,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: DownloadPluginBinaryInputDTO): Promise<Result<DownloadPluginBinaryOutputDTO, ApplicationError>> {

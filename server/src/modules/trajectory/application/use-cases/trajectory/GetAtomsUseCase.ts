@@ -1,15 +1,14 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { inject } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import {
     resolveAnalysisComputeClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
+} from '@shared/application/utilities/cluster-location';
 import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utilities/team-cluster/resolve-trajectory-native-cluster-context';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
@@ -67,10 +66,10 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
-        
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
+
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async execute(input: GetAtomsColumnarInputDTO): Promise<Result<GetAtomsColumnarOutputDTO, ApplicationError>> {

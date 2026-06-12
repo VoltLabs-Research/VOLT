@@ -2,9 +2,10 @@ import {
     TeamClusterServiceExposureAccessMode,
     TeamClusterServiceExposureSourceKind,
     TeamClusterServiceExposureStatus,
-    type TeamClusterServiceExposure
-} from '@modules/cluster/domain/contracts/TeamClusterServiceExposure';
-import type { AnalysisStageStatus, AnalysisStageType } from '@modules/analysis/domain/entities/Analysis';
+    type TeamClusterServiceExposure,
+    type TeamClusterDaemonExecutionLogSegment
+} from '@shared/contracts/types/TeamClusterExposure';
+import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
@@ -346,17 +347,6 @@ interface TeamClusterDaemonRuntimeHeartbeatEventPayload {
     metrics?: Record<string, unknown>;
 }
 
-export interface TeamClusterDaemonExecutionLogSegment {
-    stream: 'stdout' | 'stderr' | 'system';
-    text: string;
-    occurredAt: string;
-    nodeId?: string;
-    nodeType?: string;
-    nodeLabel?: string;
-    pluginId?: string;
-    executionPath?: string[];
-}
-
 export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
     AnalysisLogChunk: 'analysis-log-chunk',
     DebugLogChunk: 'debug-log-chunk',
@@ -402,7 +392,8 @@ export {
 };
 
 export type {
-    TeamClusterServiceExposure
+    TeamClusterServiceExposure,
+    TeamClusterDaemonExecutionLogSegment
 };
 
 export {

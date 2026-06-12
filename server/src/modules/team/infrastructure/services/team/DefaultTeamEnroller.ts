@@ -1,17 +1,17 @@
 import { SystemRoleNames } from '@core/constants/system-roles';
-import type { IDeploymentSettingsRepository } from '@modules/system/domain/port/IDeploymentSettingsRepository';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import type { INewMemberDefaultTeamEnroller } from '@modules/team/domain/port/team/INewMemberDefaultTeamEnroller';
 import type { ITeamMembershipService } from '@modules/team/domain/port/team/ITeamMembershipService';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import type { IDeploymentSettingsRepository } from '@shared/contracts/ports';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton(TEAM_TOKENS.DefaultTeamEnroller)
 export default class DefaultTeamEnroller implements INewMemberDefaultTeamEnroller {
     constructor(
-        @inject(SYSTEM_TOKENS.DeploymentSettingsRepository)
+        @inject(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository)
         private readonly deploymentSettingsRepository: IDeploymentSettingsRepository,
 
         @inject(TEAM_TOKENS.TeamMembershipService)

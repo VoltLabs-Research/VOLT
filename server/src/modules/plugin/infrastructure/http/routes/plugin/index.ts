@@ -13,6 +13,7 @@ export default createHttpModule({
     basePath: '/api/plugins/:teamId',
     resource: Resource.PLUGIN,
     teamScope: HttpModuleTeamScope.BasePath,
+    moduleKey: 'plugin',
     routes: (router) => {
         router.get('/node-types/schema', controllers.getNodeTypesSchema.handle);
         router.post('/workflow-validation', controllers.validateWorkflow.handle);

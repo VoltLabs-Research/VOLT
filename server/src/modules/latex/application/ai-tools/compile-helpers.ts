@@ -1,6 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
 import { spawn } from 'node:child_process';
@@ -44,7 +44,7 @@ interface PrepareWorkDirDeps {
     latexDocumentRepository: ILatexDocumentRepository;
     latexAssetRepository: ILatexAssetRepository;
     latexFileRepository: ILatexFileRepository;
-    objectGatewayClient: TeamClusterObjectGatewayClient;
+    objectGatewayClient: ITeamClusterObjectGatewayClient;
     tempFileService: ITempFileService;
 }
 
@@ -196,7 +196,7 @@ const syncWorkDirInputs = async (
     latexFiles: LatexFile[],
     assets: LatexAsset[],
     storageClusterId: string,
-    objectGatewayClient: TeamClusterObjectGatewayClient
+    objectGatewayClient: ITeamClusterObjectGatewayClient
 ): Promise<void> => {
     const limit = pLimit(WORKDIR_SYNC_CONCURRENCY);
     const previousManifest = await readWorkDirManifest(workDir);

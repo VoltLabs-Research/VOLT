@@ -1,8 +1,9 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
+import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
 import {
     IParticleFilterService,
@@ -22,7 +23,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/scene-artifacts/SceneArtifactRepository';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
@@ -65,10 +65,12 @@ export default class ParticleFilterService implements IParticleFilterService {
         private readonly trajectoryRepository: TrajectoryRepository,
 
 
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository)
+        private readonly analysisRepository: IAnalysisRepository,
 
 
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
 
 
         @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)

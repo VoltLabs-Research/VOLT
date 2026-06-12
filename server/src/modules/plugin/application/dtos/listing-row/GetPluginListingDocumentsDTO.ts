@@ -1,54 +1,16 @@
-import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
-
-export interface GetPluginListingDocumentsInputDTO {
-    pluginId: string;
-    exposureName?: string;
-    exposureId?: string;
-    teamId: string;
-    trajectoryId?: string;
-    analysisId?: string;
-    page?: number;
-    limit?: number;
-    sortAsc?: boolean;
-}
-
-export interface ExportPluginListingDocumentsInputDTO {
-    pluginId: string;
-    exposureId?: string;
-    teamId: string;
-    trajectoryId?: string;
-    analysisId?: string;
-    exposureName?: string;
-    sortAsc?: boolean;
-    format?: ExportType;
-}
-
-export interface ColumnDef {
-    key?: string;
-    label: string;
-    title?: string;
-    sortable: boolean;
-    width?: number;
-}
-
-export interface ListingRowData {
-    _id: string;
-    timestep: number;
-    analysisId: string;
-    trajectoryId: string;
-    exposureId: string;
-    trajectoryName: string;
-    [key: string]: unknown;
-}
-
-export interface PluginListingDocumentsMeta extends Record<string, unknown> {
-    pluginId: string;
-    exposureName: string;
-    exposureId: string;
-    columns: ColumnDef[];
-    subListingNames: string[];
-}
-
-export interface GetPluginListingDocumentsOutputDTO extends PaginatedResult<ListingRowData> {
-    _meta: PluginListingDocumentsMeta;
-}
+/**
+ * Re-export shim. The canonical get/export-plugin-listing-documents DTOs now
+ * live in the neutral `@shared/contracts/dtos/GetPluginListingDocumentsDTO`
+ * (detachable-modules migration). Existing
+ * `@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO`
+ * importers (the export use case, daemon-listing types, listing enrichment) keep
+ * working unchanged.
+ */
+export type {
+    GetPluginListingDocumentsInputDTO,
+    ExportPluginListingDocumentsInputDTO,
+    ColumnDef,
+    ListingRowData,
+    PluginListingDocumentsMeta,
+    GetPluginListingDocumentsOutputDTO
+} from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';

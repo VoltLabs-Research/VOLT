@@ -9,6 +9,7 @@ export default createHttpModule({
     basePath: '/api/plugins/:teamId',
     resource: Resource.PLUGIN,
     teamScope: HttpModuleTeamScope.BasePath,
+    moduleKey: 'plugin',
     routes: (router) => {
         router.get('/exposures/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
         router.get('/exposures/artifacts/:artifactId/chart', controllers.getPluginExposureChart.handle);

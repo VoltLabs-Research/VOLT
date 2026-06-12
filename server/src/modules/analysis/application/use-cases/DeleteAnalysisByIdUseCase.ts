@@ -6,7 +6,7 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
+} from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Result } from '@shared/domain/port/Result';

@@ -1,4 +1,4 @@
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import type { PluginDebugSessionRegistryEntry } from '@modules/plugin/domain/contracts/plugin/PluginDebugSessionRegistry';
 
 export interface IPluginDebugSessionRegistryService {

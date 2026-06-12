@@ -1,34 +1,14 @@
-export interface RasterFrameMetadata {
-    timestep: number;
-    availableModels: string[];
-}
-
-export interface RasterTrajectoryMetadata {
-    availableTimesteps: number[];
-}
-
-export interface RasterAnalysisMetadata {
-    analysisId: string;
-    totalFrames: number;
-    rasterizedFrames: number;
-    availableTimesteps: number[];
-    frames: RasterFrameMetadata[];
-}
-
-export interface RasterMetadata {
-    trajectoryId: string;
-    totalFrames: number;
-    rasterizedFrames: number;
-    status: RasterMetadataStatus;
-    trajectory: RasterTrajectoryMetadata | null;
-    analyses: RasterAnalysisMetadata[];
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export enum RasterMetadataStatus {
-    Pending = 'pending',
-    Processing = 'processing',
-    Completed = 'completed',
-    Failed = 'failed'
-}
+/**
+ * Re-export shim. The canonical raster-metadata types + status enum now live in
+ * the neutral `@shared/contracts/types/RasterMetadata` (detachable-modules
+ * migration). Existing `@modules/raster/domain/entities/RasterMetadata`
+ * importers (including the `RasterMetadataStatus` runtime enum used in
+ * comparisons) keep working unchanged.
+ */
+export type {
+    RasterFrameMetadata,
+    RasterTrajectoryMetadata,
+    RasterAnalysisMetadata,
+    RasterMetadata
+} from '@shared/contracts/types/RasterMetadata';
+export { RasterMetadataStatus } from '@shared/contracts/types/RasterMetadata';

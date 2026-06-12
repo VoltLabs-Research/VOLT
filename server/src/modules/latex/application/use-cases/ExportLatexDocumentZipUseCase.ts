@@ -4,8 +4,8 @@ import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import type { IClusterObjectArchiveService } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
 import type { ExportLatexDocumentInputDTO, ExportLatexDocumentOutputDTO } from '@modules/latex/application/dtos/ExportLatexDocumentDTO';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/application/utilities/sanitize-asset-path';
@@ -29,7 +29,7 @@ export class ExportLatexDocumentZipUseCase implements IUseCase<ExportLatexDocume
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
         @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: ILatexFileRepository,
-        @inject(CLUSTER_TOKENS.ClusterObjectArchiveService) private readonly archiveService: IClusterObjectArchiveService
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService) private readonly archiveService: IClusterObjectArchiveService
     ) {}
 
     async execute(input: ExportLatexDocumentInputDTO): Promise<Result<ExportLatexDocumentOutputDTO, ApplicationError>> {

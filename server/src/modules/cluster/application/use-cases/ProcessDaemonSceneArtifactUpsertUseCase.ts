@@ -1,8 +1,9 @@
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type {
+    ISceneArtifactRepository,
+    ITrajectoryRepository,
+    IAnalysisRepository
+} from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId,
@@ -10,9 +11,12 @@ import {
 } from '@modules/cluster/application/utilities/cluster-location';
 import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import SceneArtifactBatchUpsertedEvent, {
-    SceneArtifactBatchUpsertedArtifact
-} from '@modules/trajectory/domain/events/scene-artifacts/SceneArtifactBatchUpsertedEvent';
+// cluster EMITS the trajectory-owned `scene-artifact.upserted` event via the
+// neutral GenericDomainEvent; the owner event class is no longer imported. Its
+// payload artifact type is taken from the neutral contract.
+import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -20,9 +24,10 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
-import AnalysisStageChangedEvent from '@modules/analysis/domain/events/AnalysisStageChangedEvent';
-import type { AnalysisExpectedArtifact } from '@modules/analysis/domain/entities/Analysis';
-import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+// cluster EMITS the analysis-owned `analysis.stage.changed` event via the
+// neutral GenericDomainEvent; the owner event class is no longer imported.
+import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
+import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 
 export interface ProcessDaemonSceneArtifactUpsertInputDTO {
@@ -72,9 +77,9 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
 > {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}
@@ -153,7 +158,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
         }
 
         await Promise.all(Array.from(groups.values()).map((group) =>
-            this.eventBus.publish(new SceneArtifactBatchUpsertedEvent(group)).catch((err) => {
+            this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.SceneArtifactBatchUpserted, group)).catch((err) => {
                 logger.warn({ err, trajectoryId: group.trajectoryId, analysisId: group.analysisId },
                     '[ProcessDaemonSceneArtifactUpsertUseCase] Failed to publish scene-artifact.upserted');
             })
@@ -195,7 +200,7 @@ export default class ProcessDaemonSceneArtifactUpsertUseCase implements IUseCase
                 return;
             }
 
-            await this.eventBus.publish(new AnalysisStageChangedEvent({
+            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
                 analysisId,
                 teamId: group[0]!.teamId,
                 trajectoryId: updatedAnalysis.props.trajectory,

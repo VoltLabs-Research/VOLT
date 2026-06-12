@@ -1,11 +1,12 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+import { JobStatus } from '@shared/contracts/types/JobStatus';
+import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
@@ -19,14 +20,14 @@ const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
 
 @Singleton()
 @Subscribe('job.status.changed')
-export default class JobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
+export default class JobStatusChangedEventHandler implements IEventHandler<IDomainEvent<JobStatusChangedEventPayload>> {
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ){}
 
-    async handle(event: JobStatusChangedEvent): Promise<void> {
+    async handle(event: IDomainEvent<JobStatusChangedEventPayload>): Promise<void> {
         const { status, queueType, teamId, trajectoryId } = event.payload;
 
         if (!trajectoryId) return;

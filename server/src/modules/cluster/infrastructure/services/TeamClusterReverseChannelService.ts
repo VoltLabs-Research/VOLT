@@ -2,8 +2,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type {
     ContainerTerminalAttachment,
     ContainerTerminalSize
-} from '@modules/container/domain/port/IContainerService';
-import { ContainerDeploymentProgressService } from '@modules/container/infrastructure/services/ContainerDeploymentProgressService';
+} from '@shared/contracts/ports';
+import type { IContainerDeploymentProgressService } from '@shared/contracts/ports';
+import { CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens/ContainerTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/utilities/TeamClusterReverseTerminal';
 import {
@@ -40,6 +41,7 @@ import {
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
 import type {
     TeamClusterDaemonCommandData,
@@ -240,7 +242,8 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
     constructor(
         private readonly socketEmitter: SocketIOEmitter,
         private readonly exposureRegistryService: TeamClusterExposureRegistryService,
-        private readonly containerDeploymentProgressService: ContainerDeploymentProgressService
+        @inject(CONTAINER_CONTRACT_TOKENS.ContainerDeploymentProgressService)
+        private readonly containerDeploymentProgressService: IContainerDeploymentProgressService
     ) {
         this.startIdleSweep();
     }

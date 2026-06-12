@@ -1,11 +1,11 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { GetPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/GetPluginListingDocumentsUseCase';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOKENS.AITool)
+@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListPluginListingDocumentsAITool extends AITool {
     readonly name = 'list_plugin_listing_documents';
     readonly description = 'List a plugin exposure\'s result rows as tabular metadata.';

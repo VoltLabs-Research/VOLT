@@ -3,8 +3,8 @@ import type { Analysis, AnalysisProps } from '@modules/analysis/domain/entities/
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import {
@@ -28,7 +28,7 @@ interface AnalysisSort extends Record<string, 1 | -1> {
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {

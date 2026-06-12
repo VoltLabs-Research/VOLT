@@ -1,10 +1,12 @@
-import type { GetRasterMetadataOutputDTO } from '@modules/raster/application/dtos/GetRasterMetadataDTO';
-import { GetRasterMetadataUseCase } from '@modules/raster/application/use-cases/GetRasterMetadataUseCase';
+import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
+import type { GetRasterMetadataOutputDTO } from '@shared/contracts/dtos';
+import type { IGetRasterMetadataUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasRasterMetadataInput {
     trajectoryId: string;
@@ -18,11 +20,11 @@ export class GetPublicCanvasRasterMetadataUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
+
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        
-        private readonly getRasterMetadataUseCase: GetRasterMetadataUseCase
+        @inject(RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase)
+        private readonly getRasterMetadataUseCase: IGetRasterMetadataUseCase
     ) {}
 
     async execute(input: GetPublicCanvasRasterMetadataInput): Promise<Result<GetRasterMetadataOutputDTO, ApplicationError>> {

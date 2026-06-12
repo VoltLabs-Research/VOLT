@@ -1,4 +1,4 @@
-import { AI_PROVIDERS, AI_PROVIDER_DESCRIPTIONS, AI_PROVIDER_NAMES } from '@modules/ai/domain/contracts/AIProviders';
+import { AI_PROVIDERS, AI_PROVIDER_DESCRIPTIONS, AI_PROVIDER_NAMES } from '@shared/contracts/types/AIProviders';
 import { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 import type { ITeamAIProviderCatalog, TeamAIProviderMetadata } from '@modules/team/domain/port/ai-integration/ITeamAIProviderCatalog';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';

@@ -1,11 +1,11 @@
-import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { IRasterStorageService } from '@modules/raster/domain/port/IRasterStorageService';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import type { IRasterStorageService } from '@shared/contracts/ports';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type {
     GetPublicCanvasRasterFrameInputDTO,
     GetPublicCanvasRasterFrameOutputDTO
@@ -29,14 +29,14 @@ export class GetPublicCanvasRasterFrameUseCase implements IUseCase<
 
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        @inject(RASTER_TOKENS.RasterStorageService)
+        @inject(RASTER_CONTRACT_TOKENS.RasterStorageService)
         private readonly rasterStorage: IRasterStorageService,
 
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async execute(

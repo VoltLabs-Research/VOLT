@@ -7,8 +7,8 @@ import {
     RegistryInstallPluginInputDTO,
     RegistryInstallPluginOutputDTO
 } from '@modules/plugin/application/dtos/plugin/RegistryInstallPluginDTO';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -29,7 +29,7 @@ export class RegistryInstallPluginUseCase implements IUseCase<RegistryInstallPlu
     constructor(
         @inject(PLUGIN_TOKENS.PluginStorageService) private readonly storageService: IPluginStorageService,
         @inject(PLUGIN_TOKENS.RegistryGateway) private readonly registryGateway: IRegistryGateway,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly clusterSelectionService: ITeamClusterSelectionService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly clusterSelectionService: ITeamClusterSelectionService,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}

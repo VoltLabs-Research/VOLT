@@ -3,7 +3,6 @@ import { EmptyState, IconButton, Row, SearchInput, Skeleton, Stack, Text, Toolti
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import { formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
@@ -198,15 +197,15 @@ const AIConversationSidebar = ({
                         </Tooltip>
                     </Row>
                 </Row>
-
-                <Text as='p' size='sm' tone='muted'>
-                    {formatDistanceToNow(new Date(conversation.lastMessageAt || conversation.updatedAt), { addSuffix: true })}
-                </Text>
             </div>
         );
     };
 
-    let listContent: ReactNode = filteredConversations.map(renderConversationItem);
+    let listContent: ReactNode = (
+        <Stack gap='025'>
+            {filteredConversations.map(renderConversationItem)}
+        </Stack>
+    );
 
     if (isLoading) {
         listContent = Array.from({ length: 6 }).map((_, index) => (
