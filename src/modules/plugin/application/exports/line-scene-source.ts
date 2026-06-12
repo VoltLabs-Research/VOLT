@@ -25,4 +25,9 @@ export interface LineEntityRangesSidecar {
     entities: LineEntityRange[];
 }
 
-export const buildLineRangesSidecarKey = (glbObjectKey: string): string => `${glbObjectKey}.ranges.json`;
+// Keyed to the logical GLB, not its storage encoding: baked exports stage the
+// pre-compression `.glb` key while styled re-exports receive the stored
+// `.glb.zst` key, and both must resolve to the same sidecar name.
+export const buildLineRangesSidecarKey = (glbObjectKey: string): string => (
+    `${glbObjectKey.replace(/\.zst$/, '')}.ranges.json`
+);
