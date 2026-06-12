@@ -2,7 +2,7 @@ import DeleteAnalysisByIdUseCase from '@modules/analysis/application/use-cases/D
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
 import { CascadeDeleteEachOnTrajectoryDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTrajectoryDeletedHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';

@@ -4,7 +4,7 @@ import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatReposi
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
@@ -17,7 +17,7 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository) private readonly messageRepo: IChatMessageRepository,
         @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
+        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>> {

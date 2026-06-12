@@ -6,7 +6,7 @@ import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/traj
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';

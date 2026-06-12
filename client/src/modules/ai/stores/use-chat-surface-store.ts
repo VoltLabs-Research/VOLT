@@ -16,7 +16,6 @@ import { create } from 'zustand';
 export type ChatSurface = 'floating' | 'page' | 'hidden';
 
 interface ChatSurfaceState {
-    /** Whether the floating widget is open. */
     isWidgetOpen: boolean;
     openWidget: () => void;
     closeWidget: () => void;

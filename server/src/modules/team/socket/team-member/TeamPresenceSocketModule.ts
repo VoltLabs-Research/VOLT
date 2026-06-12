@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -10,7 +10,7 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
@@ -19,7 +19,7 @@ import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 

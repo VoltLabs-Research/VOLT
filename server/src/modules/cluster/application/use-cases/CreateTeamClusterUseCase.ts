@@ -1,4 +1,4 @@
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import { inject, injectable } from 'tsyringe';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
@@ -37,7 +37,7 @@ export default class CreateTeamClusterUseCase implements IUseCase<CreateTeamClus
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         @inject(CLUSTER_TOKENS.TeamClusterCredentialsCipher) private readonly teamClusterCredentialsCipher: ITeamClusterCredentialsCipher,
-        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(CLUSTER_TOKENS.DemoClusterDeploymentService) private readonly demoClusterDeploymentService: IDemoClusterDeploymentService,
         @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService
     ){}

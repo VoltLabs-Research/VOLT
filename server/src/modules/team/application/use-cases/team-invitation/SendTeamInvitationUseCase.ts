@@ -1,6 +1,6 @@
 import type { ITeamRoleRepository } from '@modules/team/domain/port/team-role/ITeamRoleRepository';
 import type { ITeamInvitationRepository } from '@modules/team/domain/port/team-invitation/ITeamInvitationRepository';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
@@ -23,7 +23,7 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository,
         @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
-        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(SHARED_TOKENS.EventBus)

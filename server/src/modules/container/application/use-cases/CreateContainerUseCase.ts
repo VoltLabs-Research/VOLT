@@ -1,4 +1,4 @@
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import type { IContainerRepository } from '@modules/container/domain/port/IContainerRepository';
@@ -29,7 +29,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         @inject(CONTAINER_TOKENS.ContainerPublicPortAllocator) private readonly publicPortAllocator: IContainerPublicPortAllocator,
         @inject(CONTAINER_TOKENS.ContainerPortProxyRelayService) private readonly relayService: IContainerPortProxyRelayService,
         @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
+        @inject(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
         @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ) {}
 

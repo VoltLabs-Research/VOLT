@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events/TrajectoryDeletedPayload';
 
 export type { TrajectoryDeletedEventPayload };

@@ -4,7 +4,7 @@ import type { IContainerRepository } from '@modules/container/domain/port/IConta
 import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
 import { DaemonContainerRuntimeService } from '@modules/container/infrastructure/services/DaemonContainerRuntimeService';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -48,7 +48,7 @@ const CONTAINER_TERMINAL_EVENTS = {
 } as const;
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class ContainerTerminalSocketModule extends BaseSocketModule {
     public readonly name = 'ContainerTerminalSocketModule';
 

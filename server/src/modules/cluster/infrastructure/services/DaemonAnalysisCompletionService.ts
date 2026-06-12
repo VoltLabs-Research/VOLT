@@ -17,7 +17,7 @@ import { TrajectoryStatus } from '@shared/contracts/types';
 // trajectory.updated) via the neutral GenericDomainEvent, dispatched by name.
 // This removes the static import of those owner modules' event classes; the
 // neutral payload contracts type the payloads.
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';

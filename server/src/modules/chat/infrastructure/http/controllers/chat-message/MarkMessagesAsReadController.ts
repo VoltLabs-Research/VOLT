@@ -3,11 +3,7 @@ import { MarkMessageAsReadUseCase } from '@modules/chat/application/use-cases/ch
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 const MarkMessagesAsReadController = createController(MarkMessageAsReadUseCase, {
-    statusCode: HttpStatus.NoContent,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.NoContent
 });
 
 export default MarkMessagesAsReadController;

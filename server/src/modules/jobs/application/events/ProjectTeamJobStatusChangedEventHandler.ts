@@ -2,7 +2,7 @@ import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedE
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import type { ITeamJobProjectionService } from '@modules/jobs/domain/port/ITeamJobProjectionService';
 import type { TeamJobSnapshot } from '@modules/jobs/domain/contracts/TeamJobSnapshot';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
@@ -13,7 +13,7 @@ import { inject } from 'tsyringe';
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
         @inject(JOBS_TOKENS.TeamJobProjectionService) private readonly teamJobProjectionService: ITeamJobProjectionService,
-        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
+        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ) {}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {

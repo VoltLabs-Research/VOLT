@@ -3,7 +3,7 @@ import type { IScriptingNotebookRepository } from '@modules/scripting/domain/por
 import type { IScriptingSessionOrchestrator } from '@modules/scripting/domain/port/IScriptingSessionOrchestrator';
 import type { INotebookCredentialService } from '@modules/scripting/domain/port/INotebookCredentialService';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import { inject } from 'tsyringe';

@@ -3,11 +3,7 @@ import { DeleteMessageUseCase } from '@modules/chat/application/use-cases/chat-m
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 const DeleteMessageController = createController(DeleteMessageUseCase, {
-    statusCode: HttpStatus.NoContent,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.NoContent
 });
 
 export default DeleteMessageController;

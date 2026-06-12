@@ -9,9 +9,6 @@ interface OpenCommandPaletteInput {
 
 const VALID_ACTIONS: readonly CommandPaletteAction[] = ['open', 'close', 'toggle'];
 
-/**
- * Opens, closes, or toggles the command palette via its Zustand store.
- */
 const openCommandPalette: ClientToolHandler<OpenCommandPaletteInput> = {
     name: 'open_command_palette',
 

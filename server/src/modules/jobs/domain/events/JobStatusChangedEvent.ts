@@ -1,4 +1,4 @@
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 import type { JobStatusChangedEventPayload } from '@shared/contracts/events/JobStatusChangedPayload';
 
 // The payload type now lives in the neutral contracts layer

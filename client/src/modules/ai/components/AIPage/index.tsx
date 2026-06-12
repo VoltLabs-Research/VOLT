@@ -20,6 +20,8 @@ interface AIPageRouteParams extends Params {
     conversationId?: string;
 }
 
+const UNSET_CONVERSATION_ID = Symbol('unset-conversation-id');
+
 const AIPage = () => {
     useTip('ai-spreadsheet-panel');
 
@@ -70,24 +72,33 @@ const AIPage = () => {
         stopStreaming
     } = useAIChatContext();
 
-    // The URL is the source of truth for the page surface; push it into the
-    // shared provider so the hoisted useChat hydrates the right conversation.
-    useEffect(() => {
-        if (conversationId !== activeConversationId) {
-            setActiveConversationId(conversationId);
-        }
-    }, [conversationId, activeConversationId, setActiveConversationId]);
+    const prevConversationIdRef = useRef<string | undefined | typeof UNSET_CONVERSATION_ID>(UNSET_CONVERSATION_ID);
+    const prevActiveConversationIdRef = useRef<string | undefined>(activeConversationId);
 
-    // When the provider's active conversation changes (e.g. created from the
-    // widget, or selected here), keep the page URL aligned.
     useEffect(() => {
-        if (!activeConversationId) {
+        const urlChanged = prevConversationIdRef.current !== conversationId;
+        const providerChanged = prevActiveConversationIdRef.current !== activeConversationId;
+
+        prevConversationIdRef.current = conversationId;
+        prevActiveConversationIdRef.current = activeConversationId;
+
+        if (conversationId === activeConversationId) {
             return;
         }
-        if (activeConversationId !== conversationId) {
-            navigate(`/dashboard/ai/${activeConversationId}`);
+
+        if (providerChanged) {
+            if (activeConversationId) {
+                navigate(`/dashboard/ai/${activeConversationId}`);
+            } else {
+                navigate('/dashboard/ai');
+            }
+            return;
         }
-    }, [activeConversationId, conversationId, navigate]);
+
+        if (urlChanged) {
+            setActiveConversationId(conversationId);
+        }
+    }, [conversationId, activeConversationId, navigate, setActiveConversationId]);
 
     const canCreate = canAccess(['ai-conversation:create']);
     const canUpdate = canAccess(['ai-conversation:update']);

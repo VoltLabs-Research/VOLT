@@ -1,8 +1,8 @@
-import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import type { ISocketAuthenticationResult, ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
@@ -10,9 +10,9 @@ import { inject } from 'tsyringe';
 @Singleton()
 export default class AuthenticateSocketConnectionUseCase {
     constructor(
-        @inject(AUTH_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
-        @inject(AUTH_TOKENS.TokenService) private readonly tokenService: ITokenService,
-        @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository
+        @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository,
+        @inject(AUTH_CONTRACT_TOKENS.TokenService) private readonly tokenService: ITokenService,
+        @inject(SESSION_CONTRACT_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository
     ) {}
 
     async execute(token?: string): Promise<ISocketAuthenticationResult> {

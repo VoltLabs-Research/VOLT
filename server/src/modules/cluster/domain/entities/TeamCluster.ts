@@ -37,8 +37,8 @@ export {
     resolveTeamClusterRoleCapabilities,
     buildTeamClusterEffectiveCapabilities,
     resolveEffectiveCapabilitiesFromRoleConfig
-} from '@shared/application/utilities/cluster-capabilities';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/application/utilities/cluster-capabilities';
+} from '@shared/domain/utilities/cluster-capabilities';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 
 export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = {
     analysis: 8,

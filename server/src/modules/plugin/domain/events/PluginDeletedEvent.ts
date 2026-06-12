@@ -1,6 +1,6 @@
 import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 
-import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 
 export interface PluginDeletedEventPayload {
     pluginId: string;

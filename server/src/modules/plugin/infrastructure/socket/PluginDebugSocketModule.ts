@@ -10,7 +10,7 @@ import { WorkflowValidatorService } from '@modules/plugin/infrastructure/service
 import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
 import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
 import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
@@ -119,7 +119,7 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 });
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 

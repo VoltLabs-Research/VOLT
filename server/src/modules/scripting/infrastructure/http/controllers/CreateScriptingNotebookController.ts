@@ -3,9 +3,5 @@ import { createController } from '@shared/infrastructure/http/controllers/create
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 export default createController(CreateScriptingNotebookUseCase, {
-    statusCode: HttpStatus.Created,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.Created
 });

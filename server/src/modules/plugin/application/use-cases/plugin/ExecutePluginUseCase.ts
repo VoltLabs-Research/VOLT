@@ -23,7 +23,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ErrorCodes } from '@core/constants/error-codes';
 // plugin EMITS the analysis-owned `analysis.created` event via the neutral
 // GenericDomainEvent; the owner event class is no longer imported.
-import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
 import type { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';

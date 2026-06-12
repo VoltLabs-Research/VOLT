@@ -3,11 +3,7 @@ import { LeaveGroupUseCase } from '@modules/chat/application/use-cases/chat/Leav
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 const LeaveGroupController = createController(LeaveGroupUseCase, {
-    statusCode: HttpStatus.NoContent,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.NoContent
 });
 
 export default LeaveGroupController;

@@ -2,7 +2,7 @@ import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
 import type { ISceneArtifactRepository } from '@shared/contracts/ports';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
-import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
 import type { IEventHandler } from '@shared/application/events/IEventHandler';

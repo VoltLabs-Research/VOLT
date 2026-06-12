@@ -3,6 +3,7 @@ import { authenticateOptional } from '@shared/infrastructure/http/middleware/aut
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
+    moduleKey: 'trajectory',
     basePath: '/api/canvas',
     routes: (router) => {
         router.use(authenticateOptional);

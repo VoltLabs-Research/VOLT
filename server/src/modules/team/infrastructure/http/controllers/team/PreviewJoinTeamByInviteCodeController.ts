@@ -3,11 +3,7 @@ import PreviewJoinTeamByInviteCodeUseCase from '@modules/team/application/use-ca
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 
 const PreviewJoinTeamByInviteCodeController = createController(PreviewJoinTeamByInviteCodeUseCase, {
-    statusCode: HttpStatus.OK,
-    extendParams: (request, params) => ({
-        ...params,
-        userId: request.userId
-    })
+    statusCode: HttpStatus.OK
 });
 
 export default PreviewJoinTeamByInviteCodeController;

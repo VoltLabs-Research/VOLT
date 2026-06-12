@@ -10,7 +10,7 @@ import { SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens/Simula
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
+import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 

@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import WhiteboardRealtimeStateService from '@modules/whiteboards/infrastructure/services/WhiteboardRealtimeStateService';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
@@ -41,7 +41,7 @@ const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
 @Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
+@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
 export default class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';
 

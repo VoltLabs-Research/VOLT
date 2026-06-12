@@ -4,7 +4,7 @@ import {
     SOFT_STORAGE_LIMIT_PCT
 } from '@shared/application/utilities/cluster-storage-policy';
 import { TeamClusterStatus } from '@shared/contracts/types';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/application/utilities/cluster-capabilities';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';

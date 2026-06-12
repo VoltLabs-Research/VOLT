@@ -13,6 +13,5 @@ export const INFRA_TOKENS = Object.freeze({
     TempStorageLifecycleService: Symbol.for('TempStorageLifecycleService'),
     EventBus: Symbol.for('EventBus'),
     RedisClient: Symbol.for('RedisClient'),
-    FileExtractorService: Symbol.for('FileExtractorService'),
-    DaemonCredentialGuard: Symbol.for('DaemonCredentialGuard')
+    FileExtractorService: Symbol.for('FileExtractorService')
 });

@@ -5,7 +5,7 @@
 // `@modules/{chat,container,plugin}` entity/repo classes.
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { CHAT_CONTRACT_TOKENS, CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type {
     IAnalysisRepository,
     IChatRepository,
@@ -31,7 +31,7 @@ import type {
 // dashboard maps plugins without importing the concrete `@modules/plugin` entity.
 import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { IUseCase } from '@shared/application/IUseCase';
-import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
+import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
@@ -102,7 +102,7 @@ implements IUseCase<GetGlobalSearchInputDTO, GetGlobalSearchOutputDTO> {
         @inject(CONTAINER_CONTRACT_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository<ContainerSearchView>,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(COMPUTE_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository<PluginEntity>,
-        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(CHAT_CONTRACT_TOKENS.ChatRepository) private readonly chatRepository: IChatRepository<unknown, ChatSearchView>
     ) {}
 

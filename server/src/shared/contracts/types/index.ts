@@ -114,3 +114,6 @@ export type {
     AnalysisExecutionLogSegment,
     AnalysisFrameLogSnapshot
 } from './AnalysisFrameLog';
+export { TeamClusterDaemonResponseType } from './TeamClusterDaemon';
+export { isPopulatedSecretKeyRole } from './SecretKey';
+export type { PopulatedRole, PopulatedUser, SecretKeyProps } from './SecretKey';

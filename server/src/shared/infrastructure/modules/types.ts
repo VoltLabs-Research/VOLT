@@ -1,8 +1,9 @@
 /**
- * Tier of a detachable module. Tiers express a coarse layering used purely for
- * registration/boot ordering (kernel first, client-only last) — they do NOT by
- * themselves imply dependencies. Hard/soft deps are declared explicitly via
- * `requires`/`optional`.
+ * Tier of a detachable module. A documentation-only category that communicates
+ * a module's coarse layering/role; it carries no runtime ordering logic.
+ * `kernel` additionally has enforcement meaning: kernel modules can never be
+ * detached (see {@link ModuleRegistry}), and kernel membership is derived
+ * from this field — there is no separate hand-maintained kernel list to drift.
  */
 export type ModuleTier = 'kernel' | 'capability' | 'compute' | 'leaf' | 'client-only';
 
@@ -15,7 +16,7 @@ export type ModuleTier = 'kernel' | 'capability' | 'compute' | 'leaf' | 'client-
 export interface ModuleManifest {
     /** Stable, unique identifier for the module, e.g. `'latex'`. */
     key: string;
-    /** Coarse layering bucket used for ordering. See {@link ModuleTier}. */
+    /** Coarse layering/role category. See {@link ModuleTier}. */
     tier: ModuleTier;
     /**
      * Hard dependencies: keys of modules that MUST be enabled for this module to
@@ -25,23 +26,10 @@ export interface ModuleManifest {
     requires?: string[];
     /**
      * Soft dependencies: keys of modules that enhance this one if present but are
-     * not mandatory. The module must degrade gracefully when they are absent.
+     * not mandatory. Documentation of intent — the module must degrade gracefully
+     * when they are absent. Not enforced at runtime.
      */
     optional?: string[];
-    /** Capability/resource names this module provides to others. */
-    provides?: string[];
-    /** Lower registers earlier within a tier (default {@link DEFAULT_PRIORITY}). */
-    priority?: number;
     /** Human-readable summary of what the module does. */
     description?: string;
 }
-
-/**
- * Modules that can never be detached: the server cannot boot without them.
- * They are always force-included by {@link ModuleRegistry.resolveEnabled} and
- * their exclusion is treated as a validation error.
- */
-export const KERNEL_MODULES: readonly string[] = ['auth', 'session', 'socket', 'team'];
-
-/** Default `priority` applied to a manifest that does not specify one. */
-export const DEFAULT_PRIORITY = 100;

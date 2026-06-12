@@ -4,7 +4,7 @@ import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatReposi
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -14,7 +14,7 @@ import { inject, injectable } from 'tsyringe';
 export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
-        @inject(SOCKET_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
+        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ){}
 
     async execute(input: LeaveGroupInputDTO): Promise<Result<null, ApplicationError>> {

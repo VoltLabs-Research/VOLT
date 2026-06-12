@@ -10,7 +10,6 @@ const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 const VALID_THEMES: readonly Theme[] = [Theme.Light, Theme.Dark, Theme.System];
 
-/** Resolves a theme preference into the concrete theme to apply on the document. */
 const resolveEffectiveTheme = (preference: Theme): Theme => {
     if (preference === Theme.System) {
         return window.matchMedia(THEME_MEDIA_QUERY).matches ? Theme.Dark : Theme.Light;

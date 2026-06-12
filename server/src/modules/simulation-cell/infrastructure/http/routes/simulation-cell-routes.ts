@@ -3,7 +3,7 @@ import { Resource } from '@core/constants/resources';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import GetSimulationCellByTrajectoryController from '@modules/simulation-cell/infrastructure/http/controllers/GetSimulationCellByTrajectoryController';
 import SimulationCellRepository from '@modules/simulation-cell/infrastructure/persistence/mongo/repositories/SimulationCellRepository';
-import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
+import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';

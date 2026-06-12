@@ -3,7 +3,7 @@ import SceneArtifact, { SceneArtifactProps } from '@modules/trajectory/domain/en
 import { ISceneArtifactRepository, TeamSceneArtifactFilters } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
 import SceneArtifactMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/scene-artifacts/SceneArtifactMapper';
 import SceneArtifactModel, { SceneArtifactDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/scene-artifacts/SceneArtifactModel';
-import { STORAGE_CLUSTER_POPULATE } from '@shared/application/PopulatePresets';
+import { STORAGE_CLUSTER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import mongoose from 'mongoose';

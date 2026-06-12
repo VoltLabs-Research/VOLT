@@ -5,7 +5,7 @@ import { extractPluginId } from '@shared/application/utilities/extract-plugin-id
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
-import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
+import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';

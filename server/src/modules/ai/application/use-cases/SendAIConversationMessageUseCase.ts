@@ -1,4 +1,4 @@
-import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
@@ -45,7 +45,7 @@ export default class SendAIConversationMessageUseCase implements IUseCase<SendAI
     constructor(
         @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
         @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository,
-        @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(AI_TOKENS.AIChatTransport) private readonly aiChatTransport: IAIChatTransport,
         @inject(AI_TOKENS.AIMessageDTOMapper) private readonly messageDTOMapper: AIMessageDTOMapper,
         @inject(AI_TOKENS.AIUIMessageUtils) private readonly uiMessageUtils: AIUIMessageUtils,

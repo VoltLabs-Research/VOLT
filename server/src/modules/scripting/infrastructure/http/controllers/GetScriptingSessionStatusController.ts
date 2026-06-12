@@ -11,10 +11,6 @@ import type { GetScriptingSessionStatusOutputDTO } from '@modules/scripting/appl
 const scriptingJupyterAccessTokenService = container.resolve(ScriptingJupyterAccessTokenService);
 
 export default createController(GetScriptingSessionStatusUseCase, {
-    extendParams: (req: AuthenticatedRequest, params: Record<string, unknown>) => ({
-        ...params,
-        userId: req.userId
-    }),
     handleSuccess: (req: AuthenticatedRequest, res: Response, value: GetScriptingSessionStatusOutputDTO): void => {
         const { runtimeNotebookId, accessToken, ...response } = value;
 

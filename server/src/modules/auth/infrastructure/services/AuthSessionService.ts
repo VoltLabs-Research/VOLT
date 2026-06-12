@@ -2,7 +2,7 @@ import type { IAuthSessionService, CreateSessionInput } from '@modules/auth/doma
 import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
 import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
+import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
@@ -11,7 +11,7 @@ export default class AuthSessionService implements IAuthSessionService {
     constructor(
         @inject(AUTH_TOKENS.TokenService)
         private readonly tokenService: ITokenService,
-        @inject(SESSION_TOKENS.SessionRepository)
+        @inject(SESSION_CONTRACT_TOKENS.SessionRepository)
         private readonly sessionRepository: ISessionRepository
     ) {}
 

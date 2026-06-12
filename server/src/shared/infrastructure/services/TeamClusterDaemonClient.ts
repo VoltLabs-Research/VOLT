@@ -1,17 +1,20 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,
     TeamClusterTunnelOpenRequest
 } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
-import TeamClusterReverseChannelService from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
+import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
 import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
-import { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
-import { TeamClusterDaemonResponseType, TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
+import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
+import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -130,8 +133,8 @@ export default class TeamClusterDaemonClient {
     };
 
     constructor(
-        
-        private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterReverseChannelService)
+        private readonly teamClusterReverseChannelService: ITeamClusterReverseChannelService
     ) {}
 
     private createCommandMetadata(): DaemonCommandMetadata {

@@ -6,6 +6,7 @@
     "dev:drop:redis": "tsx tools/drop-redis.ts",
     "dev:drop:minio": "tsx tools/drop-minio.ts",
     "depcruise": "npx --yes dependency-cruiser@^17.4.3 src --config .dependency-cruiser.cjs",
+    "lint": "eslint .",
     "smoke:modules": "node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/module-boot-smoke.ts"
   },
   "devDependencies": {

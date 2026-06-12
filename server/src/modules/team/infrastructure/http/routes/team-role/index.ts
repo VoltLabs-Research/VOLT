@@ -11,6 +11,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import { container } from 'tsyringe';
 
 export default createHttpModule({
+    moduleKey: 'team',
     basePath: '/api/teams/:teamId/roles',
     resource: Resource.TEAM_ROLE,
     teamScope: HttpModuleTeamScope.BasePath,

@@ -5,6 +5,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import express from 'express';
 
 export default createHttpModule({
+    moduleKey: 'ai',
     basePath: '/api/ai/conversations',
     resource: Resource.AI_CONVERSATION,
     teamScope: HttpModuleTeamScope.Param,
