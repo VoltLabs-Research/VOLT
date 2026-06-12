@@ -4,9 +4,11 @@ import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
+import { JobStatus } from '@shared/contracts/types';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import type { IStoragePlacementService } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCloneJob, { TrajectoryCloneJobProps, TrajectoryCloneJobState } from '@modules/trajectory/domain/entities/trajectory/TrajectoryCloneJob';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -66,7 +68,7 @@ export default class TrajectoryCloneCoordinator {
         @inject(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository) private readonly cloneJobRepository: ITrajectoryCloneJobRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
-        private readonly storagePlacementService: StoragePlacementService,
+        @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
@@ -252,7 +254,7 @@ export default class TrajectoryCloneCoordinator {
                 { select: ['name'] }
             );
 
-            await this.eventBus.publish(new JobStatusChangedEvent({
+            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
                 jobId: job.id,
                 teamId: job.props.team,
                 status: mapCloneStateToJobStatus(job.props.state),

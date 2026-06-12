@@ -1,13 +1,6 @@
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-
-export const extractPluginId = (pluginValue: unknown): string => {
-    let pluginId = '';
-
-    if (typeof pluginValue === 'string') {
-        pluginId = pluginValue;
-    } else if (isRecord(pluginValue) && pluginValue._id != null) {
-        pluginId = String(pluginValue._id);
-    }
-
-    return pluginId;
-};
+/**
+ * MOVED to the neutral shared layer (detachable-modules migration).
+ * Canonical home: `@shared/application/utilities/extract-plugin-id`.
+ * Re-exported here so existing in-module importers compile unchanged.
+ */
+export { extractPluginId } from '@shared/application/utilities/extract-plugin-id';

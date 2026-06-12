@@ -1,38 +1,38 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { ISceneArtifactRepository, IAnalysisRepository, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import {
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
+import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
+import type { IGetPluginExposureGLBUseCase } from '@shared/contracts/ports/IGetPluginExposureGLBUseCase';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveSceneArtifactStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import { resolveSceneArtifactStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { SceneArtifactSourceType } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 
-import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import { getClusterGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import type { SceneArtifactProps } from '@shared/contracts/types';
+import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type { Readable } from 'node:stream';
 
 @Singleton()
+@AliasOf(PLUGIN_USECASE_TOKENS.GetPluginExposureGLBUseCase)
 export class GetPluginExposureGLBUseCase implements IUseCase<
     GetPluginExposureGLBInputDTO,
     GetPluginExposureGLBOutputDTO,
     ApplicationError
-> {
+>, IGetPluginExposureGLBUseCase {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(

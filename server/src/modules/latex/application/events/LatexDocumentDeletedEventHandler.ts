@@ -4,7 +4,7 @@ import type { ILatexFileRepository } from '@modules/latex/domain/port/ILatexFile
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
 import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
@@ -20,7 +20,7 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
     constructor(
         @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
         @inject(LATEX_TOKENS.LatexFileRepository) private readonly latexFileRepository: ILatexFileRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {

@@ -1,11 +1,11 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { ListContainersUseCase } from '@modules/container/application/use-cases/ListContainersUseCase';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOKENS.AITool)
+@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListContainersAITool extends AITool {
     readonly name = 'list_containers';
     readonly description = 'List all Docker containers in the team.';

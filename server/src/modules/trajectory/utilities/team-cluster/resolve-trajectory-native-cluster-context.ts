@@ -1,5 +1,5 @@
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 
 import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';

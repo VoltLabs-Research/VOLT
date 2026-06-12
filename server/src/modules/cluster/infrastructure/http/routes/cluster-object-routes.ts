@@ -101,6 +101,7 @@ const applyReadHeaders = (
 
 export default createHttpModule({
     basePath: '/api/cluster-objects/:teamId',
+    moduleKey: 'cluster',
     protected: false,
     routes: (router) => {
         router.put('/write/:token', async (request, response) => {

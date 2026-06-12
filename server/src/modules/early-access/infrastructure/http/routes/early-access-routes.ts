@@ -3,6 +3,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 
 export default createHttpModule({
+    moduleKey: 'early-access',
     basePath: '/api/early-access',
     protected: false,
     routes: (router) => {

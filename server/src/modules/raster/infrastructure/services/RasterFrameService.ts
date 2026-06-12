@@ -1,19 +1,20 @@
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
 import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import { resolveSceneArtifactStorageCluster } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-storage-cluster';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
+import { resolveSceneArtifactStorageCluster } from '@shared/application/utilities/resolve-scene-artifact-storage-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 @Singleton(RASTER_TOKENS.RasterFrameReader)
 export class RasterFrameService implements IRasterFrameReader {
     constructor(
         private readonly rasterStorage: RasterStorageService,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly analysisRepository: AnalysisRepository
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult> {

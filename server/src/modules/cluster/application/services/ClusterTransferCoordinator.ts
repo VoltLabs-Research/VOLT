@@ -2,14 +2,16 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+// cluster EMITS the jobs-owned `job.status.changed` event (the transfer-job
+// projection onto the team jobs history) via the neutral GenericDomainEvent,
+// so it no longer imports the jobs event class. JobStatus enum is neutral.
+import { JobStatus } from '@shared/contracts/types';
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
@@ -182,8 +184,8 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
         private readonly storagePlacementService: StoragePlacementService,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(SYSTEM_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
@@ -1018,7 +1020,7 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
             const projectionContext = await this.resolveTransferJobProjectionContext(job);
             const status = mapTransferStateToJobStatus(job.props.state);
 
-            await this.eventBus.publish(new JobStatusChangedEvent({
+            await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
                 jobId: job.id,
                 teamId: job.props.team,
                 status,

@@ -154,14 +154,40 @@ const renderRouteWithChildren = (route: RouteConfig) => {
     );
 };
 
-export const renderPublicRoutes = () => {
-    return publicRoutes.map((route) => renderRouteWithChildren(route));
+const isRouteModuleEnabled = (
+    route: RouteConfig,
+    enabledModules: string[] | null,
+    hiddenModules: string[]
+): boolean => {
+    if (!route.moduleKey) {
+        return true;
+    }
+
+    const serverEnabled = enabledModules === null || enabledModules.includes(route.moduleKey);
+
+    // A module hidden by the user is filtered out of the route table entirely:
+    // its lazy `loader` never runs, so its JS chunk is never fetched — full
+    // per-user decoupling, not just a hidden nav item. Its URLs fall through to
+    // the app-level NotFound catch-all.
+    return serverEnabled && !hiddenModules.includes(route.moduleKey);
 };
 
-export const renderProtectedRoutes = () => {
+const filterEnabledRoutes = (
+    routes: RouteConfig[],
+    enabledModules: string[] | null,
+    hiddenModules: string[]
+): RouteConfig[] => {
+    return routes.filter((route) => isRouteModuleEnabled(route, enabledModules, hiddenModules));
+};
+
+export const renderPublicRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
+    return filterEnabledRoutes(publicRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route));
+};
+
+export const renderProtectedRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
-            {nonDashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(nonDashboardProtectedRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
             <Route
                 path={DASHBOARD_ROUTE_PREFIX}
                 element={(
@@ -170,24 +196,24 @@ export const renderProtectedRoutes = () => {
                     </Suspense>
                 )}
             >
-                {dashboardProtectedRoutes.map((route) => renderRouteWithChildren(route))}
+                {filterEnabledRoutes(dashboardProtectedRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
             </Route>
         </Route>
     );
 };
 
-export const renderGuestRoutes = () => {
+export const renderGuestRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Guest} />}>
-            {guestRoutes.map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(guestRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
         </Route>
     );
 };
 
-export const renderOptionalAuthRoutes = () => {
+export const renderOptionalAuthRoutes = (enabledModules: string[] | null, hiddenModules: string[]) => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.OptionalAuth} />}>
-            {optionalAuthRoutes.map((route) => renderRouteWithChildren(route))}
+            {filterEnabledRoutes(optionalAuthRoutes, enabledModules, hiddenModules).map((route) => renderRouteWithChildren(route))}
         </Route>
     );
 };

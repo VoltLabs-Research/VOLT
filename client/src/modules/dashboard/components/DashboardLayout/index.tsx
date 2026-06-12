@@ -5,6 +5,8 @@ import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
 import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
+import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
+import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/TrajectoryUploaderContainer';
 import {
@@ -179,54 +181,57 @@ const DashboardLayout = () => {
     }), []);
 
     return (
-        <Box as='main' display='flex' height='vh-max' className={`dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
-            <TeamCreatorModal isRequired={teams.length === 0} />
-            <JoinTeamModal />
+        <AIChatProvider>
+            <AIPageExitWidgetBridge />
+            <Box as='main' display='flex' height='vh-max' className={`dashboard-main ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+                <TeamCreatorModal isRequired={teams.length === 0} />
+                <JoinTeamModal />
 
-            {/* Sidebar Overlay for Mobile */}
-            <Box position='fixed' inset='0' className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`} onClick={() => setSidebarOpen(false)} />
+                {/* Sidebar Overlay for Mobile */}
+                <Box position='fixed' inset='0' className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-            <DashboardSidebar
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                collapsed={sidebarCollapsed}
-                onToggleCollapse={toggleSidebarCollapsed}
-                onExpandSidebar={expandSidebar}
-            />
+                <DashboardSidebar
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
+                    collapsed={sidebarCollapsed}
+                    onToggleCollapse={toggleSidebarCollapsed}
+                    onExpandSidebar={expandSidebar}
+                />
 
-            <Box className='dashboard-content-wrapper'>
-                <DemoExpirationBanner />
-                {!headerHidden && (
-                    <DashboardHeader
-                        setSidebarOpen={setSidebarOpen}
-                        globalSearchBreadcrumb={globalSearchBreadcrumb}
-                    />
-                )}
+                <Box className='dashboard-content-wrapper'>
+                    <DemoExpirationBanner />
+                    {!headerHidden && (
+                        <DashboardHeader
+                            setSidebarOpen={setSidebarOpen}
+                            globalSearchBreadcrumb={globalSearchBreadcrumb}
+                        />
+                    )}
 
-                <Box flex='1' minH='0' overflow='y-auto' className='dashboard-content-main'>
-                    <TrajectoryUploaderContainer>
-                        <motion.div
-                            key={getOutletTransitionKey(location.pathname)}
-                            initial={prefersReducedMotion ? false : { opacity: 0 }}
-                            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-                            style={{ height: '100%' }}
-                        >
-                            <Outlet context={outletContext} />
-                        </motion.div>
-                    </TrajectoryUploaderContainer>
+                    <Box flex='1' minH='0' overflow='y-auto' className='dashboard-content-main'>
+                        <TrajectoryUploaderContainer>
+                            <motion.div
+                                key={getOutletTransitionKey(location.pathname)}
+                                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                                animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                                style={{ height: '100%' }}
+                            >
+                                <Outlet context={outletContext} />
+                            </motion.div>
+                        </TrajectoryUploaderContainer>
+                    </Box>
+
+                    {!headerHidden && <DashboardBottomBar />}
+
+                    <DemoWelcomeModal />
                 </Box>
 
-                {!headerHidden && <DashboardBottomBar />}
-
-                <DemoWelcomeModal />
+                <JobsDrawer />
+                <ClustersDrawer />
+                <ActivityDrawer />
+                <PresenceDrawer />
             </Box>
-
-            <JobsDrawer />
-            <ClustersDrawer />
-            <ActivityDrawer />
-            <PresenceDrawer />
-        </Box>
+        </AIChatProvider>
     );
 };
 

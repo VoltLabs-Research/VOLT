@@ -9,15 +9,17 @@ import {
     getRasterFrameObjectName,
     getTrajectoryRasterPreviewsPrefix
 } from '@modules/raster/utilities/raster-storage-paths';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 @Singleton(RASTER_TOKENS.RasterStorageService)
 export class RasterStorageService implements IRasterStorageService {
     constructor(
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async hasTrajectoryPreview(trajectoryId: string, teamClusterId: string): Promise<boolean> {

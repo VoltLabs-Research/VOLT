@@ -32,6 +32,7 @@ interface AIConversationPanelContentProps {
     onMessageDraftChange: (message: string) => void;
     onModelChange: (model: string) => void;
     onSend: () => void;
+    onStop?: () => void;
     onOpenTableArtifact: (artifact: AIMessageArtifact) => void;
     onRetry: () => void;
     onOpenIntegrations: () => void;
@@ -57,6 +58,7 @@ const AIConversationPanelContent = ({
     onMessageDraftChange,
     onModelChange,
     onSend,
+    onStop,
     onOpenTableArtifact,
     onRetry,
     onOpenIntegrations
@@ -117,6 +119,7 @@ const AIConversationPanelContent = ({
                 onChange={onMessageDraftChange}
                 onModelChange={onModelChange}
                 onSend={onSend}
+                onStop={onStop}
                 disabled={!canSendMessage || isProviderCatalogLoading || noProviderConfigured}
                 isSending={isSendingMessage}
                 error={sendMessageError}

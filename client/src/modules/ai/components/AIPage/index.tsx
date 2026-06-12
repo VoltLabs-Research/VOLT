@@ -4,7 +4,7 @@ import AIConversationSidebar from '@/modules/ai/components/AIConversationSidebar
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import ResizeHandle from '@/modules/canvas/components/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
-import useAIPage from '@/modules/ai/hooks/use-ai-page';
+import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
 import { toAIModelSelectOptions } from '@/modules/ai/utilities/model-options';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { EmptyState, Box, Row, Stack } from '@voltstack/bravais';
@@ -26,7 +26,6 @@ const AIPage = () => {
     const navigate = useNavigate();
     const { conversationId } = useParams<AIPageRouteParams>();
     const { canAccess } = useTeamPermissions();
-    const [messageDraft, setMessageDraft] = useState('');
     const [openArtifact, setOpenArtifact] = useState<AIMessageArtifact | null>(null);
     const didCollapseSidebar = useRef(false);
 
@@ -62,9 +61,34 @@ const AIPage = () => {
         handleDeleteConversation,
         handleRenameConversation,
         addToolApprovalResponse,
-        handleSendMessage,
-        loadConversationMessages
-    } = useAIPage(conversationId);
+        loadConversationMessages,
+        activeConversationId,
+        setActiveConversationId,
+        messageDraft,
+        setMessageDraft,
+        handleSend,
+        stopStreaming
+    } = useAIChatContext();
+
+    // The URL is the source of truth for the page surface; push it into the
+    // shared provider so the hoisted useChat hydrates the right conversation.
+    useEffect(() => {
+        if (conversationId !== activeConversationId) {
+            setActiveConversationId(conversationId);
+        }
+    }, [conversationId, activeConversationId, setActiveConversationId]);
+
+    // When the provider's active conversation changes (e.g. created from the
+    // widget, or selected here), keep the page URL aligned.
+    useEffect(() => {
+        if (!activeConversationId) {
+            return;
+        }
+        if (activeConversationId !== conversationId) {
+            navigate(`/dashboard/ai/${activeConversationId}`);
+        }
+    }, [activeConversationId, conversationId, navigate]);
+
     const canCreate = canAccess(['ai-conversation:create']);
     const canUpdate = canAccess(['ai-conversation:update']);
     const canDelete = canAccess(['ai-conversation:delete']);
@@ -112,28 +136,6 @@ const AIPage = () => {
         await handleRenameConversation(targetConversationId, title);
     };
 
-    const handleSend = async () => {
-        const draftToSend = messageDraft;
-        const normalizedText = draftToSend.trim();
-
-        if (!normalizedText) {
-            return;
-        }
-
-        setMessageDraft('');
-        try {
-            if (!conversationId) {
-                sessionStorage.setItem('volt:ai:pending-message', normalizedText);
-                await handleCreateConversation(normalizedText);
-                return;
-            }
-
-            await handleSendMessage(normalizedText);
-        } catch {
-            setMessageDraft(normalizedText);
-        }
-    };
-
     const noProviderConfigured = availableModelsForProvider.length === 0 && !isProviderCatalogLoading;
     const isThreadEmpty = !isMessagesLoading && messages.length === 0;
 
@@ -150,24 +152,6 @@ const AIPage = () => {
             loadConversationMessages(conversationId).catch(console.warn);
         }
     };
-
-    useEffect(() => {
-        if (!conversationId || !canSendMessage) {
-            return;
-        }
-
-        const text = sessionStorage.getItem('volt:ai:pending-message');
-
-        if (!text) {
-            return;
-        }
-
-        sessionStorage.removeItem('volt:ai:pending-message');
-        handleSendMessage(text).catch(() => {
-            sessionStorage.setItem('volt:ai:pending-message', text);
-            setMessageDraft(text);
-        });
-    }, [canSendMessage, conversationId, handleSendMessage]);
 
     if (accessDenied) {
         return (
@@ -201,6 +185,7 @@ const AIPage = () => {
                         onChange={setMessageDraft}
                         onModelChange={setSelectedModel}
                         onSend={handleSend}
+                        onStop={stopStreaming}
                         disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
                         isSending={isSendingMessage}
                         error={sendMessageError}

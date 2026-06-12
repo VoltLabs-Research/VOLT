@@ -1,43 +1,14 @@
 /**
- * Describes a public access mode supported by a team cluster service exposure.
+ * Re-export shim. The canonical exposure enums + `TeamClusterServiceExposure`
+ * shape now live in the neutral `shared/contracts` layer (detachable-modules
+ * migration). Existing
+ * `@modules/cluster/domain/contracts/TeamClusterServiceExposure` importers keep
+ * working unchanged, and — because these are nominal enums — stay
+ * type-identical to every other consumer of the contract.
  */
-export enum TeamClusterServiceExposureAccessMode {
-    Http = 'http',
-    Tcp = 'tcp',
-    WebSocket = 'websocket'
-}
-
-/**
- * Describes the operational state of an exposure registered by a team cluster daemon.
- */
-export enum TeamClusterServiceExposureStatus {
-    Active = 'active',
-    Unavailable = 'unavailable'
-}
-
-/**
- * Describes where a team cluster service exposure originates.
- */
-export enum TeamClusterServiceExposureSourceKind {
-    Container = 'container',
-    Daemon = 'daemon'
-}
-
-/**
- * Represents a single persistent service exposure published by a team cluster daemon.
- */
-export interface TeamClusterServiceExposure {
-    id: string;
-    teamClusterId: string;
-    teamId: string;
-    sourceKind: TeamClusterServiceExposureSourceKind;
-    exposureName: string;
-    accessModes: TeamClusterServiceExposureAccessMode[];
-    targetHost: string;
-    targetPort: number;
-    status: TeamClusterServiceExposureStatus;
-    labels: Record<string, string>;
-    containerId?: string;
-    containerName?: string;
-    containerPort?: number;
-}
+export {
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    TeamClusterServiceExposureSourceKind
+} from '@shared/contracts/types/TeamClusterExposure';
+export type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';

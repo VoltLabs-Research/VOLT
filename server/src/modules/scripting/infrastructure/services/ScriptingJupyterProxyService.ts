@@ -16,8 +16,9 @@ import {
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import {
     TeamClusterServiceExposureAccessMode
-} from '@modules/cluster/utilities/teamClusterSocket';
-import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
+} from '@shared/contracts/types';
+import type { ITeamClusterExposureRegistryService } from '@shared/contracts/ports';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { getTeamMemberRolePermissions } from '@modules/team/domain/entities/team-member/TeamMember';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
@@ -146,7 +147,7 @@ export class ScriptingJupyterProxyService implements IScriptingJupyterProxyServi
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
         private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
-        private readonly exposureRegistryService: TeamClusterExposureRegistryService
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService
     ) {
         this.startHttpProxySessionSweep();
     }

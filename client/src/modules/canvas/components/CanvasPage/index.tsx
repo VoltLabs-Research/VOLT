@@ -1,4 +1,5 @@
 import { useKeyboardShortcutsStore } from '../../stores/use-keyboard-shortcuts-store';
+import { useCanvasBridgeStore } from '../../stores/use-canvas-bridge-store';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
@@ -182,6 +183,42 @@ const CanvasPage = () => {
 
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
+
+    // Register the live viewer context into the canvas bridge so AI client tools
+    // (control_playback, seek_frame, reset_camera, …) can reach the active
+    // trajectory + scene ref. Cleared on unmount so off-canvas tool calls fail
+    // gracefully ("viewer not mounted").
+    const activeScene = useEditorStore((s) => s.activeScene);
+    const registerCanvasBridge = useCanvasBridgeStore((s) => s.register);
+    const unregisterCanvasBridge = useCanvasBridgeStore((s) => s.unregister);
+
+    useEffect(() => {
+        if (isLocalGlbViewer || !trajectoryId) {
+            return;
+        }
+
+        const activeSceneId = activeScene ? `${activeScene.source}:${activeScene.sceneType}` : null;
+
+        registerCanvasBridge({
+            trajectoryId,
+            timesteps: availableTimesteps ?? [],
+            currentTimestep,
+            activeSceneId,
+            sceneRef
+        });
+
+        return () => {
+            unregisterCanvasBridge();
+        };
+    }, [
+        isLocalGlbViewer,
+        trajectoryId,
+        availableTimesteps,
+        currentTimestep,
+        activeScene,
+        registerCanvasBridge,
+        unregisterCanvasBridge
+    ]);
     const {
         analysisId,
         showGrid,

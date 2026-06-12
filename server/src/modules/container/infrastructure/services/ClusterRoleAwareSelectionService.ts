@@ -2,17 +2,16 @@ import {
     HARD_STORAGE_LIMIT_PCT,
     SOFT_STORAGE_ASSIGNMENT_PENALTY,
     SOFT_STORAGE_LIMIT_PCT
-} from '@modules/cluster/application/services/cluster-storage-policy';
-import {
-    resolveEffectiveCapabilitiesFromRoleConfig,
-    TeamClusterStatus
-} from '@modules/cluster/domain/entities/TeamCluster';
+} from '@shared/application/utilities/cluster-storage-policy';
+import { TeamClusterStatus } from '@shared/contracts/types';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/application/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
-import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
+import type { TeamClusterLike } from '@shared/contracts/types';
+import type { ITeamClusterRepository } from '@shared/contracts/ports';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 
 type SelectionCapability = 'compute' | 'storage';
 
@@ -24,7 +23,7 @@ interface ResolveRoleAwareClusterInput {
 }
 
 interface ScoredCluster {
-    cluster: TeamCluster;
+    cluster: TeamClusterLike;
     score: number;
     metrics: SystemMetrics | null;
 }
@@ -94,7 +93,7 @@ const normalizeNetworkUsage = (metrics: SystemMetrics | null): number => {
 };
 
 const supportsCapability = (
-    cluster: TeamCluster,
+    cluster: TeamClusterLike,
     capability: SelectionCapability
 ): boolean => {
     if (cluster.props.status !== TeamClusterStatus.Connected) {
@@ -115,13 +114,13 @@ const supportsCapability = (
 @injectable()
 export class ClusterRoleAwareSelectionService {
     constructor(
-        private readonly teamClusterRepository: TeamClusterRepository,
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {}
 
     async resolveStorageCluster(
         input: ResolveRoleAwareClusterInput
-    ): Promise<TeamCluster> {
+    ): Promise<TeamClusterLike> {
         return this.resolveCluster('storage', input);
     }
 
@@ -129,12 +128,12 @@ export class ClusterRoleAwareSelectionService {
         input: ResolveRoleAwareClusterInput
     ): Promise<string> {
         const cluster = await this.resolveStorageCluster(input);
-        return cluster.id;
+        return cluster._id;
     }
 
     async resolveComputeCluster(
         input: ResolveRoleAwareClusterInput
-    ): Promise<TeamCluster> {
+    ): Promise<TeamClusterLike> {
         return this.resolveCluster('compute', input);
     }
 
@@ -142,12 +141,12 @@ export class ClusterRoleAwareSelectionService {
         input: ResolveRoleAwareClusterInput
     ): Promise<string> {
         const cluster = await this.resolveComputeCluster(input);
-        return cluster.id;
+        return cluster._id;
     }
 
     async resolveConnectedCluster(
         input: ResolveRoleAwareClusterInput
-    ): Promise<TeamCluster> {
+    ): Promise<TeamClusterLike> {
         const requestedCluster = await this.findRequestedCluster(input);
         if (requestedCluster) {
             this.assertConnected(requestedCluster, buildMissingConnectedClusterError);
@@ -171,13 +170,13 @@ export class ClusterRoleAwareSelectionService {
         input: ResolveRoleAwareClusterInput
     ): Promise<string> {
         const cluster = await this.resolveConnectedCluster(input);
-        return cluster.id;
+        return cluster._id;
     }
 
     private async resolveCluster(
         capability: SelectionCapability,
         input: ResolveRoleAwareClusterInput
-    ): Promise<TeamCluster> {
+    ): Promise<TeamClusterLike> {
         const requestedCluster = await this.findRequestedCluster(input);
         if (requestedCluster) {
             this.assertConnected(requestedCluster, () => buildMissingClusterError(capability));
@@ -206,7 +205,7 @@ export class ClusterRoleAwareSelectionService {
 
     private async findRequestedCluster(
         input: ResolveRoleAwareClusterInput
-    ): Promise<TeamCluster | null> {
+    ): Promise<TeamClusterLike | null> {
         if (!input.requestedTeamClusterId) {
             return null;
         }
@@ -223,7 +222,7 @@ export class ClusterRoleAwareSelectionService {
     }
 
     private assertConnected(
-        cluster: TeamCluster,
+        cluster: TeamClusterLike,
         buildError: MissingClusterErrorFactory
     ): void {
         if (cluster.props.status !== TeamClusterStatus.Connected) {
@@ -231,7 +230,7 @@ export class ClusterRoleAwareSelectionService {
         }
     }
 
-    private async listConnectedClusters(teamId: string): Promise<TeamCluster[]> {
+    private async listConnectedClusters(teamId: string): Promise<TeamClusterLike[]> {
         return this.teamClusterRepository.export({
             filter: {
                 team: teamId,
@@ -245,10 +244,10 @@ export class ClusterRoleAwareSelectionService {
 
     private async selectBestCluster(
         capability: SelectionCapability,
-        candidates: TeamCluster[],
+        candidates: TeamClusterLike[],
         input: ResolveRoleAwareClusterInput,
         buildMissingError: MissingClusterErrorFactory
-    ): Promise<TeamCluster> {
+    ): Promise<TeamClusterLike> {
         const scoredCandidates = await this.scoreClusters(capability, candidates, input);
         const selectedCluster = scoredCandidates[0]?.cluster;
 
@@ -261,11 +260,11 @@ export class ClusterRoleAwareSelectionService {
 
     private async scoreClusters(
         capability: SelectionCapability,
-        candidates: TeamCluster[],
+        candidates: TeamClusterLike[],
         input: ResolveRoleAwareClusterInput
     ): Promise<ScoredCluster[]> {
         const scoredCandidates = await Promise.all(candidates.map(async (cluster) => {
-            const metrics = await this.systemMetricsRepository.getLatestByClusterId(cluster.id);
+            const metrics = await this.systemMetricsRepository.getLatestByClusterId(cluster._id);
             return {
                 cluster,
                 score: this.computeClusterScore(capability, cluster, metrics, input),
@@ -290,7 +289,7 @@ export class ClusterRoleAwareSelectionService {
 
     private computeClusterScore(
         capability: SelectionCapability,
-        cluster: TeamCluster,
+        cluster: TeamClusterLike,
         metrics: SystemMetrics | null,
         input: ResolveRoleAwareClusterInput
     ): number {
@@ -307,13 +306,13 @@ export class ClusterRoleAwareSelectionService {
 
         if (capability === 'compute'
             && input.preferredStorageClusterId
-            && input.preferredStorageClusterId !== cluster.id) {
+            && input.preferredStorageClusterId !== cluster._id) {
             score -= REMOTE_EXECUTION_PENALTY;
         }
 
         if (capability === 'storage'
             && input.preferredComputeClusterId
-            && input.preferredComputeClusterId !== cluster.id) {
+            && input.preferredComputeClusterId !== cluster._id) {
             score -= REMOTE_STORAGE_PENALTY;
         }
 

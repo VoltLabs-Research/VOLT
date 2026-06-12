@@ -3,7 +3,7 @@ import type {
     ContainerTerminalExec,
     ContainerTerminalSize,
     ContainerTerminalStream
-} from '@modules/container/domain/port/IContainerService';
+} from '@shared/contracts/ports';
 
 export class TeamClusterReverseTerminalExec implements ContainerTerminalExec {
     constructor(private readonly onResize: (size: ContainerTerminalSize) => void) {}

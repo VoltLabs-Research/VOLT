@@ -1,7 +1,9 @@
 import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/cluster/utilities/teamClusterSocket';
 import type { ITeamClusterExposureRegistryService } from '@modules/cluster/domain/port/ITeamClusterExposureRegistryService';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { EventEmitter } from 'node:events';
 import type { ExposureRegistryChangeEvent } from '@modules/cluster/domain/contracts/ExposureRegistryChangeEvent';
 export type { ExposureRegistryChangeEvent };
@@ -10,8 +12,15 @@ const buildRegistryKey = (teamClusterId: string, exposureId: string): string => 
     return `${teamClusterId}:${exposureId}`;
 };
 
+// `@Singleton()` keeps the class self-registered under its own constructor so
+// the cluster-internal positional injection (TeamClusterReverseChannelService)
+// keeps resolving the same shared singleton. `@AliasOf(...)` adds the neutral
+// cross-module token the scripting consumers inject against. A bare
+// `@Singleton(token)` would register ONLY under the token (see decorators.ts)
+// and break the by-class injection — hence the Singleton + AliasOf idiom.
 @Singleton()
-export default class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryService {
+@AliasOf(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService)
+export default class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryService, ITeamClusterExposureRegistryServicePort {
     private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
     private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();
     private readonly events = new EventEmitter();

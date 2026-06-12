@@ -1,4 +1,3 @@
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
 import Plugin, { PluginStatus } from '@modules/plugin/domain/entities/plugin/Plugin';
 import Workflow, { type WorkflowProps } from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
@@ -17,13 +16,15 @@ import SocketIOEventRegistry from '@modules/socket/infrastructure/services/Socke
 import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { ITrajectoryRepository, ITeamClusterSelectionService, ITrajectoryFrameRepository } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { inject } from 'tsyringe';
 
 // --- Payload types from the client ---
 
@@ -129,9 +130,12 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         private readonly daemonClient: TeamClusterDaemonClient,
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
         private readonly pluginRepository: PluginRepository,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly trajectoryFrameRepository: TrajectoryFrameRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
+        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
         private readonly pluginDependencyResolverService: PluginDependencyResolverService,
         private readonly workflowValidator: WorkflowValidatorService

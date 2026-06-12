@@ -1,4 +1,4 @@
-import type { AIProvider } from '@modules/ai/domain/contracts/AIProviders';
+import type { AIProvider } from '@shared/contracts/types/AIProviders';
 
 export type TeamAIProvider = AIProvider;
 

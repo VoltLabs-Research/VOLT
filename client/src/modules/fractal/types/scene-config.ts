@@ -14,6 +14,20 @@ export interface LineSceneSettings {
     lineWidth: number;
 }
 
+// Triangle ranges per line entity, read from the GLB's `.ranges.json` sidecar.
+// Maps a listing row's entity id to the index-buffer slice of its tube.
+export interface LineEntityRange {
+    id: number;
+    triangleStart: number;
+    triangleCount: number;
+}
+
+export interface LineEntityHighlight {
+    sceneKey: string;
+    entityId: number;
+    entityRanges: LineEntityRange[];
+}
+
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState;
     rendererRuntime: RendererRuntimeState;

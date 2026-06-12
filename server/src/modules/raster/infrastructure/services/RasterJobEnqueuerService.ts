@@ -1,19 +1,21 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
-import { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService, ITrajectoryRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IRasterJobEnqueuer,
     RasterJobEnqueueResult,
     RasterTriggerConfig
 } from '@modules/raster/domain/port/IRasterJobEnqueuer';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import DaemonAnalysisCompletionService from '@modules/cluster/infrastructure/services/DaemonAnalysisCompletionService';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { inject } from 'tsyringe';
 
 interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
@@ -25,10 +27,10 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
 @Singleton(RASTER_TOKENS.RasterJobEnqueuer)
 export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
     constructor(
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly teamClusterSelectionService: TeamClusterSelectionService,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly daemonAnalysisCompletionService: DaemonAnalysisCompletionService
+        @inject(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService) private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
     ) {}
 
     async triggerRasterization(

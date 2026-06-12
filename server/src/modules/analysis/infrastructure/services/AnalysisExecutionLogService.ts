@@ -1,12 +1,12 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import type { IAnalysisExecutionLogService } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { ITeamClusterObjectGatewayClient, ITrajectoryRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type IORedis from 'ioredis';
@@ -123,8 +123,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
         private readonly emitter: SocketIOEmitter,
-        private readonly trajectoryRepository: TrajectoryRepository,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     private async requireStorageClusterId(trajectoryId: string): Promise<string> {

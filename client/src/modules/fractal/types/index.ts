@@ -3,7 +3,7 @@ import type { Camera, Plane, Vector3 } from 'three';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
-import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 export enum AnalysisStatus {
     Pending = 'pending',
@@ -44,6 +44,7 @@ export type UseGlbSceneParams = {
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
+    lineHighlight?: LineEntityHighlight;
     sceneVisualOverrides: SceneVisualOverrides;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;

@@ -1,8 +1,8 @@
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+} from '@shared/application/utilities/cluster-location';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 
 interface ResolveSceneArtifactStorageClusterInput {

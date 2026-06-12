@@ -4,12 +4,17 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflo
 import { BinaryUploadResult, BinaryUploadTarget, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/port/plugin/IPluginStorageService';
 import { WorkflowValidationMode } from '@modules/plugin/domain/port/plugin/IWorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import ClusterObjectArchiveService from '@modules/cluster/infrastructure/services/ClusterObjectArchiveService';
-import ClusterObjectSignedUrlService from '@modules/cluster/infrastructure/services/ClusterObjectSignedUrlService';
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type {
+    IClusterObjectArchiveService,
+    IClusterObjectSignedUrlService,
+    IStoragePlacementService,
+    ITeamClusterObjectGatewayClient
+} from '@shared/contracts/ports';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -53,11 +58,15 @@ const normalizeBinaryFileName = (fileName: string): string => {
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,
-        private readonly storagePlacementService: StoragePlacementService,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
+        @inject(COMPUTE_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: IStoragePlacementService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         private readonly workflowValidator: WorkflowValidatorService,
-        private readonly signedUrlService: ClusterObjectSignedUrlService,
-        private readonly archiveService: ClusterObjectArchiveService
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService)
+        private readonly signedUrlService: IClusterObjectSignedUrlService,
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
+        private readonly archiveService: IClusterObjectArchiveService
     ) {}
 
     private async resolveOwnerClusterId(pluginId: string): Promise<string> {

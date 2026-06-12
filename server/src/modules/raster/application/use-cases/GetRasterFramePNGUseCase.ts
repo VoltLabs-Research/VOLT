@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import type { GetRasterFramePNGInputDTO } from '@modules/raster/application/dtos/GetRasterFramePNGDTO';
 import type { IRasterFrameReader } from '@modules/raster/domain/port/IRasterFrameReader';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';

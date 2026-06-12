@@ -11,6 +11,7 @@ interface CreateHttpModuleConfig {
     teamScope?: HttpModuleTeamScope;
     protected?: boolean;
     routerOptions?: RouterOptions;
+    moduleKey?: string;
     routes: (router: Router) => void;
 }
 
@@ -29,6 +30,7 @@ export const createHttpModule = (config: CreateHttpModuleConfig): HttpModule => 
         protected: isProtected,
         router,
         resource: config.resource,
-        teamScope: config.teamScope
+        teamScope: config.teamScope,
+        moduleKey: config.moduleKey
     };
 };

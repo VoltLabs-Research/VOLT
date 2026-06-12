@@ -1,5 +1,5 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import {
     isZstdObjectName,
     stripTrailingZstdExtension
@@ -20,7 +20,7 @@ interface GlbStreamRequestContext {
 }
 
 export const getClusterGlbStream = async (
-    objectGatewayClient: TeamClusterObjectGatewayClient,
+    objectGatewayClient: ITeamClusterObjectGatewayClient,
     teamClusterId: string,
     objectName: string,
     _requestContext: GlbStreamRequestContext

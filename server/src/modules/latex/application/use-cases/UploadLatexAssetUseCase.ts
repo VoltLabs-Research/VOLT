@@ -3,8 +3,8 @@ import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import type { IClusterObjectSignedUrlService } from '@modules/cluster/domain/port/IClusterObjectSignedUrlService';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
 import { buildLatexAssetContentUrl, buildLatexAssetStorageKey, requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import type { LatexAssetUploadTargetDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
 import type { UploadLatexAssetInputDTO, UploadLatexAssetOutputDTO } from '@modules/latex/application/dtos/UploadLatexAssetDTO';
@@ -28,7 +28,7 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexAssetRepository) private readonly latexAssetRepository: ILatexAssetRepository,
-        @inject(CLUSTER_TOKENS.ClusterObjectSignedUrlService) private readonly signedUrlService: IClusterObjectSignedUrlService
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService) private readonly signedUrlService: IClusterObjectSignedUrlService
     ) {}
 
     async execute(input: UploadLatexAssetInputDTO): Promise<Result<UploadLatexAssetOutputDTO, ApplicationError>> {

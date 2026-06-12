@@ -1,9 +1,7 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type StoragePlacementRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/StoragePlacementRepository';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import type { IStoragePlacementRepository, IClusterTransferJobRepository, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { inject } from 'tsyringe';
-import ClusterTransferJobRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/ClusterTransferJobRepository';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
@@ -14,9 +12,9 @@ import logger from '@shared/infrastructure/logger';
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient,
-        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: StoragePlacementRepository,
-        private readonly clusterTransferJobRepository: ClusterTransferJobRepository
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
+        @inject(CLUSTER_SERVICE_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
+        @inject(CLUSTER_SERVICE_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {

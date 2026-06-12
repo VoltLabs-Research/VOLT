@@ -1,9 +1,9 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ILatexFolderRepository } from '@modules/latex/domain/port/ILatexFolderRepository';
 import { LATEX_TOKENS } from '@modules/latex/infrastructure/di/LatexTokens';
 import type { ILatexDocumentRepository } from '@modules/latex/domain/port/ILatexDocumentRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import type { CreateLatexDocumentInputDTO, CreateLatexDocumentOutputDTO } from '@modules/latex/application/dtos/CreateLatexDocumentDTO';
 import LatexDocumentCreatedEvent from '@modules/latex/domain/events/LatexDocumentCreatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -19,7 +19,7 @@ export class CreateLatexDocumentUseCase implements IUseCase<CreateLatexDocumentI
     constructor(
         @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository,
         @inject(LATEX_TOKENS.LatexFolderRepository) private readonly latexFolderRepository: ILatexFolderRepository,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
     ) {}

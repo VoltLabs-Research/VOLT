@@ -2,8 +2,8 @@ import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/Whiteb
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import type { IClusterObjectSignedUrlService } from '@modules/cluster/domain/port/IClusterObjectSignedUrlService';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
 import type { UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO } from '@modules/whiteboards/application/dtos/UploadWhiteboardAssetDTO';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO, ApplicationError> {
     constructor(
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
-        @inject(CLUSTER_TOKENS.ClusterObjectSignedUrlService) private readonly signedUrlService: IClusterObjectSignedUrlService
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService) private readonly signedUrlService: IClusterObjectSignedUrlService
     ) {}
 
     private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {

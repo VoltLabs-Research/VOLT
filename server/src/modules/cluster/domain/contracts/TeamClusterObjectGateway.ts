@@ -1,59 +1,17 @@
-import type { Readable as NodeReadable } from 'node:stream';
-
-export interface TeamClusterObjectGatewayListRequest {
-    bucket: string;
-    prefix?: string;
-    cursor?: string;
-    limit?: number;
-}
-
-export interface TeamClusterObjectGatewayListEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: Date;
-}
-
-export interface TeamClusterObjectGatewayListResponse {
-    keys: string[];
-    objects: TeamClusterObjectGatewayListEntry[];
-    nextCursor?: string;
-}
-
-export interface TeamClusterObjectGatewayHeadResponse {
-    contentLength?: number;
-    contentType?: string;
-    contentEncoding?: string;
-    etag?: string;
-    lastModified?: Date;
-    metadata: Record<string, string>;
-}
-
-export interface TeamClusterObjectGatewayStreamResponse extends TeamClusterObjectGatewayHeadResponse {
-    headers: Record<string, string>;
-    stream: NodeReadable;
-}
-
-export interface TeamClusterObjectGatewayPutRequest {
-    bucket: string;
-    objectKey: string;
-    contentLength: number;
-    contentType?: string;
-    contentEncoding?: string;
-    metadata?: Record<string, string>;
-}
-
-export interface TeamClusterObjectGatewayPutStreamRequest extends TeamClusterObjectGatewayPutRequest {
-    stream: NodeReadable;
-}
-
-export interface TeamClusterObjectGatewayPutBufferRequest extends TeamClusterObjectGatewayPutRequest {
-    buffer: Buffer;
-}
-
-export interface TeamClusterObjectGatewayComposeRequest {
-    bucket: string;
-    objectKey: string;
-    sourceObjectKeys: string[];
-    metadata?: Record<string, string>;
-}
+/**
+ * Re-export shim. The canonical team-cluster object gateway payload types now
+ * live in the neutral `shared/contracts` layer (detachable-modules migration).
+ * Existing `@modules/cluster/domain/contracts/TeamClusterObjectGateway`
+ * importers keep working unchanged.
+ */
+export type {
+    TeamClusterObjectGatewayListRequest,
+    TeamClusterObjectGatewayListEntry,
+    TeamClusterObjectGatewayListResponse,
+    TeamClusterObjectGatewayHeadResponse,
+    TeamClusterObjectGatewayStreamResponse,
+    TeamClusterObjectGatewayPutRequest,
+    TeamClusterObjectGatewayPutStreamRequest,
+    TeamClusterObjectGatewayPutBufferRequest,
+    TeamClusterObjectGatewayComposeRequest
+} from '@shared/contracts/types/TeamClusterObjectGateway';

@@ -1,10 +1,11 @@
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
-
-export interface GetSimulationCellByTrajectoryInputDTO {
-    teamId: string;
-    trajectoryId: string;
-    timestep?: number;
-}
-
-export type GetSimulationCellByTrajectoryOutputDTO = PersistedOutput<SimulationCellProps> | null;
+/**
+ * Re-export shim (detachable-modules migration). The canonical, neutral DTO now
+ * lives at `@shared/contracts/dtos/GetSimulationCellByTrajectoryDTO`. This owner
+ * file re-exports both names so existing
+ * `@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO`
+ * importers compile unchanged.
+ */
+export type {
+    GetSimulationCellByTrajectoryInputDTO,
+    GetSimulationCellByTrajectoryOutputDTO
+} from '@shared/contracts/dtos/GetSimulationCellByTrajectoryDTO';

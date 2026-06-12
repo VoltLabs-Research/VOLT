@@ -1,8 +1,11 @@
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
-
-export interface GetPluginExposureExportInputDTO {
-    teamId: string;
-    analysisId: string;
-}
-
-export type GetPluginExposureExportOutputDTO = DownloadStreamOutputDTO;
+/**
+ * Re-export shim. The canonical get-plugin-exposure-export DTOs now live in the
+ * neutral `@shared/contracts/dtos/GetPluginExposureExportDTO`
+ * (detachable-modules migration). Existing
+ * `@modules/plugin/application/dtos/exposure/GetPluginExposureExportDTO`
+ * importers keep working unchanged.
+ */
+export type {
+    GetPluginExposureExportInputDTO,
+    GetPluginExposureExportOutputDTO
+} from '@shared/contracts/dtos/GetPluginExposureExportDTO';

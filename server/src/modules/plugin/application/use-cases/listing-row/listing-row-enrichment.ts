@@ -1,10 +1,9 @@
 import { deriveColumns } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
 import type { ColumnDef } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import type { DaemonListingRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
+import type { Analysis } from '@shared/contracts/types';
 
 interface EnrichDaemonListingRowsInput {
     rows: DaemonListingRow[];

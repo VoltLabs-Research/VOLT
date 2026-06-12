@@ -1,11 +1,11 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ListTeamClustersByTeamIdUseCase from '@modules/cluster/application/use-cases/ListTeamClustersByTeamIdUseCase';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOKENS.AITool)
+@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListClustersAITool extends AITool {
     readonly name = 'list_clusters';
     readonly description = 'List the team compute clusters.';

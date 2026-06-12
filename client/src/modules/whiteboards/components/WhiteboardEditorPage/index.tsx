@@ -3,6 +3,9 @@ import useWhiteboardEditor from '@/modules/whiteboards/hooks/use-whiteboard-edit
 import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
 import useWhiteboardSync from '@/modules/whiteboards/hooks/use-whiteboard-sync';
 import { insertWhiteboardImages } from '@/modules/whiteboards/utilities/excalidraw-images';
+import { applyWhiteboardDrawRequest } from '@/modules/whiteboards/utilities/whiteboard-draw';
+import { useWhiteboardEditorHandleStore } from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
+import type { WhiteboardDrawRequest } from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
 import { extractWhiteboardImageFiles } from '@/modules/whiteboards/utilities/whiteboard-image-files';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import {
@@ -312,6 +315,34 @@ const WhiteboardEditorPage = () => {
             appState: normalizeWhiteboardRuntimeAppState(pendingScene.appState) as unknown as ExcalidrawAppState
         });
     }, []);
+
+    const registerEditorHandle = useWhiteboardEditorHandleStore((state) => state.register);
+    const unregisterEditorHandle = useWhiteboardEditorHandleStore((state) => state.unregister);
+
+    // Expose the live Excalidraw scene to the `draw_on_whiteboard` AI tool. The
+    // handle is a pure callback bridge (no Excalidraw types leak into the store),
+    // registered while this board is open and cleared on unmount.
+    useEffect(() => {
+        if (!resolvedWhiteboardId) {
+            return;
+        }
+
+        registerEditorHandle({
+            whiteboardId: resolvedWhiteboardId,
+            isReady: () => Boolean(excalidrawApiRef.current),
+            draw: (request: WhiteboardDrawRequest) => {
+                const api = excalidrawApiRef.current;
+                if (!api) {
+                    return { drawn: 0 };
+                }
+                return applyWhiteboardDrawRequest(api, request);
+            }
+        });
+
+        return () => {
+            unregisterEditorHandle();
+        };
+    }, [resolvedWhiteboardId, registerEditorHandle, unregisterEditorHandle]);
 
     const handleBack = useCallback(() => navigate('/dashboard/whiteboards'), [navigate]);
 

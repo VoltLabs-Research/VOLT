@@ -44,5 +44,6 @@ export interface RouteConfig {
     children?: RouteConfig[];
     requiredPermissions?: string[];
     permissionMode?: RoutePermissionMode;
+    moduleKey?: string;
     navigation?: RouteNavigationConfig;
 };

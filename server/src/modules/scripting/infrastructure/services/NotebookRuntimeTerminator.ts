@@ -5,7 +5,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterExposureRegistryService from '@modules/cluster/infrastructure/services/TeamClusterExposureRegistryService';
+import type { ITeamClusterExposureRegistryService } from '@shared/contracts/ports';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { findNotebookExposure } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import { inject } from 'tsyringe';
 
@@ -23,7 +24,7 @@ import { inject } from 'tsyringe';
 export class NotebookRuntimeTerminator implements INotebookRuntimeTerminator {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        private readonly exposureRegistryService: TeamClusterExposureRegistryService
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService
     ) {}
 
     async terminate(teamClusterId: string, runtimeNotebookId: string): Promise<boolean> {

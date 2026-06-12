@@ -1,14 +1,13 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
+import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import type { ITrajectoryUploadSessionRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryUploadSessionRepository';
 import type { ITrajectoryFolderRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFolderRepository';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import type { IClusterObjectSignedUrlService } from '@modules/cluster/domain/port/IClusterObjectSignedUrlService';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { IStoragePlacementService } from '@shared/contracts/ports';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryCreatedEvent';
 import type {
@@ -96,10 +95,10 @@ export default class CreateTrajectoryUploadSessionUseCase implements IUseCase<
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(TRAJECTORY_TOKENS.TrajectoryFolderRepository) private readonly trajectoryFolderRepository: ITrajectoryFolderRepository,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly storagePlacementService: StoragePlacementService,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        @inject(COMPUTE_TOKENS.StoragePlacementService) private readonly storagePlacementService: IStoragePlacementService,
         @inject(TRAJECTORY_TOKENS.TrajectoryUploadSessionRepository) private readonly uploadSessionRepository: ITrajectoryUploadSessionRepository,
-        @inject(CLUSTER_TOKENS.ClusterObjectSignedUrlService)
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService)
         private readonly signedUrlService: IClusterObjectSignedUrlService,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus

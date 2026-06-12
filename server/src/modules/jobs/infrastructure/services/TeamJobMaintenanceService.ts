@@ -1,5 +1,4 @@
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import type { AnalysisDeletedEventPayload } from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 import { JobStatus } from '@modules/jobs/domain/entities/Job';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type {
@@ -9,11 +8,13 @@ import type {
     TeamClusterFailureDetail
 } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import TrajectoryFrameRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFrameRepository';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
-import type { TrajectoryDeletedEventPayload } from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { ITrajectoryRepository } from '@shared/contracts/ports';
+import type {
+    AnalysisDeletedEventPayload,
+    TrajectoryDeletedEventPayload
+} from '@shared/contracts/events';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -24,6 +25,33 @@ import { inject } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const TOMBSTONE_TTL_SECONDS = 600;
+
+/**
+ * Global DI symbol for the trajectory module's dump-storage service. Referenced
+ * via `Symbol.for(...)` (the same global registry key the owner registers under)
+ * so this maintenance service can inject it without statically importing
+ * `@modules/trajectory`. No neutral contract token exists for it yet — see the
+ * narrow ports below.
+ *
+ * FOLLOW-UP: promote this symbol into `@shared/contracts/tokens/ComputeTokens`
+ * (a later @shared phase) so it has a single typed source of truth.
+ */
+const TRAJECTORY_DUMP_STORAGE_TOKEN = Symbol.for('TrajectoryDumpStorageService');
+
+/**
+ * Narrow, jobs-owned ports describing exactly the trajectory-side capabilities
+ * this maintenance service consumes. They exist locally because no neutral
+ * `@shared/contracts` port has been extracted for the frame repository or the
+ * dump-storage service yet; injecting the concretes by their tokens keeps the
+ * jobs module detachable (structural typing, no `@modules/trajectory` import).
+ */
+interface MaintenanceTrajectoryFrameReader {
+    getFrames(trajectoryId: string): Promise<Array<{ timestep: number }>>;
+}
+
+interface MaintenanceTrajectoryDumpStorage {
+    getObjectName(trajectoryId: string, timestep: string): string;
+}
 
 const REMOVABLE_STATUSES = new Set<string>([
     JobStatus.Queued,
@@ -66,9 +94,12 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
         private readonly teamJobsService: TeamJobsService,
-        private readonly trajectoryRepo: TrajectoryRepository,
-        private readonly trajectoryFrameRepo: TrajectoryFrameRepository,
-        private readonly dumpStorage: TrajectoryDumpStorageService
+        @inject(COMPUTE_TOKENS.TrajectoryRepository)
+        private readonly trajectoryRepo: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository)
+        private readonly trajectoryFrameRepo: MaintenanceTrajectoryFrameReader,
+        @inject(TRAJECTORY_DUMP_STORAGE_TOKEN)
+        private readonly dumpStorage: MaintenanceTrajectoryDumpStorage
     ) {}
 
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {

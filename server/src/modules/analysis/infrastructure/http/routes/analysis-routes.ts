@@ -4,6 +4,7 @@ import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpMod
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
+    moduleKey: 'analysis',
     basePath: '/api/analyses/:teamId',
     resource: Resource.ANALYSIS,
     teamScope: HttpModuleTeamScope.BasePath,

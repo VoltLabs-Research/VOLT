@@ -1,7 +1,7 @@
 import { IconButton, Select, VisuallyHidden, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useId } from 'react';
-import { IoArrowUpOutline } from 'react-icons/io5';
+import { IoArrowUpOutline, IoStopOutline } from 'react-icons/io5';
 import type { KeyboardEvent } from 'react';
 import './AIComposer.css';
 
@@ -15,6 +15,7 @@ interface AIComposerProps {
     onChange: (message: string) => void;
     onModelChange: (model: string) => void;
     onSend: () => void;
+    onStop?: () => void;
 }
 
 const AIComposer = ({
@@ -26,18 +27,21 @@ const AIComposer = ({
     error,
     onChange,
     onModelChange,
-    onSend
+    onSend,
+    onStop
 }: AIComposerProps) => {
     const inputId = useId();
     const inputLabelId = useId();
     const statusId = useId();
 
     const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             onSend();
         }
     };
+
+    const canStop = isSending && Boolean(onStop);
 
     let modelPlaceholder = 'No models';
     if (modelOptions.length) {
@@ -99,17 +103,30 @@ const AIComposer = ({
                     aria-label='Select AI model'
                 />
 
-                <Tooltip content='Send message'>
-                    <IconButton
-                        className='ai-composer-send'
-                        disabled={disabled || isSending || !value.trim()}
-                        onClick={onSend}
-                        aria-label='Send message'
-                        title='Send message'
-                    >
-                        <IoArrowUpOutline size={18} />
-                    </IconButton>
-                </Tooltip>
+                {canStop ? (
+                    <Tooltip content='Stop generating'>
+                        <IconButton
+                            className='ai-composer-send ai-composer-stop'
+                            onClick={onStop}
+                            aria-label='Stop generating'
+                            title='Stop generating'
+                        >
+                            <IoStopOutline size={18} />
+                        </IconButton>
+                    </Tooltip>
+                ) : (
+                    <Tooltip content='Send message'>
+                        <IconButton
+                            className='ai-composer-send'
+                            disabled={disabled || isSending || !value.trim()}
+                            onClick={onSend}
+                            aria-label='Send message'
+                            title='Send message'
+                        >
+                            <IoArrowUpOutline size={18} />
+                        </IconButton>
+                    </Tooltip>
+                )}
             </Row>
         </Stack>
     );

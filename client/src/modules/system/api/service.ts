@@ -19,6 +19,7 @@ export interface RBACConfig {
 
 export interface DeploymentConfig {
     mode: 'local' | 'cloud';
+    enabledModules: string[] | null;
 }
 
 const endpoints = {

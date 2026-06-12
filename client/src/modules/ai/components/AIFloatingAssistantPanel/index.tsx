@@ -1,8 +1,9 @@
-import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-ai-conversation-panel';
+import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-shared-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
+import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
 import { VisuallyHidden, IconButton, Row, Surface, Tooltip } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import './AIFloatingAssistantPanel.css';
@@ -136,7 +137,9 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
 };
 
 const AIFloatingAssistantPanel = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const isOpen = useChatSurfaceStore((state) => state.isWidgetOpen);
+    const closeWidget = useChatSurfaceStore((state) => state.closeWidget);
+    const toggleWidget = useChatSurfaceStore((state) => state.toggleWidget);
     const triggerRef = useRef<HTMLButtonElement>(null);
     let triggerClassName = 'dashboard-ai-trigger';
 
@@ -148,7 +151,7 @@ const AIFloatingAssistantPanel = () => {
     if (isOpen) {
         panelContent = (
             <AIFloatingAssistantPanelContent
-                onClose={() => setIsOpen(false)}
+                onClose={closeWidget}
                 triggerRef={triggerRef}
             />
         );
@@ -161,7 +164,7 @@ const AIFloatingAssistantPanel = () => {
                     ref={triggerRef}
                     aria-label={isOpen ? 'Close Volt AI assistant' : 'Open Volt AI assistant'}
                     className={triggerClassName}
-                    onClick={() => setIsOpen((current) => !current)}
+                    onClick={toggleWidget}
                 >
                     <IoSparklesOutline size={18} />
                 </IconButton>

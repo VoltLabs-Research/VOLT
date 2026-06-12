@@ -4,7 +4,9 @@
     "build": "tsc -p tsconfig.json",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
     "dev:drop:redis": "tsx tools/drop-redis.ts",
-    "dev:drop:minio": "tsx tools/drop-minio.ts"
+    "dev:drop:minio": "tsx tools/drop-minio.ts",
+    "depcruise": "npx --yes dependency-cruiser@^17.4.3 src --config .dependency-cruiser.cjs",
+    "smoke:modules": "node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/module-boot-smoke.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

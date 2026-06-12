@@ -1,8 +1,10 @@
 import { createConversationStreamTransport } from '@/modules/ai/services/stream-transport';
 import { invalidateConversationsQueries, invalidateConversationMessagesQuery } from '@/modules/ai/hooks/queries';
+import { useClientToolDispatch } from '@/modules/ai/tools/use-client-tool-dispatch';
 import { useChat } from '@ai-sdk/react';
 import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { AddToolResultFn } from '@/modules/ai/tools/use-client-tool-dispatch';
 import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIConversationMessage } from '@/modules/ai/api/entities/ai-conversation';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
@@ -99,12 +101,20 @@ const useAIChatStream = ({
         chatId = `ai-conversation:${conversationId}`;
     }
 
+    // Client-executed tools: the model streams a tool call out, `onToolCall`
+    // runs the matching browser handler and feeds the result back via
+    // `addToolResult`. `addToolResult` is part of useChat's return value, so we
+    // bridge the cycle through a ref that's populated right after the hook runs.
+    const dispatchClientTool = useClientToolDispatch();
+    const addToolResultRef = useRef<AddToolResultFn | null>(null);
+
     const {
         messages: streamMessages,
         status: streamStatus,
         error: streamError,
         sendMessage,
         setMessages,
+        addToolResult,
         addToolApprovalResponse,
         stop
     } = useChat({
@@ -116,6 +126,21 @@ const useAIChatStream = ({
             || lastAssistantMessageIsCompleteWithApprovalResponses({ messages })
             || lastAssistantMessageHasProviderExecutedApprovalResponses({ messages })
         ),
+        onToolCall: ({ toolCall }) => {
+            const addResult = addToolResultRef.current;
+            if (!addResult) return;
+
+            // Server tools are not in the client registry; the dispatcher no-ops
+            // on those. Client tools run in the browser and resolve the call.
+            return dispatchClientTool(
+                {
+                    toolCallId: toolCall.toolCallId,
+                    toolName: toolCall.toolName,
+                    input: toolCall.input
+                },
+                addResult
+            );
+        },
         onFinish: () => {
             if (!isMountedRef.current) return;
 
@@ -126,6 +151,8 @@ const useAIChatStream = ({
             }
         }
     });
+
+    addToolResultRef.current = addToolResult as unknown as AddToolResultFn;
 
     const isSendingMessage = streamStatus === 'submitted' || streamStatus === 'streaming';
 
@@ -190,11 +217,16 @@ const useAIChatStream = ({
         }
     }, [canSendMessage, conversationId, isSendingMessage, sendMessage]);
 
+    const stopStreaming = useCallback(() => {
+        stop();
+    }, [stop]);
+
     return {
         messages: streamMessages,
         isSendingMessage,
         sendMessageError,
         handleSendMessage,
+        stopStreaming,
         addToolApprovalResponse
     };
 };

@@ -1,6 +1,6 @@
 import type {
     ContainerTerminalAttachment
-} from '@modules/container/domain/port/IContainerService';
+} from '@shared/contracts/ports';
 import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import type {

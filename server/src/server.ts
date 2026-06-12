@@ -7,6 +7,9 @@ import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import type { Duplex } from 'node:stream';
 import { container } from 'tsyringe';
 import { registerAllDependencies } from './core/bootstrap/register-deps';
+import { resolveEnabledModules, isModuleEnabled } from './core/bootstrap/module-state';
+import type { IDeploymentSettingsRepository } from './modules/system/domain/port/IDeploymentSettingsRepository';
+import { SYSTEM_TOKENS } from './modules/system/infrastructure/di/SystemTokens';
 import { configureOAuthStrategies } from './modules/auth/infrastructure/http/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
@@ -194,19 +197,46 @@ const startServer = async () => {
 
             await flushPendingSubscriptions();
 
+            // Re-resolve the enabled-module set now that Mongo is up, folding in
+            // the DB-persisted DeploymentSettings.enabledModules (env VOLT_MODULES
+            // still wins). Non-fatal: route mounting already ran on env+defaults;
+            // this aligns the cached set used by runtime `isModuleEnabled` checks
+            // and surfaces the authoritative list in logs.
+            try {
+                const deploymentSettingsRepository = container.resolve<IDeploymentSettingsRepository>(
+                    SYSTEM_TOKENS.DeploymentSettingsRepository
+                );
+                const settings = await deploymentSettingsRepository.getSettings();
+                resolveEnabledModules(settings.props.enabledModules ?? null);
+            } catch (error: unknown) {
+                logger.warn(`@server: could not resolve DB-enabled modules, using env/defaults: ${error instanceof Error ? error.message : String(error)}`);
+            }
+
             activeSocketGateway = container.resolve(SocketGateway);
-            activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
-            activeTrajectoryCloneRunner = container.resolve(TrajectoryCloneRunner);
-            activeContainerPortRelayLifecycle = container.resolve(ContainerPortRelayLifecycleService);
+
+            // Lifecycle runners belong to optional compute modules. Resolve/start
+            // each only when its module is enabled — otherwise autoload skipped its
+            // files and resolving would throw. (socket is kernel, always on.)
+            if (isModuleEnabled('cluster')) {
+                activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
+            }
+            if (isModuleEnabled('trajectory')) {
+                activeTrajectoryCloneRunner = container.resolve(TrajectoryCloneRunner);
+            }
+            if (isModuleEnabled('container')) {
+                activeContainerPortRelayLifecycle = container.resolve(ContainerPortRelayLifecycleService);
+            }
             const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
             for (const module of socketModules) {
                 activeSocketGateway.register(module);
             }
 
-            await activeContainerPortRelayLifecycle.start();
+            if (activeContainerPortRelayLifecycle) {
+                await activeContainerPortRelayLifecycle.start();
+            }
             await activeSocketGateway.initialize(server);
-            activeClusterTransferRunner.start();
-            activeTrajectoryCloneRunner.start();
+            activeClusterTransferRunner?.start();
+            activeTrajectoryCloneRunner?.start();
             logger.info(`@server: SocketGateway ready on :${SERVER_PORT}`);
 
             logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);

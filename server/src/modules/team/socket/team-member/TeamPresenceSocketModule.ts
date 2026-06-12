@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import UpdateUserActivityUseCase from '@modules/daily-activity/application/use-cases/UpdateUserActivityUseCase';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
@@ -11,8 +10,13 @@ import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/infrastructure/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/infrastructure/services/team-member/TeamRoomPresenceService';
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import type { IEventBus } from '@shared/application/events/IEventBus';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
+import { inject } from 'tsyringe';
 
 @Singleton()
 @AliasOf(SOCKET_TOKENS.SocketModule)
@@ -25,14 +29,15 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        
+
         private readonly teamPresenceService: TeamPresenceService,
         private readonly teamRoomPresenceService: TeamRoomPresenceService,
-        
+
         private readonly userRepository: UserRepository,
-        
-        private readonly updateUserActivityUseCase: UpdateUserActivityUseCase,
-        
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus,
+
         private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
     ) {
         super(emitter, roomManager, eventRegistry);
@@ -117,11 +122,9 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
 
     private async updateUserActivity(teamId: string, userId: string, minutes: number): Promise<void> {
         try {
-            await this.updateUserActivityUseCase.execute({
-                teamId,
-                userId,
-                durationInMinutes: minutes
-            });
+            await this.eventBus.publish(
+                new GenericDomainEvent(DOMAIN_EVENTS.UserActivityRecorded, { teamId, userId, minutes })
+            );
         } catch (error) {
             logger.error(error, `[TeamPresenceSocketModule] Failed to update activity for user ${userId}`);
         }

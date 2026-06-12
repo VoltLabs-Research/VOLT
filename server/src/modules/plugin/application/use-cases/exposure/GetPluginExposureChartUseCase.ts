@@ -1,16 +1,14 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { ISceneArtifactRepository, ITrajectoryRepository, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import {
     GetPluginExposureChartInputDTO,
     GetPluginExposureChartOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureChartDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveSceneArtifactStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
-import { SceneArtifactSourceType } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import { resolveSceneArtifactStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { SceneArtifactSourceType } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -32,9 +30,9 @@ export class GetPluginExposureChartUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(

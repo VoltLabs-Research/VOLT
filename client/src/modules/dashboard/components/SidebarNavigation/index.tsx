@@ -1,6 +1,7 @@
 import './SidebarNavigation.css';
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
-import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
+import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
+import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
 import ClusterCredentialsModal from '@/modules/cluster/components/ClusterCredentialsModal';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
@@ -10,49 +11,21 @@ import { Box, Tooltip } from '@voltstack/bravais';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
+import { useEnabledModules } from '@/modules/system/hooks/use-module-enabled';
+import { useHiddenModules } from '@/modules/system/hooks/use-hidden-modules';
 import { useMemo } from 'react';
 import {
     BarChart3,
-    BookOpen,
     Box as CubeIcon,
-    FileText,
-    KeyRound,
-    LayoutGrid,
-    Lock,
-    MessageCircle,
-    Paintbrush,
-    Server,
-    Sparkles,
-    Users,
-    Workflow
+    Server
 } from 'lucide-react';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import type { LucideIcon } from 'lucide-react';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     collapsed?: boolean;
     onExpandSidebar?: () => void;
 }
-
-interface IconPair {
-    inactive: LucideIcon;
-    active: LucideIcon;
-}
-
-const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> = {
-    [DashboardNavigationIconKey.AI]: { inactive: Sparkles, active: Sparkles },
-    [DashboardNavigationIconKey.Containers]: { inactive: CubeIcon, active: CubeIcon },
-    [DashboardNavigationIconKey.Dashboard]: { inactive: LayoutGrid, active: LayoutGrid },
-    [DashboardNavigationIconKey.Latex]: { inactive: FileText, active: FileText },
-    [DashboardNavigationIconKey.ManageRoles]: { inactive: KeyRound, active: KeyRound },
-    [DashboardNavigationIconKey.Messages]: { inactive: MessageCircle, active: MessageCircle },
-    [DashboardNavigationIconKey.MyTeam]: { inactive: Users, active: Users },
-    [DashboardNavigationIconKey.Notebooks]: { inactive: BookOpen, active: BookOpen },
-    [DashboardNavigationIconKey.Plugins]: { inactive: Workflow, active: Workflow },
-    [DashboardNavigationIconKey.SecretKeys]: { inactive: Lock, active: Lock },
-    [DashboardNavigationIconKey.Whiteboards]: { inactive: Paintbrush, active: Paintbrush }
-};
 
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
 const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
@@ -69,11 +42,23 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
     const { plugins } = usePluginSelectors();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const singleTenant = useSingleTenant();
+    const enabledModules = useEnabledModules();
+    const { hidden: hiddenModules } = useHiddenModules();
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
     const handleNavigate = (to: string) => {
         navigate(to);
         setSidebarOpen(false);
+    };
+
+    const isModuleEnabled = (item: DashboardNavigationItem): boolean => {
+        if (!item.moduleKey) {
+            return true;
+        }
+
+        const serverEnabled = enabledModules === null || enabledModules.includes(item.moduleKey);
+
+        return serverEnabled && !hiddenModules.includes(item.moduleKey);
     };
 
     const isSelected = (to: string) => {
@@ -246,7 +231,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
 
     return (
         <nav className='sidebar-nav y-auto'>
-            {(singleTenant ? MAIN_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
+            {(singleTenant ? MAIN_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : MAIN_NAVIGATION_ITEMS).filter(isModuleEnabled).map(renderNavItem)}
 
             <Tooltip
                 content={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
@@ -292,7 +277,7 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false, onExpandSidebar 
                 />
             </Tooltip>
 
-            {(singleTenant ? SECONDARY_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SECONDARY_NAVIGATION_ITEMS).map(renderNavItem)}
+            {(singleTenant ? SECONDARY_NAVIGATION_ITEMS.filter((item) => !item.multiTenantOnly) : SECONDARY_NAVIGATION_ITEMS).filter(isModuleEnabled).map(renderNavItem)}
 
             {!sidebarClusters.isOnClustersRoute && (
                 <ClusterCredentialsModal

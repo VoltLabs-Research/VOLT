@@ -1,13 +1,12 @@
-interface ChatIdentifierValue {
-    toString(): string;
-}
+/**
+ * The participant structural types now live in the neutral contracts layer
+ * (`@shared/contracts/types/Chat`) for the detachable-modules migration
+ * (consumed by dashboard). Re-exported here so existing importers of this module
+ * path compile unchanged.
+ */
+import type { ChatParticipant } from '@shared/contracts/types/Chat';
 
-export interface ChatUserReference {
-    _id?: ChatIdentifierValue;
-    toString(): string;
-}
-
-export type ChatParticipant = string | ChatUserReference;
+export type { ChatIdentifierValue, ChatUserReference, ChatParticipant } from '@shared/contracts/types/Chat';
 
 export interface ChatProps {
     participants: ChatParticipant[];

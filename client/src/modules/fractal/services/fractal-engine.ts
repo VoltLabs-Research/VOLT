@@ -15,7 +15,7 @@ import {
 import MortonSortWorker from '@/modules/fractal/workers/morton-sort.worker?worker';
 import { computeBoundingBox } from '@/modules/fractal/utilities/morton-sort';
 
-import type { LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
+import type { LineEntityHighlight, LineEntityRange, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 interface FractalSurface {
     scene: THREE.Scene;
@@ -42,7 +42,13 @@ interface TraversalCache {
 interface LineGeometryUserData {
     basePositionArray?: Float32Array;
     lineWidthOffset?: number;
+    baseColorArray?: Float32Array | Uint8Array;
+    syntheticColorAttribute?: boolean;
 }
+
+// Non-highlighted tubes keep this fraction of their baked color so the
+// selected entity reads unambiguously, screenshots included.
+const LINE_HIGHLIGHT_DIM_FACTOR = 0.15;
 
 export type FractalParams = {
     url?: string | null;
@@ -59,6 +65,7 @@ export type FractalParams = {
     boxBounds?: BoxBounds;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
+    lineHighlight?: LineEntityHighlight;
 };
 
 type EngineCallbacks = {
@@ -158,6 +165,8 @@ export class FractalEngine {
     private lastColorValue: string | undefined = undefined;
     private lastBaseLineWidth: number | undefined = undefined;
     private lastLineWidth: number | undefined = undefined;
+    private lastLineHighlightEntityId: number | null | undefined = undefined;
+    private lastLineHighlightRanges: LineEntityRange[] | null | undefined = undefined;
     private traversalCache: TraversalCache = { pointClouds: [], meshes: [] };
 
     private mortonWorker: Worker | null = null;
@@ -307,9 +316,12 @@ export class FractalEngine {
             this.lastColorValue = undefined;
             this.lastBaseLineWidth = undefined;
             this.lastLineWidth = undefined;
+            this.lastLineHighlightEntityId = undefined;
+            this.lastLineHighlightRanges = undefined;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
             this.updateLineWidth(this.params.lineSettings);
+            this.updateLineHighlight(this.params.lineHighlight);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -640,6 +652,35 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
+    // Dims every line tube except the highlighted entity by rewriting the
+    // vertex-color buffer in place (originals stashed for a lossless restore).
+    // The triangle ranges come from the GLB's `.ranges.json` sidecar.
+    updateLineHighlight(highlight?: LineEntityHighlight) {
+        if (!this.state.model || this.traversalCache.meshes.length === 0) return;
+        const entityId = highlight?.entityId ?? null;
+        const entityRanges = highlight?.entityRanges ?? null;
+        if (entityId === this.lastLineHighlightEntityId && entityRanges === this.lastLineHighlightRanges) {
+            return;
+        }
+        this.lastLineHighlightEntityId = entityId;
+        this.lastLineHighlightRanges = entityRanges;
+
+        // An entity hidden by the active style has no range — treat it as no
+        // highlight rather than dimming the whole model.
+        const range = entityRanges?.find((candidate) => candidate.id === entityId) ?? null;
+
+        const processedGeometries = new Set<THREE.BufferGeometry>();
+        this.traversalCache.meshes.forEach((mesh) => {
+            if (!(mesh.geometry instanceof THREE.BufferGeometry) || processedGeometries.has(mesh.geometry)) {
+                return;
+            }
+            processedGeometries.add(mesh.geometry);
+            this.applyLineHighlightToGeometry(mesh, range);
+        });
+
+        this.surface.invalidate();
+    }
+
     updateCameraPosition(cameraPosition: THREE.Vector3) {
         if (!this.state.model) return;
         if (this.traversalCache.pointClouds.length === 0) return;
@@ -723,6 +764,73 @@ export class FractalEngine {
         geometry.computeBoundingBox();
         geometry.computeBoundingSphere();
         userData.lineWidthOffset = lineWidthOffset;
+    }
+
+    private setMeshVertexColors(mesh: THREE.Mesh, enabled: boolean) {
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        materials.forEach((material) => {
+            material.vertexColors = enabled;
+            material.needsUpdate = true;
+        });
+    }
+
+    private applyLineHighlightToGeometry(mesh: THREE.Mesh, range: LineEntityRange | null) {
+        const geometry = mesh.geometry;
+        const index = geometry.getIndex();
+        if (!index) return;
+        const userData = geometry.userData as THREE.BufferGeometry['userData'] & LineGeometryUserData;
+
+        if (!range) {
+            if (!userData.baseColorArray) return;
+            if (userData.syntheticColorAttribute) {
+                geometry.deleteAttribute('color');
+                this.setMeshVertexColors(mesh, false);
+            } else {
+                const attribute = geometry.getAttribute('color') as THREE.BufferAttribute;
+                (attribute.array as Float32Array).set(userData.baseColorArray as Float32Array);
+                attribute.needsUpdate = true;
+            }
+            delete userData.baseColorArray;
+            delete userData.syntheticColorAttribute;
+            return;
+        }
+
+        // Uniform-colored line GLBs ship without COLOR_0; highlighting needs a
+        // per-vertex channel, so synthesize an all-ones one (a no-op tint).
+        let colorAttribute = geometry.getAttribute('color');
+        if (!(colorAttribute instanceof THREE.BufferAttribute)) {
+            const vertexCount = geometry.getAttribute('position').count;
+            colorAttribute = new THREE.BufferAttribute(new Float32Array(vertexCount * 3).fill(1), 3);
+            geometry.setAttribute('color', colorAttribute);
+            userData.syntheticColorAttribute = true;
+            this.setMeshVertexColors(mesh, true);
+        }
+
+        const colors = colorAttribute.array as Float32Array | Uint8Array;
+        if (!userData.baseColorArray) {
+            userData.baseColorArray = colors.slice() as Float32Array | Uint8Array;
+        }
+
+        const base = userData.baseColorArray;
+        const itemSize = colorAttribute.itemSize;
+        for (let vertex = 0; vertex < colorAttribute.count; vertex += 1) {
+            const offset = vertex * itemSize;
+            colors[offset] = base[offset] * LINE_HIGHLIGHT_DIM_FACTOR;
+            colors[offset + 1] = base[offset + 1] * LINE_HIGHLIGHT_DIM_FACTOR;
+            colors[offset + 2] = base[offset + 2] * LINE_HIGHLIGHT_DIM_FACTOR;
+        }
+
+        const indices = index.array;
+        const start = range.triangleStart * 3;
+        const end = Math.min(start + (range.triangleCount * 3), indices.length);
+        for (let entry = start; entry < end; entry += 1) {
+            const offset = indices[entry] * itemSize;
+            colors[offset] = base[offset];
+            colors[offset + 1] = base[offset + 1];
+            colors[offset + 2] = base[offset + 2];
+        }
+
+        colorAttribute.needsUpdate = true;
     }
 
     private applyClippingToModel(root: THREE.Object3D, planes: Plane[]) {

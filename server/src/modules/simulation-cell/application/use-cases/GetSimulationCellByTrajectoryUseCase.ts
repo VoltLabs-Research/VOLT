@@ -5,14 +5,18 @@ import type {
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import type { IGetSimulationCellByTrajectoryUseCase } from '@shared/contracts/ports/IGetSimulationCellByTrajectoryUseCase';
+import { SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens/SimulationCellTokens';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
+import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { TRAJECTORY_POPULATE } from '@shared/application/PopulatePresets';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
-export default class GetSimulationCellByTrajectoryUseCase {
+@AliasOf(SIMULATION_CELL_CONTRACT_TOKENS.GetSimulationCellByTrajectoryUseCase)
+export default class GetSimulationCellByTrajectoryUseCase implements IGetSimulationCellByTrajectoryUseCase {
     constructor(
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository) private readonly repository: ISimulationCellRepository
     ) {}

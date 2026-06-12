@@ -87,6 +87,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         isSendingMessage: chatStream.isSendingMessage,
         sendMessageError: chatStream.sendMessageError,
         handleSendMessage: chatStream.handleSendMessage,
+        stopStreaming: chatStream.stopStreaming,
         addToolApprovalResponse: chatStream.addToolApprovalResponse
     };
 };

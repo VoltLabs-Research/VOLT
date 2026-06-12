@@ -2,7 +2,8 @@ import DeleteAnalysisByIdUseCase from '@modules/analysis/application/use-cases/D
 import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
 import { CascadeDeleteEachOnTrajectoryDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTrajectoryDeletedHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import { inject } from 'tsyringe';
@@ -16,7 +17,7 @@ export default class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTr
         super();
     }
 
-    protected async deleteOne(analysisId: string, event: TrajectoryDeletedEvent): Promise<void> {
+    protected async deleteOne(analysisId: string, event: IDomainEvent<TrajectoryDeletedEventPayload>): Promise<void> {
         await this.deleteAnalysisByIdUseCase.execute({
             analysisId,
             teamId: event.payload.teamId,

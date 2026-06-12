@@ -1,20 +1,7 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
-import type {
-    AnalysisArtifactStatus,
-    AnalysisChildAnalysis,
-    AnalysisExpectedArtifact,
-    AnalysisStage
-} from '@modules/analysis/domain/entities/Analysis';
+import type { AnalysisStageChangedEventPayload } from '@shared/contracts/events/AnalysisStageChangedPayload';
 
-export interface AnalysisStageChangedEventPayload {
-    analysisId: string;
-    trajectoryId: string;
-    teamId: string;
-    artifactStatus?: AnalysisArtifactStatus;
-    expectedArtifacts?: AnalysisExpectedArtifact[];
-    stages?: AnalysisStage[];
-    childAnalyses?: AnalysisChildAnalysis[];
-}
+export type { AnalysisStageChangedEventPayload };
 
 export default class AnalysisStageChangedEvent extends BaseDomainEvent<AnalysisStageChangedEventPayload> {
     constructor(payload: AnalysisStageChangedEventPayload) {

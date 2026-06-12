@@ -1,20 +1,12 @@
-import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
-
-export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-export type AnalysisExecutionLogSegment = TeamClusterDaemonExecutionLogSegment;
-
-export interface AnalysisFrameLogSnapshot {
-    analysisId: string;
-    teamId: string;
-    trajectoryId: string;
-    timestep: number;
-    status: AnalysisFrameLogStatus;
-    sealed: boolean;
-    truncated: boolean;
-    nextCursor: string | null;
-    segments: AnalysisExecutionLogSegment[];
-}
+// Canonical analysis frame-log snapshot types now live in the neutral contracts
+// layer (detachable-modules migration); imported for local use + re-exported for
+// owner consumers.
+import type { AnalysisFrameLogSnapshot } from '@shared/contracts/types/AnalysisFrameLog';
+export type {
+    AnalysisFrameLogStatus,
+    AnalysisExecutionLogSegment,
+    AnalysisFrameLogSnapshot
+} from '@shared/contracts/types/AnalysisFrameLog';
 
 export interface GetFrameLogInput {
     analysisId: string;

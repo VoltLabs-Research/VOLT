@@ -5,6 +5,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 
 export default createHttpModule({
     basePath: '/api/jobs/:teamId',
+    moduleKey: 'jobs',
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
