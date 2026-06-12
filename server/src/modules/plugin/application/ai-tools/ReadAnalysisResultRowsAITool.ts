@@ -1,11 +1,11 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { GetListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/GetListingRowsByAnalysisIdUseCase';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOKENS.AITool)
+@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ReadAnalysisResultRowsAITool extends AITool {
     readonly name = 'read_analysis_result_rows';
     readonly description = 'Read individual rows of an analysis result table (paginated) when you need concrete values rather than aggregate statistics.';

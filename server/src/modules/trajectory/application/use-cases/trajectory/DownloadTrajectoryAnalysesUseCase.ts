@@ -1,13 +1,12 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens';
 import { inject } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type { IClusterObjectArchiveService, ClusterArchiveReference } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
-import { GetPluginExposureExportUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureExportUseCase';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { IClusterObjectArchiveService, ClusterArchiveReference } from '@shared/contracts/ports';
+import type { IGetPluginExposureExportUseCase } from '@shared/contracts/ports';
 import {
     DownloadTrajectoryAnalysesInputDTO,
     DownloadTrajectoryAnalysesOutputDTO
@@ -18,8 +17,8 @@ import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/down
 import { injectable } from 'tsyringe';
 import { v4 } from 'uuid';
 
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { Analysis } from '@shared/contracts/types';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const ANALYSIS_STATUS_COMPLETED = 'completed';
@@ -54,12 +53,13 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
 
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
 
-        private readonly getPluginExposureExportUseCase: GetPluginExposureExportUseCase,
+        @inject(PLUGIN_USECASE_TOKENS.GetPluginExposureExportUseCase)
+        private readonly getPluginExposureExportUseCase: IGetPluginExposureExportUseCase,
 
-        @inject(CLUSTER_TOKENS.ClusterObjectArchiveService)
+        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 

@@ -1,21 +1,21 @@
-import UserCreatedEvent from '@modules/auth/domain/events/UserCreatedEvent';
-import CreateNotificationUseCase from '@modules/notification/application/use-cases/CreateNotificationUseCase';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { inject, delay } from 'tsyringe';
+import { CreateNotificationUseCase } from '@modules/notification/application/use-cases';
+import type { UserCreatedIntegrationEvent } from '@shared/application/contracts/events/UserCreatedIntegrationEvent';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import type { IDeploymentSettingsRepository } from '@shared/contracts/ports';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
-import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
-import type { IDeploymentSettingsRepository } from '@modules/system/domain/port/IDeploymentSettingsRepository';
+import { delay, inject } from 'tsyringe';
 
 @Subscribe('user.created')
-export default class UserCreatedEventHandler implements IEventHandler<UserCreatedEvent> {
+export default class TeamOnboardingNotificationHandler implements IEventHandler<UserCreatedIntegrationEvent> {
     constructor(
         @inject(delay(() => CreateNotificationUseCase))
         private readonly createNotificationUseCase: CreateNotificationUseCase,
-        @inject(SYSTEM_TOKENS.DeploymentSettingsRepository)
+        @inject(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository)
         private readonly deploymentSettingsRepository: IDeploymentSettingsRepository
-    ){}
+    ) {}
 
-    async handle(event: UserCreatedEvent): Promise<void> {
+    async handle(event: UserCreatedIntegrationEvent): Promise<void> {
         const { id, firstName } = event.payload;
 
         const settings = await this.deploymentSettingsRepository.getSettings();

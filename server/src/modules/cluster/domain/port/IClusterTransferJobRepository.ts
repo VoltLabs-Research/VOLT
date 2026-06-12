@@ -1,16 +1,7 @@
-import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import type ClusterTransferJob from '@modules/cluster/domain/entities/ClusterTransferJob';
-import type { ClusterTransferJobProps, ClusterTransferJobState } from '@modules/cluster/domain/entities/ClusterTransferJob';
-
-export interface IClusterTransferJobRepository extends IBaseRepository<ClusterTransferJob, ClusterTransferJobProps> {
-    findOpenByScope(
-        scopeType: ClusterTransferJobProps['scopeType'],
-        scopeId: string
-    ): Promise<ClusterTransferJob | null>;
-    findNextRunnable(): Promise<ClusterTransferJob | null>;
-    listOpenByClusterIds(teamId: string, clusterIds: string[]): Promise<ClusterTransferJob[]>;
-    claimNextRunnable(claimantId: string, ttlMs: number): Promise<ClusterTransferJob | null>;
-    renewClaim(jobId: string, claimantId: string, ttlMs: number): Promise<boolean>;
-    releaseClaim(jobId: string, claimantId: string): Promise<void>;
-    updateRuntimeState(jobId: string, runtimeState: Record<string, unknown>): Promise<ClusterTransferJob | null>;
-}
+/**
+ * Re-export shim. Canonical port now lives in the neutral `shared/contracts`
+ * layer (detachable-modules migration). Existing
+ * `@modules/cluster/domain/port/IClusterTransferJobRepository` importers keep
+ * working unchanged.
+ */
+export type { IClusterTransferJobRepository } from '@shared/contracts/ports/IClusterTransferJobRepository';

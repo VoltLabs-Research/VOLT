@@ -1,40 +1,23 @@
-export interface SimulationCellDims {
-    width: number;
-    height: number;
-    length: number;
-}
+/**
+ * Re-export shim (detachable-modules migration). The structural simulation-cell
+ * data shapes now live in the neutral contracts layer
+ * (`@shared/contracts/types/SimulationCell`). This owner file re-exports them so
+ * existing `@modules/simulation-cell/domain/entities/SimulationCell` importers
+ * compile unchanged, and retains the runtime `createSimulationCell` factory plus
+ * the `SimulationCell` entity alias.
+ */
+export type {
+    SimulationCellDims,
+    SimulationCellPeriodicBoundaryConditions,
+    SimulationCellGeometry,
+    SimulationCellTrajectoryReference,
+    SimulationCellProps,
+    SimulationCellLike
+} from '@shared/contracts/types/SimulationCell';
 
-export interface SimulationCellPeriodicBoundaryConditions {
-    x: boolean;
-    y: boolean;
-    z: boolean;
-}
+import type { SimulationCellLike, SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 
-export interface SimulationCellGeometry {
-    cell_vectors: number[][];
-    cell_origin: number[];
-    periodic_boundary_conditions: SimulationCellPeriodicBoundaryConditions;
-}
-
-export interface SimulationCellTrajectoryReference {
-    _id?: string;
-    name?: string;
-}
-
-export interface SimulationCellProps {
-    boundingBox: SimulationCellDims;
-    geometry: SimulationCellGeometry;
-    team: string;
-    trajectory: string | SimulationCellTrajectoryReference;
-    timestep: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-export interface SimulationCell {
-    readonly _id: string;
-    props: SimulationCellProps;
-}
+export interface SimulationCell extends SimulationCellLike {}
 
 export const createSimulationCell = (_id: string, props: SimulationCellProps): SimulationCell => ({
     _id,

@@ -24,6 +24,7 @@ export default class DeploymentSettingsRepository
         return doc ?? new DeploymentSettings('', {
             defaultTeam: null,
             autoJoinNewMembers: false,
+            enabledModules: null,
             createdAt: new Date(),
             updatedAt: new Date()
         });

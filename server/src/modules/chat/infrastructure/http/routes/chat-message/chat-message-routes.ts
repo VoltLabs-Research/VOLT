@@ -4,6 +4,7 @@ import controllers from '@modules/chat/infrastructure/http/controllers/chat-mess
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
+    moduleKey: 'chat',
     basePath: '/api/chat-messages',
     protected: true,
     routes: (router) => {

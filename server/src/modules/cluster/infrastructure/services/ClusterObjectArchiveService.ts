@@ -7,7 +7,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
 
 import type { IClusterObjectArchiveService } from '@modules/cluster/domain/port/IClusterObjectArchiveService';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 
 export interface ClusterArchiveObjectEntry {
     type: 'object';

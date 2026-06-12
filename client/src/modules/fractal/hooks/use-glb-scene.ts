@@ -47,7 +47,8 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         sceneKey: params.sceneKey,
         boxBounds: params.boxBounds,
         pointCloudSettings: params.pointCloudSettings,
-        lineSettings: params.lineSettings
+        lineSettings: params.lineSettings,
+        lineHighlight: params.lineHighlight
     };
 }
 
@@ -127,6 +128,7 @@ export default function useGlbScene(
                             paramsRef.current.sceneVisualOverrides
                         );
                         engine.updateLineWidth(paramsRef.current.lineSettings);
+                        engine.updateLineHighlight(paramsRef.current.lineHighlight);
                     }
                     invalidate();
                 }
@@ -179,6 +181,7 @@ export default function useGlbScene(
             paramsRef.current.sceneVisualOverrides
         );
         engine.updateLineWidth(paramsRef.current.lineSettings);
+        engine.updateLineHighlight(paramsRef.current.lineHighlight);
     }, [
         params.url,
         params.resourceKey,
@@ -194,7 +197,8 @@ export default function useGlbScene(
         params.pointCloudSettings,
         params.pointSizeMultiplier,
         params.sceneVisualOverrides,
-        params.lineSettings
+        params.lineSettings,
+        params.lineHighlight
     ]);
 
     useFrame(({ camera: frameCamera }) => {

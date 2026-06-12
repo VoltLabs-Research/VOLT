@@ -8,16 +8,19 @@ import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTok
 import type { IAnalysisExecutionLogService } from '@modules/analysis/domain/port/IAnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
+import type { IGetAnalysisFrameLogUseCase } from '@shared/contracts/ports/IGetAnalysisFrameLogUseCase';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { Result } from '@shared/domain/port/Result';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
 @Singleton()
+@AliasOf(COMPUTE_TOKENS.GetAnalysisFrameLogUseCase)
 export default class GetAnalysisFrameLogUseCase implements IUseCase<
     GetAnalysisFrameLogInputDTO,
     GetAnalysisFrameLogOutputDTO,
     ApplicationError
-> {
+>, IGetAnalysisFrameLogUseCase {
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService

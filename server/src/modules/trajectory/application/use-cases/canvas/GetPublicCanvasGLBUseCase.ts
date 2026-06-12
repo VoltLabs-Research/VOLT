@@ -1,14 +1,14 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import {
     GetPublicCanvasGLBInputDTO,
     GetPublicCanvasGLBOutputDTO
 } from '@modules/trajectory/application/dtos/canvas/GetPublicCanvasGLBDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
-import { getClusterGlbStream } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
@@ -26,7 +26,7 @@ export class GetPublicCanvasGLBUseCase implements IUseCase<
         
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
         
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(

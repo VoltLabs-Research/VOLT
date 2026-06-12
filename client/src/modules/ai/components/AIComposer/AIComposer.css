@@ -119,3 +119,20 @@
         transform: none;
     }
 }
+
+.ai-composer-stop {
+    background: var(--status-error-bg, rgba(220, 38, 38, 0.12));
+    color: var(--status-error, #dc2626);
+    animation: ai-composer-stop-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ai-composer-stop-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-composer-stop {
+        animation: none;
+    }
+}

@@ -1,8 +1,8 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GetSubListingOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetSubListingDTO';
-import { GetSubListingUseCase } from '@modules/plugin/application/use-cases/listing-row/GetSubListingUseCase';
+import type { GetSubListingOutputDTO } from '@shared/contracts/dtos';
+import type { IGetSubListingUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -31,10 +31,10 @@ export class GetPublicCanvasSubListingUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
-        
-        private readonly getSubListingUseCase: GetSubListingUseCase
+
+        @inject(PLUGIN_USECASE_TOKENS.GetSubListingUseCase) private readonly getSubListingUseCase: IGetSubListingUseCase
     ) {}
 
     async execute(input: GetPublicCanvasSubListingInput): Promise<Result<GetSubListingOutputDTO>> {

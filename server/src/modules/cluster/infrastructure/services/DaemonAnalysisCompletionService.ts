@@ -1,25 +1,27 @@
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
 import type {
+    Analysis,
     AnalysisArtifactStatus,
     AnalysisChildAnalysis,
     AnalysisExpectedArtifact,
     AnalysisStage,
     AnalysisStageStatus,
-    AnalysisStageType
-} from '@modules/analysis/domain/entities/Analysis';
-import AnalysisStageChangedEvent from '@modules/analysis/domain/events/AnalysisStageChangedEvent';
-import AnalysisStatusChangedEvent from '@modules/analysis/domain/events/AnalysisStatusChangedEvent';
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
-import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
+    AnalysisStageType,
+    TrajectoryLike
+} from '@shared/contracts/types';
+import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { JobStatus } from '@shared/contracts/types';
+import { TrajectoryStatus } from '@shared/contracts/types';
+// cluster EMITS the analysis-, jobs- and trajectory-owned events
+// (analysis.stage.changed / analysis.status.changed / job.status.changed /
+// trajectory.updated) via the neutral GenericDomainEvent, dispatched by name.
+// This removes the static import of those owner modules' event classes; the
+// neutral payload contracts type the payloads.
+import { GenericDomainEvent } from '@shared/application/events/GenericDomainEvent';
+import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
-import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
+import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -27,6 +29,32 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import IORedis from 'ioredis';
 import { inject } from 'tsyringe';
+
+/**
+ * Minimal local view of the analysis execution-log service this service depends
+ * on. The concrete `AnalysisExecutionLogService` lives in the analysis module
+ * and is registered under `COMPUTE_TOKENS.AnalysisExecutionLogService` (the
+ * token contract exists, but no port type contract does yet — FOLLOW-UP), so we
+ * inject by token against this local structural interface to avoid importing
+ * the concrete class.
+ */
+interface DaemonExecutionLogService {
+    markFrameRunning(input: {
+        analysisId: string;
+        teamId: string;
+        trajectoryId: string;
+        jobId: string;
+        timestep: number;
+    }): Promise<void>;
+    sealFrameLog(input: {
+        analysisId: string;
+        teamId: string;
+        trajectoryId: string;
+        jobId: string;
+        timestep: number;
+        status: 'completed' | 'failed';
+    }): Promise<void>;
+}
 
 const ANALYSIS_QUEUE_TYPE = 'analysis_processing';
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
@@ -197,7 +225,7 @@ interface DaemonAnalysisStageStatusInput extends DaemonJobInputBase {
 
 interface ResolvedTrajectoryOwnership {
     teamId: string;
-    trajectory: Trajectory;
+    trajectory: TrajectoryLike;
     trajectoryContext: JobTrajectoryContext;
 }
 
@@ -205,16 +233,16 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
 }
 
-@Singleton(CLUSTER_TOKENS.DaemonAnalysisCompletionService)
+@Singleton(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService)
 export default class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
-        private readonly analysisRepo: AnalysisRepository,
-        private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-        private readonly trajectoryRepo: TrajectoryRepository
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonExecutionLogService,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
     ) {}
 
     /**
@@ -439,7 +467,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
     async handleAnalysisStageStatus(input: DaemonAnalysisStageStatusInput): Promise<void> {
         const resolved = await this.resolveAnalysisOwnership(input);
         const analysis = resolved.analysis;
-        const trajectoryId = resolved.trajectory.id;
+        const trajectoryId = resolved.trajectory._id;
         const stage = this.toAnalysisStage(input, resolved.trajectoryContext.timestep);
         const currentStages = analysis.props.stages ?? [];
         const previousStage = currentStages.find((candidate) => this.isSameStageIdentity(candidate, stage));
@@ -501,15 +529,15 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         // it). Subsequent runs are no-ops on the value but the write is cheap.
         if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
             try {
-                await this.trajectoryRepo.updateById(resolved.trajectory.id, { hasPreview: true });
-                await this.eventBus.publish(new TrajectoryUpdatedEvent({
-                    trajectoryId: resolved.trajectory.id,
+                await this.trajectoryRepo.updateById(resolved.trajectory._id, { hasPreview: true });
+                await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
+                    trajectoryId: resolved.trajectory._id,
                     teamId: resolved.teamId,
                     updates: { hasPreview: true },
                     updatedAt: new Date()
                 }));
             } catch (error: unknown) {
-                logger.warn({ err: error, trajectoryId: resolved.trajectory.id }, '[DaemonAnalysisCompletion] failed to persist hasPreview after raster completion');
+                logger.warn({ err: error, trajectoryId: resolved.trajectory._id }, '[DaemonAnalysisCompletion] failed to persist hasPreview after raster completion');
             }
         }
     }
@@ -522,7 +550,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         const { jobId, status, error } = input;
         const resolved = await this.resolveTrajectoryOwnership(input);
         const teamId = resolved.teamId;
-        const trajectoryId = resolved.trajectory.id;
+        const trajectoryId = resolved.trajectory._id;
         const trajectoryContext = resolved.trajectoryContext;
         const keys = this.glbKeys(trajectoryId);
         const terminalReceiptKey = keys.terminal(jobId);
@@ -586,7 +614,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         }));
 
         if (updatedAnalysis) {
-            await this.publishAnalysisStageChanged(updatedAnalysis, resolved.teamId, resolved.trajectory.id)
+            await this.publishAnalysisStageChanged(updatedAnalysis, resolved.teamId, resolved.trajectory._id)
                 .catch(swallow('Failed to publish analysis.stage.changed after upload status', {
                     analysisId: input.analysisId,
                     jobId: input.jobId
@@ -622,7 +650,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             childAnalyses?: AnalysisChildAnalysis[];
         } = {}
     ): Promise<void> {
-        await this.eventBus.publish(new AnalysisStatusChangedEvent({
+        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStatusChanged, {
             analysisId,
             trajectoryId: extras.trajectoryId ?? '',
             teamId,
@@ -642,7 +670,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         teamId: string,
         trajectoryId: string
     ): Promise<void> {
-        await this.eventBus.publish(new AnalysisStageChangedEvent({
+        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
             analysisId: analysis._id,
             trajectoryId,
             teamId,
@@ -955,7 +983,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             trajectoryContext,
             error
         } = input;
-        const event = new JobStatusChangedEvent({
+        const event = new GenericDomainEvent(DOMAIN_EVENTS.JobStatusChanged, {
             jobId,
             teamId,
             status,
@@ -1028,7 +1056,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             );
         }
 
-        if (input.trajectoryId && input.trajectoryId !== trajectory.id) {
+        if (input.trajectoryId && input.trajectoryId !== trajectory._id) {
             throw ApplicationError.badRequest(
                 'TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_MISMATCH',
                 'Payload trajectory does not match persisted analysis ownership'
@@ -1040,7 +1068,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             trajectory,
             teamId: analysis.props.team,
             trajectoryContext: {
-                trajectoryId: trajectory.id,
+                trajectoryId: trajectory._id,
                 trajectoryName: trajectory.props.name,
                 timestep: input.timestep
             }
@@ -1069,7 +1097,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             teamId: trajectory.props.team,
             trajectory,
             trajectoryContext: {
-                trajectoryId: trajectory.id,
+                trajectoryId: trajectory._id,
                 trajectoryName: trajectory.props.name,
                 timestep: input.timestep
             }
@@ -1122,7 +1150,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
 
     private async setTrajectoryStatus(trajectoryId: string, teamId: string, status: TrajectoryStatus): Promise<void> {
         await this.trajectoryRepo.updateById(trajectoryId, { status });
-        await this.eventBus.publish(new TrajectoryUpdatedEvent({
+        await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
             trajectoryId,
             teamId,
             updates: { status },

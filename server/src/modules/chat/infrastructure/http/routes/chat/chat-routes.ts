@@ -3,6 +3,7 @@ import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpMod
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 
 export default createHttpModule({
+    moduleKey: 'chat',
     basePath: '/api/chats',
     teamScope: HttpModuleTeamScope.Param,
     protected: true,

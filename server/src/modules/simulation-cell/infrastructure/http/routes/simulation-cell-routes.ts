@@ -16,6 +16,7 @@ const getByTrajectoryController = container.resolve(GetSimulationCellByTrajector
 export default createHttpModule({
     basePath: '/api/simulation-cells/:teamId',
     resource: Resource.SIMULATION_CELL,
+    moduleKey: 'simulation-cell',
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/', async (req, res) => {

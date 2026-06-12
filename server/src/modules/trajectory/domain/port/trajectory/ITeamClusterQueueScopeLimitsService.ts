@@ -1,7 +1,7 @@
 import type {
     TeamClusterQueueScopeLimitProps,
     TeamClusterQueueScopeLimitsProps
-} from '@modules/cluster/domain/entities/TeamCluster';
+} from '@shared/contracts/types';
 
 export type TeamClusterScopedQueueLimitKey =
     | 'analysisProcessing'

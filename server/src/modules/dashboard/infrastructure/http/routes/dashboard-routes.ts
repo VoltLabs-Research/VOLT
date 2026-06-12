@@ -4,6 +4,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 
 export default createHttpModule({
     basePath: '/api/dashboard/:teamId',
+    moduleKey: 'dashboard',
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.get('/search', controllers.getGlobalSearch.handle);

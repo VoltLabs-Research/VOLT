@@ -8,6 +8,7 @@ export default createHttpModule({
     basePath: '/api/plugins/:teamId',
     resource: Resource.PLUGIN,
     teamScope: HttpModuleTeamScope.BasePath,
+    moduleKey: 'plugin',
     routes: (router) => {
         router.get('/listings/analyses/:analysisId', controllers.getListingRowsByAnalysisId.handle);
         router.get('/listings/analyses/:analysisId/export/options', controllers.getAnalysisListingExportOptions.handle);

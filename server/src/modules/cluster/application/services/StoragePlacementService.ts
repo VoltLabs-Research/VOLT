@@ -1,31 +1,37 @@
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import type Analysis from '@modules/analysis/domain/entities/Analysis';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
-import { resolveAnalysisStorageClusterId, resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type {
+    ISceneArtifactRepository,
+    ITrajectoryRepository,
+    IAnalysisRepository,
+    ITeamClusterSelectionService
+} from '@shared/contracts/ports';
+import type { Analysis, TrajectoryLike } from '@shared/contracts/types';
+import type { IPluginRepository } from '@shared/contracts/ports';
+import { resolveAnalysisStorageClusterId, resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import {
     buildAnalysisPlacementBuckets,
     buildPluginBinaryPlacementBuckets,
     buildTrajectoryPlacementBuckets
 } from '@modules/cluster/application/utilities/storage-placement-targets';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
 import StoragePlacement, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps
 } from '@modules/cluster/domain/entities/StoragePlacement';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { IStoragePlacementRepository } from '@modules/cluster/domain/port/IStoragePlacementRepository';
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
 import type { IStoragePlacementService } from '@modules/cluster/domain/port/IStoragePlacementService';
 import { inject } from 'tsyringe';
+
+// Structural "placement view" of a plugin — the only field this service reads.
+// Binding the neutral generic IPluginRepository to this lets cluster avoid
+// importing the concrete Plugin entity class (consumer-owns-view pattern).
+interface PluginPlacementView {
+    props: { team: string };
+}
 
 interface ResolvedPlacementDefinition {
     team: string;
@@ -33,15 +39,25 @@ interface ResolvedPlacementDefinition {
     buckets: StoragePlacementBucketRef[];
 }
 
+// `@Singleton()` keeps the class self-registered under its own constructor so the
+// existing consumers that inject it POSITIONALLY by class (no `@inject`) keep
+// resolving the same shared singleton. `@AliasOf(COMPUTE_TOKENS.StoragePlacementService)`
+// adds the neutral token binding (same `Symbol.for` resolution) so cross-module
+// consumers can `@inject(COMPUTE_TOKENS.StoragePlacementService)` against the
+// `IStoragePlacementService` port without importing this concrete class. NOTE:
+// in this codebase `@Singleton(token)` registers ONLY under the token (see
+// `decorators.ts`), so a bare `@Singleton(token)` here would have broken those
+// positional-by-class injections — hence the Singleton + AliasOf pair.
 @Singleton()
+@AliasOf(COMPUTE_TOKENS.StoragePlacementService)
 export default class StoragePlacementService implements IStoragePlacementService {
     constructor(
         @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
-        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository<PluginPlacementView>,
+        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
 
     async findByScope(
@@ -206,13 +222,13 @@ export default class StoragePlacementService implements IStoragePlacementService
         });
 
         for (const trajectory of trajectories) {
-            const placement = await this.ensurePlacement('trajectory', trajectory.id);
+            const placement = await this.ensurePlacement('trajectory', trajectory._id);
             if (placement.props.primaryClusterId !== primaryClusterId) {
                 continue;
             }
 
             plannedPlacements.set(this.buildPlacementKey(placement.props.scopeType, placement.props.scopeId), placement);
-            trajectoryTransferIds.add(trajectory.id);
+            trajectoryTransferIds.add(trajectory._id);
         }
 
         const analyses = await this.analysisRepository.export({
@@ -311,10 +327,10 @@ export default class StoragePlacementService implements IStoragePlacementService
 
     private async buildTrajectoryMapForAnalyses(
         analyses: Analysis[],
-        knownTrajectories: Trajectory[]
-    ): Promise<Map<string, Trajectory>> {
-        const trajectoryMap = new Map<string, Trajectory>(
-            knownTrajectories.map((trajectory) => [trajectory.id, trajectory])
+        knownTrajectories: TrajectoryLike[]
+    ): Promise<Map<string, TrajectoryLike>> {
+        const trajectoryMap = new Map<string, TrajectoryLike>(
+            knownTrajectories.map((trajectory) => [trajectory._id, trajectory])
         );
         const missingTrajectoryIds = [...new Set(
             analyses
@@ -336,7 +352,7 @@ export default class StoragePlacementService implements IStoragePlacementService
         });
 
         for (const trajectory of fetchedTrajectories) {
-            trajectoryMap.set(trajectory.id, trajectory);
+            trajectoryMap.set(trajectory._id, trajectory);
         }
 
         return trajectoryMap;

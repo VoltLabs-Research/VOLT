@@ -1,37 +1,36 @@
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import Analysis from '@modules/analysis/domain/entities/Analysis';
-import Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
+import type { Analysis, PluginLike, WorkflowNodeLike } from '@shared/contracts/types';
+import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
+} from '@shared/application/utilities/cluster-location';
 import {
     AnalysisAllAtomsResult,
     ExposureAtomConfig,
     IAtomPropertiesService,
     PerAtomPropertyType
 } from '@modules/trajectory/domain/port/trajectory/IAtomPropertiesService';
+import type { IAnalysisRepository, IPluginRepository } from '@shared/contracts/ports';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-
-import AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
-import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/plugin/PluginRepository';
+import { inject } from 'tsyringe';
 
 @Singleton(TRAJECTORY_TOKENS.AtomPropertiesService)
 export default class AtomPropertiesService implements IAtomPropertiesService {
     constructor(
-        
+
         private readonly daemonClient: TeamClusterDaemonClient,
 
-        
-        private readonly analysisRepository: AnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository)
+        private readonly analysisRepository: IAnalysisRepository,
 
-        
-        private readonly pluginRepository: PluginRepository
+        @inject(COMPUTE_TOKENS.PluginRepository)
+        private readonly pluginRepository: IPluginRepository<PluginLike>
     ) { }
 
     async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {
@@ -291,7 +290,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return result || [];
     }
 
-    private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: Plugin }> {
+    private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: PluginLike }> {
         const analysis = await this.analysisRepository.findById(analysisId);
         if (!analysis) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
 
@@ -301,11 +300,11 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return { analysis, plugin };
     }
 
-    private getExposureNodes(plugin: Plugin) {
+    private getExposureNodes(plugin: PluginLike) {
         return plugin.props.workflow.props.nodes.filter((node) => node.type === WorkflowNodeType.Exposure);
     }
 
-    private getLineExposureIds(plugin: Plugin): Set<string> {
+    private getLineExposureIds(plugin: PluginLike): Set<string> {
         const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
         const ids = new Set<string>();
         for (const exposure of exposures) {
@@ -317,7 +316,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         return ids;
     }
 
-    private getExposureName(exposureNode: Plugin['props']['workflow']['props']['nodes'][number]): string {
+    private getExposureName(exposureNode: WorkflowNodeLike): string {
         return typeof exposureNode?.data?.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
             : '';

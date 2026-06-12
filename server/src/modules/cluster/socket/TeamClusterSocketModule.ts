@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import AnalysisExecutionLogService from '@modules/analysis/infrastructure/services/AnalysisExecutionLogService';
-import PluginDebugSessionRegistryService from '@modules/plugin/infrastructure/services/PluginDebugSessionRegistryService';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
+import type { IPluginDebugSessionRegistryService } from '@shared/contracts/ports';
 import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
 import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
@@ -48,6 +49,26 @@ import type { Result } from '@shared/domain/port/Result';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { inject } from 'tsyringe';
+import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
+
+/**
+ * Minimal local view of the analysis execution-log service. The concrete
+ * `AnalysisExecutionLogService` lives in the analysis module and is registered
+ * under `COMPUTE_TOKENS.AnalysisExecutionLogService`; we inject by token against
+ * this structural interface to avoid importing the concrete class. (No port type
+ * contract exists for it yet — FOLLOW-UP.)
+ */
+interface DaemonAppendFrameSegmentsService {
+    appendFrameSegments(input: {
+        analysisId: string;
+        teamId: string;
+        trajectoryId: string;
+        jobId: string;
+        timestep: number;
+        segments: TeamClusterDaemonExecutionLogSegment[];
+    }): Promise<void>;
+}
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -137,8 +158,8 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
         private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
-        private readonly analysisExecutionLogService: AnalysisExecutionLogService,
-        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
+        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService,
+        @inject(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService) private readonly pluginDebugSessionRegistry: IPluginDebugSessionRegistryService,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {
         super(emitter, roomManager, eventRegistry);

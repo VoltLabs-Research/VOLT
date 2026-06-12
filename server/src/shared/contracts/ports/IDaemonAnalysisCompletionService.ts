@@ -1,0 +1,133 @@
+/**
+ * Neutral, cross-module port for the daemon analysis-completion service (tracks
+ * job/session drain, publishes status + stage changes as the daemon reports
+ * back). Plus the daemon-input DTOs it accepts.
+ *
+ * Extracted from `@modules/cluster/domain/port/IDaemonAnalysisCompletionService`
+ * during the detachable-modules migration. The concrete service stays in the
+ * cluster module, registered under
+ * `CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService` (same `Symbol.for`
+ * key as the cluster module's `CLUSTER_TOKENS.DaemonAnalysisCompletionService`,
+ * so resolution is byte-identical). Consumers `@inject(...)` against this port
+ * without importing `@modules/cluster`. The original port file re-exports this
+ * so existing importers compile unchanged.
+ *
+ * This file imports no `@modules/*` code: `JobStatus` and the analysis-stage
+ * enums come from the neutral `shared/contracts/types` layer.
+ */
+import type { JobStatus } from '@shared/contracts/types/JobStatus';
+import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
+
+export interface DaemonJobCompletionInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    name: string;
+    analysisId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    success: boolean;
+    error?: string;
+}
+
+export interface DaemonAnalysisJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    name: string;
+    analysisId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+export interface DaemonAnalysisStageStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    name: string;
+    analysisId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    stageKey: string;
+    label: string;
+    stageType: AnalysisStageType;
+    stageStatus: AnalysisStageStatus;
+    pluginId?: string;
+    pluginDisplayName?: string;
+    nodeId?: string;
+    exposureId?: string;
+    configHash?: string;
+    cacheHit?: boolean;
+    detail?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    durationMs?: number;
+}
+
+export interface DaemonRasterJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+export interface DaemonGlbJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+export interface DaemonArtifactUploadJobStatusInput {
+    teamClusterId: string;
+    jobId: string;
+    teamId: string;
+    analysisId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+export interface QueuedJobNotification {
+    jobId: string;
+    name: string;
+    teamId: string;
+    timestep: number;
+    trajectoryId: string;
+    trajectoryName?: string;
+    analysisId: string;
+    queueType: string;
+}
+
+export interface QueuedDaemonJobNotification {
+    jobId: string;
+    teamId: string;
+    queueType: string;
+    name?: string;
+    analysisId?: string;
+    trajectoryId?: string;
+    trajectoryName?: string;
+    timestep?: number;
+}
+
+export interface IDaemonAnalysisCompletionService {
+    initializeSession(analysisId: string, totalJobs: number, teamId: string, trajectoryId?: string): Promise<void>;
+    initializeGlbSession(trajectoryId: string, totalJobs: number, teamId: string): Promise<void>;
+    handleJobsQueued(jobs: QueuedJobNotification[], teamId: string, teamClusterId: string): Promise<void>;
+    handleQueuedJobs(jobs: QueuedDaemonJobNotification[], cleanupScope: string, teamClusterId: string): Promise<void>;
+    handleJobCompletion(input: DaemonJobCompletionInput): Promise<void>;
+    handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void>;
+    handleAnalysisStageStatus(input: DaemonAnalysisStageStatusInput): Promise<void>;
+    handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void>;
+    handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void>;
+    handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void>;
+}

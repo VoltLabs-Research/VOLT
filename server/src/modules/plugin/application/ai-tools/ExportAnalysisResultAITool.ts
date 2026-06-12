@@ -1,0 +1,58 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
+import { ExportType } from '@shared/domain/port/IBaseRepository';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOOL_TOKENS.AITool)
+export class ExportAnalysisResultAITool extends AITool {
+    readonly name = 'export_analysis_result';
+    readonly description = 'Produce a downloadable export (JSON or CSV) of all listing rows for an analysis. Returns export metadata (filename, format, headers); it does not stream the file contents into the chat.';
+    readonly parameters = z.object({
+        analysisId: z.string(),
+        format: z.nativeEnum(ExportType).optional(),
+        includeConfig: z.boolean().optional(),
+        selectedListingIds: z.array(z.string()).optional(),
+        selectedSubListingIds: z.array(z.string()).optional(),
+        sortAsc: z.boolean().optional()
+    });
+
+    constructor(
+        protected readonly useCase: ExportListingRowsByAnalysisIdUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const result = await this.useCase.execute({
+            analysisId: params.analysisId,
+            teamId: scope.teamId,
+            format: params.format,
+            includeConfig: params.includeConfig,
+            selectedListingIds: params.selectedListingIds,
+            selectedSubListingIds: params.selectedSubListingIds,
+            sortAsc: params.sortAsc
+        });
+        if (!result.success) throw result.error;
+
+        // DownloadStreamOutputDTO carries a Readable stream we must NOT pipe into
+        // chat. Surface only the descriptive headers so the user knows an export
+        // was produced and can download it through the regular export endpoint.
+        const { headers } = result.value;
+        const filename = headers['Content-Disposition'] ?? headers['content-disposition'];
+        const contentType = headers['Content-Type'] ?? headers['content-type'];
+
+        return {
+            summary: `Prepared an export for analysis ${params.analysisId} (${params.format ?? ExportType.Json}). Download it from the analysis export endpoint.`,
+            data: {
+                analysisId: params.analysisId,
+                format: params.format ?? ExportType.Json,
+                filename,
+                contentType,
+                note: 'Export prepared. Binary contents are not included in chat; use the download endpoint to retrieve the file.'
+            }
+        };
+    }
+}

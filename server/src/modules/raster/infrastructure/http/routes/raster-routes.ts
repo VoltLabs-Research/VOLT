@@ -15,6 +15,7 @@ const frameController = container.resolve(GetRasterFramePNGController);
 export default createHttpModule({
     basePath: '/api/rasters/:teamId',
     resource: Resource.RASTER,
+    moduleKey: 'raster',
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.post('/:trajectoryId/jobs', triggerController.handle);

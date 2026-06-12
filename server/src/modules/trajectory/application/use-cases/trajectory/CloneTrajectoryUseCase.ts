@@ -1,15 +1,15 @@
 import type { ITrajectoryCloneJobRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryCloneJobRepository';
 import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import { CONTAINER_TOKENS } from '@modules/container/infrastructure/di/ContainerTokens';
-import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
+import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { ITeamClusterRepository } from '@shared/contracts/ports';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
-import StoragePlacementService from '@modules/cluster/application/services/StoragePlacementService';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import { resolveEffectiveCapabilitiesFromRoleConfig, TeamClusterStatus } from '@modules/cluster/domain/entities/TeamCluster';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { IStoragePlacementService } from '@shared/contracts/ports';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/application/utilities/cluster-capabilities';
+import { TeamClusterStatus } from '@shared/contracts/types';
 import {
     CloneTrajectoryInputDTO,
     CloneTrajectoryOutputDTO
@@ -56,12 +56,13 @@ export default class CloneTrajectoryUseCase implements IUseCase<
         private readonly cloneRunner: ITrajectoryCloneRunner,
 
 
-        private readonly storagePlacementService: StoragePlacementService,
+        @inject(COMPUTE_TOKENS.StoragePlacementService)
+        private readonly storagePlacementService: IStoragePlacementService,
 
 
-        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
 
-        @inject(CONTAINER_TOKENS.TeamClusterSelectionService)
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
         private readonly clusterSelectionService: ITeamClusterSelectionService,
 
         @inject(SHARED_TOKENS.EventBus)

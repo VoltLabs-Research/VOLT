@@ -1,11 +1,11 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
+import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import type {
     GetPluginListingDocumentsOutputDTO
-} from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import { GetPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/GetPluginListingDocumentsUseCase';
+} from '@shared/contracts/dtos';
+import type { IGetPluginListingDocumentsUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -35,10 +35,10 @@ export class GetPublicCanvasPluginListingUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
-        
-        private readonly getPluginListingDocumentsUseCase: GetPluginListingDocumentsUseCase
+
+        @inject(PLUGIN_USECASE_TOKENS.GetPluginListingDocumentsUseCase) private readonly getPluginListingDocumentsUseCase: IGetPluginListingDocumentsUseCase
     ) {}
 
     async execute(input: GetPublicCanvasPluginListingInput): Promise<Result<GetPluginListingDocumentsOutputDTO>> {

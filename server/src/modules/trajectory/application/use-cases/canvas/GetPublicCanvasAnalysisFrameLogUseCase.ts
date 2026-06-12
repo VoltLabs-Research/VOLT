@@ -1,8 +1,8 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
+import type { IGetAnalysisFrameLogUseCase } from '@shared/contracts/ports';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GetAnalysisFrameLogOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisFrameLogDTO';
-import GetAnalysisFrameLogUseCase from '@modules/analysis/application/use-cases/GetAnalysisFrameLogUseCase';
+import type { GetAnalysisFrameLogOutputDTO } from '@shared/contracts/dtos/GetAnalysisFrameLogDTO';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -29,10 +29,10 @@ export class GetPublicCanvasAnalysisFrameLogUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
-        
-        private readonly getAnalysisFrameLogUseCase: GetAnalysisFrameLogUseCase
+
+        @inject(COMPUTE_TOKENS.GetAnalysisFrameLogUseCase) private readonly getAnalysisFrameLogUseCase: IGetAnalysisFrameLogUseCase
     ) {}
 
     async execute(input: GetPublicCanvasAnalysisFrameLogInput): Promise<Result<GetAnalysisFrameLogOutputDTO, ApplicationError>> {

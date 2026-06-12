@@ -25,6 +25,7 @@ const folderHandlers = createCatalogFolderRouteHandlers({
 });
 
 export default createHttpModule({
+    moduleKey: 'container',
     basePath: '/api/containers/:teamId',
     resource: Resource.CONTAINER,
     teamScope: HttpModuleTeamScope.BasePath,

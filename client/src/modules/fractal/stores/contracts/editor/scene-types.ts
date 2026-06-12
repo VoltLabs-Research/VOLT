@@ -42,6 +42,13 @@ export interface ModelDragOffset {
     z: number;
 }
 
+// Line entity selected from an exposure's listing; the viewport highlights the
+// matching tube in whichever line scene renders that exposure.
+export interface LineEntitySelection {
+    exposureId: string;
+    entityId: number;
+}
+
 export interface ModelState {
     activeScene: SceneObjectType;
     activeScenes: SceneObjectType[];
@@ -58,6 +65,7 @@ export interface ModelState {
     modelDragOffsets: Record<string, ModelDragOffset>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
+    lineEntitySelection: LineEntitySelection | null;
 }
 
 interface ModelActions {
@@ -88,6 +96,8 @@ interface ModelActions {
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
+    // Selecting the already-selected entity clears the selection.
+    toggleLineEntitySelection: (selection: LineEntitySelection) => void;
 }
 
 export type ModelStore = ModelActions & ModelState;

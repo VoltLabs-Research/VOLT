@@ -3,6 +3,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 
 export default createHttpModule({
     basePath: '/api/team-clusters/:teamClusterId',
+    moduleKey: 'cluster',
     routes: (router) => {
         router.post(
             '/healthcheck',

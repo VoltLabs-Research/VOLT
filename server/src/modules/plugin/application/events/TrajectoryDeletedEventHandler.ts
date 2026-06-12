@@ -1,18 +1,19 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
-import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
+import type { ISceneArtifactRepository } from '@shared/contracts/ports';
+import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
+import type { IDomainEvent } from '@shared/application/events/IDomainEvent';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 @Subscribe('trajectory.deleted')
-export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
+export default class TrajectoryDeletedEventHandler implements IEventHandler<IDomainEvent<TrajectoryDeletedEventPayload>> {
     constructor(
-        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
+        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) {}
 
-    async handle(event: TrajectoryDeletedEvent): Promise<void> {
+    async handle(event: IDomainEvent<TrajectoryDeletedEventPayload>): Promise<void> {
         const { trajectoryId } = event.payload;
         const query = { trajectory: trajectoryId };
 

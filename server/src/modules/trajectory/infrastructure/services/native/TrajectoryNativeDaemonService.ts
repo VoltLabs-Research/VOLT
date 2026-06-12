@@ -1,4 +1,5 @@
-import TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import type { FrameMetadata } from '@modules/trajectory/domain/contracts/trajectory';
 import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/domain/port/native/ITrajectoryNativeDaemonService';
@@ -12,6 +13,7 @@ import type {
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { inject } from 'tsyringe';
 
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
@@ -108,11 +110,11 @@ interface TrajectoryNativeFilterPreviewResponse {
 @Singleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
 export default class TrajectoryNativeDaemonService implements ITrajectoryNativeDaemonService {
     constructor(
-        
+
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
 
-        
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
+        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {

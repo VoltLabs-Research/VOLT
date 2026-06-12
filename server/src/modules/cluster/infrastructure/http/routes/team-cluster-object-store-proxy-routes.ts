@@ -262,6 +262,7 @@ const assertOwnerAccess = async (
 
 export default createHttpModule({
     basePath: TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    moduleKey: 'cluster',
     routes: (router) => {
         router.use(async (request, response) => {
             try {

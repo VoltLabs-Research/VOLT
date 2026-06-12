@@ -1,8 +1,8 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GetPluginExposureGLBOutputDTO } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
-import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
+import type { GetPluginExposureGLBOutputDTO } from '@shared/contracts/dtos';
+import type { IGetPluginExposureGLBUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
@@ -30,10 +30,10 @@ export class GetPublicCanvasPluginExposureGLBUseCase implements IUseCase<
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
         
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
 
-        
-        private readonly getPluginExposureGLBUseCase: GetPluginExposureGLBUseCase
+
+        @inject(PLUGIN_USECASE_TOKENS.GetPluginExposureGLBUseCase) private readonly getPluginExposureGLBUseCase: IGetPluginExposureGLBUseCase
     ) {}
 
     async execute(input: GetPublicCanvasPluginExposureGLBInput): Promise<Result<GetPluginExposureGLBOutputDTO, ApplicationError>> {

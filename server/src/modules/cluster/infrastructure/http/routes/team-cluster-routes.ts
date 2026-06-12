@@ -6,6 +6,7 @@ import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-li
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/clusters',
+    moduleKey: 'cluster',
     resource: Resource.TEAM,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {

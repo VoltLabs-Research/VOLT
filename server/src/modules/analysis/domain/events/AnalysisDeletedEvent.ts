@@ -1,16 +1,7 @@
 import { BaseDomainEvent } from '@shared/application/events/BaseDomainEvent';
+import type { AnalysisDeletedEventPayload } from '@shared/contracts/events/AnalysisDeletedPayload';
 
-export interface AnalysisDeletedEventPayload {
-    analysisId: string;
-    trajectoryId: string;
-    pluginId: string;
-    teamId: string;
-    teamClusterId?: string;
-    storageClusterId?: string;
-    computeClusterId?: string;
-    userId: string;
-    pluginDisplayName: string;
-}
+export type { AnalysisDeletedEventPayload };
 
 export default class AnalysisDeletedEvent extends BaseDomainEvent<AnalysisDeletedEventPayload> {
     constructor(payload: AnalysisDeletedEventPayload) {

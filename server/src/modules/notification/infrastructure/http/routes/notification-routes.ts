@@ -3,6 +3,7 @@ import { createHttpModule } from '@shared/infrastructure/http/routing/create-htt
 
 export default createHttpModule({
     basePath: '/api/notifications',
+    moduleKey: 'notification',
     protected: true,
     routes: (router) => {
         router.get('/', controllers.getMyNotifications.handle);

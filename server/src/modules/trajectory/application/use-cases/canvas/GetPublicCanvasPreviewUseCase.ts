@@ -4,8 +4,8 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createHash } from 'node:crypto';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { resolveTrajectoryStorageClusterId } from '@modules/cluster/application/utilities/cluster-location';
-import type TeamClusterObjectGatewayClient from '@modules/cluster/infrastructure/services/TeamClusterObjectGatewayClient';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import { readTrajectoryPreview } from '@modules/trajectory/utilities/trajectory/read-trajectory-preview';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -29,7 +29,7 @@ export class GetPublicCanvasPreviewUseCase implements IUseCase<
         
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
         
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: TeamClusterObjectGatewayClient
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async execute(input: GetPublicCanvasPreviewInput): Promise<Result<GetTrajectoryPreviewOutputDTO, ApplicationError>> {

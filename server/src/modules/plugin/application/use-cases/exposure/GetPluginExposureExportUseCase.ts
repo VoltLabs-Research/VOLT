@@ -1,13 +1,15 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
-import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { IPluginRepository } from '@modules/plugin/domain/port/plugin/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import {
     GetPluginExposureExportInputDTO,
     GetPluginExposureExportOutputDTO
 } from '@modules/plugin/application/dtos/exposure/GetPluginExposureExportDTO';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
+import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
+import type { IGetPluginExposureExportUseCase } from '@shared/contracts/ports/IGetPluginExposureExportUseCase';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -18,13 +20,14 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import type { IPluginExposureExportService } from '@modules/plugin/domain/port/exposure/IPluginExposureExportService';
 
 @Singleton()
+@AliasOf(PLUGIN_USECASE_TOKENS.GetPluginExposureExportUseCase)
 export class GetPluginExposureExportUseCase implements IUseCase<
     GetPluginExposureExportInputDTO,
     GetPluginExposureExportOutputDTO,
     ApplicationError
-> {
+>, IGetPluginExposureExportUseCase {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
         @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginExposureExportService) private readonly pluginExposureExportService: IPluginExposureExportService
     ) {}

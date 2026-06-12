@@ -9,7 +9,7 @@ import {
     readContainerPortProxyAccessTokenFromUrl,
     resolveContainerPortProxyRelayProtocol
 } from '@modules/container/infrastructure/utilities/container-port-proxy';
-import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
+import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';

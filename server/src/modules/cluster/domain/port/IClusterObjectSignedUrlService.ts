@@ -1,11 +1,5 @@
-import type {
-    ClusterObjectAccessClaims,
-    ClusterObjectSignedUrl
-} from '@modules/cluster/domain/contracts/ClusterObjectGateway';
-
-type ClusterObjectTokenPayload = Omit<ClusterObjectAccessClaims, 'iat' | 'exp'>;
-
-export interface IClusterObjectSignedUrlService {
-    createToken(payload: ClusterObjectTokenPayload, ttlSeconds?: number): ClusterObjectSignedUrl;
-    verify(token: string): ClusterObjectAccessClaims | null;
-}
+/**
+ * Re-export shim. Canonical port now lives in the neutral `shared/contracts`
+ * layer (detachable-modules migration).
+ */
+export type { IClusterObjectSignedUrlService } from '@shared/contracts/ports/IClusterObjectSignedUrlService';

@@ -1,10 +1,12 @@
-import type { GetSimulationCellByTrajectoryOutputDTO } from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
-import GetSimulationCellByTrajectoryUseCase from '@modules/simulation-cell/application/use-cases/GetSimulationCellByTrajectoryUseCase';
+import { SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens';
+import type { GetSimulationCellByTrajectoryOutputDTO } from '@shared/contracts/dtos';
+import type { IGetSimulationCellByTrajectoryUseCase } from '@shared/contracts/ports';
 import { TrajectoryReadAccessService } from '@modules/trajectory/application/services/TrajectoryReadAccessService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
 interface GetPublicCanvasSimulationCellInput {
     trajectoryId: string;
@@ -19,11 +21,11 @@ export class GetPublicCanvasSimulationCellUseCase implements IUseCase<
     ApplicationError
 > {
     constructor(
-        
+
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-        
-        private readonly getSimulationCellByTrajectoryUseCase: GetSimulationCellByTrajectoryUseCase
+        @inject(SIMULATION_CELL_CONTRACT_TOKENS.GetSimulationCellByTrajectoryUseCase)
+        private readonly getSimulationCellByTrajectoryUseCase: IGetSimulationCellByTrajectoryUseCase
     ) {}
 
     async execute(input: GetPublicCanvasSimulationCellInput): Promise<Result<GetSimulationCellByTrajectoryOutputDTO, ApplicationError>> {

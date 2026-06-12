@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { TeamClusterSelectionService } from '@modules/container/infrastructure/services/TeamClusterSelectionService';
-import type AnalysisRepository from '@modules/analysis/infrastructure/persistence/mongo/repositories/AnalysisRepository';
+import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
 import type TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
 import type TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -10,9 +9,9 @@ interface ResolveSceneArtifactExecutionContextInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
-    analysisRepository: AnalysisRepository;
+    analysisRepository: IAnalysisRepository;
     trajectoryRepository: TrajectoryRepository;
-    teamClusterSelectionService: TeamClusterSelectionService;
+    teamClusterSelectionService: ITeamClusterSelectionService;
     dumpStorage: TrajectoryDumpStorageService;
     buildClusterRequiredError: () => ApplicationError;
 }

@@ -1,13 +1,7 @@
-import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
-
-export interface IRasterStorageService {
-    hasTrajectoryPreview(trajectoryId: string, teamClusterId: string): Promise<boolean>;
-    getRasterFramePNG(trajectoryId: string, timestep: number, teamClusterId: string): Promise<RasterFrameResult>;
-    getAnalysisRasterFramePNG(
-        trajectoryId: string,
-        analysisId: string,
-        timestep: number,
-        model: string,
-        teamClusterId: string
-    ): Promise<RasterFrameResult>;
-}
+/**
+ * Re-export shim. Canonical port now lives in the neutral `shared/contracts`
+ * layer (detachable-modules migration). Existing
+ * `@modules/raster/domain/port/IRasterStorageService` importers keep working
+ * unchanged.
+ */
+export type { IRasterStorageService } from '@shared/contracts/ports/IRasterStorageService';

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
-import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
-import { TeamClusterServiceExposureStatus } from '@modules/cluster/utilities/teamClusterSocket';
+import type { TeamClusterServiceExposure } from '@shared/contracts/types';
+import { TeamClusterServiceExposureStatus } from '@shared/contracts/types';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;

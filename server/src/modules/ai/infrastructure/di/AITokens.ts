@@ -1,3 +1,5 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+
 export const AI_TOKENS = {
     AIConversationRepository: Symbol.for('AIConversationRepository'),
     AIMessageRepository: Symbol.for('AIMessageRepository'),
@@ -12,5 +14,5 @@ export const AI_TOKENS = {
     SendAIConversationMessageUseCase: Symbol.for('SendAIConversationMessageUseCase'),
     UpdateAIConversationUseCase: Symbol.for('UpdateAIConversationUseCase'),
     DeleteAIConversationUseCase: Symbol.for('DeleteAIConversationUseCase'),
-    AITool: Symbol.for('AITool')
+    AITool: AI_TOOL_TOKENS.AITool
 };
