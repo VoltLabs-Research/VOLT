@@ -141,11 +141,9 @@ export class CompileLatexDocumentUseCase implements IUseCase<CompileLatexDocumen
                 return Result.fail(error);
             }
 
-            return Result.fail(new ApplicationError(
-                ErrorCodes.INTERNAL_SERVER_ERROR,
-                'Failed to compile LaTeX document',
-                500
-            ));
+            // Let the global error middleware normalize unknown errors (e.g. a Mongoose CastError
+            // from a malformed id maps to 400, not a blanket 500).
+            throw error;
         }
     }
 }
