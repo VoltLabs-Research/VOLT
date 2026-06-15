@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import colorsys
+from collections.abc import Iterable, Mapping, Sequence
+
+from .helpers import _is_color
+
 _DEFAULT_MESH_MATERIAL = {
     'baseColor': [0.8, 0.8, 0.85, 1.0],
     'metallic': 0.05,
@@ -8,7 +13,7 @@ _DEFAULT_MESH_MATERIAL = {
     'doubleSided': True,
 }
 
-_DEFAULT_DISLOCATION_MATERIAL = {
+_DEFAULT_LINE_MATERIAL = {
     'baseColor': [1.0, 0.5, 0.0, 1.0],
     'metallic': 0.0,
     'roughness': 0.8,
@@ -16,14 +21,7 @@ _DEFAULT_DISLOCATION_MATERIAL = {
     'doubleSided': True,
 }
 
-_DISLOCATION_TYPE_COLORS = {
-    'Other': [0.95, 0.1, 0.1, 1.0],
-    '1/2<111>': [0.1, 0.9, 0.1, 1.0],
-    '<100>': [1.0, 0.45, 0.74, 1.0],
-    '<110>': [0.1, 0.7, 0.95, 1.0],
-    '<111>': [0.95, 0.9, 0.1, 1.0],
-    '1/6<112>': [0.9, 0.5, 0.1, 1.0],
-}
+_GOLDEN_RATIO_CONJUGATE = 0.618033988749895
 
 _STRUCTURE_COLORS = {
     'bcc': [102 / 255, 102 / 255, 1.0],
@@ -45,3 +43,32 @@ _STRUCTURE_COLORS = {
 
 def _color_for_type(type_name: str) -> list[float]:
     return _STRUCTURE_COLORS.get(type_name.lower(), _STRUCTURE_COLORS['other'])
+
+def _resolve_category_colors(
+    values: Iterable[str],
+    explicit_colors: Mapping[str, Sequence[float]] | None = None,
+) -> dict[str, list[float]]:
+    """Resolve a deterministic RGBA color per category value.
+
+    Mirrors the daemon's ``category-colors.ts``: unique values are sorted
+    alphabetically; values with an explicit color keep it; the remaining values
+    get a golden-ratio HSL fallback (s=0.65, l=0.55, alpha 1) where the fallback
+    index counts only the values without explicit colors, in sorted order.
+    """
+    explicit: dict[str, list[float]] = {}
+    if explicit_colors:
+        for key, value in explicit_colors.items():
+            if _is_color(value):
+                explicit[str(key)] = [float(component) for component in value[:4]]
+
+    resolved: dict[str, list[float]] = {}
+    fallback_index = 0
+    for value in sorted(set(values)):
+        color = explicit.get(value)
+        if color is None:
+            hue = (fallback_index * _GOLDEN_RATIO_CONJUGATE) % 1.0
+            red, green, blue = colorsys.hls_to_rgb(hue, 0.55, 0.65)
+            color = [red, green, blue, 1.0]
+            fallback_index += 1
+        resolved[value] = color
+    return resolved

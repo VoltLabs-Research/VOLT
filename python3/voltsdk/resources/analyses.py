@@ -5,22 +5,11 @@ from typing import TYPE_CHECKING
 from .base import BaseResource, BaseCollection
 
 if TYPE_CHECKING:
+    import pandas as pd
     from voltsdk.http import HttpTransport
-    from .exposures import ExposureCollection
     from .listings import ListingCollection
 
 class Analysis(BaseResource):
-
-    @property
-    def exposures(self) -> ExposureCollection:
-        from .exposures import ExposureCollection as _EC
-
-        team_id = self._client.team_id
-        return _EC(
-            self._client,
-            path=f'/plugins/{team_id}/listings/analyses/{self.id}',
-            analysis_id=self.id,
-        )
 
     @property
     def listings(self) -> ListingCollection:
@@ -28,6 +17,10 @@ class Analysis(BaseResource):
 
         team_id = self._client.team_id
         return ListingCollection(self._client, path=f'/plugins/{team_id}/listings/analyses/{self.id}')
+
+    def df(self, columns: list[str] | None = None) -> pd.DataFrame:
+        """Shortcut for ``analysis.listings.to_dataframe()`` — the analysis results table."""
+        return self.listings.to_dataframe(columns=columns)
 
     def download_artifacts(self, dest: str = '.', unzip: bool = True) -> str:
         team_id = self._client.team_id

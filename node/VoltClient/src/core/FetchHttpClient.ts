@@ -57,12 +57,7 @@ export default class FetchHttpClient implements HttpClient {
         if (!callerSignal) return timeout;
 
         // AbortSignal.any is available in Node 20+ and modern browsers.
-        if (typeof AbortSignal.any === 'function') {
-            return AbortSignal.any([timeout, callerSignal]);
-        }
-
-        // Fallback: use timeout signal only and let caller manage cancellation.
-        return timeout;
+        return AbortSignal.any([timeout, callerSignal]);
     }
 
     private async toApiError(error: unknown, signal?: AbortSignal): Promise<never> {

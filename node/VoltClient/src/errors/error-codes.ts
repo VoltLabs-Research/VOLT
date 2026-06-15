@@ -24,7 +24,6 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     // Transport failures
     'Network::Timeout': 'Request timeout - Check your connection',
     'Network::ConnectionError': 'Network connection error - Check your internet connection',
-    'Network::Unknown': 'Network error - Please try again',
     'Internal::Server::Error': 'An unexpected error occurred',
 };
 

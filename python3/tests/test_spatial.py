@@ -13,20 +13,27 @@ from voltsdk.plugins.plugin import PluginRun
 from voltsdk.spatial import SpatialAssembler
 
 
-def _sample_dislocation_payload() -> dict:
+def _sample_line_payload() -> dict:
     return {
         'export': {
-            'DislocationExporter': {
-                'segments': [
+            'LineExporter': {
+                'lines': [
                     {
+                        'id': 0,
                         'points': [
                             [0.0, 0.0, 0.0],
                             [1.0, 0.0, 0.0],
                             [1.0, 1.0, 0.0],
                         ],
-                        'burgers': {
-                            'vector': [0.5, 0.5, 0.5],
-                        },
+                        'burgers_family': '1/2<111>',
+                        'burgers_family_label': '1/2<111>',
+                        'crystal_structure': 'bcc',
+                        'length': 2.0,
+                        'magnitude': 0.8660254037844386,
+                        'num_points': 3,
+                        'burgers_vector_local': [0.5, 0.5, 0.5],
+                        'burgers_vector_global': [0.5, 0.5, 0.5],
+                        'cluster_id': 1,
                     },
                 ],
             },
@@ -44,12 +51,12 @@ def _glb_json(path: Path) -> dict:
 
 
 class SpatialAssemblerTests(unittest.TestCase):
-    def test_glb_infers_dislocation_export_from_json(self) -> None:
+    def test_glb_infers_line_export_from_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             payload_path = root / 'dislocations.json'
             output_path = root / 'dislocations.glb'
-            payload_path.write_text(json.dumps(_sample_dislocation_payload()), encoding='utf-8')
+            payload_path.write_text(json.dumps(_sample_line_payload()), encoding='utf-8')
 
             result = SpatialAssembler().glb(payload_path, output_path=output_path)
 
@@ -70,7 +77,7 @@ class SpatialAssemblerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             payload_path = root / 'output_dislocations.json'
-            payload_path.write_text(json.dumps(_sample_dislocation_payload()), encoding='utf-8')
+            payload_path.write_text(json.dumps(_sample_line_payload()), encoding='utf-8')
 
             run = PluginRun(
                 command=[],

@@ -14,16 +14,37 @@ class Frame(BaseResource):
         super().__init__(client, data)
         self._trajectory_id = trajectory_id
 
-    def atoms(self, analysis_id: str = 'default', page: int = 1, limit: int = 10_000) -> pd.DataFrame:
+    @property
+    def timestep(self) -> int:
+        return int(self._get('timestep', 0))
+
+    @property
+    def natoms(self) -> int:
+        return int(self._get('natoms', 0))
+
+    def atoms(self, analysis_id: str = 'default') -> pd.DataFrame:
+        """Return every atom of this frame as a DataFrame.
+
+        Fetches all pages of the columnar atom stream and concatenates them, so
+        the result is the full frame regardless of size.
+        """
         import pandas as _pd
 
+        from voltsdk.io.atoms import atoms_columnar_as_df, atoms_columnar_meta
+
         team_id = self._client.team_id
-        data = self._client.get(
-            f'/trajectories/{team_id}/{self._trajectory_id}/atoms',
-            params={'timestep': self._get('timestep', 0), 'analysisId': analysis_id, 'page': page, 'limit': limit},
-        )
-        rows = data.get('data', data) if isinstance(data, dict) else data
-        return _pd.DataFrame(rows) if isinstance(rows, list) else _pd.DataFrame()
+        path = f'/trajectories/{team_id}/{self._trajectory_id}/frame/{self._get("timestep", 0)}/atoms'
+        params = {'analysisId': analysis_id, 'fmt': 'bin', 'page': 1}
+
+        first = self._client.get_bytes(path, params=params)
+        frames = [atoms_columnar_as_df(first)]
+        total_pages = atoms_columnar_meta(first)['total_pages']
+
+        for page in range(2, total_pages + 1):
+            payload = self._client.get_bytes(path, params={**params, 'page': page})
+            frames.append(atoms_columnar_as_df(payload))
+
+        return _pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
 
     def download_dump(self, dest: str = '.') -> str:
         team_id = self._client.team_id

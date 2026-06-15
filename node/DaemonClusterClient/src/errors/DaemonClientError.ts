@@ -29,10 +29,6 @@ export class DaemonClientError extends Error {
         return new DaemonClientError(DaemonClientErrorCode.SocketConnectionFailed, message, cause);
     }
 
-    static socketRegistrationFailed(message: string, cause?: unknown): DaemonClientError {
-        return new DaemonClientError(DaemonClientErrorCode.SocketRegistrationFailed, message, cause);
-    }
-
     static commandTimeout(command: string): DaemonClientError {
         return new DaemonClientError(
             DaemonClientErrorCode.CommandTimeout,

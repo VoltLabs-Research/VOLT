@@ -4,8 +4,8 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from .colors import _DISLOCATION_TYPE_COLORS, _color_for_type
-from .helpers import _is_color, _is_vector
+from .colors import _color_for_type, _resolve_category_colors
+from .helpers import _is_vector
 
 def _build_point_cloud_data(export_data: Mapping[str, Any]) -> dict[str, Any] | None:
     total_atoms = 0
@@ -94,37 +94,37 @@ def _process_mesh_export(export_data: Mapping[str, Any]) -> dict[str, Any] | Non
         'indices': indices,
     }
 
-def _process_dislocations(
+def _process_lines(
     export_data: Mapping[str, Any],
     *,
     line_width: float,
     tubular_segments: int,
-    min_segment_points: int,
-    color_by_type: bool,
-    type_colors: Mapping[str, Sequence[float]] | None,
+    min_line_points: int,
+    color_by: str | None,
+    property_colors: Mapping[str, Sequence[float]] | None,
 ) -> dict[str, Any] | None:
-    segments = export_data.get('segments')
-    if not isinstance(segments, list):
+    lines = export_data.get('lines')
+    if not isinstance(lines, list):
         return None
 
-    resolved_type_colors = dict(_DISLOCATION_TYPE_COLORS)
-    if type_colors:
-        for key, value in type_colors.items():
-            if _is_color(value):
-                resolved_type_colors[str(key)] = [float(component) for component in value]
+    colors: list[list[float]] | None = None
+    category_colors: dict[str, list[float]] = {}
+    if color_by:
+        colors = []
+        categories = [_line_category(line, color_by) for line in lines if isinstance(line, Mapping)]
+        category_colors = _resolve_category_colors(categories, property_colors)
 
     positions: list[float] = []
     normals: list[float] = []
     indices: list[int] = []
-    colors: list[float] | None = [] if color_by_type else None
     min_bound = [math.inf, math.inf, math.inf]
     max_bound = [-math.inf, -math.inf, -math.inf]
 
-    for segment in segments:
-        if not isinstance(segment, Mapping):
+    for line in lines:
+        if not isinstance(line, Mapping):
             continue
-        points = segment.get('points')
-        if not isinstance(points, list) or len(points) < min_segment_points:
+        points = line.get('points')
+        if not isinstance(points, list) or len(points) < min_line_points:
             continue
         geometry = _create_line_geometry(points, line_width, tubular_segments)
         if geometry is None:
@@ -146,9 +146,8 @@ def _process_dislocations(
             max_bound[1] = max(max_bound[1], y)
             max_bound[2] = max(max_bound[2], z)
 
-        if colors is not None:
-            dislocation_type = _calculate_dislocation_type(segment)
-            color = resolved_type_colors.get(dislocation_type, resolved_type_colors['Other'])
+        if colors is not None and color_by:
+            color = category_colors[_line_category(line, color_by)]
             colors.extend(color for _ in range(len(geometry['positions']) // 3))
 
     if not positions or not indices:
@@ -168,6 +167,10 @@ def _process_dislocations(
         'min': min_bound,
         'max': max_bound,
     }
+
+def _line_category(line: Mapping[str, Any], property_name: str) -> str:
+    value = line.get(property_name)
+    return '' if value is None else str(value)
 
 def _create_line_geometry(
     points: Sequence[Any],
@@ -249,48 +252,6 @@ def _create_line_geometry(
         'normals': normals,
         'indices': indices,
     }
-
-def _calculate_dislocation_type(segment: Mapping[str, Any], tolerance: float = 1e-6) -> str:
-    burgers = segment.get('burgers')
-    if not isinstance(burgers, Mapping):
-        return 'Other'
-    vector = burgers.get('vector')
-    if not _is_vector(vector, 3):
-        return 'Other'
-
-    bx, by, bz = [abs(float(component)) for component in vector]
-    non_zero = [component for component in (bx, by, bz) if component > tolerance]
-
-    if len(non_zero) == 3:
-        max_component = max(non_zero)
-        min_component = min(non_zero)
-        if max_component > 0.4 and max_component < 0.6 and (max_component - min_component) / max_component < tolerance:
-            return '1/2<111>'
-
-    if sum(component > tolerance for component in (bx, by, bz)) == 1:
-        return '<100>'
-
-    sorted_components = sorted([bx, by, bz], reverse=True)
-    if abs(sorted_components[0] - sorted_components[1]) < tolerance and sorted_components[2] < tolerance:
-        return '<110>'
-
-    max_component = max(bx, by, bz)
-    if max_component >= tolerance:
-        ratios = [
-            abs(bx / max_component - 1),
-            abs(by / max_component - 1),
-            abs(bz / max_component - 1),
-        ]
-        if all(ratio < tolerance for ratio in ratios) and max_component >= 0.8:
-            return '<111>'
-
-    if sorted_components[0] >= tolerance and sorted_components[1] >= tolerance and sorted_components[2] >= tolerance:
-        ratio_one = abs(sorted_components[0] / sorted_components[1] - 2)
-        ratio_two = abs(sorted_components[1] / sorted_components[2] - 1)
-        if ratio_one < tolerance and ratio_two < tolerance and sorted_components[0] < 0.4:
-            return '1/6<112>'
-
-    return 'Other'
 
 def _compute_normals(positions: Sequence[float], indices: Sequence[int]) -> list[float]:
     normals = [0.0] * len(positions)

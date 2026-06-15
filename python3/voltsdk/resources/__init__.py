@@ -3,7 +3,6 @@ from .trajectories import Trajectory, TrajectoryCollection
 from .analyses import Analysis, AnalysisCollection
 from .frames import Frame, FrameCollection
 from .listings import ListingCollection, TrajectoryListingProxy
-from .exposures import Exposure, ExposureCollection
 
 __all__ = [
     'BaseResource',
@@ -16,6 +15,4 @@ __all__ = [
     'FrameCollection',
     'ListingCollection',
     'TrajectoryListingProxy',
-    'Exposure',
-    'ExposureCollection',
 ]

@@ -7,6 +7,19 @@ from .plugins import PluginHub
 from .resources.analyses import AnalysisCollection
 from .resources.trajectories import TrajectoryCollection
 
+
+def _normalize_base_url(base_url: str | None) -> str | None:
+    """Accept a bare origin and ensure it targets the REST API root.
+
+    ``https://volt.example.com`` and ``https://volt.example.com/api`` both
+    resolve to ``https://volt.example.com/api`` so callers never have to
+    remember the ``/api`` suffix.
+    """
+    if not base_url:
+        return base_url
+    trimmed = base_url.rstrip('/')
+    return trimmed if trimmed.endswith('/api') else f'{trimmed}/api'
+
 class VoltClient:
 
     def __init__(
@@ -19,7 +32,7 @@ class VoltClient:
         plugin_cache_dir: str | None = None,
     ) -> None:
         self._secret_key = secret_key or os.environ.get('VOLT_SECRET_KEY')
-        self._base_url = (
+        self._base_url = _normalize_base_url(
             base_url
             or os.environ.get('VOLT_BASE_URL')
             or self._detect_base_url()

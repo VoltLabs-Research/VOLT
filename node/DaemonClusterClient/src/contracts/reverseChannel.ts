@@ -82,6 +82,13 @@ export interface TeamClusterDaemonSessionAttachPayload {
     terminalTarget?: TeamClusterDaemonTerminalTarget;
     containerId?: string;
     targetUrl?: string;
+    /**
+     * WebSocket subprotocols to negotiate with the upstream (e.g.
+     * `v1.kernel.websocket.jupyter.org`). Required so the daemon can match the
+     * subprotocol the browser negotiated; without it the upstream falls back to
+     * text frames while the browser expects binary, breaking the connection.
+     */
+    protocols?: string[];
 };
 
 export interface TeamClusterDaemonSessionInputPayload {

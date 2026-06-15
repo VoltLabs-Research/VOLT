@@ -187,56 +187,16 @@ export default class VoltClient {
         return response.data;
     }
 
-    /**
-     * GET + unwrap a specific field from `{ status, data: { [field]: value } }`.
-     * @deprecated Prefer `(await getUnwrapped<T>(path, query))[field]`; the
-     * dedicated field accessors duplicate `*Unwrapped` and will be removed.
-     */
-    async getField<T extends object, K extends keyof T>(
-        path: string,
-        field: K,
-        query?: HttpQuery
-    ): Promise<T[K]> {
-        const response = await this.get<ResponseEnvelope<T>>(path, query);
-        return response.data[field];
-    }
-
     /** POST + unwrap `{ status, data }` envelope. */
     async postUnwrapped<T>(path: string, body?: unknown): Promise<T> {
         const response = await this.post<ResponseEnvelope<T>>(path, body);
         return response.data;
     }
 
-    /**
-     * POST + unwrap a specific field.
-     * @deprecated Prefer `(await postUnwrapped<T>(path, body))[field]`.
-     */
-    async postField<T extends object, K extends keyof T>(
-        path: string,
-        field: K,
-        body?: unknown
-    ): Promise<T[K]> {
-        const response = await this.post<ResponseEnvelope<T>>(path, body);
-        return response.data[field];
-    }
-
     /** PATCH + unwrap `{ status, data }` envelope. */
     async patchUnwrapped<T>(path: string, body?: unknown): Promise<T> {
         const response = await this.patch<ResponseEnvelope<T>>(path, body);
         return response.data;
-    }
-
-    /**
-     * PATCH + unwrap a specific field.
-     * @deprecated Prefer `(await patchUnwrapped<T>(path, body))[field]`.
-     */
-    async patchField<T extends object, K extends keyof T>(
-        path: string,
-        field: K,
-        body?: unknown
-    ): Promise<T[K]> {
-        const response = await this.patch<ResponseEnvelope<T>>(path, body);
-        return response.data[field];
     }
 
     /** DELETE + unwrap `{ status, data }` envelope. */

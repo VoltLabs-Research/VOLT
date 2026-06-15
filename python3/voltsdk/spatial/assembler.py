@@ -4,12 +4,12 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from .colors import _DEFAULT_DISLOCATION_MATERIAL
+from .colors import _DEFAULT_LINE_MATERIAL
 from .geometry import (
     _build_point_cloud_data,
     _compute_bounds,
     _compute_normals,
-    _process_dislocations,
+    _process_lines,
     _process_mesh_export,
 )
 from .glb import Pathish, empty_glb, encode_mesh, encode_point_cloud, write_output
@@ -31,8 +31,8 @@ class SpatialAssembler:
             return self.atomistic_glb(export_data, output_path=output_path)
         if exporter_name == 'MeshExporter':
             return self.mesh_glb(export_data, output_path=output_path, **options)
-        if exporter_name == 'DislocationExporter':
-            return self.dislocations_glb(export_data, output_path=output_path, **options)
+        if exporter_name == 'LineExporter':
+            return self.lines_glb(export_data, output_path=output_path, **options)
         raise ValueError(f'Unsupported exporter: {exporter_name}')
 
     def atomistic_glb(
@@ -79,26 +79,26 @@ class SpatialAssembler:
         )
         return write_output(payload, output_path)
 
-    def dislocations_glb(
+    def lines_glb(
         self,
         source: Any,
         *,
         output_path: Pathish | None = None,
         line_width: float = 0.8,
         tubular_segments: int = 12,
-        min_segment_points: int = 2,
+        min_line_points: int = 2,
         material: Mapping[str, Any] | None = None,
-        color_by_type: bool = True,
-        type_colors: Mapping[str, Sequence[float]] | None = None,
+        color_by: str | None = None,
+        property_colors: Mapping[str, Sequence[float]] | None = None,
     ) -> bytes | Path:
-        export_data = _resolve_export_payload(source, 'DislocationExporter')
-        geometry = _process_dislocations(
+        export_data = _resolve_export_payload(source, 'LineExporter')
+        geometry = _process_lines(
             export_data,
             line_width=line_width,
             tubular_segments=tubular_segments,
-            min_segment_points=min_segment_points,
-            color_by_type=color_by_type,
-            type_colors=type_colors,
+            min_line_points=min_line_points,
+            color_by=color_by,
+            property_colors=property_colors,
         )
         if geometry is None:
             return write_output(empty_glb(), output_path)
@@ -109,7 +109,7 @@ class SpatialAssembler:
             geometry['indices'],
             colors=geometry['colors'],
             bounds=(geometry['min'], geometry['max']),
-            material={**_DEFAULT_DISLOCATION_MATERIAL, **(material or {})},
+            material={**_DEFAULT_LINE_MATERIAL, **(material or {})},
         )
         return write_output(payload, output_path)
 

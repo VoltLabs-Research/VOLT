@@ -11,7 +11,7 @@ import msgpack
 from ..io.msgpack import merged_chunked_value
 from .helpers import _is_vector
 
-_EXPORTERS = ('AtomisticExporter', 'MeshExporter', 'DislocationExporter')
+_EXPORTERS = ('AtomisticExporter', 'MeshExporter', 'LineExporter')
 
 def _resolve_export_payload(source: Any, exporter_name: str) -> Any:
     payload = _load_payload(source)
@@ -41,7 +41,7 @@ def _resolve_export_payload_from_payload(payload: Any, exporter_name: str) -> An
         return payload
     if exporter_name == 'MeshExporter' and _is_mesh_export(payload):
         return payload
-    if exporter_name == 'DislocationExporter' and _is_dislocation_export(payload):
+    if exporter_name == 'LineExporter' and _is_line_export(payload):
         return payload
 
     if isinstance(payload, Mapping):
@@ -52,7 +52,7 @@ def _resolve_export_payload_from_payload(payload: Any, exporter_name: str) -> An
                 return export_payload
             if exporter_name == 'MeshExporter' and _is_mesh_export(export_payload):
                 return export_payload
-            if exporter_name == 'DislocationExporter' and _is_dislocation_export(export_payload):
+            if exporter_name == 'LineExporter' and _is_line_export(export_payload):
                 return export_payload
     return None
 
@@ -80,7 +80,19 @@ def _load_payload_file(path: Path) -> Any:
             for message in unpacker:
                 merged = merged_chunked_value(merged, message)
         return merged
+    if suffix == '.parquet':
+        return _load_parquet_payload(path)
     raise ValueError(f'Unsupported payload format: {path.suffix or "<none>"}')
+
+def _load_parquet_payload(path: Path) -> Any:
+    import pyarrow.parquet as pq
+
+    table = pq.read_table(path)
+    if 'id' not in table.column_names or 'points' not in table.column_names:
+        raise ValueError(
+            f'Parquet payload {path.name!r} is not a line entity table (expected id and points columns).'
+        )
+    return {'lines': table.to_pylist()}
 
 def _is_atomistic_export(value: Any) -> bool:
     if not isinstance(value, Mapping) or not value:
@@ -100,5 +112,5 @@ def _is_atomistic_export(value: Any) -> bool:
 def _is_mesh_export(value: Any) -> bool:
     return isinstance(value, Mapping) and isinstance(value.get('vertices'), list) and isinstance(value.get('facets'), list)
 
-def _is_dislocation_export(value: Any) -> bool:
-    return isinstance(value, Mapping) and isinstance(value.get('segments'), list)
+def _is_line_export(value: Any) -> bool:
+    return isinstance(value, Mapping) and isinstance(value.get('lines'), list)

@@ -11,9 +11,6 @@ export enum DaemonClientErrorCode {
     /** Control socket could not establish an initial connection. */
     SocketConnectionFailed = 'SOCKET_CONNECTION_FAILED',
 
-    /** Socket registration (`team-cluster-daemon:register`) was not acknowledged. */
-    SocketRegistrationFailed = 'SOCKET_REGISTRATION_FAILED',
-
     /** A `sendCommand` call did not receive a response within the configured timeout. */
     CommandTimeout = 'COMMAND_TIMEOUT',
 

@@ -11,3 +11,4 @@ python3/voltsdk/build
 __pycache__/
 *.py[cod]
 python3/examples/output/
+CLAUDE.md

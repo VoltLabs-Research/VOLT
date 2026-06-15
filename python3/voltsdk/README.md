@@ -31,13 +31,36 @@ pip install "voltsdk[ovito]"   # OVITO pipeline integration
 
 ## Authenticated client
 
+Inside a Volt notebook the client is already wired up — no arguments needed:
+
 ```python
 from voltsdk import VoltClient
 
+client = VoltClient.from_env()      # reads VOLT_SECRET_KEY + VOLT_BASE_URL
+print(client.team)
+```
+
+Outside Volt, pass a key and the server origin. The `/api` suffix is optional —
+a bare origin works too:
+
+```python
 client = VoltClient(
-    secret_key="your-secret-key",
-    base_url="https://api.example.com",
+    secret_key="vsk_your_key_here",
+    base_url="https://volt.example.com",   # or https://volt.example.com/api
 )
+```
+
+## Reading data into pandas
+
+```python
+traj = client.trajectories.get("<trajectory-id>")
+
+# Every atom of a frame (all pages fetched and concatenated):
+df = traj.frames.first().atoms()
+
+# An analysis results table:
+analysis = traj.analyses.first()
+df = analysis.df()                     # shortcut for analysis.listings.to_dataframe()
 ```
 
 ## Open In Volt
@@ -83,7 +106,7 @@ Volt exporter payloads can also be rendered locally from Python:
 from voltsdk import SpatialAssembler, open_in_volt
 
 assembler = SpatialAssembler()
-glb_path = assembler.dislocations_glb(
+glb_path = assembler.lines_glb(
     'output/ptm-dxa_dislocations.json',
     output_path='output/ptm-dxa_dislocations.glb',
 )
@@ -91,9 +114,10 @@ glb_path = assembler.dislocations_glb(
 open_in_volt(glb_path)
 ```
 
-The Python API accepts either the full artifact file (`.json` or `.msgpack`) or
-the raw nested payload from `export.AtomisticExporter`, `export.MeshExporter`,
-or `export.DislocationExporter`.
+The Python API accepts either the full artifact file (`.json`, `.msgpack`, or a
+`.parquet` line entity table with `id`/`points` plus per-entity property columns)
+or the raw nested payload from `export.AtomisticExporter`, `export.MeshExporter`,
+or `export.LineExporter`.
 
 You can also let a `PluginRun` do the conversion directly:
 

@@ -59,6 +59,30 @@ class HttpTransport:
     def get(self, path: str, params: dict[str, Any] | None = None) -> dict:
         return self._request('GET', path, params=params)
 
+    def get_bytes(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+    ) -> bytes:
+        url = f"{self.base_url}/{path.lstrip('/')}"
+        try:
+            response = self.session.get(url, params=params, timeout=self.timeout)
+        except requests.ConnectionError as exc:
+            raise VoltConnectionError(f'Cannot connect to {url}') from exc
+        except requests.Timeout as exc:
+            raise VoltTimeoutError(f'Request timed out: {url}') from exc
+
+        if response.status_code == 401:
+            raise VoltAuthenticationError(401, 'Invalid or expired secret key', url)
+        if response.status_code == 403:
+            raise VoltPermissionError(403, 'Insufficient permissions', url)
+        if response.status_code == 404:
+            raise VoltNotFoundError(404, f'Resource not found: {path}', url)
+        if response.status_code >= 400:
+            raise VoltAPIError(response.status_code, 'Request failed', url)
+
+        return response.content
+
     def post(
         self,
         path: str,
