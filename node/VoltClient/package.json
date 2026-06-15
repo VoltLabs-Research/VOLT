@@ -1,6 +1,6 @@
 {
     "name": "@voltstack/voltclient",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Standalone HTTP client SDK for VoltLabs - Node.js 18+ and browser compatible",
     "author": "VoltLabs",
     "license": "MIT",
