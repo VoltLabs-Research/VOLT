@@ -183,6 +183,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 trajectoryId: input.trajectoryId,
                 trajectoryName: trajectory.props.name,
                 trajectoryFrames: trajectoryFramePayloads,
+                storageClusterId,
                 selectedTimesteps: input.selectedTimesteps,
                 timestep: input.timestep,
                 stages: stageExecutions
@@ -285,8 +286,26 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             };
         }
 
-        // Cache miss: collect transitive dependencies (no pluginReference
-        // executions in the new model — chaining is gone), create the analysis.
+        // Cache miss: resolve dependencies and create the analysis. Cross-plugin
+        // CHAINING is gone in the pipeline model, but argument-level plugin
+        // references survive for MultiSOM (its feature providers are a real
+        // user-facing feature, not a hidden dependency — see the rebuild plan).
+        // We therefore resolve the argument references from this stage's config
+        // and fold the referenced plugins (plus their transitive deps) into the
+        // dependency set, so the router ships them as nestedPlugins + the daemon
+        // can run the nested provider workflows. A plugin with no pluginReference
+        // arguments (every plugin except MultiSOM today) yields an empty set here.
+        const referenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
+            plugin,
+            sanitizedConfig
+        );
+        if (referenceValidation.errors.length) {
+            return fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                referenceValidation.errors.join('; ')
+            ));
+        }
+
         const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(plugin);
         if (dependencyResolution.errors.length) {
             return fail(ApplicationError.badRequest(
@@ -294,6 +313,27 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 dependencyResolution.errors.join('; ')
             ));
         }
+
+        const referencedPluginDependencies = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
+            referenceValidation.plugins
+        );
+        if (referencedPluginDependencies.errors.length) {
+            return fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                referencedPluginDependencies.errors.join('; ')
+            ));
+        }
+
+        // nestedPlugins (built by the router from pluginDependencies) must contain
+        // the declared deps, the referenced provider plugins themselves, AND those
+        // providers' transitive deps — deduped by id. Mirror the debug path.
+        const pluginDependencies = Array.from(new Map(
+            [
+                ...dependencyResolution.dependencies,
+                ...referenceValidation.plugins,
+                ...referencedPluginDependencies.dependencies
+            ].map((candidate) => [candidate.id, candidate])
+        ).values());
 
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === 'entrypoint');
         if (entrypointNode?.data.entrypoint?.binaryObjectPath) {
@@ -328,8 +368,8 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             trajectoryFrames: trajectoryFramePayloads,
             teamId: input.teamId,
             plugin,
-            pluginDependencies: dependencyResolution.dependencies,
-            pluginReferenceExecutions: [],
+            pluginDependencies,
+            pluginReferenceExecutions: referenceValidation.executions,
             config: sanitizedConfig,
             selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep

@@ -11,10 +11,11 @@ import useCloneIntentRunner from '../../hooks/use-clone-intent-runner';
 import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
+import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { Filter, FlaskConical, GripVertical, Scissors, Settings, Trash2 } from 'lucide-react';
+import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage } from '../../stores/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../stores/canvas-pipeline';
@@ -25,6 +26,7 @@ interface CanvasPipelineProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
+    canMutateCanvas?: boolean;
 }
 
 type OrderedViewStageType = 'slice-plane' | 'expression-select';
@@ -36,6 +38,7 @@ const VIEW_STAGE_META: Record<OrderedViewStageType, { label: string; icon: React
 
 const stageIcon = (stage: PipelineStage): ReactNode => {
     if (stage.type === 'analysis-plugin') return <FlaskConical size={13} aria-hidden='true' />;
+    if (stage.type === 'color-coding') return <Palette size={13} aria-hidden='true' />;
     if (stage.type === 'slice-plane' || stage.type === 'expression-select') return VIEW_STAGE_META[stage.type].icon;
     return <FlaskConical size={13} aria-hidden='true' />;
 };
@@ -48,6 +51,7 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
     if (stage.type === 'expression-select') {
         return (stage.config as ExpressionSelectStageConfig).expression?.trim() || 'Expression Select';
     }
+    if (stage.type === 'color-coding') return 'Color Coding';
     if (stage.type === 'slice-plane') return VIEW_STAGE_META['slice-plane'].label;
     return 'Stage';
 };
@@ -56,7 +60,8 @@ const CanvasPipeline = ({
     trajectory,
     trajectoryId,
     analysisId,
-    currentTimestep
+    currentTimestep,
+    canMutateCanvas
 }: CanvasPipelineProps) => {
     useEnsurePluginCatalogLoaded();
     const { modifiers } = usePluginSelectors();
@@ -75,10 +80,13 @@ const CanvasPipeline = ({
     // the user lands on the destination canvas (was the AnalyzeLauncher modal's job).
     useCloneIntentRunner({ trajectoryId, isForeignTrajectory });
 
-    // Only slice-plane / expression-select / analysis-plugin are part of the ordered
-    // executable pipeline. color-coding stays a standalone bake (its own section).
+    // The list shows the ordered executable stages (slice / expression / plugin)
+    // PLUS color-coding stages. Color-coding is NOT part of the ordered run — it
+    // bakes a colored GLB on its own "Apply" button — but it is still a visible,
+    // removable stage in the pipeline list (the run path filters it out via
+    // isOrderedPipelineStage, so it can never enter an execution).
     const allStages = useStages(trajectoryId);
-    const stages = allStages.filter(isOrderedPipelineStage);
+    const stages = allStages.filter((stage) => isOrderedPipelineStage(stage) || stage.type === 'color-coding');
     const removeStage = useCanvasPipelineStore((s) => s.removeStage);
     const reorderStage = useCanvasPipelineStore((s) => s.reorderStage);
     const toggleStageEnabled = useCanvasPipelineStore((s) => s.toggleStageEnabled);
@@ -132,10 +140,20 @@ const CanvasPipeline = ({
                         onSave={close}
                     />
                 );
+            case 'color-coding':
+                return (
+                    <ColorCodingStageEditor
+                        stageId={stage.id}
+                        trajectoryId={trajectoryId}
+                        analysisId={analysisId}
+                        currentTimestep={currentTimestep}
+                        canMutateCanvas={canMutateCanvas}
+                    />
+                );
             default:
                 return null;
         }
-    }, [trajectory, trajectoryId, analysisId, currentTimestep]);
+    }, [trajectory, trajectoryId, analysisId, currentTimestep, canMutateCanvas]);
 
     // Nothing to show until the user adds a stage (Add lives in the section
     // header now). Render nothing rather than an empty-state message.
@@ -209,10 +227,10 @@ const CanvasPipeline = ({
                                 </button>
                                 <Checkbox
                                     checked={stage.enabled}
-                                    disabled={!stage.executed}
+                                    disabled={stage.type !== 'color-coding' && !stage.executed}
                                     onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
                                     aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                                    title={stage.executed ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
+                                    title={(stage.type === 'color-coding' || stage.executed) ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
                                 />
                             </Row>
                         </Row>

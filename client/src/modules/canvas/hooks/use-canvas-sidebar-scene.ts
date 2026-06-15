@@ -590,10 +590,21 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [resolvedAnalyses, exposureEntries, analysisConfigId]);
 
     const filteredSections = useMemo(() => {
-        if (!searchQuery.trim()) return allAnalysisSections;
+        // Only surface analyses that are actually available to view: completed
+        // ones (have artifacts) or still-in-progress ones (pending/running, so
+        // the user sees live work). Failed analyses produced nothing to render,
+        // so they are excluded here — except the one currently selected in the
+        // URL, which must stay visible so its config/selection still resolves.
+        const available = allAnalysisSections.filter((section) => {
+            if (section.analysis._id === analysisConfigId) return true;
+            const status = normalizeCanvasAnalysisStatus(section.analysis.status);
+            return status !== undefined && status !== AnalysisStatus.Failed;
+        });
+
+        if (!searchQuery.trim()) return available;
         const query = searchQuery.toLowerCase();
-        return allAnalysisSections.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
-    }, [allAnalysisSections, searchQuery]);
+        return available.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
+    }, [allAnalysisSections, searchQuery, analysisConfigId]);
 
     // Pipeline is now the only execution path and always carries selectedTimesteps
     // (possibly the current timestep), so all analyses surface under Visual Elements;
@@ -636,11 +647,21 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (analysis?._id) {
+            // Stay on the current timestep when selecting an analysis. An analysis
+            // need not cover every frame; forcing a jump to its nearest timestep
+            // (previously unconditional) reset the viewer to the first frame and
+            // broke loading the model at the frame the user was actually viewing.
+            // Only move when the current frame is genuinely outside the analysis's
+            // computed timesteps — and then to the nearest one that has data.
             const selectedAnalysisTimesteps = getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps);
-            const nextTimestep = getNearestTimestep(currentTimestep, selectedAnalysisTimesteps ?? trajectoryTimesteps);
+            const currentTimestepHasData = selectedAnalysisTimesteps === undefined
+                || (currentTimestep !== undefined && selectedAnalysisTimesteps.includes(currentTimestep));
 
-            if (nextTimestep !== undefined && nextTimestep !== currentTimestep) {
-                setCurrentTimestep(nextTimestep);
+            if (!currentTimestepHasData) {
+                const nextTimestep = getNearestTimestep(currentTimestep, selectedAnalysisTimesteps ?? trajectoryTimesteps);
+                if (nextTimestep !== undefined && nextTimestep !== currentTimestep) {
+                    setCurrentTimestep(nextTimestep);
+                }
             }
         }
 
