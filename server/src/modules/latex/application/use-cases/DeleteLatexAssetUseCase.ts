@@ -22,46 +22,43 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
     ) {}
 
     async execute(input: DeleteLatexAssetInputDTO): Promise<Result<DeleteLatexAssetOutputDTO, ApplicationError>> {
-        try {
-            const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
-                input.teamId,
-                input.documentId
-            );
+        const document = await this.latexDocumentRepository.findByTeamAndDocumentId(
+            input.teamId,
+            input.documentId
+        );
 
-            if (!document) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
-                    'LaTeX document not found'
-                ));
-            }
-            const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
-
-            const asset = await this.latexAssetRepository.findByDocumentAndAssetId(
-                input.documentId,
-                input.assetId
-            );
-
-            if (!asset) {
-                return Result.fail(ApplicationError.notFound(
-                    ErrorCodes.RESOURCE_NOT_FOUND,
-                    'LaTeX asset not found'
-                ));
-            }
-
-            await this.objectGatewayClient.deleteObject(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, asset.props.storageKey);
-            await this.latexAssetRepository.deleteById(input.assetId);
-
-            return Result.ok(null);
-        } catch (error) {
-            if (error instanceof ApplicationError) {
-                return Result.fail(error);
-            }
-
-            return Result.fail(new ApplicationError(
-                ErrorCodes.INTERNAL_SERVER_ERROR,
-                'Failed to delete LaTeX asset',
-                500
+        if (!document) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                'LaTeX document not found'
             ));
         }
+        const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
+
+        const asset = await this.latexAssetRepository.findByDocumentAndAssetId(
+            input.documentId,
+            input.assetId
+        );
+
+        if (!asset) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                'LaTeX asset not found'
+            ));
+        }
+
+        // Why: an asset row whose signed upload was abandoned has no physical object,
+        // so the gateway delete 404s. Treat the storage delete as idempotent — the
+        // metadata row is the source of truth and must still be removable.
+        try {
+            await this.objectGatewayClient.deleteObject(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, asset.props.storageKey);
+        } catch (error) {
+            if (!(error instanceof ApplicationError) || error.statusCode !== 404) {
+                throw error;
+            }
+        }
+        await this.latexAssetRepository.deleteById(input.assetId);
+
+        return Result.ok(null);
     }
 }

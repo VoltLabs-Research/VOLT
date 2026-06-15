@@ -6,6 +6,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import { ErrorCodes } from '@core/constants/error-codes';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
@@ -51,6 +52,19 @@ interface QueuedGlbJob {
 
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const GLB_JOB_NAME = 'Preprocess trajectory frame';
+
+// The daemon's TrajectoryIngest command throws a plain Error when every staged
+// file was unparseable (`No valid trajectory frames found in upload`). The
+// reverse-channel bridge has no typed status for a plain Error, so it ships it
+// as INTERNAL_ERROR / HTTP 500 and the daemon client faithfully rebuilds it as a
+// 500 ApplicationError. That is the user handing us a non-trajectory file (e.g.
+// a PNG), not a server fault — detect it by message so we can answer 4xx. A
+// genuine daemon/transport failure (timeout, connection drop, any other error)
+// does NOT match and stays 5xx.
+const isNoValidFramesError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : '';
+    return /no valid trajectory frames/i.test(message);
+};
 
 @injectable()
 export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
@@ -174,6 +188,19 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
                 analysisIds: [],
                 analysisComputeClusterIds: []
             })).catch(() => {});
+
+            // The daemon could not parse a single trajectory frame out of the
+            // uploaded file(s): the user's input is unprocessable, not a server
+            // fault. Return a typed 4xx instead of letting the 500 propagate.
+            // Anything else (transport failure, timeout, genuine daemon crash)
+            // keeps its original status class.
+            if (isNoValidFramesError(error)) {
+                return Result.fail(ApplicationError.unprocessableEntity(
+                    ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES,
+                    'The uploaded file does not contain any readable trajectory frames. Upload a supported trajectory dump (e.g. a LAMMPS dump, XYZ, or a ZIP of frames).'
+                ));
+            }
+
             throw error;
         }
     }

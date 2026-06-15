@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { UpdatePasswordInputDTO, UpdatePasswordOutputDTO } from '@modules/auth/application/dtos/UpdatePasswordDTO';
+import { validatePassword } from '@modules/auth/domain/password-policy';
 import type { IAuthSessionService } from '@modules/auth/domain/port/IAuthSessionService';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
@@ -20,6 +21,11 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
     ) {}
 
     async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>> {
+        const passwordError = validatePassword(input.password);
+        if (passwordError) {
+            return Result.fail(passwordError);
+        }
+
         const user = await this.userRepository.findByIdWithPassword(input.userId);
         if (!user) {
             return Result.fail(ApplicationError.notFound(

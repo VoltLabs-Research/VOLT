@@ -20,6 +20,7 @@ const HTTP_STATUS_CODES: Record<number, string> = {
     403: 'Http::403',
     404: 'Http::404',
     409: 'Http::409',
+    422: 'Http::422',
     429: 'Http::429',
     500: 'Http::500',
     502: 'Http::502',
