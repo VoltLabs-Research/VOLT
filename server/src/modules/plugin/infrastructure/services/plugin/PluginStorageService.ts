@@ -29,6 +29,33 @@ import { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
+/**
+ * If every archive entry lives under one shared top-level directory (e.g. `kmeans-clustering/...`),
+ * return that prefix (with trailing slash) so callers can resolve `plugin.json`/`binary/` regardless
+ * of whether the zip was packaged with a wrapper dir or flat at the root. Returns '' when entries
+ * diverge at the top level (treat paths as already root-relative).
+ */
+const detectArchiveRootPrefix = (paths: string[]): string => {
+    const topLevelSegments = new Set<string>();
+
+    for (const entryPath of paths) {
+        const firstSegment = entryPath.split('/')[0];
+        if (firstSegment.length > 0) {
+            topLevelSegments.add(firstSegment);
+        }
+    }
+
+    if (topLevelSegments.size !== 1) {
+        return '';
+    }
+
+    const [onlySegment] = [...topLevelSegments];
+    // Only treat it as a wrapper dir if at least one entry actually nests beneath it
+    // (a single flat file named "plugin.json" has one segment but no nesting).
+    const isWrapperDir = paths.some((entryPath) => entryPath.startsWith(`${onlySegment}/`));
+    return isWrapperDir ? `${onlySegment}/` : '';
+};
+
 const isWorkflowProps = (value: unknown): value is WorkflowProps => {
     if (!isRecord(value)) {
         return false;
@@ -312,7 +339,15 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
-        const pluginJsonFile = directory.files.find((file) => file.path === 'plugin.json');
+        // A packaged plugin (e.g. the prebuilt kmeans-clustering.zip) usually nests everything under
+        // a single top-level directory (`kmeans-clustering/plugin.json`), while a hand-zipped one has
+        // files at the root (`plugin.json`). Detect a single common top-level prefix and strip it so
+        // both layouts import. If entries diverge at the top level, prefix is '' (treat as root).
+        const archivePrefix = detectArchiveRootPrefix(directory.files.map((file) => file.path));
+        const resolveEntry = (relativePath: string): unzipper.File | undefined =>
+            directory.files.find((file) => file.path === `${archivePrefix}${relativePath}`);
+
+        const pluginJsonFile = resolveEntry('plugin.json');
         if (!pluginJsonFile) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
@@ -363,8 +398,8 @@ export default class PluginStorageService implements IPluginStorageService {
         let binaryImported = false;
         let persistedPlugin = newPlugin;
         const binaryFile = directory.files.find((file) => {
-            return file.path.startsWith('binary/')
-                && file.path !== 'binary/'
+            return file.path.startsWith(`${archivePrefix}binary/`)
+                && file.path !== `${archivePrefix}binary/`
                 && file.type !== 'Directory';
         });
         if (binaryFile) {

@@ -217,8 +217,13 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
 );
 
 // Selector helper: the stages for one trajectory, stable empty array when none.
+// Falls back to the active trajectory exactly like the store's resolveTrajectoryId/addStage, so a
+// stage added under the resolved id is always counted here even when the prop isn't threaded.
 export const useStages = (trajectoryId?: string): PipelineStage[] =>
-    useCanvasPipelineStore((state) => (trajectoryId ? state.byTrajectory[trajectoryId] ?? EMPTY_STAGES : EMPTY_STAGES));
+    useCanvasPipelineStore((state) => {
+        const target = trajectoryId ?? state.activeTrajectoryId;
+        return target ? state.byTrajectory[target] ?? EMPTY_STAGES : EMPTY_STAGES;
+    });
 
 // The stage types that participate in the ordered, executable pipeline list shown
 // in the CanvasPipeline UI. 'color-coding' and 'line-style' are intentionally
