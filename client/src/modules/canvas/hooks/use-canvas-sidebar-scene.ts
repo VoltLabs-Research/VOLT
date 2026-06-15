@@ -572,16 +572,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
-    const sectionTimestepScopedIds = useMemo(() => {
-        const scoped = new Set<string>();
-        for (const analysis of resolvedAnalyses) {
-            if (getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps)) {
-                scoped.add(analysis._id);
-            }
-        }
-        return scoped;
-    }, [resolvedAnalyses, trajectoryTimesteps]);
-
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (resolvedAnalyses.length === 0) return [];
 
@@ -605,17 +595,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return allAnalysisSections.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
     }, [allAnalysisSections, searchQuery]);
 
-    const hasSelectedTimestepAnalyses = sectionTimestepScopedIds.size > 0;
-
-    const sceneCollectionSections = useMemo(
-        () => filteredSections.filter((section) => !sectionTimestepScopedIds.has(section.analysis._id)),
-        [filteredSections, sectionTimestepScopedIds]
-    );
-
-    const selectedTimestepSections = useMemo(
-        () => filteredSections.filter((section) => sectionTimestepScopedIds.has(section.analysis._id)),
-        [filteredSections, sectionTimestepScopedIds]
-    );
+    // Pipeline is now the only execution path and always carries selectedTimesteps
+    // (possibly the current timestep), so all analyses surface under Visual Elements;
+    // the former timestep-scoped split has been dropped.
+    const sceneCollectionSections = filteredSections;
 
     const toggleSection = useCallback((analysisId: string) => {
         setExpandedSections(prev => {
@@ -714,8 +697,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         filteredSections,
         sceneCollectionSections,
-        selectedTimestepSections,
-        hasSelectedTimestepAnalyses,
         showSectionsSkeleton: bootstrapLoading,
         headerPopoverCallbacks,
 

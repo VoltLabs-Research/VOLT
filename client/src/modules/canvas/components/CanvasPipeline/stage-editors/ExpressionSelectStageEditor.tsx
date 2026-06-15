@@ -10,6 +10,7 @@ interface ExpressionSelectStageEditorProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
+    onSave?: () => void;
 }
 
 const TEXTAREA_ROWS = 3;
@@ -22,7 +23,8 @@ const ExpressionSelectStageEditor = memo(({
     stageId,
     trajectoryId,
     analysisId,
-    currentTimestep
+    currentTimestep,
+    onSave
 }: ExpressionSelectStageEditorProps) => {
     const stage = useCanvasPipelineStore((s) =>
         (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
@@ -56,7 +58,8 @@ const ExpressionSelectStageEditor = memo(({
 
     const handleApply = useCallback(() => {
         updateStageConfig(stageId, { expression: draft } as Partial<ExpressionSelectStageConfig>, trajectoryId);
-    }, [draft, stageId, trajectoryId, updateStageConfig]);
+        onSave?.();
+    }, [draft, stageId, trajectoryId, updateStageConfig, onSave]);
 
     const handleClear = useCallback(() => {
         setDraft('');

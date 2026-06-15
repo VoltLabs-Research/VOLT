@@ -46,11 +46,19 @@ const ExposureEditor = ({ node }: EditorProps) => {
             <FormSection title='Data'>
                 <FormFieldRHF<ExposureEditorFormValues>
                     variant='inline'
-                    label='Results Suffix'
+                    label='Filename'
                     fieldType='input'
                     name='results'
                     control={form.control}
                     placeholder='results.parquet'
+                />
+                <FormFieldRHF<ExposureEditorFormValues>
+                    variant='inline'
+                    label='Id'
+                    fieldType='input'
+                    name='id'
+                    control={form.control}
+                    placeholder='(optional) shared pipeline key'
                 />
             </FormSection>
         </>

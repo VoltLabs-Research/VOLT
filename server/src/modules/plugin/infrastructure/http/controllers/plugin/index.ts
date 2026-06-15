@@ -4,7 +4,7 @@ import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugi
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
 import { DownloadPluginBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DownloadPluginBinaryUseCase';
-import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
+import { ExecutePipelineUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePipelineUseCase';
 import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
 import GetNodeTypesSchemaUseCase from '@modules/plugin/application/use-cases/plugin/GetNodeTypesSchemaUseCase';
 import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
@@ -39,7 +39,7 @@ const CreatePluginController = createController(CreatePluginUseCase, HttpStatus.
 const DeleteBinaryController = createController(DeleteBinaryUseCase, HttpStatus.NoContent);
 const DeletePluginByIdController = createController(DeletePluginByIdUseCase, HttpStatus.NoContent);
 const DownloadPluginBinaryController = createPreparedDownloadStreamController(DownloadPluginBinaryUseCase);
-const ExecutePluginController = createController(ExecutePluginUseCase, {
+const ExecutePipelineController = createController(ExecutePipelineUseCase, {
     extendParams: withAuthenticatedUserId
 });
 const ExportPluginController = createPreparedDownloadStreamController(ExportPluginUseCase);
@@ -60,7 +60,7 @@ export default createControllerRegistry({
     deleteBinary: DeleteBinaryController,
     deleteById: DeletePluginByIdController,
     downloadBinary: DownloadPluginBinaryController,
-    executePlugin: ExecutePluginController,
+    executePipeline: ExecutePipelineController,
     exportPlugin: ExportPluginController,
     getNodeTypesSchema: GetNodeTypesSchemaController,
     getPluginById: GetPluginByIdController,

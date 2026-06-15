@@ -5,6 +5,8 @@ import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
 import type {
     IPluginExecutionRouter,
     PluginReferenceExecutionRequest,
+    PipelineStageExecutionInput,
+    RoutePipelineExecutionInput,
     RoutePluginExecutionInput
 } from '@modules/plugin/domain/port/plugin/IPluginExecutionRouter';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
@@ -145,12 +147,26 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     timestep?: number;
 }
 
-interface DispatchCleanupSummary {
-    duplicateDependencyCount: number;
-    duplicateNestedPluginCount: number;
-    duplicatePluginReferenceExecutionCount: number;
-    uniquePluginSyncCount: number;
-    payloadBytes: number;
+// One ordered stage in the pipeline dispatch sent to the daemon. A computing
+// plugin stage carries its full per-plugin dispatch payload; a cache-hit plugin
+// stage carries only the reuse pointer; a slice/expression stage carries its
+// dump-transform config.
+interface PipelineStageDispatch {
+    kind: 'plugin' | 'slice' | 'expression';
+    plugin?: PluginDispatchPayload;
+    cacheHit?: boolean;
+    cacheSourceAnalysisId?: string;
+    sharedExposureIds?: string[];
+    config?: Record<string, unknown>;
+}
+
+interface PipelineDispatchPayload extends Record<string, unknown> {
+    teamId: string;
+    teamClusterId: string;
+    trajectoryId: string;
+    selectedTimesteps?: number[];
+    timestep?: number;
+    stages: PipelineStageDispatch[];
 }
 
 interface EncodedDispatchSection {
@@ -407,7 +423,107 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         }
     }
 
-    async route(input: RoutePluginExecutionInput): Promise<void> {
+    // Daemon-orchestrated pipeline: one command carrying the ordered stage list.
+    // Computing plugin stages each ship their own dispatch payload (workflow,
+    // frames, nested plugins) and have their binaries synced first; cache-hit
+    // plugin stages and slice/expression stages ship only their lightweight
+    // descriptors. The daemon runs the stages sequentially against one mutating
+    // working dump and a shared exposure context, emitting one analysis worth of
+    // events per computing plugin stage (so each surfaces individually).
+    async routePipeline(input: RoutePipelineExecutionInput): Promise<void> {
+        const stageDispatches: PipelineStageDispatch[] = [];
+        const syncTasks: Promise<void>[] = [];
+
+        for (const stage of input.stages) {
+            if (stage.kind !== 'plugin') {
+                stageDispatches.push({ kind: stage.kind, config: stage.config });
+                continue;
+            }
+
+            if (stage.cacheHit) {
+                stageDispatches.push({
+                    kind: 'plugin',
+                    cacheHit: true,
+                    cacheSourceAnalysisId: stage.cacheSourceAnalysisId,
+                    sharedExposureIds: stage.sharedExposureIds
+                });
+                continue;
+            }
+
+            if (!stage.execution) {
+                throw ApplicationError.badRequest(
+                    ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                    'Pipeline plugin stage is missing its execution payload'
+                );
+            }
+
+            const { dispatchPayload, syncTasks: stageSyncTasks } = await this.buildPluginDispatch(stage.execution);
+            syncTasks.push(...stageSyncTasks);
+            stageDispatches.push({
+                kind: 'plugin',
+                plugin: dispatchPayload,
+                sharedExposureIds: stage.sharedExposureIds
+            });
+        }
+
+        await Promise.all(syncTasks);
+
+        const pipelinePayload: PipelineDispatchPayload = {
+            teamId: input.teamId,
+            teamClusterId: input.teamClusterId,
+            trajectoryId: input.trajectoryId,
+            selectedTimesteps: input.selectedTimesteps,
+            timestep: input.timestep,
+            stages: stageDispatches
+        };
+
+        const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(
+            input.teamClusterId,
+            ChannelCommands.PipelineStart,
+            pipelinePayload
+        );
+
+        // Each computing plugin stage is one normal analysis on the daemon, so
+        // seed a completion session per computed analysisId and project queued
+        // jobs exactly as the single-plugin path does.
+        const computingStages = input.stages.filter(
+            (stage): stage is PipelineStageExecutionInput & { execution: RoutePluginExecutionInput } =>
+                stage.kind === 'plugin' && !stage.cacheHit && stage.execution !== undefined
+        );
+        const jobsByAnalysisId = new Map<string, DaemonAnalysisJob[]>();
+        for (const job of response.jobs ?? []) {
+            const existing = jobsByAnalysisId.get(job.analysisId);
+            if (existing) {
+                existing.push(job);
+            } else {
+                jobsByAnalysisId.set(job.analysisId, [job]);
+            }
+        }
+
+        for (const stage of computingStages) {
+            const stageJobs = jobsByAnalysisId.get(stage.execution.analysisId) ?? [];
+            await this.daemonAnalysisCompletionService.initializeSession(
+                stage.execution.analysisId,
+                stageJobs.length,
+                input.teamId,
+                input.trajectoryId
+            );
+
+            if (stageJobs.length > 0) {
+                await this.daemonAnalysisCompletionService.handleJobsQueued(
+                    stageJobs.map((job) => ({ ...job, trajectoryName: input.trajectoryName })),
+                    input.teamId,
+                    input.teamClusterId
+                ).catch((error) => {
+                    logger.warn(error, '@plugin-execution-router: failed to project queued pipeline jobs');
+                });
+            }
+        }
+    }
+
+    private async buildPluginDispatch(
+        input: RoutePluginExecutionInput
+    ): Promise<{ dispatchPayload: PluginDispatchPayload; syncTasks: Promise<void>[] }> {
         const uniqueDependencyPlugins = dedupePluginsById(input.pluginDependencies);
         const uniquePluginsToSync = dedupePluginsById([
             input.plugin,
@@ -427,17 +543,19 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         ));
         const pluginReferenceExecutions = dedupePluginReferenceExecutions(input.pluginReferenceExecutions);
 
-        const [, encodedTrajectoryFrames, encodedWorkflow, encodedNestedPlugins, encodedPluginReferenceExecutions] = await Promise.all([
-            Promise.all(uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(
-                input.teamClusterId,
-                dependency,
-                pluginOwnerClusterIds.get(dependency.id)
-            ))),
+        const [encodedTrajectoryFrames, encodedWorkflow, encodedNestedPlugins, encodedPluginReferenceExecutions] = await Promise.all([
             encodeDispatchSection(input.trajectoryFrames),
             this.encodeWorkflowSection(input.plugin, rootPluginOwnerClusterId),
             this.encodeNestedPluginsSection(input.plugin.id, uniqueDependencyPlugins, nestedPlugins, pluginOwnerClusterIds),
             encodeDispatchSection(pluginReferenceExecutions)
         ]);
+
+        const syncTasks = uniquePluginsToSync.map((dependency) => this.syncPluginBinaryIfNeeded(
+            input.teamClusterId,
+            dependency,
+            pluginOwnerClusterIds.get(dependency.id)
+        ));
+
         const dispatchPayload: PluginDispatchPayload = {
             analysis: serializeAnalysis(input.analysis),
             analysisId: input.analysisId,
@@ -455,70 +573,8 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep
         };
-        const payloadBytesEstimate =
-            encodedTrajectoryFrames.storedBytes
-            + encodedWorkflow.storedBytes
-            + encodedNestedPlugins.storedBytes
-            + encodedPluginReferenceExecutions.storedBytes
-            + Buffer.byteLength(JSON.stringify({
-                analysisId: input.analysisId,
-                pluginId: input.plugin.id,
-                teamId: input.teamId,
-                trajectoryId: input.trajectoryId,
-                teamClusterId: input.teamClusterId,
-                config: input.config,
-                selectedFrameOnly: input.selectedFrameOnly,
-                selectedTimesteps: input.selectedTimesteps,
-                timestep: input.timestep
-            }), 'utf8');
-        const cleanupSummary: DispatchCleanupSummary = {
-            duplicateDependencyCount: input.pluginDependencies.length - uniqueDependencyPlugins.length,
-            duplicateNestedPluginCount: input.pluginDependencies.length - nestedPlugins.length,
-            duplicatePluginReferenceExecutionCount: input.pluginReferenceExecutions.length - pluginReferenceExecutions.length,
-            uniquePluginSyncCount: uniquePluginsToSync.length,
-            payloadBytes: payloadBytesEstimate
-        };
-        const payloadCompressionSavingsBytes =
-            (encodedTrajectoryFrames.rawBytes - encodedTrajectoryFrames.storedBytes)
-            + (encodedWorkflow.rawBytes - encodedWorkflow.storedBytes)
-            + (encodedNestedPlugins.rawBytes - encodedNestedPlugins.storedBytes)
-            + (encodedPluginReferenceExecutions.rawBytes - encodedPluginReferenceExecutions.storedBytes);
 
-        if (
-            cleanupSummary.duplicateDependencyCount > 0
-            || cleanupSummary.duplicateNestedPluginCount > 0
-            || cleanupSummary.duplicatePluginReferenceExecutionCount > 0
-        ) {
-            logger.info(`@plugin-execution-router: deduped analysis dispatch payload analysisId=${input.analysisId} teamClusterId=${input.teamClusterId} pluginId=${input.plugin.id} payloadCompressionSavingsBytes=${payloadCompressionSavingsBytes}`);
-        } else {
-            logger.debug(`@plugin-execution-router: prepared analysis dispatch payload analysisId=${input.analysisId} teamClusterId=${input.teamClusterId} pluginId=${input.plugin.id} payloadBytes=${cleanupSummary.payloadBytes}`);
-        }
-
-        const response = await this.teamClusterDaemonClient.command<DaemonAnalysisStartResponse>(
-            input.teamClusterId,
-            ChannelCommands.AnalysisStart,
-            dispatchPayload
-        );
-
-        await this.daemonAnalysisCompletionService.initializeSession(
-            input.analysisId,
-            response.totalJobs,
-            input.teamId,
-            input.trajectoryId
-        );
-
-        if (response.jobs?.length > 0) {
-            await this.daemonAnalysisCompletionService.handleJobsQueued(
-                response.jobs.map((job) => ({
-                    ...job,
-                    trajectoryName: input.trajectoryName
-                })),
-                input.teamId,
-                input.teamClusterId
-            ).catch((error) => {
-                logger.warn(error, '@plugin-execution-router: failed to project queued daemon analysis jobs');
-            });
-        }
+        return { dispatchPayload, syncTasks };
     }
 
     private async syncPluginBinaryIfNeeded(

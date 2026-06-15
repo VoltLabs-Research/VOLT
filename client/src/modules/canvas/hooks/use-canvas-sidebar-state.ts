@@ -11,15 +11,12 @@ const useCanvasSidebarState = ({ trajectory, trajectoryId }: UseCanvasSidebarSta
     const state = useCanvasSidebarScene({ trajectory, trajectoryId });
     const totalAnalyses = state.analyses.length;
     const sceneCollectionTotalAnalyses = state.sceneCollectionSections.length;
-    const selectedTimestepTotalAnalyses = state.selectedTimestepSections.length;
     const showEmptySearch = !state.showSectionsSkeleton && !!state.searchQuery && state.filteredSections.length === 0;
 
     return {
         ...state,
         totalAnalyses,
         sceneCollectionTotalAnalyses,
-        selectedTimestepTotalAnalyses,
-        hasSelectedTimestepAnalyses: state.hasSelectedTimestepAnalyses,
         showEmptySearch
     };
 };

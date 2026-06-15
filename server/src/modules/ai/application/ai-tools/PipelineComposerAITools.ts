@@ -29,25 +29,6 @@ export class ConfigureColorCodingAITool extends AITool<z.infer<typeof configureC
     protected readonly clientExecuted = true;
 }
 
-const plotAttributeVsFrameParams = z.object({
-    attribute: z.string().describe('Global attribute name to plot across frames (e.g. "TotalEnergy", "Temperature").'),
-    description: z.string().optional().describe('Human-readable description of what this chart shows.')
-});
-
-/**
- * CLIENT-EXECUTED. Opens a chart panel showing an attribute vs frame index.
- * Depends on global-attribute time-series infrastructure (workstream 06).
- * Until that exists, the client handler returns a no-op guard.
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
-export class PlotAttributeVsFrameAITool extends AITool<z.infer<typeof plotAttributeVsFrameParams>> {
-    readonly name = 'plot_attribute_vs_frame';
-    readonly description = 'Create a chart showing a global attribute value across trajectory frames. '
-        + 'Use for time-series like TotalEnergy, Temperature, Pressure, etc.';
-    readonly parameters = plotAttributeVsFrameParams;
-    protected readonly clientExecuted = true;
-}
-
 const pushExpressionSelectParams = z.object({
     formula: z.string().describe(
         'Boolean expression over per-atom properties (e.g. "Position.X > 10", "StructureType == 1"). '

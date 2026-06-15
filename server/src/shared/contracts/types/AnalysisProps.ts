@@ -69,6 +69,11 @@ export interface AnalysisProps {
     config: AnalysisConfig;
     trajectory: string;
     createdBy: string;
+    // Content hash of the pipeline stage that produced this analysis
+    // (trajectory + selected timesteps + ordered upstream stage hashes + this
+    // plugin id + config). Set only for pipeline-run analyses; used to reuse a
+    // completed analysis as a cache hit on a later identical pipeline run.
+    pipelineStageHash?: string;
     totalFrames?: number;
     completedFrames?: number;
     startedAt?: Date;

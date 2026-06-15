@@ -38,8 +38,8 @@ export default createHttpModule({
             .patch(controllers.updatePluginById.handle)
             .delete(controllers.deleteById.handle);
         router.post(
-            '/:pluginId/trajectories/:trajectoryId/executions',
-            controllers.executePlugin.handle
+            '/trajectories/:trajectoryId/pipeline-executions',
+            controllers.executePipeline.handle
         );
     }
 });

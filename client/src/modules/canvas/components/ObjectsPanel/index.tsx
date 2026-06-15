@@ -5,6 +5,7 @@ import useAnalysisStatus from '../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
 import CanvasPipeline from '../CanvasPipeline';
+import PipelineHeaderActions from '../CanvasPipeline/PipelineHeaderActions';
 import SceneCollection from '../SceneCollection';
 import {
     CanvasTreeEmptyRow,
@@ -115,7 +116,6 @@ const ObjectsPanel = ({
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
     const [pipelineOpen, setPipelineOpen] = useState(true);
-    const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(false);
     const [particleFilterOpen, setParticleFilterOpen] = useState(false);
     const [lineStyleOpen, setLineStyleOpen] = useState(false);
@@ -131,7 +131,6 @@ const ObjectsPanel = ({
 
     const {
         sceneCollectionSections,
-        selectedTimestepSections,
         expandedSections,
         toggleSection,
         showSectionsSkeleton,
@@ -142,9 +141,7 @@ const ObjectsPanel = ({
         removeScene,
         onDeleteAnalysis,
         onRetryLoadExposures,
-        sceneCollectionTotalAnalyses,
-        selectedTimestepTotalAnalyses,
-        hasSelectedTimestepAnalyses
+        sceneCollectionTotalAnalyses
     } = useCanvasSidebarState({ trajectory, trajectoryId: trajectory?._id });
 
     const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
@@ -196,8 +193,8 @@ const ObjectsPanel = ({
     }, [setCurrentTimestep]);
 
     const getFirstTourSection = useCallback(() => {
-        return sceneCollectionSections[0] ?? selectedTimestepSections[0];
-    }, [sceneCollectionSections, selectedTimestepSections]);
+        return sceneCollectionSections[0];
+    }, [sceneCollectionSections]);
 
     const selectFirstTourAnalysis = useCallback(() => {
         const section = getFirstTourSection();
@@ -530,13 +527,20 @@ const ObjectsPanel = ({
             icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
             expanded={pipelineOpen}
             onExpandedChange={setPipelineOpen}
+            headerAction={(
+                <PipelineHeaderActions
+                    trajectory={trajectory}
+                    trajectoryId={resolvedTrajectoryId}
+                    currentTimestep={currentTimestep}
+                    canMutateCanvas={canMutateCanvas}
+                />
+            )}
         >
             <CanvasPipeline
                 trajectory={trajectory}
                 trajectoryId={resolvedTrajectoryId}
                 analysisId={analysisId}
                 currentTimestep={currentTimestep}
-                canMutateCanvas={canMutateCanvas}
             />
         </RightCollapsible>
     ) : null;
@@ -547,7 +551,6 @@ const ObjectsPanel = ({
         const hasParticleFilterArtifacts = particleFilterArtifacts.length > 0;
         const hasLineStyleArtifacts = lineStyleArtifacts.length > 0;
         const compactSectionCount = (hasAnalyses ? 1 : 0)
-            + (hasSelectedTimestepAnalyses ? 1 : 0)
             + (hasColorCodingArtifacts ? 1 : 0)
             + (hasParticleFilterArtifacts ? 1 : 0)
             + (hasLineStyleArtifacts ? 1 : 0);
@@ -555,10 +558,9 @@ const ObjectsPanel = ({
         return (
             <Stack minH='0' className="canvas-objects-panel canvas-objects-panel--analysis-compact">
                 <div className="canvas-objects-panel__top">
-                    {pipelineSection}
                     {hasAnalyses && (
                         <RightCollapsible
-                            title="Analyses"
+                            title="Visual Elements"
                             icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                             expanded={sceneCollectionOpen}
                             onExpandedChange={setSceneCollectionOpen}
@@ -576,24 +578,7 @@ const ObjectsPanel = ({
                             />
                         </RightCollapsible>
                     )}
-
-                    {hasSelectedTimestepAnalyses && (
-                        <RightCollapsible
-                            title="Per-timestep analyses"
-                            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                            expanded={selectedTimestepAnalysisOpen}
-                            onExpandedChange={setSelectedTimestepAnalysisOpen}
-                            tourId="canvas-per-timestep-analyses-section"
-                        >
-                            <SceneCollection
-                                {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
-                                filteredSections={selectedTimestepSections}
-                                totalAnalyses={selectedTimestepTotalAnalyses}
-                                showDefaultScene={false}
-                                firstAnalysisTourTargetId="canvas-first-per-timestep-analysis-row"
-                            />
-                        </RightCollapsible>
-                    )}
+                    {pipelineSection}
 
                     {hasColorCodingArtifacts && (
                         <RightCollapsible
@@ -665,9 +650,8 @@ const ObjectsPanel = ({
     return (
         <Stack minH='0' className="canvas-objects-panel">
             <div className="canvas-objects-panel__top">
-                {pipelineSection}
                 <RightCollapsible
-                    title="Scene Collection"
+                    title="Visual Elements"
                     icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
                     expanded={sceneCollectionOpen}
                     onExpandedChange={setSceneCollectionOpen}
@@ -689,24 +673,7 @@ const ObjectsPanel = ({
                         />
                     )}
                 </RightCollapsible>
-
-                {!isRasterWorkspace && hasSelectedTimestepAnalyses && (
-                    <RightCollapsible
-                        title="Timestep-scoped analyses"
-                        icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                        expanded={selectedTimestepAnalysisOpen}
-                        onExpandedChange={setSelectedTimestepAnalysisOpen}
-                        tourId="canvas-per-timestep-analyses-section"
-                    >
-                        <SceneCollection
-                            {...(sharedSceneCollectionProps as ComponentProps<typeof SceneCollection>)}
-                            filteredSections={selectedTimestepSections}
-                            totalAnalyses={selectedTimestepTotalAnalyses}
-                            showDefaultScene={false}
-                            firstAnalysisTourTargetId="canvas-first-per-timestep-analysis-row"
-                        />
-                    </RightCollapsible>
-                )}
+                {pipelineSection}
             </div>
 
             <div className="canvas-objects-panel__bottom">

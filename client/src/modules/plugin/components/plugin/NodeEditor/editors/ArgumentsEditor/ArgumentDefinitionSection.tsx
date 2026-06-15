@@ -186,11 +186,19 @@ const ArgumentDefinitionSection = ({
                 return;
             }
 
-            if (field === 'multipleSelection' || field === 'showPluginConfiguration' || field === 'required') {
-                onUpdateArgument(argumentIndex, {
+            if (field === 'multipleSelection' || field === 'showPluginConfiguration' || field === 'required' || field === 'inferFromContext') {
+                const nextArgument: IArgumentDefinition = {
                     ...currentArgument,
                     [field]: nextValue === 'true'
-                });
+                };
+                // An inferFromContext argument is resolved from the pipeline's
+                // shared exposure context at runtime, so a user-entered
+                // value/default would be meaningless — drop them when enabling.
+                if (field === 'inferFromContext' && nextValue === 'true') {
+                    delete nextArgument.value;
+                    delete nextArgument.default;
+                }
+                onUpdateArgument(argumentIndex, nextArgument);
                 return;
             }
 
@@ -647,23 +655,34 @@ const ArgumentDefinitionSection = ({
 
                                 {showValueSection && (
                                     <FormSection title='Values'>
+                                        {!argument.inferFromContext && (
+                                            <>
+                                                <ArgumentField
+                                                    label='Value'
+                                                    name={`value-${level}-${index}`}
+                                                    fieldType={scalarFieldType}
+                                                    value={getArgumentFieldInputValue(argument, 'value')}
+                                                    onChange={createArgumentFieldHandler(index, 'value')}
+                                                    options={scalarOptions}
+                                                    placeholder='Preset hidden value'
+                                                />
+                                                <ArgumentField
+                                                    label='Default'
+                                                    name={`default-${level}-${index}`}
+                                                    fieldType={scalarFieldType}
+                                                    value={getArgumentFieldInputValue(argument, 'default')}
+                                                    onChange={createArgumentFieldHandler(index, 'default')}
+                                                    options={scalarOptions}
+                                                    placeholder='Default value'
+                                                />
+                                            </>
+                                        )}
                                         <ArgumentField
-                                            label='Value'
-                                            name={`value-${level}-${index}`}
-                                            fieldType={scalarFieldType}
-                                            value={getArgumentFieldInputValue(argument, 'value')}
-                                            onChange={createArgumentFieldHandler(index, 'value')}
-                                            options={scalarOptions}
-                                            placeholder='Preset hidden value'
-                                        />
-                                        <ArgumentField
-                                            label='Default'
-                                            name={`default-${level}-${index}`}
-                                            fieldType={scalarFieldType}
-                                            value={getArgumentFieldInputValue(argument, 'default')}
-                                            onChange={createArgumentFieldHandler(index, 'default')}
-                                            options={scalarOptions}
-                                            placeholder='Default value'
+                                            label='Infer From Context'
+                                            name={`infer-from-context-${level}-${index}`}
+                                            fieldType='checkbox'
+                                            value={Boolean(argument.inferFromContext)}
+                                            onChange={createArgumentFieldHandler(index, 'inferFromContext')}
                                         />
                                     </FormSection>
                                 )}

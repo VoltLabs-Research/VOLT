@@ -22,6 +22,9 @@ const launchGrainSegmentation: ClientToolHandler<LaunchGrainSegmentationInput> =
             };
         }
 
+        // Adds a grain-segmentation stage to the pipeline. It does NOT auto-run:
+        // execution now happens for the whole ordered pipeline via the Run popover
+        // (one pipeline-executions request), so this only seeds the stage.
         const stageId = useCanvasPipelineStore.getState().addStage('analysis-plugin', {
             pluginId: 'grain-segmentation',
             argValues: { dislocation_density_threshold: threshold },

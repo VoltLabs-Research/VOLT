@@ -15,6 +15,7 @@ export interface IExposureProperty {
 
 export interface IExposureComputed {
     _id: string;
+    id?: string;
     name: string;
     icon?: string;
     results: string;
