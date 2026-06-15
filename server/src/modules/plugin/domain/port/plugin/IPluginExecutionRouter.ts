@@ -49,6 +49,10 @@ export interface RoutePipelineExecutionInput {
     trajectoryId: string;
     trajectoryName: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    // The trajectory's storage cluster. Threaded explicitly so an all-cache-hit
+    // pipeline (which ships no compute-stage plugin payload) still tells the
+    // daemon where to fetch dumps / persisted shared exposures.
+    storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
     stages: PipelineStageExecutionInput[];

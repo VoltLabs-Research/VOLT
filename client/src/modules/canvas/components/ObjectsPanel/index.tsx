@@ -541,6 +541,7 @@ const ObjectsPanel = ({
                 trajectoryId={resolvedTrajectoryId}
                 analysisId={analysisId}
                 currentTimestep={currentTimestep}
+                canMutateCanvas={canMutateCanvas}
             />
         </RightCollapsible>
     ) : null;

@@ -32,7 +32,9 @@ const hasPresetArgumentValue = (definition: IArgumentDefinition): boolean => {
 };
 
 export const isUserConfigurableArgument = (definition: IArgumentDefinition): boolean => {
-    return !hasPresetArgumentValue(definition);
+    // inferFromContext args are injected by the daemon from the pipeline's shared
+    // exposure context — they carry no user-facing value, so never render them.
+    return !hasPresetArgumentValue(definition) && !definition.inferFromContext;
 };
 
 export const getUserConfigurableArguments = (

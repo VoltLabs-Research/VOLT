@@ -90,7 +90,14 @@ export const sanitizeVisibleArgumentConfig = (
     const sanitizedValues: ArgumentValueMap = {};
 
     for (const definition of definitions) {
-        if (!definition.argument || !isArgumentVisible(definition, definitions, values)) {
+        // inferFromContext args are injected by the daemon from the pipeline's
+        // shared exposure context, not by the user. Strip any client-sent value
+        // so it never reaches validation or the daemon as a user argument.
+        if (
+            !definition.argument
+            || definition.inferFromContext
+            || !isArgumentVisible(definition, definitions, values)
+        ) {
             continue;
         }
 
