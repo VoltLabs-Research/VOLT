@@ -284,7 +284,7 @@ const ConfigurationStep = ({
                     <Box className='create-container-deployment-fields'>
                         <Box className='create-container-deployment-name'>
                             <FormFieldRHF
-                                label='Name'
+                                label='Container Name'
                                 placeholder='my-container-app'
                                 value={config.name}
                                 onChange={(e) => onConfigChange('name', e.target.value)}

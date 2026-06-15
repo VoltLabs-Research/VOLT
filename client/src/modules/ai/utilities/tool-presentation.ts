@@ -43,7 +43,9 @@ const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
 
     global_search: { runningLabel: 'Searching', doneLabel: 'Searched', group: 'data' },
     compare_analyses: { runningLabel: 'Comparing analyses', doneLabel: 'Compared analyses', group: 'data' },
-    summarize_analysis_run: { runningLabel: 'Summarizing the run', doneLabel: 'Summarized the run', group: 'data' }
+    summarize_analysis_run: { runningLabel: 'Summarizing the run', doneLabel: 'Summarized the run', group: 'data' },
+
+    execute_pipeline: { runningLabel: 'Running the pipeline', doneLabel: 'Ran the pipeline', group: 'action' }
 };
 
 const humanizeToolName = (toolName: string): string => {

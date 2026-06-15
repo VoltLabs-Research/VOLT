@@ -144,7 +144,7 @@ const useWhiteboardsListing = () => {
             return;
         }
 
-        await showPromise(
+        const whiteboard = await showPromise(
             createWhiteboard({
                 teamId,
                 title: 'Untitled Whiteboard',
@@ -152,7 +152,12 @@ const useWhiteboardsListing = () => {
             }),
             whiteboardsListingResource.toasts.create
         );
-    }, [folderedListing.currentFolderId, createWhiteboard, teamId]);
+
+        // Open the editor for the freshly-created whiteboard (parallels openWhiteboard).
+        if (whiteboard?._id) {
+            navigate(`/dashboard/whiteboard/${whiteboard._id}`);
+        }
+    }, [folderedListing.currentFolderId, createWhiteboard, teamId, navigate]);
 
     return {
         ...folderedListing,

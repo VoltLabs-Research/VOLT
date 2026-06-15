@@ -39,8 +39,7 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/GeneralSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'General',
-            multiTenantOnly: true
+            label: 'General'
         }
     },
     {
@@ -49,8 +48,7 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/AuthenticationSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Authentication',
-            multiTenantOnly: true
+            label: 'Authentication'
         }
     },
     {
@@ -86,8 +84,7 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/session/components/SessionSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Sessions',
-            multiTenantOnly: true
+            label: 'Sessions'
         }
     },
     {

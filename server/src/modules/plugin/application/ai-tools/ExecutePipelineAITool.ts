@@ -6,21 +6,24 @@ import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 @CollectionMember(AI_TOOL_TOKENS.AITool)
-export class ExecutePluginAITool extends AITool {
-    readonly name = 'execute_plugin';
-    readonly description = 'Run an analysis plugin on a trajectory with a given configuration. Starts real compute on the team cluster and returns an analysisId to track. Call describe_plugin_arguments first to build a valid config.';
+export class ExecutePipelineAITool extends AITool {
+    readonly name = 'execute_pipeline';
+    readonly description = 'Run an analysis pipeline on a trajectory: an ORDERED list of plugin stages executed sequentially on the team cluster. This is the ONLY way to run analysis — there is no single-plugin path. To run just one plugin, pass a one-stage pipeline. Stages run in array order against one evolving frame, so a stage that requiresExposures (see list_plugins) must come AFTER a stage whose producesExposures includes those ids (e.g. a reconstruction stage that emits a cluster table before a dislocation stage that consumes it). Call describe_plugin_arguments per plugin first to build each stage config. Returns the analysisId of every computed stage, in order, to track with get_analysis.';
     readonly parameters = z.object({
-        pluginId: z.string(),
         trajectoryId: z.string(),
-        config: z.record(z.string(), z.unknown()).optional().default({}),
+        stages: z.array(z.object({
+            pluginId: z.string(),
+            config: z.record(z.string(), z.unknown()).optional().default({})
+        })).min(1).describe('Ordered plugin stages. An upstream stage must precede any stage that consumes its exposures.'),
         selectedTimesteps: z.array(z.number()).optional(),
         teamClusterId: z.string().optional(),
         reason: z.string().optional()
     });
 
-    // Running a plugin dispatches real compute to the user's cluster — an
-    // expensive, side-effecting action. Gate it behind explicit human approval;
-    // the AI SDK pauses the stream and the continuation flow resumes on approve.
+    // Running a pipeline dispatches real compute to the user's cluster — an
+    // expensive, side-effecting action, the more so for a multi-stage run. Gate
+    // it behind explicit human approval; the AI SDK pauses the stream and the
+    // continuation flow resumes on approve.
     readonly needsApproval = true;
 
     constructor(
@@ -30,24 +33,22 @@ export class ExecutePluginAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        // A single plugin run is a one-stage pipeline (the only execution path).
         const result = await this.useCase.execute({
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,
             userId: scope.userId,
             selectedTimesteps: params.selectedTimesteps,
             teamClusterId: params.teamClusterId,
-            stages: [{ kind: 'plugin', pluginId: params.pluginId, config: params.config }]
+            stages: params.stages.map((stage) => ({ kind: 'plugin', pluginId: stage.pluginId, config: stage.config }))
         });
         if (!result.success) throw result.error;
 
-        const analysisId = result.value.analysisIds[0];
-        return {
-            summary: analysisId
-                ? `Started analysis ${analysisId}. Track its progress with get_analysis.`
-                : 'Pipeline stage was served from cache; no new analysis was created.',
-            data: result.value
-        };
+        // analysisIds carry only COMPUTED plugin stages in pipeline order;
+        // cache-hit stages reuse a prior analysis and are omitted.
+        const analysisIds = result.value.analysisIds;
+        const summary = analysisIds.length
+            ? `Started a ${params.stages.length}-stage pipeline. Computed analyses (in order): ${analysisIds.join(', ')}. Track each with get_analysis.`
+            : 'Every pipeline stage was served from cache; no new analysis was created.';
+        return { summary, data: result.value };
     }
 }
-
