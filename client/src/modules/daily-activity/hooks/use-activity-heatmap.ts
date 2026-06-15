@@ -205,16 +205,10 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
         [currentUser?._id, data, range, startDate]
     );
 
-    const legendItems = ACTIVITY_HEATMAP_LEGEND;
-
-    const handleMouseEnter = (event: MouseEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
-        setTooltipState(createTooltipState(value));
-        setTooltipOpen(true);
-    };
-
-    const handleDayFocus = (event: FocusEvent<SVGRectElement>, value: ActivityHeatmapChartDataItem | null) => {
+    const handleDayActivate = (
+        event: MouseEvent<SVGRectElement> | FocusEvent<SVGRectElement>,
+        value: ActivityHeatmapChartDataItem | null
+    ) => {
         const rect = event.currentTarget.getBoundingClientRect();
         setTooltipPos({ x: rect.left + (rect.width / 2), y: rect.top });
         setTooltipState(createTooltipState(value));
@@ -231,15 +225,15 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
 
     return {
         chartData,
-        legendItems,
+        legendItems: ACTIVITY_HEATMAP_LEGEND,
         today,
         startDate,
         tooltipOpen,
         tooltipPos,
         tooltipState,
         getDayAriaLabel,
-        handleMouseEnter,
-        handleDayFocus,
+        handleMouseEnter: handleDayActivate,
+        handleDayFocus: handleDayActivate,
         handleMouseLeave,
         handleMouseMove
     };

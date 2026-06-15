@@ -68,7 +68,6 @@ export const appendClusterHistoryMetric = (
 };
 
 export const setClusterMetricsQueryData = (
-    _queryClient: QueryClient,
     clusters: ClusterMetrics[]
 ) => {
     clusterMetricsQuery.update(undefined, (previous = []) => {
@@ -83,7 +82,6 @@ export const setClusterMetricsQueryData = (
 };
 
 export const setClusterHistoryQueryData = (
-    _queryClient: QueryClient,
     history: ClusterHistoryMetric[],
     clusterId: string
 ) => {
@@ -94,7 +92,7 @@ export const setClusterHistoryQueryData = (
     clusterHistoryLoadedQuery.set(clusterId, true);
 
     if (latestMetric) {
-        setClusterMetricsQueryData(_queryClient, [latestMetric]);
+        setClusterMetricsQueryData([latestMetric]);
     }
 };
 

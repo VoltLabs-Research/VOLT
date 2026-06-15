@@ -20,6 +20,7 @@ import type {
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -157,10 +158,6 @@ interface EncodedDispatchSection {
     storedBytes: number;
     compressedValue: string;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-};
 
 const injectOwnerClusterIdIntoWorkflow = (
     workflow: WorkflowSerializable,

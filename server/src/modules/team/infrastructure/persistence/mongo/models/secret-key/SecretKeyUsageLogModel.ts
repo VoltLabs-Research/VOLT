@@ -3,12 +3,7 @@ import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-enum SecretKeyUsageLogRelation {
-    SecretKey = 'secretKey',
-    Team = 'team'
-};
-
-type SecretKeyUsageLogRelations = `${SecretKeyUsageLogRelation}`;
+type SecretKeyUsageLogRelations = 'secretKey' | 'team';
 
 export interface SecretKeyUsageLogDocument extends Persistable<SecretKeyUsageLogProps, SecretKeyUsageLogRelations>, Document {};
 

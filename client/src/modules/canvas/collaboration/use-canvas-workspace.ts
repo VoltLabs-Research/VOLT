@@ -79,7 +79,6 @@ const useCanvasWorkspace = ({
     const navigate = useNavigate();
 
     const lobbyUsers = usePresenceStore((s) => s.lobbyUsers);
-    const workspaceViewers = usePresenceStore((s) => s.workspaceViewers);
 
     const currentUserId = currentUser?._id;
     const effectiveOwnerId = requestedOwnerId ?? currentUserId;
@@ -232,13 +231,10 @@ const useCanvasWorkspace = ({
         : undefined;
 
     return {
-        lobbyUsers,
         peersInLobby,
-        workspaceViewers,
         collaborationOwner,
         ownerId: effectiveOwnerId,
         isOwner,
-        readOnly: !isOwner,
         navigateToWorkspace
     };
 };

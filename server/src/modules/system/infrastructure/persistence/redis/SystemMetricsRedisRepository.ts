@@ -16,7 +16,7 @@ export default class SystemMetricsRedisRepository implements ISystemMetricsRepos
     private readonly clusterId: string;
 
     constructor() {
-        this.clusterId = resolveSystemMetricsIdentity().clusterId;
+        this.clusterId = resolveSystemMetricsIdentity();
     }
 
     private getMetricsKey(clusterId: string = this.clusterId): string {

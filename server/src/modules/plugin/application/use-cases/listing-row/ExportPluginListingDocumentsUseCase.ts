@@ -20,7 +20,7 @@ import { Result } from '@shared/domain/port/Result';
 
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
 const DAEMON_PAGE_SIZE = 200;
 

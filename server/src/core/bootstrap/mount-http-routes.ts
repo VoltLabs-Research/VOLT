@@ -8,6 +8,7 @@ import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-
 import LatexHttpModule from '@modules/latex/infrastructure/http/routes/latex-routes';
 import WhiteboardHttpModule from '@modules/whiteboards/infrastructure/http/routes/whiteboard-routes';
 import AnalysisHttpModule from '@modules/analysis/infrastructure/http/routes/analysis-routes';
+import ProvenanceHttpModule from '@modules/analysis/infrastructure/http/routes/provenance-routes';
 import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes';
 import ChatMessageHttpModule from '@modules/chat/infrastructure/http/routes/chat-message/chat-message-routes';
 import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat/chat-routes';
@@ -42,6 +43,7 @@ import TeamClusterLifecycleHttpModule from '@modules/cluster/infrastructure/http
 import ClusterObjectHttpModule from '@modules/cluster/infrastructure/http/routes/cluster-object-routes';
 import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding';
 import LineStyleHttpModule from '@modules/trajectory/infrastructure/http/routes/line-style';
+import LodHttpModule from '@modules/trajectory/infrastructure/http/routes/lod';
 import CanvasHttpModule from '@modules/trajectory/infrastructure/http/routes/canvas';
 import DiscoverHttpModule from '@modules/trajectory/infrastructure/http/routes/discover';
 import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter';
@@ -99,6 +101,7 @@ const HTTP_MODULES: HttpModule[] = [
     TrajectoryHttpModule,
     JobsHttpModule,
     AnalysisHttpModule,
+    ProvenanceHttpModule,
     PluginHttpModule,
     RasterHttpModule,
     SimulationCellHttpModule,
@@ -108,6 +111,7 @@ const HTTP_MODULES: HttpModule[] = [
     CanvasHttpModule,
     ColorCodingHttpModule,
     LineStyleHttpModule,
+    LodHttpModule,
     ParticleFilterHttpModule,
     AIConversationHttpModule,
     LatexHttpModule,

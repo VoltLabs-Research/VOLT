@@ -5,8 +5,6 @@ interface UseHiddenModulesReturn {
     hidden: string[];
     /** Toggle a module's hidden state (no-op for protected/non-hideable keys). */
     toggle: (moduleKey: string) => void;
-    /** Replace the whole hidden set. */
-    setHidden: (moduleKeys: string[]) => void;
     /** Whether a given module is currently hidden for this user. */
     isHidden: (moduleKey: string) => boolean;
 }
@@ -19,12 +17,10 @@ interface UseHiddenModulesReturn {
 export const useHiddenModules = (): UseHiddenModulesReturn => {
     const hidden = useHiddenModulesStore((state) => state.hidden);
     const toggle = useHiddenModulesStore((state) => state.toggle);
-    const setHidden = useHiddenModulesStore((state) => state.setHidden);
 
     return {
         hidden,
         toggle,
-        setHidden,
         isHidden: (moduleKey: string) => hidden.includes(moduleKey)
     };
 };

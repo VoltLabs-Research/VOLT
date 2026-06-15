@@ -6,7 +6,7 @@ interface TeamPermissionScopeInput {
     permissions: string[];
 }
 
-export const hasPermission = (permissions: string[], permission: string): boolean => {
+const hasPermission = (permissions: string[], permission: string): boolean => {
     return permissions.includes('*') || permissions.includes(permission);
 };
 

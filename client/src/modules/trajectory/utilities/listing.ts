@@ -6,11 +6,6 @@ export enum TrajectoryListingRowType {
     Trajectory = 'trajectory'
 }
 
-enum TrajectoryListingDndPrefix {
-    Folder = 'folder',
-    Trajectory = 'trajectory'
-}
-
 const TRAJECTORY_LISTING_ROOT_DROPPABLE_ID = 'root';
 
 export interface TrajectoryFolderRow extends TrajectoryFolder {
@@ -67,11 +62,11 @@ export const getTrajectoryListingDraggableId = (row: TrajectoryListingRow): stri
         return null;
     }
 
-    return `${TrajectoryListingDndPrefix.Trajectory}:${row._id}`;
+    return `${TrajectoryListingRowType.Trajectory}:${row._id}`;
 };
 
 export const getTrajectoryListingFolderDroppableId = (folderId: string | null): string => {
-    return `${TrajectoryListingDndPrefix.Folder}:${folderId ?? TRAJECTORY_LISTING_ROOT_DROPPABLE_ID}`;
+    return `${TrajectoryListingRowType.Folder}:${folderId ?? TRAJECTORY_LISTING_ROOT_DROPPABLE_ID}`;
 };
 
 export const getTrajectoryListingDroppableId = (row: TrajectoryListingRow): string | null => {
@@ -83,7 +78,7 @@ export const getTrajectoryListingDroppableId = (row: TrajectoryListingRow): stri
 };
 
 export const resolveTrajectoryListingDroppableFolderId = (droppableId: string): string | null | undefined => {
-    const prefix = `${TrajectoryListingDndPrefix.Folder}:`;
+    const prefix = `${TrajectoryListingRowType.Folder}:`;
     if (!droppableId.startsWith(prefix)) {
         return undefined;
     }

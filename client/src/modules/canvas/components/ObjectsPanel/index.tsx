@@ -4,6 +4,7 @@ import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useAnalysisStatus from '../../hooks/use-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
+import CanvasPipeline from '../CanvasPipeline';
 import SceneCollection from '../SceneCollection';
 import {
     CanvasTreeEmptyRow,
@@ -19,7 +20,7 @@ import {
 } from '../../utilities/tree-menus';
 import { formatArtifactLabel, pruneExpandedTimesteps } from './artifact-labels';
 
-import { ChevronDown, ChevronRight, Filter, Layers, Palette, Spline, Wrench } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, Layers, Palette, Spline } from 'lucide-react';
 import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, CollapsibleSection, Stack } from '@voltstack/bravais';
@@ -37,7 +38,10 @@ import './ObjectsPanel.css';
 
 interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
-    pluginsContent?: ReactNode;
+    trajectoryId?: string;
+    analysisId?: string;
+    currentTimestep?: number;
+    canMutateCanvas?: boolean;
     mode?: 'default' | 'analysis-compact';
 }
 
@@ -97,18 +101,21 @@ const RightCollapsible = ({ title, icon, expanded, onExpandedChange, headerActio
 
 const ObjectsPanel = ({
     trajectory,
+    trajectoryId,
+    analysisId,
+    currentTimestep,
+    canMutateCanvas,
     onDownloadAnalysis,
     onDownloadExposureListing,
     rasterContainerSelections = [],
     activeRasterContainerId = 'container-1',
     onSetActiveRasterContainer,
     onUpdateRasterContainerSelection,
-    pluginsContent,
     mode = 'default'
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
+    const [pipelineOpen, setPipelineOpen] = useState(true);
     const [selectedTimestepAnalysisOpen, setSelectedTimestepAnalysisOpen] = useState(true);
-    const [pluginsOpen, setPluginsOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(false);
     const [particleFilterOpen, setParticleFilterOpen] = useState(false);
     const [lineStyleOpen, setLineStyleOpen] = useState(false);
@@ -515,6 +522,25 @@ const ObjectsPanel = ({
         );
     }, [renderArtifactTreeItem, sceneArtifactsLoading]);
 
+    const resolvedTrajectoryId = trajectoryId ?? trajectory?._id;
+
+    const pipelineSection = !isRasterWorkspace ? (
+        <RightCollapsible
+            title="Pipeline"
+            icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
+            expanded={pipelineOpen}
+            onExpandedChange={setPipelineOpen}
+        >
+            <CanvasPipeline
+                trajectory={trajectory}
+                trajectoryId={resolvedTrajectoryId}
+                analysisId={analysisId}
+                currentTimestep={currentTimestep}
+                canMutateCanvas={canMutateCanvas}
+            />
+        </RightCollapsible>
+    ) : null;
+
     if (isAnalysisCompact) {
         const hasAnalyses = sceneCollectionSections.length > 0;
         const hasColorCodingArtifacts = colorCodingArtifacts.length > 0;
@@ -529,6 +555,7 @@ const ObjectsPanel = ({
         return (
             <Stack minH='0' className="canvas-objects-panel canvas-objects-panel--analysis-compact">
                 <div className="canvas-objects-panel__top">
+                    {pipelineSection}
                     {hasAnalyses && (
                         <RightCollapsible
                             title="Analyses"
@@ -638,6 +665,7 @@ const ObjectsPanel = ({
     return (
         <Stack minH='0' className="canvas-objects-panel">
             <div className="canvas-objects-panel__top">
+                {pipelineSection}
                 <RightCollapsible
                     title="Scene Collection"
                     icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
@@ -677,17 +705,6 @@ const ObjectsPanel = ({
                             showDefaultScene={false}
                             firstAnalysisTourTargetId="canvas-first-per-timestep-analysis-row"
                         />
-                    </RightCollapsible>
-                )}
-
-                {pluginsContent && (
-                    <RightCollapsible
-                        title="Plugins"
-                        icon={<Wrench style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-                        expanded={pluginsOpen}
-                        onExpandedChange={setPluginsOpen}
-                    >
-                        {pluginsContent}
                     </RightCollapsible>
                 )}
             </div>

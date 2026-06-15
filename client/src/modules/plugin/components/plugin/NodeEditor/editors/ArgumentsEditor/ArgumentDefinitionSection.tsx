@@ -28,7 +28,7 @@ import {
 import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from './argument-field.types';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import FormSection from '@/shared/presentation/components/FormSection';
-import { DashedActionBox, Row, Select, Stack, Tag, Text } from '@voltstack/bravais';
+import { DashedActionBox, Row, Select, Stack, Tag, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -38,7 +38,6 @@ import type {
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
 } from '@/modules/plugin/api/entities/plugin/workflow';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];
@@ -141,7 +140,7 @@ const ArgumentDefinitionSection = ({
                     delete nextArgument.multipleSelection;
                 }
 
-                if (nextType === ArgumentType.LIST) {
+                if (nextType === ArgumentType.LIST || nextType === ArgumentType.TUPLE) {
                     nextArgument.listArguments ??= [];
                 } else {
                     delete nextArgument.listArguments;
@@ -533,7 +532,7 @@ const ArgumentDefinitionSection = ({
                     })
                     : undefined;
 
-                const showValueSection = argument.type !== ArgumentType.LIST && !isPluginReferenceArgumentType(argument.type);
+                const showValueSection = argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.TUPLE && !isPluginReferenceArgumentType(argument.type);
                 const scalarOptions: SelectOption[] | undefined = argument.type === ArgumentType.BOOLEAN
                     ? BOOLEAN_ARGUMENT_VALUE_OPTIONS
                     : argument.type === ArgumentType.SELECT
@@ -727,6 +726,21 @@ const ArgumentDefinitionSection = ({
                                 {argument.type === ArgumentType.LIST && (
                                     <>
                                         <h4 className='argument-row-subheading text-eyebrow'>Nested Arguments</h4>
+                                        <div className='argument-row-subblock argument-row-nested'>
+                                            <ArgumentDefinitionSection
+                                                arguments={argument.listArguments ?? []}
+                                                onAddArgument={() => handleNestedArgumentAdd(index)}
+                                                onRemoveArgument={(nestedIndex) => handleNestedArgumentRemove(index, nestedIndex)}
+                                                onUpdateArgument={(nestedIndex, nextNestedArgument) => handleNestedArgumentUpdate(index, nestedIndex, nextNestedArgument)}
+                                                level={level + 1}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {argument.type === ArgumentType.TUPLE && (
+                                    <>
+                                        <h4 className='argument-row-subheading text-eyebrow'>Tuple Components</h4>
                                         <div className='argument-row-subblock argument-row-nested'>
                                             <ArgumentDefinitionSection
                                                 arguments={argument.listArguments ?? []}

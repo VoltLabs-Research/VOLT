@@ -88,6 +88,10 @@ export class DescribePluginArgumentsUseCase implements IUseCase<DescribePluginAr
             const itemKeys = definition.listArguments.map((item) => item.argument).join(', ');
             notes.push(`List of items; each item has: ${itemKeys}.`);
         }
+        if (definition.type === ArgumentType.Tuple && definition.listArguments?.length) {
+            const componentKeys = definition.listArguments.map((item) => item.argument).join(', ');
+            notes.push(`Single fixed-shape object with fields: ${componentKeys}.`);
+        }
         if (definition.type === ArgumentType.PluginReference) {
             notes.push('References another plugin; pass that plugin\'s id/key as the value.');
         }

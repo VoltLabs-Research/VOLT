@@ -136,15 +136,4 @@ export const updateMessageInCache = (
 
 export const removeChatMessagesFromCache = (queryClient: QueryClient, chatId: string) => {
     queryClient.removeQueries({ queryKey: getChatMessagesInfiniteQueryKey(chatId) });
-    queryClient.removeQueries({
-        predicate: (query) => {
-            const [scope, resource, params] = query.queryKey;
-            return scope === 'chat'
-                && resource === 'messages'
-                && typeof params === 'object'
-                && params !== null
-                && 'chatId' in params
-                && params.chatId === chatId;
-        }
-    });
 };

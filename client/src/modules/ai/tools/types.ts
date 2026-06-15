@@ -38,8 +38,6 @@ export interface ClientToolContext {
     getCanvasBridge: () => CanvasBridgeSnapshot;
     /** Marks the viewer as AI-driven for a short window (drives the overlay badge). */
     markViewerActing: () => void;
-    /** Chat surface control (widget / page / hidden) — wired in Wave 2. */
-    setChatSurface?: (surface: 'floating' | 'page' | 'hidden') => void;
 }
 
 /**

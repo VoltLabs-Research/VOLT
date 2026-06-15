@@ -1,11 +1,11 @@
 import { WHITEBOARD_TOKENS } from '@modules/whiteboards/infrastructure/di/WhiteboardTokens';
-import { inject, injectable } from 'tsyringe';
+import { inject } from 'tsyringe';
 import type { IWhiteboardRepository } from '@modules/whiteboards/domain/port/IWhiteboardRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { DeleteWhiteboardInputDTO, DeleteWhiteboardOutputDTO } from '@modules/whiteboards/application/dtos/DeleteWhiteboardDTO';
-import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/domain/entities/Whiteboard';
 import WhiteboardDeletedEvent from '@modules/whiteboards/domain/events/WhiteboardDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -23,26 +23,8 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
         private readonly eventBus: IEventBus
     ) {}
 
-    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
-        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
-            return props.storageClusterId;
-        }
-
-        throw ApplicationError.conflict(
-            'Whiteboard::StorageClusterRequired',
-            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
-        );
-    }
-
     async execute(input: DeleteWhiteboardInputDTO): Promise<Result<DeleteWhiteboardOutputDTO, ApplicationError>> {
         try {
-            if (!input.userId) {
-                return Result.fail(ApplicationError.unauthorized(
-                    ErrorCodes.AUTHENTICATION_REQUIRED,
-                    'Authentication required'
-                ));
-            }
-
             const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
                 input.teamId,
                 input.whiteboardId
@@ -58,7 +40,7 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             await this.whiteboardRepository.deleteById(input.whiteboardId);
 
             const prefix = `${input.teamId}/${input.whiteboardId}/`;
-            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+            const storageClusterId = requireWhiteboardStorageClusterId(whiteboard._id, whiteboard.props);
             try {
                 await this.objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, prefix);
             } catch {

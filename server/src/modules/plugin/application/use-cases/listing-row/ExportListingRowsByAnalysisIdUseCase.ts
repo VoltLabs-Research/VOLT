@@ -5,7 +5,7 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
 
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 import { ListingRowsExportPresenter } from '@modules/plugin/infrastructure/http/presenters/listing-row/ListingRowsExportPresenter';
 
 @Singleton()

@@ -21,7 +21,6 @@ interface ToolPresentationConfig {
 const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
     navigate_to: { runningLabel: 'Navigating', doneLabel: 'Navigated', group: 'navigation' },
     open_in_viewer: { runningLabel: 'Opening the viewer', doneLabel: 'Opened the viewer', group: 'navigation' },
-    open_trajectory: { runningLabel: 'Opening the viewer', doneLabel: 'Opened the viewer', group: 'navigation' },
     open_panel: { runningLabel: 'Opening a panel', doneLabel: 'Opened a panel', group: 'navigation' },
     open_command_palette: { runningLabel: 'Opening the command palette', doneLabel: 'Toggled the command palette', group: 'navigation' },
     set_chat_surface: { runningLabel: 'Moving the assistant', doneLabel: 'Moved the assistant', group: 'navigation' },

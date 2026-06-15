@@ -30,11 +30,11 @@ export class GetNotificationsAITool extends AITool {
         });
         if (!result.success) throw result.error;
 
+        const unreadCount = result.value.data.reduce((count, notification) => count + (notification.read ? 0 : 1), 0);
+
         const notifications = params.unreadOnly
             ? result.value.data.filter((notification) => !notification.read)
             : result.value.data;
-
-        const unreadCount = result.value.data.filter((notification) => !notification.read).length;
 
         return {
             summary: `Returned ${notifications.length} notification(s) (${unreadCount} unread on this page).`,

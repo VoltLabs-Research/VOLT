@@ -93,7 +93,7 @@ export class TeamClusterReverseTunnelStream extends Duplex implements TeamCluste
     }
 
     override _write(chunk: Buffer | string, _encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-        const data = typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk);
+        const data = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
 
         let settled = false;
         const done = (error?: Error | null): void => {

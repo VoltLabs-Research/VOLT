@@ -18,14 +18,10 @@ import { useMemo } from 'react';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
-import { LatexListingRowType } from '@/modules/latex/utilities/listing';
-
-const isLatexFolder = (row: LatexListingRow): boolean => {
-    return row.rowType === LatexListingRowType.Folder;
-};
+import { isLatexFolderRow } from '@/modules/latex/utilities/listing';
 
 const COLUMNS = createFolderedListingColumns<LatexListingRow>({
-    isFolder: isLatexFolder,
+    isFolder: isLatexFolderRow,
     resolveTitle: (row) => row.title || 'Untitled Document',
     skeletonWidth: 200
 });

@@ -16,8 +16,8 @@ import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
     SOFT_STORAGE_LIMIT_PCT
-} from '@modules/cluster/application/services/cluster-storage-policy';
-import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
+} from '@shared/application/utilities/cluster-storage-policy';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import ClusterTransferJob, {
     ClusterTransferJobReason,
     ClusterTransferJobState,

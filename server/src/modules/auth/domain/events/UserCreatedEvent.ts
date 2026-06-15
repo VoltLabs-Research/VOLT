@@ -1,11 +1,8 @@
 import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 
 export interface UserCreatedEventPayload {
-    userId: string;
     id: string;
-    email: string;
     firstName: string;
-    lastName: string;
 }
 
 export default class UserCreatedEvent extends BaseDomainEvent<UserCreatedEventPayload> {

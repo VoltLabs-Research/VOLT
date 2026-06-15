@@ -1,6 +1,6 @@
 import DeleteAIConversationUseCase from '@modules/ai/application/use-cases/DeleteAIConversationUseCase';
 import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIToolScope } from '@modules/ai/infrastructure/services/AIToolService';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';

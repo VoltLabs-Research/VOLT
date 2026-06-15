@@ -1,14 +1,14 @@
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
-import type { IRasterStorageService } from '@modules/raster/domain/port/IRasterStorageService';
+import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
+import type { IRasterStorageService } from '@shared/contracts/ports/IRasterStorageService';
 import {
     getAnalysisRasterFrameObjectName,
     getAnalysisRasterPreviewsPrefix,
     getRasterFrameObjectName,
     getTrajectoryRasterPreviewsPrefix
-} from '@modules/raster/utilities/raster-storage-paths';
+} from '@shared/application/utilities/raster-storage-paths';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -21,18 +21,6 @@ export class RasterStorageService implements IRasterStorageService {
     constructor(
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
-
-    async hasTrajectoryPreview(trajectoryId: string, teamClusterId: string): Promise<boolean> {
-        const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);
-
-        for await (const key of this.listObjectKeys(TEAM_CLUSTER_BUCKETS.RASTERIZER, prefix, teamClusterId)) {
-            if (key.endsWith('.png')) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     async *listPreviewFiles(trajectoryId: string, teamClusterId: string): AsyncIterable<string> {
         const prefix = getTrajectoryRasterPreviewsPrefix(trajectoryId);

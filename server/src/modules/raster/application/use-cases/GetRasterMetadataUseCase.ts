@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type {
     GetRasterMetadataInputDTO,
     GetRasterMetadataOutputDTO
-} from '@modules/raster/application/dtos/GetRasterMetadataDTO';
+} from '@shared/contracts/dtos/GetRasterMetadataDTO';
 import type { IRasterMetadataService } from '@modules/raster/domain/port/IRasterMetadataService';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens/RasterTokens';

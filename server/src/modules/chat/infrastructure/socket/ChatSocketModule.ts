@@ -111,7 +111,7 @@ export default class ChatSocketModule extends BaseSocketModule {
             }, {});
 
             this.emitToSocket(conn.id, SOCKET_CHAT_EVENTS.USERS_PRESENCE_INFO, presenceMap);
-            return ackOk(presenceMap);
+            return ackOk();
         });
 
         this.onDisconnect(connection.id, async (conn) => {

@@ -1,7 +1,7 @@
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentOutline, IoCloseOutline } from 'react-icons/io5';
 import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
-import { formatSize } from '@/shared/utils/format';
+import { formatSize } from '@voltstack/bravais';
 import { Box, Button, IconButton, Popover, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';

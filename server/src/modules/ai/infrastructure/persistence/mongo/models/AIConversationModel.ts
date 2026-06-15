@@ -3,12 +3,9 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
-export enum AIConversationRelation {
-    UserId = 'userId',
-    TeamId = 'teamId'
-}
+type AIConversationRelations = 'userId' | 'teamId';
 
-export interface AIConversationDocument extends Persistable<AIConversationProps, AIConversationRelation>, Document {}
+export interface AIConversationDocument extends Persistable<AIConversationProps, AIConversationRelations>, Document {}
 
 const AIConversationSchema: Schema<AIConversationDocument> = new Schema({
     userId: {

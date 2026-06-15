@@ -1,0 +1,141 @@
+.canvas-pipeline {
+    padding: 6px;
+}
+
+.canvas-pipeline__toolbar {
+    align-items: center;
+}
+
+.canvas-pipeline__menu-group {
+    padding: 4px 8px 2px;
+}
+
+.canvas-pipeline__empty {
+    padding: 4px 2px;
+}
+
+.canvas-pipeline__list {
+    display: flex;
+    flex-direction: column;
+}
+
+.canvas-pipeline-stage {
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.canvas-pipeline-stage--selected {
+    border-color: var(--accent-blue);
+}
+
+.canvas-pipeline-stage--dragging {
+    opacity: 0.5;
+}
+
+.canvas-pipeline-stage__header {
+    align-items: center;
+    padding: 4px 6px;
+    background: var(--color-surface-1);
+}
+
+.canvas-pipeline-stage__header--disabled {
+    opacity: 0.55;
+}
+
+.canvas-pipeline-stage__grip {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-muted);
+    cursor: grab;
+}
+
+.canvas-pipeline-stage__select {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    padding: 0;
+}
+
+.canvas-pipeline-stage__icon {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-muted);
+}
+
+.canvas-pipeline-stage__label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.canvas-pipeline-stage__actions {
+    align-items: center;
+}
+
+.canvas-pipeline-stage__action {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.canvas-pipeline-stage__action:hover {
+    color: var(--color-text-primary);
+}
+
+.canvas-pipeline-stage__action--remove:hover {
+    color: var(--status-error);
+}
+
+.canvas-pipeline__editor {
+    padding: 8px 6px;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+}
+
+/* Expression-select editor body (moved from the former InstantModifierStack). */
+.expression-select-chip {
+    width: 100%;
+}
+
+.expression-select-chip__input {
+    width: 100%;
+    resize: vertical;
+}
+
+.expression-select-chip__match-count {
+    margin-left: auto;
+}
+
+.expression-select-chip__error {
+    color: var(--status-error);
+}
+
+.canvas-code-input {
+    width: 100%;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.75rem;
+    color: var(--input-fg, var(--color-text-primary));
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    line-height: 1.4;
+}
+
+.canvas-code-input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}

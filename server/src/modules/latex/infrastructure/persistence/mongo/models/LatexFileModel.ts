@@ -3,13 +3,9 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { LatexFileProps } from '@modules/latex/domain/entities/LatexFile';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum LatexFileRelation {
-    Document = 'document',
-    Team = 'team',
-    CreatedBy = 'createdBy'
-}
+type LatexFileRelations = 'document' | 'team' | 'createdBy';
 
-export interface LatexFileDocument extends Persistable<LatexFileProps, `${LatexFileRelation}`>, Document {}
+export interface LatexFileDocument extends Persistable<LatexFileProps, LatexFileRelations>, Document {}
 
 const LatexFileSchema: Schema<LatexFileDocument> = new Schema({
     document: {

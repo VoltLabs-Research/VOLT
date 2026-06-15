@@ -3,16 +3,9 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { ScriptingNotebookProps } from '@modules/scripting/domain/entities/ScriptingNotebook';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum ScriptingNotebookRelation {
-    Team = 'team',
-    TeamCluster = 'teamCluster',
-    ContainerResources = 'containerResources',
-    RuntimeNotebookId = 'runtimeNotebookId',
-    Trajectory = 'trajectory',
-    CreatedBy = 'createdBy'
-}
+type ScriptingNotebookRelations = 'team' | 'teamCluster' | 'containerResources' | 'runtimeNotebookId' | 'trajectory' | 'createdBy';
 
-export interface ScriptingNotebookDocument extends Persistable<ScriptingNotebookProps, `${ScriptingNotebookRelation}`>, Document {};
+export interface ScriptingNotebookDocument extends Persistable<ScriptingNotebookProps, ScriptingNotebookRelations>, Document {};
 
 const ScriptingNotebookContainerResourcesSchema = new Schema({
     cpus: {

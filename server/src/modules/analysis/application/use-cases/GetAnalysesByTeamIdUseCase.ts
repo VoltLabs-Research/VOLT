@@ -2,7 +2,7 @@ import { GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO } from '@modu
 import type { Analysis, AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import type { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
-import { extractPluginId } from '@modules/analysis/utilities/extract-plugin-id';
+import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import type { ITrajectoryRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -20,10 +20,6 @@ interface TeamAnalysesFilter extends Partial<AnalysisProps> {
     team: string;
 }
 
-interface AnalysisSort extends Record<string, 1 | -1> {
-    createdAt: -1;
-}
-
 @injectable()
 export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesByTeamIdInputDTO, GetAnalysesByTeamIdOutputDTO, ApplicationError> {
     constructor(
@@ -39,9 +35,9 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
             team: teamId
         };
 
-        const sort: AnalysisSort = {
+        const sort = {
             createdAt: -1
-        };
+        } as const;
 
         const populate = [
             TRAJECTORY_POPULATE,

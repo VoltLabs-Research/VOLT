@@ -21,7 +21,7 @@ type NotificationDetailKeys = Record<string, unknown> & {
 };
 
 const BASE_KEY = 'notifications';
-const DEFAULT_LIMIT = 20;
+export const DEFAULT_LIMIT = 20;
 
 const KEYS = buildKeys<NotificationDetailKeys>(BASE_KEY);
 
@@ -44,13 +44,12 @@ export const useNotificationsInfiniteQuery = (
 };
 
 export const prependNotificationToInfiniteCache = (
-    _params: NotificationQueryParams,
     notification: Notification
 ) => {
     notificationQuery.cache.upsert(notification);
 };
 
-export const markNotificationsInfiniteCacheAsRead = (_params: NotificationQueryParams) => {
+export const markNotificationsInfiniteCacheAsRead = () => {
     notificationQuery.cache.patchAllInfiniteLists((current) => ({
         ...current,
         pages: current.pages.map((page) => ({
@@ -62,14 +61,13 @@ export const markNotificationsInfiniteCacheAsRead = (_params: NotificationQueryP
 };
 
 export const useMarkAllReadMutation = (
-    params: NotificationQueryParams,
     options?: MutationOptions<void, void>
 ) => {
     return useMutation<void, Error, void>({
         ...options,
         mutationFn: () => service.markAllAsRead({}),
         onSuccess: withSuccess(() => {
-            markNotificationsInfiniteCacheAsRead(params);
+            markNotificationsInfiniteCacheAsRead();
             void notificationQuery.cache.invalidate();
         }, options)
     });

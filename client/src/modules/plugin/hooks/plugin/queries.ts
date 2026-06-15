@@ -79,7 +79,6 @@ export const PLUGIN_QUERY_KEYS = {
     root: pluginBaseKeys.prefix,
     all: pluginBaseKeys.all,
     byId: pluginBaseKeys.byId,
-    allList: pluginBaseKeys.all,
     pluginById: pluginBaseKeys.pluginById,
     catalog: catalogKeys.prefix,
     catalogInfinite: catalogInfiniteKeys.prefix,
@@ -169,7 +168,7 @@ export const useRegistrySearchQuery = (
 // ─── Cache sync helpers ──────────────────────────────────────────────────────
 
 const pluginEntityCache = createEntityCacheResource<Plugin>({
-    listKey: PLUGIN_QUERY_KEYS.allList,
+    listKey: PLUGIN_QUERY_KEYS.all,
     detailKey: (id) => PLUGIN_QUERY_KEYS.pluginById({ _id: id }),
     onUpsert: (plugin) => {
         patchPaginatedPage<Plugin>(PLUGIN_QUERY_KEYS.catalog(), (page) => {
@@ -198,18 +197,18 @@ export const syncPluginEntityCaches = (plugin: Plugin): void => {
     pluginEntityCache.upsert(plugin);
 };
 
-export const removePluginEntityCaches = (pluginId: string): void => {
+const removePluginEntityCaches = (pluginId: string): void => {
     pluginEntityCache.remove(pluginId);
 };
 
-export const invalidatePluginCatalogQueries = async (): Promise<void> => {
+const invalidatePluginCatalogQueries = async (): Promise<void> => {
     await batchInvalidateQueries([
         PLUGIN_QUERY_KEYS.catalog(),
         PLUGIN_QUERY_KEYS.all()
     ]);
 };
 
-export const invalidatePluginEntityQueries = async (): Promise<void> => {
+const invalidatePluginEntityQueries = async (): Promise<void> => {
     await invalidatePluginCatalogQueries();
     await queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.byId() });
 };

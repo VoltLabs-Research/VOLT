@@ -54,7 +54,7 @@ const parseTimestamp = (timestamp?: string): number => {
 
 const UNGROUPED_TIMESTEP = -1;
 
-const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup | null => {
+const buildTrajectoryGroup = (updatedJob: Job): TrajectoryJobGroup => {
     const timestep = resolveJobTimestep(updatedJob) ?? UNGROUPED_TIMESTEP;
     const normalizedJob = normalizeJobTimestep(updatedJob, timestep);
 
@@ -83,10 +83,6 @@ export const applyJobUpdate = (
     const trajIndex = groups.findIndex((group) => group.trajectoryId === updatedJob.trajectoryId);
     if (trajIndex === -1) {
         const trajectoryGroup = buildTrajectoryGroup(normalizedJob);
-
-        if (!trajectoryGroup) {
-            return groups;
-        }
 
         return [trajectoryGroup, ...groups];
     }

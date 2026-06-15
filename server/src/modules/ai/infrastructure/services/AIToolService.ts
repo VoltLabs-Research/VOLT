@@ -6,10 +6,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ToolSet } from 'ai';
 import { injectAll } from 'tsyringe';
 
-// Re-export for backward compatibility: the canonical AIToolScope now lives in
-// the neutral shared/contracts layer (detachable-modules migration).
-export type { AIToolScope };
-
 @Singleton(AI_TOKENS.AIToolService)
 export default class AIToolService implements IAIToolService {
     constructor(

@@ -7,23 +7,9 @@ import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAcces
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
-import type { FindOptions, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { Result } from '@shared/domain/port/Result';
 import { inject, injectable } from 'tsyringe';
-
-interface GetChatMessagesFilter {
-    chat: string;
-}
-
-interface GetChatMessagesSort extends Record<string, 1 | -1> {
-    createdAt: 1;
-}
-
-interface GetChatMessagesFindOptions extends FindOptions<GetChatMessagesFilter>, PaginationOptions {
-    filter: GetChatMessagesFilter;
-    sort: GetChatMessagesSort;
-}
-
 
 @injectable()
 export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, PaginatedResult<PersistedChatMessageDTO>, ApplicationError> {
@@ -34,7 +20,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
 
     async execute(input: GetChatMessagesInputDTO): Promise<Result<PaginatedResult<PersistedChatMessageDTO>, ApplicationError>> {
         const { chatId } = input;
-        const options: GetChatMessagesFindOptions = {
+        const options = {
             filter: {
                 chat: chatId
             },
@@ -44,7 +30,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
             sort: {
                 createdAt: 1
             }
-        };
+        } as const;
 
         const chatResult = await resolveAccessibleChat(this.chatRepo, chatId, input.userId);
         if (!chatResult.success) {

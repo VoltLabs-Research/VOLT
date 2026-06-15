@@ -69,7 +69,7 @@ const ENVIRONMENT_DATA_KEYS = [
 
 const RENDERER_DATA_KEYS = ['create', 'runtime'] as const;
 const PERFORMANCE_DATA_KEYS = ['preset', 'dpr', 'performance', 'adaptiveEvents', 'interactionDegrade'] as const;
-const CONFIGURATION_DATA_KEYS = ['slicePlaneConfig', 'activeSidebarOption', 'activeModifier'] as const;
+const CONFIGURATION_DATA_KEYS = ['activeSidebarOption', 'activeModifier'] as const;
 
 const pickDataFields = <TSource, TKey extends string>(
     source: TSource | undefined,

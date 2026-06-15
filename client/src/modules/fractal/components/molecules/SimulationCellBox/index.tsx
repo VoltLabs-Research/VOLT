@@ -2,6 +2,12 @@ import { DragControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { BoxBounds } from '@/modules/fractal/api/entities/model';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
+import {
+    buildAabbWireframeGeometry,
+    buildCellWireframeGeometry,
+    hasValidCellVectors
+} from '@/modules/fractal/utilities/cell-wireframe';
+import type { CellPbc } from '@/modules/fractal/utilities/cell-wireframe';
 import { Theme } from '@/shared/presentation/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
@@ -11,6 +17,13 @@ import { useMemo, useRef, useEffect, forwardRef, useState, useCallback } from 'r
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { localModelDragBus, remoteModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
 import type { ReactNode, RefObject } from 'react';
+
+export interface SimulationCellGeometryView {
+    cellVectors?: number[][];
+    cellOrigin?: number[];
+    pbc?: CellPbc;
+    showPbcImages?: boolean;
+}
 
 interface SimulationCellTransforms {
     scale: number;
@@ -25,6 +38,7 @@ interface SimulationCellTransforms {
 interface SimulationCellBoxProps {
     sceneKey: string;
     boxBounds?: BoxBounds;
+    cellGeometry?: SimulationCellGeometryView;
     children?: ReactNode;
     transforms?: SimulationCellTransforms;
     orbitControlsRef?: RefObject<{ enabled: boolean } | null>;
@@ -53,6 +67,7 @@ const isPrimaryDragModifierPressed = (event: KeyboardEvent) => event.ctrlKey || 
 const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     sceneKey,
     boxBounds,
+    cellGeometry,
     children,
     transforms,
     orbitControlsRef,
@@ -274,30 +289,20 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     });
 
     const geometry = useMemo(() => {
+        // Prefer the true cell parallelepiped from edge vectors (correct for
+        // sheared/triclinic cells + optional PBC image copies); fall back to the
+        // axis-aligned box implied by boxBounds when no vectors are available.
+        if (cellGeometry && hasValidCellVectors(cellGeometry.cellVectors)) {
+            return buildCellWireframeGeometry(
+                cellGeometry.cellVectors!,
+                cellGeometry.cellOrigin,
+                { pbc: cellGeometry.pbc, showPbcImages: cellGeometry.showPbcImages }
+            );
+        }
+
         if (!boxBounds) return null;
-
-        const { xlo, xhi, ylo, yhi, zlo, zhi } = boxBounds;
-
-        const points = [
-            new THREE.Vector3(xlo, ylo, zlo), new THREE.Vector3(xhi, ylo, zlo),
-            new THREE.Vector3(xhi, ylo, zlo), new THREE.Vector3(xhi, yhi, zlo),
-            new THREE.Vector3(xhi, yhi, zlo), new THREE.Vector3(xlo, yhi, zlo),
-            new THREE.Vector3(xlo, yhi, zlo), new THREE.Vector3(xlo, ylo, zlo),
-
-            new THREE.Vector3(xlo, ylo, zhi), new THREE.Vector3(xhi, ylo, zhi),
-            new THREE.Vector3(xhi, ylo, zhi), new THREE.Vector3(xhi, yhi, zhi),
-            new THREE.Vector3(xhi, yhi, zhi), new THREE.Vector3(xlo, yhi, zhi),
-            new THREE.Vector3(xlo, yhi, zhi), new THREE.Vector3(xlo, ylo, zhi),
-
-            new THREE.Vector3(xlo, ylo, zlo), new THREE.Vector3(xlo, ylo, zhi),
-            new THREE.Vector3(xhi, ylo, zlo), new THREE.Vector3(xhi, ylo, zhi),
-            new THREE.Vector3(xhi, yhi, zlo), new THREE.Vector3(xhi, yhi, zhi),
-            new THREE.Vector3(xlo, yhi, zlo), new THREE.Vector3(xlo, yhi, zhi)
-        ];
-
-        const geo = new THREE.BufferGeometry().setFromPoints(points);
-        return geo;
-    }, [boxBounds]);
+        return buildAabbWireframeGeometry(boxBounds);
+    }, [boxBounds, cellGeometry]);
 
     const boxGeometry = useMemo(() => {
         if (!boxBounds) return null;

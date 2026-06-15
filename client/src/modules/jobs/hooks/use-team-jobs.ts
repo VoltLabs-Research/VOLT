@@ -190,10 +190,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         handleTeamJobs(payload.groups, payload.revision);
     }, [clearJobsLoadingTimeout, handleTeamJobs, latestAppliedRevision, setLoading]);
 
-    const handleJobUpdateEvent = useCallback((payload: Job) => {
-        handleJobUpdate(payload);
-    }, [handleJobUpdate]);
-
     const prepareTeamJobs = useCallback((teamId: string) => {
         const currentStoreTeamId = useTeamJobsStore.getState().currentTeamId;
 
@@ -220,7 +216,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     }, [clearJobsLoadingTimeout, queryClient, reset]);
 
     useSocketEvent<TeamJobsEventPayload>(SOCKET_TEAM_EVENTS.JOBS_INITIAL, handleInitialJobsEvent, { enabled: subscribe });
-    useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdateEvent, { enabled: subscribe });
+    useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdate, { enabled: subscribe });
 
     useEffect(() => {
         const remainingPendingUpdates = pendingJobUpdatesRef.current.filter((event) => {

@@ -98,8 +98,8 @@ export const upsertTeamClusterQueryData = (teamId: string, teamCluster: TeamClus
             };
         }
 
-        const exists = current.data.some((cluster) => cluster._id === teamCluster._id);
         const existingCluster = current.data.find((cluster) => cluster._id === teamCluster._id);
+        const exists = Boolean(existingCluster);
         const mergedTeamCluster = mergeTeamClusterTransferState(existingCluster, teamCluster);
 
         const total = exists ? current.pagination.total : current.pagination.total + 1;
@@ -250,14 +250,6 @@ export const useUpdateTeamClusterRoleMutation = (
     });
 };
 
-const demoTeamClusterStatusQueryKey = (teamId: string) => ['demo-team-cluster-status', teamId];
-
-const invalidateDemoTeamClusterStatusQuery = (teamId: string) => {
-    return queryClient.invalidateQueries({
-        queryKey: demoTeamClusterStatusQueryKey(teamId)
-    });
-};
-
 export const useProvisionDemoTeamClusterMutation = (
     options?: MutationOptions<ProvisionDemoTeamClusterOutputDTO, ProvisionDemoTeamClusterInputDTO>
 ) => {
@@ -267,7 +259,6 @@ export const useProvisionDemoTeamClusterMutation = (
         ...options,
         onSuccess: withSuccess((data, variables) => {
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
-            void invalidateDemoTeamClusterStatusQuery(variables.teamId);
         }, options)
     });
 };
@@ -285,7 +276,6 @@ export const useDeleteDemoTeamClusterMutation = (
             }
 
             void invalidateTeamClustersQuery(variables.teamId);
-            void invalidateDemoTeamClusterStatusQuery(variables.teamId);
         }, options)
     });
 };

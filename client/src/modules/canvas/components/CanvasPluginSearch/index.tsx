@@ -1,21 +1,15 @@
-import { buildCanvasModifierOptions } from '../../utilities/modifier-registry';
-import { useCanvasFocusStore } from '../../stores/use-canvas-focus-store';
+import { useCanvasPipelineStore } from '../../stores/canvas-pipeline';
 import { EmptyState, Row, SearchInput, Stack, Surface, Text } from '@voltstack/bravais';
 import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 import './CanvasPluginSearch.css';
 
 const MAX_RESULTS = 12;
 
-// Why: when the focus is not already on an editable surface (native input,
-// textarea, select, or `contentEditable`) we treat certain keys as shortcuts
-// into the plugin search: printable chars seed the query, Backspace/Delete
-// trim the last char, and Ctrl/Cmd+A focuses the input and selects its
-// current contents.
 const isEditableTarget = (target: EventTarget | null): boolean => {
     if (!target || !(target instanceof HTMLElement)) return false;
     if (target.isContentEditable) return true;
@@ -25,7 +19,7 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 
 const CanvasPluginSearch = () => {
     const { modifiers } = usePluginSelectors();
-    const focusModifier = useCanvasFocusStore((s) => s.focusModifier);
+    const addStage = useCanvasPipelineStore((s) => s.addStage);
     const floatingRoot = useFloatingRoot();
 
     const [query, setQuery] = useState('');
@@ -35,8 +29,8 @@ const CanvasPluginSearch = () => {
     const queryRef = useRef('');
     queryRef.current = query;
 
-    const searchInputId = useId();
-    const resultsListId = useId();
+    const searchInputId = `canvas-plugin-search-${Math.random().toString(36).slice(2)}`;
+    const resultsListId = `canvas-plugin-results-${Math.random().toString(36).slice(2)}`;
 
     const { refs, floatingStyles, context } = useFloating({
         placement: 'bottom',
@@ -58,36 +52,25 @@ const CanvasPluginSearch = () => {
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
 
-    const allOptions = useMemo(() => buildCanvasModifierOptions(modifiers), [modifiers]);
-
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return allOptions.slice(0, MAX_RESULTS);
-        return allOptions
-            .filter((option) => option.title.toLowerCase().includes(q))
+        if (!q) return modifiers.slice(0, MAX_RESULTS);
+        return modifiers
+            .filter((m) => m.name.toLowerCase().includes(q))
             .slice(0, MAX_RESULTS);
-    }, [allOptions, query]);
+    }, [modifiers, query]);
 
     useEffect(() => {
         const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
             if (isEditableTarget(event.target)) return;
-
-            // Ctrl/Cmd + A: focus the plugin search and select its contents.
             if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
                 event.preventDefault();
                 const input = inputRef.current;
-                if (input) {
-                    input.focus();
-                    input.select();
-                }
+                if (input) { input.focus(); input.select(); }
                 setIsOpen(true);
                 return;
             }
-
-            // Any other modifier combo is left alone (browser shortcuts, etc.).
             if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-            // Backspace / Delete: trim the last char of the current query.
             if (event.key === 'Backspace' || event.key === 'Delete') {
                 if (queryRef.current.length === 0) return;
                 event.preventDefault();
@@ -97,8 +80,6 @@ const CanvasPluginSearch = () => {
                 inputRef.current?.focus();
                 return;
             }
-
-            // Any single printable char (not Space): seed the query and open.
             if (event.key.length === 1 && event.key !== ' ') {
                 event.preventDefault();
                 setQuery((prev) => prev + event.key);
@@ -107,19 +88,16 @@ const CanvasPluginSearch = () => {
                 inputRef.current?.focus();
             }
         };
-
         document.addEventListener('keydown', handleGlobalKeyDown);
         return () => document.removeEventListener('keydown', handleGlobalKeyDown);
     }, []);
 
-    useEffect(() => {
-        setActiveIndex(-1);
-    }, [query]);
+    useEffect(() => { setActiveIndex(-1); }, [query]);
 
     const handleSelect = (index: number) => {
-        const option = results[index];
-        if (!option) return;
-        focusModifier(option.modifierId);
+        const modifier = results[index];
+        if (!modifier) return;
+        addStage('analysis-plugin', { pluginId: modifier.pluginId, argValues: {} });
         setQuery('');
         setIsOpen(false);
         setActiveIndex(-1);
@@ -133,37 +111,23 @@ const CanvasPluginSearch = () => {
             setActiveIndex((current) => Math.min(current + 1, results.length - 1));
             return;
         }
-
         if (event.key === 'ArrowUp') {
             event.preventDefault();
             setActiveIndex((current) => Math.max(current - 1, 0));
             return;
         }
-
         if (event.key === 'Enter') {
-            if (activeIndex < 0 && results.length === 1) {
-                event.preventDefault();
-                handleSelect(0);
-                return;
-            }
-            if (activeIndex >= 0) {
-                event.preventDefault();
-                handleSelect(activeIndex);
-            }
+            if (activeIndex < 0 && results.length === 1) { event.preventDefault(); handleSelect(0); return; }
+            if (activeIndex >= 0) { event.preventDefault(); handleSelect(activeIndex); }
             return;
         }
-
         if (event.key === 'Escape') {
-            if (isOpen) {
-                event.preventDefault();
-                setIsOpen(false);
-                inputRef.current?.blur();
-            }
+            if (isOpen) { event.preventDefault(); setIsOpen(false); inputRef.current?.blur(); }
         }
     };
 
     const activeOptionId = activeIndex >= 0 && results[activeIndex]
-        ? `${resultsListId}-${results[activeIndex].modifierId}`
+        ? `${resultsListId}-${results[activeIndex].pluginId}`
         : undefined;
 
     return (
@@ -181,15 +145,10 @@ const CanvasPluginSearch = () => {
                 aria-haspopup='listbox'
                 aria-controls={isOpen ? resultsListId : undefined}
                 aria-activedescendant={activeOptionId}
-                onChange={(e) => {
-                    setQuery(e.target.value);
-                    setIsOpen(true);
-                    setActiveIndex(-1);
-                }}
+                onChange={(e) => { setQuery(e.target.value); setIsOpen(true); setActiveIndex(-1); }}
                 onFocus={() => setIsOpen(true)}
                 onKeyDown={handleKeyDown}
             />
-
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
                     <Surface
@@ -206,7 +165,7 @@ const CanvasPluginSearch = () => {
                                 <EmptyState
                                     title={query ? 'No plugins match' : 'No plugins available'}
                                     description={query
-                                        ? `Nothing matches “${query.trim()}”. Try a different name.`
+                                        ? `Nothing matches "${query.trim()}". Try a different name.`
                                         : 'Install or publish a plugin to see it listed here.'}
                                 />
                             </Row>
@@ -219,12 +178,12 @@ const CanvasPluginSearch = () => {
                                 gap='025'
                                 p='05'
                             >
-                                {results.map((option, index) => {
+                                {results.map((modifier, index) => {
                                     const isActive = index === activeIndex;
-                                    const optionId = `${resultsListId}-${option.modifierId}`;
+                                    const optionId = `${resultsListId}-${modifier.pluginId}`;
                                     return (
                                         <button
-                                            key={option.modifierId}
+                                            key={modifier.pluginId}
                                             id={optionId}
                                             type='button'
                                             role='option'
@@ -234,9 +193,7 @@ const CanvasPluginSearch = () => {
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
                                         >
-                                            <Text size='md' tone='secondary' truncate>
-                                                {option.title}
-                                            </Text>
+                                            <Text size='md' tone='secondary' truncate>{modifier.name}</Text>
                                         </button>
                                     );
                                 })}

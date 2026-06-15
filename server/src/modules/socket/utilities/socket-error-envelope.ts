@@ -3,7 +3,6 @@ import type { ErrorCode } from '@core/constants/error-codes';
 
 export interface SocketErrorEnvelope {
     code: ErrorCode;
-    message: ErrorCode;
     details?: string;
 }
 
@@ -21,8 +20,7 @@ export const createSocketErrorEnvelope = (
 ): SocketErrorEnvelope => {
     const resolvedCode = resolveSocketErrorCode(code);
     const errorEnvelope: SocketErrorEnvelope = {
-        code: resolvedCode,
-        message: resolvedCode
+        code: resolvedCode
     };
 
     if (details) {

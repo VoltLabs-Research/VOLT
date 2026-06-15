@@ -27,6 +27,7 @@ import TeamClusterReverseChannelService, {
     type TeamClusterDaemonInboundStreamPayload
 } from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
+import { ProvenanceService } from '@modules/analysis/application/services/ProvenanceService';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,
@@ -162,7 +163,8 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
         @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService,
         @inject(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService) private readonly pluginDebugSessionRegistry: IPluginDebugSessionRegistryService,
-        private readonly systemMetricsRepository: SystemMetricsRedisRepository
+        private readonly systemMetricsRepository: SystemMetricsRedisRepository,
+        private readonly provenanceService: ProvenanceService
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -547,6 +549,23 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
                 logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${result.error.statusCode} message=${result.error.message}`);
             }
 
+            return true;
+        }
+
+        if ((payload as { type: string }).type === 'analysis-provenance') {
+            const prov = payload as unknown as {
+                pluginName: string; pluginVersion: string; parameters: Record<string, unknown>;
+                inputFrameContentHash: string; atomCount: number; frameIndex: number;
+                trajectoryId: string; analysisId: string; teamId: string;
+                coreToolkitVersion: string; rngSeed?: number; executedAt: string;
+                executedBy: string; executionTimeMs: number; outputArtifactIds: string[];
+            };
+            this.provenanceService.recordAnalysisExecution({
+                ...prov,
+                executedAt: new Date(prov.executedAt)
+            }).catch((err: unknown) => {
+                logger.warn({ err }, 'Failed to record analysis provenance from daemon event');
+            });
             return true;
         }
 

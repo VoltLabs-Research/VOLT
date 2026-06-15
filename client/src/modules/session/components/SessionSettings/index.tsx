@@ -32,7 +32,6 @@ const SessionSettings: FC = () => {
     const {
         activities,
         closeRevokeAllSessionsModal,
-        isCurrentSession,
         isRevoking,
         loadingActivity,
         loadingSessions,
@@ -44,7 +43,7 @@ const SessionSettings: FC = () => {
     } = useSessionData();
 
     const renderSession = (session: ActiveSession) => {
-        const isCurrent = isCurrentSession(session);
+        const isCurrent = session.isCurrent;
         const DeviceIcon = session.isMobile ? Smartphone : Monitor;
 
         return (
@@ -73,7 +72,7 @@ const SessionSettings: FC = () => {
         );
     };
 
-    const renderActivity = (activity: LoginActivityEntry, index: number) => {
+    const renderActivity = (activity: LoginActivityEntry) => {
         const { browser, os } = parseSessionUserAgent(activity.userAgent);
         const ActionIcon = getSessionActivityIcon(activity.action);
         const toneClass = getActivityIconToneClass(activity.action, activity.success);
@@ -83,7 +82,7 @@ const SessionSettings: FC = () => {
         const ariaLabel = `${actionLabel} · ${browser} on ${os} · ${activity.ip}`;
 
         return (
-            <li key={`${activity._id}-${index}`} className='session-row' aria-label={ariaLabel}>
+            <li key={activity._id} className='session-row' aria-label={ariaLabel}>
                 <ActionIcon size={16} className={`session-row__icon ${toneClass}`} />
                 <div className='session-row__body'>
                     <span className='session-row__title'>{browser} on {os}</span>

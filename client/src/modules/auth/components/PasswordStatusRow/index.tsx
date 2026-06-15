@@ -2,10 +2,10 @@ import SettingsRow from '@/modules/auth/components/SettingsRow';
 import { Button } from '@voltstack/bravais';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
-import type { PasswordInfo } from '@/modules/auth/components/PasswordChangeForm/validation-schema';
+import type { GetPasswordInfoOutputDTO } from '@/modules/auth/api/service';
 
 interface PasswordStatusRowProps {
-    passwordInfo: PasswordInfo | null;
+    passwordInfo: GetPasswordInfoOutputDTO | null;
     isFormOpen: boolean;
     onToggleForm: () => void;
 }

@@ -129,9 +129,6 @@ export const useEditorStore = create<EditorStore>()(
                 rendererSettings: {
                     create: state.rendererSettings.create
                 },
-                configuration: {
-                    slicePlaneConfig: state.configuration.slicePlaneConfig
-                },
                 pointSizeMultiplier: state.pointSizeMultiplier,
                 pointCloudSettings: state.pointCloudSettings,
                 sceneVisualOverrides: state.sceneVisualOverrides,

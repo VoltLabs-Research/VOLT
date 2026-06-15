@@ -13,7 +13,6 @@
 import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
 
 export interface IRasterStorageService {
-    hasTrajectoryPreview(trajectoryId: string, teamClusterId: string): Promise<boolean>;
     getRasterFramePNG(trajectoryId: string, timestep: number, teamClusterId: string): Promise<RasterFrameResult>;
     getAnalysisRasterFramePNG(
         trajectoryId: string,

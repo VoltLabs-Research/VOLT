@@ -25,8 +25,6 @@ const appendQueryParameter = (url: string, key: string, value: string): string =
 
 @injectable()
 export default class OAuthLoginCallbackController {
-    constructor() {}
-
     async handle(request: AuthenticatedRequest, res: Response): Promise<void> {
         if (!request.token) {
             const errorCode = request.oauthErrorCode || ErrorCodes.OAUTH_STRATEGY_ERROR;

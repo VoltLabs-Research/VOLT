@@ -43,6 +43,14 @@ const DEPLOY_STEP_SEQUENCE = [
     'container-ready'
 ] as const;
 
+const DEPLOY_STEP_MESSAGE_MAP: Record<string, string> = {
+    accepted: 'Deployment request accepted.',
+    'pulling-image': 'Pulling image. This can take a while the first time.',
+    'creating-container': 'Creating container...',
+    'starting-container': 'Starting container...',
+    'container-ready': 'Container is ready.'
+};
+
 interface ContainerDeployProgressEvent {
     operationId: string;
     teamClusterId: string;
@@ -133,21 +141,13 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
     const hasResolvedResourceLimits = clusterResourceLimits?.maxCpus != null
         && clusterResourceLimits?.maxMemoryMB != null;
 
-    const deployStepMessageMap = useMemo<Record<string, string>>(() => ({
-        accepted: 'Deployment request accepted.',
-        'pulling-image': 'Pulling image. This can take a while the first time.',
-        'creating-container': 'Creating container...',
-        'starting-container': 'Starting container...',
-        'container-ready': 'Container is ready.'
-    }), []);
-
     useSocketEvent<ContainerDeployProgressEvent>(SOCKET_CONTAINER_EVENTS.DEPLOY_PROGRESS, (event) => {
         if (!activeCreateOperationId || event.operationId !== activeCreateOperationId) {
             return;
         }
 
         const nextMessage = event.step
-            ? deployStepMessageMap[event.step] ?? `Deploying container: ${event.step}`
+            ? DEPLOY_STEP_MESSAGE_MAP[event.step] ?? `Deploying container: ${event.step}`
             : 'Deploying container...';
 
         setDeployProgressMessage(nextMessage);

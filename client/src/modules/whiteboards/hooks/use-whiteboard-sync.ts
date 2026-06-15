@@ -53,12 +53,7 @@ interface WhiteboardPatchAck {
     snapshot?: WhiteboardStatePayload;
 };
 
-interface QueuedWhiteboardState {
-    elements: ExcalidrawElement[];
-    appState: AppState;
-};
-
-interface SyncedWhiteboardState {
+interface WhiteboardSceneState {
     elements: ExcalidrawElement[];
     appState: AppState;
 };
@@ -91,14 +86,14 @@ const useWhiteboardSync = ({
     const isSubscribedRef = useRef(false);
     const isSendingPatchRef = useRef(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const queuedStateRef = useRef<QueuedWhiteboardState | null>(null);
+    const queuedStateRef = useRef<WhiteboardSceneState | null>(null);
     const remoteApplyChainRef = useRef(Promise.resolve());
     const lastConflictToastAtRef = useRef(0);
     const applyRemoteStateRef = useRef<(
         payload: WhiteboardStatePayload | undefined,
         mode: 'snapshot' | 'delta'
     ) => void>(() => undefined);
-    const syncedSceneRef = useRef<SyncedWhiteboardState>({
+    const syncedSceneRef = useRef<WhiteboardSceneState>({
         elements: [],
         appState: {}
     });
@@ -113,7 +108,7 @@ const useWhiteboardSync = ({
         return ack.data;
     }, []);
 
-    const applyPatchAck = useCallback((ack: WhiteboardPatchAck, sentState: QueuedWhiteboardState) => {
+    const applyPatchAck = useCallback((ack: WhiteboardPatchAck, sentState: WhiteboardSceneState) => {
         if (ack.snapshot) {
             return;
         }

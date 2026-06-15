@@ -13,7 +13,6 @@ import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMa
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import logger from '@shared/infrastructure/logger';
-import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
 import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
 import Redis from 'ioredis';
@@ -29,10 +28,6 @@ interface SocketConnectionRuntimeData extends ISocketConnectionData {
     authReason?: ISocketAuthenticationResult['reason'];
 }
 
-const SOCKET_CORS_ORIGINS = collectAllowedClientOrigins([
-    process.env.CLIENT_DEV_HOST,
-    process.env.CLIENT_HOST
-]);
 const SOCKET_GATEWAY_CLOSE_TIMEOUT_MS = 1_500;
 
 interface AuthenticatedSocket extends Socket{
@@ -50,8 +45,6 @@ export default class SocketGateway{
     private adapterSub?: Redis;
     private initialized = false;
     private modules: ISocketModule[] = [];
-
-    private corsOrigins = SOCKET_CORS_ORIGINS;
 
     private pingTimeout = 20_000;
     private pingInterval = 10_000;

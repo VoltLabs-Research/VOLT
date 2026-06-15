@@ -4,13 +4,18 @@ import type { ITeamJobProjectionService } from '@modules/jobs/domain/port/ITeamJ
 import { inject } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/domain/events/JobStatusChangedEvent';
-import type { TeamJobSnapshot } from '@modules/jobs/domain/contracts/TeamJobSnapshot';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
+import { JobStatus } from '@shared/contracts/types/JobStatus';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+import {
+    jobStatusKey as buildJobStatusKey,
+    jobTombstoneKey as buildJobTombstoneKey,
+    projectedTeamJobsKey as buildProjectedTeamJobsKey,
+    projectedTeamJobsRevisionKey as buildProjectedTeamJobsRevisionKey,
+    projectedAnalysisJobsKey as buildProjectedAnalysisJobsKey
+} from '@modules/jobs/infrastructure/services/job-redis-keys';
 
 const STATUS_TTL_SECONDS = 86400;
-const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
-const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 const PROJECTED_JOB_SOURCE = 'projected';
 const LOCAL_PROJECTED_JOB_BACKING_SOURCE = 'local';
 const MISSING_SNAPSHOT_SENTINEL = '__missing__';
@@ -129,10 +134,6 @@ export default class TeamJobProjectionService implements ITeamJobProjectionServi
     ) {}
 
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
-        return this.upsertProjectedSnapshot(payload);
-    }
-
-    private async upsertProjectedSnapshot(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
             jobId,
             teamId,
@@ -151,9 +152,9 @@ export default class TeamJobProjectionService implements ITeamJobProjectionServi
             cleanupScope,
             ...extra
         } = payload;
-        const jobStatusKey = this.jobStatusKey(jobId);
-        const projectedTeamJobsKey = this.projectedTeamJobsKey(teamId);
-        const revisionKey = this.projectedTeamJobsRevisionKey(teamId);
+        const jobStatusKey = buildJobStatusKey(jobId);
+        const projectedTeamJobsKey = buildProjectedTeamJobsKey(teamId);
+        const revisionKey = buildProjectedTeamJobsRevisionKey(teamId);
         let previousRawSnapshot = await this.redis.get(jobStatusKey);
         let previousSnapshot = this.parseSnapshot(previousRawSnapshot);
 
@@ -194,9 +195,9 @@ export default class TeamJobProjectionService implements ITeamJobProjectionServi
                 5,
                 jobStatusKey,
                 projectedTeamJobsKey,
-                this.projectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
+                buildProjectedAnalysisJobsKey(nextSnapshot.analysisId ?? 'noop'),
                 revisionKey,
-                this.jobTombstoneKey(jobId),
+                buildJobTombstoneKey(jobId),
                 previousRawSnapshot ?? MISSING_SNAPSHOT_SENTINEL,
                 nextSnapshotRaw,
                 STATUS_TTL_SECONDS,
@@ -231,25 +232,5 @@ export default class TeamJobProjectionService implements ITeamJobProjectionServi
         }
 
         return JSON.parse(record) as TeamJobSnapshot;
-    }
-
-    private jobStatusKey(jobId: string): string {
-        return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
-    }
-
-    private jobTombstoneKey(jobId: string): string {
-        return `${JOB_TOMBSTONE_KEY_PREFIX}${jobId}`;
-    }
-
-    private projectedTeamJobsKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs`;
-    }
-
-    private projectedTeamJobsRevisionKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs:revision`;
-    }
-
-    private projectedAnalysisJobsKey(analysisId: string): string {
-        return `analysis:${analysisId}:projected-jobs`;
     }
 }

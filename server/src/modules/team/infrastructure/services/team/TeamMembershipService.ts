@@ -43,8 +43,7 @@ export default class TeamMembershipService implements ITeamMembershipService {
         if (existing) return;
         const role = await this.teamRoleRepository.findOne({ name: roleName, team: teamId });
         if (!role) throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Role not found');
-        const member = await this.teamMemberRepository.create({ team: teamId, user: userId, role: role._id, joinedAt: new Date() });
-        await this.teamRepository.addMemberToTeam(member._id, teamId);
+        await this.teamMemberRepository.create({ team: teamId, user: userId, role: role._id, joinedAt: new Date() });
         await this.userRepository.addTeamToUser(userId, teamId);
     }
 
@@ -54,7 +53,6 @@ export default class TeamMembershipService implements ITeamMembershipService {
             ? membership.props.user
             : membership?.props.user?._id;
 
-        await this.teamRepository.removeUserFromTeam(memberId, teamId);
         await this.teamMemberRepository.deleteById(memberId);
         if (membershipUserId) {
             await this.userRepository.removeTeamFromUser(membershipUserId, teamId);

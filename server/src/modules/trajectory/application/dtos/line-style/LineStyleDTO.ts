@@ -36,6 +36,13 @@ export interface GetLineModelRangesStreamInputDTO {
     style?: string;
 };
 
+export interface GetOctreeMetadataStreamInputDTO {
+    trajectoryId: string;
+    timestep: string;
+    analysisId: string;
+    exposureId: string;
+};
+
 export interface GetLineEntityPropertiesInputDTO {
     trajectoryId: string;
     timestep: string;

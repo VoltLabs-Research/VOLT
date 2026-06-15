@@ -15,11 +15,7 @@ const isTokenPayload = (value: unknown): value is TokenPayload => {
         return false;
     }
 
-    return '_id' in value
-        && 'userId' in value
-        && 'id' in value
-        && typeof value._id === 'string'
-        && typeof value.userId === 'string'
+    return 'id' in value
         && typeof value.id === 'string';
 };
 
@@ -65,8 +61,6 @@ export default class JwtTokenService implements ITokenService {
         };
 
         return jwt.sign({
-            _id: userId,
-            userId,
             id: userId
         }, this.secret, signOptions);
     }

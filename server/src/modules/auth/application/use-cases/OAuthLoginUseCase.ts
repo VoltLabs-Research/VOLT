@@ -53,11 +53,8 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
                 });
 
                 await this.eventBus.publish(new UserCreatedEvent({
-                    userId: user._id,
                     id: user._id,
-                    email: user.props.email,
-                    firstName: user.props.firstName,
-                    lastName: user.props.lastName
+                    firstName: user.props.firstName
                 }));
 
                 try {

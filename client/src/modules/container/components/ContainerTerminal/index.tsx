@@ -14,7 +14,7 @@ interface ContainerTerminalProps {
         name: string;
         containerId: string;
     };
-    onClose: () => void;
+    onClose?: () => void;
     embedded?: boolean;
 }
 

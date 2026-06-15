@@ -50,11 +50,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
             password: hashedPassword,
             role: UserRole.User,
             teams: [],
-            analyses: [],
-            lastLoginAt: new Date(),
-            lastSeenAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date()
+            analyses: []
         });
 
         const avatar = await this.avatarService.generateAndUploadDefaultAvatar(newUser._id, newUser.props.email);
@@ -68,11 +64,8 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         }
 
         await this.eventBus.publish(new UserCreatedEvent({
-            userId: newUser._id,
             id: newUser._id,
-            email: newUser.props.email,
-            firstName: newUser.props.firstName,
-            lastName: newUser.props.lastName
+            firstName: newUser.props.firstName
         }));
 
         const token = await this.authSessionService.createSessionWithToken({

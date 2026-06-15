@@ -6,7 +6,7 @@ import {
 } from '@/modules/latex/hooks/queries';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME } from '@/modules/latex/utilities/workspace';
+import { buildFolderPlaceholderPath, getAssetDisplayName, isFolderPlaceholderAsset, LATEX_FOLDER_PLACEHOLDER_NAME, splitWorkspacePath } from '@/modules/latex/utilities/workspace';
 import { useCallback, useRef } from 'react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { FileWithPath } from '@/shared/utils/file';
@@ -52,7 +52,7 @@ const CREATE_FOLDER_TOAST = {
 };
 
 /** Manages asset listing, upload, deletion, move, and editor insertion for a LaTeX document. */
-const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
+const useLatexAssets = ({ documentId }: UseLatexAssetsInput) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,19 +97,10 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
             deleteAsset({ documentId, assetId: asset._id }),
             DELETE_TOAST
         );
-    }, [confirm, deleteAsset, documentId]);
-
-    const handleInsertRef = useCallback((asset: LatexAsset) => {
-        onInsertRef?.(buildLatexRef(asset));
-    }, [onInsertRef]);
+    }, [deleteAsset, documentId]);
 
     const handleRenameAsset = useCallback(async (asset: LatexAsset, name: string): Promise<void> => {
-        const currentPath = asset.path;
-        const { path } = (() => {
-            const normalized = currentPath.replace(/\\/g, '/');
-            const index = normalized.lastIndexOf('/');
-            return { path: index >= 0 ? normalized.slice(0, index + 1) : '' };
-        })();
+        const { path } = splitWorkspacePath(asset.path);
 
         await showPromise(
             updateAsset({ documentId, assetId: asset._id, path: `${path}${name}` }),
@@ -139,7 +130,6 @@ const useLatexAssets = ({ documentId, onInsertRef }: UseLatexAssetsInput) => {
         folderInputRef,
         uploadEntriesWithoutToast,
         handleDeleteAsset,
-        handleInsertRef,
         handleRenameAsset,
         handleCreateFolder,
         deleteAsset,

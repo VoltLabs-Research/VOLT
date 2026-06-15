@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import { Box, Row, Stack, Text } from '@voltstack/bravais';
+import { Box, Button, Checkbox, NumberInput, Row, Stack, Text } from '@voltstack/bravais';
+import { useCellDisplayStore } from '@/modules/fractal/stores/cell-display-store';
+import type { CellPbc } from '@/modules/fractal/utilities/cell-wireframe';
+import { hasValidCellVectors } from '@/modules/fractal/utilities/cell-wireframe';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 import type { ReactNode } from 'react';
 
@@ -9,18 +13,48 @@ interface SimulationCellViewProps {
     currentTimestep: number | undefined;
 }
 
+const AXIS_LABELS = ['a', 'b', 'c'] as const;
+const PBC_AXES = ['x', 'y', 'z'] as const;
+
+const cloneVectors = (vectors: number[][]): number[][] => vectors.map((v) => [...v]);
+
 const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewProps) => {
     const teamId = typeof trajectory?.team === 'object' ? trajectory.team._id : trajectory?.team;
+    const trajectoryId = trajectory?._id;
     const {
         simulationCell: cell,
         isLoading,
         accessDenied: accessDeniedState,
         accessDeniedMessage: accessDeniedMessage
     } = useSimulationCell({
-        trajectoryId: trajectory?._id,
+        trajectoryId,
         timestep: currentTimestep,
-        enabled: !!trajectory?._id && !!teamId
+        enabled: !!trajectoryId && !!teamId
     });
+
+    const showPbcImages = useCellDisplayStore((state) => state.showPbcImages);
+    const setShowPbcImages = useCellDisplayStore((state) => state.setShowPbcImages);
+    const setCellOverride = useCellDisplayStore((state) => state.setCellOverride);
+    const clearCellOverride = useCellDisplayStore((state) => state.clearCellOverride);
+    const cellOverride = useCellDisplayStore((state) =>
+        (trajectoryId ? state.cellOverrides[trajectoryId] : undefined)
+    );
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [draftVectors, setDraftVectors] = useState<number[][]>([]);
+    const [draftPbc, setDraftPbc] = useState<CellPbc>({ x: true, y: true, z: true });
+
+    // Seed the edit draft from the override (if any) or the fetched cell, so the
+    // form opens pre-filled with the values the 3D view is currently rendering.
+    const fetchedVectors = cell?.geometry?.cell_vectors;
+    const fetchedPbc = cell?.geometry?.periodic_boundary_conditions;
+    useEffect(() => {
+        if (isEditing) return;
+        const baseVectors = cellOverride?.cellVectors ?? fetchedVectors;
+        const basePbc = cellOverride?.pbc ?? fetchedPbc;
+        if (baseVectors) setDraftVectors(cloneVectors(baseVectors));
+        if (basePbc) setDraftPbc({ ...basePbc });
+    }, [isEditing, cellOverride, fetchedVectors, fetchedPbc]);
 
     if (accessDeniedState) {
         return <AccessDenied description={accessDeniedMessage} showBack={false} />;
@@ -36,10 +70,11 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
         );
     }
 
-    const pbc = cell.geometry?.periodic_boundary_conditions;
+    const pbc = cellOverride?.pbc ?? cell.geometry?.periodic_boundary_conditions;
     const pbcStr = pbc ? [pbc.x && 'X', pbc.y && 'Y', pbc.z && 'Z'].filter(Boolean).join(', ') : undefined;
-    const vectors = cell.geometry?.cell_vectors;
-    const origin = cell.geometry?.cell_origin;
+    const vectors = cellOverride?.cellVectors ?? cell.geometry?.cell_vectors;
+    const origin = cellOverride?.cellOrigin ?? cell.geometry?.cell_origin;
+    const canEdit = !!trajectoryId && hasValidCellVectors(vectors);
 
     const boundingBoxRows: [string, ReactNode][] = [
         ['Width', cell.boundingBox?.width?.toFixed(4)],
@@ -67,21 +102,99 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
         }
     ];
 
+    const updateDraftComponent = (vectorIndex: number, componentIndex: number, value: number) => {
+        setDraftVectors((previous) => {
+            const next = cloneVectors(previous);
+            if (!next[vectorIndex]) next[vectorIndex] = [0, 0, 0];
+            next[vectorIndex][componentIndex] = Number.isFinite(value) ? value : 0;
+            return next;
+        });
+    };
+
+    const applyEdit = () => {
+        if (!trajectoryId) return;
+        setCellOverride(trajectoryId, {
+            cellVectors: cloneVectors(draftVectors),
+            cellOrigin: origin ? [...origin] : [0, 0, 0],
+            pbc: { ...draftPbc }
+        });
+        setIsEditing(false);
+    };
+
+    const resetEdit = () => {
+        if (trajectoryId) clearCellOverride(trajectoryId);
+        setIsEditing(false);
+    };
+
     return (
         <Box p='1'>
-            <Row align='start' gap='1-5'>
-                {columns.filter((col) => col.visible !== false).map((col) => (
-                    <Stack key={col.title} style={{ minWidth: 140 }}>
-                        <Text size='xs' tone='muted'>{col.title}</Text>
-                        {col.rows.map(([label, value, valueClass]) => (
-                            <Row key={label} justify='between' gap='1' className="font-size-1 color-secondary">
-                                <Text tone='muted'>{label}</Text>
-                                <span className={valueClass}>{value}</span>
-                            </Row>
-                        ))}
-                    </Stack>
-                ))}
+            <Row align='start' justify='between' gap='1'>
+                <Row align='start' gap='1-5'>
+                    {columns.filter((col) => col.visible !== false).map((col) => (
+                        <Stack key={col.title} style={{ minWidth: 140 }}>
+                            <Text size='xs' tone='muted'>{col.title}</Text>
+                            {col.rows.map(([label, value, valueClass]) => (
+                                <Row key={label} justify='between' gap='1' className="font-size-1 color-secondary">
+                                    <Text tone='muted'>{label}</Text>
+                                    <span className={valueClass}>{value}</span>
+                                </Row>
+                            ))}
+                        </Stack>
+                    ))}
+                </Row>
+                <Stack gap='05' style={{ minWidth: 150 }}>
+                    <Checkbox
+                        checked={showPbcImages}
+                        label='Show PBC images'
+                        onChange={(event) => setShowPbcImages(event.target.checked)}
+                    />
+                    {canEdit && !isEditing && (
+                        <Button variant='ghost' size='sm' onClick={() => setIsEditing(true)}>
+                            Edit Cell
+                        </Button>
+                    )}
+                    {cellOverride && !isEditing && (
+                        <Button variant='ghost' size='sm' intent='neutral' onClick={resetEdit}>
+                            Reset Cell
+                        </Button>
+                    )}
+                </Stack>
             </Row>
+
+            {isEditing && (
+                <Stack gap='1' style={{ marginTop: 12 }}>
+                    <Text size='xs' tone='muted'>Edit a/b/c edge vectors (Ångströms)</Text>
+                    {draftVectors.map((vector, vectorIndex) => (
+                        <Row key={AXIS_LABELS[vectorIndex] ?? vectorIndex} align='center' gap='05'>
+                            <Text size='sm' style={{ width: 16 }}>{AXIS_LABELS[vectorIndex] ?? `v${vectorIndex + 1}`}</Text>
+                            {vector.map((component, componentIndex) => (
+                                <NumberInput
+                                    key={componentIndex}
+                                    value={component}
+                                    step={0.1}
+                                    onValueChange={(next) => updateDraftComponent(vectorIndex, componentIndex, next)}
+                                    aria-label={`${AXIS_LABELS[vectorIndex] ?? vectorIndex} component ${componentIndex + 1}`}
+                                />
+                            ))}
+                        </Row>
+                    ))}
+                    <Text size='xs' tone='muted'>Periodic boundary conditions</Text>
+                    <Row gap='1'>
+                        {PBC_AXES.map((axis) => (
+                            <Checkbox
+                                key={axis}
+                                checked={draftPbc[axis]}
+                                label={axis.toUpperCase()}
+                                onChange={(event) => setDraftPbc((previous) => ({ ...previous, [axis]: event.target.checked }))}
+                            />
+                        ))}
+                    </Row>
+                    <Row gap='05'>
+                        <Button size='sm' onClick={applyEdit}>Apply</Button>
+                        <Button size='sm' variant='ghost' intent='neutral' onClick={() => setIsEditing(false)}>Cancel</Button>
+                    </Row>
+                </Stack>
+            )}
         </Box>
     );
 };

@@ -4,11 +4,13 @@ import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-
 import { TRAJECTORY_QUERY_KEYS, trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
+import { useAtomSelectionLink } from '@/modules/canvas/hooks/use-atom-selection';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import { Select, Row, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
+import type { MouseEvent } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import AtomTypeBadge from '../AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
@@ -59,6 +61,23 @@ const renderAtomTypeBadge = (value: unknown) => {
     return <AtomTypeBadge type={value} />;
 };
 
+// Mirrors the per-atom selection into the table: a filled dot for selected
+// atoms (picked in 3D or clicked here), an empty slot otherwise. The highlight
+// color matches the 3D overlay so the two surfaces read as one selection.
+const AtomSelectionIndicator = ({ selected }: { selected: boolean }) => (
+    <span
+        aria-hidden='true'
+        style={{
+            display: 'inline-block',
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: selected ? '#ffd400' : 'transparent',
+            boxShadow: selected ? '0 0 0 1px rgba(0,0,0,0.25)' : 'none'
+        }}
+    />
+);
+
 const parseTimestepParam = (value: string | null): number | undefined => {
     if (value === null) {
         return undefined;
@@ -88,6 +107,17 @@ export default function PerAtomViewer() {
         return availableTimesteps[0];
     }, [availableTimesteps, requestedTimestep]);
     const isEnabled = Boolean(trajectoryId && timestep !== undefined);
+
+    const { isRowSelected, onRowClick } = useAtomSelectionLink({ trajectoryId, timestep });
+
+    const handleRowClick = useCallback((item: AtomListingRow, event: MouseEvent): boolean => {
+        const atomId = Number(item.id);
+        if (!Number.isFinite(atomId)) return false;
+        onRowClick(atomId, { shift: event.shiftKey, ctrl: event.ctrlKey || event.metaKey });
+        // Returning false keeps the listing's own multi-select machinery from
+        // also reacting — this click drives the 3D selection only.
+        return false;
+    }, [onRowClick]);
 
     useEffect(() => {
         if (timestep === undefined || searchParams.get('timestep') === String(timestep)) {
@@ -152,8 +182,20 @@ export default function PerAtomViewer() {
         };
     }, []);
 
-    const columns = useMemo<ColumnConfig[]>(() => {
-        const baseCols: ColumnConfig[] = [
+    const columns = useMemo<ColumnConfig<AtomListingRow>[]>(() => {
+        const baseCols: ColumnConfig<AtomListingRow>[] = [
+            {
+                key: '_selected',
+                title: '',
+                width: 28,
+                skeleton: { variant: 'rounded', width: 10, height: 10 },
+                // Selection mirror: a filled dot marks atoms currently selected
+                // (in 3D or here). Reading isRowSelected keeps the table in sync
+                // with picks without the table owning any selection state.
+                render: (_value: unknown, row: AtomListingRow) => (
+                    <AtomSelectionIndicator selected={isRowSelected(Number(row.id))} />
+                )
+            },
             {
                 key: 'id',
                 title: 'ID',
@@ -196,7 +238,7 @@ export default function PerAtomViewer() {
         }
 
         return baseCols;
-    }, [properties]);
+    }, [properties, isRowSelected]);
 
     const listingContext: PerAtomViewerContext = useMemo(() => ({
         trajectoryId: trajectoryId ?? '',
@@ -239,6 +281,7 @@ export default function PerAtomViewer() {
             defaultLimit={100}
             enabled={isEnabled}
             headerActions={headerActions}
+            onItemClick={handleRowClick}
             emptyMessage='No atoms data found.'
         />
     );

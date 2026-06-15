@@ -10,15 +10,10 @@ export const GRADIENT_CSS: Record<string, string> = {
     Grayscale: 'linear-gradient(to right, #000000, #ffffff)'
 };
 
-export const getVerticalGradientCss = (gradient: string): string | undefined => {
-    return GRADIENT_CSS[gradient]?.replace('to right', 'to top');
-};
-
 export const formatLegendValue = (value: number): string => {
     const absValue = Math.abs(value);
     let result: string;
-    if (absValue >= 1e15) result = value.toExponential(3);
-    else if (absValue >= 1e6) result = value.toExponential(3);
+    if (absValue >= 1e6) result = value.toExponential(3);
     else if (absValue < 0.001 && absValue !== 0) result = value.toExponential(3);
     else result = value.toPrecision(6).replace(/\.?0+$/, '');
     return result.replace('e+', 'e');

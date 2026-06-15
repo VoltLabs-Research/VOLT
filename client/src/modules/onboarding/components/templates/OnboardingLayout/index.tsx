@@ -11,12 +11,11 @@ import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team
 
 interface OnboardingLayoutProps {
     children: ReactNode;
-    onSettingsClick?: () => void;
+    onSettingsClick: () => void;
     onSignOut: () => void;
     isSigningOut?: boolean;
     leftSlot?: ReactNode;
     overlay?: ReactNode;
-    contentClassName?: string;
 };
 
 const OnboardingLayout = ({
@@ -25,24 +24,18 @@ const OnboardingLayout = ({
     onSignOut,
     isSigningOut = false,
     leftSlot,
-    overlay,
-    contentClassName
+    overlay
 }: OnboardingLayoutProps) => {
     const user = useCurrentUser();
-    const contentClassNames = ['onboarding-layout__content'];
 
     const handleJoinTeamSuccess = async ({ teamId }: JoinByInviteCodeOutputDTO) => {
         switchSelectedTeam(teamId);
         await refreshSocketSession();
     };
 
-    if (contentClassName) {
-        contentClassNames.push(contentClassName);
-    }
-
     return (
         <div className='onboarding-layout screen-vh'>
-            <main className={contentClassNames.join(' ')}>
+            <main className='onboarding-layout__content'>
                 {children}
             </main>
 
@@ -71,7 +64,7 @@ const OnboardingLayout = ({
             {user && (
                 <div className='onboarding-layout__user-menu'>
                     <UserMenuPopover
-                        onSettingsClick={onSettingsClick ?? (() => {})}
+                        onSettingsClick={onSettingsClick}
                         onSignOut={onSignOut}
                         isSigningOut={isSigningOut}
                     />

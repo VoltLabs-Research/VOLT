@@ -56,7 +56,7 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
  * useGlbScene — imperatively manages a FractalEngine and attaches the loaded
  * model to a ref-owned Group. Mutations flow through the engine's imperative
  * API; React re-renders are avoided for all hot-path updates (uniforms,
- * visibility mask, color coding).
+ * visibility mask).
  */
 export default function useGlbScene(
     params: UseGlbSceneParams,
@@ -129,6 +129,7 @@ export default function useGlbScene(
                         );
                         engine.updateLineWidth(paramsRef.current.lineSettings);
                         engine.updateLineHighlight(paramsRef.current.lineHighlight);
+                        engine.setVisibilityMask(paramsRef.current.visibilityMask ?? null);
                     }
                     invalidate();
                 }
@@ -201,6 +202,17 @@ export default function useGlbScene(
         params.lineHighlight
     ]);
 
+    // Push the per-atom visibility mask to the engine whenever it changes (e.g.
+    // the user edits an expression-select modifier). A null mask resets the
+    // cloud to all-visible, so — unlike the scalar effect — this must run for
+    // null too; the engine no-ops until a point cloud is present, and the mask
+    // is re-applied from paramsRef once the model loads (onModelAvailable).
+    useEffect(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        engine.setVisibilityMask(params.visibilityMask ?? null);
+    }, [params.visibilityMask]);
+
     useFrame(({ camera: frameCamera }) => {
         engineRef.current?.updateCameraPosition(frameCamera.position);
     });
@@ -262,6 +274,10 @@ export default function useGlbScene(
         loadError: loadingState.error,
         deselect: interaction.deselect,
         setSelectedObject: interaction.setSelectedObject,
-        onHoverChange: interaction.onHoverChange
+        onHoverChange: interaction.onHoverChange,
+        // Exposed so canvas-level interaction hooks (atom picking, lasso/box,
+        // selection highlight) can reach the imperative engine for this scene.
+        // The ref is owned and disposed here; consumers must not retain it.
+        engineRef
     };
 }

@@ -7,7 +7,8 @@ const DTYPE_ID: Record<AtomColumnDType, number> = {
     f32: 0,
     u32: 1,
     u16: 2,
-    str: 3
+    str: 3,
+    i32: 4
 };
 
 const DTYPE_BYTES: Record<AtomColumnDType, number> = {
@@ -15,7 +16,8 @@ const DTYPE_BYTES: Record<AtomColumnDType, number> = {
     u32: 4,
     u16: 2,
     // Length-prefixed UTF-8 blob; byte-addressable, so any length is valid.
-    str: 1
+    str: 1,
+    i32: 4
 };
 
 /**

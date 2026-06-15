@@ -52,7 +52,7 @@ const useGroupActions = () => {
                 replaceChatInCache(queryClient, chat);
             }
         });
-    }, [addUsersToGroupMutationResult, navigate, queryClient]);
+    }, [addUsersToGroupMutationResult, queryClient]);
 
     const removeUsersFromGroup = useCallback(async (chatId: string, userIds: string[]) => {
         return runAction({
@@ -66,7 +66,7 @@ const useGroupActions = () => {
                 replaceChatInCache(queryClient, chat);
             }
         });
-    }, [navigate, queryClient, removeUsersFromGroupMutationResult]);
+    }, [queryClient, removeUsersFromGroupMutationResult]);
 
     const updateGroupInfo = useCallback(async (chatId: string, dto: UpdateGroupInfoDTO) => {
         return runAction({
@@ -80,7 +80,7 @@ const useGroupActions = () => {
                 replaceChatInCache(queryClient, chat);
             }
         });
-    }, [navigate, queryClient, updateGroupInfoMutationResult]);
+    }, [queryClient, updateGroupInfoMutationResult]);
 
     const updateGroupAdmins = useCallback(async (chatId: string, dto: UpdateGroupAdminsDTO) => {
         return runAction({
@@ -94,7 +94,7 @@ const useGroupActions = () => {
                 replaceChatInCache(queryClient, chat);
             }
         });
-    }, [navigate, queryClient, updateGroupAdminsMutationResult]);
+    }, [queryClient, updateGroupAdminsMutationResult]);
 
     const leaveGroup = useCallback(async (chatId: string) => {
         await runAction({

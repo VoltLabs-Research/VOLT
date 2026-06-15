@@ -1,5 +1,5 @@
 import type { Readable } from 'node:stream';
-import type { GlbContentEncoding } from '@modules/trajectory/utilities/storage/glb-stream-resolution';
+import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
 
 export interface GetPublicCanvasGLBInputDTO {
     trajectoryId: string;

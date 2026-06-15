@@ -37,8 +37,6 @@ interface PointCloudColorInfo {
 
 interface MaterialPipelineUserData {
     basePointScale?: number;
-    atomCount?: number;
-    pickingMaterial?: THREE.ShaderMaterial;
 }
 
 type PointsWithPipelineUserData = THREE.Points & { userData: MaterialPipelineUserData & Record<string, unknown> };
@@ -81,6 +79,17 @@ const createPointCloudUniforms = (): PointCloudMaterialUniforms => ({
     lightingMix: { value: 1.0 },
     opacity: { value: 1.0 }
 });
+
+const ensurePointCloudVisibilityAttribute = (geometry: THREE.BufferGeometry): void => {
+    const existing = geometry.getAttribute('aVisible');
+    const pointCount = geometry.getAttribute('position')?.count ?? 0;
+    if (existing instanceof THREE.BufferAttribute && existing.count === pointCount) {
+        return;
+    }
+    // Default-fill 1.0 (all visible) so untouched scenes render identically —
+    // the engine's setVisibilityMask overwrites this once a mask is applied.
+    geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Float32Array(pointCount).fill(1), 1));
+};
 
 const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCloudColorInfo => {
     let colorAttribute = geometry.getAttribute('color');
@@ -192,6 +201,7 @@ export class MaterialPipeline {
 
     configurePointCloud(points: THREE.Points): THREE.Points {
         const colorInfo = ensurePointCloudColorAttribute(points.geometry);
+        ensurePointCloudVisibilityAttribute(points.geometry);
 
         const numPoints = points.geometry.attributes.position.count;
 
@@ -237,7 +247,6 @@ export class MaterialPipeline {
 
         const typedPoints = points as PointsWithPipelineUserData;
         typedPoints.userData.basePointScale = dynamicPointScale;
-        typedPoints.userData.atomCount = numPoints;
         this.pointCloudMaterials.add(mat);
 
         debugFractal('material-pipeline.configure-point-cloud', {
