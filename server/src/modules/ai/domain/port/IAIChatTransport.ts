@@ -4,7 +4,6 @@ import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
 import type { TeamAIProvider } from '@modules/team/domain/entities/ai-integration/TeamAIIntegration';
 
 export interface AIChatReplyStream {
-    consumeText(): Promise<string>;
     pipeToResponse(response: Response): void;
 }
 

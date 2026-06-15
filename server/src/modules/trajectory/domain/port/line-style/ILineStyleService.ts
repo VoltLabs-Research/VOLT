@@ -53,4 +53,16 @@ export interface ILineStyleService {
         exposureId: string,
         style?: LineStyleSpec
     ): Promise<LineStyleStreamResponse>;
+
+    // LOD octree-metadata sidecar of an exposure's baked point-cloud GLB
+    // (`<glb>.octree.json`). The daemon bakes it next to the GLB for clouds above
+    // its atom threshold; the client LOD manager reads it to stream only
+    // visible-region tiles. Reuses the same exposure GLB resolution + sidecar
+    // streaming as the ranges path.
+    getOctreeMetadataStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        analysisId: string,
+        exposureId: string
+    ): Promise<LineStyleStreamResponse>;
 }

@@ -31,7 +31,7 @@ import type { SocketInvalidationConfig } from '@/shared/presentation/components/
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
-import '@/modules/cluster/components/ServerTable/ServerTable.css';
+import '@/modules/cluster/components/ClustersListing/ServerTable.css';
 import { useNavigate } from 'react-router-dom';
 
 const renderMetricBars = (percentage: number, label: string): ReactNode => {

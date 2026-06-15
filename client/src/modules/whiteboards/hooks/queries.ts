@@ -28,8 +28,6 @@ const BASE_KEY = 'whiteboards';
 
 interface WhiteboardQueryKeys {
     single: { whiteboardId: string };
-    folders: FolderListParams;
-    folder: FolderGetParams;
 };
 
 const KEYS = buildKeys<WhiteboardQueryKeys>(BASE_KEY);

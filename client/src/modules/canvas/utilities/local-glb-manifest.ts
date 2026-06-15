@@ -1,15 +1,3 @@
-export interface LocalGlbManifestFrame {
-    url: string;
-    label?: string;
-    timestep?: number;
-}
-
-export interface LocalGlbManifest {
-    title?: string;
-    initialFrame?: number;
-    frames: LocalGlbManifestFrame[];
-}
-
 export interface ResolvedLocalGlbManifestFrame {
     url: string;
     label?: string;

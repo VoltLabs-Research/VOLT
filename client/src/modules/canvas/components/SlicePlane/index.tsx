@@ -2,19 +2,22 @@ import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import useSlicePlane from '../../hooks/use-slice-plane';
 import { Row, Stack, Text } from '@voltstack/bravais';
 
-const SlicePlane = () => {
+interface SlicePlaneProps {
+    stageId: string;
+    trajectoryId?: string;
+}
+
+const SlicePlane = ({ stageId, trajectoryId }: SlicePlaneProps) => {
     const {
-        enabled,
         distanceInput,
         normalInputs,
         reverseOrientation,
         visualizePlane,
-        handleEnabledChange,
         handleDistanceChange,
         handleNormalChange,
         handleReverseOrientationChange,
         handleVisualizePlaneChange
-    } = useSlicePlane();
+    } = useSlicePlane(stageId, trajectoryId);
 
     return (
         <Stack gap='05' className="canvas-slice-plane">
@@ -22,15 +25,6 @@ const SlicePlane = () => {
                 <Text size='xs' tone='muted'>Coordinates</Text>
                 <Text size='xs' tone='secondary'>Cartesian Coordinates</Text>
             </Row>
-
-            <FormFieldRHF
-                fieldKey="slice-plane-enabled"
-                fieldType="checkbox"
-                label="Enabled"
-                fieldValue={enabled}
-                onFieldChange={handleEnabledChange}
-                variant="canvas"
-            />
 
             <FormFieldRHF
                 fieldKey="slice-plane-distance"

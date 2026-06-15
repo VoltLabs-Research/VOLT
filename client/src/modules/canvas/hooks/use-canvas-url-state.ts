@@ -1,6 +1,5 @@
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export enum CanvasWorkspace {
@@ -38,24 +37,16 @@ const parseNumberParam = (value: string | null): number | undefined => {
 
 const useCanvasUrlState = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const {
-        selectedIds: activeModifiers,
-        toggleSelection,
-        isSelected
-    } = useSelectionParams({ paramName: 'modifiers' });
 
     const analysisId = searchParams.get('analysisId') || undefined;
     const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
-    const pluginParam = searchParams.get('plugin') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
     const selectedNotebookId = searchParams.get('notebook') || undefined;
-    const rasterModel = searchParams.get('rasterModel') || undefined;
     const requestedTimestep = parseNumberParam(searchParams.get('timestep'));
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
-    const renderConfigOpen = searchParams.get('renderConfig') === 'true';
     const requestedWorkspace = searchParams.get('workspace');
     const activeWorkspace = CANVAS_WORKSPACES.has(requestedWorkspace ?? '')
         ? resolveCanvasWorkspace(requestedWorkspace)
@@ -87,40 +78,19 @@ const useCanvasUrlState = () => {
         updateSearchParams({ workspace: id === CanvasWorkspace.Scene ? null : id }, options);
     }, [updateSearchParams]);
 
-    const toggleModifier = useCallback((id: string) => {
-        toggleSelection(id);
-    }, [toggleSelection]);
-
-    const isModifierSelected = useCallback((id: string) => {
-        return isSelected(id);
-    }, [isSelected]);
-
-    const pluginSelection = useMemo(() => {
-        if (!pluginParam) return null;
-        const [pluginId, pluginModifierId] = pluginParam.split(':');
-        return { pluginId, pluginModifierId };
-    }, [pluginParam]);
-
     return {
         searchParams,
         updateSearchParams,
         analysisId,
         resultsPluginId,
         timelineExposureId,
-        pluginParam,
-        pluginSelection,
         settingsKey,
         selectedNotebookId,
-        rasterModel,
         requestedTimestep,
         showWidgets,
         showGrid,
         showGizmo,
-        renderConfigOpen,
-        activeModifiers,
         activeWorkspace,
-        toggleModifier,
-        isModifierSelected,
         setAnalysisId,
         setResultsPluginId,
         setTimelineExposureId,

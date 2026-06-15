@@ -6,7 +6,7 @@ import { inject } from 'tsyringe';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type LatexDocumentDeletedEvent from '@modules/latex/domain/events/LatexDocumentDeletedEvent';
-import { requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
+import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@modules/latex/application/utilities/latex-storage';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
@@ -25,7 +25,7 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {
         const { documentId, teamId } = event.payload;
-        const storagePrefix = `latex-assets/${teamId}/${documentId}/`;
+        const storagePrefix = buildLatexAssetStoragePrefix(teamId, documentId);
         const storageClusterId = requireLatexStorageClusterId(documentId, {
             storageClusterId: event.payload.storageClusterId
         });

@@ -6,11 +6,6 @@ export enum WhiteboardListingRowType {
     Whiteboard = 'whiteboard'
 };
 
-enum WhiteboardListingDndPrefix {
-    Folder = 'folder',
-    Whiteboard = 'whiteboard'
-};
-
 export interface WhiteboardFolderRow extends WhiteboardFolder {
     rowType: WhiteboardListingRowType.Folder;
     lastEditedBy: null;
@@ -61,7 +56,7 @@ export const getWhiteboardListingDraggableId = (row: WhiteboardListingRow): stri
         return null;
     }
 
-    return `${WhiteboardListingDndPrefix.Whiteboard}:${row._id}`;
+    return `${WhiteboardListingRowType.Whiteboard}:${row._id}`;
 };
 
 export const getWhiteboardListingDroppableId = (row: WhiteboardListingRow): string | null => {
@@ -69,5 +64,5 @@ export const getWhiteboardListingDroppableId = (row: WhiteboardListingRow): stri
         return null;
     }
 
-    return `${WhiteboardListingDndPrefix.Folder}:${row._id}`;
+    return `${WhiteboardListingRowType.Folder}:${row._id}`;
 };

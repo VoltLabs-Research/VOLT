@@ -52,7 +52,7 @@ export const findNotebookExposure = (
     };
 };
 
-const PROXY_URL_ORIGIN = 'http://volt.local';
+export const PROXY_URL_ORIGIN = 'http://volt.local';
 
 export const resolveServerBaseUrl = (): string => {
     const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
@@ -133,7 +133,7 @@ const isSecureRequest = (req: Request): boolean => {
     return forwardedProto?.split(',')[0]?.trim()?.toLowerCase() === 'https';
 };
 
-export const buildJupyterProxyAccessCookieOptions = (
+const buildJupyterProxyAccessCookieOptions = (
     req: Request,
     teamId: string,
     runtimeNotebookId: string,

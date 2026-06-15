@@ -163,7 +163,6 @@ const endpoints = {
         '/:trajectoryId/scene-artifacts',
         {
             unwrap: 'raw',
-            omit: ['type'],
             query: buildSceneArtifactQuery
         }
     ),

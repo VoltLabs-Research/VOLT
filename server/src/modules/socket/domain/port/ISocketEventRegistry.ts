@@ -12,11 +12,6 @@ export interface ISocketEventRegistry {
         handler: SocketEventHandler<T, TResult>
     ): void;
 
-    off(
-        socketId: string, 
-        event: string
-    ): void;
-
     onDisconnect(
         socketId: string,
         handler: (connection: ISocketConnection) => void | Promise<void>

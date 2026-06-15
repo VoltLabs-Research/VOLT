@@ -5,7 +5,7 @@ import {
     getUserConfigurableArguments
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import { CollapsibleSection, Row, Select, Stack, Text } from '@voltstack/bravais';
+import { CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import type {
@@ -13,7 +13,6 @@ import type {
     IPluginReferenceSelection
 } from '@/modules/plugin/api/entities/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;

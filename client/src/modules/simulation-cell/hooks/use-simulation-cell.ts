@@ -11,11 +11,8 @@ interface UseSimulationCellParams {
 interface UseSimulationCellResult {
     simulationCell: SimulationCell | null;
     isLoading: boolean;
-    error: string | null;
-    isReady: boolean;
     accessDenied: boolean;
     accessDeniedMessage: string | undefined;
-    refetch: () => Promise<void>;
 };
 
 const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationCellResult => {
@@ -26,8 +23,7 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
     const {
         data,
         isLoading,
-        error: queryError,
-        refetch
+        error: queryError
     } = simulationCellByTrajectoryQuery(
         {
             trajectoryId: trajectoryId || '',
@@ -51,26 +47,11 @@ const useSimulationCell = (params: UseSimulationCellParams = {}): UseSimulationC
         ? reportError(queryError, { surface: ErrorSurface.Silent }).title
         : undefined;
 
-    let errorMessage: string | null = null;
-    if (queryError && !accessDenied) {
-        errorMessage = reportError(queryError, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to fetch simulation cell'
-        }).title;
-    }
-
-    const handleRefetch = async (): Promise<void> => {
-        await refetch();
-    };
-
     return {
         simulationCell,
         isLoading,
-        error: errorMessage,
-        isReady: !isLoading,
         accessDenied,
-        accessDeniedMessage,
-        refetch: handleRefetch
+        accessDeniedMessage
     };
 };
 

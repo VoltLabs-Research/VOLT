@@ -184,6 +184,20 @@ export default class LineStyleService implements ILineStyleService {
         return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.ranges.json`);
     }
 
+    async getOctreeMetadataStreamResponse(
+        trajectoryId: string,
+        timestep: string | number,
+        analysisId: string,
+        exposureId: string
+    ): Promise<LineStyleStreamResponse> {
+        const objectName = await this.resolveExposureGlbObjectName(trajectoryId, analysisId, timestep, exposureId);
+
+        // The daemon octree exporter keys the sidecar to the logical GLB
+        // (`<key>.glb.octree.json`, see buildOctreeMetadataSidecarKey), the same
+        // `.zst`-stripped base as the ranges sidecar.
+        return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.octree.json`);
+    }
+
     // The export node options declared in the plugin definition (colorBy,
     // propertyColors, material) are the daemon's styling baseline.
     private async resolveExportBaseOptions(

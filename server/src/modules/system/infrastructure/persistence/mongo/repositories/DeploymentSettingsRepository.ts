@@ -1,7 +1,7 @@
 import DeploymentSettings, {
     DeploymentSettingsProps
 } from '@modules/system/domain/entities/DeploymentSettings';
-import type { IDeploymentSettingsRepository } from '@modules/system/domain/port/IDeploymentSettingsRepository';
+import type { IDeploymentSettingsRepository } from '@shared/contracts/ports/IDeploymentSettingsRepository';
 import { SYSTEM_TOKENS } from '@modules/system/infrastructure/di/SystemTokens';
 import deploymentSettingsMapper from '@modules/system/infrastructure/persistence/mongo/mappers/DeploymentSettingsMapper';
 import DeploymentSettingsModel, {
@@ -13,7 +13,7 @@ import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo
 @Singleton(SYSTEM_TOKENS.DeploymentSettingsRepository)
 export default class DeploymentSettingsRepository
     extends MongooseBaseRepository<DeploymentSettings, DeploymentSettingsProps, DeploymentSettingsDocument>
-    implements IDeploymentSettingsRepository {
+    implements IDeploymentSettingsRepository<DeploymentSettings, DeploymentSettingsProps> {
 
     constructor() {
         super(DeploymentSettingsModel, deploymentSettingsMapper);

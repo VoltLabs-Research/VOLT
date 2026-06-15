@@ -220,7 +220,7 @@ export default function SimulationCardFooter({
         } finally {
             setIsDeleting(false);
         }
-    }, [deleteTrajectoryMutation, confirm, trajectoryId, name, onDelete]);
+    }, [deleteTrajectoryMutation, trajectoryId, name, onDelete]);
 
     const handleRasterizeTrajectory = useCallback(async () => {
         if (!teamId || isRasterizing || isProcessing) {

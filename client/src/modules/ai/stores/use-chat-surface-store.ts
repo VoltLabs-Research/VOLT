@@ -13,8 +13,6 @@ import { create } from 'zustand';
  * is a deliberate follow-up; this store is the safe, regression-free first step.
  */
 
-export type ChatSurface = 'floating' | 'page' | 'hidden';
-
 interface ChatSurfaceState {
     isWidgetOpen: boolean;
     openWidget: () => void;

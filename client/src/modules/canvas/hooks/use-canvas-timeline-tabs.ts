@@ -113,10 +113,9 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     }, [sceneExposureFallback]);
 
     const resolvedPluginId = useMemo(() => {
-        if (pluginId && plugin) return pluginId;
         if (pluginId) return pluginId;
         return sceneExposureFallback[0]?.pluginId;
-    }, [pluginId, plugin, sceneExposureFallback]);
+    }, [pluginId, sceneExposureFallback]);
 
     const listingExposures = pluginListingExposures.length > 0
         ? pluginListingExposures

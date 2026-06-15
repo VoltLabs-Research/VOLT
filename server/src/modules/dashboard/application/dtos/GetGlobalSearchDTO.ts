@@ -79,7 +79,7 @@ export interface GetGlobalSearchInputDTO {
     teamId: string;
     userId: string;
     query?: string;
-    limit?: number | string;
+    limit?: number;
 }
 
 export interface GetGlobalSearchOutputDTO {

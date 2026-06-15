@@ -90,7 +90,7 @@ export default function DiscoverTeamTrajectoriesPage() {
                     />
                 </section>
             </div>
-            <DiscoverTeamEmailPrompt teamId={teamId} teamName={teamName} />
+            <DiscoverTeamEmailPrompt teamId={teamId} />
         </main>
     );
 }

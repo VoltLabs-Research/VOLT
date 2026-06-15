@@ -1,6 +1,12 @@
-import useSlicingPlanes from '@/modules/fractal/hooks/use-slicing-planes';
+import usePipelineSlicePlanes from '@/modules/canvas/hooks/use-pipeline-slice-planes';
 import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
+import useExpressionVisibilityMask from '@/modules/canvas/hooks/use-expression-visibility-mask';
+import useAtomsBuffer from '@/modules/trajectory/hooks/use-atoms-buffer';
+import useAtomPick from '@/modules/canvas/hooks/use-atom-pick';
+import { useAtomSelectionLink } from '@/modules/canvas/hooks/use-atom-selection';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
+import { useCellDisplayStore } from '@/modules/fractal/stores/cell-display-store';
+import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utilities/model-world-bounds';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utilities/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
@@ -12,10 +18,9 @@ import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fi
 import { useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useEffect, useCallback, useRef, useState } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
@@ -60,7 +65,6 @@ interface SingleModelViewerProps {
     currentTimestep: number | undefined;
     analysisId?: string;
     sceneConfig: SceneObjectType;
-    slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
@@ -90,7 +94,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     currentTimestep,
     analysisId = 'default',
     sceneConfig,
-    slicePlaneConfig,
     boxBounds,
     pointSizeMultiplier,
     pointCloudSettings,
@@ -196,7 +199,10 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         setModelWorldBounds?.(modelWorldBounds);
     }, [modelWorldBounds, setModelWorldBounds]);
 
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig, modelWorldBounds);
+    const sliceClippingPlanes = usePipelineSlicePlanes(
+        enableSlice ? trajectoryId : undefined,
+        modelWorldBounds
+    );
 
     const canvasMode = useCanvasAccessMode();
     const glbResource = useMemo(() =>
@@ -211,10 +217,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
     );
     const url = glbResource.url;
-
-    const handleEmptyData = useCallback(async () => {
-        return;
-    }, []);
 
     const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
 
@@ -232,12 +234,55 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         void pickLineEntity(sceneConfig, event.faceIndex);
     }, [pickLineEntity, sceneConfig]);
 
+    // Per-atom visibility mask from the enabled expression-select modifiers.
+    // Evaluated client-side over the full-frame atom buffer the picker uses
+    // (analysisId 'default' → undefined keeps the frame — and its query cache —
+    // aligned with the rendered cloud).
+    const { mask: expressionVisibilityMask } = useExpressionVisibilityMask({
+        trajectoryId,
+        analysisId: analysisId === 'default' ? undefined : analysisId,
+        currentTimestep
+    });
+
+    // Triclinic cell wireframe: read the fetched cell (cached by TanStack Query;
+    // shared with the 2D SimulationCellView) and the cell-display store (PBC-image
+    // toggle + client-side edits). The edited override wins so the 3D box reflects
+    // the user's edits immediately. Cell vectors are in simulation units, matching
+    // the boxBounds the content group already renders in.
+    const { simulationCell } = useSimulationCell({
+        trajectoryId,
+        timestep: currentTimestep,
+        enabled: canvasMode !== 'public' && Boolean(trajectoryId)
+    });
+    const showPbcImages = useCellDisplayStore((state) => state.showPbcImages);
+    const cellOverride = useCellDisplayStore(
+        (state) => state.cellOverrides[trajectoryId]
+    );
+    const cellGeometry = useMemo(() => {
+        const fetched = simulationCell?.geometry;
+        const cellVectors = cellOverride?.cellVectors ?? fetched?.cell_vectors;
+        const cellOrigin = cellOverride?.cellOrigin ?? fetched?.cell_origin;
+        const pbc = cellOverride?.pbc ?? fetched?.periodic_boundary_conditions;
+        if (!cellVectors) return undefined;
+        return { cellVectors, cellOrigin, pbc, showPbcImages };
+    }, [simulationCell, cellOverride, showPbcImages]);
+
+    // Tracks whether this scene's GLB resolved to a renderable atom point cloud
+    // — the gate for atom picking. Chained to the upstream consumer so its
+    // existing behavior is unchanged.
+    const [hasPointClouds, setHasPointClouds] = useState(false);
+    const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
+        setHasPointClouds(info.hasPointClouds);
+        onContentTypeDetected?.(info);
+    }, [onContentTypeDetected]);
+
     const {
         modelBounds,
         loadError,
         deselect,
         setSelectedObject,
-        onHoverChange
+        onHoverChange,
+        engineRef
     } = useGlbScene({
         url,
         resourceKey: glbResource.resourceKey,
@@ -256,7 +301,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         updateThrottle,
         onSelect,
         orbitControlsRef,
-        onEmptyData: handleEmptyData,
         disableAutoTransform: true,
         sceneKey,
         boxBounds,
@@ -265,11 +309,63 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         lineSettings,
         lineHighlight,
         sceneVisualOverrides,
+        visibilityMask: expressionVisibilityMask,
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged,
-        onContentTypeDetected
+        onContentTypeDetected: handleContentTypeDetected
     }, modelContainerRef);
+
+    // Atom picking only applies to the atoms point cloud (not line/mesh scenes,
+    // not the public canvas where per-atom data is RBAC-scoped). Gated further
+    // on the GPU pick path: the engine no-ops when no point cloud is loaded.
+    const atomPickEnabled = canvasMode !== 'public'
+        && hasPointClouds
+        && resolveLineSceneSource(sceneConfig) === null;
+
+    const {
+        ids: atomIdBuffer,
+        exceedsSelectionCap
+    } = useAtomsBuffer({
+        trajectoryId,
+        analysisId: analysisId === 'default' ? undefined : analysisId,
+        timestep: currentTimestep,
+        enabled: atomPickEnabled
+    });
+
+    const { selectionKey, selectedIds } = useAtomSelectionLink({
+        trajectoryId,
+        timestep: currentTimestep
+    });
+
+    useAtomPick({
+        engineRef,
+        selectionKey: atomPickEnabled ? selectionKey : null,
+        ids: atomIdBuffer,
+        enabled: atomPickEnabled,
+        allowLassoBox: atomPickEnabled && !exceedsSelectionCap,
+        orbitControlsRef
+    });
+
+    // Reflect the per-frame selection into the 3D view. The engine maps the
+    // frame-stable ids back to its (morton-sorted) vertices via the same id
+    // buffer the picker used, then paints the additive highlight overlay.
+    // `modelBounds` is a dependency so a deep-linked selection (URL → store
+    // before the model loads) reapplies once the cloud is present.
+    useEffect(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        if (!atomPickEnabled || !atomIdBuffer || selectedIds.size === 0) {
+            engine.updateAtomHighlight(new Set<number>());
+            return;
+        }
+        const originalIndices = new Set<number>();
+        for (let index = 0; index < atomIdBuffer.length; index += 1) {
+            if (selectedIds.has(Number(atomIdBuffer[index]))) originalIndices.add(index);
+        }
+        engine.updateAtomHighlight(originalIndices);
+    }, [engineRef, atomPickEnabled, atomIdBuffer, selectedIds, modelBounds]);
+
 
     useEffect(() => {
         autoFitKeyRef.current = autoFitKey;
@@ -396,6 +492,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         <SimulationCellBox
             sceneKey={sceneKey}
             boxBounds={boxBounds}
+            cellGeometry={cellGeometry}
             transforms={cellBoxTransforms}
             orbitControlsRef={orbitControlsRef}
             onSelect={setSelectedObject}

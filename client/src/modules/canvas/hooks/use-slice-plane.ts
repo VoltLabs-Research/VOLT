@@ -1,10 +1,8 @@
-import { useEditorStore } from '@/modules/canvas/stores/editor';
+import { useCanvasPipelineStore } from '@/modules/canvas/stores/canvas-pipeline';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { DEFAULT_SLICE_PLANE_CONFIG, getSlicePlaneCenterDistance, isSlicePlaneConfigPristine } from '@/modules/fractal/utilities/slice-plane';
-
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SlicePlaneNormalAxis } from '@/modules/fractal/api/entities/scene';
+import type { SlicePlaneStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
 
 const NON_COMMITTABLE_NUMERIC_INPUTS = new Set(['', '-', '+', '.', '-.', '+.']);
 
@@ -18,130 +16,85 @@ const isFiniteNumericInput = (value: string): value is string => {
 };
 
 export interface UseSlicePlaneReturn {
-    enabled: boolean;
     distanceInput: string;
     normalInputs: Record<SlicePlaneNormalAxis, string>;
     reverseOrientation: boolean;
     visualizePlane: boolean;
-    handleEnabledChange: (_fieldKey: string, value: string | number | boolean) => void;
     handleDistanceChange: (_fieldKey: string, value: string | number | boolean) => void;
     handleNormalChange: (axis: SlicePlaneNormalAxis) => (_fieldKey: string, value: string | number | boolean) => void;
     handleReverseOrientationChange: (_fieldKey: string, value: string | number | boolean) => void;
     handleVisualizePlaneChange: (_fieldKey: string, value: string | number | boolean) => void;
 }
 
-const useSlicePlane = (): UseSlicePlaneReturn => {
-    const {
-        slicePlaneConfig,
-        modelWorldBounds,
-        setSlicePlaneConfig,
-        setSlicePlaneEnabled,
-        setSlicePlaneDistance,
-        setSlicePlaneNormalComponent,
-        setSlicePlaneReverseOrientation,
-        setSlicePlaneVisualizePlane
-    } = useEditorStore(useShallow((s) => ({
-        slicePlaneConfig: s.configuration.slicePlaneConfig,
-        modelWorldBounds: s.modelWorldBounds,
-        setSlicePlaneConfig: s.configuration.setSlicePlaneConfig,
-        setSlicePlaneEnabled: s.configuration.setSlicePlaneEnabled,
-        setSlicePlaneDistance: s.configuration.setSlicePlaneDistance,
-        setSlicePlaneNormalComponent: s.configuration.setSlicePlaneNormalComponent,
-        setSlicePlaneReverseOrientation: s.configuration.setSlicePlaneReverseOrientation,
-        setSlicePlaneVisualizePlane: s.configuration.setSlicePlaneVisualizePlane
-    })));
+/**
+ * Drives one slice-plane pipeline stage. The stage's own enabled toggle (in the
+ * pipeline row) gates whether the plane clips — there is no inner "Enabled"
+ * control here. Distance auto-centering on the model bounds is handled by
+ * use-pipeline-slice-planes when the config is still pristine.
+ */
+const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneReturn => {
+    const stage = useCanvasPipelineStore((s) =>
+        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)
+    );
+    const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
 
-    const [distanceInput, setDistanceInput] = useState(() => String(slicePlaneConfig.distance));
+    const config = stage?.config as SlicePlaneStageConfig | undefined;
+    const distance = config?.distance ?? 0;
+    const normal = useMemo(
+        () => config?.normal ?? { x: 1, y: 0, z: 0 },
+        [config?.normal]
+    );
+    const reverseOrientation = config?.reverseOrientation ?? false;
+    const visualizePlane = config?.visualizePlane ?? false;
+
+    const [distanceInput, setDistanceInput] = useState(() => String(distance));
     const [normalInputs, setNormalInputs] = useState<Record<SlicePlaneNormalAxis, string>>(() => ({
-        x: String(slicePlaneConfig.normal.x),
-        y: String(slicePlaneConfig.normal.y),
-        z: String(slicePlaneConfig.normal.z)
+        x: String(normal.x),
+        y: String(normal.y),
+        z: String(normal.z)
     }));
 
     useEffect(() => {
-        setDistanceInput(String(slicePlaneConfig.distance));
-    }, [slicePlaneConfig.distance]);
+        setDistanceInput(String(distance));
+    }, [distance]);
 
     useEffect(() => {
-        setNormalInputs({
-            x: String(slicePlaneConfig.normal.x),
-            y: String(slicePlaneConfig.normal.y),
-            z: String(slicePlaneConfig.normal.z)
-        });
-    }, [slicePlaneConfig.normal.x, slicePlaneConfig.normal.y, slicePlaneConfig.normal.z]);
+        setNormalInputs({ x: String(normal.x), y: String(normal.y), z: String(normal.z) });
+    }, [normal.x, normal.y, normal.z]);
 
-    useEffect(() => {
-        if (!modelWorldBounds || !isSlicePlaneConfigPristine(slicePlaneConfig)) {
-            return;
-        }
-
-        const centeredDistance = getSlicePlaneCenterDistance(slicePlaneConfig, modelWorldBounds);
-        if (centeredDistance === slicePlaneConfig.distance) {
-            return;
-        }
-
-        setSlicePlaneConfig({
-            distance: centeredDistance
-        });
-    }, [modelWorldBounds, setSlicePlaneConfig, slicePlaneConfig]);
-
-    const handleEnabledChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
-        const nextEnabled = Boolean(value);
-
-        if (nextEnabled && modelWorldBounds && slicePlaneConfig.distance === DEFAULT_SLICE_PLANE_CONFIG.distance) {
-            setSlicePlaneConfig({
-                enabled: true,
-                distance: getSlicePlaneCenterDistance(slicePlaneConfig, modelWorldBounds)
-            });
-            return;
-        }
-
-        setSlicePlaneEnabled(nextEnabled);
-    }, [modelWorldBounds, setSlicePlaneConfig, setSlicePlaneEnabled, slicePlaneConfig]);
+    const patch = useCallback((next: Partial<SlicePlaneStageConfig>) => {
+        updateStageConfig(stageId, next as Partial<SlicePlaneStageConfig>, trajectoryId);
+    }, [stageId, trajectoryId, updateStageConfig]);
 
     const handleDistanceChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
         const nextValue = String(value);
         setDistanceInput(nextValue);
-
-        if (!isFiniteNumericInput(nextValue)) {
-            return;
-        }
-
-        setSlicePlaneDistance(Number(nextValue));
-    }, [setSlicePlaneDistance]);
+        if (!isFiniteNumericInput(nextValue)) return;
+        patch({ distance: Number(nextValue) });
+    }, [patch]);
 
     const handleNormalChange = useCallback((axis: SlicePlaneNormalAxis) => {
         return (_fieldKey: string, value: string | number | boolean) => {
             const nextValue = String(value);
-
-            setNormalInputs((current) => ({
-                ...current,
-                [axis]: nextValue
-            }));
-
-            if (!isFiniteNumericInput(nextValue)) {
-                return;
-            }
-
-            setSlicePlaneNormalComponent(axis, Number(nextValue));
+            setNormalInputs((current) => ({ ...current, [axis]: nextValue }));
+            if (!isFiniteNumericInput(nextValue)) return;
+            patch({ normal: { ...normal, [axis]: Number(nextValue) } });
         };
-    }, [setSlicePlaneNormalComponent]);
+    }, [normal, patch]);
 
     const handleReverseOrientationChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
-        setSlicePlaneReverseOrientation(Boolean(value));
-    }, [setSlicePlaneReverseOrientation]);
+        patch({ reverseOrientation: Boolean(value) });
+    }, [patch]);
 
     const handleVisualizePlaneChange = useCallback((_fieldKey: string, value: string | number | boolean) => {
-        setSlicePlaneVisualizePlane(Boolean(value));
-    }, [setSlicePlaneVisualizePlane]);
+        patch({ visualizePlane: Boolean(value) });
+    }, [patch]);
 
     return {
-        enabled: slicePlaneConfig.enabled,
         distanceInput,
         normalInputs,
-        reverseOrientation: slicePlaneConfig.reverseOrientation,
-        visualizePlane: slicePlaneConfig.visualizePlane,
-        handleEnabledChange,
+        reverseOrientation,
+        visualizePlane,
         handleDistanceChange,
         handleNormalChange,
         handleReverseOrientationChange,

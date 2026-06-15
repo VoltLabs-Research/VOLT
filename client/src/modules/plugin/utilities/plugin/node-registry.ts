@@ -65,6 +65,9 @@ export const ARGUMENT_TYPE_OPTIONS: NodeOption<ArgumentType>[] = [{
     value: ArgumentType.LIST,
     label: 'List'
 }, {
+    value: ArgumentType.TUPLE,
+    label: 'Tuple'
+}, {
     value: ArgumentType.PLUGIN_REFERENCE,
     label: 'Plugin Reference'
 }];
@@ -78,6 +81,9 @@ export const EXPORTER_OPTIONS: NodeOption<Exporter>[] = [{
 }, {
     value: Exporter.LINE,
     label: 'Line Exporter'
+}, {
+    value: Exporter.BOND,
+    label: 'Bond Exporter'
 }, {
     value: Exporter.CHART,
     label: 'Chart Exporter'

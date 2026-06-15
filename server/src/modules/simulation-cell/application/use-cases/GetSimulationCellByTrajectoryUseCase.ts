@@ -1,10 +1,9 @@
 import type {
     GetSimulationCellByTrajectoryInputDTO,
     GetSimulationCellByTrajectoryOutputDTO
-} from '@modules/simulation-cell/application/dtos/GetSimulationCellByTrajectoryDTO';
+} from '@shared/contracts/dtos/GetSimulationCellByTrajectoryDTO';
 import type { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
-import type { ISimulationCellRepository } from '@modules/simulation-cell/domain/port/ISimulationCellRepository';
-import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import type { ISimulationCellRepository } from '@shared/contracts/ports/ISimulationCellRepository';
 import type { IGetSimulationCellByTrajectoryUseCase } from '@shared/contracts/ports/IGetSimulationCellByTrajectoryUseCase';
 import { SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens/SimulationCellTokens';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
@@ -18,7 +17,7 @@ import { inject, injectable } from 'tsyringe';
 @AliasOf(SIMULATION_CELL_CONTRACT_TOKENS.GetSimulationCellByTrajectoryUseCase)
 export default class GetSimulationCellByTrajectoryUseCase implements IGetSimulationCellByTrajectoryUseCase {
     constructor(
-        @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository) private readonly repository: ISimulationCellRepository
+        @inject(SIMULATION_CELL_CONTRACT_TOKENS.SimulationCellRepository) private readonly repository: ISimulationCellRepository
     ) {}
 
     async execute(

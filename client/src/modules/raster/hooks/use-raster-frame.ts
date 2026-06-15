@@ -79,7 +79,7 @@ export const useRasterFrame = ({
         queryKey: buildRasterFrameQueryKey({ scope, trajectoryId, timestep, analysisId, model, requestKey }),
         enabled: canFetchFrame,
         retry: false,
-        queryFn: async ({ signal }) => {
+        queryFn: async () => {
             const blob = requiresAnalysisFrame
                 ? await canvasService.getAnalysisRasterFrame({
                     trajectoryId: trajectoryId!,
@@ -91,10 +91,6 @@ export const useRasterFrame = ({
                     trajectoryId: trajectoryId!,
                     timestep: timestep!
                 });
-
-            if (signal.aborted) {
-                throw new DOMException('The raster frame request was aborted', 'AbortError');
-            }
 
             return blob;
         },

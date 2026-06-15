@@ -5,7 +5,7 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { formatUnknownValue } from '@/shared/utils/format';
+import { formatUnknownValue } from '@voltstack/bravais';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import { useMedia } from '@voltstack/bravais';

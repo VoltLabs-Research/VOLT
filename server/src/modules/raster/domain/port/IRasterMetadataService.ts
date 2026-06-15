@@ -1,4 +1,4 @@
-import type { RasterMetadata } from '@modules/raster/domain/entities/RasterMetadata';
+import type { RasterMetadata } from '@shared/contracts/types/RasterMetadata';
 
 export interface IRasterMetadataService {
     getRasterMetadata(trajectoryId: string, teamId: string): Promise<RasterMetadata | null>;

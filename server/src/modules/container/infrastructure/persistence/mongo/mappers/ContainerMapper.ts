@@ -6,7 +6,5 @@ export default createMongoMapper<Container, IContainerProps, IContainerDoc>(Cont
     'createdBy',
     'team',
     'teamCluster',
-    'folder',
-    'network',
-    'volume'
+    'folder'
 ]);

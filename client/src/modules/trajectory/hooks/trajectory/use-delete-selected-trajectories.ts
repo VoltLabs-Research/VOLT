@@ -25,7 +25,7 @@ export default function useDeleteSelectedTrajectories() {
             Promise.all(selectedIds.map((id) => deleteTrajectoryMutation.mutateAsync(id))).then(clearSelection),
             { action: 'Deleting', subject: `${selectedIds.length} trajectories` }
         );
-    }, [clearSelection, confirm, deleteTrajectoryMutation, selectedIds]);
+    }, [clearSelection, deleteTrajectoryMutation, selectedIds]);
 
     return deleteSelectedTrajectories;
 }

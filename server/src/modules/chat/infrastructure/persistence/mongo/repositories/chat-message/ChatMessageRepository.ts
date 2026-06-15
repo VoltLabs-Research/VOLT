@@ -8,19 +8,6 @@ import type { ChatMessageProps } from '@modules/chat/domain/entities/chat-messag
 import type { IChatMessageRepository } from '@modules/chat/domain/port/chat-message/IChatMessageRepository';
 import type { ChatMessageDocument } from '@modules/chat/infrastructure/persistence/mongo/models/chat-message/ChatMessageModel';
 
-interface MarkMessagesAsReadFilter {
-    chat: string;
-    readBy: {
-        $ne: string;
-    };
-}
-
-interface MarkMessagesAsReadUpdate {
-    $addToSet: {
-        readBy: string;
-    };
-}
-
 @Singleton(CHAT_TOKENS.ChatMessageRepository)
 export default class ChatMessageRepository
     extends MongooseBaseRepository<ChatMessage, ChatMessageProps, ChatMessageDocument>
@@ -40,13 +27,13 @@ export default class ChatMessageRepository
     }
 
     async markAllAsRead(chatId: string, userId: string): Promise<void> {
-        const filter: MarkMessagesAsReadFilter = {
+        const filter = {
             chat: chatId,
             readBy: {
                 $ne: userId
             }
         };
-        const update: MarkMessagesAsReadUpdate = {
+        const update = {
             $addToSet: {
                 readBy: userId
             }

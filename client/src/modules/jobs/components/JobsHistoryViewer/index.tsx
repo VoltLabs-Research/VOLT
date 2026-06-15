@@ -34,8 +34,7 @@ const JobsHistoryViewer = (props: JobsHistoryViewerProps) => {
         trajectoryId,
         queueFilter,
         isConnected,
-        isLoading,
-        hideAfterComplete: false
+        isLoading
     });
 
     const { resetTracking } = useJobsAutoSelectAnalysis({

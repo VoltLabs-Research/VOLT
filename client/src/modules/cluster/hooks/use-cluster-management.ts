@@ -89,7 +89,6 @@ export interface ClusterManagementResult {
     selectedCluster: TeamCluster | null;
     selectedClusterId: string | null;
     setSelectedClusterId: (clusterId: string | null) => void;
-    waitingCluster: TeamCluster | null;
     isLoading: boolean;
     error: Error | null;
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
@@ -147,10 +146,6 @@ const useClusterManagement = (): ClusterManagementResult => {
     const selectedCluster = useMemo(() => {
         return clusters.find((cluster) => cluster._id === resolvedSelectedClusterId) ?? null;
     }, [clusters, resolvedSelectedClusterId]);
-
-    const waitingCluster = useMemo(() => {
-        return clusters.find((cluster) => isTeamClusterWaiting(cluster.status)) ?? null;
-    }, [clusters]);
 
     const createCluster = async (name: string) => {
         const result = await showPromise(createMutation.mutateAsync({
@@ -221,7 +216,6 @@ const useClusterManagement = (): ClusterManagementResult => {
         selectedCluster,
         selectedClusterId: resolvedSelectedClusterId,
         setSelectedClusterId,
-        waitingCluster,
         isLoading: teamClustersQuery.isLoading,
         error: teamClustersQuery.error,
         createCluster,

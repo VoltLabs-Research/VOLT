@@ -3,12 +3,5 @@ import Team, { TeamProps } from '@modules/team/domain/entities/team/Team';
 import { createMongoMapper } from '@shared/infrastructure/persistence/mongo/createMongoMapper';
 
 export default createMongoMapper<Team, TeamProps, TeamDocument>(Team, [
-    'owner',
-    'admins',
-    'members',
-    'invitations',
-    'containers',
-    'trajectories',
-    'chats',
-    'plugins'
+    'owner'
 ]);

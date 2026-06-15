@@ -107,10 +107,6 @@ const GetPublicCanvasRasterFrameController = createPreparedDownloadStreamControl
     extendParams: withOptionalUserId
 });
 
-const GetPublicCanvasAnalysisRasterFrameController = createPreparedDownloadStreamController(GetPublicCanvasRasterFrameUseCase, {
-    extendParams: withOptionalUserId
-});
-
 const GetPublicCanvasDumpController = createPreparedDownloadStreamController(GetPublicCanvasDumpUseCase, {
     extendParams: withOptionalUserId
 });
@@ -153,15 +149,7 @@ const GetPublicCanvasColorCodingPropertiesController = createController(GetPubli
     extendParams: withOptionalUserId
 });
 
-const GetPublicCanvasColorCodingPropertiesByAnalysisController = createController(GetPublicCanvasColorCodingPropertiesUseCase, {
-    extendParams: withOptionalUserId
-});
-
 const GetPublicCanvasColorCodingStatsController = createController(GetPublicCanvasColorCodingStatsUseCase, {
-    extendParams: withOptionalUserId
-});
-
-const GetPublicCanvasColorCodingStatsByAnalysisController = createController(GetPublicCanvasColorCodingStatsUseCase, {
     extendParams: withOptionalUserId
 });
 
@@ -170,16 +158,7 @@ const GetPublicCanvasColoredModelStreamController = createStreamController(GetPu
     getHeaders: getPassthroughModelHeaders
 });
 
-const GetPublicCanvasColoredModelStreamByAnalysisController = createStreamController(GetPublicCanvasColoredModelStreamUseCase, {
-    extendParams: withOptionalUserId,
-    getHeaders: getPassthroughModelHeaders
-});
-
 const GetPublicCanvasParticleFilterPropertiesController = createController(GetPublicCanvasParticleFilterPropertiesUseCase, {
-    extendParams: withOptionalUserId
-});
-
-const GetPublicCanvasParticleFilterPropertiesByAnalysisController = createController(GetPublicCanvasParticleFilterPropertiesUseCase, {
     extendParams: withOptionalUserId
 });
 
@@ -187,24 +166,11 @@ const GetPublicCanvasParticleFilterUniqueValuesController = createController(Get
     extendParams: withOptionalUserId
 });
 
-const GetPublicCanvasParticleFilterUniqueValuesByAnalysisController = createController(GetPublicCanvasParticleFilterUniqueValuesUseCase, {
-    extendParams: withOptionalUserId
-});
-
 const GetPublicCanvasParticleFilterPreviewController = createController(GetPublicCanvasParticleFilterPreviewUseCase, {
     extendParams: withOptionalUserId
 });
 
-const GetPublicCanvasParticleFilterPreviewByAnalysisController = createController(GetPublicCanvasParticleFilterPreviewUseCase, {
-    extendParams: withOptionalUserId
-});
-
 const GetPublicCanvasFilteredModelStreamController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
-    extendParams: withOptionalUserId,
-    getHeaders: getPassthroughModelHeaders
-});
-
-const GetPublicCanvasFilteredModelStreamByAnalysisController = createStreamController(GetPublicCanvasFilteredModelStreamUseCase, {
     extendParams: withOptionalUserId,
     getHeaders: getPassthroughModelHeaders
 });
@@ -238,26 +204,26 @@ const resolvedControllers = createControllerRegistry({
     trajectory: GetPublicCanvasTrajectoryController,
     preview: GetPublicCanvasPreviewController,
     rasterFrame: GetPublicCanvasRasterFrameController,
-    analysisRasterFrame: GetPublicCanvasAnalysisRasterFrameController,
+    analysisRasterFrame: GetPublicCanvasRasterFrameController,
     dump: GetPublicCanvasDumpController,
     glb: GetPublicCanvasGLBController,
     analyses: ListPublicCanvasAnalysesController,
     simulationCell: GetPublicCanvasSimulationCellController,
     sceneArtifacts: ListPublicCanvasSceneArtifactsController,
     colorCodingProperties: GetPublicCanvasColorCodingPropertiesController,
-    colorCodingPropertiesByAnalysis: GetPublicCanvasColorCodingPropertiesByAnalysisController,
+    colorCodingPropertiesByAnalysis: GetPublicCanvasColorCodingPropertiesController,
     colorCodingStats: GetPublicCanvasColorCodingStatsController,
-    colorCodingStatsByAnalysis: GetPublicCanvasColorCodingStatsByAnalysisController,
+    colorCodingStatsByAnalysis: GetPublicCanvasColorCodingStatsController,
     colorCodingModel: GetPublicCanvasColoredModelStreamController,
-    colorCodingModelByAnalysis: GetPublicCanvasColoredModelStreamByAnalysisController,
+    colorCodingModelByAnalysis: GetPublicCanvasColoredModelStreamController,
     particleFilterProperties: GetPublicCanvasParticleFilterPropertiesController,
-    particleFilterPropertiesByAnalysis: GetPublicCanvasParticleFilterPropertiesByAnalysisController,
+    particleFilterPropertiesByAnalysis: GetPublicCanvasParticleFilterPropertiesController,
     particleFilterUniqueValues: GetPublicCanvasParticleFilterUniqueValuesController,
-    particleFilterUniqueValuesByAnalysis: GetPublicCanvasParticleFilterUniqueValuesByAnalysisController,
+    particleFilterUniqueValuesByAnalysis: GetPublicCanvasParticleFilterUniqueValuesController,
     particleFilterPreview: GetPublicCanvasParticleFilterPreviewController,
-    particleFilterPreviewByAnalysis: GetPublicCanvasParticleFilterPreviewByAnalysisController,
+    particleFilterPreviewByAnalysis: GetPublicCanvasParticleFilterPreviewController,
     particleFilterModel: GetPublicCanvasFilteredModelStreamController,
-    particleFilterModelByAnalysis: GetPublicCanvasFilteredModelStreamByAnalysisController,
+    particleFilterModelByAnalysis: GetPublicCanvasFilteredModelStreamController,
     plugin: GetPublicCanvasPluginController,
     pluginListing: GetPublicCanvasPluginListingController,
     subListing: GetPublicCanvasSubListingController,

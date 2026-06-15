@@ -7,5 +7,4 @@ export interface GetLoginActivityInputDTO {
 
 export interface GetLoginActivityOutputDTO {
     activities: PersistedSessionDTO[];
-    total: number;
 }

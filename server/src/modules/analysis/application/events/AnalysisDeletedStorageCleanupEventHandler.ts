@@ -2,8 +2,8 @@ import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceT
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
-import type { AnalysisStorageCleanupTarget } from '@modules/analysis/utilities/storage-cleanup-prefixes';
-import { getAnalysisStorageCleanupTargets } from '@modules/analysis/utilities/storage-cleanup-prefixes';
+import type { AnalysisStorageCleanupTarget } from '@shared/application/utilities/storage-cleanup-prefixes';
+import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { IStoragePlacementRepository } from '@shared/contracts/ports';
 import type { IClusterTransferJobRepository } from '@shared/contracts/ports';

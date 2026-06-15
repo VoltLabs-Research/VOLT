@@ -14,8 +14,6 @@ const buildModifierPropertyValue = (exposureId: string, property: string): strin
     return `plugin:${exposureId}:${property}`;
 };
 
-const buildOptionTitle = (property: string): string => property;
-
 export const buildPropertyOptions = (properties: FilterPropertiesData | undefined): PropertyOption[] => {
     if (!properties) {
         return [];
@@ -38,7 +36,7 @@ export const buildPropertyOptions = (properties: FilterPropertiesData | undefine
             const type = properties.perAtomTypes?.[exposureId]?.[property] ?? 'number';
             options.push({
                 value: buildModifierPropertyValue(exposureId, property),
-                title: buildOptionTitle(property),
+                title: property,
                 property,
                 exposureId,
                 type

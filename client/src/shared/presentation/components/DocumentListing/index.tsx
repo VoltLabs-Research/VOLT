@@ -1,6 +1,6 @@
 import { isAccessDeniedCode } from '@/shared/errors/core';
 import type { DocumentListingDragAndDropConfig } from '@/shared/presentation/components/DocumentListing/drag-and-drop';
-import { getValueByPath } from '@/shared/utils/format';
+import { getValueByPath } from '@voltstack/bravais';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import { sortData, type SortConfig } from '@/shared/utils/sort';
 import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';

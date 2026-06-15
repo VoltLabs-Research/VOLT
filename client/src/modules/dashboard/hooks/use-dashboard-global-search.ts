@@ -1,5 +1,5 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
-import { EMPTY_GLOBAL_SEARCH_RESULTS } from '@/modules/dashboard/api/service';
+import { EMPTY_GLOBAL_SEARCH_RESULTS, MIN_SEARCH_QUERY_LENGTH } from '@/modules/dashboard/api/service';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import {
@@ -19,7 +19,6 @@ import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_RESULT_LIMIT = 5;
-const MIN_SEARCH_QUERY_LENGTH = 2;
 
 export interface DashboardGlobalSearchItem {
     id: string;

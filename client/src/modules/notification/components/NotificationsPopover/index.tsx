@@ -1,5 +1,5 @@
 import useNotificationData from '../../hooks/use-notification-data';
-import '../NotificationBadge/NotificationBadge.css';
+import './NotificationBadge.css';
 import NotificationList from '../NotificationList';
 import { Button, IconButton, Popover, Row } from '@voltstack/bravais';
 import PanelHeader from '@/shared/presentation/components/PanelHeader';

@@ -77,17 +77,12 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                     const remainingTeams = teams.filter((team) => team._id !== teamId);
                     const nextTeam = remainingTeams[0] ?? null;
 
-                    if (nextTeam) {
-                        resetTeamScopedApplicationState();
-                        state.setSelectedTeamId(nextTeam._id);
-                    } else {
-                        resetTeamScopedApplicationState();
-                        state.setSelectedTeamId(null);
-                    }
+                    resetTeamScopedApplicationState();
+                    state.setSelectedTeamId(nextTeam?._id ?? null);
                 }
             }
         });
-    }, [confirm, leaveTeamMutation, teams]);
+    }, [leaveTeamMutation, teams]);
 
     const teamOptions = useMemo(() =>
         teams.map((team) => ({

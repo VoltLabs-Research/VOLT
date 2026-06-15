@@ -99,13 +99,3 @@ export const getSlicePlaneCenterDistance = (
 
     return center.dot(normal);
 };
-
-export const isSlicePlaneConfigPristine = (config: SlicePlaneConfig): boolean => {
-    return config.enabled === DEFAULT_SLICE_PLANE_CONFIG.enabled
-        && config.distance === DEFAULT_SLICE_PLANE_CONFIG.distance
-        && config.normal.x === DEFAULT_SLICE_PLANE_CONFIG.normal.x
-        && config.normal.y === DEFAULT_SLICE_PLANE_CONFIG.normal.y
-        && config.normal.z === DEFAULT_SLICE_PLANE_CONFIG.normal.z
-        && config.reverseOrientation === DEFAULT_SLICE_PLANE_CONFIG.reverseOrientation
-        && config.visualizePlane === DEFAULT_SLICE_PLANE_CONFIG.visualizePlane;
-};

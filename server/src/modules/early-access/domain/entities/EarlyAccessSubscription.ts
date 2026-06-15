@@ -2,11 +2,6 @@ export enum EarlyAccessSubscriptionSource {
     DiscoverTeam = 'discover_team'
 }
 
-export interface EarlyAccessSubscriptionRef {
-    _id?: string;
-    toString?: () => string;
-}
-
 export interface EarlyAccessSubscriptionProps {
     team: string;
     email: string;
@@ -27,23 +22,7 @@ export default class EarlyAccessSubscription {
         return this._id;
     }
 
-    public getTeamId(): string {
-        return EarlyAccessSubscription.getRefId(this.props.team);
-    }
-
     public static normalizeEmail(email: string): string {
         return email.trim().toLowerCase();
-    }
-
-    private static getRefId(value: string | EarlyAccessSubscriptionRef): string {
-        if (typeof value === 'string') {
-            return value;
-        }
-
-        if (value._id) {
-            return value._id;
-        }
-
-        return value.toString?.() ?? '';
     }
 }

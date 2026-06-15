@@ -1,11 +1,11 @@
-import { useGenerateInviteCodeMutation, useDeleteInviteCodeMutation, useTeamsQuery } from '@/modules/team/hooks/team/queries';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useGenerateInviteCodeMutation, useDeleteInviteCodeMutation } from '@/modules/team/hooks/team/queries';
+import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { runAction } from '@/shared/presentation/actions/run-action';
 import { ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 const GENERATE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Generating invite code...',
@@ -39,10 +39,7 @@ export default function useInviteCode(): UseInviteCodeReturn {
     const teamId = useSelectedTeamId();
     const { canAccess } = useTeamPermissions();
 
-    const teamsQuery = useTeamsQuery();
-    const selectedTeam = useMemo(() => {
-        return teamsQuery.data?.find((team) => team._id === teamId) ?? null;
-    }, [teamsQuery.data, teamId]);
+    const selectedTeam = useSelectedTeam();
 
     const canManageCode = canAccess(['team-invitation:create']);
 

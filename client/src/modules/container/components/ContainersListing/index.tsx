@@ -12,7 +12,7 @@ import {
 import { Heading, Text } from '@voltstack/bravais';
 import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
-import { formatSize } from '@/shared/utils/format';
+import { formatSize } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';

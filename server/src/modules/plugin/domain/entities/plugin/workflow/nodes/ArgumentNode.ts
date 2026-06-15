@@ -5,6 +5,7 @@ export enum ArgumentType {
     Boolean = 'boolean',
     String = 'string',
     List = 'list',
+    Tuple = 'tuple',
     PluginReference = 'pluginReference'
 }
 

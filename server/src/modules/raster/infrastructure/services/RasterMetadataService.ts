@@ -2,10 +2,10 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type {
     RasterAnalysisMetadata,
     RasterFrameMetadata, RasterMetadata, RasterTrajectoryMetadata
-} from '@modules/raster/domain/entities/RasterMetadata';
-import { RasterMetadataStatus } from '@modules/raster/domain/entities/RasterMetadata';
+} from '@shared/contracts/types/RasterMetadata';
+import { RasterMetadataStatus } from '@shared/contracts/types/RasterMetadata';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
-import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@modules/raster/utilities/raster-storage-paths';
+import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@shared/application/utilities/raster-storage-paths';
 import {
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId

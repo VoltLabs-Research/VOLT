@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
 import type { ColumnConfig, Identifiable } from '@/shared/presentation/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/presentation/types/menu';
-import { formatUnknownValue } from '@/shared/utils/format';
+import { formatUnknownValue } from '@voltstack/bravais';
 import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react';
 
 interface TableRowProps<T extends Identifiable> {

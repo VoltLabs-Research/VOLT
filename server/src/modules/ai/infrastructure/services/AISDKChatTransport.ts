@@ -13,7 +13,7 @@ import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createXai } from '@ai-sdk/xai';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { AIConversationMessage } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { AIProvider, AI_PROVIDERS } from '@modules/ai/domain/contracts/AIProviders';
+import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
 import type { AIMessageToolCall, AIMessageToolResult } from '@modules/ai/domain/entities/AIMessage';
 import type { AIChatFinishEvent, AIChatReplyStream, GenerateAIChatReplyInput, IAIChatTransport } from '@modules/ai/domain/port/IAIChatTransport';
 import type { IAIToolService } from '@modules/ai/domain/port/IAIToolService';
@@ -122,10 +122,6 @@ const toAIMessageToolResult = (toolResult: AIStreamToolResult): AIMessageToolRes
 
 class AISDKReplyStream implements AIChatReplyStream {
     constructor(private readonly result: AIStreamResult) {}
-
-    consumeText(): Promise<string> {
-        return Promise.resolve(this.result.text);
-    }
 
     pipeToResponse(response: Response): void {
         this.result.pipeUIMessageStreamToResponse(response);

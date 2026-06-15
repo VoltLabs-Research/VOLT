@@ -4,14 +4,11 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum DailyActivityRelation {
-    Team = 'team',
-    User = 'user'
-}
+type DailyActivityRelations = 'team' | 'user';
 
 export interface DailyActivityDocument extends Persistable<
     DailyActivityProps,
-    DailyActivityRelation.Team | DailyActivityRelation.User
+    DailyActivityRelations
 >, Document {};
 
 const ActivitySchema = new Schema({

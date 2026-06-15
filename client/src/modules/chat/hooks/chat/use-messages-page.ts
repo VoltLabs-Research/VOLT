@@ -42,8 +42,7 @@ const useMessagesPage = (chatId?: string) => {
         updateMessage,
         isChatsLoading,
         isMessagesLoading,
-        chatsError,
-        messagesError
+        chatsError
     } = chatData;
 
     const typingUsers = useChatPresenceStore((state) => state.typingUsers);
@@ -204,7 +203,6 @@ const useMessagesPage = (chatId?: string) => {
         isMessagesLoading,
         hasMoreMessages,
         chatsError,
-        messagesError,
         ...uiState,
 
         handleSelectChat: handleSelectConversation,

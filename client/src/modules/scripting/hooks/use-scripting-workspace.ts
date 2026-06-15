@@ -63,9 +63,7 @@ const rememberReadyJupyterUrl = (input: { trajectoryId: string; notebookId?: str
         readyJupyterUrlByNotebookId.set(input.notebookId, input.url);
     }
 
-    if (input.trajectoryId) {
-        readyJupyterUrlByTrajectoryId.set(input.trajectoryId, input.url);
-    }
+    readyJupyterUrlByTrajectoryId.set(input.trajectoryId, input.url);
 };
 
 const readRememberedJupyterUrl = (input: { trajectoryId: string; notebookId?: string }): string | null => {

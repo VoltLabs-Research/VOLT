@@ -7,7 +7,7 @@ import { Row, Tag } from '@voltstack/bravais';
 import { Box } from 'lucide-react';
 import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import { formatNumber } from '@/shared/utils/format';
+import { formatNumber } from '@voltstack/bravais';
 
 interface PeriodicAxisStatus {
     axis: 'X' | 'Y' | 'Z';

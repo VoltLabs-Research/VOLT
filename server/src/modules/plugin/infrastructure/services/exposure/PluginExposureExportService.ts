@@ -22,7 +22,7 @@ import path from 'node:path';
 import { v4 } from 'uuid';
 import { inject } from 'tsyringe';
 
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 import type {
     IPluginExposureExportService,
     PluginExposureExportParams

@@ -1,10 +1,8 @@
 import { Box, Button, Stack, Callout } from '@voltstack/bravais';
 import { IoExitOutline } from 'react-icons/io5';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import type { Chat } from '@/modules/chat/api/entities/chat';
 
 interface GeneralTabProps {
-    chat: Chat;
     groupName: string;
     groupDescription: string;
     isLoading: boolean;

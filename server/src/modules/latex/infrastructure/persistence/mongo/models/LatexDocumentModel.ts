@@ -3,13 +3,9 @@ import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum LatexDocumentRelation {
-    Team = 'team',
-    CreatedBy = 'createdBy',
-    LastEditedBy = 'lastEditedBy'
-}
+type LatexDocumentRelations = 'team' | 'createdBy' | 'lastEditedBy';
 
-type LatexDocumentDocumentBase = Persistable<LatexDocumentProps, `${LatexDocumentRelation}`>;
+type LatexDocumentDocumentBase = Persistable<LatexDocumentProps, LatexDocumentRelations>;
 
 export interface LatexDocumentDocument extends Omit<LatexDocumentDocumentBase, 'folder'>, Document {
     folder: Types.ObjectId | null;

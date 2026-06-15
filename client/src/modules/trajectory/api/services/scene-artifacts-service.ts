@@ -24,7 +24,6 @@ export interface RenderableExposurePayload {
 export interface ListSceneArtifactsInputDTO {
     trajectoryId: string;
     sourceType?: SceneArtifactSourceType;
-    type?: SceneArtifactSourceType;
     analysisId?: string;
     projection?: 'raw' | 'renderable-exposures';
     timestep?: number;
@@ -36,15 +35,14 @@ export interface ListTeamSceneArtifactsInputDTO {
     page?: number;
     limit?: number;
     sourceType?: SceneArtifactSourceType;
-    type?: SceneArtifactSourceType;
     analysisId?: string;
     timestep?: number;
 }
 
 export const buildSceneArtifactQuery = (
-    params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType' | 'type'>
+    params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType'>
 ) => {
-    const sourceType = params.sourceType ?? params.type;
+    const sourceType = params.sourceType;
     return {
         ...(params.analysisId ? { analysisId: params.analysisId } : {}),
         ...(params.projection ? { projection: params.projection } : {}),
@@ -56,9 +54,9 @@ export const buildSceneArtifactQuery = (
 };
 
 const buildTeamSceneArtifactQuery = (
-    params: Pick<ListTeamSceneArtifactsInputDTO, 'analysisId' | 'timestep' | 'page' | 'limit' | 'sourceType' | 'type'>
+    params: Pick<ListTeamSceneArtifactsInputDTO, 'analysisId' | 'timestep' | 'page' | 'limit' | 'sourceType'>
 ) => {
-    const sourceType = params.sourceType ?? params.type;
+    const sourceType = params.sourceType;
     return {
         ...(params.analysisId ? { analysisId: params.analysisId } : {}),
         ...(params.timestep !== undefined ? { timestep: params.timestep } : {}),
@@ -72,13 +70,11 @@ const endpoints = {
     listByTrajectory: get<ListSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
         '/:trajectoryId/scene-artifacts', {
             unwrap: 'raw',
-            omit: ['type'],
             query: buildSceneArtifactQuery
         }
     ),
     listByTeam: paginated<ListTeamSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact>>('/scene-artifacts', {
         unwrap: 'raw',
-        omit: ['type'],
         query: buildTeamSceneArtifactQuery
     })
 };

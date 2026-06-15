@@ -13,6 +13,9 @@ export default createHttpModule({
         router.get('/trajectory/:trajectoryId', controllers.listByTrajectoryId.handle);
         router.get('/:analysisId/logs/:timestep', controllers.getFrameLog.handle);
         router.post('/:analysisId/failed-frames/retries', controllers.retryFailedFrames.handle);
+        router.get('/:analysisId/global-attributes/metadata', controllers.getGlobalAttributesMetadata.handle);
+        router.get('/:analysisId/global-attributes/timeseries', controllers.getGlobalAttributesTimeSeries.handle);
+        router.get('/:analysisId/global-attributes/export', controllers.exportGlobalAttributes.handle);
         router.route('/:analysisId')
             .get(controllers.getById.handle)
             .delete(controllers.deleteById.handle);

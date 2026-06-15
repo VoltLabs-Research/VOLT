@@ -21,7 +21,7 @@ import type {
     AnalysisSubListingExportData,
     ExportListingRowsByAnalysisIdOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import type { DownloadStreamOutputDTO } from '@modules/plugin/domain/contracts/plugin/DownloadStream';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
 /**
  * Converts a snake_case or hyphen-separated name to Title-Case with hyphens.

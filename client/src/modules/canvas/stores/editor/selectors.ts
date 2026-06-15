@@ -11,7 +11,6 @@ export const selectFractalSceneConfig = (state: EditorStore) => ({
     lights: state.lights,
     pointCloudSettings: state.pointCloudSettings,
     pointSizeMultiplier: state.pointSizeMultiplier,
-    slicePlaneConfig: state.configuration.slicePlaneConfig,
     dpr: state.performanceSettings.dpr,
     performance: state.performanceSettings.performance,
     adaptiveEventsEnabled: state.performanceSettings.adaptiveEvents.enabled,

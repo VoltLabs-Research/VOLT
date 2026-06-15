@@ -33,13 +33,9 @@ export type PersistedEntityDTO<TProps> = PersistedEntityOutput<TProps>;
 
 export type EntityOutputDTO<TProps> = PersistedEntityDTO<TProps>;
 
-export type TeamScopedPaginatedOutputDTO<TData> = PaginatedOutputDTO<TData>;
-
 export interface MessageOutputDTO {
     message: string;
 }
-
-export type EntityPropsOutputDTO<TProps> = PersistedEntityDTO<TProps>;
 
 export type PaginatedOutputDTO<TData> = PaginatedResult<TData>;
 

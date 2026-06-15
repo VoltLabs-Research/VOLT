@@ -4,13 +4,9 @@ import mongoose from 'mongoose';
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum WhiteboardRelation {
-    Team = 'team',
-    CreatedBy = 'createdBy',
-    LastEditedBy = 'lastEditedBy'
-}
+type WhiteboardRelations = 'team' | 'createdBy' | 'lastEditedBy';
 
-type WhiteboardDocumentBase = Persistable<WhiteboardProps, `${WhiteboardRelation}`>;
+type WhiteboardDocumentBase = Persistable<WhiteboardProps, WhiteboardRelations>;
 
 export interface WhiteboardDocument extends Omit<WhiteboardDocumentBase, 'folder'>, Document {
     folder: Types.ObjectId | null;

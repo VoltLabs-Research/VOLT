@@ -197,5 +197,4 @@ const usePluginListing = ({
     };
 };
 
-export type { PluginListingContext };
 export default usePluginListing;

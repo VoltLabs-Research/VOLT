@@ -1,3 +1,5 @@
+import ApplicationError from '@shared/application/errors/ApplicationError';
+
 interface PopulatedWhiteboardUser {
     _id: string;
     firstName?: string;
@@ -28,5 +30,16 @@ export const createWhiteboard = (_id: string, props: WhiteboardProps): Whiteboar
     _id,
     props
 });
+
+export const requireWhiteboardStorageClusterId = (whiteboardId: string, props: WhiteboardProps): string => {
+    if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
+        return props.storageClusterId;
+    }
+
+    throw ApplicationError.conflict(
+        'Whiteboard::StorageClusterRequired',
+        `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
+    );
+};
 
 export default Whiteboard;

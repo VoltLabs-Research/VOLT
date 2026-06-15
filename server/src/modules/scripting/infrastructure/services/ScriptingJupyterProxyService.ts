@@ -12,6 +12,7 @@ import {
     JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM,
     JUPYTER_PROXY_BASE_PATH,
     matchJupyterProxyPath,
+    PROXY_URL_ORIGIN,
     setJupyterProxyAccessCookie
 } from '@modules/scripting/infrastructure/utilities/jupyter-proxy';
 import {
@@ -91,7 +92,6 @@ interface HttpProxySessionEntry {
 
 const JUPYTER_NATIVE_TOKEN_QUERY_PARAM = 'token';
 const UPGRADE_ACTION = Action.READ;
-const PROXY_URL_ORIGIN = 'http://volt.local';
 const UPSTREAM_URL_ORIGIN = 'http://upstream.local';
 const JUPYTER_PROXY_TEMPORARY_UNAVAILABLE_MESSAGE = 'Jupyter proxy is temporarily unavailable';
 const DAEMON_PROXY_UNAVAILABLE_ERROR_MESSAGES = [

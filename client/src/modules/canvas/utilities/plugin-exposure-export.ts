@@ -7,7 +7,8 @@ export const DEFAULT_LINE_WIDTH = 0.08;
 const RENDERABLE_SCENE_EXPORTERS = new Set<string>([
     Exporter.ATOMISTIC,
     Exporter.MESH,
-    Exporter.LINE
+    Exporter.LINE,
+    Exporter.BOND
 ]);
 
 type ExposureExportLike = {

@@ -1,4 +1,4 @@
-import type { RetryTeamJobsResult } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { RetryTeamJobsResult } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 
 export interface RetryTeamFailedJobsInputDTO {
     teamId: string;

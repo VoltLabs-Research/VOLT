@@ -23,8 +23,6 @@ export interface IContainerProps {
     teamCluster?: string;
     env: ContainerEnvironmentVariable[];
     ports: ContainerPortMapping[];
-    network?: string;
-    volume?: string;
     mountDockerSocket?: boolean;
     accessiblePorts?: ContainerAccessiblePort[];
     createdAt?: Date;
@@ -45,8 +43,6 @@ export class Container implements IContainerProps {
     public teamCluster?: string;
     public env!: ContainerEnvironmentVariable[];
     public ports!: ContainerPortMapping[];
-    public network?: string;
-    public volume?: string;
     public mountDockerSocket?: boolean;
     public accessiblePorts?: ContainerAccessiblePort[];
     public createdAt?: Date;

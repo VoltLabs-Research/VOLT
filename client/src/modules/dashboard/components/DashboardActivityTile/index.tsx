@@ -1,5 +1,6 @@
 import { Sparkline, Box, IconFrame, Row, Stack, Text, openModal } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
+import { getTrendColor } from '@/modules/dashboard/utilities/trend-color';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { Activity as ActivityIcon } from 'lucide-react';
@@ -10,11 +11,6 @@ import type { DailyActivity } from '@/modules/daily-activity/api/entities/daily-
 
 const ACTIVITY_LOOKBACK_DAYS = 7;
 const ACTIVITY_REFRESH_INTERVAL_MS = 10_000;
-
-const getTrendColor = (isPositiveTrend: boolean): string => {
-    const colorVariable = isPositiveTrend ? '--accent-green' : '--accent-red';
-    return getComputedStyle(document.documentElement).getPropertyValue(colorVariable).trim() || '#30d158';
-};
 
 interface ActivityTileSummary {
     todayActions: number;

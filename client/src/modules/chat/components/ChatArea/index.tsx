@@ -142,7 +142,6 @@ const ChatArea = ({
             <TypingIndicator users={typingUsers} />
 
             <ChatInput
-                disabled={false}
                 isSending={isSending}
                 onTyping={onTyping}
                 onSendText={onSendText}

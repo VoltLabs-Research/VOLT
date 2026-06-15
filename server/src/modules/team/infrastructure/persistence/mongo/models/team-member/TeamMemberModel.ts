@@ -2,13 +2,7 @@ import { TeamMemberProps } from '@modules/team/domain/entities/team-member/TeamM
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-enum TeamMemberRelation {
-    Team = 'team',
-    User = 'user',
-    Role = 'role'
-};
-
-type TeamMemberRelations = `${TeamMemberRelation}`;
+type TeamMemberRelations = 'team' | 'user' | 'role';
 
 export interface TeamMemberDocument extends Persistable<TeamMemberProps, TeamMemberRelations>, Document{};
 

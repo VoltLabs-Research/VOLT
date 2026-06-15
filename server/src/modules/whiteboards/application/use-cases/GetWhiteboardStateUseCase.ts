@@ -5,7 +5,7 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/GetWhiteboardStateDTO';
-import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -22,17 +22,6 @@ export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInp
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
-
-    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
-        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
-            return props.storageClusterId;
-        }
-
-        throw ApplicationError.conflict(
-            'Whiteboard::StorageClusterRequired',
-            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
-        );
-    }
 
     async execute(input: GetWhiteboardStateInputDTO): Promise<Result<GetWhiteboardStateOutputDTO, ApplicationError>> {
         try {
@@ -55,7 +44,7 @@ export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInp
                 ));
             }
 
-            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+            const storageClusterId = requireWhiteboardStorageClusterId(whiteboard._id, whiteboard.props);
             const key = whiteboard.props.payloadKey;
             const stateExists = await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, key);
 

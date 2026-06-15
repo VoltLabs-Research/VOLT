@@ -5,7 +5,7 @@ import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utiliti
 import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { formatDuration } from '@/shared/utils/format';
+import { formatDuration } from '@voltstack/bravais';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';

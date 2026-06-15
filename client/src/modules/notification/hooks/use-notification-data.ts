@@ -1,13 +1,11 @@
-import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from './queries';
+import { useMarkAllReadMutation, useNotificationsInfiniteQuery, DEFAULT_LIMIT } from './queries';
 import useNotificationSocket from './use-notification-socket';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import type { Notification } from '../api/entities/notification';
 
-const DEFAULT_LIMIT = 20;
-
 const useNotificationData = () => {
-    useNotificationSocket(DEFAULT_LIMIT);
+    useNotificationSocket();
 
     const infiniteQuery = useNotificationsInfiniteQuery(
         { limit: DEFAULT_LIMIT }
@@ -25,9 +23,7 @@ const useNotificationData = () => {
         return allNotifications.filter((notification) => !notification.read).length;
     }, [allNotifications]);
 
-    const markAllReadMutation = useMarkAllReadMutation({
-        limit: DEFAULT_LIMIT
-    });
+    const markAllReadMutation = useMarkAllReadMutation();
 
     const fetchNotifications = useCallback(() => {
         return infiniteQuery.refetch();

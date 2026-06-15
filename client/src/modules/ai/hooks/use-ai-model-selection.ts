@@ -143,7 +143,6 @@ const useAIModelSelection = (teamId: string | null) => {
     return {
         selectedModel,
         selectedProvider,
-        selectedModelDefinition,
         configuredProviderCatalog,
         availableModelsForProvider,
         noProviderConfigured,

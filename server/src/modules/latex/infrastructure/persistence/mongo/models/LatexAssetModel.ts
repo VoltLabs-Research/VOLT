@@ -3,13 +3,9 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { LatexAssetProps } from '@modules/latex/domain/entities/LatexAsset';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum LatexAssetRelation {
-    Team = 'team',
-    Document = 'document',
-    CreatedBy = 'createdBy'
-}
+type LatexAssetRelations = 'team' | 'document' | 'createdBy';
 
-export interface LatexAssetDocument extends Persistable<LatexAssetProps, `${LatexAssetRelation}`>, Document {}
+export interface LatexAssetDocument extends Persistable<LatexAssetProps, LatexAssetRelations>, Document {}
 
 const LatexAssetSchema: Schema<LatexAssetDocument> = new Schema({
     team: {

@@ -3,12 +3,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import type { SimulationCellDims, SimulationCellGeometry, SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-export enum SimulationCellRelation {
-    Team = 'team',
-    Trajectory = 'trajectory'
-}
-
-type SimulationCellRelations = SimulationCellRelation.Team | SimulationCellRelation.Trajectory;
+type SimulationCellRelations = 'team' | 'trajectory';
 
 export interface SimulationCellDocument extends Persistable<
     SimulationCellProps,

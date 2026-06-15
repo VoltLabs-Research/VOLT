@@ -34,13 +34,12 @@ const firstSortedPreviewKey = async (
     return keys.sort((leftKey, rightKey) => leftKey.localeCompare(rightKey))[0] ?? null;
 };
 
-const readRemotePreview = async (
-    input: ReadTrajectoryPreviewInput,
-    teamClusterId: string
+export const readTrajectoryPreview = async (
+    input: ReadTrajectoryPreviewInput
 ): Promise<GetTrajectoryPreviewOutputDTO | null> => {
     const previewKey = await firstSortedPreviewKey(
         input.objectGatewayClient,
-        teamClusterId,
+        input.storageClusterId,
         input.trajectoryId
     );
 
@@ -49,16 +48,10 @@ const readRemotePreview = async (
     }
 
     const buffer = await input.objectGatewayClient.getBuffer(
-        teamClusterId,
+        input.storageClusterId,
         TEAM_CLUSTER_BUCKETS.RASTERIZER,
         previewKey
     );
 
     return input.createOutput(buffer);
-};
-
-export const readTrajectoryPreview = async (
-    input: ReadTrajectoryPreviewInput
-): Promise<GetTrajectoryPreviewOutputDTO | null> => {
-    return readRemotePreview(input, input.storageClusterId);
 };

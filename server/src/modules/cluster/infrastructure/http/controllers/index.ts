@@ -1,4 +1,3 @@
-import CompleteTeamClusterDeletionUseCase from '@modules/cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
 import CreateTeamClusterRemoteAccessSessionUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterRemoteAccessSessionUseCase';
 import CreateTeamClusterTransferRequestUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterTransferRequestUseCase';
 import CreateTeamClusterUseCase from '@modules/cluster/application/use-cases/CreateTeamClusterUseCase';
@@ -16,10 +15,8 @@ import ListTeamClusterTransferJobsUseCase from '@modules/cluster/application/use
 import ListTeamClustersByTeamIdUseCase from '@modules/cluster/application/use-cases/ListTeamClustersByTeamIdUseCase';
 import ProcessTeamClusterHealthcheckUseCase from '@modules/cluster/application/use-cases/ProcessTeamClusterHealthcheckUseCase';
 import ProvisionDemoTeamClusterUseCase from '@modules/cluster/application/use-cases/ProvisionDemoTeamClusterUseCase';
-import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
 import RegenerateTeamClusterEnrollmentTokenUseCase from '@modules/cluster/application/use-cases/RegenerateTeamClusterEnrollmentTokenUseCase';
 import RevealTeamClusterCredentialsUseCase from '@modules/cluster/application/use-cases/RevealTeamClusterCredentialsUseCase';
-import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
 import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
 import UpdateTeamClusterRoleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterRoleUseCase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -30,7 +27,6 @@ import {
 } from '@shared/infrastructure/http/controllers/createController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
-const CompleteTeamClusterDeletionController = createController(CompleteTeamClusterDeletionUseCase);
 const CreateTeamClusterRemoteAccessSessionController = createController(CreateTeamClusterRemoteAccessSessionUseCase);
 const CreateTeamClusterTransferRequestController = createController(CreateTeamClusterTransferRequestUseCase);
 const CreateTeamClusterController = createController(CreateTeamClusterUseCase, {
@@ -52,15 +48,12 @@ const ProcessTeamClusterHealthcheckController = createController(ProcessTeamClus
 const ProvisionDemoTeamClusterController = createController(ProvisionDemoTeamClusterUseCase, {
     statusCode: HttpStatus.Created
 });
-const RecordTeamClusterHeartbeatController = createController(RecordTeamClusterHeartbeatUseCase);
 const RegenerateTeamClusterEnrollmentTokenController = createController(RegenerateTeamClusterEnrollmentTokenUseCase);
 const RevealTeamClusterCredentialsController = createController(RevealTeamClusterCredentialsUseCase);
-const UpdateTeamClusterLifecycleController = createController(UpdateTeamClusterLifecycleUseCase);
 const UpdateTeamClusterQueueConcurrencyController = createController(UpdateTeamClusterQueueConcurrencyUseCase);
 const UpdateTeamClusterRoleController = createController(UpdateTeamClusterRoleUseCase);
 
 export default createControllerRegistry({
-    completeDeletion: CompleteTeamClusterDeletionController,
     create: CreateTeamClusterController,
     createRemoteAccessSession: CreateTeamClusterRemoteAccessSessionController,
     createTransferRequest: CreateTeamClusterTransferRequestController,
@@ -78,10 +71,8 @@ export default createControllerRegistry({
     listTransferJobs: ListTeamClusterTransferJobsController,
     processHealthcheck: ProcessTeamClusterHealthcheckController,
     provisionDemo: ProvisionDemoTeamClusterController,
-    recordHeartbeat: RecordTeamClusterHeartbeatController,
     regenerateEnrollmentToken: RegenerateTeamClusterEnrollmentTokenController,
     revealCredentials: RevealTeamClusterCredentialsController,
-    updateLifecycle: UpdateTeamClusterLifecycleController,
     updateQueueConcurrency: UpdateTeamClusterQueueConcurrencyController,
     updateRole: UpdateTeamClusterRoleController
 });
