@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 export type StageType =
     | 'slice-plane'
     | 'color-coding'
+    | 'line-style'
     | 'expression-select'
     | 'analysis-plugin';
 
@@ -41,6 +42,14 @@ export interface ExpressionSelectStageConfig {
     expression: string;
 }
 
+// Line-style is a daemon bake driven entirely by the editor's own local state
+// (mirrors color-coding). The stage carries no required persisted config — its
+// presence in the list is the whole record. Optional `lastBakedKey` lets a future
+// caller mark the last applied style without poisoning the StageConfig union.
+export interface LineStyleStageConfig {
+    lastBakedKey?: string;
+}
+
 export type AnalysisPluginRunStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface AnalysisPluginStageConfig {
@@ -55,6 +64,7 @@ export interface AnalysisPluginStageConfig {
 export type StageConfig =
     | SlicePlaneStageConfig
     | ColorCodingStageConfig
+    | LineStyleStageConfig
     | ExpressionSelectStageConfig
     | AnalysisPluginStageConfig;
 
@@ -69,6 +79,8 @@ export const DEFAULT_SLICE_PLANE_STAGE_CONFIG: SlicePlaneStageConfig = {
 export const DEFAULT_COLOR_CODING_STAGE_CONFIG: ColorCodingStageConfig = {
     gradient: 'Viridis'
 };
+
+export const DEFAULT_LINE_STYLE_STAGE_CONFIG: LineStyleStageConfig = {};
 
 export interface PipelineStage {
     id: string;
@@ -209,8 +221,9 @@ export const useStages = (trajectoryId?: string): PipelineStage[] =>
     useCanvasPipelineStore((state) => (trajectoryId ? state.byTrajectory[trajectoryId] ?? EMPTY_STAGES : EMPTY_STAGES));
 
 // The stage types that participate in the ordered, executable pipeline list shown
-// in the CanvasPipeline UI. 'color-coding' is intentionally excluded — it keeps its
-// own standalone bake + "Color Coding" section and is not part of the ordered run.
+// in the CanvasPipeline UI. 'color-coding' and 'line-style' are intentionally
+// excluded — they are standalone daemon bakes (each applies on its own button),
+// not dump-mutating stages of the ordered run.
 export const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>([
     'slice-plane',
     'expression-select',
@@ -221,7 +234,8 @@ export const isOrderedPipelineStage = (stage: PipelineStage): boolean =>
     ORDERED_PIPELINE_STAGE_TYPES.has(stage.type);
 
 // The server pipeline-executions endpoint speaks in stage "kinds"; map the client
-// StageType onto it. color-coding is not part of the ordered run, so it has no kind.
+// StageType onto it. color-coding / line-style are standalone bakes (not part of
+// the ordered run), so they map to null and never reach the server.
 export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | null => {
