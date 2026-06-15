@@ -136,7 +136,7 @@ interface PlaybackActions {
     setTargetFps: (fps: number) => void;
     setCurrentTimestep: (timestep: number) => void;
     stopPlayback: () => void;
-    resetPlayback: () => void;
+    resetPlayback: (options?: { preserveTimestep?: boolean }) => void;
     setRangeStart: (value: number | undefined) => void;
     setRangeEnd: (value: number | undefined) => void;
     /**

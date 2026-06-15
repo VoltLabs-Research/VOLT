@@ -332,10 +332,20 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         set(updates);
     },
 
-    resetPlayback() {
+    resetPlayback(options) {
         cancelPreloading();
         advancePlaybackGeneration();
         _runtime = createInitialRuntime();
-        set(createInitialState());
+        // Why: switching the *selected analysis* (not the trajectory) re-keys the
+        // timeline scope and triggers this reset. Wiping currentTimestep there
+        // sent the viewer back to frame 0 — the bug. preserveTimestep keeps the
+        // user on the frame they were viewing; the coordinator re-clamps it to
+        // the nearest valid timestep for the new scope. Trajectory changes still
+        // call resetPlayback() with no options → full reset → frame 0.
+        const initial = createInitialState();
+        if (options?.preserveTimestep) {
+            initial.currentTimestep = get().currentTimestep;
+        }
+        set(initial);
     }
 });
