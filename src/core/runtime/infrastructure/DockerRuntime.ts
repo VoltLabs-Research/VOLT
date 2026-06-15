@@ -2,6 +2,7 @@ import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
 import type { ContainerAction } from '@/modules/container/contracts/http-container';
 import { TEAM_CLUSTER_ID_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_VALUE } from '@/core/runtime/contracts/runtime-container';
+import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { withTimeout } from '@/core/observability/infrastructure/daemon-instrumentation';
 import type { DaemonConfig } from '@/core/config';
@@ -541,7 +542,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         logger.info(`Provisioning Docker image from registry for imageName=${imageName}`);
 
         this.eventBroker?.emitProgress({
-            action: 'container-create',
+            action: OrchestrationAction.ContainerCreate,
             stage: ProgressStageType.Running,
             timestamp: new Date().toISOString(),
             payload: {
@@ -603,7 +604,7 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
         }
 
         this.eventBroker.emitProgress({
-            action: 'container-create',
+            action: OrchestrationAction.ContainerCreate,
             stage,
             timestamp: new Date().toISOString(),
             payload: {

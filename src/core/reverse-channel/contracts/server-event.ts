@@ -2,6 +2,7 @@ import type {
     AnalysisJobCompletionMessage,
     AnalysisJobStatusMessage,
     AnalysisLogChunkMessage,
+    AnalysisProvenanceMessage,
     AnalysisStageStatusMessage,
     DebugLogChunkMessage
 } from '@/modules/analysis/contracts/reverse-channel-analysis';
@@ -19,6 +20,7 @@ export type TeamClusterDaemonServerEventMessage =
     | AnalysisJobStatusMessage
     | AnalysisStageStatusMessage
     | AnalysisLogChunkMessage
+    | AnalysisProvenanceMessage
     | ArtifactUploadJobStatusMessage
     | DebugLogChunkMessage
     | GlbJobStatusMessage

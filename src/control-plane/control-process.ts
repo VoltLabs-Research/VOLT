@@ -1,25 +1,26 @@
 import { randomUUID } from 'node:crypto';
-import { io, type Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@/core/config';
 import { logger } from '@/core/logger';
+import {
+    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
+    createPlaneSocket,
+    sendToParent,
+    registerSignalHandlers
+} from '@/control-plane/plane-shared';
 
-const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
 const CONTROL_CHANNEL = 'control';
 const DEFAULT_COMMAND_TIMEOUT_MS = 180_000;
 
-interface IpcBase {
-    type: string;
-}
-
-interface EmitMessage extends IpcBase {
+interface EmitMessage {
     type: 'emit';
     message: unknown;
 }
 
-interface SendCommandMessage extends IpcBase {
+interface SendCommandMessage {
     type: 'send-command';
     ipcRequestId: string;
     command: string;
@@ -27,7 +28,7 @@ interface SendCommandMessage extends IpcBase {
     timeoutMs?: number;
 }
 
-interface CommandResponseMessage extends IpcBase {
+interface CommandResponseMessage {
     type: 'command-response';
     ipcRequestId: string;
     response: unknown;
@@ -55,11 +56,6 @@ const config = loadConfig();
 let socket: Socket | null = null;
 let registered = false;
 const pendingInboundCommands = new Map<string, PendingInboundCommand>();
-
-const sendToParent = (message: object): void => {
-    if (!process.send) return;
-    process.send(message);
-};
 
 const emitSocketResponse = (requestId: string, response: SocketResponse): void => {
     socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
@@ -117,17 +113,7 @@ const sendCommand = (
 };
 
 const start = (): void => {
-    socket = io(config.voltCloudUrl, {
-        autoConnect: true,
-        forceNew: true,
-        transports: ['websocket'],
-        upgrade: false,
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 500,
-        reconnectionDelayMax: 30_000,
-        randomizationFactor: 0.3
-    });
+    socket = createPlaneSocket(config.voltCloudUrl);
 
     socket.on('connect', () => {
         socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
@@ -230,14 +216,6 @@ process.on('message', (message: ParentMessage) => {
     }
 });
 
-process.once('SIGINT', () => {
-    stop();
-    process.exit(0);
-});
-
-process.once('SIGTERM', () => {
-    stop();
-    process.exit(0);
-});
+registerSignalHandlers(stop);
 
 start();

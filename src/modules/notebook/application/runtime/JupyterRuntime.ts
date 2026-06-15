@@ -10,23 +10,13 @@ import {
     resolveComposeDefaultNetworkName
 } from '@/core/runtime/contracts/runtime-container';
 import { createHash } from 'node:crypto';
-import type { CreateNotebookSessionResponse, NotebookContainerResources, NotebookSessionSnapshot } from '@/contracts';
+import type { CreateNotebookSessionRequest, CreateNotebookSessionResponse, NotebookContainerResources, NotebookSessionSnapshot } from '@/contracts';
 import type { DaemonConfig } from '@/core/config';
 import path from 'node:path';
 import os from 'node:os';
 
-interface EnsureNotebookSessionInput {
-    notebook: NotebookSessionSnapshot;
-    requestedBy: string;
-    publicBasePath: string;
-    baseUrl: string;
-    secretKey?: string;
-    trajectoryId?: string;
-}
-
 interface EnsureContainerResult {
     containerId: string;
-    lastNotebookDigest?: string;
 }
 
 const NOTEBOOK_LABEL_KIND_KEY = 'volt.runtime.kind';
@@ -49,7 +39,7 @@ const PUBLIC_BASE_PATH_ENV_KEY = 'VOLT_PUBLIC_BASE_PATH';
  *  - idempotent ensure (find the container by `volt.notebook.id`, reuse it so the
  *    kernel/state survive reopen, recreate only when the runtime fingerprint
  *    changes),
- *  - seeding the `.ipynb` into the container filesystem (digest-deduped),
+ *  - seeding the `.ipynb` into the container filesystem,
  *  - the Jupyter startup command (image/cmd/token/base_url/CSP frame-ancestors).
  */
 @Service('jupyterRuntime')
@@ -59,9 +49,9 @@ export class JupyterRuntime {
         private readonly dockerRuntime: DockerRuntime
     ) {}
 
-    async ensureSession(input: EnsureNotebookSessionInput): Promise<CreateNotebookSessionResponse> {
+    async ensureSession(input: CreateNotebookSessionRequest): Promise<CreateNotebookSessionResponse> {
         const notebookPath = this.resolveNotebookRelativePath(input.notebook.notebookPath);
-        const normalizedInput: EnsureNotebookSessionInput = {
+        const normalizedInput: CreateNotebookSessionRequest = {
             ...input,
             notebook: {
                 ...input.notebook,
@@ -69,12 +59,11 @@ export class JupyterRuntime {
             }
         };
 
-        const { containerId, lastNotebookDigest } = await this.ensureContainer(normalizedInput);
-        await this.syncNotebookContents(containerId, notebookPath, input.notebook.content, lastNotebookDigest);
+        const { containerId } = await this.ensureContainer(normalizedInput);
+        await this.syncNotebookContents(containerId, notebookPath, input.notebook.content);
 
-        const uiPath = this.config.jupyter.uiPath === '/doc' ? '/lab' : this.config.jupyter.uiPath;
         const internalPath = path.posix.join(
-            uiPath,
+            this.config.jupyter.uiPath,
             'tree',
             notebookPath.split('/').map(encodeURIComponent).join('/')
         );
@@ -91,7 +80,7 @@ export class JupyterRuntime {
         };
     }
 
-    private async ensureContainer(input: EnsureNotebookSessionInput): Promise<EnsureContainerResult> {
+    private async ensureContainer(input: CreateNotebookSessionRequest): Promise<EnsureContainerResult> {
         const existingContainerId = await this.findRuntimeContainerId(input.notebook._id);
         if (existingContainerId) {
             if (await this.shouldRecreateContainer(existingContainerId, input)) {
@@ -153,14 +142,9 @@ export class JupyterRuntime {
     private async syncNotebookContents(
         containerId: string,
         notebookPath: string,
-        notebookContent: NotebookSessionSnapshot['content'],
-        lastNotebookDigest?: string
+        notebookContent: NotebookSessionSnapshot['content']
     ): Promise<void> {
         const notebookContents = JSON.stringify(notebookContent, null, 2);
-        const nextNotebookDigest = createHash('sha1').update(notebookContents).digest('hex');
-        if (lastNotebookDigest === nextNotebookDigest) {
-            return;
-        }
 
         const notebookFilePath = path.posix.join(this.config.jupyter.notebookRoot, notebookPath);
         await this.dockerRuntime.writeContainerFile(
@@ -211,7 +195,7 @@ export class JupyterRuntime {
         return normalizedPath;
     }
 
-    private buildRuntimeFingerprint(input: EnsureNotebookSessionInput): string {
+    private buildRuntimeFingerprint(input: CreateNotebookSessionRequest): string {
         const containerResources = this.resolveNotebookContainerResources();
         return createHash('sha1').update(JSON.stringify({
             image: this.config.jupyter.image,
@@ -278,7 +262,7 @@ export class JupyterRuntime {
 
     private async shouldRecreateContainer(
         containerId: string,
-        input: EnsureNotebookSessionInput
+        input: CreateNotebookSessionRequest
     ): Promise<boolean> {
         const currentFingerprint = await this.readContainerEnvValue(containerId, RUNTIME_FINGERPRINT_ENV_KEY);
         if (currentFingerprint === null) {

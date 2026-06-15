@@ -42,6 +42,18 @@ const copyFile = async (from, to) => {
         path.join(root, 'src', 'modules', 'trajectory', 'infrastructure', 'storage', 'parquet-ingest-worker.cjs'),
         path.join(root, 'dist', 'modules', 'trajectory', 'infrastructure', 'storage', 'parquet-ingest-worker.cjs')
     );
+    // Vendored CoreToolkit CLI used by the pipeline slice/expression/merge stages.
+    // Copied with its executable bit so the built/Docker daemon can spawn it.
+    const dumpTransformTo = path.join(root, 'dist', 'modules', 'analysis', 'infrastructure', 'bin', 'volt-dump-transform');
+    await copyFile(
+        path.join(root, 'src', 'modules', 'analysis', 'infrastructure', 'bin', 'volt-dump-transform'),
+        dumpTransformTo
+    );
+    try {
+        await fs.chmod(dumpTransformTo, 0o755);
+    } catch {
+        // best-effort: the source already carries the executable bit on POSIX.
+    }
 })().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

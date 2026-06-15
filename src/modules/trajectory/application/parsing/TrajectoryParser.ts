@@ -2,14 +2,23 @@ import { Service } from '@/core/decorators/service';
 import { normalizePagination, calculatePaginationOffset } from '@/contracts/pagination';
 import type {
     TrajectoryFrameData,
-    TrajectoryFrameStore
+    TrajectoryFrameStore,
+    TrajectoryElementMetadata
 } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import type { ParsedSimulationCell } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
 import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
+import type {
+    ColumnDType,
+    TypedColumn,
+    ElementTableEntry,
+    LammpsUnits
+} from '@/shared/typed-data';
 
 export interface ParsedTrajectoryMetadata {
     headers: string[];
     simulationCell: ParsedSimulationCell;
+    units: LammpsUnits;
+    elementTable: ElementTableEntry[];
 }
 
 export interface ParsedTrajectory {
@@ -17,7 +26,7 @@ export interface ParsedTrajectory {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
-    properties?: Record<string, Float32Array>;
+    properties: Record<string, TypedColumn>;
     min: [number, number, number];
     max: [number, number, number];
 }
@@ -55,6 +64,20 @@ export interface AtomsPageResult {
     atoms: AtomsPageRow[];
     totalAtoms: number;
     nativeProperties: string[];
+    propertyDtypes: Record<string, ColumnDType>;
+    units: LammpsUnits;
+    elementTable: ElementTableEntry[];
+}
+
+export interface PropertyStatsResult {
+    min: number;
+    max: number;
+    dtype: ColumnDType;
+}
+
+export interface UniqueValuesResult {
+    values: number[];
+    dtype: ColumnDType;
 }
 
 const buildSimulationCell = (frame: TrajectoryFrameData): ParsedSimulationCell => {
@@ -71,14 +94,19 @@ const buildSimulationCell = (frame: TrajectoryFrameData): ParsedSimulationCell =
     };
 };
 
-const frameToParsedTrajectory = (frame: TrajectoryFrameData): ParsedTrajectory => {
+const frameToParsedTrajectory = (
+    frame: TrajectoryFrameData,
+    elementMetadata: TrajectoryElementMetadata
+): ParsedTrajectory => {
     const min: [number, number, number] = [frame.frameBbox[0], frame.frameBbox[1], frame.frameBbox[2]];
     const max: [number, number, number] = [frame.frameBbox[3], frame.frameBbox[4], frame.frameBbox[5]];
     const propertyHeaders = Object.keys(frame.properties);
     return {
         metadata: {
             headers: ['id', 'type', 'x', 'y', 'z', ...propertyHeaders],
-            simulationCell: buildSimulationCell(frame)
+            simulationCell: buildSimulationCell(frame),
+            units: elementMetadata.units,
+            elementTable: elementMetadata.elementTable
         },
         positions: frame.positions,
         types: frame.types,
@@ -89,7 +117,7 @@ const frameToParsedTrajectory = (frame: TrajectoryFrameData): ParsedTrajectory =
     };
 };
 
-const computeStats = (values: Float32Array): { min: number; max: number } => {
+const computeStats = (values: Int32Array | Float32Array): { min: number; max: number } => {
     if (values.length === 0) return { min: 0, max: 0 };
     let min = Number.POSITIVE_INFINITY;
     let max = Number.NEGATIVE_INFINITY;
@@ -103,7 +131,7 @@ const computeStats = (values: Float32Array): { min: number; max: number } => {
     return { min, max };
 };
 
-const collectUnique = (values: Float32Array, maxValues: number): number[] => {
+const collectUnique = (values: Int32Array | Float32Array, maxValues: number): number[] => {
     const unique = new Set<number>();
     for (let index = 0; index < values.length && unique.size < maxValues; index++) {
         const value = values[index];
@@ -118,12 +146,18 @@ export class TrajectoryParser {
 
     public async readFrame(input: DumpFileInput): Promise<ParsedTrajectory> {
         try {
-            const frame = await this.trajectoryFrameStore.readFrame({
-                trajectoryId: input.trajectoryId,
-                timestep: input.timestep,
-                ownerClusterId: input.ownerClusterId
-            });
-            return frameToParsedTrajectory(frame);
+            const [frame, elementMetadata] = await Promise.all([
+                this.trajectoryFrameStore.readFrame({
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    ownerClusterId: input.ownerClusterId
+                }),
+                this.trajectoryFrameStore.readElementMetadata({
+                    trajectoryId: input.trajectoryId,
+                    ownerClusterId: input.ownerClusterId
+                })
+            ]);
+            return frameToParsedTrajectory(frame, elementMetadata);
         } catch (error) {
             throw this.rethrowNotFound(error, input);
         }
@@ -134,17 +168,19 @@ export class TrajectoryParser {
         return parsed.metadata;
     }
 
-    public async getPropertyStats(input: PropertyStatsInput): Promise<{ min: number; max: number }> {
+    public async getPropertyStats(input: PropertyStatsInput): Promise<PropertyStatsResult> {
         const parsed = await this.readFrame(input);
-        const values = this.getPropertyValues(parsed, input.property);
-        return computeStats(values);
+        const column = this.getPropertyColumn(parsed, input.property);
+        return { ...computeStats(column.values), dtype: column.dtype };
     }
 
-    public async getUniqueValues(input: UniqueValuesInput): Promise<number[]> {
+    public async getUniqueValues(input: UniqueValuesInput): Promise<UniqueValuesResult> {
         const parsed = await this.readFrame(input);
-        const values = this.getPropertyValues(parsed, input.property);
-        if (values.length === 0) return [];
-        return collectUnique(values, input.maxValues);
+        const column = this.getPropertyColumn(parsed, input.property);
+        return {
+            values: column.values.length === 0 ? [] : collectUnique(column.values, input.maxValues),
+            dtype: column.dtype
+        };
     }
 
     public async getAtomsPage(input: AtomsPageInput): Promise<AtomsPageResult> {
@@ -154,7 +190,11 @@ export class TrajectoryParser {
         const startIndex = calculatePaginationOffset(pagination.page, pagination.limit);
         const endIndex = Math.min(totalAtoms, startIndex + pagination.limit);
         const properties = parsed.properties;
-        const nativeProperties = properties ? Object.keys(properties) : [];
+        const nativeProperties = Object.keys(properties);
+        const propertyDtypes: Record<string, ColumnDType> = {};
+        for (const propName of nativeProperties) {
+            propertyDtypes[propName] = properties[propName].dtype;
+        }
         const atoms: AtomsPageRow[] = [];
 
         for (let index = startIndex; index < endIndex; index++) {
@@ -166,12 +206,19 @@ export class TrajectoryParser {
                 z: parsed.positions[index * 3 + 2]
             };
             for (const propName of nativeProperties) {
-                atom[propName] = properties![propName][index];
+                atom[propName] = properties[propName].values[index];
             }
             atoms.push(atom);
         }
 
-        return { atoms, totalAtoms, nativeProperties };
+        return {
+            atoms,
+            totalAtoms,
+            nativeProperties,
+            propertyDtypes,
+            units: parsed.metadata.units,
+            elementTable: parsed.metadata.elementTable
+        };
     }
 
     public async getAtomIds(input: DumpFileInput): Promise<number[]> {
@@ -182,12 +229,12 @@ export class TrajectoryParser {
         return Array.from(parsed.ids);
     }
 
-    public getPropertyValues(parsed: ParsedTrajectory, property: string): Float32Array {
+    public getPropertyColumn(parsed: ParsedTrajectory, property: string): TypedColumn {
         const lowerProperty = property.toLowerCase();
         const axisIndex = ({ x: 0, y: 1, z: 2 } as const)[lowerProperty as 'x' | 'y' | 'z'];
 
         if (lowerProperty === 'type') {
-            return new Float32Array(parsed.types);
+            return { dtype: 'i32', values: Int32Array.from(parsed.types) };
         }
 
         if (axisIndex !== undefined) {
@@ -195,18 +242,28 @@ export class TrajectoryParser {
             for (let index = 0; index < values.length; index++) {
                 values[index] = parsed.positions[index * 3 + axisIndex];
             }
-            return values;
+            return { dtype: 'f32', values };
         }
 
         if (lowerProperty === 'id' && parsed.ids) {
-            return Float32Array.from(parsed.ids);
+            return { dtype: 'i32', values: Int32Array.from(parsed.ids) };
         }
 
-        const properties = parsed.properties;
-        if (!properties) return new Float32Array(0);
+        const source = parsed.properties[property] ?? parsed.properties[lowerProperty];
+        return source ?? { dtype: 'f32', values: new Float32Array(0) };
+    }
 
-        const source = properties[property] ?? properties[lowerProperty];
-        return source ? new Float32Array(source) : new Float32Array(0);
+    /**
+     * Numeric Float32Array view for consumers (filter evaluation) that operate on a
+     * single float lane. Reuses the typed column directly when it is already f32 (no
+     * clone); an i32 column is widened to f32 for the filter math, which thresholds on
+     * numbers and never persists the result.
+     */
+    public getPropertyValues(parsed: ParsedTrajectory, property: string): Float32Array {
+        const column = this.getPropertyColumn(parsed, property);
+        return column.values instanceof Float32Array
+            ? column.values
+            : Float32Array.from(column.values);
     }
 
     public remapExternalValues(parsed: ParsedTrajectory, externalValues: Float32Array): Float32Array {

@@ -23,7 +23,7 @@ import { WorkflowRuntime } from '@/modules/analysis/application/workflow/Workflo
 import { WorkflowScheduler, type WorkflowExecutionStatus } from '@/modules/analysis/application/workflow/WorkflowScheduler';
 import type { ReverseChannelCommandPayloadView } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
-import ApplicationError from '@/app/coordination/ApplicationError';
+import { readWorkflowTrace } from '@/modules/analysis/application/workflow/WorkflowWalker';
 import type {
     WorkflowExecutionContext,
     WorkflowNode,
@@ -120,17 +120,6 @@ interface CurrentDebugNodeInfo {
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
 let sessionCounter = 0;
-
-const extractWorkflowTraceFromError = (error: unknown): DebugNodeResult['nestedTrace'] => {
-    if (!(error instanceof ApplicationError) || error.code !== 'Workflow::Trace') {
-        return undefined;
-    }
-    if (typeof error.details !== 'object' || error.details === null) {
-        return undefined;
-    }
-    const trace = (error.details as { trace?: unknown }).trace;
-    return Array.isArray(trace) ? trace as DebugNodeResult['nestedTrace'] : undefined;
-};
 
 @Service('debugSessionManager')
 export class DebugSessionManager {
@@ -299,7 +288,7 @@ export class DebugSessionManager {
                 status: 'error',
                 error: message,
                 stack,
-                nestedTrace: extractWorkflowTraceFromError(error),
+                nestedTrace: readWorkflowTrace(error),
                 durationMs,
                 contextSnapshot: WorkflowSession.snapshotOutputs(session.context.outputs)
             };

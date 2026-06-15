@@ -1,16 +1,21 @@
-import { io, type Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@/core/config';
 import { logger } from '@/core/logger';
+import {
+    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
+    createPlaneSocket,
+    sendToParent,
+    registerSignalHandlers
+} from '@/control-plane/plane-shared';
 
 interface EmitMessage {
     type: 'emit-message';
     message: unknown;
 }
 
-const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
 const MAX_BUFFERED_MESSAGES = 8192;
 
 const config = loadConfig();
@@ -20,11 +25,6 @@ const label = process.argv[3] || process.env.TEAM_CLUSTER_SOCKET_CHANNEL_LABEL |
 let socket: Socket | null = null;
 let registered = false;
 const bufferedMessages: unknown[] = [];
-
-const sendToParent = (message: object): void => {
-    if (!process.send) return;
-    process.send(message);
-};
 
 const drainBufferedMessages = (): void => {
     if (!socket || !registered) return;
@@ -47,17 +47,7 @@ const emitMessage = (message: unknown): void => {
 };
 
 const start = (): void => {
-    socket = io(config.voltCloudUrl, {
-        autoConnect: true,
-        forceNew: true,
-        transports: ['websocket'],
-        upgrade: false,
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 500,
-        reconnectionDelayMax: 30_000,
-        randomizationFactor: 0.3
-    });
+    socket = createPlaneSocket(config.voltCloudUrl);
 
     socket.on('connect', () => {
         socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
@@ -104,15 +94,7 @@ process.on('message', (message: EmitMessage) => {
     emitMessage(message.message);
 });
 
-process.once('SIGINT', () => {
-    stop();
-    process.exit(0);
-});
-
-process.once('SIGTERM', () => {
-    stop();
-    process.exit(0);
-});
+registerSignalHandlers(stop);
 
 if (channel) {
     start();

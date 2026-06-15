@@ -1,5 +1,14 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
+import { parseAseMetadata } from '@/modules/trajectory/infrastructure/parsing/AseImportBridge';
+
+// LAMMPS metadata heuristics (dump vs data detection + header → cell/natoms/timestep)
+// live here, in the daemon, mirroring the C++ native parsers in `packages/LammpsIO`.
+// This module is self-contained for the native-LAMMPS fast path and adds the import
+// router seam: when the header is not native LAMMPS, ingest falls back to the Python
+// ASE conversion bridge.
+
+export type LammpsMetadataFormat = 'dump' | 'data';
 
 export interface ParsedSimulationCellGeometry {
     cell_vectors: [[number, number, number], [number, number, number], [number, number, number]];
@@ -30,6 +39,10 @@ interface SimulationCellBounds {
     xz?: number;
     yz?: number;
 }
+
+export const UNSUPPORTED_TRAJECTORY_FORMAT_MESSAGE = 'Unsupported trajectory format';
+
+const HEADER_LINE_LIMIT = 200;
 
 const createSimulationCell = (periodicBoundaryConditions: { x: boolean; y: boolean; z: boolean }): ParsedSimulationCell => {
     return {
@@ -82,6 +95,33 @@ const applySimulationCellBounds = (simulationCell: ParsedSimulationCell, bounds:
     boundingBox.length = length;
     boundingBox.height = height;
 };
+
+const readHeaderLines = (filePath: string): Promise<string[]> => (
+    new Promise<string[]>((resolve, reject) => {
+        const lines: string[] = [];
+        const stream = createReadStream(filePath, {
+            encoding: 'utf8',
+            highWaterMark: 8 * 1024
+        });
+
+        const rl = createInterface({
+            input: stream,
+            crlfDelay: Infinity
+        });
+
+        rl.on('line', (line) => {
+            lines.push(line);
+            if (lines.length >= HEADER_LINE_LIMIT) {
+                rl.close();
+                stream.destroy();
+            }
+        });
+
+        rl.on('close', () => resolve(lines));
+        rl.on('error', reject);
+        stream.on('error', reject);
+    })
+);
 
 const parseDumpMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
     let timestep = 0;
@@ -193,40 +233,41 @@ const parseDataMetadataOnly = (headerLines: string[]): ParsedFrameMetadata => {
     };
 };
 
-export const parseTrajectoryMetadata = async (filePath: string): Promise<ParsedFrameMetadata> => {
-    const headerLines = await new Promise<string[]>((resolve, reject) => {
-        const lines: string[] = [];
-        const stream = createReadStream(filePath, {
-            encoding: 'utf8',
-            highWaterMark: 8 * 1024
-        });
-
-        const rl = createInterface({
-            input: stream,
-            crlfDelay: Infinity
-        });
-
-        rl.on('line', (line) => {
-            lines.push(line);
-            if (lines.length >= 200) {
-                rl.close();
-                stream.destroy();
-            }
-        });
-
-        rl.on('close', () => resolve(lines));
-        rl.on('error', reject);
-        stream.on('error', reject);
-    });
-
+/**
+ * Detect whether a header block is a LAMMPS dump or data file. Returns `null` for
+ * anything that is not native LAMMPS — that is the signal for the ingest router to
+ * fall back to the Python ASE conversion bridge.
+ */
+const detectLammpsMetadataFormat = (headerLines: string[]): LammpsMetadataFormat | null => {
     if (headerLines.some((line) => line.includes('ITEM: TIMESTEP'))) {
-        return parseDumpMetadataOnly(headerLines);
+        return 'dump';
     }
 
     const content = headerLines.join('\n');
     if (/^\s*\d+\s+atoms/m.test(content) && /(xlo\s+xhi|ylo\s+yhi|zlo\s+zhi)/m.test(content)) {
-        return parseDataMetadataOnly(headerLines);
+        return 'data';
     }
 
-    throw new Error('Unsupported trajectory format');
+    return null;
+};
+
+/**
+ * Parse trajectory metadata for any supported format.
+ *
+ * Fast path: LAMMPS dump/data — detected by header heuristics, parsed natively in TS.
+ * Fallback:  any format ASE can read (.xyz, extXYZ, CIF, POSCAR, PDB, …) — delegated to
+ *            the Python ASE bridge subprocess. If ASE also fails, throws
+ *            {@link UNSUPPORTED_TRAJECTORY_FORMAT_MESSAGE}.
+ */
+export const parseTrajectoryMetadata = async (filePath: string): Promise<ParsedFrameMetadata> => {
+    const headerLines = await readHeaderLines(filePath);
+    const lammpsFormat = detectLammpsMetadataFormat(headerLines);
+    if (lammpsFormat === 'dump') {
+        return parseDumpMetadataOnly(headerLines);
+    }
+    if (lammpsFormat === 'data') {
+        return parseDataMetadataOnly(headerLines);
+    }
+    // Non-LAMMPS: delegate to ASE bridge.
+    return parseAseMetadata(filePath);
 };

@@ -14,6 +14,7 @@ import type {
     WorkflowValueMap
 } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowGraph, WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import type { PipelineContext } from '@/modules/analysis/application/analysis/pipeline-context';
 
 export interface WorkflowOutputsSnapshot {
     [nodeId: string]: WorkflowNodeOutput;
@@ -38,6 +39,7 @@ export interface WorkflowSessionParams {
     execution?: WorkflowExecutionOptions;
     nestedPlugins?: NestedPluginDefinition[];
     nestedWorkflows?: Map<string, WorkflowDefinition>;
+    pipelineContext?: PipelineContext;
 }
 
 export interface WorkflowSessionDefinitionParams extends Omit<WorkflowSessionParams, 'workflow'> {
@@ -140,10 +142,7 @@ export class WorkflowSession {
     static resolveContextDumps(context: WorkflowExecutionContext): TrajectoryDumpDescriptor[] {
         const overrides = context.trajectoryDumpOverrides;
         if (overrides && overrides.length > 0) {
-            return overrides.map((frame) => ({
-                ...frame,
-                path: frame.path
-            }));
+            return overrides.map((frame) => ({ ...frame }));
         }
 
         const selectedTimesteps = context.selectedTimesteps?.length

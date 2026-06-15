@@ -53,7 +53,14 @@ export const buildItemAnalysisJob = (
             inputFile,
             itemIndex: index,
             forEachItem: item,
-            forEachIndex: index
+            forEachIndex: index,
+            // Multi-frame execution: carry the window descriptor so
+            // AnalysisEnvironment downloads the full windowTimesteps set. Undefined
+            // for single-frame jobs (window-of-1 still flows through inputFile).
+            windowMode: item.windowMode,
+            windowSize: item.windowSize,
+            referenceTimestep: item.referenceTimestep,
+            windowTimesteps: item.windowTimesteps
         }
     };
 };

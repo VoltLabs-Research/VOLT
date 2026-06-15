@@ -17,23 +17,13 @@ export class WorkflowNodeExecutor {
 
     async executeNode(
         node: WorkflowNode,
-        context: WorkflowExecutionContext,
-        shouldSkipNode?: (node: WorkflowNode) => string | undefined
+        context: WorkflowExecutionContext
     ): Promise<WorkflowNodeExecutionResult> {
         if (!this.registry.has(node.type)) {
             return {
                 node,
                 status: 'skipped',
                 reason: `No handler registered for node type "${node.type}"`
-            };
-        }
-
-        const skipReason = shouldSkipNode?.(node);
-        if (skipReason) {
-            return {
-                node,
-                status: 'skipped',
-                reason: skipReason
             };
         }
 

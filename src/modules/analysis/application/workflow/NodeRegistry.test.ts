@@ -16,12 +16,13 @@ const EXPECTED_PLANNING_NODE_TYPES = [
     WorkflowNodeType.Modifier,
     WorkflowNodeType.Arguments,
     WorkflowNodeType.Context,
-    WorkflowNodeType.ForEach
+    WorkflowNodeType.ForEach,
+    WorkflowNodeType.TrajectoryWindow
 ];
 
-test('getPlanningNodeTypes() returns exactly {Modifier, Arguments, Context, ForEach}', () => {
-    const registry = WorkflowNodeRegistry.createDefault();
-    const planning = registry.getPlanningNodeTypes();
+test('WORKFLOW_NODE_PHASE planning set is exactly {Modifier, Arguments, Context, ForEach, TrajectoryWindow}', () => {
+    const planning = (Object.keys(WORKFLOW_NODE_PHASE) as WorkflowNodeType[])
+        .filter((type) => WORKFLOW_NODE_PHASE[type] === 'planning');
 
     assert.deepEqual(
         [...planning].sort(),
@@ -47,12 +48,9 @@ test('WORKFLOW_NODE_PHASE marks planning types as planning and the rest as runti
     }
 });
 
-test('isPlanningNode / isPlanningNodeType agree with WORKFLOW_NODE_PHASE for every node type', () => {
-    const registry = WorkflowNodeRegistry.createDefault();
-
+test('isPlanningNodeType agrees with WORKFLOW_NODE_PHASE for every node type', () => {
     for (const type of ALL_NODE_TYPES) {
         const expected = WORKFLOW_NODE_PHASE[type] === 'planning';
-        assert.equal(registry.isPlanningNode(type), expected, `registry.isPlanningNode("${type}")`);
         assert.equal(isPlanningNodeType(type), expected, `isPlanningNodeType("${type}")`);
     }
 });

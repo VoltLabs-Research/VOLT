@@ -10,7 +10,7 @@ import type { LocalClusterObjectStoreGateway } from '@/core/storage/contracts/cl
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import type { QueueService } from '@/core/queues/application/QueueService';
 import type { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
-import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
+import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@/contracts';
 import { parseTrajectoryMetadata, type ParsedSimulationCell } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@/support/native-temp-dir';
@@ -367,7 +367,7 @@ export class TrajectoryIngestCommand {
             stagingObjectKey: frame.objectKey,
             ownerClusterId,
             status: 'queued',
-            queueType: TRAJECTORY_GLB_QUEUE_NAME,
+            queueType: TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME,
             metadata: {
                 trajectoryId,
                 timestep: frame.timestep

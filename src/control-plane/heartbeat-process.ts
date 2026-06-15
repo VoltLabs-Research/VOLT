@@ -1,4 +1,4 @@
-import { io, type Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
 import http from 'node:http';
 import https from 'node:https';
 
@@ -6,15 +6,19 @@ import { loadConfig } from '@/core/config';
 import { logger } from '@/core/logger';
 import { MetricsService } from '@/core/metrics/application/MetricsService';
 import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
+import {
+    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
+    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
+    createPlaneSocket,
+    registerSignalHandlers
+} from '@/control-plane/plane-shared';
 
 interface RuntimeConfigMessage {
     type: 'runtime-config';
     runtimeConfig: TeamClusterDaemonRuntimeConfig | null;
 }
 
-const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
 const HEARTBEAT_CHANNEL = 'heartbeat';
 const VOLT_HEALTHCHECK_PATH = '/healthz';
 
@@ -126,17 +130,7 @@ const startLatencyProbe = (): void => {
 };
 
 const start = (): void => {
-    socket = io(config.voltCloudUrl, {
-        autoConnect: true,
-        forceNew: true,
-        transports: ['websocket'],
-        upgrade: false,
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 500,
-        reconnectionDelayMax: 30_000,
-        randomizationFactor: 0.3
-    });
+    socket = createPlaneSocket(config.voltCloudUrl);
 
     socket.on('connect', () => {
         socket?.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
@@ -184,14 +178,6 @@ process.on('message', (message: RuntimeConfigMessage) => {
     runtimeConfig = message.runtimeConfig;
 });
 
-process.once('SIGINT', () => {
-    stop();
-    process.exit(0);
-});
-
-process.once('SIGTERM', () => {
-    stop();
-    process.exit(0);
-});
+registerSignalHandlers(stop);
 
 start();

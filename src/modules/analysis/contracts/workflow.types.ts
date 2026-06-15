@@ -9,6 +9,7 @@ import type { TrajectoryFrameStore } from '@/modules/trajectory/application/stor
 import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
 
 import type { AnalysisJobExecutionData, DaemonAnalysisDocument } from './http-analysis';
+import type { PipelineContext } from '@/modules/analysis/application/analysis/pipeline-context';
 import type {
     TrajectoryDumpDescriptor,
     TrajectoryFrame,
@@ -120,9 +121,19 @@ export interface WorkflowExecutionContext {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     selectedTimestep?: number;
+    // Multi-frame execution: the localized window of dumps handed to the current
+    // job (a window, the whole trajectory, or a reference + current pair) and the
+    // index of the primary frame within that window. Empty/undefined for the
+    // single-frame (window-of-1) path that does not declare a TrajectoryWindow.
+    windowFrames?: TrajectoryDumpDescriptor[];
+    primaryFrameIndex?: number;
     workflow: WorkflowGraph;
     nestedWorkflows: Map<string, WorkflowDefinition>;
     execution?: WorkflowExecutionOptions;
+    // Present only for daemon-orchestrated pipeline runs. Carries the per-(timestep)
+    // shared-exposure context so an entrypoint with `inferFromContext` arguments can
+    // resolve its upstream-produced exposure file paths into extra CLI flags.
+    pipelineContext?: PipelineContext;
 }
 
 export enum WorkflowNodeType {
@@ -130,6 +141,7 @@ export enum WorkflowNodeType {
     Arguments = 'arguments',
     Context = 'context',
     ForEach = 'forEach',
+    TrajectoryWindow = 'trajectory-window',
     Entrypoint = 'entrypoint',
     Plugin = 'plugin-node',
     Exposure = 'exposure',
@@ -244,7 +256,7 @@ export class WorkflowGraph {
     }
 
     getRuntimeRootNodes(): WorkflowNode[] {
-        for (const type of [WorkflowNodeType.ForEach, WorkflowNodeType.Context, WorkflowNodeType.Arguments, WorkflowNodeType.Modifier]) {
+        for (const type of [WorkflowNodeType.ForEach, WorkflowNodeType.TrajectoryWindow, WorkflowNodeType.Context, WorkflowNodeType.Arguments, WorkflowNodeType.Modifier]) {
             const runtimeRootNode = this.nodes.find((node) => node.type === type);
 
             if (runtimeRootNode) {

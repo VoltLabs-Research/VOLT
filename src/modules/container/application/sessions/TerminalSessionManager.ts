@@ -18,7 +18,6 @@ import type { CommandResult } from '@voltstack/daemon-cluster-client';
 type SessionCommandResult = CommandResult<object | null>;
 
 interface ReverseChannelTerminalState {
-    sessionId: string;
     attachment: RuntimeTerminalAttachment;
     onData: (chunk: Buffer) => void;
     onEnd: () => void;
@@ -129,7 +128,6 @@ export class TerminalSessionManager {
             attachment.stream.on('error', onError);
 
             this.terminalStates.set(payload.sessionId, {
-                sessionId: payload.sessionId,
                 attachment,
                 onData,
                 onEnd,

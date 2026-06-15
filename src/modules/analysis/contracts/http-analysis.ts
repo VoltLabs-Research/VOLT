@@ -62,6 +62,8 @@ export interface AnalysisExposureDefinition {
     nodeId: string;
     name: string;
     results: string;
+    // Optional shared-exposure key carried from the exposure node's `id`.
+    id?: string;
     export?: AnalysisExposureExportDefinition;
 }
 
@@ -114,6 +116,7 @@ export interface AnalysisWorkflowSnapshot {
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     exposures: AnalysisExposureDefinition[];
     forEachNodeId?: string;
+    trajectoryWindowNodeId?: string;
     nodeOutputSnapshots: AnalysisNodeOutputSnapshots;
 }
 
@@ -125,10 +128,20 @@ export interface AnalysisJobExecutionData {
     traceContext?: Record<string, string>;
 }
 
+export type WorkflowWindowMode = 'window' | 'all' | 'referencePair';
+
 export interface PlannedExecutionItem {
     timestep?: number;
     path?: string;
     frame?: number;
+    // Multi-frame planning: the window descriptor carried from the
+    // TrajectoryWindow node through to the job metadata. `windowTimesteps` is the
+    // resolved slice for this primary frame ('all' carries the whole trajectory).
+    // Absent for the single-frame path.
+    windowMode?: WorkflowWindowMode;
+    windowSize?: number;
+    referenceTimestep?: number;
+    windowTimesteps?: number[];
 }
 
 export interface AnalysisJobMetadata {
@@ -144,6 +157,13 @@ export interface AnalysisJobMetadata {
     itemIndex?: number;
     forEachItem?: PlannedExecutionItem;
     forEachIndex?: number;
+    // Multi-frame execution metadata (absent for single-frame jobs). The
+    // AnalysisEnvironment downloads every timestep in windowTimesteps and the
+    // plugin receives the localized set via the TrajectoryWindow node output.
+    windowMode?: WorkflowWindowMode;
+    windowSize?: number;
+    referenceTimestep?: number;
+    windowTimesteps?: number[];
 }
 
 export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extends JobIdentity {
@@ -223,4 +243,82 @@ export interface AnalysisStartResponse {
     queued: boolean;
     totalJobs: number;
     jobs: QueuedJobNotification[];
+}
+
+// ---- Pipeline (daemon-orchestrated sequential run) ----
+
+// One ordered stage of a pipeline. A computing plugin stage carries the same
+// transport payload a single AnalysisStart does; a cache-hit plugin stage
+// carries only the reuse pointer; a slice/expression stage carries its
+// dump-transform config.
+export interface PipelineStageTransport {
+    kind: 'plugin' | 'slice' | 'expression';
+    // computing plugin stage:
+    plugin?: AnalysisStartTransportRequest;
+    // cache-hit plugin stage:
+    cacheHit?: boolean;
+    cacheSourceAnalysisId?: string;
+    // The exposure ids this plugin stage registers into the shared context.
+    sharedExposureIds?: string[];
+    // slice / expression stage:
+    config?: AnalysisValueMap;
+}
+
+export interface PipelineStartTransportRequest {
+    teamId: string;
+    teamClusterId: string;
+    trajectoryId: string;
+    selectedTimesteps?: number[];
+    timestep?: number;
+    stages: PipelineStageTransport[];
+}
+
+export interface PipelineStartResolvedStage {
+    kind: 'plugin' | 'slice' | 'expression';
+    plugin?: AnalysisStartRequest;
+    cacheHit?: boolean;
+    cacheSourceAnalysisId?: string;
+    sharedExposureIds?: string[];
+    config?: AnalysisValueMap;
+}
+
+export interface PipelineStartRequest extends Omit<PipelineStartTransportRequest, 'stages'> {
+    stages: PipelineStartResolvedStage[];
+}
+
+export type PipelineStartTransportPayload = WithTrace<PipelineStartTransportRequest>;
+export type PipelineStartRequestWithTrace = WithTrace<PipelineStartRequest>;
+
+// ---- Pipeline (resolved plan + per-timestep queue payload) ----
+
+// A single stage as planned by the PipelineDispatcher. Compute plugin stages
+// reference their (large) AnalysisJobExecutionData by Redis key rather than
+// inlining it; cache-hit and slice/expression stages carry only their small
+// reuse pointer / config inline.
+export interface PipelinePlannedStage {
+    kind: 'plugin' | 'slice' | 'expression';
+    // compute plugin stage:
+    analysisId?: string;
+    pluginId?: string;
+    pluginDisplayName?: string;
+    executionDataReference?: AnalysisExecutionDataReference;
+    // cache-hit plugin stage:
+    cacheHit?: boolean;
+    cacheSourceAnalysisId?: string;
+    sharedExposureIds?: string[];
+    // slice / expression stage:
+    config?: AnalysisValueMap;
+}
+
+export interface PipelineQueueJobPayload extends JobIdentity {
+    status: string;
+    queueType: string;
+    name: string;
+    trajectoryId: string;
+    storageClusterId?: string;
+    timestep: number;
+    stages: PipelinePlannedStage[];
+    traceContext?: Record<string, string>;
+    createdAt: string;
+    updatedAt: string;
 }

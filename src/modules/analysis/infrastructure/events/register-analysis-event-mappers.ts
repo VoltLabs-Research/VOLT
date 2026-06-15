@@ -6,6 +6,7 @@ import {
     createAnalysisJobStatusDedupeKey,
     createAnalysisJobStatusMessage,
     createAnalysisLogChunkMessage,
+    createAnalysisProvenanceMessage,
     createAnalysisStageStatusDedupeKey,
     createAnalysisStageStatusMessage,
     createDebugLogChunkMessage
@@ -19,6 +20,7 @@ import {
     DebugLogChunkReportedEvent,
     type BaseAnalysisEventData
 } from '@/modules/analysis/domain/events';
+import { AnalysisProvenanceRecordedEvent } from '@/modules/analysis/domain/provenance-event';
 
 type AnalysisLifecycleStatus = 'started' | 'completed' | 'failed';
 
@@ -52,5 +54,10 @@ export const registerAnalysisEventMappers = (bridge: DomainEventBridge): void =>
     bridge.register(DebugLogChunkReportedEvent, (payload, { messageContext }) => ({
         kind: 'immediate',
         message: createDebugLogChunkMessage(messageContext, payload)
+    }));
+
+    bridge.register(AnalysisProvenanceRecordedEvent, (payload, { messageContext }) => ({
+        kind: 'immediate',
+        message: createAnalysisProvenanceMessage(messageContext, payload)
     }));
 };

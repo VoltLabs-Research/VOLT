@@ -11,6 +11,7 @@ import type { QueueScopeLimitsRegistry } from '@/core/queues/application/QueueSc
 import type { ArtifactUploadWorker } from '@/modules/plugin/application/artifacts/ArtifactUploadWorker';
 import type { PluginWarmupWorker } from '@/modules/plugin/application/binaries/PluginWarmupWorker';
 import type { AnalysisWorker } from '@/modules/analysis/application/workers/AnalysisWorker';
+import type { PipelineWorker } from '@/modules/analysis/application/workers/PipelineWorker';
 import type { TrajectoryFrameProcessingWorker } from '@/modules/trajectory/application/frame-processing/TrajectoryFrameProcessingWorker';
 import type { TrajectoryGlbWorker } from '@/modules/trajectory/application/glb/TrajectoryGlbWorker';
 import type { TrajectoryRasterWorker } from '@/modules/trajectory/application/raster/TrajectoryRasterWorker';
@@ -71,6 +72,7 @@ export class RuntimeRoleCoordinator {
         private readonly queueConcurrencyCoordinator: QueueConcurrencyCoordinator,
         private readonly queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
         private readonly analysisWorker: AnalysisWorker,
+        private readonly pipelineWorker: PipelineWorker,
         private readonly artifactUploadWorker: ArtifactUploadWorker,
         private readonly pluginWarmupWorker: PluginWarmupWorker,
         private readonly trajectoryRasterWorker: TrajectoryRasterWorker,
@@ -170,6 +172,7 @@ export class RuntimeRoleCoordinator {
         const { analysis, glbPreprocessing, artifactUpload, pluginWarmup } = this.snapshot.queueConcurrency;
 
         this.analysisWorker.start(analysis);
+        this.pipelineWorker.start(analysis);
         this.artifactUploadWorker.start(artifactUpload);
         this.pluginWarmupWorker.start(pluginWarmup);
         this.trajectoryGlbWorker.start(glbPreprocessing);
@@ -182,6 +185,7 @@ export class RuntimeRoleCoordinator {
 
         await Promise.all([
             this.analysisWorker.stop(),
+            this.pipelineWorker.stop(),
             this.artifactUploadWorker.stop(),
             this.pluginWarmupWorker.stop(),
             this.trajectoryGlbWorker.stop()

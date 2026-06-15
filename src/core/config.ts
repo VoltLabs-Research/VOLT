@@ -8,11 +8,6 @@ interface MinioConfig {
     useSSL: boolean;
 }
 
-interface JupyterHostPortRange {
-    start: number;
-    end: number;
-}
-
 interface JupyterConfig {
     image: string;
     memoryInMegabytes: number;
@@ -23,9 +18,6 @@ interface JupyterConfig {
     token: string;
     uiPath: string;
     frameAncestors: string;
-    startTimeoutMs: number;
-    hostPortRange?: JupyterHostPortRange;
-    publicBasePath: string;
 }
 
 export interface DaemonConfig {
@@ -78,14 +70,6 @@ const readNumberWithDefault = (name: string, fallback: number): number => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const readOptionalNumber = (name: string): number | undefined => {
-    const value = process.env[name];
-    if (!value) return undefined;
-
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-};
-
 const readBooleanWithDefault = (name: string, fallback: boolean): boolean => {
     const value = process.env[name];
     return value ? BOOLEAN_TRUTHY.has(value.toLowerCase()) : fallback;
@@ -95,25 +79,6 @@ const normalizePath = (value: string): string => {
     if (value === '/') return '/';
 
     return `/${value.replace(/^\/+|\/+$/g, '')}`;
-};
-
-const resolveJupyterHostPortRange = (
-    start: number | undefined,
-    end: number | undefined
-): JupyterHostPortRange | undefined => {
-    if (start === undefined && end === undefined) {
-        return undefined;
-    }
-
-    if (start === undefined || end === undefined) {
-        throw new Error('JUPYTER_HOST_PORT_RANGE_START and JUPYTER_HOST_PORT_RANGE_END must be set together');
-    }
-
-    if (start > end) {
-        throw new Error('JUPYTER_HOST_PORT_RANGE_START must be less than or equal to JUPYTER_HOST_PORT_RANGE_END');
-    }
-
-    return { start, end };
 };
 
 export const loadConfig = (): DaemonConfig => {
@@ -140,13 +105,7 @@ export const loadConfig = (): DaemonConfig => {
         port: readNumberWithDefault('JUPYTER_PORT', 8888),
         token: readStringWithDefault('JUPYTER_TOKEN', 'volt-scripting'),
         uiPath: normalizePath(readStringWithDefault('JUPYTER_UI_PATH', '/lab')),
-        frameAncestors: readStringWithDefault('JUPYTER_FRAME_ANCESTORS', '*'),
-        startTimeoutMs: readNumberWithDefault('JUPYTER_START_TIMEOUT_MS', 60_000),
-        hostPortRange: resolveJupyterHostPortRange(
-            readOptionalNumber('JUPYTER_HOST_PORT_RANGE_START'),
-            readOptionalNumber('JUPYTER_HOST_PORT_RANGE_END')
-        ),
-        publicBasePath: normalizePath(readStringWithDefault('JUPYTER_PUBLIC_BASE_PATH', '/api/notebooks/proxy'))
+        frameAncestors: readStringWithDefault('JUPYTER_FRAME_ANCESTORS', '*')
     };
     const allowedBuckets: ObjectBucketName[] = [
         ObjectBucketName.Dumps,

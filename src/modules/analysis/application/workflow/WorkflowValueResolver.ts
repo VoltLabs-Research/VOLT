@@ -24,6 +24,7 @@ const WORKFLOW_REFERENCE_ALIASES: Record<string, WorkflowNodeType[]> = {
     arguments: [WorkflowNodeTypeEnum.Arguments],
     context: [WorkflowNodeTypeEnum.Context],
     foreach: [WorkflowNodeTypeEnum.ForEach],
+    'trajectory-window': [WorkflowNodeTypeEnum.TrajectoryWindow],
     entrypoint: [WorkflowNodeTypeEnum.Entrypoint],
     plugin: [WorkflowNodeTypeEnum.Plugin],
     exposure: [WorkflowNodeTypeEnum.Exposure],

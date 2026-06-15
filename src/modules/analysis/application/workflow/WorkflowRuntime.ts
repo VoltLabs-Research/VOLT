@@ -31,6 +31,7 @@ import type { ResultProcessorService } from '@/modules/plugin/application/export
 import type { WorkflowExecutionOptions } from '@/modules/analysis/contracts/workflow.types';
 import type { TrajectoryFrameStore } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import type { AnalysisStageReporter } from '@/modules/analysis/application/workflow/AnalysisStageReporter';
+import type { PipelineContext } from '@/modules/analysis/application/analysis/pipeline-context';
 import {
     WorkflowWalker,
     createWorkflowTraceFailure,
@@ -159,11 +160,15 @@ export interface WorkflowExecuteInput {
     executionData: AnalysisJobExecutionData;
     outputs: WorkflowOutputs;
     dumpTargets: WorkflowDumpTarget[];
+    primaryFrameIndex: number;
     outputDir: string;
     timestep: number;
     artifactUploadBatch: ArtifactUploadBatch;
     logSinkFactory: WorkflowLogSinkFactory;
     stageReporter?: AnalysisStageReporter;
+    // Pipeline runs only: shared per-(timestep) exposure context. Threaded into
+    // the session so the entrypoint handler can append inferFromContext CLI args.
+    pipelineContext?: PipelineContext;
 }
 
 export interface WorkflowExecuteResult {
@@ -273,8 +278,9 @@ export class WorkflowRuntime {
     }
 
     async execute(input: WorkflowExecuteInput): Promise<WorkflowExecuteResult> {
-        const { executionData, outputs, dumpTargets } = input;
+        const { executionData, outputs } = input;
         const { identity, workflow, trajectoryFrames } = executionData;
+        const primaryDumpTarget = this.resolvePrimaryDumpTarget(input);
         const session = WorkflowSession.createFromDefinition({
             outputs,
             userConfig: {},
@@ -286,9 +292,10 @@ export class WorkflowRuntime {
             pluginId: identity.pluginId,
             teamId: identity.teamId,
             execution: this.buildRuntimeExecutionOptions(input),
-            selectedTimestep: dumpTargets[0]!.timestep,
+            selectedTimestep: primaryDumpTarget.timestep,
             workflow: workflow.definition,
-            nestedPlugins: workflow.nestedPlugins
+            nestedPlugins: workflow.nestedPlugins,
+            pipelineContext: input.pipelineContext
         });
         const graph = session.context.workflow;
         const visitedNodeIds = new Set<string>(outputs.keys());
@@ -377,12 +384,20 @@ export class WorkflowRuntime {
                 session,
                 node,
                 executionPath,
-                input.dumpTargets[0]!,
+                this.resolvePrimaryDumpTarget(input),
                 session.outputs,
                 input.outputDir
             )
         );
         return execution.output;
+    }
+
+    // The primary frame anchors per-frame outputs and the single-frame plugin
+    // path: it is the frame the job is "centered" on (window mode) or the only
+    // frame (window-of-1). Clamped against the localized window.
+    private resolvePrimaryDumpTarget(input: WorkflowExecuteInput): WorkflowDumpTarget {
+        const index = Math.max(0, Math.min(input.primaryFrameIndex, input.dumpTargets.length - 1));
+        return input.dumpTargets[index]!;
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {

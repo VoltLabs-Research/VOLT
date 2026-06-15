@@ -21,6 +21,7 @@ export interface AnalysisEnvironmentState {
     outputs: Map<string, WorkflowNodeOutput>;
     dumpTargets: WorkflowDumpTarget[];
     dumpLocalPaths: string[];
+    primaryFrameIndex: number;
 }
 
 @Service('analysisEnvironment')
@@ -32,11 +33,64 @@ export class AnalysisEnvironment {
         metadata: AnalysisJobMetadata,
         timestep: number | undefined
     ): Promise<AnalysisEnvironmentState> {
+        if (timestep === undefined) {
+            throw new Error(`Analysis ${executionData.identity.analysisId} requires a primary timestep`);
+        }
+
         const runtime = await this.initialize(executionData, metadata);
 
-        await this.downloadSingleDump(runtime, executionData, metadata);
-        runtime.dumpTargets = this.buildSingleDumpTargets(executionData, runtime.dumpLocalPaths, timestep);
-        runtime.outputs = this.buildSingleOutputs(executionData, metadata, runtime);
+        // The single-frame path is a window of one: when the job carries no
+        // window metadata, windowTimesteps is just [primaryTimestep].
+        const windowTimesteps = metadata.windowTimesteps?.length
+            ? metadata.windowTimesteps
+            : [timestep];
+
+        const timestepToLocalPath = await this.downloadFrameSet(runtime, executionData, windowTimesteps);
+        runtime.dumpTargets = this.buildFrameSetTargets(executionData, windowTimesteps, timestepToLocalPath);
+        runtime.primaryFrameIndex = Math.max(0, windowTimesteps.indexOf(timestep));
+        runtime.outputs = this.buildOutputs(executionData, metadata, runtime, windowTimesteps);
+        await this.materializeFrameArgumentDumps(runtime, executionData);
+        return runtime;
+    }
+
+    // Pipeline variant of prepare(): instead of downloading its own dump, the
+    // single frame is bound to the caller-supplied mutating `working.dump` (a
+    // window-of-1). The geometry (natoms/simulationCell) comes from the
+    // trajectory snapshot for that timestep, and exposure outputs land under the
+    // caller-owned `stageOutputDir`. Reuses the exact same output seeding helpers
+    // as prepare() so the workflow runs identically. Neither the working dump nor
+    // the stage output dir is added to dumpLocalPaths/outputDir for cleanup here:
+    // the pipeline driver owns those paths and removes them with the run temp dir.
+    async prepareWithDump(
+        executionData: AnalysisJobExecutionData,
+        metadata: AnalysisJobMetadata,
+        timestep: number,
+        workingDumpPath: string,
+        stageOutputDir: string
+    ): Promise<AnalysisEnvironmentState> {
+        await fs.mkdir(stageOutputDir, { recursive: true });
+        const runtime: AnalysisEnvironmentState = {
+            outputDir: stageOutputDir,
+            outputs: new Map(),
+            dumpTargets: [],
+            dumpLocalPaths: [],
+            primaryFrameIndex: 0
+        };
+
+        const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === timestep);
+        if (!frame) {
+            throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${timestep}`);
+        }
+
+        runtime.dumpTargets = [{
+            localPath: workingDumpPath,
+            originalPath: `trajectory-${executionData.identity.trajectoryId}/timestep-${timestep}.dump.zst`,
+            timestep,
+            natoms: frame.natoms,
+            simulationCell: frame.simulationCell
+        }];
+        runtime.primaryFrameIndex = 0;
+        runtime.outputs = this.buildOutputs(executionData, metadata, runtime, [timestep]);
         await this.materializeFrameArgumentDumps(runtime, executionData);
         return runtime;
     }
@@ -61,66 +115,142 @@ export class AnalysisEnvironment {
             unsafeCleanup: true
         })).path;
 
-        return { outputDir, outputs: new Map(), dumpTargets: [], dumpLocalPaths: [] };
+        return { outputDir, outputs: new Map(), dumpTargets: [], dumpLocalPaths: [], primaryFrameIndex: 0 };
     }
 
-    private async downloadSingleDump(
+    // Downloads every timestep in the window exactly once, deduping repeated
+    // timesteps (e.g. a referencePair where reference === current). Returns a
+    // timestep -> localized-path map; every downloaded path is also pushed into
+    // dumpLocalPaths for cleanup.
+    private async downloadFrameSet(
         runtime: AnalysisEnvironmentState,
         executionData: AnalysisJobExecutionData,
-        metadata: AnalysisJobMetadata
-    ): Promise<void> {
-        const { storageClusterId } = executionData.identity;
-        runtime.dumpLocalPaths.push(await downloadCompressedDump(this.objectStore, metadata.inputFile!, storageClusterId!, DAEMON_PATHS.analysisDumps));
+        windowTimesteps: number[]
+    ): Promise<Map<number, string>> {
+        const { storageClusterId, trajectoryId } = executionData.identity;
+        if (!storageClusterId) {
+            throw new Error(`Analysis ${executionData.identity.analysisId} cannot download dumps without a storage cluster`);
+        }
+
+        const timestepToLocalPath = new Map<number, string>();
+        for (const windowTimestep of windowTimesteps) {
+            if (timestepToLocalPath.has(windowTimestep)) {
+                continue;
+            }
+
+            const objectKey = `trajectory-${trajectoryId}/timestep-${windowTimestep}.dump.zst`;
+            const localPath = await downloadCompressedDump(
+                this.objectStore,
+                objectKey,
+                storageClusterId,
+                DAEMON_PATHS.analysisDumps
+            );
+            timestepToLocalPath.set(windowTimestep, localPath);
+            runtime.dumpLocalPaths.push(localPath);
+        }
+
+        return timestepToLocalPath;
     }
 
-    private buildSingleDumpTargets(
+    // One WorkflowDumpTarget per window frame, in window order, each bound to its
+    // localized dump path + frame geometry from the trajectory snapshot.
+    private buildFrameSetTargets(
         executionData: AnalysisJobExecutionData,
-        dumpLocalPaths: string[],
-        timestep: number | undefined
+        windowTimesteps: number[],
+        timestepToLocalPath: Map<number, string>
     ): WorkflowDumpTarget[] {
-        if (timestep === undefined) {
-            throw new Error(`Single-dump analysis ${executionData.identity.analysisId} requires a timestep`);
-        }
+        return windowTimesteps.map((windowTimestep) => {
+            const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === windowTimestep);
+            if (!frame) {
+                throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${windowTimestep}`);
+            }
 
-        const frame = executionData.trajectoryFrames.find((candidate) => candidate.timestep === timestep);
-        if (!frame) {
-            throw new Error(`Trajectory frame missing for analysis ${executionData.identity.analysisId} timestep ${timestep}`);
-        }
-
-        return [{
-            localPath: dumpLocalPaths[0]!,
-            originalPath: undefined,
-            timestep,
-            natoms: frame.natoms,
-            simulationCell: frame.simulationCell
-        }];
+            return {
+                localPath: timestepToLocalPath.get(windowTimestep)!,
+                originalPath: `trajectory-${executionData.identity.trajectoryId}/timestep-${windowTimestep}.dump.zst`,
+                timestep: windowTimestep,
+                natoms: frame.natoms,
+                simulationCell: frame.simulationCell
+            };
+        });
     }
 
-    private buildSingleOutputs(
+    private buildOutputs(
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
-        runtime: AnalysisEnvironmentState
+        runtime: AnalysisEnvironmentState,
+        windowTimesteps: number[]
     ): Map<string, WorkflowNodeOutput> {
         const outputs = this.snapshotToOutputs(executionData);
+        const localizedFrames = runtime.dumpTargets.map((target) => ({
+            timestep: target.timestep,
+            natoms: target.natoms,
+            simulationCell: target.simulationCell,
+            path: target.localPath,
+            originalPath: target.originalPath
+        }));
+        const primaryIndex = runtime.primaryFrameIndex;
+
+        this.seedForEachOutput(executionData, metadata, runtime, outputs, localizedFrames, primaryIndex);
+        this.seedTrajectoryWindowOutput(executionData, runtime, outputs, localizedFrames, primaryIndex);
+
+        return outputs;
+    }
+
+    // Existing single-frame (forEach) plugins: seed the forEach `currentValue`
+    // with the primary localized dump. With no window metadata the window is one
+    // frame, so this is the unchanged single-frame behavior.
+    private seedForEachOutput(
+        executionData: AnalysisJobExecutionData,
+        metadata: AnalysisJobMetadata,
+        runtime: AnalysisEnvironmentState,
+        outputs: Map<string, WorkflowNodeOutput>,
+        localizedFrames: WorkflowNodeOutput[],
+        primaryIndex: number
+    ): void {
         const forEachNodeId = executionData.workflow.forEachNodeId;
         if (!forEachNodeId) {
-            return outputs;
+            return;
         }
 
         if (!metadata.forEachItem || metadata.forEachIndex === undefined) {
             throw new Error(`forEach node ${forEachNodeId} requires forEachItem and forEachIndex in metadata`);
         }
 
-        const dumpLocalPath = runtime.dumpLocalPaths[0]!;
-
+        const primaryFrame = localizedFrames[primaryIndex];
         outputs.set(forEachNodeId, {
             ...outputs.get(forEachNodeId),
-            currentValue: { ...metadata.forEachItem, path: dumpLocalPath },
+            currentValue: { ...metadata.forEachItem, path: (primaryFrame?.path as string | undefined) },
             currentIndex: metadata.forEachIndex,
             outputPath: runtime.outputDir
         });
+    }
 
-        return outputs;
+    // Multi-frame plugins: seed the TrajectoryWindow node output with the full
+    // localized window + primary pointer, so the entrypoint mustache resolves
+    // `{{ trajectory-window.framePaths }}` / `.primaryValue.path` / `.frames.<i>`.
+    private seedTrajectoryWindowOutput(
+        executionData: AnalysisJobExecutionData,
+        runtime: AnalysisEnvironmentState,
+        outputs: Map<string, WorkflowNodeOutput>,
+        localizedFrames: WorkflowNodeOutput[],
+        primaryIndex: number
+    ): void {
+        const windowNodeId = executionData.workflow.trajectoryWindowNodeId;
+        if (!windowNodeId) {
+            return;
+        }
+
+        outputs.set(windowNodeId, {
+            ...outputs.get(windowNodeId),
+            frames: localizedFrames,
+            count: localizedFrames.length,
+            primaryIndex,
+            primaryValue: localizedFrames[primaryIndex] ?? null,
+            framePaths: localizedFrames.map((frame) => frame.path as string).join(' '),
+            framePathsCsv: localizedFrames.map((frame) => frame.path as string).join(','),
+            outputPath: runtime.outputDir
+        });
     }
 
     private snapshotToOutputs(executionData: AnalysisJobExecutionData): Map<string, WorkflowNodeOutput> {

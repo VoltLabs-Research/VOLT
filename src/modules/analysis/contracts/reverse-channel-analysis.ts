@@ -7,6 +7,7 @@ import type { ExecutionLogSegment } from '@/core/runtime/contracts/execution-log
 import type {
     BaseAnalysisEventData
 } from '@/modules/analysis/domain/events';
+import type { AnalysisProvenance } from '@/modules/analysis/contracts/provenance-types';
 
 type AnalysisJobCompletionPayload = BaseAnalysisEventData & { error?: string };
 
@@ -63,6 +64,17 @@ export type AnalysisStageStatusMessage = AuthenticatedReverseChannelMessage<
 export type AnalysisLogChunkMessage = AuthenticatedReverseChannelMessage<'analysis-log-chunk', AnalysisLogChunkPayload>;
 
 export type DebugLogChunkMessage = AuthenticatedReverseChannelMessage<'debug-log-chunk', DebugLogChunkPayload>;
+
+export type AnalysisProvenanceMessage = AuthenticatedReverseChannelMessage<'analysis-provenance', AnalysisProvenance>;
+
+export const createAnalysisProvenanceMessage = (
+    context: AuthenticatedMessageContext,
+    payload: AnalysisProvenance
+): AnalysisProvenanceMessage => ({
+    type: 'analysis-provenance',
+    ...context,
+    ...payload
+});
 
 export const createAnalysisJobStatusMessage = (
     context: AuthenticatedMessageContext,

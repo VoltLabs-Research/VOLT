@@ -3,6 +3,7 @@ import { WorkflowContextHandler } from '@/modules/analysis/application/workflow/
 import { WorkflowEntrypointHandler } from '@/modules/analysis/application/workflow/nodes/WorkflowEntrypointHandler';
 import { WorkflowExposureHandler } from '@/modules/analysis/application/workflow/nodes/ExposureHandler';
 import { WorkflowForEachHandler } from '@/modules/analysis/application/workflow/nodes/ForEachHandler';
+import { WorkflowTrajectoryWindowHandler } from '@/modules/analysis/application/workflow/nodes/TrajectoryWindowHandler';
 import { WorkflowIfStatementHandler } from '@/modules/analysis/application/workflow/nodes/IfStatementHandler';
 import { WorkflowModifierHandler } from '@/modules/analysis/application/workflow/nodes/ModifierHandler';
 import { WorkflowSwitchCaseHandler, WorkflowSwitchStatementHandler } from '@/modules/analysis/application/workflow/nodes/SwitchStatementHandler';
@@ -31,6 +32,7 @@ export const WORKFLOW_NODE_PHASE: Record<WorkflowNodeType, WorkflowNodePhase> = 
     [WorkflowNodeType.Arguments]: 'planning',
     [WorkflowNodeType.Context]: 'planning',
     [WorkflowNodeType.ForEach]: 'planning',
+    [WorkflowNodeType.TrajectoryWindow]: 'planning',
     [WorkflowNodeType.Entrypoint]: 'runtime',
     [WorkflowNodeType.Plugin]: 'runtime',
     [WorkflowNodeType.Exposure]: 'runtime',
@@ -60,6 +62,7 @@ export class WorkflowNodeRegistry {
         workflowNodeRegistry.register(new WorkflowArgumentsHandler(workflowNodeRegistry));
         workflowNodeRegistry.register(new WorkflowContextHandler());
         workflowNodeRegistry.register(new WorkflowForEachHandler(workflowNodeRegistry));
+        workflowNodeRegistry.register(new WorkflowTrajectoryWindowHandler());
         workflowNodeRegistry.register(new WorkflowEntrypointHandler());
         workflowNodeRegistry.register(new WorkflowExposureHandler());
         workflowNodeRegistry.register(new WorkflowIfStatementHandler(workflowNodeRegistry));
@@ -81,17 +84,6 @@ export class WorkflowNodeRegistry {
 
     has(type: WorkflowNodeType): boolean {
         return this.handlers.has(type);
-    }
-
-    isPlanningNode(type: WorkflowNodeType): boolean {
-        return isPlanningNodeType(type);
-    }
-
-    getPlanningNodeTypes(): Set<WorkflowNodeType> {
-        return new Set(
-            (Object.keys(WORKFLOW_NODE_PHASE) as WorkflowNodeType[])
-                .filter((type) => WORKFLOW_NODE_PHASE[type] === 'planning')
-        );
     }
 
     async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {

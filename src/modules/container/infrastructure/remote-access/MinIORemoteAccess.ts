@@ -2,8 +2,7 @@ import { MinioService } from '@/core/storage/infrastructure/minio/MinioService';
 import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@/contracts';
 import type { ReverseChannelCommandResult } from '@/core/reverse-channel/contracts/reverse-channel-messaging';
 import type { RemoteExplorerEntry, RemoteExplorerNode } from '@/contracts';
-import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath } from '@/modules/container/infrastructure/remote-access/shared';
-import { parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
+import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath, parseMinioPath, splitExplorerPathSegments, toWebReadableStream } from '@/modules/container/infrastructure/remote-access/shared';
 import BaseRemoteAccess from '@/modules/container/infrastructure/remote-access/BaseRemoteAccess';
 import { isObjectNotFoundError } from '@/core/storage/contracts/cluster-object-store';
 

@@ -110,6 +110,34 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
     };
 };
 
+// Rebuilds the decoded exposure shape from a bond entity table. A bond carries
+// its two rendered endpoints inline in `points` (the same self-contained shape
+// as a line), so the GLB export never joins against the atom table; atom_a /
+// atom_b / pbc_shift_* / distance ride along as per-bond property columns. The
+// property rows feed the same store as lines (keyed by bond id), under the
+// non-atom `'lines'` storage suffix so analysis-wide per-atom merges never mix
+// bond rows in by id collision — bonds need that isolation exactly as lines do.
+const reconstructFromBondTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
+    const bonds: JsonObject[] = [];
+    const propertyRows: JsonObject[] = [];
+
+    for (const row of rows) {
+        const { points, ...properties } = row;
+        const bondPoints = Array.isArray(points) ? points : [];
+        bonds.push({ ...properties, points: bondPoints as JsonObject[string] });
+        propertyRows.push(properties);
+    }
+
+    return {
+        listing: { main_listing: { bonds: rows.length } },
+        subListingNames: propertyRows.length > 0 ? ['bonds'] : [],
+        subListings: propertyRows.length > 0 ? { bonds: propertyRows } : {},
+        perAtomProperties: propertyRows as unknown as PerAtomProperties,
+        entityKind: 'lines',
+        exportData: { export: { BondExporter: { bonds } } }
+    };
+};
+
 // Rebuilds the decoded exposure shape from a line entity table (fixed id +
 // points columns; every other column is a per-entity property). Properties
 // feed the same property store as per-atom data — keyed by entity id — so
@@ -213,6 +241,21 @@ export const readWorkflowExposurePayload = async (
             }
             const document = JSON.parse(payload) as unknown;
             return isRecord(document) ? extractFromDocument(document as JsonObject) : emptyResult();
+        }
+
+        // Bond entity table: fixed id + points geometry + atom_a/atom_b
+        // references. Checked before the line branch (it is also id + points).
+        if (
+            columnNames.includes('points')
+            && columnNames.includes('id')
+            && columnNames.includes('atom_a')
+            && columnNames.includes('atom_b')
+        ) {
+            const reader = await connection.runAndReadAll(
+                `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY id`
+            );
+            const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
+            return reconstructFromBondTable(rows);
         }
 
         // Line entity table: fixed id + points geometry column.

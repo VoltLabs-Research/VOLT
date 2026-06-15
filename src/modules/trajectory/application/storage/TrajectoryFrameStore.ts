@@ -1,4 +1,12 @@
 import type { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
+import type {
+    ColumnDType,
+    TypedColumn,
+    ElementTableEntry,
+    LammpsUnits
+} from '@/shared/typed-data';
+
+export type { ColumnDType, TypedColumn, ElementTableEntry, LammpsUnits };
 
 export interface TrajectoryFrameData {
     timestep: number;
@@ -6,7 +14,7 @@ export interface TrajectoryFrameData {
     positions: Float32Array;
     types: Uint16Array;
     ids?: Uint32Array;
-    properties: Record<string, Float32Array>;
+    properties: Record<string, TypedColumn>;
     frameBbox: readonly [number, number, number, number, number, number];
 }
 
@@ -27,6 +35,13 @@ export interface TrajectoryFrameStoreIngestResult {
     frameCount: number;
     size: number;
     bucket: ObjectBucketName;
+    units: LammpsUnits;
+    elementTable: ElementTableEntry[];
+}
+
+export interface TrajectoryElementMetadata {
+    units: LammpsUnits;
+    elementTable: ElementTableEntry[];
 }
 
 export interface TrajectoryFrameLookupInput {
@@ -38,4 +53,5 @@ export interface TrajectoryFrameLookupInput {
 export interface TrajectoryFrameStore {
     ingest(input: TrajectoryFrameStoreIngestInput): Promise<TrajectoryFrameStoreIngestResult>;
     readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData>;
+    readElementMetadata(input: { trajectoryId: string; ownerClusterId: string }): Promise<TrajectoryElementMetadata>;
 }

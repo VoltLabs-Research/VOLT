@@ -20,6 +20,7 @@ import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storag
 import type { ArtifactUploadQueue } from '@/modules/plugin/application/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@/modules/analysis/domain/events';
+import type { AnalysisProvenanceCollector } from '@/modules/analysis/application/analysis/AnalysisProvenanceCollector';
 
 export interface ProcessAnalysisJobDependencies {
     analysisDataStore: AnalysisDataStore;
@@ -28,6 +29,7 @@ export interface ProcessAnalysisJobDependencies {
     daemonJobReporter: DaemonJobReporter;
     workflowRuntime: WorkflowRuntime;
     analysisQueueAdmissionController: AnalysisQueueAdmissionController;
+    analysisProvenanceCollector?: AnalysisProvenanceCollector;
 }
 
 export interface ProcessAnalysisJobHooks {
@@ -46,6 +48,8 @@ export const processAnalysisJob = async (
     if (!job.executionDataReference) {
         throw new Error(`Missing executionDataReference for analysis job ${job.jobId}`);
     }
+
+    const jobStartedAt = Date.now();
 
     const executionData = await deps.analysisDataStore.resolve({
         jobId: job.jobId,
@@ -182,8 +186,9 @@ export const processAnalysisJob = async (
                             executionData,
                             outputs: runtime!.outputs,
                             dumpTargets: runtime!.dumpTargets,
+                            primaryFrameIndex: runtime!.primaryFrameIndex,
                             outputDir: runtime!.outputDir,
-                            timestep: runtime!.dumpTargets[0]!.timestep,
+                            timestep: runtime!.dumpTargets[runtime!.primaryFrameIndex]!.timestep,
                             artifactUploadBatch,
                             stageReporter,
                             logSinkFactory: (context) => createAnalysisExecutionLogSink({
@@ -211,6 +216,15 @@ export const processAnalysisJob = async (
 
                 await emitExecutionTrace(workflowOutcome.trace, true);
                 await setProgress(70);
+
+                if (deps.analysisProvenanceCollector) {
+                    await deps.analysisProvenanceCollector.recordCompletion({
+                        executionData,
+                        metadata,
+                        startedAt: jobStartedAt,
+                        outputArtifactIds: []
+                    }).catch(logAndSwallow('warn', { jobId: job.jobId }, 'Provenance recording failed'));
+                }
 
                 await runStage(
                     {

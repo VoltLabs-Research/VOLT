@@ -1,6 +1,7 @@
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@/modules/plugin/application/exports/export-node-processor-shared';
-import type { AtomisticExportData, ExportExecutionInput } from '@/modules/plugin/application/exports/export-node-processor-types';
+import { exportOctreeMetadata } from '@/modules/plugin/application/exports/octree-exporter';
+import type { AtomisticExportData, ExportExecutionInput, OctreeExportOptions } from '@/modules/plugin/application/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
@@ -183,7 +184,8 @@ export const exportAtomisticArtifact = async (
     input: ExportExecutionInput,
     exportData: AtomisticExportData,
     objectPath: string,
-    ownerClusterId: string
+    ownerClusterId: string,
+    octreeOptions?: OctreeExportOptions
 ): Promise<boolean> => {
     const pointCloud = await buildPointCloudDataDirect(exportData);
     if (!pointCloud) {
@@ -205,6 +207,20 @@ export const exportAtomisticArtifact = async (
         objectPath,
         ownerClusterId
     });
+
+    // LOD octree metadata rides next to the GLB (a no-op below the atom
+    // threshold or when disabled). positions.length / 3 is the atom count: the
+    // buffer is interleaved xyz, the exact shape the octree builder reads.
+    if (octreeOptions) {
+        await exportOctreeMetadata(
+            input,
+            pointCloud.positions,
+            pointCloud.positions.length / 3,
+            objectPath,
+            ownerClusterId,
+            octreeOptions
+        );
+    }
 
     return true;
 };

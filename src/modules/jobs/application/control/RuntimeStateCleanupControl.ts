@@ -58,8 +58,6 @@ export class RuntimeStateCleanupControl {
     }
 
     private distinctKeys(keys: string[]): string[] {
-        return keys
-            .filter((key) => key.trim().length > 0)
-            .filter((key, index, values) => values.indexOf(key) === index);
+        return [...new Set(keys)];
     }
 }

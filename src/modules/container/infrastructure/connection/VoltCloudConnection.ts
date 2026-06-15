@@ -1,45 +1,18 @@
 import { Service } from '@/core/decorators/service';
 import { logger } from '@/core/logger';
-import {
-    EnvelopeKind,
-    encodeEnvelope
-} from '@/core/reverse-channel/contracts/binary-envelope';
-import type { BinaryStreamPayload } from '@/core/reverse-channel/contracts/binary-messages';
-import type { TeamClusterDaemonServerEventMessage } from '@/core/reverse-channel/contracts/server-event';
-import type { RuntimeProgressMessage } from '@/core/runtime/contracts/reverse-channel-runtime';
 import type { DaemonConfig } from '@/core/config';
 import type { TeamClusterDaemonRuntimeConfig } from '@/core/runtime/contracts/team-cluster-runtime';
 import type { TeamClusterDaemonMessage } from '@voltstack/daemon-cluster-client';
 import { ControlPlaneProcessClient } from '@/modules/container/infrastructure/connection/ControlPlaneProcessClient';
 import { TeamClusterStatus } from '@/modules/container/contracts/container-types';
-import type { ExposureSnapshotMessage } from '@/modules/container/contracts/container-types';
 
 interface RuntimeLifecycleUpdateRequest {
     teamClusterId: string;
     daemonPassword: string;
     status: TeamClusterStatus;
 };
-type OutboundMessage =
-    | CommandlessTeamClusterDaemonMessage
-    | ExposureSnapshotMessage
-    | RuntimeProgressMessage
-    | TeamClusterDaemonServerEventMessage;
 
 type CommandlessTeamClusterDaemonMessage = Exclude<TeamClusterDaemonMessage, { type: 'command' }>;
-
-const STREAM_TRANSPORTED_SERVER_EVENT_TYPES = [
-    'analysis-log-chunk',
-    'debug-log-chunk',
-    'trajectory-scene-artifact-upsert-batch'
-] as const;
-
-type StreamTransportedServerEventType = typeof STREAM_TRANSPORTED_SERVER_EVENT_TYPES[number];
-type StreamTransportedServerEventMessage = Extract<
-    TeamClusterDaemonServerEventMessage,
-    { type: StreamTransportedServerEventType }
->;
-
-const STREAM_TRANSPORTED_SERVER_EVENT_TYPE_SET = new Set<string>(STREAM_TRANSPORTED_SERVER_EVENT_TYPES);
 
 @Service('voltCloudConnection')
 export class VoltCloudConnection {
@@ -49,8 +22,7 @@ export class VoltCloudConnection {
     public readonly client: ControlPlaneProcessClient;
 
     constructor(
-        private readonly config: DaemonConfig,
-        private readonly getRuntimeConfigSnapshot?: () => TeamClusterDaemonRuntimeConfig | null
+        private readonly config: DaemonConfig
     ) {
         this.client = new ControlPlaneProcessClient(config);
 
@@ -88,9 +60,9 @@ export class VoltCloudConnection {
         return this.connectedToCloud;
     }
 
-    emitMessage(message: OutboundMessage): void {
+    emitMessage(message: CommandlessTeamClusterDaemonMessage): void {
         try {
-            this.emitTransportMessage(message);
+            this.client.emit(message as unknown as TeamClusterDaemonMessage);
         } catch (err) {
             logger.warn(`Failed to emit message to VoltCloud: ${err instanceof Error ? err.message : String(err)}`);
         }
@@ -125,43 +97,5 @@ export class VoltCloudConnection {
         }
 
         return runtimeConfig;
-    }
-
-    private emitTransportMessage(message: OutboundMessage): void {
-        if (this.isServerEventMessage(message)) {
-            this.emitServerEventMessage(message);
-            return;
-        }
-
-        this.client.emit(message as unknown as TeamClusterDaemonMessage);
-    }
-
-    private emitServerEventMessage(message: TeamClusterDaemonServerEventMessage): void {
-        if (!this.isStreamTransportedServerEventMessage(message)) {
-            this.client.emit(message as unknown as TeamClusterDaemonMessage);
-            return;
-        }
-
-        const serialized = Buffer.from(JSON.stringify(message), 'utf8');
-        const streamPayload: BinaryStreamPayload = {
-            type: 'stream',
-            requestId: `daemon-event-stream:${message.type}`,
-            streamId: message.type,
-            chunk: encodeEnvelope(0, EnvelopeKind.StreamChunk, serialized)
-        };
-
-        this.client.emit(streamPayload as unknown as TeamClusterDaemonMessage);
-    }
-
-    private isServerEventMessage(message: OutboundMessage): message is TeamClusterDaemonServerEventMessage {
-        return message.type.startsWith('analysis-')
-            || message.type.startsWith('trajectory-')
-            || message.type === 'artifact-upload-job-status';
-    }
-
-    private isStreamTransportedServerEventMessage(
-        message: TeamClusterDaemonServerEventMessage
-    ): message is StreamTransportedServerEventMessage {
-        return STREAM_TRANSPORTED_SERVER_EVENT_TYPE_SET.has(message.type);
     }
 };

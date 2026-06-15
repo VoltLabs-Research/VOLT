@@ -47,6 +47,7 @@ export interface WorkflowArgumentDefinition {
     listItemLabelArgument?: string;
     required?: boolean;
     multipleSelection?: boolean;
+    inferFromContext?: boolean;
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
@@ -63,6 +64,17 @@ export interface WorkflowArgumentsData {
 
 export interface WorkflowForEachData {
     iterableSource?: string;
+}
+
+export type WorkflowTrajectoryWindowMode = 'window' | 'all' | 'referencePair';
+
+export interface WorkflowTrajectoryWindowData {
+    mode: WorkflowTrajectoryWindowMode;
+    // window mode: number of dumps in the window (odd when centered).
+    windowSize?: number;
+    centered?: boolean;
+    // referencePair mode: the fixed reference frame timestep.
+    referenceTimestep?: number;
 }
 
 export interface WorkflowIfCondition {
@@ -88,6 +100,9 @@ export interface WorkflowSwitchCaseData {
 export interface WorkflowExposureData {
     name?: string;
     results?: string;
+    // Optional shared-exposure key (see server ExposureNodeData.id). When set,
+    // the pipeline registers this exposure's output path under ctx.sharedExposures[id].
+    id?: string;
 }
 
 export interface WorkflowExportData {
@@ -128,6 +143,7 @@ export interface WorkflowNodeData {
     modifier?: JsonObject;
     arguments?: WorkflowArgumentsData;
     forEach?: WorkflowForEachData;
+    trajectoryWindow?: WorkflowTrajectoryWindowData;
     entrypoint?: WorkflowEntrypointData;
     pluginNode?: WorkflowPluginNodeData;
     exposure?: WorkflowExposureData;
@@ -142,6 +158,7 @@ export type WorkflowNodeDefinitionType =
     | 'arguments'
     | 'context'
     | 'forEach'
+    | 'trajectory-window'
     | 'entrypoint'
     | 'plugin-node'
     | 'exposure'

@@ -1,4 +1,5 @@
 export const ANALYSIS_QUEUE_NAME = 'analysis_processing';
+export const PIPELINE_QUEUE_NAME = 'pipeline_processing';
 export const ARTIFACT_UPLOAD_QUEUE_NAME = 'artifact_upload';
 export const PLUGIN_WARMUP_QUEUE_NAME = 'plugin_warmup';
 export const TRAJECTORY_RASTER_QUEUE_NAME = 'trajectory_rasterization';

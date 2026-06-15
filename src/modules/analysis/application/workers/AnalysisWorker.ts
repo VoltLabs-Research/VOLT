@@ -13,6 +13,7 @@ import type { AnalysisDataStore } from '@/modules/analysis/infrastructure/storag
 import type { ArtifactUploadQueue } from '@/modules/plugin/application/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@/modules/jobs/application/reporting/DaemonJobReporter';
 import { processAnalysisJob } from '@/modules/analysis/application/workers/processAnalysisJob';
+import type { AnalysisProvenanceCollector } from '@/modules/analysis/application/analysis/AnalysisProvenanceCollector';
 
 @Service('analysisWorker')
 export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
@@ -27,7 +28,8 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
         private readonly artifactUploadQueue: ArtifactUploadQueue,
         private readonly daemonJobReporter: DaemonJobReporter,
         private readonly workflowRuntime: WorkflowRuntime,
-        private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController
+        private readonly analysisQueueAdmissionController: AnalysisQueueAdmissionController,
+        private readonly analysisProvenanceCollector: AnalysisProvenanceCollector
     ) {
         super({ queueService, scopeLimitsRegistry: queueScopeLimitsRegistry });
     }
@@ -39,7 +41,8 @@ export class AnalysisWorker extends BaseWorker<AnalysisQueueJobPayload> {
             artifactUploadQueue: this.artifactUploadQueue,
             daemonJobReporter: this.daemonJobReporter,
             workflowRuntime: this.workflowRuntime,
-            analysisQueueAdmissionController: this.analysisQueueAdmissionController
+            analysisQueueAdmissionController: this.analysisQueueAdmissionController,
+            analysisProvenanceCollector: this.analysisProvenanceCollector
         }, {
             updateProgress: (value) => bullJob.updateProgress(value)
         });

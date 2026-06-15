@@ -158,3 +158,99 @@ test('planExecutionStrategy (context-only, no ForEach): snapshots the executed p
         ['arguments-1', 'context-1', 'modifier-1']
     );
 });
+
+// --- TrajectoryWindow planning fan-out (multi-frame execution mode) --------
+
+const WINDOW_FRAMES: TrajectoryFrame[] = [
+    { timestep: 0, natoms: 10, simulationCell: 'cell-0' },
+    { timestep: 10, natoms: 10, simulationCell: 'cell-10' },
+    { timestep: 20, natoms: 10, simulationCell: 'cell-20' }
+];
+
+// Modifier -> Arguments -> Context -> TrajectoryWindow -> Entrypoint -> Exposure
+const buildWindowWorkflow = (
+    trajectoryWindow: { mode: 'window' | 'all' | 'referencePair'; windowSize?: number; centered?: boolean; referenceTimestep?: number }
+): WorkflowDefinition => ({
+    nodes: [
+        modifierNode(),
+        argumentsNode(),
+        contextNode(),
+        {
+            id: 'window-1',
+            type: WorkflowNodeType.TrajectoryWindow,
+            position: { x: 0, y: 0 },
+            data: { trajectoryWindow }
+        },
+        {
+            id: 'entrypoint-1',
+            type: WorkflowNodeType.Entrypoint,
+            position: { x: 0, y: 0 },
+            data: {
+                entrypoint: {
+                    binaryObjectPath: 'plugins/demo/main',
+                    arguments: '{{ trajectory-window.framePaths }}'
+                }
+            }
+        },
+        exposureNode()
+    ],
+    edges: [
+        { source: 'modifier-1', target: 'arguments-1' },
+        { source: 'arguments-1', target: 'context-1' },
+        { source: 'context-1', target: 'window-1' },
+        { source: 'window-1', target: 'entrypoint-1' },
+        { source: 'entrypoint-1', target: 'exposure-1' }
+    ]
+});
+
+const buildWindowRequest = (workflow: WorkflowDefinition): WorkflowExecutionRequest => ({
+    ...buildRequest(workflow),
+    trajectoryFrames: WINDOW_FRAMES
+});
+
+test('planExecutionStrategy (window mode:all): emits a single job carrying every timestep', async () => {
+    const plan = await createEngine().planExecutionStrategy(buildWindowRequest(buildWindowWorkflow({ mode: 'all' })));
+
+    assert.ok(plan, 'expected a non-null plan');
+    assert.equal(plan!.forEachNodeId, undefined);
+    assert.equal(plan!.trajectoryWindowNodeId, 'window-1');
+    assert.equal(plan!.items.length, 1);
+    const item = plan!.items[0] as { timestep?: number; windowMode?: string; windowTimesteps?: number[] };
+    assert.equal(item.timestep, 0);
+    assert.equal(item.windowMode, 'all');
+    assert.deepEqual(item.windowTimesteps, [0, 10, 20]);
+});
+
+test('planExecutionStrategy (window mode:window size 3): one job per primary frame with clamped windowTimesteps', async () => {
+    const plan = await createEngine().planExecutionStrategy(
+        buildWindowRequest(buildWindowWorkflow({ mode: 'window', windowSize: 3, centered: true }))
+    );
+
+    assert.ok(plan, 'expected a non-null plan');
+    assert.equal(plan!.trajectoryWindowNodeId, 'window-1');
+    assert.equal(plan!.items.length, WINDOW_FRAMES.length);
+
+    const items = plan!.items as Array<{ timestep?: number; windowTimesteps?: number[] }>;
+    assert.deepEqual(items.map((item) => item.timestep), [0, 10, 20]);
+    assert.deepEqual(items.map((item) => item.windowTimesteps), [
+        [0, 10, 20], // primary 0 clamps forward
+        [0, 10, 20], // primary 10 centered
+        [0, 10, 20]  // primary 20 clamps backward (only 3 frames)
+    ]);
+});
+
+test('planExecutionStrategy (window mode:referencePair): each job carries [reference, primary]', async () => {
+    const plan = await createEngine().planExecutionStrategy(
+        buildWindowRequest(buildWindowWorkflow({ mode: 'referencePair', referenceTimestep: 0 }))
+    );
+
+    assert.ok(plan, 'expected a non-null plan');
+    const items = plan!.items as Array<{ timestep?: number; windowTimesteps?: number[]; referenceTimestep?: number }>;
+    assert.deepEqual(items.map((item) => item.windowTimesteps), [
+        [0],       // reference == primary
+        [0, 10],
+        [0, 20]
+    ]);
+    assert.equal(items[1].referenceTimestep, 0);
+});
+

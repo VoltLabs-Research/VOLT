@@ -102,6 +102,7 @@ export const planAnalysisWorkflow = async (
             pluginReferenceExecutions: input.pluginReferenceExecutions,
             exposures: WorkflowSession.collectExposureDefinitions(workflow),
             forEachNodeId: plan.forEachNodeId,
+            trajectoryWindowNodeId: plan.trajectoryWindowNodeId,
             nodeOutputSnapshots: plan.nodeOutputSnapshots
         },
         trajectoryFrames: input.trajectoryFrames,

@@ -30,7 +30,8 @@ export const buildObjectPath = (
     arrayIndex?: number
 ): string => {
     const isChart = exporter === 'ChartExporter' || type === 'chart-png';
-    const folder = isChart ? 'charts' : 'glb';
+    const isSim = exporter === 'ConfigurationExporter';
+    const folder = isChart ? 'charts' : isSim ? 'simulation' : 'glb';
     const extension = isChart ? 'png' : type;
     const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
 

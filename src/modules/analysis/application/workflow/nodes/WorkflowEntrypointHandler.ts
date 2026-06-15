@@ -15,12 +15,17 @@ import type {
 } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 import { decodeCliArgumentsToken } from '@/support/serialization/serialization';
+import {
+    buildInferFromContextArgs,
+    collectInferFromContextArgumentKeys
+} from '@/modules/analysis/application/analysis/pipeline-context';
 import { isRecord } from '@/support/type-guards/is-record';
 import type {
     PluginFrameDescriptor,
     PluginProcessResponse
 } from '@/modules/plugin/contracts/plugin-batch';
 import type { SharedFramePublishInput } from '@/modules/plugin/application/runtime/SharedMemoryBridge';
+import type { TypedColumn } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 import fs from 'node:fs/promises';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -297,7 +302,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         positions: Float32Array;
         types: Uint16Array;
         ids?: Uint32Array;
-        properties: Record<string, Float32Array>;
+        properties: Record<string, TypedColumn>;
         atomCount: number;
     }): SharedFramePublishInput {
         const atomCount = frame.atomCount;
@@ -323,12 +328,12 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
                 data: frame.ids
             });
         }
-        for (const [propertyName, values] of Object.entries(frame.properties)) {
+        for (const [propertyName, column] of Object.entries(frame.properties)) {
             columns.push({
                 name: `properties/${propertyName}`,
-                dtype: 'float32',
-                shape: [values.length],
-                data: values
+                dtype: column.dtype === 'i32' ? 'int32' : 'float32',
+                shape: [column.values.length],
+                data: column.values
             });
         }
         return { columns };
@@ -438,9 +443,20 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             ? execution.prepareArgs(parsedArgs)
             : { args: parsedArgs };
 
+        // Pipeline runs only: append `--<key> <path>` for each inferFromContext
+        // argument, resolving the path from the shared pipeline context that
+        // upstream plugin stages populated. Throws if a required upstream
+        // exposure was never produced (stage ordering should guarantee it ran).
+        const inferFromContextArgs = context.pipelineContext
+            ? buildInferFromContextArgs(
+                context.pipelineContext,
+                collectInferFromContextArgumentKeys(context.workflow.definition)
+            )
+            : [];
+
         return {
             ...preparedArgs,
-            args: [...preparedArgs.args],
+            args: [...preparedArgs.args, ...inferFromContextArgs],
             resolvedArguments
         };
     }
