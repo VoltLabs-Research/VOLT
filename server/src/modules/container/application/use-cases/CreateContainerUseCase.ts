@@ -10,7 +10,7 @@ import type { ContainerPortMapping, RuntimeContainerInfo } from '@modules/contai
 import type { ITeamClusterContainerRuntimeService } from '@modules/container/domain/port/ITeamClusterContainerRuntimeService';
 import type { IContainerPortProxyRelayService } from '@modules/container/domain/port/IContainerPortProxyRelayService';
 import type { IContainerPublicPortAllocator } from '@modules/container/domain/port/IContainerPublicPortAllocator';
-import type { ITeamClusterSelectionService } from '@modules/container/domain/port/ITeamClusterSelectionService';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -134,13 +134,6 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
-
-        if (!input.userId.trim()) {
-            return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.VALIDATION_INVALID_INPUT,
-                'Actor userId is required'
-            ));
-        }
 
         if (input.folderId) {
             const folder = await this.folderRepository.findByTeamAndFolderId(input.teamId, input.folderId);

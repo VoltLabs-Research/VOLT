@@ -31,10 +31,8 @@ export type UseGlbSceneParams = {
     position: Pos3D;
     rotation: Pos3D;
     scale: number;
-    enableInstancing?: boolean;
     updateThrottle: number;
     useFixedReference?: boolean;
-    preserveInitialTransform?: boolean;
     onSelect?: () => void;
     orbitControlsRef?: RefObject<OrbitControlsHandle | null>;
     onEmptyData?: () => void;
@@ -45,6 +43,7 @@ export type UseGlbSceneParams = {
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
     lineHighlight?: LineEntityHighlight;
+    visibilityMask?: Uint8Array | null;
     sceneVisualOverrides: SceneVisualOverrides;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;

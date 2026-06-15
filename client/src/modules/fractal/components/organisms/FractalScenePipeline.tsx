@@ -2,7 +2,7 @@ import CameraRig from '@/modules/fractal/components/atoms/CameraRig';
 import CanvasGrid from '@/modules/fractal/components/atoms/CanvasGrid';
 import InitialCameraPose from '@/modules/fractal/components/atoms/InitialCameraPose';
 import ScreenshotCapture from '@/modules/fractal/components/atoms/ScreenshotCapture';
-import SlicePlaneHelper from '@/modules/fractal/components/atoms/SlicePlaneHelper';
+import PipelineSlicePlaneHelpers from '@/modules/canvas/components/PipelineSlicePlaneHelpers';
 import DynamicEffects from '@/modules/fractal/components/molecules/DynamicEffects';
 import DynamicEnvironment from '@/modules/fractal/components/molecules/DynamicEnvironment';
 import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights';
@@ -121,7 +121,7 @@ const FractalScenePipeline = ({
             {gridEnabled && (
                 <CanvasGrid settings={{ ...config.grid, enabled: gridEnabled }} darkTheme={darkTheme} />
             )}
-            <SlicePlaneHelper config={config.slicePlaneConfig} modelWorldBounds={modelWorldBounds} />
+            <PipelineSlicePlaneHelpers modelWorldBounds={modelWorldBounds} />
             <Bvh firstHitOnly>
                 {children}
             </Bvh>

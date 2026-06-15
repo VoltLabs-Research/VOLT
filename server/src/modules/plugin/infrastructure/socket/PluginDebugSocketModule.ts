@@ -460,7 +460,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
     private emitSessionCompleted(socketId: string, sessionId: string): void {
         this.emitToSocket(socketId, 'debug:session:completed', {
             sessionId,
-            exposureResults: [],
             totalDuration: 0
         });
         this.pluginDebugSessionRegistry.unregisterSession(sessionId);

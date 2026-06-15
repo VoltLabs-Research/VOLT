@@ -15,7 +15,7 @@ const ContainerTerminalPage = () => {
         );
     }
 
-    return <ContainerTerminal container={container} onClose={() => {}} embedded />;
+    return <ContainerTerminal container={container} embedded />;
 };
 
 export default ContainerTerminalPage;

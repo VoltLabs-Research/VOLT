@@ -1,7 +1,7 @@
 import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import type {
     PaginatedTeamScopedInputDTO,
-    TeamScopedPaginatedOutputDTO,
+    PaginatedOutputDTO,
 } from '@modules/team/application/dtos/common';
 
 export type ListWhiteboardsInputDTO = PaginatedTeamScopedInputDTO & {
@@ -19,4 +19,4 @@ export interface WhiteboardListItem {
     updatedAt: Date;
 }
 
-export type ListWhiteboardsOutputDTO = TeamScopedPaginatedOutputDTO<WhiteboardListItem>;
+export type ListWhiteboardsOutputDTO = PaginatedOutputDTO<WhiteboardListItem>;

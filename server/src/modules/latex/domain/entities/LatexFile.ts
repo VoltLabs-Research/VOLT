@@ -25,10 +25,6 @@ export default class LatexFile {
         public props: LatexFileProps
     ) {}
 
-    get id(): string {
-        return this._id;
-    }
-
     /** Full relative path within the project, e.g. `"chapters/intro.tex"`. */
     get fullPath(): string {
         return this.props.path ? `${this.props.path}${this.props.name}` : this.props.name;

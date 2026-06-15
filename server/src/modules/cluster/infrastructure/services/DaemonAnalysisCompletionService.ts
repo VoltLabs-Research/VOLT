@@ -19,7 +19,7 @@ import { TrajectoryStatus } from '@shared/contracts/types';
 // neutral payload contracts type the payloads.
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
-import { resolveAnalysisComputeClusterId } from '@modules/cluster/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@modules/cluster/domain/port/IDaemonAnalysisCompletionService';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';

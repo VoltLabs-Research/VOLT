@@ -2,12 +2,7 @@ import type { TeamAIIntegrationProps } from '@modules/team/domain/entities/ai-in
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-enum TeamAIIntegrationRelation {
-    Team = 'team',
-    CreatedBy = 'createdBy'
-};
-
-type TeamAIIntegrationRelations = `${TeamAIIntegrationRelation}`;
+type TeamAIIntegrationRelations = 'team' | 'createdBy';
 
 export interface TeamAIIntegrationDocument extends Persistable<TeamAIIntegrationProps, TeamAIIntegrationRelations>, Document {};
 

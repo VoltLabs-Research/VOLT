@@ -6,8 +6,7 @@ import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService, IT
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IRasterJobEnqueuer,
-    RasterJobEnqueueResult,
-    RasterTriggerConfig
+    RasterJobEnqueueResult
 } from '@modules/raster/domain/port/IRasterJobEnqueuer';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -21,7 +20,6 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
     teamId: string;
     storageClusterId?: string;
-    config?: RasterTriggerConfig;
 }
 
 @Singleton(RASTER_TOKENS.RasterJobEnqueuer)
@@ -35,8 +33,7 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
 
     async triggerRasterization(
         trajectoryId: string,
-        teamId: string,
-        config?: RasterTriggerConfig
+        teamId: string
     ): Promise<RasterJobEnqueueResult> {
         const trajectory = await this.trajectoryRepository.findById(trajectoryId);
 
@@ -64,10 +61,6 @@ export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
             teamId,
             storageClusterId
         };
-
-        if (config) {
-            payload.config = config;
-        }
 
         try {
             const response = await this.teamClusterDaemonClient.command<RasterJobEnqueueResult>(

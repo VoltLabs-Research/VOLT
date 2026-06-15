@@ -378,7 +378,7 @@ const useFileTree = ({
             .map((asset) => onDeleteAssetDirect({ documentId, assetId: asset._id }));
 
         await Promise.all([...fileOperations, ...assetOperations]);
-    }, [assets, confirm, documentId, files, onDeleteAssetDirect, onDeleteFileDirect]);
+    }, [assets, documentId, files, onDeleteAssetDirect, onDeleteFileDirect]);
 
     return {
         treeNodes,

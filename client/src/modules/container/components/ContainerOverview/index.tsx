@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { format, formatDistanceStrict } from 'date-fns';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import { Box, Button, Divider, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
-import { formatSize } from '@/shared/utils/format';
+import { formatSize } from '@voltstack/bravais';
 import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
 import useTimeSeriesBuffer from '@/modules/container/hooks/use-time-series-buffer';

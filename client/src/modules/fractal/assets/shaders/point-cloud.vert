@@ -3,17 +3,21 @@
 uniform float pointScale;
 uniform float uMinPointSize;
 
+attribute float aVisible;
+
 varying vec3 vColor;
 varying vec3 vWorldPosition;
+varying float vVisible;
 
 /**
  * Vertex shader for point sprite rendering. The GLB streamed from the server
  * already carries baked vertex colors (default / color-coding / particle-filter
- * endpoints all produce a fully coloured point cloud), so the shader just
- * forwards `color` to the fragment stage.
+ * endpoints all produce a fully coloured point cloud), so the shader forwards
+ * `color` to the fragment stage as `vColor`.
  */
 void main(){
     vColor = color;
+    vVisible = aVisible;
 
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;

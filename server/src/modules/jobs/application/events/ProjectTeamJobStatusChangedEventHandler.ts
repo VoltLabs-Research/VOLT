@@ -1,7 +1,7 @@
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import type { ITeamJobProjectionService } from '@modules/jobs/domain/port/ITeamJobProjectionService';
-import type { TeamJobSnapshot } from '@modules/jobs/domain/contracts/TeamJobSnapshot';
+import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import type { ISocketEmitter } from '@modules/socket/domain/port/ISocketEmitter';
 import { IEventHandler } from '@shared/application/events/IEventHandler';

@@ -5,7 +5,7 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { SaveWhiteboardStateInputDTO, SaveWhiteboardStateOutputDTO } from '@modules/whiteboards/application/dtos/SaveWhiteboardStateDTO';
-import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import { requireWhiteboardStorageClusterId, type WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -19,26 +19,8 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
-    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
-        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
-            return props.storageClusterId;
-        }
-
-        throw ApplicationError.conflict(
-            'Whiteboard::StorageClusterRequired',
-            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
-        );
-    }
-
     async execute(input: SaveWhiteboardStateInputDTO): Promise<Result<SaveWhiteboardStateOutputDTO, ApplicationError>> {
         try {
-            if (!input.userId) {
-                return Result.fail(ApplicationError.unauthorized(
-                    ErrorCodes.AUTHENTICATION_REQUIRED,
-                    'Authentication required'
-                ));
-            }
-
             const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
                 input.teamId,
                 input.whiteboardId
@@ -59,7 +41,7 @@ export class SaveWhiteboardStateUseCase implements IUseCase<SaveWhiteboardStateI
             }
 
             const key = whiteboard.props.payloadKey;
-            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+            const storageClusterId = requireWhiteboardStorageClusterId(whiteboard._id, whiteboard.props);
 
             await this.objectGatewayClient.putBuffer(storageClusterId, {
                 bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,

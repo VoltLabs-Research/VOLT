@@ -1,7 +1,7 @@
 import { isDemoClusterFeatureEnabled } from '@/modules/cluster/utilities/demo-feature';
 
 const POST_AUTH_DESTINATION_STORAGE_KEY = 'volt:auth:post-auth-destination';
-export const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';
+const DEFAULT_POST_AUTH_DESTINATION = '/dashboard';
 const ONBOARDING_PATH = '/onboarding';
 const CLUSTER_ONBOARDING_PATH = '/onboarding/cluster/setup';
 const CLUSTER_ONBOARDING_CHOICE_PATH = '/onboarding/cluster/choice';
@@ -15,11 +15,7 @@ interface BuildOnboardingRedirectPathInput {
     onboardingPath: string;
 }
 
-const getSessionStorage = (): Storage => {
-    return window.sessionStorage;
-};
-
-export const sanitizePostAuthDestination = (destination: string | null | undefined): string | null => {
+const sanitizePostAuthDestination = (destination: string | null | undefined): string | null => {
     if (!destination) {
         return null;
     }
@@ -47,12 +43,8 @@ const isOnboardingDestination = (destination: string): boolean => {
         return false;
     }
 
-    try {
-        const url = new URL(safeDestination, window.location.origin);
-        return url.pathname === ONBOARDING_PATH || url.pathname.startsWith(`${ONBOARDING_PATH}/`);
-    } catch {
-        return false;
-    }
+    const pathname = safeDestination.split(/[?#]/)[0];
+    return pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`);
 };
 
 const buildOnboardingRedirectPath = ({
@@ -69,43 +61,28 @@ const buildOnboardingRedirectPath = ({
 };
 
 export const setPostAuthDestination = (destination: string): void => {
-    const storage = getSessionStorage();
-    if (!storage) {
-        return;
-    }
-
     const safeDestination = sanitizePostAuthDestination(destination);
 
     if (!safeDestination) {
-        storage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+        window.sessionStorage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
         return;
     }
 
-    storage.setItem(POST_AUTH_DESTINATION_STORAGE_KEY, safeDestination);
+    window.sessionStorage.setItem(POST_AUTH_DESTINATION_STORAGE_KEY, safeDestination);
 };
 
 export const getPostAuthDestination = (): string | null => {
-    const storage = getSessionStorage();
-    if (!storage) {
-        return null;
-    }
-
-    const destination = sanitizePostAuthDestination(storage.getItem(POST_AUTH_DESTINATION_STORAGE_KEY));
+    const destination = sanitizePostAuthDestination(window.sessionStorage.getItem(POST_AUTH_DESTINATION_STORAGE_KEY));
 
     if (!destination) {
-        storage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+        window.sessionStorage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
     }
 
     return destination;
 };
 
 export const clearPostAuthDestination = (): void => {
-    const storage = getSessionStorage();
-    if (!storage) {
-        return;
-    }
-
-    storage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
+    window.sessionStorage.removeItem(POST_AUTH_DESTINATION_STORAGE_KEY);
 };
 
 export const resolvePostAuthDestination = ({

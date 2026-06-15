@@ -63,18 +63,8 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         });
     }
 
-    off(
-        socketId: string, 
-        event: string
-    ): void{
-        const socket = this.sockets.get(socketId);
-        if(!socket) return;
-
-        socket.removeAllListeners(event);
-    }
-
     onDisconnect(
-        socketId: string, 
+        socketId: string,
         handler: (connection: ISocketConnection) => void | Promise<void>
     ): void{
         const socket = this.sockets.get(socketId);
@@ -97,12 +87,5 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         }
 
         handlers.push(handler);
-    }
-
-    getConnection(socketId: string): ISocketConnection | undefined{
-        const socket = this.sockets.get(socketId);
-        if(!socket) return undefined;
-
-        return this.socketMapper.toDomain(socket);
     }
 }

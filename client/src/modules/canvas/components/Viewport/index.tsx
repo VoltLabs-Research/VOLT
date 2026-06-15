@@ -1,7 +1,6 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
 import { useLineEntityHighlight } from '../../hooks/use-line-entity-selection';
 import AIViewerActivityBadge from './AIViewerActivityBadge';
-import ColorbarLegend from '../ColorbarLegend';
 import PlaybackTicker from '../PlaybackTicker';
 import ViewportFloatingControls from '../ViewportFloatingControls';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
@@ -94,7 +93,6 @@ const Viewport = ({
     const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
     const {
         activeScenes,
-        slicePlaneConfig,
         sceneVisualOverrides,
         activeModelBounds,
         modelWorldBounds,
@@ -104,7 +102,6 @@ const Viewport = ({
         setIsPointCloudScene
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
-        slicePlaneConfig: s.configuration.slicePlaneConfig,
         sceneVisualOverrides: s.sceneVisualOverrides,
         activeModelBounds: s.activeModel?.modelBounds,
         modelWorldBounds: s.modelWorldBounds,
@@ -233,7 +230,6 @@ const Viewport = ({
                                     analysisId={analysisId}
                                     activeScenes={activeScenes}
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
-                                    slicePlaneConfig={slicePlaneConfig}
                                     boxBounds={resolvedBoxBounds}
                                     sceneVisualOverrides={sceneVisualOverrides}
                                     lineHighlight={lineHighlight}
@@ -256,8 +252,6 @@ const Viewport = ({
                 {!hideGradient && <Box position='absolute' inset='0' className="canvas-viewport-gradient" />}
 
                 {analysisOverlay}
-
-                <ColorbarLegend />
 
                 <AIViewerActivityBadge />
 

@@ -52,10 +52,6 @@ const buildPropertyCondition = (input: {
     ...(input.exposureId ? { exposureId: input.exposureId } : {})
 });
 
-const resolveCondition = (condition: ParticleFilterConditionDTO): ParticleFilterCondition => (
-    buildPropertyCondition(condition)
-);
-
 export const buildParticleFilterRequest = (
     input: ParticleFilterRequestInputLike
 ): ParticleFilterRequest => {
@@ -67,6 +63,6 @@ export const buildParticleFilterRequest = (
 
     return {
         combinator: input.combinator,
-        conditions: conditions.map(resolveCondition)
+        conditions: conditions.map(buildPropertyCondition)
     };
 };

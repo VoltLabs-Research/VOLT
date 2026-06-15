@@ -45,8 +45,8 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     const files = filesQueryResult.data ?? [];
     const isLoading = filesQueryResult.isLoading;
 
-    const { mutateAsync: createFile, isPending: isCreating } = useCreateLatexFileMutation();
-    const { mutateAsync: deleteFile, isPending: isDeleting } = useDeleteLatexFileMutation();
+    const { mutateAsync: createFile } = useCreateLatexFileMutation();
+    const { mutateAsync: deleteFile } = useDeleteLatexFileMutation();
     const { mutateAsync: setEntrypoint } = useSetLatexFileEntrypointMutation();
     const { mutateAsync: updateFile, isPending: isSaving } = useUpdateLatexFileMutation();
 
@@ -101,8 +101,6 @@ const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     return {
         files,
         isLoading,
-        isCreating,
-        isDeleting,
         isSaving,
         handleCreateFile,
         createFileWithoutSelection,

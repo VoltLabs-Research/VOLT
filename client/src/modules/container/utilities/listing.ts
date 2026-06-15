@@ -6,11 +6,6 @@ export enum ContainerListingRowType {
     Container = 'container'
 }
 
-enum ContainerListingDndPrefix {
-    Folder = 'folder',
-    Container = 'container'
-}
-
 export interface ContainerFolderRow extends ContainerFolder {
     rowType: ContainerListingRowType.Folder;
     name: string;
@@ -65,7 +60,7 @@ export const getContainerListingDraggableId = (row: ContainerListingRow): string
         return null;
     }
 
-    return `${ContainerListingDndPrefix.Container}:${row._id}`;
+    return `${ContainerListingRowType.Container}:${row._id}`;
 };
 
 export const getContainerListingDroppableId = (row: ContainerListingRow): string | null => {
@@ -73,5 +68,5 @@ export const getContainerListingDroppableId = (row: ContainerListingRow): string
         return null;
     }
 
-    return `${ContainerListingDndPrefix.Folder}:${row._id}`;
+    return `${ContainerListingRowType.Folder}:${row._id}`;
 };

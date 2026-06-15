@@ -1,12 +1,11 @@
 import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import useAIPage from '@/modules/ai/hooks/use-ai-page';
 import { toAIModelSelectOptions } from '@/modules/ai/utilities/model-options';
+import { PENDING_MESSAGE_STORAGE_KEY } from '@/modules/ai/providers/AIChatProvider';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
 import type { SelectOption } from '@voltstack/bravais';
 import { useNavigate } from 'react-router-dom';
-
-const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
 
 interface PrepareMessageContext {
     conversationId?: string;

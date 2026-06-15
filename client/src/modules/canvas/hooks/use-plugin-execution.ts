@@ -6,14 +6,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
 import useCanvasUrlState from './use-canvas-url-state';
 
-import type { ModifierOption } from '../utilities/modifier-registry';
 import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 
 export enum ExecState {
     Idle = 'idle',
     Loading = 'loading',
     Success = 'success',
     Error = 'error'
+}
+
+/** Minimal plugin option shape used by this hook. */
+export interface ModifierOption {
+    modifierId: string;
+    title: string;
+    isPlugin: boolean;
+    plugin?: Plugin;
+    pluginId?: string;
+    pluginModifierId?: string;
 }
 
 const RESERVED_RUNTIME_ARGUMENTS = {

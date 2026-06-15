@@ -140,7 +140,7 @@ const LazyAIFloatingAssistantPanel = lazy(
 );
 
 const createIdleCallbackHandle = (onIdle: () => void): IdleCallbackHandle => {
-    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    if (typeof window.requestIdleCallback === 'function') {
         const idleCallbackId = window.requestIdleCallback(onIdle, { timeout: 1500 });
 
         return {

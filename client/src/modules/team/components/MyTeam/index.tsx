@@ -22,7 +22,7 @@ import EditableTag from '@/shared/presentation/components/EditableTag';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { dateColumn } from '@/shared/presentation/utilities/column-presets';
 import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
-import { formatDuration } from '@/shared/utils/format';
+import { formatDuration } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { IoChatbubbleOutline, IoExitOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { useCallback, useMemo } from 'react';
@@ -148,7 +148,7 @@ export default function MyTeamTemplate() {
                 toast: getRemoveMemberToastOptions(member)
             });
         }
-    }, [selectedTeam._id, removeTeamMemberMutation, confirm]);
+    }, [selectedTeam._id, removeTeamMemberMutation]);
 
     const handleLeaveTeam = useCallback(async () => {
         const isConfirmed = await confirm({

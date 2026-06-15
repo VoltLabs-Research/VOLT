@@ -1,5 +1,5 @@
 import { Button, Box, ListRow } from '@voltstack/bravais';
-import { getInitialsFromEmail, getAvatarColorFromString } from '@/shared/utils/user';
+import { getInitialsFromEmail, getAvatarColorFromString } from '@voltstack/bravais';
 import { format } from 'date-fns';
 import './InvitationRow.css';
 

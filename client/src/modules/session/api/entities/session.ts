@@ -2,14 +2,8 @@ import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 
 export interface ActiveSession extends BaseEntity {
     user: string;
-    token: null;
-    userAgent: string;
     ip: string;
-    isActive: boolean;
     lastActivity: string;
-    action: SessionActivityType;
-    success: boolean;
-    failureReason?: string;
     isCurrent: boolean;
     browser: string;
     os: string;
@@ -20,7 +14,6 @@ export interface LoginActivityEntry extends BaseEntity {
     user: string;
     userAgent: string;
     ip: string;
-    isActive: boolean;
     action: SessionActivityType;
     success: boolean;
     failureReason?: string;

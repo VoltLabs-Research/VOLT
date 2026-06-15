@@ -220,7 +220,6 @@ const useChatData = () => {
         messages,
         currentChatId,
         hasMore,
-        page: messagesQuery.data?.pages.length ?? 1,
         fetchChats,
         selectChat,
         loadMoreMessages,
@@ -229,8 +228,7 @@ const useChatData = () => {
         updateMessage,
         isChatsLoading: chatsResult.isLoading,
         isMessagesLoading: messagesQuery.isLoading || messagesQuery.isFetchingNextPage,
-        chatsError: chatsResult.error,
-        messagesError: messagesQuery.error
+        chatsError: chatsResult.error
     };
 };
 

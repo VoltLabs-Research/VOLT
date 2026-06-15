@@ -1,4 +1,4 @@
-import { Button, CollapsibleSection, Row, Select, Stack, Text } from '@voltstack/bravais';
+import { Button, CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import {
@@ -7,6 +7,7 @@ import {
     getUserConfigurableArguments,
     getArgumentDefaultValue,
     getListArgumentValue,
+    getTupleArgumentValue,
     getSelectArgumentValue,
     getPrimitiveArgumentFieldValue,
     isPluginReferenceArgumentType
@@ -20,7 +21,6 @@ import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/w
 import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
-import { getMultiSelectTriggerLabel } from '@/shared/presentation/utilities/multi-select-trigger-label';
 import { isRecord } from '@/shared/utils/type-guards';
 import './ArgumentFieldsRenderer.css';
 
@@ -291,6 +291,18 @@ const ArgumentFieldsRenderer = ({
         onChange(argument.argument, items.filter((_, index) => index !== itemIndex));
     }, [onChange]);
 
+    const handleTupleFieldChange = useCallback((
+        argument: IArgumentDefinition,
+        tupleValue: ListItemValue,
+        nestedKey: string,
+        nextValue: unknown
+    ) => {
+        onChange(argument.argument, {
+            ...tupleValue,
+            [nestedKey]: nextValue
+        });
+    }, [onChange]);
+
     const handleListItemAdd = useCallback((argument: IArgumentDefinition, listPath: string, items: ListItemValue[]) => {
         const nextItemIndex = items.length;
         onChange(argument.argument, [...items, createDefaultListItem(argument.listArguments)]);
@@ -356,6 +368,30 @@ const ArgumentFieldsRenderer = ({
                     frameOptions={resolvedFrameOptions}
                     autocompleteOptions={autocompleteOptions}
                 />
+            );
+        }
+
+        if (argument.type === ArgumentType.TUPLE) {
+            const tupleValue = getTupleArgumentValue(argument, argumentValue);
+            const nestedArguments = argument.listArguments ?? [];
+
+            return (
+                <Stack key={fieldKey} gap='05'>
+                    <p className='canvas-form-label'>
+                        {argument.label || argument.argument}
+                    </p>
+                    <ArgumentFieldsRenderer
+                        arguments={nestedArguments}
+                        values={tupleValue}
+                        onChange={(nestedKey, nextValue) => handleTupleFieldChange(argument, tupleValue, nestedKey, nextValue)}
+                        frameOptions={resolvedFrameOptions}
+                        emptyMessage='No tuple components configured.'
+                        path={fieldKey}
+                        rootValues={resolvedRootValues}
+                        autocompleteOptions={autocompleteOptions}
+                        allowTemplateReferenceMode={allowTemplateReferenceMode}
+                    />
+                </Stack>
             );
         }
 
@@ -466,6 +502,7 @@ const ArgumentFieldsRenderer = ({
         autocompleteOptions,
         handleListItemAdd,
         handlePrimitiveChange,
+        handleTupleFieldChange,
         onChange,
         path,
         publishedPluginsById,

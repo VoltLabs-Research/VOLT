@@ -216,16 +216,12 @@ const useAIChatStream = ({
         }
     }, [canSendMessage, conversationId, isSendingMessage, sendMessage]);
 
-    const stopStreaming = useCallback(() => {
-        stop();
-    }, [stop]);
-
     return {
         messages: streamMessages,
         isSendingMessage,
         sendMessageError,
         handleSendMessage,
-        stopStreaming,
+        stopStreaming: stop,
         addToolApprovalResponse
     };
 };

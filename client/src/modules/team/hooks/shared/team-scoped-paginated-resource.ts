@@ -1,4 +1,4 @@
-import { buildKeys, queryClient } from '@/shared/infrastructure/query';
+import { buildKeys } from '@/shared/infrastructure/query';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { QueryKey } from '@tanstack/react-query';
 
@@ -37,13 +37,6 @@ export const createTeamScopedPaginatedResource = <
 
     const getListingQueryKey = ({ teamId }: { teamId: string }): QueryKey => {
         return [...queryKeys[config.listKeyName](), teamId];
-    };
-
-    const getPageQueryKey = ({ teamId, page, limit }: TeamScopedPaginatedParams): QueryKey => {
-        return [...getListingQueryKey({ teamId }), {
-            page,
-            limit
-        }];
     };
 
     const getAggregateQueryKey = ({ teamId, limit }: TeamScopedAggregateParams): QueryKey => {
@@ -94,9 +87,7 @@ export const createTeamScopedPaginatedResource = <
     return {
         queryKeys,
         getListingQueryKey,
-        getPageQueryKey,
         getAggregateQueryKey,
-        invalidateListingQuery: (teamId: string) => queryClient.invalidateQueries({ queryKey: getListingQueryKey({ teamId }) }),
         fetchAllPages,
         createListingAccessors
     };

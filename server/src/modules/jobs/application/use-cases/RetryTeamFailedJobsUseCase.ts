@@ -1,6 +1,6 @@
 import type { RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO } from '@modules/jobs/application/dtos/RetryTeamFailedJobsDTO';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import type { ITeamJobMaintenanceService } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { ITeamJobMaintenanceService } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import type { IUseCase } from '@shared/application/IUseCase';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';

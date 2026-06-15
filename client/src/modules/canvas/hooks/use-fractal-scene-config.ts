@@ -24,7 +24,6 @@ const useFractalSceneConfig = (): FractalSceneConfig => {
         effects: selected.effects,
         lights: selected.lights,
         pointCloudSettings,
-        slicePlaneConfig: selected.slicePlaneConfig,
         dpr: selected.dpr,
         performance: selected.performance,
         adaptiveEventsEnabled: selected.adaptiveEventsEnabled,

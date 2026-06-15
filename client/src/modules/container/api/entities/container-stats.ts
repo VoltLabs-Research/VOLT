@@ -19,7 +19,6 @@ export interface NetworkStats {
 
 export interface ContainerStats {
     cpu_stats: CpuStats;
-    precpu_stats: CpuStats;
     memory_stats: MemoryStats;
     networks?: Record<string, NetworkStats>;
 }

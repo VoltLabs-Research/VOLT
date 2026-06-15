@@ -27,6 +27,7 @@ import AnalysisListingDownloadModal, {
 } from '../AnalysisListingDownloadModal';
 import CommandPalette from '../CommandPalette';
 import PluginResultsViewer from '../PluginResultsViewer';
+import GlobalAttributesPanel from '@/modules/analysis/components/GlobalAttributesPanel';
 import RightPanel from '../RightPanel';
 import StatusBar from '../StatusBar';
 import Timeline from '../Timeline';
@@ -65,14 +66,7 @@ import { createInitialRasterContainerSelections } from '@/modules/raster/types/c
 import { clampFrameIndex, fetchLocalGlbManifest, resolveLocalGlbUrl } from '@/modules/canvas/utilities/local-glb-manifest';
 
 import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utilities/local-glb-manifest';
-
-interface DownloadExposureListingParams {
-    pluginId: string;
-    exposureId: string;
-    analysisId?: string;
-    trajectoryId?: string;
-    exposureName?: string;
-}
+import type { CanvasExposureDownloadParams } from '@/modules/canvas/components/canvas-panel-props';
 
 interface CanvasLocationState {
     entry?: string;
@@ -471,7 +465,7 @@ const CanvasPage = () => {
         storageKey: 'volt:canvas:timeline-panel-size'
     });
 
-    const handleDownloadExposureListing = useCallback((params: DownloadExposureListingParams) => {
+    const handleDownloadExposureListing = useCallback((params: CanvasExposureDownloadParams) => {
         downloadListing(params);
     }, [downloadListing]);
 
@@ -984,6 +978,9 @@ const CanvasPage = () => {
                     pluginId={resultsPluginId}
                     analysisId={analysisId}
                 />
+            )}
+            {!isLocalGlbViewer && showWidgets && analysisId && (
+                <GlobalAttributesPanel analysisId={analysisId} />
             )}
             <AnalysisListingDownloadModal
                 analysisId={downloadAnalysisModalTargetId}

@@ -7,13 +7,6 @@ export interface TeamProps {
     name: string;
     description: string;
     owner: string | TeamOwnerRef;
-    admins?: string[];
-    members?: string[];
-    invitations?: string[];
-    containers?: string[];
-    trajectories?: string[];
-    chats?: string[];
-    plugins?: string[];
     inviteCode?: string;
     createdAt: Date;
     updatedAt: Date;

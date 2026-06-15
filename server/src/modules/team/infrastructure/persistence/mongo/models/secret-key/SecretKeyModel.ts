@@ -2,13 +2,7 @@ import { SecretKeyProps } from '@modules/team/domain/entities/secret-key/SecretK
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-enum SecretKeyRelation {
-    Team = 'team',
-    Role = 'role',
-    CreatedBy = 'createdBy'
-};
-
-type SecretKeyRelations = `${SecretKeyRelation}`;
+type SecretKeyRelations = 'team' | 'role' | 'createdBy';
 
 export interface SecretKeyDocument extends Persistable<SecretKeyProps, SecretKeyRelations>, Document {};
 

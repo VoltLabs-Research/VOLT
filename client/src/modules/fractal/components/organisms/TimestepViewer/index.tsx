@@ -1,13 +1,14 @@
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
+import BondsModelViewer from '@/modules/fractal/components/molecules/BondsModelViewer';
 import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
+import { resolveBondLineSettings } from '@/modules/fractal/services/bond-render';
 import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useState, useRef, useEffect } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
@@ -26,7 +27,6 @@ interface TimestepViewerProps {
     currentTimestep: number | undefined;
     analysisId?: string;
     activeScenes: SceneObjectType[];
-    slicePlaneConfig: SlicePlaneConfig;
     boxBounds: BoxBounds;
     pointCloudSettings: PointCloudSceneSettings;
     sceneVisualOverrides: SceneVisualOverrides;
@@ -81,7 +81,6 @@ const TimestepViewer = ({
     currentTimestep,
     analysisId = 'default',
     activeScenes: storeActiveScenes,
-    slicePlaneConfig,
     boxBounds,
     pointCloudSettings,
     sceneVisualOverrides,
@@ -145,6 +144,8 @@ const TimestepViewer = ({
             {scenesToRender.map((scene, index) => {
                 const sceneKey = getSceneKey(scene);
                 const sceneOverride = sceneVisualOverrides[sceneKey];
+                const isBondScene = scene.source === 'plugin'
+                    && scene.sceneRenderMetadata?.exporter === Exporter.BOND;
                 const lineSettings: LineSceneSettings | undefined = scene.source === 'plugin'
                     && scene.sceneRenderMetadata?.exporter === Exporter.LINE
                     ? {
@@ -154,28 +155,40 @@ const TimestepViewer = ({
                             ?? DEFAULT_LINE_WIDTH
                     }
                     : undefined;
+                // A bonds exposure is a line-tube cylinder GLB (BondExporter
+                // delegates to the line exporter). It renders through the same
+                // SingleModelViewer line path, but bond width derives from the
+                // baked bond radius (defaultLineWidth = diameter) rather than the
+                // dislocation default, and the user's per-scene width override
+                // still applies in-frame.
+                const bondLineSettings: LineSceneSettings | undefined = isBondScene
+                    ? resolveBondLineSettings(
+                        { radius: (scene.sceneRenderMetadata?.defaultLineWidth ?? 0) / 2 || undefined },
+                        sceneOverride?.lineWidth
+                    )
+                    : undefined;
                 const scenePosition = resolveSpawnPosition(scene);
                 const spawnPosition: [number, number, number] = [
                     scenePosition.x ?? 0,
                     scenePosition.y ?? 0,
                     scenePosition.z ?? 0
                 ];
+                const ModelViewer = isBondScene ? BondsModelViewer : SingleModelViewer;
                 return (
                     <group
                         key={`${scene.source}-${scene.sceneType}-${'exposureId' in scene ? scene.exposureId : ''}-${index}`}
                         position={spawnPosition}
                     >
-                        <SingleModelViewer
+                        <ModelViewer
                             teamId={teamId}
                             trajectoryId={trajectoryId}
                             currentTimestep={currentTimestep}
                             analysisId={analysisId}
                             sceneConfig={scene}
-                            slicePlaneConfig={slicePlaneConfig}
                             boxBounds={boxBounds}
                             pointSizeMultiplier={pointCloudSettings.pointSizeMultiplier}
                             pointCloudSettings={pointCloudSettings}
-                            lineSettings={lineSettings}
+                            lineSettings={bondLineSettings ?? lineSettings}
                             lineHighlight={lineHighlight?.sceneKey === sceneKey ? lineHighlight : undefined}
                             sceneVisualOverrides={sceneVisualOverrides}
                             setModelWorldBounds={setModelWorldBounds}

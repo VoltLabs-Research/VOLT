@@ -15,18 +15,10 @@ export interface RasterAnalysisMetadata {
     frames: RasterFrameMetadata[];
 };
 
-export enum RasterMetadataStatus {
-    Pending = 'pending',
-    Processing = 'processing',
-    Completed = 'completed',
-    Failed = 'failed'
-};
-
 export interface RasterMetadata {
     trajectoryId: string;
     totalFrames: number;
     rasterizedFrames: number;
-    status: RasterMetadataStatus;
     trajectory: RasterTrajectoryMetadata | null;
     analyses: RasterAnalysisMetadata[];
     createdAt: string;

@@ -5,7 +5,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
 import type { UploadWhiteboardAssetInputDTO, UploadWhiteboardAssetOutputDTO } from '@modules/whiteboards/application/dtos/UploadWhiteboardAssetDTO';
-import type { WhiteboardProps } from '@modules/whiteboards/domain/entities/Whiteboard';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/domain/entities/Whiteboard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/port/Result';
@@ -19,17 +19,6 @@ export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAs
         @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService) private readonly signedUrlService: IClusterObjectSignedUrlService
     ) {}
-
-    private requireStorageClusterId(whiteboardId: string, props: WhiteboardProps): string {
-        if (props.storageClusterId && props.storageClusterId.trim().length > 0) {
-            return props.storageClusterId;
-        }
-
-        throw ApplicationError.conflict(
-            'Whiteboard::StorageClusterRequired',
-            `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
-        );
-    }
 
     async execute(input: UploadWhiteboardAssetInputDTO): Promise<Result<UploadWhiteboardAssetOutputDTO, ApplicationError>> {
         try {
@@ -47,7 +36,7 @@ export class UploadWhiteboardAssetUseCase implements IUseCase<UploadWhiteboardAs
 
             const assetId = uuidv4();
             const objectKey = `${input.teamId}/${input.whiteboardId}/assets/${assetId}`;
-            const storageClusterId = this.requireStorageClusterId(whiteboard._id, whiteboard.props);
+            const storageClusterId = requireWhiteboardStorageClusterId(whiteboard._id, whiteboard.props);
             const signed = this.signedUrlService.createToken({
                 kind: 'cluster-object',
                 operation: 'write',

@@ -37,11 +37,3 @@ const clientToolRegistry = buildRegistry();
 export const getClientTool = (name: string): ClientToolHandler | undefined => {
     return clientToolRegistry.get(name);
 };
-
-export const isClientTool = (name: string): boolean => {
-    return clientToolRegistry.has(name);
-};
-
-export const listClientToolNames = (): string[] => {
-    return Array.from(clientToolRegistry.keys());
-};

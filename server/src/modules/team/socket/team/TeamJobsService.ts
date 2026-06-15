@@ -62,7 +62,7 @@ export default class TeamJobsService {
         private readonly redis: IORedis
     ) { }
 
-    async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
+    private async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
     }
 

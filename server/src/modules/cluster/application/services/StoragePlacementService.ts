@@ -295,7 +295,6 @@ export default class StoragePlacementService implements IStoragePlacementService
                 throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
             }
 
-            await this.trajectoryRepository.findById(analysis.props.trajectory);
             const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
             if (!storageClusterId) {
                 throw ApplicationError.conflict(

@@ -1,6 +1,3 @@
-export interface RasterTriggerConfig {
-}
-
 export interface RasterJobEnqueueResult {
     queuedJobs: number;
     duplicateJobs: number;
@@ -21,7 +18,6 @@ export interface RasterJobEnqueueResult {
 export interface IRasterJobEnqueuer {
     triggerRasterization(
         trajectoryId: string,
-        teamId: string,
-        config?: RasterTriggerConfig
+        teamId: string
     ): Promise<RasterJobEnqueueResult>;
 }

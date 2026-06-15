@@ -22,7 +22,6 @@ type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
 interface DaemonNotebookJupyterResponse {
     internalPath: string;
-    url?: string;
     ready: boolean;
     containerStage?: NotebookContainerStage;
 }
@@ -100,7 +99,7 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         });
 
         const jupyter = this.requireDaemonJupyterResponse(response);
-        const daemonPath = this.resolveDaemonJupyterPath(jupyter);
+        const daemonPath = jupyter.internalPath;
         const accessToken = this.accessTokenService.create({
             teamId: input.teamId,
             runtimeNotebookId,
@@ -145,9 +144,5 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
         }
 
         throw ApplicationError.internalServerError('Daemon returned an invalid Jupyter session response');
-    }
-
-    private resolveDaemonJupyterPath(jupyter: DaemonNotebookJupyterResponse): string {
-        return jupyter.internalPath;
     }
 }

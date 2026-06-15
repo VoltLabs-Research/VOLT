@@ -1,7 +1,7 @@
 import type { LatexDocumentProps } from '@modules/latex/domain/entities/LatexDocument';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-const buildAssetPrefix = (teamId: string, documentId: string): string => {
+export const buildLatexAssetStoragePrefix = (teamId: string, documentId: string): string => {
     return `latex-assets/${teamId}/${documentId}/`;
 };
 
@@ -25,7 +25,7 @@ export const buildLatexAssetStorageKey = (
     uniqueId: string,
     ext: string
 ): string => {
-    return `${buildAssetPrefix(teamId, documentId)}${uniqueId}${ext}`;
+    return `${buildLatexAssetStoragePrefix(teamId, documentId)}${uniqueId}${ext}`;
 };
 
 export const assertLatexAssetStorageKey = (
@@ -33,7 +33,7 @@ export const assertLatexAssetStorageKey = (
     documentId: string,
     storageKey: string
 ): void => {
-    if (storageKey.startsWith(buildAssetPrefix(teamId, documentId))) {
+    if (storageKey.startsWith(buildLatexAssetStoragePrefix(teamId, documentId))) {
         return;
     }
 

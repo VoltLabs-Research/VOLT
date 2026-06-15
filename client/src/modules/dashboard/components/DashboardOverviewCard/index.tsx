@@ -1,6 +1,7 @@
 import './DashboardOverviewCard.css';
 import { Sparkline, Box, IconFrame, Row, Stack, Text } from '@voltstack/bravais';
 import DashboardCard from '@/modules/dashboard/components/DashboardCard';
+import { getTrendColor } from '@/modules/dashboard/utilities/trend-color';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
@@ -20,11 +21,6 @@ interface DashboardSparklineProps {
     card: DashboardMetricsCard;
     color: string;
 }
-
-const getTrendColor = (isPositiveTrend: boolean): string => {
-    const colorVariable = isPositiveTrend ? '--accent-green' : '--accent-red';
-    return getComputedStyle(document.documentElement).getPropertyValue(colorVariable).trim() || '#30d158';
-};
 
 const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: DashboardStatContentProps) => {
     const TrendIcon = isPositiveTrend ? FaArrowUpLong : FaArrowDownLong;
@@ -67,7 +63,7 @@ const DashboardSparkline = ({ card, color }: DashboardSparklineProps) => (
 const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
     const navigate = useNavigate();
     const isPositiveTrend = (card.lastMonthStatus ?? 0) >= 0;
-    const isClickable = Boolean(card.listingUrl && !card.listingUrl.includes(':trajectoryId'));
+    const isClickable = Boolean(card.listingUrl);
 
     const handleClick = () => {
         if (isClickable && card.listingUrl) {

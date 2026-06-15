@@ -4,7 +4,6 @@ import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
-import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import { AcceptTeamInvitationInputDTO, AcceptTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/AcceptTeamInvitationDTO';
@@ -18,7 +17,6 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository) private readonly invitationRepository: ITeamInvitationRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        @inject(TEAM_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository) private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(AUTH_CONTRACT_TOKENS.UserRepository) private readonly userRepository: IUserRepository
     ){}
@@ -64,14 +62,13 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
             ));
         }
 
-        const teamMember = await this.teamMemberRepository.create({
+        await this.teamMemberRepository.create({
             team: teamId,
             user: userId,
             role: ownerRole._id,
             joinedAt: new Date()
         });
 
-        await this.teamRepository.addMemberToTeam(teamMember._id, teamId);
         await this.userRepository.addTeamToUser(userId, teamId);
 
         await this.invitationRepository.updateById(invitation._id, invitation.accept());

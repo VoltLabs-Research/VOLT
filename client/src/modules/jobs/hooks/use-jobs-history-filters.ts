@@ -8,7 +8,6 @@ interface UseJobsHistoryFiltersArgs {
     queueFilter?: string;
     isConnected: boolean;
     isLoading: boolean;
-    hideAfterComplete: boolean;
 };
 
 const flattenGroups = (groups: TrajectoryJobGroup[]): Job[] => {
@@ -20,8 +19,7 @@ const useJobsHistoryFilters = ({
     trajectoryId,
     queueFilter,
     isConnected,
-    isLoading,
-    hideAfterComplete
+    isLoading
 }: UseJobsHistoryFiltersArgs) => {
     const relevantJobs = useMemo(() => {
         let allJobs = flattenGroups(groups);
@@ -45,17 +43,10 @@ const useJobsHistoryFilters = ({
         return relevantJobs.every((job) => job.status === JobStatus.Completed);
     }, [relevantJobs]);
 
-    const shouldShowPanel = useMemo(() => {
-        if (relevantJobs.length === 0) return false;
-        if (!hideAfterComplete) return true;
-        return hasActiveJobs;
-    }, [hasActiveJobs, hideAfterComplete, relevantJobs]);
-
     return {
         relevantJobs,
         hasActiveJobs,
-        allJobsCompleted,
-        shouldShowPanel
+        allJobsCompleted
     };
 };
 

@@ -1,4 +1,5 @@
-import type { IRasterFrameReader, RasterFrameResult } from '@modules/raster/domain/port/IRasterFrameReader';
+import type { IRasterFrameReader } from '@modules/raster/domain/port/IRasterFrameReader';
+import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
 import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 import { RasterStorageService } from '@modules/raster/infrastructure/services/RasterStorageService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';

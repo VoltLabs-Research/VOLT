@@ -137,16 +137,11 @@ const useNotebooksListing = () => {
         }
 
         try {
-            const result = await service.listNotebooks({
+            return await service.listNotebooks({
                 page: params.page,
                 limit: params.limit,
                 scope: resolveScope(params.scope)
             });
-
-            return {
-                ...result,
-                data: result.data || []
-            };
         } catch (error) {
             if (isAccessDeniedError(error)) {
                 throw error;

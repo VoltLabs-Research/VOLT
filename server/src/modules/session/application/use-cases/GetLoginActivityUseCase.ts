@@ -18,8 +18,7 @@ export default class GetLoginActivityUseCase implements IUseCase<GetLoginActivit
         const activities = sessions.map((session) => toPersistedSessionDTO(session));
 
         return Result.ok({
-            activities,
-            total: activities.length
+            activities
         });
     }
 }

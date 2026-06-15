@@ -92,7 +92,6 @@ const DashboardLayout = () => {
         }
     }, [demoTeamClustersQuery.data, setDemoFromCluster, clearDemo]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [headerHiddenOverride, setHeaderHiddenOverride] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsedOverride, setSidebarCollapsedOverride] = useState(false);
     const [sidebarCollapsedPreference, setSidebarCollapsedPreference] = useState(() => {
@@ -104,7 +103,7 @@ const DashboardLayout = () => {
         getDashboardWorkspaceChromeState
     );
 
-    const headerHidden = workspaceChromeState.headerHidden || headerHiddenOverride;
+    const headerHidden = workspaceChromeState.headerHidden;
     const sidebarCollapsed = workspaceChromeState.sidebarCollapsed || sidebarCollapsedOverride || sidebarCollapsedPreference;
 
     useTip('dashboard-sidebar-collapse', {
@@ -155,24 +154,12 @@ const DashboardLayout = () => {
             setSidebarCollapsedOverride(false);
         };
 
-        const handleHeaderHideRequest = () => {
-            setHeaderHiddenOverride(true);
-        };
-
-        const handleHeaderShowRequest = () => {
-            setHeaderHiddenOverride(false);
-        };
-
         window.addEventListener(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse, handleSidebarCollapseRequest);
         window.addEventListener(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand, handleSidebarExpandRequest);
-        window.addEventListener(DASHBOARD_LAYOUT_EVENTS.requestHeaderHide, handleHeaderHideRequest);
-        window.addEventListener(DASHBOARD_LAYOUT_EVENTS.requestHeaderShow, handleHeaderShowRequest);
 
         return () => {
             window.removeEventListener(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse, handleSidebarCollapseRequest);
             window.removeEventListener(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand, handleSidebarExpandRequest);
-            window.removeEventListener(DASHBOARD_LAYOUT_EVENTS.requestHeaderHide, handleHeaderHideRequest);
-            window.removeEventListener(DASHBOARD_LAYOUT_EVENTS.requestHeaderShow, handleHeaderShowRequest);
         };
     }, []);
 

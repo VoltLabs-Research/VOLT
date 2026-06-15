@@ -1,5 +1,5 @@
 import type { RemoveTeamRunningJobsInputDTO } from '@modules/jobs/application/dtos/RemoveTeamRunningJobsDTO';
-import type { ITeamJobMaintenanceService, RemoveTeamJobsResult } from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+import type { ITeamJobMaintenanceService, RemoveTeamJobsResult } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
 import type { TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';

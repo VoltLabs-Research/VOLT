@@ -54,6 +54,10 @@ export const getArgumentDefaultValue = (definition: IArgumentDefinition): unknow
         return [];
     }
 
+    if (definition.type === ArgumentType.TUPLE) {
+        return createDefaultListItem(definition.listArguments);
+    }
+
     if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
         return [];
     }
@@ -73,6 +77,21 @@ export const createDefaultListItem = (definitions?: IArgumentDefinition[]): Argu
     }
 
     return nextItem;
+};
+
+export const getTupleArgumentValue = (
+    definition: IArgumentDefinition,
+    value: unknown
+): ArgumentObjectValue => {
+    if (isRecord(value)) {
+        return value;
+    }
+
+    if (isRecord(definition.default)) {
+        return definition.default;
+    }
+
+    return createDefaultListItem(definition.listArguments);
 };
 
 export const getPrimitiveArgumentFieldValue = (
@@ -119,7 +138,7 @@ export const getListArgumentValue = (
     return [];
 };
 
-export interface PluginReferenceSelectionValue {
+interface PluginReferenceSelectionValue {
     pluginId: string;
     config: Record<string, unknown>;
 }
@@ -264,6 +283,21 @@ export const resolveArgumentRuntimeValue = (
 
             return normalizedItem;
         });
+    }
+
+    if (definition.type === ArgumentType.TUPLE) {
+        const item = getTupleArgumentValue(definition, resolvedValue);
+        const nestedDefinitions = definition.listArguments ?? [];
+        const normalizedItem: ArgumentObjectValue = {};
+
+        for (const nestedDefinition of getVisibleArguments(nestedDefinitions, item)) {
+            normalizedItem[nestedDefinition.argument] = resolveArgumentRuntimeValue(
+                nestedDefinition,
+                item[nestedDefinition.argument]
+            );
+        }
+
+        return normalizedItem;
     }
 
     if (definition.type === ArgumentType.PLUGIN_REFERENCE) {

@@ -34,7 +34,6 @@ interface UseRasterWorkspaceResult {
     modelOptions: RasterModelOption[];
     selectedModel: string | null;
     displayTimestep?: number;
-    sourceTitle: string;
     sourceDescription: string | null;
     isAnalysisSource: boolean;
     isLoading: boolean;
@@ -245,7 +244,6 @@ export const useRasterWorkspace = ({
         modelOptions,
         selectedModel,
         displayTimestep,
-        sourceTitle: source?.title ?? 'Raster',
         sourceDescription: source?.description ?? null,
         isAnalysisSource: source?.scope === RasterFrameScope.Analysis,
         isLoading: metadataQuery.isLoading || frameQuery.isLoading,

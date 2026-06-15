@@ -18,7 +18,7 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
 
     async execute(input: TriggerRasterizationInputDTO): Promise<Result<TriggerRasterizationOutputDTO, ApplicationError>> {
         try {
-            const result = await this.rasterJobEnqueuer.triggerRasterization(input.trajectoryId, input.teamId, input.config);
+            const result = await this.rasterJobEnqueuer.triggerRasterization(input.trajectoryId, input.teamId);
 
             if (result.queuedJobs === 0 && result.skippedJobs === 0) {
                 return Result.fail(ApplicationError.notFound(

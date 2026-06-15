@@ -25,6 +25,7 @@ export enum ArgumentType {
     BOOLEAN = 'boolean',
     STRING = 'string',
     LIST = 'list',
+    TUPLE = 'tuple',
     PLUGIN_REFERENCE = 'pluginReference'
 }
 
@@ -59,7 +60,9 @@ export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',
     LINE = 'LineExporter',
-    CHART = 'ChartExporter'
+    BOND = 'BondExporter',
+    CHART = 'ChartExporter',
+    CONFIGURATION = 'ConfigurationExporter'
 }
 
 export enum WorkflowExportType {

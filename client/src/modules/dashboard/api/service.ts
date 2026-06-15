@@ -43,7 +43,7 @@ interface SearchQueryParams extends Record<string, unknown> {
     limit: number;
 }
 
-const MIN_SEARCH_QUERY_LENGTH = 2;
+export const MIN_SEARCH_QUERY_LENGTH = 2;
 
 const endpoints = {
     getMetrics: get<EmptyParams, DashboardMetrics>('/metrics', {
@@ -71,30 +71,6 @@ export default createService({
         dashboard: {
             basePath: '/dashboard',
             useRBAC: true
-        },
-        analysis: {
-            basePath: '/analyses',
-            useRBAC: true
-        },
-        container: {
-            basePath: '/containers',
-            useRBAC: true
-        },
-        trajectory: {
-            basePath: '/trajectories',
-            useRBAC: true
-        },
-        team: {
-            basePath: '/teams',
-            useRBAC: false
-        },
-        plugin: {
-            basePath: '/plugins',
-            useRBAC: true
-        },
-        chat: {
-            basePath: '/chats',
-            useRBAC: false
         },
         metrics: {
             basePath: '/trajectories',

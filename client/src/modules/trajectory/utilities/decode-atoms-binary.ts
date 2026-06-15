@@ -4,7 +4,8 @@ const DTYPE_BY_ID: Record<number, AtomColumnDType> = {
     0: 'f32',
     1: 'u32',
     2: 'u16',
-    3: 'str'
+    3: 'str',
+    4: 'i32'
 };
 
 const createTypedArrayView = (
@@ -20,6 +21,8 @@ const createTypedArrayView = (
             return new Uint32Array(buffer, byteOffset, byteLength / Uint32Array.BYTES_PER_ELEMENT);
         case 'u16':
             return new Uint16Array(buffer, byteOffset, byteLength / Uint16Array.BYTES_PER_ELEMENT);
+        case 'i32':
+            return new Int32Array(buffer, byteOffset, byteLength / Int32Array.BYTES_PER_ELEMENT);
         default: {
             const exhaustive: never = dtype;
             throw new Error(`Unsupported atom column dtype: ${exhaustive}`);

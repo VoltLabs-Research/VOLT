@@ -2,7 +2,7 @@ import useAnalysisActivitySummary from '../../hooks/use-analysis-activity-summar
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
-import { formatSize } from '@/shared/utils/format';
+import { formatSize } from '@voltstack/bravais';
 import { Divider, Row, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import type { Analysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';

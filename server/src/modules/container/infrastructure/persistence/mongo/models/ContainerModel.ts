@@ -12,8 +12,6 @@ export interface IContainer extends Document {
     containerId: string;
     folder: mongoose.Types.ObjectId | null;
     internalIp?: string;
-    network?: mongoose.Types.ObjectId;
-    volume?: mongoose.Types.ObjectId;
     team?: mongoose.Types.ObjectId;
     teamCluster?: mongoose.Types.ObjectId;
     status: string;
@@ -85,16 +83,6 @@ const ContainerSchema = new Schema<IContainer>({
         default: null
     },
     internalIp: internalIpField,
-    network: {
-        type: Schema.Types.ObjectId,
-        ref: 'DockerNetwork',
-        required: false
-    },
-    volume: {
-        type: Schema.Types.ObjectId,
-        ref: 'DockerVolume',
-        required: false
-    },
     team: {
         ...teamRefField(false)
     },

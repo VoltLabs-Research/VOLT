@@ -3,6 +3,8 @@ import { useLineEntityRowSelection } from '../../hooks/use-line-entity-selection
 
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
+import ExposureChart from './ExposureChart';
+import { usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
 import { Box, Button, Heading, IconButton, Row, Surface, Text, Tooltip } from '@voltstack/bravais';
 
 import './PluginResultsViewer.css';
@@ -12,6 +14,34 @@ interface PluginResultsViewerProps {
     analysisId: string;
 }
 
+const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
+    artifact: NonNullable<ReturnType<typeof usePluginResults>['activeChartArtifact']>;
+    pluginId: string;
+    analysisId: string;
+    trajectoryId: string | undefined;
+}) => {
+    const exposureName = typeof artifact.metadata?.exposureName === 'string'
+        ? artifact.metadata.exposureName
+        : artifact.displayName;
+    const listingQuery = usePluginListingQuery(
+        { pluginId, analysisId, trajectoryId, exposureName },
+        { enabled: Boolean(pluginId && analysisId && exposureName) }
+    );
+    const rows = listingQuery.data?.data ?? [];
+    if (listingQuery.isLoading) {
+        return <Text size='xs' tone='muted' style={{ padding: '8px' }}>Loading chart data...</Text>;
+    }
+    if (rows.length === 0) {
+        return (
+            <figure className="canvas-results-chart">
+                <Text size='xs' tone='muted' style={{ padding: '8px' }}>No row data available for chart.</Text>
+                <figcaption>{artifact.displayName}</figcaption>
+            </figure>
+        );
+    }
+    return <ExposureChart artifact={artifact} rows={rows} pluginId={pluginId} analysisId={analysisId} />;
+};
+
 const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
@@ -20,7 +50,6 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
         isDownloading, isEmpty, close, download
     } = usePluginResults({ pluginId, analysisId });
     const resolvedTeamId = teamId ?? undefined;
-    const chartBasePath = resolvedTeamId ? `/api/plugins/${resolvedTeamId}/exposures/artifacts` : '';
     const lineRowSelection = useLineEntityRowSelection(activeExposureId);
 
     return (
@@ -95,16 +124,14 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 analysisId={analysisId}
                             />
                         )}
-                        {activeChartArtifact && chartBasePath && (
+                        {activeChartArtifact && (
                             <div className="canvas-results-charts">
-                                <figure className="canvas-results-chart">
-                                    <img
-                                        src={`${chartBasePath}/${activeChartArtifact._id}/chart`}
-                                        alt={activeChartArtifact.displayName}
-                                        loading="lazy"
-                                    />
-                                    <figcaption>{activeChartArtifact.displayName}</figcaption>
-                                </figure>
+                                <ChartArtifactView
+                                    artifact={activeChartArtifact}
+                                    pluginId={pluginId}
+                                    analysisId={analysisId}
+                                    trajectoryId={trajectoryId}
+                                />
                             </div>
                         )}
                     </Box>

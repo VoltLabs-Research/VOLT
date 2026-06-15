@@ -195,7 +195,6 @@ const GroupManagementModal = ({
             <Box id={getTabPanelId(activeTab)} role='tabpanel' aria-labelledby={getTabButtonId(activeTab)} tabIndex={0} className='group-management-content'>
                 {activeTab === Tab.General && (
                     <GeneralTab
-                        chat={chat}
                         groupName={groupName}
                         groupDescription={groupDescription}
                         isLoading={isLoading}

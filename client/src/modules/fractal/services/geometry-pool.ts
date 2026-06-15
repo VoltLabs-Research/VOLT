@@ -131,3 +131,55 @@ class GeometryPool {
 }
 
 export const geometryPool = new GeometryPool();
+
+// Above this atom count the per-type sphere InstancedMesh path is too heavy; the
+// renderer falls back to the existing GPU point-cloud/impostor path (plan 12 LOD).
+// Tunable: real spheres stay smooth for hundreds of thousands of atoms, while
+// large cells need the point path to keep interactive frame rates.
+export const SPHERE_RENDER_ATOM_THRESHOLD = 200_000;
+
+/**
+ * Whether per-type sphere geometry (InstancedMesh) should render for a model of
+ * `atomCount` atoms, or the point/impostor fallback should take over. The full
+ * InstancedMesh bridge lands with plan 12 (LOD); this gate is the shared
+ * decision both paths read so the threshold lives in one place.
+ */
+export const shouldRenderSpheres = (atomCount: number): boolean =>
+    atomCount > 0 && atomCount <= SPHERE_RENDER_ATOM_THRESHOLD;
+
+// Sphere tessellation: 16 segments is OVITO's default-quality particle sphere —
+// smooth at interactive sizes without exploding vertex counts under instancing.
+const SPHERE_SEGMENTS = 16;
+
+/**
+ * Per-LAMMPS-type sphere-geometry cache. The radius comes from the trajectory's
+ * element table (covalent/vdW radius per type, plan 04); identical type+radius
+ * pairs across scenes share one `THREE.SphereGeometry`. Disposed geometries are
+ * dropped so a re-cache rebuilds them.
+ */
+class SphereGeometryPool {
+    private byKey = new Map<string, THREE.SphereGeometry>();
+
+    private keyFor(type: number, radius: number): string {
+        // Round the radius into the key so float jitter from different element
+        // sources still collapses to one cached sphere.
+        return `${type}:${radius.toFixed(4)}`;
+    }
+
+    get(type: number, radius: number): THREE.SphereGeometry {
+        const key = this.keyFor(type, radius);
+        const existing = this.byKey.get(key);
+        if (existing) return existing;
+
+        const geometry = new THREE.SphereGeometry(radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS);
+        this.byKey.set(key, geometry);
+        return geometry;
+    }
+
+    clear(): void {
+        this.byKey.forEach((geometry) => geometry.dispose());
+        this.byKey.clear();
+    }
+}
+
+export const sphereGeometryPool = new SphereGeometryPool();

@@ -6,11 +6,6 @@ export enum LatexListingRowType {
     Document = 'document'
 }
 
-enum LatexListingDndPrefix {
-    Folder = 'folder',
-    Document = 'document'
-}
-
 export interface LatexFolderRow extends LatexFolder {
     rowType: LatexListingRowType.Folder;
     createdBy: null;
@@ -52,7 +47,7 @@ export const getLatexListingDraggableId = (row: LatexListingRow): string | null 
         return null;
     }
 
-    return `${LatexListingDndPrefix.Document}:${row._id}`;
+    return `${LatexListingRowType.Document}:${row._id}`;
 };
 
 export const getLatexListingDroppableId = (row: LatexListingRow): string | null => {
@@ -60,5 +55,5 @@ export const getLatexListingDroppableId = (row: LatexListingRow): string | null 
         return null;
     }
 
-    return `${LatexListingDndPrefix.Folder}:${row._id}`;
+    return `${LatexListingRowType.Folder}:${row._id}`;
 };

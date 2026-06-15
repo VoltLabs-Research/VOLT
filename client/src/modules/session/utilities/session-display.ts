@@ -7,8 +7,8 @@ interface SessionUserAgentInfo {
     os: string;
 };
 
-export const parseSessionUserAgent = (userAgent: string | null | undefined): SessionUserAgentInfo => {
-    const normalizedUserAgent = typeof userAgent === 'string' ? userAgent.trim() : '';
+export const parseSessionUserAgent = (userAgent: string): SessionUserAgentInfo => {
+    const normalizedUserAgent = userAgent.trim();
     let browser = 'Unknown Browser';
     let os = 'Unknown OS';
 

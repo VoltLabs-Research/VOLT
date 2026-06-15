@@ -25,6 +25,7 @@
 
 varying vec3 vColor;
 varying vec3 vWorldPosition;
+varying float vVisible;
 
 uniform float ambientFactor;
 uniform float diffuseFactor;
@@ -40,9 +41,13 @@ uniform float opacity;
  * Fragment shader for rendering circular point sprites with a "fake sphere"
  * normal reconstructed from `gl_PointCoord`. Delegates lighting to the
  * phongSphereImpostor helper from volt/atom-common.
+ *
+ * The base color is the baked per-vertex `vColor` (the GLB carries the colour
+ * produced by the daemon / palette / fallback path).
 */
 void main(){
     #include <clipping_planes_fragment>
+    if(vVisible < 0.5) discard;
 
     vec2 coord = gl_PointCoord - vec2(0.5);
     float radius = length(coord);
@@ -53,8 +58,10 @@ void main(){
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
     vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
 
+    vec3 baseColor = vColor;
+
     vec3 litColor = phongSphereImpostor(
-        vColor,
+        baseColor,
         fakeNormal,
         lightDir,
         viewDir,
@@ -66,7 +73,7 @@ void main(){
         rimPower
     );
 
-    vec3 finalColor = mix(vColor, litColor, lightingMix);
+    vec3 finalColor = mix(baseColor, litColor, lightingMix);
     float alphaFactor = edgeSoftness > 0.0
         ? smoothstep(0.5, 0.5 - edgeSoftness, radius)
         : 1.0;

@@ -1,4 +1,3 @@
-import type { ITeamPresenceService } from '@modules/team/domain/port/team-member/ITeamPresenceService';
 import type {
     AttachTeamPresenceResult,
     DetachedTeamPresenceSession
@@ -28,7 +27,7 @@ export type {
 } from '@modules/team/domain/contracts/team-member/TeamPresenceTypes';
 
 @Singleton()
-export default class TeamPresenceService implements ITeamPresenceService {
+export default class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();
     private readonly connectionsByUser = new Map<string, Set<string>>();

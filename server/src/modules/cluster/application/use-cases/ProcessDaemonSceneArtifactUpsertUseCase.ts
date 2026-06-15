@@ -8,7 +8,7 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId,
     resolveTrajectoryStorageClusterId
-} from '@modules/cluster/application/utilities/cluster-location';
+} from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 // cluster EMITS the trajectory-owned `scene-artifact.upserted` event via the

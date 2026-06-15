@@ -3,14 +3,7 @@ import { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-enum TeamInvitationRelation {
-    Team = 'team',
-    InvitedBy = 'invitedBy',
-    InvitedUser = 'invitedUser',
-    Role = 'role'
-};
-
-type TeamInvitationRelations = `${TeamInvitationRelation}`;
+type TeamInvitationRelations = 'team' | 'invitedBy' | 'invitedUser' | 'role';
 
 export interface TeamInvitationDocument extends Persistable<TeamInvitationProps, TeamInvitationRelations>, Document{};
 

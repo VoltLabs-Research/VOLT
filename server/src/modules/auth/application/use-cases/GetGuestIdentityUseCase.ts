@@ -16,7 +16,7 @@ export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentit
     async execute(input: GetGuestIdentityInputDTO): Promise<Result<GetGuestIdentityOutputDTO, ApplicationError>>{
         const hash = crypto.createHash('md5').update(input.seed).digest('hex');
         const { buffer } = this.avatarService.generateIdenticon(hash);
-        const avatar = `data:image/png;base64,${buffer}`;
+        const avatar = `data:image/svg+xml;base64,${buffer.toString('base64')}`;
 
         const shortHash = hash.substring(0, 4).toUpperCase();
 

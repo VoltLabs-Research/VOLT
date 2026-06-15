@@ -16,13 +16,6 @@ export class UpdateWhiteboardUseCase implements IUseCase<UpdateWhiteboardInputDT
     ) {}
 
     async execute(input: UpdateWhiteboardInputDTO): Promise<Result<UpdateWhiteboardOutputDTO, ApplicationError>> {
-        if (!input.userId) {
-            return Result.fail(ApplicationError.unauthorized(
-                ErrorCodes.AUTHENTICATION_REQUIRED,
-                'Authentication required'
-            ));
-        }
-
         const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
             input.teamId,
             input.whiteboardId

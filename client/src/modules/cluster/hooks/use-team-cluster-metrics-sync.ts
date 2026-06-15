@@ -53,10 +53,10 @@ export default function useTeamClusterMetricsSync(): void {
     }, { runOnMount: true });
 
     useSocketEvent<ClusterMetrics[]>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_ALL, (clusters) => {
-        setClusterMetricsQueryData(queryClient, clusters);
+        setClusterMetricsQueryData(clusters);
     }, { enabled: hasClusters });
 
     useSocketEvent<ClusterMetricsHistoryEvent>(SOCKET_CLUSTER_METRICS_EVENTS.METRICS_HISTORY, ({ clusterId, history }) => {
-        setClusterHistoryQueryData(queryClient, history, clusterId);
+        setClusterHistoryQueryData(history, clusterId);
     }, { enabled: hasClusters });
 }

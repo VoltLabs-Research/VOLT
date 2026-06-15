@@ -36,8 +36,6 @@ const useSessionData = () => {
         [sessions]
     );
 
-    const isCurrentSession = (session: ActiveSession) => session.isCurrent;
-
     const openRevokeAllSessionsModal = () => {
         openModal(REVOKE_ALL_MODAL_ID);
     };
@@ -80,7 +78,6 @@ const useSessionData = () => {
         activities,
         otherSessionsCount,
         isRevoking,
-        isCurrentSession,
         loadingSessions: activeSessionsResult.isLoading,
         loadingActivity: loginActivityResult.isLoading,
         openRevokeAllSessionsModal,

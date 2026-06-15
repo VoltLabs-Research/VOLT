@@ -1,15 +1,16 @@
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
-import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { JobStatus } from '@shared/contracts/types/JobStatus';
 import JobStatusChangedEvent from '@modules/jobs/domain/events/JobStatusChangedEvent';
 import type {
     ITeamJobMaintenanceService,
     RemoveTeamJobsResult,
     RetryTeamJobsResult,
     TeamClusterFailureDetail
-} from '@modules/jobs/domain/port/ITeamJobMaintenanceService';
+} from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { TRAJECTORY_CONTRACT_TOKENS } from '@shared/contracts/tokens/TrajectoryTokens';
 import type { ITrajectoryRepository } from '@shared/contracts/ports';
 import type {
     AnalysisDeletedEventPayload,
@@ -22,21 +23,16 @@ import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type IORedis from 'ioredis';
 import { inject } from 'tsyringe';
+import {
+    jobStatusKey,
+    jobTombstoneKey,
+    projectedTeamJobsKey,
+    projectedTeamJobsRevisionKey,
+    projectedAnalysisJobsKey
+} from '@modules/jobs/infrastructure/services/job-redis-keys';
 
-const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const TOMBSTONE_TTL_SECONDS = 600;
 
-/**
- * Global DI symbol for the trajectory module's dump-storage service. Referenced
- * via `Symbol.for(...)` (the same global registry key the owner registers under)
- * so this maintenance service can inject it without statically importing
- * `@modules/trajectory`. No neutral contract token exists for it yet — see the
- * narrow ports below.
- *
- * FOLLOW-UP: promote this symbol into `@shared/contracts/tokens/ComputeTokens`
- * (a later @shared phase) so it has a single typed source of truth.
- */
-const TRAJECTORY_DUMP_STORAGE_TOKEN = Symbol.for('TrajectoryDumpStorageService');
 
 /**
  * Narrow, jobs-owned ports describing exactly the trajectory-side capabilities
@@ -98,7 +94,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(COMPUTE_TOKENS.TrajectoryFrameRepository)
         private readonly trajectoryFrameRepo: MaintenanceTrajectoryFrameReader,
-        @inject(TRAJECTORY_DUMP_STORAGE_TOKEN)
+        @inject(TRAJECTORY_CONTRACT_TOKENS.TrajectoryDumpStorageService)
         private readonly dumpStorage: MaintenanceTrajectoryDumpStorage
     ) {}
 
@@ -217,21 +213,17 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
     async cleanupDeletedAnalysis(
         input: Pick<AnalysisDeletedEventPayload, 'analysisId' | 'teamId' | 'computeClusterId'>
     ): Promise<void> {
-        const allTargetJobs = input.teamId
-            ? await this.collectJobsMatching(
-                input.teamId,
-                (job) => job.analysisId === input.analysisId
-            )
-            : [];
+        const allTargetJobs = await this.collectJobsMatching(
+            input.teamId,
+            (job) => job.analysisId === input.analysisId
+        );
         const removableJobs = allTargetJobs.filter((job) => REMOVABLE_STATUSES.has(job.status));
         const distinctJobIds = this.distinctJobIds(allTargetJobs);
         const daemonClusterIds = await this.stopDaemonJobsBestEffort(removableJobs);
 
-        if (input.teamId) {
-            await this.dropProjectedJobs(input.teamId, allTargetJobs, {
-                preserveJobTombstones: false
-            });
-        }
+        await this.dropProjectedJobs(input.teamId, allTargetJobs, {
+            preserveJobTombstones: false
+        });
 
         await this.cleanupLocalAnalysisSessionState(input.analysisId);
 
@@ -261,10 +253,6 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         teamId: string,
         predicate: (job: TeamJobSummary) => boolean
     ): Promise<TeamJobSummary[]> {
-        if (!teamId) {
-            return [];
-        }
-
         const jobs = await this.teamJobsService.getFlatTeamJobs(teamId);
         return jobs.filter(predicate);
     }
@@ -512,20 +500,20 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             const analysisId = job.analysisId;
             analysisIdsByJobId.set(job.jobId, analysisId);
 
-            pipeline.del(this.jobStatusKey(job.jobId));
-            pipeline.srem(this.projectedTeamJobsKey(teamId), job.jobId);
+            pipeline.del(jobStatusKey(job.jobId));
+            pipeline.srem(projectedTeamJobsKey(teamId), job.jobId);
             if (preserveJobTombstones) {
-                pipeline.set(this.jobTombstoneKey(job.jobId), '1', 'EX', TOMBSTONE_TTL_SECONDS);
+                pipeline.set(jobTombstoneKey(job.jobId), '1', 'EX', TOMBSTONE_TTL_SECONDS);
             } else {
-                pipeline.del(this.jobTombstoneKey(job.jobId));
+                pipeline.del(jobTombstoneKey(job.jobId));
             }
 
             if (analysisId) {
-                pipeline.srem(this.projectedAnalysisJobsKey(analysisId), job.jobId);
+                pipeline.srem(projectedAnalysisJobsKey(analysisId), job.jobId);
             }
         }
 
-        pipeline.incr(this.projectedTeamJobsRevisionKey(teamId));
+        pipeline.incr(projectedTeamJobsRevisionKey(teamId));
 
         const results = await pipeline.exec();
         if (!results) {
@@ -541,13 +529,11 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             const delResult = this.didRedisMutationAffect(results[index]);
             index += 1;
             // srem projected-jobs
-            this.didRedisMutationAffect(results[index]);
             index += 1;
             // tombstone mutation (no counted affect)
             index += 1;
 
             if (analysisId) {
-                this.didRedisMutationAffect(results[index]);
                 index += 1;
             }
 
@@ -767,26 +753,6 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             affectedClusters: 0,
             clusterFailures: []
         };
-    }
-
-    private jobStatusKey(jobId: string): string {
-        return `${JOB_STATUS_KEY_PREFIX}${jobId}`;
-    }
-
-    private jobTombstoneKey(jobId: string): string {
-        return `jobs:removed:${jobId}`;
-    }
-
-    private projectedTeamJobsKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs`;
-    }
-
-    private projectedTeamJobsRevisionKey(teamId: string): string {
-        return `team:${teamId}:projected-jobs:revision`;
-    }
-
-    private projectedAnalysisJobsKey(analysisId: string): string {
-        return `analysis:${analysisId}:projected-jobs`;
     }
 
     private analysisRemainingKey(analysisId: string): string {

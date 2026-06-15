@@ -7,7 +7,7 @@ import {
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { reportError, ErrorSurface } from '@/shared/errors/core';
 import { Button, Heading, Text } from '@voltstack/bravais';
-import { Bell, CheckCircle2, Mail, X } from 'lucide-react';
+import { Bell, Mail, X } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -15,7 +15,6 @@ import './DiscoverTeamEmailPrompt.css';
 
 interface DiscoverTeamEmailPromptProps {
     teamId: string;
-    teamName: string;
 }
 
 const isValidEmail = (email: string): boolean => {
@@ -27,8 +26,7 @@ const getReferrer = (): string => {
 };
 
 const DiscoverTeamEmailPrompt = ({
-    teamId,
-    teamName: _teamName
+    teamId
 }: DiscoverTeamEmailPromptProps) => {
     const currentUser = useCurrentUser();
     const createSubscription = useCreateEarlyAccessSubscriptionMutation();
@@ -38,7 +36,6 @@ const DiscoverTeamEmailPrompt = ({
     const [email, setEmail] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
 
     const description = "Be among the first users to use VOLT with your device. We'll notify you and give you access.";
 
@@ -47,7 +44,6 @@ const DiscoverTeamEmailPrompt = ({
         const shouldShow = state !== 'dismissed' && state !== 'subscribed';
 
         setIsVisible(shouldShow);
-        setIsSubmitted(state === 'subscribed');
         setError(null);
     }, [teamId]);
 
@@ -60,9 +56,9 @@ const DiscoverTeamEmailPrompt = ({
     }, [currentUser?.email, email]);
 
     const dismiss = useCallback(() => {
-        setDiscoverTeamEmailPromptState(teamId, isSubmitted ? 'subscribed' : 'dismissed');
+        setDiscoverTeamEmailPromptState(teamId, 'dismissed');
         setIsVisible(false);
-    }, [isSubmitted, teamId]);
+    }, [teamId]);
 
     const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -82,7 +78,6 @@ const DiscoverTeamEmailPrompt = ({
             });
 
             setEmail(result.email);
-            setIsSubmitted(true);
             setIsVisible(false);
             setError(null);
             setDiscoverTeamEmailPromptState(teamId, 'subscribed');
@@ -111,7 +106,7 @@ const DiscoverTeamEmailPrompt = ({
         >
             <div className='discover-team-email-prompt__shell'>
                 <div className='discover-team-email-prompt__icon' aria-hidden='true'>
-                    {isSubmitted ? <CheckCircle2 size={18} /> : <Bell size={18} />}
+                    <Bell size={18} />
                 </div>
                 <div className='discover-team-email-prompt__copy'>
                     <Heading
@@ -121,7 +116,7 @@ const DiscoverTeamEmailPrompt = ({
                         weight='semibold'
                         className='discover-team-email-prompt__title'
                     >
-                        {isSubmitted ? 'You are on the VOLT list' : 'Stay up to date about VOLT'}
+                        Stay up to date about VOLT
                     </Heading>
                     <Text
                         id={statusId}
@@ -130,7 +125,7 @@ const DiscoverTeamEmailPrompt = ({
                         tone='muted'
                         className='discover-team-email-prompt__description'
                     >
-                        {isSubmitted ? 'We will notify you when access opens for your team.' : description}
+                        {description}
                     </Text>
                     <div className='discover-team-email-prompt__links'>
                         <a
@@ -154,61 +149,48 @@ const DiscoverTeamEmailPrompt = ({
                         </a>
                     </div>
                 </div>
-                {isSubmitted ? (
-                    <Button
-                        type='button'
-                        variant='soft'
-                        intent='neutral'
-                        size='sm'
-                        onClick={dismiss}
-                        className='discover-team-email-prompt__done'
-                    >
-                        Done
-                    </Button>
-                ) : (
-                    <form className='discover-team-email-prompt__form' onSubmit={handleSubmit}>
-                        <div className='discover-team-email-prompt__field'>
-                            <Mail size={14} aria-hidden='true' />
-                            <input
-                                id={inputId}
-                                type='email'
-                                value={email}
-                                onChange={(event) => {
-                                    setEmail(event.target.value);
-                                    if (error) setError(null);
-                                }}
-                                placeholder='you@company.com'
-                                autoComplete='email'
-                                inputMode='email'
-                                aria-label='Email address'
-                                aria-invalid={error ? true : undefined}
-                                aria-describedby={error ? `${inputId}-error` : undefined}
-                                disabled={createSubscription.isPending}
-                            />
-                        </div>
-                        {error && (
-                            <Text
-                                id={`${inputId}-error`}
-                                as='span'
-                                size='xs'
-                                className='discover-team-email-prompt__error'
-                                role='status'
-                            >
-                                {error}
-                            </Text>
-                        )}
-                        <Button
-                            type='submit'
-                            variant='solid'
-                            intent='brand'
-                            size='md'
-                            isLoading={createSubscription.isPending}
-                            className='discover-team-email-prompt__submit'
+                <form className='discover-team-email-prompt__form' onSubmit={handleSubmit}>
+                    <div className='discover-team-email-prompt__field'>
+                        <Mail size={14} aria-hidden='true' />
+                        <input
+                            id={inputId}
+                            type='email'
+                            value={email}
+                            onChange={(event) => {
+                                setEmail(event.target.value);
+                                if (error) setError(null);
+                            }}
+                            placeholder='you@company.com'
+                            autoComplete='email'
+                            inputMode='email'
+                            aria-label='Email address'
+                            aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? `${inputId}-error` : undefined}
+                            disabled={createSubscription.isPending}
+                        />
+                    </div>
+                    {error && (
+                        <Text
+                            id={`${inputId}-error`}
+                            as='span'
+                            size='xs'
+                            className='discover-team-email-prompt__error'
+                            role='status'
                         >
-                            Notify me
-                        </Button>
-                    </form>
-                )}
+                            {error}
+                        </Text>
+                    )}
+                    <Button
+                        type='submit'
+                        variant='solid'
+                        intent='brand'
+                        size='md'
+                        isLoading={createSubscription.isPending}
+                        className='discover-team-email-prompt__submit'
+                    >
+                        Notify me
+                    </Button>
+                </form>
                 <Button
                     type='button'
                     variant='ghost'

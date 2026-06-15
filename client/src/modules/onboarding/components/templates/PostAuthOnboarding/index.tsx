@@ -20,10 +20,6 @@ import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { FormEvent, ReactNode } from 'react';
-interface OnboardingStepState {
-    title: string;
-    description: string;
-};
 
 const useNextDestination = (): string => {
     const location = useLocation();
@@ -76,7 +72,7 @@ const PostAuthOnboarding = () => {
         }
     }
 
-    const stepState: OnboardingStepState = {
+    const stepState = {
         title: "Let's create a team for you!",
         description: "Invite other users to collaborate or join existing teams. You'll have the option to create new teams later."
     };

@@ -10,30 +10,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { inject } from 'tsyringe';
 
-interface TeamMembersPushUpdate {
-    $push: {
-        members: string;
-    };
-};
-
-interface TeamRolesPushUpdate {
-    $push: {
-        roles: string;
-    };
-};
-
-interface TeamAdminsPullUpdate {
-    $pull: {
-        admins: string;
-    };
-};
-
-interface TeamMembersPullUpdate {
-    $pull: {
-        members: string;
-    };
-};
-
 interface TeamMembershipIdFilter {
     _id: {
         $in: string[];
@@ -52,60 +28,8 @@ export default class TeamRepository
         super(TeamModel, teamMapper);
     }
 
-    async addMemberToTeam(memberId: string, teamId: string): Promise<void> {
-        const update: TeamMembersPushUpdate = {
-            $push: {
-                members: memberId
-            }
-        };
-
-        await this.model.updateOne({ _id: teamId }, update);
-    }
-
-    async addRoleToTeam(roleId: string, teamId: string): Promise<void> {
-        const update: TeamRolesPushUpdate = {
-            $push: {
-                roles: roleId
-            }
-        };
-
-        await this.model.updateOne({ _id: teamId }, update);
-    }
-
     async removeUserFromAllTeams(userId: string): Promise<void> {
-        const memberships = await this.teamMemberRepository.findByUserId(userId);
         await this.teamMemberRepository.deleteByUserId(userId);
-        const adminsUpdate: TeamAdminsPullUpdate = {
-            $pull: {
-                admins: userId
-            }
-        };
-
-        await this.model.updateMany(
-            { admins: userId },
-            adminsUpdate
-        );
-
-        for (const membership of memberships) {
-            const update: TeamMembersPullUpdate = {
-                $pull: {
-                    members: membership._id
-                }
-            };
-
-            await this.model.updateOne(
-                { _id: membership.props.team },
-                update
-            );
-        }
-    }
-
-    async removeUserFromTeam(memberId: string, teamId: string): Promise<void> {
-        await this.model.findByIdAndUpdate(teamId, {
-            $pull: {
-                members: memberId
-            }
-        });
     }
 
     async findUserTeams(userId: string): Promise<PersistedEntityOutput<TeamProps>[]> {

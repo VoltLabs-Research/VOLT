@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils/cn';
-import { formatSize } from '@/shared/utils/format';
+import { formatSize } from '@voltstack/bravais';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
 import './FileAttachment.css';

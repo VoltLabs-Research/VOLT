@@ -14,7 +14,7 @@
  * the persisted-state sanitizer (so a tampered localStorage can never hide a
  * protected route).
  */
-export const PROTECTED_MODULE_KEYS = ['dashboard', 'trajectory'] as const;
+const PROTECTED_MODULE_KEYS = ['dashboard', 'trajectory'] as const;
 
 const PROTECTED_MODULE_KEY_SET = new Set<string>(PROTECTED_MODULE_KEYS);
 
