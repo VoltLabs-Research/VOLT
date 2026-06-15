@@ -11,6 +11,7 @@ import type { DragEvent, ReactNode } from 'react';
 import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
 import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab } from '@/modules/latex/hooks/use-latex-workspace';
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
+import latexService from '@/modules/latex/api/service';
 import LatexPdfViewer from './LatexPdfViewer';
 import type { MenuOption } from '@/shared/presentation/types/menu';
 interface LatexEditorPanelProps {
@@ -56,6 +57,50 @@ interface TabDropIndicator {
     targetKey: string | null;
     position: 'before' | 'after' | 'end';
 }
+
+/**
+ * Resolves a LaTeX asset's content to an authenticated `blob:` URL. The raw
+ * `asset.url` is a bare API path; react-pdf and `<img>` fetch it directly and
+ * bypass the axios auth interceptor (→ 401). Fetching through the service keeps
+ * the bearer token and yields a blob URL safe for any consumer (including the
+ * navigations behind "Open file", which can't carry headers at all).
+ */
+const useAuthedAssetUrl = (asset: LatexAsset | null): string | null => {
+    const [url, setUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!asset) {
+            setUrl(null);
+            return;
+        }
+
+        const key = new URL(asset.url, window.location.origin).searchParams.get('key');
+        if (!key) {
+            setUrl(null);
+            return;
+        }
+
+        let objectUrl: string | null = null;
+        let cancelled = false;
+
+        latexService.getAssetContent({ documentId: asset.documentId, key })
+            .then((blob) => {
+                if (cancelled) return;
+                objectUrl = URL.createObjectURL(blob);
+                setUrl(objectUrl);
+            })
+            .catch(() => {
+                if (!cancelled) setUrl(null);
+            });
+
+        return () => {
+            cancelled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [asset?.url, asset?.documentId]);
+
+    return url;
+};
 
 const getFileLanguage = (filename: string): string => {
     const lower = filename.toLowerCase();
@@ -158,6 +203,7 @@ const LatexEditorPanel = ({
 
     const headerTitle = activeFile?.name ?? (activeAsset ? getAssetDisplayName(activeAsset) : 'No file selected');
     const activeAssetKind = getAssetKind(activeAsset);
+    const resolvedAssetUrl = useAuthedAssetUrl(activeAsset);
     const dirtyFileIdSet = useMemo(() => new Set(dirtyFileIds), [dirtyFileIds]);
 
     const tabItems = useMemo<EditorTabItem[]>(() => openTabs.reduce<EditorTabItem[]>((items, tab) => {
@@ -365,7 +411,8 @@ const LatexEditorPanel = ({
                     intent='brand'
                     size='sm'
                     shape='rounded'
-                    onClick={() => window.open(activeAsset.url, '_blank', 'noopener,noreferrer')}
+                    disabled={!resolvedAssetUrl}
+                    onClick={() => resolvedAssetUrl && window.open(resolvedAssetUrl, '_blank', 'noopener,noreferrer')}
                 >
                     <Download size={14} />
                     Open file
@@ -380,8 +427,8 @@ const LatexEditorPanel = ({
         if (activeAssetKind === AssetKind.Pdf) {
             return (
                 <LatexPdfViewer
-                    pdfUrl={activeAsset.url}
-                    onDownload={() => window.open(activeAsset.url, '_blank', 'noopener,noreferrer')}
+                    pdfUrl={resolvedAssetUrl}
+                    onDownload={() => resolvedAssetUrl && window.open(resolvedAssetUrl, '_blank', 'noopener,noreferrer')}
                     downloadLabel='Open PDF'
                 />
             );
@@ -391,7 +438,7 @@ const LatexEditorPanel = ({
             return (
                 <Row height='max' p='1' overflow='auto' className='flex-center'>
                     <img
-                        src={activeAsset.url}
+                        src={resolvedAssetUrl ?? undefined}
                         alt={headerTitle}
                         className='mw-max mh-max object-contain'
                     />

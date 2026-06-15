@@ -1,4 +1,5 @@
 import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
+import { OAuthProvider } from '@modules/auth/domain/entities/User';
 import GithubStrategyWrapper from '@modules/auth/infrastructure/http/oauth/strategies/GitHubStrategy';
 import GoogleStrategyWrapper from '@modules/auth/infrastructure/http/oauth/strategies/GoogleStrategy';
 import MicrosoftStrategyWrapper from '@modules/auth/infrastructure/http/oauth/strategies/MicrosoftStrategy';
@@ -6,6 +7,29 @@ import { container } from 'tsyringe';
 import passport from 'passport';
 
 let configured = false;
+
+/**
+ * The OAuth providers that are actually configured (their CLIENT_ID env var is set). Single source
+ * of truth shared by strategy registration and the public `GET /api/auth/oauth/providers` endpoint,
+ * so the sign-in page only shows buttons that can complete a login.
+ */
+export const getConfiguredOAuthProviders = (): OAuthProvider[] => {
+    const providers: OAuthProvider[] = [];
+
+    if (process.env.GITHUB_CLIENT_ID) {
+        providers.push(OAuthProvider.GitHub);
+    }
+
+    if (process.env.GOOGLE_CLIENT_ID) {
+        providers.push(OAuthProvider.Google);
+    }
+
+    if (process.env.MICROSOFT_CLIENT_ID) {
+        providers.push(OAuthProvider.Microsoft);
+    }
+
+    return providers;
+};
 
 /**
  * Registers the OAuth passport strategies.

@@ -11,6 +11,11 @@ export const ErrorCodes = createErrorCodes({
 
     AUTH_UNAUTHORIZED: 'Auth::Unauthorized',
     AUTH_CREDENTIALS_INVALID: 'Auth::Credentials::Invalid',
+    AUTH_EMAIL_REQUIRED: 'Auth::Email::Required',
+    AUTH_EMAIL_INVALID: 'Auth::Email::Invalid',
+    AUTH_NAME_REQUIRED: 'Auth::Name::Required',
+    AUTH_PASSWORD_TOO_SHORT: 'Auth::Password::TooShort',
+    AUTH_PASSWORD_REQUIRED: 'Auth::Password::Required',
 
     AUTHENTICATION_REQUIRED: 'Authentication::Required',
     AUTHENTICATION_UNAUTHORIZED: 'Authentication::Unauthorized',

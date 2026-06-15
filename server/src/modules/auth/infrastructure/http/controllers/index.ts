@@ -2,6 +2,7 @@ import CheckEmailController from '@modules/auth/infrastructure/http/controllers/
 import DeleteMyAccountController from '@modules/auth/infrastructure/http/controllers/DeleteMyAccountController';
 import GetGuestIdentityController from '@modules/auth/infrastructure/http/controllers/GetGuestIdentityController';
 import GetMyAccountController from '@modules/auth/infrastructure/http/controllers/GetMyAccountController';
+import GetOAuthProvidersController from '@modules/auth/infrastructure/http/controllers/GetOAuthProvidersController';
 import GetPasswordInfoController from '@modules/auth/infrastructure/http/controllers/GetPasswordInfoController';
 import OAuthLoginCallbackController from '@modules/auth/infrastructure/http/controllers/OAuthLoginCallbackController';
 import SignInController from '@modules/auth/infrastructure/http/controllers/SignInController';
@@ -15,6 +16,7 @@ export default createControllerRegistry({
     deleteMyAccount: DeleteMyAccountController,
     getGuestIdentity: GetGuestIdentityController,
     getMyAccount: GetMyAccountController,
+    getOAuthProviders: GetOAuthProvidersController,
     getPasswordInfo: GetPasswordInfoController,
     oauthLoginCallback: OAuthLoginCallbackController,
     signIn: SignInController,

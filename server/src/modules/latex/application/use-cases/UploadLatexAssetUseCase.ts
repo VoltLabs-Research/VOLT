@@ -35,7 +35,9 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
         try {
             const validFiles = (input.files ?? [])
                 .map((file, uploadIndex) => ({ file, uploadIndex }))
-                .filter(({ file }) => file && file.name && file.size > 0);
+                // ponytail: size >= 0 (not > 0) so legitimate empty files (.bib/.sty,
+                // folder placeholders) aren't dropped and 400 the whole batch.
+                .filter(({ file }) => file && file.name && file.size >= 0);
 
             if (validFiles.length === 0) {
                 return Result.fail(ApplicationError.badRequest(

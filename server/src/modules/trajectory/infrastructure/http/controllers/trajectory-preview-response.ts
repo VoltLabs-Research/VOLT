@@ -1,4 +1,3 @@
-import { ErrorCodes } from '@core/constants/error-codes';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
 import type { Response } from 'express';
@@ -19,11 +18,9 @@ export const sendTrajectoryPreview = (
     BaseResponse.success(res, value.base64);
 };
 
-export const sendTrajectoryPreviewError = (res: Response): void => {
-    BaseResponse.error(
-        res,
-        'Failed to retrieve trajectory preview',
-        500,
-        ErrorCodes.INTERNAL_SERVER_ERROR
-    );
+// Why: the createController escape hatch passes the thrown error here. Hard-coding
+// 500 flattened recoverable failures (e.g. 409 daemon-not-connected, 404 missing
+// object) into opaque server errors; normalize so each error keeps its real status.
+export const sendTrajectoryPreviewError = (res: Response, error: unknown): void => {
+    BaseResponse.fromError(res, error);
 };

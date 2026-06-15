@@ -139,6 +139,29 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 : frame.simulationCell?._id) ?? ''
         }));
 
+        // Resolve the timesteps to run. When the request omits an explicit
+        // selection, default to every trajectory frame. This mirrors the daemon's
+        // own fallback AND, crucially, ships an explicit list: the daemon resolves
+        // an empty selection by reading frames off the first plugin compute stage's
+        // payload, so an all-cache-hit pipeline (which carries no plugin payload)
+        // would otherwise crash with "no selected timesteps and no trajectory
+        // frames to resolve them from". Sending the list here keeps a valid
+        // trajectory runnable regardless of cache state.
+        const resolvedSelectedTimesteps = input.selectedTimesteps?.length
+            ? input.selectedTimesteps
+            : trajectoryFramePayloads.map((frame) => frame.timestep);
+
+        if (resolvedSelectedTimesteps.length === 0) {
+            // The trajectory genuinely has no frames to run against (still
+            // processing, or its upload produced nothing). That is a client-state
+            // problem, not a server fault — surface 422 instead of letting the
+            // daemon reject the dispatch with a raw 500.
+            return Result.fail(ApplicationError.unprocessableEntity(
+                ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
+                'This trajectory has no frames to run the pipeline on. Wait for trajectory processing to finish, or re-upload a valid trajectory.'
+            ));
+        }
+
         // Walk the stages in order, accumulating the upstream content-hash chain
         // so each plugin stage's hash captures everything that runs before it.
         const upstreamStageHashes: string[] = [];
@@ -163,7 +186,8 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                     storageClusterId,
                     computeClusterId,
                     trajectoryFramePayloads,
-                    [...upstreamStageHashes]
+                    [...upstreamStageHashes],
+                    resolvedSelectedTimesteps
                 );
                 if (stageResult.error) {
                     return Result.fail(stageResult.error);
@@ -184,7 +208,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 trajectoryName: trajectory.props.name,
                 trajectoryFrames: trajectoryFramePayloads,
                 storageClusterId,
-                selectedTimesteps: input.selectedTimesteps,
+                selectedTimesteps: resolvedSelectedTimesteps,
                 timestep: input.timestep,
                 stages: stageExecutions
             });
@@ -215,7 +239,8 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
         storageClusterId: string | undefined,
         computeClusterId: string,
         trajectoryFramePayloads: Array<{ timestep: number; natoms: number; simulationCell: string }>,
-        upstreamStageHashes: string[]
+        upstreamStageHashes: string[],
+        selectedTimesteps: number[]
     ): Promise<{
         stageHash: string;
         execution: PipelineStageExecutionInput;
@@ -261,7 +286,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
         const sharedExposureIds = collectSharedExposureIds(plugin);
         const stageHash = computePipelineStageHash({
             trajectoryId: input.trajectoryId,
-            selectedTimesteps: input.selectedTimesteps,
+            selectedTimesteps,
             upstreamStageHashes,
             pluginId: plugin._id,
             config: sanitizedConfig
@@ -371,7 +396,7 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             pluginDependencies,
             pluginReferenceExecutions: referenceValidation.executions,
             config: sanitizedConfig,
-            selectedTimesteps: input.selectedTimesteps,
+            selectedTimesteps,
             timestep: input.timestep
         };
 

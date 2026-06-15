@@ -31,7 +31,7 @@ import {
     IMPORT_WORKSPACE_TOAST
 } from './workspace/toasts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
 import { confirmAction, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
 import { showPromise } from '@/shared/presentation/hooks/toast';
@@ -275,12 +275,15 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 surface: ErrorSurface.Silent,
                 fallbackTitle: 'Compilation failed'
             }).title;
-            const response = typeof error === 'object'
-                && error !== null
-                && 'response' in error
-                && typeof error.response === 'object'
-                && error.response !== null
-                ? error.response
+            // The 422 compiler log rides in the Blob body of the axios error, which is
+            // nested under ApiError.originalError — the ApiError itself has no .response.
+            const axiosError: unknown = isApiError(error) ? error.originalError : error;
+            const response = typeof axiosError === 'object'
+                && axiosError !== null
+                && 'response' in axiosError
+                && typeof axiosError.response === 'object'
+                && axiosError.response !== null
+                ? axiosError.response
                 : null;
             const data = response && 'data' in response ? response.data : null;
 

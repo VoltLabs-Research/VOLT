@@ -69,6 +69,25 @@ const looksLikeErrorCode = (value: string): boolean => {
     return value.includes('::');
 };
 
+/**
+ * Mongoose throws a `CastError` (name === 'CastError') when a path value can't be coerced — most
+ * commonly a malformed ObjectId arriving from a route param (e.g. `/documents/not-an-objectid`).
+ * Left unmapped these surfaced as a 500; a malformed id is a client mistake → 400.
+ */
+const normalizeCastError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
+    if (getStringProperty(errorRecord, 'name') !== 'CastError') {
+        return undefined;
+    }
+
+    const path = getStringProperty(errorRecord, 'path');
+
+    return {
+        code: ErrorCodes.VALIDATION_INVALID_INPUT,
+        message: path ? `Invalid value for "${path}"` : 'Invalid identifier',
+        statusCode: HttpStatus.BadRequest
+    };
+};
+
 const normalizeValidationError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
     const errorName = getStringProperty(errorRecord, 'name');
     const nestedValidationErrors = asRecord(errorRecord.errors);
@@ -132,7 +151,7 @@ export const normalizeError = (error: unknown): NormalizedError => {
         };
     }
 
-    const validationError = normalizeValidationError(errorRecord);
+    const validationError = normalizeCastError(errorRecord) ?? normalizeValidationError(errorRecord);
     const statusCode = getErrorStatusCode(errorRecord) ?? validationError?.statusCode;
     const code = getStringProperty(errorRecord, 'code')
         ?? validationError?.code;
