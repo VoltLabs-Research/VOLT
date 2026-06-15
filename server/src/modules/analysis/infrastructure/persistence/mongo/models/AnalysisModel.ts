@@ -47,6 +47,11 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         type: Schema.Types.Mixed,
         required: true
     },
+    pipelineStageHash: {
+        type: String,
+        required: false,
+        index: true
+    },
     totalFrames: {
         type: Number,
         default: 0

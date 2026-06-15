@@ -26,6 +26,8 @@ export const ChannelCommands = Object.freeze({
     AnalysisStart: 'analysis.start',
     AnalysisCleanupRuntimeState: 'analysis.cleanup-runtime-state',
 
+    PipelineStart: 'pipeline.start',
+
     ContainerList: 'container.list',
     ContainerCreate: 'container.create',
     ContainerGet: 'container.get',

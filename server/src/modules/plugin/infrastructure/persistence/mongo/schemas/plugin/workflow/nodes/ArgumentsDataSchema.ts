@@ -103,6 +103,10 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Boolean,
         default: false
     },
+    inferFromContext: {
+        type: Boolean,
+        default: false
+    },
     pluginReferenceFilter: [{
         type: String
     }],

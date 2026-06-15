@@ -75,6 +75,9 @@ export interface PipelineStage {
     type: StageType;
     config: StageConfig;
     enabled: boolean;
+    // True once this stage has been run as part of a pipeline execution. The row
+    // checkbox (which toggles `enabled`) stays disabled until a stage is executed.
+    executed?: boolean;
 }
 
 const EMPTY_STAGES: PipelineStage[] = [];
@@ -88,6 +91,7 @@ interface CanvasPipelineStore {
     reorderStage: (id: string, newIndex: number, trajectoryId?: string) => void;
     updateStageConfig: (id: string, config: Partial<StageConfig>, trajectoryId?: string) => void;
     toggleStageEnabled: (id: string, trajectoryId?: string) => void;
+    markStagesExecuted: (ids: string[], trajectoryId?: string) => void;
     clearAll: (trajectoryId?: string) => void;
 }
 
@@ -113,7 +117,7 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                     set((state) => ({
                         byTrajectory: {
                             ...state.byTrajectory,
-                            [target]: [...(state.byTrajectory[target] ?? EMPTY_STAGES), { id, type, config, enabled: true }]
+                            [target]: [...(state.byTrajectory[target] ?? EMPTY_STAGES), { id, type, config, enabled: true, executed: false }]
                         }
                     }));
                     return id;
@@ -170,6 +174,20 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                     }));
                 },
 
+                markStagesExecuted: (ids, trajectoryId) => {
+                    const target = resolveTrajectoryId(trajectoryId);
+                    if (!target) return;
+                    const idSet = new Set(ids);
+                    set((state) => ({
+                        byTrajectory: {
+                            ...state.byTrajectory,
+                            [target]: (state.byTrajectory[target] ?? EMPTY_STAGES).map((stage) =>
+                                idSet.has(stage.id) ? { ...stage, executed: true } : stage
+                            )
+                        }
+                    }));
+                },
+
                 clearAll: (trajectoryId) => {
                     const target = resolveTrajectoryId(trajectoryId);
                     if (!target) return;
@@ -189,6 +207,35 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
 // Selector helper: the stages for one trajectory, stable empty array when none.
 export const useStages = (trajectoryId?: string): PipelineStage[] =>
     useCanvasPipelineStore((state) => (trajectoryId ? state.byTrajectory[trajectoryId] ?? EMPTY_STAGES : EMPTY_STAGES));
+
+// The stage types that participate in the ordered, executable pipeline list shown
+// in the CanvasPipeline UI. 'color-coding' is intentionally excluded — it keeps its
+// own standalone bake + "Color Coding" section and is not part of the ordered run.
+export const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>([
+    'slice-plane',
+    'expression-select',
+    'analysis-plugin'
+]);
+
+export const isOrderedPipelineStage = (stage: PipelineStage): boolean =>
+    ORDERED_PIPELINE_STAGE_TYPES.has(stage.type);
+
+// The server pipeline-executions endpoint speaks in stage "kinds"; map the client
+// StageType onto it. color-coding is not part of the ordered run, so it has no kind.
+export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
+
+export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | null => {
+    switch (type) {
+        case 'analysis-plugin':
+            return 'plugin';
+        case 'slice-plane':
+            return 'slice';
+        case 'expression-select':
+            return 'expression';
+        default:
+            return null;
+    }
+};
 
 // Enabled slice-plane stages (id + config) for a trajectory — drives the engine
 // clipping planes and the visualization helpers. Returns the trajectory's stage

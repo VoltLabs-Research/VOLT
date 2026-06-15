@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
+import { ExecutePipelineUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePipelineUseCase';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -24,26 +24,30 @@ export class ExecutePluginAITool extends AITool {
     readonly needsApproval = true;
 
     constructor(
-        protected readonly useCase: ExecutePluginUseCase
+        protected readonly useCase: ExecutePipelineUseCase
     ) {
         super();
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        // A single plugin run is a one-stage pipeline (the only execution path).
         const result = await this.useCase.execute({
-            pluginId: params.pluginId,
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,
             userId: scope.userId,
-            config: params.config,
             selectedTimesteps: params.selectedTimesteps,
-            teamClusterId: params.teamClusterId
+            teamClusterId: params.teamClusterId,
+            stages: [{ kind: 'plugin', pluginId: params.pluginId, config: params.config }]
         });
         if (!result.success) throw result.error;
 
+        const analysisId = result.value.analysisIds[0];
         return {
-            summary: `Started analysis ${result.value.analysisId}. Track its progress with get_analysis.`,
+            summary: analysisId
+                ? `Started analysis ${analysisId}. Track its progress with get_analysis.`
+                : 'Pipeline stage was served from cache; no new analysis was created.',
             data: result.value
         };
     }
 }
+
