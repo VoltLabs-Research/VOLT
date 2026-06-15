@@ -21,18 +21,25 @@ export interface DeletePluginInputDTO {
     _id: string;
 }
 
-export interface ExecutePluginInputDTO {
-    pluginId: string;
-    trajectoryId: string;
-    teamClusterId: string;
+export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
+
+export interface PipelineStageInputDTO {
+    kind: PipelineStageKind;
+    pluginId?: string;
     config: Record<string, unknown>;
-    selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
-    timestep?: number;
 }
 
-export interface ExecutePluginOutputDTO {
-    analysisId: string;
+export interface ExecutePipelineInputDTO {
+    trajectoryId: string;
+    teamClusterId?: string;
+    selectedTimesteps?: number[];
+    timestep?: number;
+    stages: PipelineStageInputDTO[];
+}
+
+export interface ExecutePipelineOutputDTO {
+    // One analysisId per COMPUTED plugin stage, in pipeline order (cache hits omitted).
+    analysisIds: string[];
 }
 
 export interface ExportAnalysisResultsInputDTO {
@@ -195,7 +202,7 @@ const endpoints = {
         })
     }),
     installRegistryPlugin: post<InstallRegistryPluginInputDTO, Plugin>('/registry/install'),
-    execute: post<ExecutePluginInputDTO, ExecutePluginOutputDTO>('/:pluginId/trajectories/:trajectoryId/executions'),
+    executePipeline: post<ExecutePipelineInputDTO, ExecutePipelineOutputDTO>('/trajectories/:trajectoryId/pipeline-executions'),
     listTeamClusters: paginated<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>('/:teamId/clusters', {
         client: 'teamClusters'
     }),

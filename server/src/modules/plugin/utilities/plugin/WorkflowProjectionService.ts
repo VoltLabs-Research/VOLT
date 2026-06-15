@@ -7,6 +7,7 @@ import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
 
 interface ComputedExposure {
     _id: string;
+    id?: string;
     name: string;
     results: string;
     icon?: string;
@@ -48,6 +49,7 @@ export default class WorkflowProjectionService {
 
             return {
                 _id: exposureNode.id,
+                id: exposure?.id,
                 export: exportNode?.data.export ?? null,
                 name: exposure?.name ?? '',
                 icon: exposure?.icon,

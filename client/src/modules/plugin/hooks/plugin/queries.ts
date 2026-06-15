@@ -26,8 +26,8 @@ import type { RegistrySearchResponse } from '@/modules/plugin/api/entities/plugi
 import type {
     ClonePluginInputDTO,
     DeletePluginInputDTO,
-    ExecutePluginInputDTO,
-    ExecutePluginOutputDTO,
+    ExecutePipelineInputDTO,
+    ExecutePipelineOutputDTO,
     ExportAnalysisResultsInputDTO,
     ExportPluginInputDTO,
     GetPluginInputDTO,
@@ -245,7 +245,7 @@ export const useInstallRegistryPluginMutation = managePluginEntityMutation<Insta
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useExecutePluginMutation = createMutation<ExecutePluginOutputDTO, ExecutePluginInputDTO>(pluginService.execute);
+export const useExecutePipelineMutation = createMutation<ExecutePipelineOutputDTO, ExecutePipelineInputDTO>(pluginService.executePipeline);
 
 export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInputDTO>(
     pluginService.clone,

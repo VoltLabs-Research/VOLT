@@ -22,6 +22,9 @@ export const ExposureDataSchema = new Schema({
     icon: {
         type: String
     },
+    id: {
+        type: String
+    },
     results: {
         type: String,
         required: [true, ValidationCodes.PLUGIN_EXPOSURE_RESULTS_REQUIRED]

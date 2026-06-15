@@ -94,6 +94,7 @@ export interface IArgumentDefinition {
     listItemLabelArgument?: string;
     required?: boolean;
     multipleSelection?: boolean;
+    inferFromContext?: boolean;
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;
@@ -162,6 +163,7 @@ export interface IPluginNodeData {
 export interface IExposureData {
     name: string;
     icon?: string;
+    id?: string;
     results: string;
     hasListing?: boolean;
     [key: string]: unknown;

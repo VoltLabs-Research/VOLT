@@ -2,22 +2,21 @@ import './CanvasPipeline.css';
 import {
     useCanvasPipelineStore,
     useStages,
-    DEFAULT_SLICE_PLANE_STAGE_CONFIG,
-    DEFAULT_COLOR_CODING_STAGE_CONFIG
+    isOrderedPipelineStage
 } from '../../stores/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useCloneIntentRunner from '../../hooks/use-clone-intent-runner';
 import SlicePlane from '../SlicePlane';
-import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
-import { Box, Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
+import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { Filter, FlaskConical, GripVertical, Palette, Plus, Scissors, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Filter, FlaskConical, GripVertical, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { PipelineStage, StageType, StageConfig } from '../../stores/canvas-pipeline';
+import type { PipelineStage } from '../../stores/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../stores/canvas-pipeline';
 import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
 
@@ -26,18 +25,19 @@ interface CanvasPipelineProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
-    canMutateCanvas?: boolean;
 }
 
-const VIEW_STAGE_META: Record<Exclude<StageType, 'analysis-plugin'>, { label: string; icon: ReactNode }> = {
+type OrderedViewStageType = 'slice-plane' | 'expression-select';
+
+const VIEW_STAGE_META: Record<OrderedViewStageType, { label: string; icon: ReactNode }> = {
     'slice-plane': { label: 'Slice Plane', icon: <Scissors size={13} aria-hidden='true' /> },
-    'color-coding': { label: 'Color Coding', icon: <Palette size={13} aria-hidden='true' /> },
     'expression-select': { label: 'Expression Select', icon: <Filter size={13} aria-hidden='true' /> }
 };
 
 const stageIcon = (stage: PipelineStage): ReactNode => {
     if (stage.type === 'analysis-plugin') return <FlaskConical size={13} aria-hidden='true' />;
-    return VIEW_STAGE_META[stage.type].icon;
+    if (stage.type === 'slice-plane' || stage.type === 'expression-select') return VIEW_STAGE_META[stage.type].icon;
+    return <FlaskConical size={13} aria-hidden='true' />;
 };
 
 const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): string => {
@@ -48,15 +48,15 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
     if (stage.type === 'expression-select') {
         return (stage.config as ExpressionSelectStageConfig).expression?.trim() || 'Expression Select';
     }
-    return VIEW_STAGE_META[stage.type].label;
+    if (stage.type === 'slice-plane') return VIEW_STAGE_META['slice-plane'].label;
+    return 'Stage';
 };
 
 const CanvasPipeline = ({
     trajectory,
     trajectoryId,
     analysisId,
-    currentTimestep,
-    canMutateCanvas
+    currentTimestep
 }: CanvasPipelineProps) => {
     useEnsurePluginCatalogLoaded();
     const { modifiers } = usePluginSelectors();
@@ -75,58 +75,44 @@ const CanvasPipeline = ({
     // the user lands on the destination canvas (was the AnalyzeLauncher modal's job).
     useCloneIntentRunner({ trajectoryId, isForeignTrajectory });
 
-    const stages = useStages(trajectoryId);
-    const addStage = useCanvasPipelineStore((s) => s.addStage);
+    // Only slice-plane / expression-select / analysis-plugin are part of the ordered
+    // executable pipeline. color-coding stays a standalone bake (its own section).
+    const allStages = useStages(trajectoryId);
+    const stages = allStages.filter(isOrderedPipelineStage);
     const removeStage = useCanvasPipelineStore((s) => s.removeStage);
     const reorderStage = useCanvasPipelineStore((s) => s.reorderStage);
     const toggleStageEnabled = useCanvasPipelineStore((s) => s.toggleStageEnabled);
     const setActiveTrajectory = useCanvasPipelineStore((s) => s.setActiveTrajectory);
 
     // Register the active trajectory so global getState() callers (AI tools, the
-    // exposure chart, the global-attributes brush) append stages to this pipeline.
+    // exposure chart, the header Add menu) append stages to this pipeline.
     useEffect(() => {
         setActiveTrajectory(trajectoryId ?? null);
         return () => setActiveTrajectory(null);
     }, [trajectoryId, setActiveTrajectory]);
 
-    const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
     const [dragId, setDragId] = useState<string | null>(null);
 
     const pluginNameById = new Map(modifiers.map((m) => [m.pluginId, m.name]));
 
-    const handleAdd = useCallback((type: StageType, config: StageConfig) => {
-        if (!trajectoryId) return;
-        const id = addStage(type, config, trajectoryId);
-        if (id) setSelectedStageId(id);
-    }, [addStage, trajectoryId]);
-
     const handleRemove = useCallback((id: string) => {
         removeStage(id, trajectoryId);
-        setSelectedStageId((current) => (current === id ? null : current));
     }, [removeStage, trajectoryId]);
 
     const handleDrop = useCallback((targetId: string) => {
         if (!dragId || dragId === targetId) return;
-        const targetIndex = stages.findIndex((s) => s.id === targetId);
+        // Reorder against the full store array so filtered-out (color-coding) stages
+        // keep their positions; translate the target's index in the full list.
+        const targetIndex = allStages.findIndex((s) => s.id === targetId);
         if (targetIndex === -1) return;
         reorderStage(dragId, targetIndex, trajectoryId);
         setDragId(null);
-    }, [dragId, stages, reorderStage, trajectoryId]);
+    }, [dragId, allStages, reorderStage, trajectoryId]);
 
-    const renderStageEditor = useCallback((stage: PipelineStage): ReactNode => {
+    const renderStageEditor = useCallback((stage: PipelineStage, close: () => void): ReactNode => {
         switch (stage.type) {
             case 'slice-plane':
                 return <SlicePlane stageId={stage.id} trajectoryId={trajectoryId} />;
-            case 'color-coding':
-                return (
-                    <ColorCodingStageEditor
-                        stageId={stage.id}
-                        trajectoryId={trajectoryId}
-                        analysisId={analysisId}
-                        currentTimestep={currentTimestep}
-                        canMutateCanvas={canMutateCanvas}
-                    />
-                );
             case 'expression-select':
                 return (
                     <ExpressionSelectStageEditor
@@ -134,6 +120,7 @@ const CanvasPipeline = ({
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
                         currentTimestep={currentTimestep}
+                        onSave={close}
                     />
                 );
             case 'analysis-plugin':
@@ -142,109 +129,52 @@ const CanvasPipeline = ({
                         stageId={stage.id}
                         trajectory={trajectory}
                         trajectoryId={trajectoryId}
-                        currentTimestep={currentTimestep}
-                        canMutateCanvas={canMutateCanvas}
+                        onSave={close}
                     />
                 );
             default:
                 return null;
         }
-    }, [trajectory, trajectoryId, analysisId, currentTimestep, canMutateCanvas]);
+    }, [trajectory, trajectoryId, analysisId, currentTimestep]);
 
-    const selectedStage = stages.find((s) => s.id === selectedStageId) ?? null;
+    // Nothing to show until the user adds a stage (Add lives in the section
+    // header now). Render nothing rather than an empty-state message.
+    if (stages.length === 0) {
+        return null;
+    }
 
     return (
         <Stack gap='05' className='canvas-pipeline'>
-            <Row justify='end' className='canvas-pipeline__toolbar'>
-                <Popover
-                    id='canvas-pipeline-add-menu'
-                    noPadding
-                    className='context-menu-popover context-menu-popover--md'
-                    trigger={
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            shape='rounded'
-                            leftIcon={<Plus size={12} />}
-                            disabled={!canMutateCanvas || !trajectoryId}
-                            aria-label='Add pipeline stage'
-                            className='font-size-05'
+            <Stack gap='025' className='canvas-pipeline__list'>
+                {stages.map((stage) => (
+                    <Box
+                        key={stage.id}
+                        className={`canvas-pipeline-stage ${dragId === stage.id ? 'canvas-pipeline-stage--dragging' : ''}`}
+                        draggable
+                        onDragStart={() => setDragId(stage.id)}
+                        onDragEnd={() => setDragId(null)}
+                        onDragOver={(e) => { e.preventDefault(); }}
+                        onDrop={() => handleDrop(stage.id)}
+                    >
+                        <Row
+                            gap='05'
+                            className={`canvas-pipeline-stage__header ${!stage.enabled ? 'canvas-pipeline-stage__header--disabled' : ''}`}
                         >
-                            Add
-                        </Button>
-                    }
-                >
-                    {(close) => (
-                        <PopoverMenu label='Add pipeline stage'>
-                            <SectionLabel className='canvas-pipeline__menu-group'>View</SectionLabel>
-                            <PopoverMenuItem
-                                icon={VIEW_STAGE_META['slice-plane'].icon}
-                                label='Slice Plane'
-                                size='sm'
-                                onClick={() => { handleAdd('slice-plane', { ...DEFAULT_SLICE_PLANE_STAGE_CONFIG }); close(); }}
-                            />
-                            <PopoverMenuItem
-                                icon={VIEW_STAGE_META['color-coding'].icon}
-                                label='Color Coding'
-                                size='sm'
-                                onClick={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); close(); }}
-                            />
-                            <PopoverMenuItem
-                                icon={VIEW_STAGE_META['expression-select'].icon}
-                                label='Expression Select'
-                                size='sm'
-                                onClick={() => { handleAdd('expression-select', { expression: '' }); close(); }}
-                            />
-                            {modifiers.length > 0 && (
-                                <SectionLabel className='canvas-pipeline__menu-group'>Analysis</SectionLabel>
-                            )}
-                            {modifiers.map((modifier) => (
-                                <PopoverMenuItem
-                                    key={modifier.pluginId}
-                                    icon={<FlaskConical size={13} aria-hidden='true' />}
-                                    label={modifier.name}
-                                    size='sm'
-                                    onClick={() => {
-                                        handleAdd('analysis-plugin', { pluginId: modifier.pluginId, argValues: {} });
-                                        close();
-                                    }}
-                                />
-                            ))}
-                        </PopoverMenu>
-                    )}
-                </Popover>
-            </Row>
+                            <span className='canvas-pipeline-stage__grip' aria-hidden='true'>
+                                <GripVertical size={12} />
+                            </span>
 
-            {stages.length === 0 ? (
-                <Text size='xs' tone='muted' className='canvas-pipeline__empty'>
-                    Add a View transform or run an analysis to build the pipeline.
-                </Text>
-            ) : (
-                <Stack gap='025' className='canvas-pipeline__list'>
-                    {stages.map((stage) => {
-                        const isSelected = stage.id === selectedStageId;
-                        return (
-                            <Box
-                                key={stage.id}
-                                className={`canvas-pipeline-stage ${isSelected ? 'canvas-pipeline-stage--selected' : ''} ${dragId === stage.id ? 'canvas-pipeline-stage--dragging' : ''}`}
-                                draggable
-                                onDragStart={() => setDragId(stage.id)}
-                                onDragEnd={() => setDragId(null)}
-                                onDragOver={(e) => { e.preventDefault(); }}
-                                onDrop={() => handleDrop(stage.id)}
-                            >
-                                <Row
-                                    gap='05'
-                                    className={`canvas-pipeline-stage__header ${!stage.enabled ? 'canvas-pipeline-stage__header--disabled' : ''}`}
-                                >
-                                    <span className='canvas-pipeline-stage__grip' aria-hidden='true'>
-                                        <GripVertical size={12} />
-                                    </span>
+                            <ContextMenuPopover
+                                id={`canvas-pipeline-stage-config-${stage.id}`}
+                                triggerAction='click'
+                                placement='left-start'
+                                ariaLabel={`${stageLabel(stage, pluginNameById)} settings`}
+                                className='context-menu-popover--plugin-config'
+                                trigger={
                                     <button
                                         type='button'
                                         className='canvas-pipeline-stage__select u-select-none'
-                                        onClick={() => setSelectedStageId((current) => (current === stage.id ? null : stage.id))}
-                                        aria-expanded={isSelected}
+                                        aria-label={`${stageLabel(stage, pluginNameById)} settings`}
                                     >
                                         <span className='canvas-pipeline-stage__icon'>{stageIcon(stage)}</span>
                                         <Text
@@ -255,42 +185,40 @@ const CanvasPipeline = ({
                                         >
                                             {stageLabel(stage, pluginNameById)}
                                         </Text>
+                                        <span className='canvas-pipeline-stage__gear' aria-hidden='true'>
+                                            <Settings size={12} />
+                                        </span>
                                     </button>
-                                    <Row gap='025' shrink='0' className='canvas-pipeline-stage__actions'>
-                                        <button
-                                            type='button'
-                                            className='canvas-pipeline-stage__action'
-                                            onClick={() => toggleStageEnabled(stage.id, trajectoryId)}
-                                            aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                                            title={stage.enabled ? 'Disable' : 'Enable'}
-                                        >
-                                            {stage.enabled
-                                                ? <ToggleRight size={13} aria-hidden='true' />
-                                                : <ToggleLeft size={13} aria-hidden='true' />
-                                            }
-                                        </button>
-                                        <button
-                                            type='button'
-                                            className='canvas-pipeline-stage__action canvas-pipeline-stage__action--remove'
-                                            onClick={() => handleRemove(stage.id)}
-                                            aria-label='Remove stage'
-                                            title='Remove'
-                                        >
-                                            <Trash2 size={12} aria-hidden='true' />
-                                        </button>
-                                    </Row>
-                                </Row>
-                            </Box>
-                        );
-                    })}
-                </Stack>
-            )}
+                                }
+                                content={(close) => (
+                                    <Stack className='canvas-plugin-popover-content'>
+                                        {renderStageEditor(stage, close)}
+                                    </Stack>
+                                )}
+                            />
 
-            {selectedStage && (
-                <Box className='canvas-pipeline__editor'>
-                    {renderStageEditor(selectedStage)}
-                </Box>
-            )}
+                            <Row gap='025' shrink='0' className='canvas-pipeline-stage__actions'>
+                                <button
+                                    type='button'
+                                    className='canvas-pipeline-stage__action canvas-pipeline-stage__action--remove'
+                                    onClick={() => handleRemove(stage.id)}
+                                    aria-label='Remove stage'
+                                    title='Remove'
+                                >
+                                    <Trash2 size={12} aria-hidden='true' />
+                                </button>
+                                <Checkbox
+                                    checked={stage.enabled}
+                                    disabled={!stage.executed}
+                                    onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
+                                    aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
+                                    title={stage.executed ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
+                                />
+                            </Row>
+                        </Row>
+                    </Box>
+                ))}
+            </Stack>
         </Stack>
     );
 };

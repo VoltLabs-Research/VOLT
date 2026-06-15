@@ -4,9 +4,6 @@ import GetAnalysesByTrajectoryIdController from './GetAnalysesByTrajectoryIdCont
 import GetAnalysisByIdController from './GetAnalysisByIdController';
 import GetAnalysisFrameLogController from './GetAnalysisFrameLogController';
 import RetryFailedFramesController from './RetryFailedFramesController';
-import GetGlobalAttributesMetadataController from './GetGlobalAttributesMetadataController';
-import GetGlobalAttributesTimeSeriesController from './GetGlobalAttributesTimeSeriesController';
-import ExportGlobalAttributesController from './ExportGlobalAttributesController';
 import { createControllerRegistry } from '@shared/infrastructure/di/create-controller-registry';
 
 export default createControllerRegistry({
@@ -15,8 +12,5 @@ export default createControllerRegistry({
     getFrameLog: GetAnalysisFrameLogController,
     listByTeamId: GetAnalysesByTeamIdController,
     listByTrajectoryId: GetAnalysesByTrajectoryIdController,
-    retryFailedFrames: RetryFailedFramesController,
-    getGlobalAttributesMetadata: GetGlobalAttributesMetadataController,
-    getGlobalAttributesTimeSeries: GetGlobalAttributesTimeSeriesController,
-    exportGlobalAttributes: ExportGlobalAttributesController
+    retryFailedFrames: RetryFailedFramesController
 });

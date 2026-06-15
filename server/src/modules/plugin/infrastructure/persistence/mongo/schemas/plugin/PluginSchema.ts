@@ -29,6 +29,7 @@ export const PluginSchema = new Schema({
     exposures: {
         type: [{
             _id: { type: String, required: true },
+            id: { type: String },
             name: { type: String, required: true },
             results: { type: String, required: true },
             icon: { type: String },

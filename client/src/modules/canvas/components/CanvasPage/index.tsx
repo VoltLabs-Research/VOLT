@@ -27,7 +27,6 @@ import AnalysisListingDownloadModal, {
 } from '../AnalysisListingDownloadModal';
 import CommandPalette from '../CommandPalette';
 import PluginResultsViewer from '../PluginResultsViewer';
-import GlobalAttributesPanel from '@/modules/analysis/components/GlobalAttributesPanel';
 import RightPanel from '../RightPanel';
 import StatusBar from '../StatusBar';
 import Timeline from '../Timeline';
@@ -978,9 +977,6 @@ const CanvasPage = () => {
                     pluginId={resultsPluginId}
                     analysisId={analysisId}
                 />
-            )}
-            {!isLocalGlbViewer && showWidgets && analysisId && (
-                <GlobalAttributesPanel analysisId={analysisId} />
             )}
             <AnalysisListingDownloadModal
                 analysisId={downloadAnalysisModalTargetId}
