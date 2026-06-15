@@ -41,11 +41,9 @@ export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDT
                 return Result.fail(error);
             }
 
-            return Result.fail(new ApplicationError(
-                ErrorCodes.INTERNAL_SERVER_ERROR,
-                'Failed to retrieve LaTeX document',
-                500
-            ));
+            // Let the global error middleware normalize unknown errors — notably a Mongoose
+            // CastError from a malformed documentId maps to 400, not a blanket 500.
+            throw error;
         }
     }
 }
