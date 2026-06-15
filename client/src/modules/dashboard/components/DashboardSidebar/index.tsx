@@ -95,14 +95,17 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
                     collapsed={collapsed}
                 />
 
-                {!singleTenant && (
-                    <UserMenuPopover
-                        onSettingsClick={handleSettingsClick}
-                        onSignOut={handleSignOut}
-                        isSigningOut={isSigningOut}
-                        collapsed={collapsed}
-                    />
-                )}
+                {/*
+                  The user menu (Account Settings + Sign Out) is a per-user concern, not a
+                  multi-tenant one. It must render in single-tenant/local mode too — otherwise a
+                  local user has no way to sign out or reach account settings from the UI.
+                */}
+                <UserMenuPopover
+                    onSettingsClick={handleSettingsClick}
+                    onSignOut={handleSignOut}
+                    isSigningOut={isSigningOut}
+                    collapsed={collapsed}
+                />
             </Box>
         </Box>
     );

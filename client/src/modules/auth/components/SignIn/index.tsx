@@ -147,6 +147,25 @@ const SignInTemplate = () => {
         if (!areFieldsValid) return;
 
         const values = getValues();
+
+        // Client-side guards mirroring the server policy (the server remains authoritative):
+        // enforce the advertised 8-char minimum and a matching confirmation before submitting.
+        if (values.password.length < 8) {
+            sileo.error({
+                title: 'Password too short',
+                description: 'Your password must be at least 8 characters.'
+            });
+            return;
+        }
+
+        if (values.password !== values.passwordConfirm) {
+            sileo.error({
+                title: 'Passwords do not match',
+                description: 'Please make sure both password fields are identical.'
+            });
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             const [firstName, ...rest] = values.fullName.trim().split(/\s+/);

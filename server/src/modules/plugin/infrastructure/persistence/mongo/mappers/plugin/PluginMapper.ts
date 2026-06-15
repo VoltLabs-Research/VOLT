@@ -29,6 +29,11 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
         const resolvedExposures = props.exposures ?? projection.exposures;
         const resolvedArguments = props.arguments ?? projection.arguments;
         const resolvedListingExposures = props.listingExposures ?? projection.listingExposures;
+        // Dependency hints are pure functions of the workflow; resolve from the
+        // freshly-computed projection so plugins persisted before these fields
+        // existed still expose them (no schema migration / re-save needed).
+        const resolvedProducesExposures = props.producesExposures ?? projection.producesExposures;
+        const resolvedRequiresExposures = props.requiresExposures ?? projection.requiresExposures;
 
         return new Plugin(doc._id.toString(), {
             ...props,
@@ -36,7 +41,9 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
             modifier: resolvedModifier,
             exposures: resolvedExposures,
             arguments: resolvedArguments,
-            listingExposures: resolvedListingExposures
+            listingExposures: resolvedListingExposures,
+            producesExposures: resolvedProducesExposures,
+            requiresExposures: resolvedRequiresExposures
         });
     }
 
