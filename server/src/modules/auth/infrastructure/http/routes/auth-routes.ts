@@ -14,6 +14,8 @@ export default createHttpModule({
         router.post('/users', controllers.signUp.handle);
         router.get('/emails/:email/availability', controllers.checkEmail.handle);
 
+        router.get('/oauth/providers', controllers.getOAuthProviders.handle);
+
         router.get('/guest-identity', controllers.getGuestIdentity.handle);
         router.get('/github', createOAuthLoginRoute(OAuthProvider.GitHub, ['user:email']));
         router.get('/github/callback', createOAuthCallbackMiddleware(OAuthProvider.GitHub), controllers.oauthLoginCallback.handle);

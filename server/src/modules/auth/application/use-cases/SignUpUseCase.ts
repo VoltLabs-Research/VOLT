@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { toPersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
 import { SignUpInputDTO, SignUpOutputDTO } from '@modules/auth/application/dtos/SignUpDTO';
 import User, { UserRole } from '@modules/auth/domain/entities/User';
+import { validatePassword } from '@modules/auth/domain/password-policy';
 import type { IAuthSessionService } from '@modules/auth/domain/port/IAuthSessionService';
 import type { IAvatarService } from '@modules/auth/domain/port/IAvatarService';
 import type { IPasswordHasher } from '@modules/auth/domain/port/IPasswordHasher';
@@ -31,6 +32,28 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
     ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
+        // Trust-boundary validation: `input` is an untyped HTTP body. Guard before any string ops
+        // (e.g. User.normalizeName) so a malformed body returns 400, not a 500 from `.trim()` on undefined.
+        if (typeof input.email !== 'string' || input.email.trim().length === 0) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.AUTH_EMAIL_REQUIRED,
+                'Email is required'
+            ));
+        }
+
+        if (typeof input.firstName !== 'string' || input.firstName.trim().length === 0
+            || typeof input.lastName !== 'string') {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.AUTH_NAME_REQUIRED,
+                'First and last name are required'
+            ));
+        }
+
+        const passwordError = validatePassword(input.password);
+        if (passwordError) {
+            return Result.fail(passwordError);
+        }
+
         const email = User.normalizeEmail(input.email);
 
         const emailExists = await this.userRepository.emailExists(email);
