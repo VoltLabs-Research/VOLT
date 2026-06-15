@@ -12,10 +12,11 @@ import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
+import LineStyleStageEditor from './stage-editors/LineStyleStageEditor';
 import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
 import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
+import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Spline, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage } from '../../stores/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../stores/canvas-pipeline';
@@ -39,6 +40,7 @@ const VIEW_STAGE_META: Record<OrderedViewStageType, { label: string; icon: React
 const stageIcon = (stage: PipelineStage): ReactNode => {
     if (stage.type === 'analysis-plugin') return <FlaskConical size={13} aria-hidden='true' />;
     if (stage.type === 'color-coding') return <Palette size={13} aria-hidden='true' />;
+    if (stage.type === 'line-style') return <Spline size={13} aria-hidden='true' />;
     if (stage.type === 'slice-plane' || stage.type === 'expression-select') return VIEW_STAGE_META[stage.type].icon;
     return <FlaskConical size={13} aria-hidden='true' />;
 };
@@ -52,9 +54,16 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
         return (stage.config as ExpressionSelectStageConfig).expression?.trim() || 'Expression Select';
     }
     if (stage.type === 'color-coding') return 'Color Coding';
+    if (stage.type === 'line-style') return 'Line Style';
     if (stage.type === 'slice-plane') return VIEW_STAGE_META['slice-plane'].label;
     return 'Stage';
 };
+
+// Standalone bake stages (color-coding, line-style) apply on their own button
+// and are never part of the ordered run, so their row toggle is always usable
+// (the executed-gate only applies to ordered stages, which run as a pipeline).
+const isStandaloneBakeStage = (stage: PipelineStage): boolean =>
+    stage.type === 'color-coding' || stage.type === 'line-style';
 
 const CanvasPipeline = ({
     trajectory,
@@ -81,12 +90,13 @@ const CanvasPipeline = ({
     useCloneIntentRunner({ trajectoryId, isForeignTrajectory });
 
     // The list shows the ordered executable stages (slice / expression / plugin)
-    // PLUS color-coding stages. Color-coding is NOT part of the ordered run — it
-    // bakes a colored GLB on its own "Apply" button — but it is still a visible,
-    // removable stage in the pipeline list (the run path filters it out via
-    // isOrderedPipelineStage, so it can never enter an execution).
+    // PLUS the standalone bake stages (color-coding, line-style). Those bakes are
+    // NOT part of the ordered run — each applies on its own button — but they are
+    // still visible, removable stages (the run path filters them out via
+    // isOrderedPipelineStage, so they can never enter an execution).
     const allStages = useStages(trajectoryId);
-    const stages = allStages.filter((stage) => isOrderedPipelineStage(stage) || stage.type === 'color-coding');
+    const stages = allStages.filter((stage) =>
+        isOrderedPipelineStage(stage) || stage.type === 'color-coding' || stage.type === 'line-style');
     const removeStage = useCanvasPipelineStore((s) => s.removeStage);
     const reorderStage = useCanvasPipelineStore((s) => s.reorderStage);
     const toggleStageEnabled = useCanvasPipelineStore((s) => s.toggleStageEnabled);
@@ -144,6 +154,15 @@ const CanvasPipeline = ({
                 return (
                     <ColorCodingStageEditor
                         stageId={stage.id}
+                        trajectoryId={trajectoryId}
+                        analysisId={analysisId}
+                        currentTimestep={currentTimestep}
+                        canMutateCanvas={canMutateCanvas}
+                    />
+                );
+            case 'line-style':
+                return (
+                    <LineStyleStageEditor
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
                         currentTimestep={currentTimestep}
@@ -227,10 +246,10 @@ const CanvasPipeline = ({
                                 </button>
                                 <Checkbox
                                     checked={stage.enabled}
-                                    disabled={stage.type !== 'color-coding' && !stage.executed}
+                                    disabled={isStandaloneBakeStage(stage) ? false : !stage.executed}
                                     onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
                                     aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                                    title={(stage.type === 'color-coding' || stage.executed) ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
+                                    title={(isStandaloneBakeStage(stage) || stage.executed) ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
                                 />
                             </Row>
                         </Row>
