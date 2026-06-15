@@ -9,6 +9,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import TrajectoryUpdatedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent';
+import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/trajectory/TrajectoryDeletedEvent';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type { TrajectoryUploadSession } from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IUseCase } from '@shared/application/IUseCase';
@@ -154,12 +156,23 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         } catch (error) {
             logger.error(error, `[CommitTrajectoryUploadSessionUseCase] Commit failed for uploadSessionId=${session.id}`);
             await this.uploadSessionRepository.markStatus(session.id, 'failed').catch(() => {});
-            await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Failed }).catch(() => {});
-            await this.eventBus.publish(new TrajectoryUpdatedEvent({
+            // Owner directive: never leave a failed trajectory orphaned in the
+            // dashboard. Delete it outright (and emit the deletion event so the
+            // storage/cleanup subscribers tear down any staged objects) instead
+            // of marking it Failed. A freshly-committing trajectory has no
+            // analyses yet, so the analysis id lists are empty.
+            const trajectory = await this.trajectoryRepo.findById(trajectoryId).catch(() => null);
+            await this.trajectoryRepo.deleteById(trajectoryId).catch((deleteError) => {
+                logger.warn(deleteError, `[CommitTrajectoryUploadSessionUseCase] Failed to delete orphaned trajectory ${trajectoryId}`);
+            });
+            await this.eventBus.publish(new TrajectoryDeletedEvent({
                 trajectoryId,
                 teamId: input.teamId,
-                updates: { status: TrajectoryStatus.Failed },
-                updatedAt: new Date()
+                storageClusterId: trajectory ? resolveTrajectoryStorageClusterId(trajectory.props) : undefined,
+                userId: input.userId ?? '',
+                trajectoryName: trajectory?.props.name ?? 'Trajectory',
+                analysisIds: [],
+                analysisComputeClusterIds: []
             })).catch(() => {});
             throw error;
         }

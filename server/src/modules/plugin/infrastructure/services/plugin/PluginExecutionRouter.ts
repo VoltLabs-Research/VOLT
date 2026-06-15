@@ -164,6 +164,7 @@ interface PipelineDispatchPayload extends Record<string, unknown> {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
+    storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
     stages: PipelineStageDispatch[];
@@ -472,6 +473,7 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
+            storageClusterId: input.storageClusterId,
             selectedTimesteps: input.selectedTimesteps,
             timestep: input.timestep,
             stages: stageDispatches
