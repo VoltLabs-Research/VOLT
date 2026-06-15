@@ -606,10 +606,21 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return available.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
     }, [allAnalysisSections, searchQuery, analysisConfigId]);
 
-    // Pipeline is now the only execution path and always carries selectedTimesteps
-    // (possibly the current timestep), so all analyses surface under Visual Elements;
-    // the former timestep-scoped split has been dropped.
-    const sceneCollectionSections = filteredSections;
+    // Right panel must surface ONLY analyses that have data at the timestep the
+    // user is currently viewing. An analysis with no selectedTimesteps metadata
+    // covers every frame (getSelectedTimestepsForAnalysis → undefined); a scoped
+    // one only shows when its timesteps include currentTimestep. The actively
+    // selected analysis stays visible regardless so its config/selection keeps
+    // resolving while the viewer re-clamps frames. Before the timestep resolves
+    // (undefined) we show everything rather than flashing an empty list.
+    const sceneCollectionSections = useMemo(() => {
+        if (currentTimestep === undefined) return filteredSections;
+        return filteredSections.filter((section) => {
+            if (section.analysis._id === analysisConfigId) return true;
+            const scoped = getSelectedTimestepsForAnalysis(section.analysis, trajectoryTimesteps);
+            return scoped === undefined || scoped.includes(currentTimestep);
+        });
+    }, [filteredSections, currentTimestep, analysisConfigId, trajectoryTimesteps]);
 
     const toggleSection = useCallback((analysisId: string) => {
         setExpandedSections(prev => {
