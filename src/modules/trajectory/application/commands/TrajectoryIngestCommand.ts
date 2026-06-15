@@ -103,6 +103,13 @@ export class TrajectoryIngestCommand {
         );
         const frames = this.deduplicateFrames(parsedFrames, trajectoryId);
 
+        if (frames.length === 0) {
+            // Every staged file was unparseable / not a trajectory. Surface a
+            // clear error so the server tears down the empty trajectory rather
+            // than leaving an orphan stuck in the dashboard.
+            throw new Error(`No valid trajectory frames found in upload (trajectoryId=${trajectoryId})`);
+        }
+
         // Phase 2: Initialize session counter and enqueue jobs
         const sessionPrefix = `trajectory-frame-session:${trajectoryId}`;
         const framesForParquet = frames.map((f) => ({
@@ -236,11 +243,17 @@ export class TrajectoryIngestCommand {
         try {
             return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
         } catch (error) {
-            if (this.isUnsupportedTrajectoryFormatError(error)) {
-                await this.removeIgnoredStagedObject(bucket, staged.objectKey);
-                return [];
-            }
-            throw error;
+            // A directory upload can contain files that are not valid trajectory
+            // frames (READMEs, logs, configs, partial dumps). Ignoring the whole
+            // upload because of one bad file is wrong — silently skip any file we
+            // can't parse (unsupported format, ASE bridge unavailable, malformed
+            // header) and keep the valid frames. Only the valid dumps survive.
+            logger.warn(
+                { file: staged.originalName, err: error instanceof Error ? error.message : String(error) },
+                '@trajectory-ingest: skipping unparseable staged file'
+            );
+            await this.removeIgnoredStagedObject(bucket, staged.objectKey);
+            return [];
         }
     }
 
@@ -294,10 +307,13 @@ export class TrajectoryIngestCommand {
             try {
                 metadata = await parseTrajectoryMetadata(resolvedOutputPath);
             } catch (error) {
-                if (this.isUnsupportedTrajectoryFormatError(error)) {
-                    continue;
-                }
-                throw error;
+                // Same policy as loose files: skip any ZIP entry we can't parse
+                // instead of failing the whole archive.
+                logger.warn(
+                    { entry: entry.path, err: error instanceof Error ? error.message : String(error) },
+                    '@trajectory-ingest: skipping unparseable ZIP entry'
+                );
+                continue;
             }
 
             const expandedObjectKey = `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`;
@@ -342,10 +358,6 @@ export class TrajectoryIngestCommand {
         return basename.startsWith('.') ||
             ZIP_ENTRY_JUNK_BASENAMES.has(basename) ||
             entryPath.split('/').some((part) => ZIP_ENTRY_JUNK_BASENAMES.has(part));
-    }
-
-    private isUnsupportedTrajectoryFormatError(error: unknown): boolean {
-        return error instanceof Error && error.message === 'Unsupported trajectory format';
     }
 
     private async removeIgnoredStagedObject(bucket: string, objectKey: string): Promise<void> {

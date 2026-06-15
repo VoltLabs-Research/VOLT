@@ -29,6 +29,14 @@ const FIXED_ATOM_COLUMNS = new Set(['atom_index', 'id', 'x', 'y', 'z', 'bucket',
 // owns positions/buckets).
 const NON_PROPERTY_COLUMNS = new Set(['atom_index', 'x', 'y', 'z', 'bucket']);
 
+// Cosmetic per-atom RGB columns a plugin bakes for its own GLB rendering (e.g.
+// coordination's `color` / `coordination_color`). They are NOT analysis
+// properties — surfacing them as selectable coloring/filter options is the
+// "redundant per-atom-properties" the UI should never show. Kept in the GLB
+// export payload, dropped from the property-store rows / discovery catalog.
+const isCosmeticColorColumn = (key: string): boolean =>
+    key === 'color' || key.endsWith('_color');
+
 export const createWorkflowExposureOutputFilePath = (
     outputDir: string,
     resultsFileName: string
@@ -198,11 +206,12 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
     }
 
     // Per-atom coloring rows: drop geometry/grouping columns so the property
-    // store (which owns timestep/atom_index/id) does not collide on rebuild.
+    // store (which owns timestep/atom_index/id) does not collide on rebuild, and
+    // drop cosmetic RGB columns so they never appear as selectable properties.
     const propertyRows = rows.map((row) => {
         const out: JsonObject = {};
         for (const [key, value] of Object.entries(row)) {
-            if (!NON_PROPERTY_COLUMNS.has(key)) {
+            if (!NON_PROPERTY_COLUMNS.has(key) && !isCosmeticColorColumn(key)) {
                 out[key] = value as JsonObject[string];
             }
         }
@@ -283,6 +292,18 @@ export const inspectWorkflowExposureOutput = async (
     resultsFileName: string
 ): Promise<WorkflowExposureInspectionResult> => {
     const outputFilePath = createWorkflowExposureOutputFilePath(outputDir, resultsFileName);
+
+    // Opaque shared-context exposures (plain-text `*.table` cluster-graph files)
+    // are not Parquet — DuckDB read_parquet would throw on them. They carry no
+    // listing or export payload, so report an empty inspection rather than fail.
+    if (!resultsFileName.toLowerCase().endsWith('.parquet')) {
+        return {
+            outputFilePath,
+            listingRowCount: 0,
+            subListingNames: [],
+            exportPayload: null
+        };
+    }
 
     const { listing, subListingNames, exportData } = await readWorkflowExposurePayload(outputFilePath);
     const mainListing = listing?.main_listing;

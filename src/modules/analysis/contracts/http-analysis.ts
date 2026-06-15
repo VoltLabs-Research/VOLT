@@ -268,6 +268,7 @@ export interface PipelineStartTransportRequest {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
+    storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
     stages: PipelineStageTransport[];

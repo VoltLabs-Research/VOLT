@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { Service } from '@/core/decorators/service';
 import { OrchestrationAction } from '@/core/runtime/contracts/http-runtime';
@@ -66,8 +67,15 @@ export class PipelineDispatcher {
         }
 
         const jobs: QueuedJobNotification[] = [];
+        // A fresh token per pipeline run keeps the BullMQ jobId unique across
+        // re-runs of the same trajectory+timestep. Without it the second run on
+        // the same frame reuses an identical jobId, BullMQ silently no-ops the
+        // add() (the prior job lingers under removeOnComplete/Fail), the daemon
+        // never processes it, and the server's per-analysis completion session
+        // never drains → the run is stuck "queued" forever.
+        const runToken = randomUUID();
         for (const timestep of timesteps) {
-            const jobId = `pipeline-${input.teamClusterId}-${input.trajectoryId}-${timestep}`;
+            const jobId = `pipeline-${input.teamClusterId}-${input.trajectoryId}-${timestep}-${runToken}`;
             const timestamp = new Date().toISOString();
             const payload: PipelineQueueJobPayload = {
                 jobId,
@@ -88,10 +96,14 @@ export class PipelineDispatcher {
 
             // One QueuedJobNotification per (computing stage × timestep) so the
             // server's routePipeline can group by analysisId and seed a
-            // completion session per computing plugin stage.
+            // completion session per computing plugin stage. The jobId MUST match
+            // the per-stage jobId the daemon later reports terminal status under
+            // (`${payload.jobId}:${analysisId}` in processPipelineJob) — otherwise
+            // the projected "queued" row and the "completed/failed" row carry
+            // different jobIds and the UI shows the same stage twice.
             for (const computeStage of computeStages) {
                 jobs.push({
-                    jobId,
+                    jobId: `${jobId}:${computeStage.analysisId}`,
                     name: computeStage.name,
                     teamId: input.teamId,
                     trajectoryId: input.trajectoryId,
@@ -186,8 +198,13 @@ export class PipelineDispatcher {
     }
 
     private resolveStorageClusterId(input: PipelineStartRequestWithTrace): string | undefined {
-        return input.stages
-            .find((stage) => stage.kind === 'plugin' && stage.plugin)
-            ?.plugin?.analysis.storageClusterId;
+        // Prefer the explicit storage cluster the server threaded through. Fall
+        // back to a compute stage's plugin payload for older servers — but an
+        // all-cache-hit pipeline ships no plugin payload, so the explicit field
+        // is what keeps those runs from failing with "missing a storage cluster".
+        return input.storageClusterId
+            ?? input.stages
+                .find((stage) => stage.kind === 'plugin' && stage.plugin)
+                ?.plugin?.analysis.storageClusterId;
     }
 }

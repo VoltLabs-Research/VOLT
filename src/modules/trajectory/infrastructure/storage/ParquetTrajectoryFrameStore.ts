@@ -228,6 +228,15 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 
     public async readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData> {
+        // A null/undefined timestep would otherwise blow up on BigInt(input.timestep)
+        // with a cryptic "Cannot convert null to a BigInt". Surface a clear,
+        // typed not-found instead so callers (and the UI) get an actionable error.
+        if (input.timestep === null || input.timestep === undefined || !Number.isFinite(Number(input.timestep))) {
+            throw this.rethrowNotFound(
+                new Error(`trajectory frame lookup requires a numeric timestep, got ${String(input.timestep)}`),
+                input
+            );
+        }
         const cacheKey = this.buildFrameCacheKey(input);
         const cached = this.frameCache.get(cacheKey);
         if (cached) {
@@ -243,7 +252,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ` +
                 'WHERE timestep = $timestep ORDER BY atom_index',
-                { timestep: BigInt(input.timestep) }
+                { timestep: BigInt(Number(input.timestep)) }
             );
             const rows = reader.getRowObjectsJS();
             if (rows.length === 0) {

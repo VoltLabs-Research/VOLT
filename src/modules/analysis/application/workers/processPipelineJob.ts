@@ -18,6 +18,7 @@ import { createWorkflowExposureOutputFilePath } from '@/modules/analysis/applica
 import {
     createPipelineContext,
     registerSharedExposure,
+    resolveSharedExposure,
     type PipelineContext
 } from '@/modules/analysis/application/analysis/pipeline-context';
 import type { DumpTransformService } from '@/modules/analysis/application/analysis/dump-transform';
@@ -51,6 +52,14 @@ export interface ProcessPipelineJobHooks {
 }
 
 const ATOMS_PARQUET_SUFFIX = 'atoms.parquet';
+
+// Reserved shared-exposure id under which each compute stage persists a snapshot
+// of the working dump AS IT STANDS AFTER that stage ran. A later pipeline run
+// that cache-hits the stage restores this snapshot instead of re-deriving the
+// working-dump mutation — a faithful replay for any stage type (annotated-dump
+// promotion or per-atom merge), since a cache hit guarantees an identical
+// upstream chain (and therefore an identical working-dump state).
+const WORKING_DUMP_EXPOSURE_ID = '__working_dump__';
 
 // One BullMQ job == one timestep == the whole ordered stage chain run
 // sequentially against a single mutating working.dump, sharing one
@@ -128,12 +137,13 @@ export const processPipelineJob = async (
                     if (stage.cacheHit) {
                         await runCacheHitStage(payload, deps, context, stage, index, storageClusterId, workingDump, stageDir);
                     } else {
-                        // Entering runComputeStage guarantees a terminal report via
-                        // withJobLifecycle (completed on success, failed on throw),
-                        // so mark it self-reported up front — the catch below then
-                        // only drains stages that never started.
-                        if (stage.analysisId) reportedAnalysisIds.add(stage.analysisId);
-                        await runComputeStage(payload, deps, context, stage, workingDump, stageDir);
+                        // runComputeStage marks itself in reportedAnalysisIds the
+                        // moment its withJobLifecycle emits a terminal status, so a
+                        // throw BEFORE the lifecycle (e.g. executionData fetch) is
+                        // still drained by the catch below. The drain jobId matches
+                        // the per-stage report jobId (`${jobId}:${analysisId}`), so
+                        // the queued row is replaced — never duplicated.
+                        await runComputeStage(payload, deps, context, stage, workingDump, stageDir, reportedAnalysisIds);
                     }
                     break;
             }
@@ -215,9 +225,29 @@ const runCacheHitStage = async (
             );
         }
         registerSharedExposure(context, exposureId, localPath);
+    }
 
-        if (localPath.endsWith(ATOMS_PARQUET_SUFFIX)) {
-            await deps.dumpTransformService.merge(workingDump, localPath);
+    // Restore the working-dump snapshot this stage produced (annotated-dump
+    // promotion or per-atom merge), so downstream stages see the exact same dump
+    // state a fresh run would have produced. Older cached analyses persisted no
+    // snapshot — fall back to merging any atoms.parquet shared exposure so the
+    // cache hit still advances the dump rather than silently passing it through.
+    const restoredDump = await deps.pipelineSharedExposureStore.fetch({
+        ownerClusterId: storageClusterId,
+        trajectoryId: payload.trajectoryId,
+        analysisId: sourceAnalysisId,
+        exposureId: WORKING_DUMP_EXPOSURE_ID,
+        timestep: payload.timestep,
+        destinationDir: stageDir
+    });
+    if (restoredDump) {
+        await fs.copyFile(restoredDump, workingDump);
+    } else {
+        for (const exposureId of stage.sharedExposureIds ?? []) {
+            const resolved = resolveSharedExposure(context, exposureId);
+            if (resolved && resolved.endsWith(ATOMS_PARQUET_SUFFIX)) {
+                await deps.dumpTransformService.merge(workingDump, resolved);
+            }
         }
     }
 
@@ -242,7 +272,8 @@ const runComputeStage = async (
     context: PipelineContext,
     stage: PipelinePlannedStage,
     workingDump: string,
-    stageDir: string
+    stageDir: string,
+    reportedAnalysisIds: Set<string>
 ): Promise<void> => {
     if (!stage.executionDataReference || !stage.analysisId) {
         throw new Error('Pipeline compute stage is missing its executionData reference');
@@ -297,6 +328,10 @@ const runComputeStage = async (
                 if (status === 'failed') {
                     logger.error(`Pipeline compute stage failed for jobId=${stageJobId}: ${error ?? 'Unknown error'}`);
                 }
+                // Mark self-reported only once a terminal status is actually
+                // emitted, so the top-level catch drains this stage if it threw
+                // before reaching the lifecycle (no double-report either way).
+                reportedAnalysisIds.add(analysisId);
                 reportAnalysisStatus(status, error);
             },
             cleanup: async () => {
@@ -350,8 +385,17 @@ const runComputeStage = async (
 
 // After a compute stage completes: for each id-bearing exposure, register its
 // output file into the shared context AND persist it to MinIO (so future cache
-// hits can re-fetch it); and merge any Per-Atom-Properties exposure (results
-// ending in atoms.parquet) into the working dump for downstream stages.
+// hits can re-fetch it). Then advance the working dump for downstream stages:
+// reconstruction producers (PTM/ACNA/PSM) emit an `_annotated.dump` that is the
+// input frame PLUS structure_type/cluster_id/neighbor-topology columns — that
+// full superset becomes the working dump so reconstruction consumers (OpenDXA,
+// Elastic Strain) get the neighbor topology they require. Non-reconstruction
+// plugins have no annotated dump, so their per-atom-properties exposure
+// (atoms.parquet) is merged into the working dump by atom id instead. We keep
+// the heavy neighbor columns OUT of atoms.parquet (the UI property store) so
+// per-atom properties stay minimal.
+const ANNOTATED_DUMP_SUFFIX = 'annotated.dump';
+
 const registerStageExposures = async (
     deps: ProcessPipelineJobDependencies,
     context: PipelineContext,
@@ -363,36 +407,75 @@ const registerStageExposures = async (
     workingDump: string
 ): Promise<void> => {
     for (const exposure of executionData.workflow.exposures) {
+        if (!exposure.id || exposure.id.length === 0) {
+            continue;
+        }
         const filePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
+        try {
+            await fs.access(filePath);
+        } catch {
+            continue;
+        }
+        registerSharedExposure(context, exposure.id, filePath);
 
-        if (exposure.id && exposure.id.length > 0) {
-            try {
-                await fs.access(filePath);
-            } catch {
+        if (storageClusterId) {
+            await deps.pipelineSharedExposureStore.persist({
+                ownerClusterId: storageClusterId,
+                trajectoryId: executionData.identity.trajectoryId,
+                analysisId,
+                exposureId: exposure.id,
+                timestep,
+                sourcePath: filePath
+            });
+        }
+    }
+
+    // Advance the working dump. Prefer a reconstruction producer's annotated
+    // dump (a complete superset incl. neighbor topology); else merge the per-atom
+    // properties parquet so downstream stages still see this plugin's columns.
+    const annotatedDump = `${outputDir}_${ANNOTATED_DUMP_SUFFIX}`;
+    let advancedFromAnnotatedDump = false;
+    try {
+        await fs.access(annotatedDump);
+        await fs.copyFile(annotatedDump, workingDump);
+        advancedFromAnnotatedDump = true;
+    } catch {
+        // No annotated dump (non-reconstruction plugin); fall through to merge.
+    }
+
+    if (!advancedFromAnnotatedDump) {
+        // Merge each distinct per-atom file once (a plugin may expose atoms.parquet
+        // for several exposures — the 3D scene, a chart, the merge — same file).
+        const mergedPaths = new Set<string>();
+        for (const exposure of executionData.workflow.exposures) {
+            if (!isPerAtomPropertiesExposure(exposure)) {
                 continue;
             }
-            registerSharedExposure(context, exposure.id, filePath);
-
-            if (storageClusterId) {
-                await deps.pipelineSharedExposureStore.persist({
-                    ownerClusterId: storageClusterId,
-                    trajectoryId: executionData.identity.trajectoryId,
-                    analysisId,
-                    exposureId: exposure.id,
-                    timestep,
-                    sourcePath: filePath
-                });
+            const filePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
+            if (mergedPaths.has(filePath)) {
+                continue;
             }
-        }
-
-        if (isPerAtomPropertiesExposure(exposure)) {
             try {
                 await fs.access(filePath);
                 await deps.dumpTransformService.merge(workingDump, filePath);
+                mergedPaths.add(filePath);
             } catch {
                 // No per-atom output produced for this timestep; nothing to merge.
             }
         }
+    }
+
+    // Persist the post-stage working dump so a future pipeline run that cache-hits
+    // this stage can restore the exact dump state instead of re-deriving it.
+    if (storageClusterId) {
+        await deps.pipelineSharedExposureStore.persist({
+            ownerClusterId: storageClusterId,
+            trajectoryId: executionData.identity.trajectoryId,
+            analysisId,
+            exposureId: WORKING_DUMP_EXPOSURE_ID,
+            timestep,
+            sourcePath: workingDump
+        });
     }
 };
 

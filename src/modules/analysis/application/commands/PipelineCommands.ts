@@ -31,6 +31,7 @@ export class PipelineCommands {
             teamId: payload.teamId,
             teamClusterId: payload.teamClusterId,
             trajectoryId: payload.trajectoryId,
+            storageClusterId: payload.storageClusterId,
             selectedTimesteps: payload.selectedTimesteps,
             timestep: payload.timestep,
             stages

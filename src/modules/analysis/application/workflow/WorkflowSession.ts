@@ -247,6 +247,11 @@ export class WorkflowSession {
                 nodeId: node.id,
                 name: exposureData.name!,
                 results: exposureData.results!,
+                // Carry the exposure node's shared-exposure `id` through to the
+                // runtime so registerStageExposures can register id-bearing
+                // outputs (e.g. PTM/ACNA `clusters_table` / `clusters_transitions`)
+                // into the pipeline's shared context for downstream stages.
+                id: exposureData.id,
                 export: exportNode ? exportNode.data.export : undefined
             });
         }
