@@ -72,6 +72,9 @@ export class DescribePluginArgumentsUseCase implements IUseCase<DescribePluginAr
         if (definition.multipleSelection) {
             described.multipleSelection = true;
         }
+        if (definition.inferFromContext === true) {
+            described.inferFromContext = true;
+        }
 
         const note = this.buildNote(definition);
         if (note) {
@@ -84,6 +87,9 @@ export class DescribePluginArgumentsUseCase implements IUseCase<DescribePluginAr
     private buildNote(definition: ArgumentDefinition): string | undefined {
         const notes: string[] = [];
 
+        if (definition.inferFromContext === true) {
+            notes.push(`Do NOT set this in config — its value is injected from an upstream pipeline stage that produces the "${definition.argument}" exposure. Put a stage that produces it earlier in the pipeline.`);
+        }
         if (definition.type === ArgumentType.List && definition.listArguments?.length) {
             const itemKeys = definition.listArguments.map((item) => item.argument).join(', ');
             notes.push(`List of items; each item has: ${itemKeys}.`);
