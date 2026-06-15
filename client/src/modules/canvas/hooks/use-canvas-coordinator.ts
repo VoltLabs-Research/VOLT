@@ -91,7 +91,13 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         }
 
         previousTimelineScopeKeyRef.current = timelineScopeKey;
-        resetPlayback();
+        // Why: this effect also fires when only the *selected analysis* changes
+        // (timelineScopeKey embeds analysisId). A full reset wiped currentTimestep
+        // and the reconciler below snapped the viewer to frame 0 — selecting an
+        // exposure must NOT move the user off their frame. preserveTimestep keeps
+        // the frame; getNearestTimestep re-clamps it to the new scope if needed.
+        // Trajectory switches still hard-reset via CanvasPage's own effect.
+        resetPlayback({ preserveTimestep: true });
     }, [isAwaitingSelectedAnalysis, timelineScopeKey, resetPlayback]);
 
     useEffect(() => {
