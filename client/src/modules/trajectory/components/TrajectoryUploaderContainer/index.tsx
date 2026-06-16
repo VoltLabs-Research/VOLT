@@ -2,6 +2,7 @@ import useTrajectoryUpload from '@/modules/trajectory/hooks/trajectory/use-traje
 import { useCallback } from 'react';
 import FileUploaderContainer, { type FileDropUpload } from '@/shared/presentation/components/FileUploaderContainer';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
+import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
 import { useNavigate } from 'react-router-dom';
 
 interface TrajectoryUploaderContainerProps {
@@ -9,7 +10,8 @@ interface TrajectoryUploaderContainerProps {
 }
 
 export default function TrajectoryUploaderContainer({ children }: TrajectoryUploaderContainerProps) {
-    const { uploadTrajectory } = useTrajectoryUpload();
+    const { currentFolderId } = useFolderSearchParam();
+    const { uploadTrajectory } = useTrajectoryUpload(currentFolderId);
     const navigate = useNavigate();
     const setLocalGlbFile = useLocalGlbStore((s) => s.setLocalGlbFile);
 
