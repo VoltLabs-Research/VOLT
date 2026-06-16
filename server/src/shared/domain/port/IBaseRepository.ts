@@ -27,6 +27,7 @@ export interface PaginatedResult<T> {
 export interface PaginationOptions {
     page?: number;
     limit?: number;
+    withTotal?: boolean;
 }
 
 export enum ExportType {

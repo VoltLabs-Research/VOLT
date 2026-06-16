@@ -313,6 +313,16 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         return geo;
     }, [boxBounds]);
 
+    // These geometries are caller-owned (attached via props), so R3F never
+    // disposes them — release the GPU buffers when they're replaced or unmount.
+    useEffect(() => () => {
+        geometry?.dispose();
+    }, [geometry]);
+
+    useEffect(() => () => {
+        boxGeometry?.dispose();
+    }, [boxGeometry]);
+
     if (!boxBounds || !geometry) {
         return <group ref={contentRef}>{children}</group>;
     }

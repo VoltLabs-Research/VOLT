@@ -46,6 +46,20 @@ interface LineGeometryUserData {
     syntheticColorAttribute?: boolean;
 }
 
+interface MortonAttributePayload {
+    name: string;
+    itemSize: number;
+    array: Float32Array;
+}
+
+interface MortonSortResult {
+    type: 'morton-sort-result';
+    id: number;
+    permutation: Uint32Array;
+    positions: Float32Array;
+    attributes: MortonAttributePayload[];
+}
+
 // Non-highlighted tubes keep this fraction of their baked color so the
 // selected entity reads unambiguously, screenshots included.
 const LINE_HIGHLIGHT_DIM_FACTOR = 0.15;
@@ -172,6 +186,16 @@ export class FractalEngine {
 
     private mortonWorker: Worker | null = null;
     private currentSortRequestId = 0;
+
+    // Coalesces slider-driven line updates: a continuous drag fires a distinct
+    // value per step, each one an O(n) buffer rewrite. Collapsing them to one
+    // rAF keeps only the latest pending settings, so the work runs once per
+    // frame instead of once per pointer event.
+    private lineUpdateRafHandle: number | null = null;
+    private pendingLineWidthSettings: LineSceneSettings | undefined = undefined;
+    private hasPendingLineWidth = false;
+    private pendingLineHighlight: LineEntityHighlight | undefined = undefined;
+    private hasPendingLineHighlight = false;
 
     constructor(
         private surface: FractalSurface,
@@ -322,8 +346,11 @@ export class FractalEngine {
             this.mortonPermutation = null;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
-            this.updateLineWidth(this.params.lineSettings);
-            this.updateLineHighlight(this.params.lineHighlight);
+            // Apply synchronously on load so the first rendered frame already has
+            // the correct line width/highlight (no deferral flash); slider-driven
+            // calls after load go through the coalesced rAF path.
+            this.applyLineWidth(this.params.lineSettings);
+            this.applyLineHighlight(this.params.lineHighlight);
 
             this.callbacks.onModelLoaded?.(bounds);
             this.callbacks.onModelAvailable?.(loadedModel);
@@ -400,35 +427,80 @@ export class FractalEngine {
         const position = points.geometry.getAttribute('position');
         if (!(position instanceof THREE.BufferAttribute)) return;
         const positionsSource = position.array as Float32Array;
+        const vertexCount = position.count;
 
         const positionsCopy = new Float32Array(positionsSource);
+
+        // Offload the immutable per-atom attribute gathers to the worker too, so
+        // the main thread only swaps `attribute.array` references on reply.
+        // `color` is intentionally excluded: updateSceneColor can rewrite the
+        // live color buffer before the worker replies (it runs synchronously from
+        // onModelAvailable), so its gather must read the live array on the main
+        // thread to preserve an active override — see applyMortonPermutation.
+        const reorderableAttributeNames = ['iRadius', '_color_index'];
+        const attributePayloads: MortonAttributePayload[] = [];
+        for (const name of reorderableAttributeNames) {
+            const attribute = points.geometry.getAttribute(name);
+            if (attribute instanceof THREE.BufferAttribute && attribute.count === vertexCount) {
+                attributePayloads.push({
+                    name,
+                    itemSize: attribute.itemSize,
+                    array: new Float32Array(attribute.array as Float32Array)
+                });
+            }
+        }
+
         const requestId = ++this.currentSortRequestId;
         const worker = this.getOrCreateMortonWorker();
 
-        const handleMessage = (event: MessageEvent<{ type: string; id: number; permutation: Uint32Array }>) => {
+        const handleMessage = (event: MessageEvent<MortonSortResult>) => {
             if (!event.data || event.data.type !== 'morton-sort-result') return;
             if (event.data.id !== requestId) return;
             worker.removeEventListener('message', handleMessage);
             if (this.isDisposed || this.currentSortRequestId !== requestId) return;
-            this.applyMortonPermutation(points, event.data.permutation);
+            this.applyMortonPermutation(points, event.data);
         };
 
         worker.addEventListener('message', handleMessage);
+        const transfer: Transferable[] = [
+            positionsCopy.buffer,
+            ...attributePayloads.map((attribute) => attribute.array.buffer)
+        ];
         worker.postMessage({
             type: 'morton-sort',
             id: requestId,
-            positions: positionsCopy
-        }, [positionsCopy.buffer]);
+            positions: positionsCopy,
+            attributes: attributePayloads
+        }, transfer);
     }
 
-    private applyMortonPermutation(points: THREE.Points, permutation: Uint32Array): void {
-        const attributeNames: string[] = ['position', 'color', 'iRadius', '_color_index'];
-        for (const name of attributeNames) {
-            const attribute = points.geometry.getAttribute(name);
-            if (attribute instanceof THREE.BufferAttribute && attribute.count === permutation.length) {
-                applyPermutationToAttribute(attribute, permutation);
+    private applyMortonPermutation(points: THREE.Points, result: MortonSortResult): void {
+        const permutation = result.permutation;
+
+        // Swap in the worker-reordered position buffer (immutable post-load, so
+        // the live array still matches the snapshot the worker reordered).
+        const positionAttribute = points.geometry.getAttribute('position');
+        if (positionAttribute instanceof THREE.BufferAttribute && positionAttribute.count === permutation.length) {
+            positionAttribute.array = result.positions;
+            positionAttribute.needsUpdate = true;
+        }
+
+        // Swap in the worker-reordered immutable attributes.
+        for (const attribute of result.attributes) {
+            const target = points.geometry.getAttribute(attribute.name);
+            if (target instanceof THREE.BufferAttribute && target.count === permutation.length) {
+                target.array = attribute.array;
+                target.needsUpdate = true;
             }
         }
+
+        // `color` may have been overridden after the sort kicked off, so reorder
+        // the live array on the main thread to preserve that override.
+        const colorAttribute = points.geometry.getAttribute('color');
+        if (colorAttribute instanceof THREE.BufferAttribute && colorAttribute.count === permutation.length) {
+            applyPermutationToAttribute(colorAttribute, permutation);
+        }
+
         // Why: keep the permutation so a per-atom visibility mask applied AFTER the
         // sort (it arrives in original parquet/vertex order) can be reordered to
         // match the now-permuted vertices.
@@ -670,6 +742,14 @@ export class FractalEngine {
     }
 
     updateLineWidth(settings?: LineSceneSettings) {
+        // Coalesce continuous slider drags: keep only the latest settings and run
+        // the O(n) geometry rewrite once per frame instead of once per step.
+        this.pendingLineWidthSettings = settings;
+        this.hasPendingLineWidth = true;
+        this.scheduleLineUpdate();
+    }
+
+    private applyLineWidth(settings?: LineSceneSettings) {
         if (!this.state.model || this.traversalCache.meshes.length === 0) return;
         const baseLineWidth = settings?.baseLineWidth;
         const lineWidth = settings?.lineWidth;
@@ -704,6 +784,13 @@ export class FractalEngine {
     // vertex-color buffer in place (originals stashed for a lossless restore).
     // The triangle ranges come from the GLB's `.ranges.json` sidecar.
     updateLineHighlight(highlight?: LineEntityHighlight) {
+        // Coalesce rapid hover changes into a single per-frame rewrite.
+        this.pendingLineHighlight = highlight;
+        this.hasPendingLineHighlight = true;
+        this.scheduleLineUpdate();
+    }
+
+    private applyLineHighlight(highlight?: LineEntityHighlight) {
         if (!this.state.model || this.traversalCache.meshes.length === 0) return;
         const entityId = highlight?.entityId ?? null;
         const entityRanges = highlight?.entityRanges ?? null;
@@ -727,6 +814,26 @@ export class FractalEngine {
         });
 
         this.surface.invalidate();
+    }
+
+    private scheduleLineUpdate() {
+        if (this.lineUpdateRafHandle !== null) return;
+        this.lineUpdateRafHandle = requestAnimationFrame(() => {
+            this.lineUpdateRafHandle = null;
+            this.flushLineUpdates();
+        });
+    }
+
+    private flushLineUpdates() {
+        if (this.isDisposed) return;
+        if (this.hasPendingLineWidth) {
+            this.hasPendingLineWidth = false;
+            this.applyLineWidth(this.pendingLineWidthSettings);
+        }
+        if (this.hasPendingLineHighlight) {
+            this.hasPendingLineHighlight = false;
+            this.applyLineHighlight(this.pendingLineHighlight);
+        }
     }
 
     updateCameraPosition(cameraPosition: THREE.Vector3) {
@@ -759,6 +866,10 @@ export class FractalEngine {
         this.loadGeneration += 1;
         this.loadAbortController?.abort();
         this.loadAbortController = null;
+        if (this.lineUpdateRafHandle !== null) {
+            cancelAnimationFrame(this.lineUpdateRafHandle);
+            this.lineUpdateRafHandle = null;
+        }
         this.callbacks.onLoadingState?.({ isLoading: false, progress: 0, error: null });
         this.callbacks.onModelAvailable?.(null);
         this.disposeModel();

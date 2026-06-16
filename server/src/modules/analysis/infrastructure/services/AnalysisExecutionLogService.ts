@@ -73,7 +73,16 @@ interface StoredAnalysisFrameLogRecord extends AnalysisFrameLogSnapshot {
     bytes?: number;
 }
 
+interface FrameLogRuntimeState {
+    storageClusterId: string;
+    record: StoredAnalysisFrameLogRecord | null;
+    persistTimer: ReturnType<typeof setTimeout> | null;
+    persisting: Promise<void>;
+}
+
 const MAX_LOG_BYTES = 16 * 1024 * 1024;
+
+const PERSIST_DEBOUNCE_MS = 500;
 
 const isAnalysisFrameLogStatus = (value: string | undefined): value is AnalysisFrameLogStatus => {
     return value === 'pending' || value === 'running' || value === 'completed' || value === 'failed';
@@ -118,6 +127,7 @@ export const getAnalysisLogRoom = (analysisId: string, timestep: number): string
 @Singleton(ANALYSIS_TOKENS.AnalysisExecutionLogService)
 export default class AnalysisExecutionLogService implements IAnalysisExecutionLogService {
     private readonly mutationChains = new Map<string, Promise<void>>();
+    private readonly frameStates = new Map<string, FrameLogRuntimeState>();
 
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
@@ -146,7 +156,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
     async markFrameRunning(input: MarkFrameRunningInput): Promise<void> {
         await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-            const current = await this.readStoredRecord(storageClusterId, input);
+            const state = await this.loadRuntimeState(storageClusterId, input);
+            const current = state.record;
             if (current?.jobId === input.jobId && current.sealed) {
                 return;
             }
@@ -167,7 +178,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
                     bytes: this.resolveRecordBytes(current)
                 };
 
-            await this.writeStoredRecord(storageClusterId, nextRecord);
+            state.record = nextRecord;
+            await this.flushRuntimeState(state);
         });
     }
 
@@ -182,7 +194,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
 
         const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-            const current = await this.readStoredRecord(storageClusterId, input);
+            const state = await this.loadRuntimeState(storageClusterId, input);
+            const current = state.record;
             const record = !current || current.jobId !== input.jobId
                 ? this.createEmptyStoredRecord(input, 'running')
                 : current;
@@ -213,8 +226,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
                 return null;
             }
 
-            const nextSegments = [...record.segments, ...acceptedSegments];
-            const nextCursor = this.resolveCursor(null, nextSegments.length);
+            record.segments.push(...acceptedSegments);
+            const nextCursor = this.resolveCursor(null, record.segments.length);
             const nextStatus = record.sealed ? record.status : 'running';
             const updatedRecord: StoredAnalysisFrameLogRecord = {
                 ...record,
@@ -228,10 +241,11 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
                 truncated,
                 nextCursor,
                 bytes: totalBytes,
-                segments: nextSegments
+                segments: record.segments
             };
 
-            await this.writeStoredRecord(storageClusterId, updatedRecord);
+            state.record = updatedRecord;
+            this.schedulePersist(state);
 
             return {
                 analysisId: input.analysisId,
@@ -252,7 +266,8 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
     async sealFrameLog(input: SealFrameLogInput): Promise<void> {
         const chunk = await this.runFrameLogMutation(input.analysisId, input.timestep, async () => {
             const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-            const current = await this.readStoredRecord(storageClusterId, input);
+            const state = await this.loadRuntimeState(storageClusterId, input);
+            const current = state.record;
             const record = !current || current.jobId !== input.jobId
                 ? this.createEmptyStoredRecord(input, input.status)
                 : current;
@@ -270,7 +285,9 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
                 bytes: this.resolveRecordBytes(record)
             };
 
-            await this.writeStoredRecord(storageClusterId, updatedRecord);
+            state.record = updatedRecord;
+            await this.flushRuntimeState(state);
+            this.frameStates.delete(this.frameMutationKey(input.analysisId, input.timestep));
 
             return {
                 analysisId: input.analysisId,
@@ -289,8 +306,13 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
     async getFrameLog(input: GetFrameLogInput): Promise<AnalysisFrameLogSnapshot> {
         await this.waitForFrameLogMutations(input.analysisId, input.timestep);
 
-        const storageClusterId = await this.requireStorageClusterId(input.trajectoryId);
-        const record = await this.readStoredRecord(storageClusterId, input);
+        const cached = this.frameStates.get(this.frameMutationKey(input.analysisId, input.timestep));
+        const record = cached
+            ? cached.record
+            : await this.readStoredRecord(
+                await this.requireStorageClusterId(input.trajectoryId),
+                input
+            );
 
         if (!record) {
             return {
@@ -315,6 +337,20 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
                 .filter(([frameKey]) => frameKey.startsWith(`${analysisId}:`))
                 .map(([, mutation]) => mutation.catch(() => undefined))
         );
+
+        for (const [frameKey, state] of this.frameStates) {
+            if (!frameKey.startsWith(`${analysisId}:`)) {
+                continue;
+            }
+
+            if (state.persistTimer) {
+                clearTimeout(state.persistTimer);
+                state.persistTimer = null;
+            }
+
+            await state.persisting.catch(() => undefined);
+            this.frameStates.delete(frameKey);
+        }
 
         const keys = await this.scanKeys(`analysis-log:${analysisId}:*`);
         if (keys.length === 0) {
@@ -375,6 +411,54 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
         }
 
         await pending.catch(() => undefined);
+    }
+
+    private async loadRuntimeState(
+        storageClusterId: string,
+        identity: Pick<MarkFrameRunningInput, 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'>
+    ): Promise<FrameLogRuntimeState> {
+        const frameKey = this.frameMutationKey(identity.analysisId, identity.timestep);
+        const existing = this.frameStates.get(frameKey);
+        if (existing) {
+            return existing;
+        }
+
+        const record = await this.readStoredRecord(storageClusterId, identity);
+        const state: FrameLogRuntimeState = {
+            storageClusterId,
+            record,
+            persistTimer: null,
+            persisting: Promise.resolve()
+        };
+        this.frameStates.set(frameKey, state);
+        return state;
+    }
+
+    private schedulePersist(state: FrameLogRuntimeState): void {
+        if (state.persistTimer) {
+            clearTimeout(state.persistTimer);
+        }
+
+        state.persistTimer = setTimeout(() => {
+            state.persistTimer = null;
+            void this.flushRuntimeState(state).catch(() => undefined);
+        }, PERSIST_DEBOUNCE_MS);
+    }
+
+    private async flushRuntimeState(state: FrameLogRuntimeState): Promise<void> {
+        if (state.persistTimer) {
+            clearTimeout(state.persistTimer);
+            state.persistTimer = null;
+        }
+
+        state.persisting = state.persisting
+            .catch(() => undefined)
+            .then(() => {
+                const record = state.record;
+                return record ? this.writeStoredRecord(state.storageClusterId, record) : undefined;
+            });
+
+        await state.persisting;
     }
 
     private createEmptyStoredRecord(

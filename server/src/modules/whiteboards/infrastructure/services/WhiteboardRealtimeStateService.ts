@@ -96,8 +96,8 @@ const hasEquivalentElementPayload = (
 const shouldReplaceElement = (
     current: WhiteboardElement | undefined,
     incoming: WhiteboardElement,
-    currentSignature?: string | null,
-    incomingSignature?: string | null
+    currentSignature: string | null | undefined,
+    resolveIncomingSignature: () => string | null
 ): boolean => {
     if (!current) {
         return true;
@@ -118,7 +118,7 @@ const shouldReplaceElement = (
         return versionNonceDelta > 0;
     }
 
-    return !hasEquivalentElementPayload(current, incoming, currentSignature, incomingSignature);
+    return !hasEquivalentElementPayload(current, incoming, currentSignature, resolveIncomingSignature());
 };
 
 const normalizeElements = (value: unknown): WhiteboardElement[] => {
@@ -195,10 +195,18 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
             }
 
             incomingOrder.push(id);
-            const incomingSignature = getElementSignature(element);
-            if (shouldReplaceElement(room.elements.get(id), element, room.elementSignatures.get(id), incomingSignature)) {
+
+            let incomingSignature: string | null | undefined;
+            const resolveIncomingSignature = (): string | null => {
+                if (incomingSignature === undefined) {
+                    incomingSignature = getElementSignature(element);
+                }
+                return incomingSignature;
+            };
+
+            if (shouldReplaceElement(room.elements.get(id), element, room.elementSignatures.get(id), resolveIncomingSignature)) {
                 room.elements.set(id, element);
-                if (incomingSignature) {
+                if (typeof incomingSignature === 'string') {
                     room.elementSignatures.set(id, incomingSignature);
                 } else {
                     room.elementSignatures.delete(id);
@@ -365,12 +373,7 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
             payloadKey,
             revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
             elements: new Map(elements.map((element) => [element.id as string, element])),
-            elementSignatures: new Map(elements
-                .map((element) => {
-                    const signature = getElementSignature(element);
-                    return signature ? [element.id as string, signature] as const : null;
-                })
-                .filter((entry): entry is readonly [string, string] => Boolean(entry))),
+            elementSignatures: new Map<string, string>(),
             elementOrder: elements.map((element) => element.id as string),
             appState: normalizeAppState(storedScene.appState),
             snapshotCache: null,

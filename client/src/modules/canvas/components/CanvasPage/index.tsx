@@ -594,49 +594,53 @@ const CanvasPage = () => {
         });
     }, [downloadTrajectoryAnalyses, trajectory?._id, trajectory?.name]);
 
-    const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
-        ? (
-            <Tooltip content="Open Jupyter in new tab">
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    className="font-size-05 canvas-btn-compact"
-                    leftIcon={<ExternalLink size={12} />}
-                    onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
-                >
-                    Open in New Tab
-                </Button>
-            </Tooltip>
-        )
-        : null;
+    const scriptingHeaderAction = useMemo(() => (
+        isScriptingWorkspace && scriptingJupyterUrl
+            ? (
+                <Tooltip content="Open Jupyter in new tab">
+                    <Button
+                        variant="ghost"
+                        intent="canvas"
+                        shape="rounded"
+                        size="sm"
+                        className="font-size-05 canvas-btn-compact"
+                        leftIcon={<ExternalLink size={12} />}
+                        onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
+                    >
+                        Open in New Tab
+                    </Button>
+                </Tooltip>
+            )
+            : null
+    ), [isScriptingWorkspace, scriptingJupyterUrl]);
 
-    const toolbarContextualActions = (canDownloadAnalysisListing || scriptingHeaderAction)
-        ? (
-            <Row gap='05'>
-                {canDownloadAnalysisListing && (
-                    <Tooltip content="Download analysis listings">
-                        <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            className="font-size-05 canvas-btn-compact"
-                            leftIcon={<Download size={12} />}
-                            onClick={() => handleDownloadAnalysisListing()}
-                            isLoading={isDownloading}
-                        >
-                            Download Analysis
-                        </Button>
-                    </Tooltip>
-                )}
-                {scriptingHeaderAction}
-            </Row>
-        )
-        : null;
+    const toolbarContextualActions = useMemo(() => (
+        (canDownloadAnalysisListing || scriptingHeaderAction)
+            ? (
+                <Row gap='05'>
+                    {canDownloadAnalysisListing && (
+                        <Tooltip content="Download analysis listings">
+                            <Button
+                                variant="ghost"
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                leftIcon={<Download size={12} />}
+                                onClick={() => handleDownloadAnalysisListing()}
+                                isLoading={isDownloading}
+                            >
+                                Download Analysis
+                            </Button>
+                        </Tooltip>
+                    )}
+                    {scriptingHeaderAction}
+                </Row>
+            )
+            : null
+    ), [canDownloadAnalysisListing, scriptingHeaderAction, isDownloading, handleDownloadAnalysisListing]);
 
-    const viewportBodyContent = (() => {
+    const viewportBodyContent = useMemo(() => {
         if (isRasterWorkspace) {
             return (
                 <CanvasRasterViewport
@@ -719,7 +723,31 @@ const CanvasPage = () => {
         }
 
         return undefined;
-    })();
+    }, [
+        isRasterWorkspace,
+        trajectoryId,
+        trajectory,
+        currentTimestep,
+        rasterContainerSelections,
+        handleUpdateRasterContainerSelection,
+        isScriptingWorkspace,
+        selectedNotebookId,
+        setScriptingJupyterUrl,
+        handleScriptingNotebookIdChange,
+        isLocalGlbViewer,
+        isLocalManifestLoading,
+        localManifestError,
+        forcedGlbUrl,
+        showNoFramesState,
+        isTrajectoryProcessingFailed,
+        handleBackToTrajectories
+    ]);
+
+    const analysisOverlay = useMemo(() => (
+        !isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
+            ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} currentTimestep={currentTimestep} />
+            : undefined
+    ), [isLocalGlbViewer, isScriptingWorkspace, isRasterWorkspace, showNoFramesState, trajectory, analysisId, currentTimestep]);
 
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport && !isScriptingWorkspace ? rightPanel.size : 0;
 
@@ -808,10 +836,7 @@ const CanvasPage = () => {
                                 showGizmo={showGizmo}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
-                                analysisOverlay={!isLocalGlbViewer && !isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState
-                                    ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} currentTimestep={currentTimestep} />
-                                    : undefined
-                                }
+                                analysisOverlay={analysisOverlay}
                                 hideGradient={isScriptingWorkspace || isRasterWorkspace || showNoFramesState}
                                 renderScene={!isScriptingWorkspace && !isRasterWorkspace && !showNoFramesState}
                                 showSceneActions={!isRasterWorkspace && !isScriptingWorkspace && !showNoFramesState}

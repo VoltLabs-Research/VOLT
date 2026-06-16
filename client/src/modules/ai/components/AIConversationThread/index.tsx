@@ -14,7 +14,7 @@ import RecoveryState from '@/shared/presentation/components/RecoveryState';
 import { Box, Button, IconButton, Row, SectionLabel, Skeleton, Stack, StatusDot, Text, ThinkingDots, Tooltip, VisuallyHidden } from '@voltstack/bravais';
 import { isToolUIPart } from 'ai';
 import { IoCheckmarkOutline, IoCopyOutline, IoExpandOutline } from 'react-icons/io5';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
@@ -543,6 +543,14 @@ const AIConversationThread = ({
     addToolApprovalResponse,
     onRetry
 }: AIConversationThreadProps) => {
+    // Per-output-entry cache: reuse the prior normalized object (stable
+    // identity) when a cheap input signature is unchanged, so only the
+    // streaming message gets a new identity and AIMessageItem's memo holds
+    // for the rest (no markdown re-parse on every streamed token).
+    const normalizedCacheRef = useRef(
+        new Map<string, { signature: string; value: NormalizedConversationMessage }>()
+    );
+
     const normalizedMessages = useMemo<NormalizedConversationMessage[]>(() => {
         const respondedToolCallIds = new Set<string>();
         for (const msg of messages) {
@@ -612,30 +620,81 @@ const AIConversationThread = ({
             };
         };
 
-        const mapped = messages.map(normalizeMessage);
+        const mergeInto = (
+            head: NormalizedConversationMessage,
+            msg: NormalizedConversationMessage
+        ) => {
+            head.segments = [...head.segments, ...msg.segments];
+            head.toolInvocations = [...head.toolInvocations, ...msg.toolInvocations];
 
-        return mapped.reduce<NormalizedConversationMessage[]>((acc, msg) => {
-            const prev = acc[acc.length - 1];
-            if (!prev || prev.role !== AIMessageRole.Assistant || msg.role !== AIMessageRole.Assistant) {
-                acc.push(msg);
-                return acc;
-            }
-
-            prev.segments = [...prev.segments, ...msg.segments];
-            prev.toolInvocations = [...prev.toolInvocations, ...msg.toolInvocations];
-
-            if (prev.preview && msg.preview) {
-                prev.preview += '\n' + msg.preview;
+            if (head.preview && msg.preview) {
+                head.preview += '\n' + msg.preview;
             } else if (msg.preview) {
-                prev.preview = msg.preview;
+                head.preview = msg.preview;
             }
 
             if (msg.reasoning) {
-                prev.reasoning += msg.reasoning;
+                head.reasoning += msg.reasoning;
+            }
+        };
+
+        // Cheap, allocation-free signature over the raw parts that determine
+        // normalization output: part type + (text length | tool state). The
+        // responded-tool-call count is folded in because it can flip a tool's
+        // state to 'approval-responded' without the message's own parts changing.
+        const signMessage = (message: UIMessage): string => {
+            let sig = message.id;
+            for (let i = 0; i < message.parts.length; i++) {
+                const part = message.parts[i];
+                const text = (part as { text?: unknown }).text;
+                if (typeof text === 'string') {
+                    sig += `|${part.type}:${text.length}`;
+                } else {
+                    const state = (part as { state?: unknown }).state;
+                    sig += `|${part.type}:${typeof state === 'string' ? state : ''}`;
+                }
+            }
+            return sig;
+        };
+
+        // Group raw messages exactly as the previous reduce did: a run of
+        // consecutive assistant messages becomes a single entry, every other
+        // message is its own entry.
+        const groups: UIMessage[][] = [];
+        for (const msg of messages) {
+            const last = groups[groups.length - 1];
+            if (last && last[0].role === AIMessageRole.Assistant && msg.role === AIMessageRole.Assistant) {
+                last.push(msg);
+            } else {
+                groups.push([msg]);
+            }
+        }
+
+        const cache = normalizedCacheRef.current;
+        const nextCache = new Map<string, { signature: string; value: NormalizedConversationMessage }>();
+        const result: NormalizedConversationMessage[] = [];
+
+        for (const group of groups) {
+            const key = group[0].id;
+            const signature = `${respondedToolCallIds.size}#` + group.map(signMessage).join(';;');
+
+            const cached = cache.get(key);
+            let value: NormalizedConversationMessage;
+            if (cached && cached.signature === signature) {
+                value = cached.value;
+            } else {
+                value = normalizeMessage(group[0]);
+                for (let i = 1; i < group.length; i++) {
+                    mergeInto(value, normalizeMessage(group[i]));
+                }
             }
 
-            return acc;
-        }, []);
+            nextCache.set(key, { signature, value });
+            result.push(value);
+        }
+
+        normalizedCacheRef.current = nextCache;
+        return result;
     }, [messages]);
 
     const streamCursor = useMemo(() => {

@@ -29,6 +29,15 @@ const LATEX_Y_TEXT_NAME = 'content';
 const SERVER_INIT_ORIGIN = 'server:init';
 
 /**
+ * `conn.data` key holding the Set of file-session keys (`{documentId}:{fileId}`)
+ * a socket has joined. socket.io empties `socket.rooms` (via `leaveAll()`) BEFORE
+ * the `disconnect` event fires, so the joined file rooms cannot be recovered from
+ * the room manager at disconnect time and must be tracked explicitly here — this
+ * lets an unclean disconnect release the live Y.Doc sessions it left behind.
+ */
+const JOINED_FILE_KEYS = 'latexJoinedFileKeys';
+
+/**
  * Origin marker for AI-authored edits applied server-side. Deliberately a
  * Symbol (a NON-string origin): the doc `update` handler routes string origins
  * through `emitToRoomExcept` (assumed to be a sender socket id, a no-op for a
@@ -132,6 +141,7 @@ export default class LatexSocketModule extends BaseSocketModule {
         this.registerFileJoin(connection);
         this.registerFileLeave(connection);
         this.registerFileUpdate(connection);
+        this.registerDisconnect(connection);
         this.wirePresenceOnDisconnect(
             connection,
             (conn) => this.getRoomFromConnection(conn),
@@ -297,6 +307,7 @@ export default class LatexSocketModule extends BaseSocketModule {
 
             const room = this.buildFileRoomId(payload.documentId, payload.fileId);
             await this.joinRoom(conn.id, room);
+            this.trackJoinedFileKey(conn, payload.documentId, payload.fileId);
 
             return ackOk({
                 documentId: payload.documentId,
@@ -310,6 +321,7 @@ export default class LatexSocketModule extends BaseSocketModule {
     private registerFileLeave(connection: ISocketConnection): void {
         this.on<LatexFileLeavePayload>(connection.id, 'latex_file_leave', async (conn, payload) => {
             await this.leaveRoom(conn.id, this.buildFileRoomId(payload.documentId, payload.fileId));
+            this.untrackJoinedFileKey(conn, payload.documentId, payload.fileId);
             await this.releaseFileSessionIfIdle(payload.documentId, payload.fileId);
         });
     }
@@ -353,6 +365,46 @@ export default class LatexSocketModule extends BaseSocketModule {
                 fileId: payload.fileId
             });
         });
+    }
+
+    /**
+     * On an unclean disconnect (tab close / navigation / crash) the client never
+     * emits `latex_file_leave`, so without this the socket's live Y.Doc sessions
+     * would leak forever. socket.io has already emptied `socket.rooms` by the time
+     * this fires, so we replay the file keys tracked on `conn.data` and release
+     * each idle session (no-op if other sockets still hold the file room open).
+     */
+    private registerDisconnect(connection: ISocketConnection): void {
+        this.onDisconnect(connection.id, async (conn) => {
+            const joinedKeys = conn.data[JOINED_FILE_KEYS] as Set<string> | undefined;
+            if (!joinedKeys || joinedKeys.size === 0) {
+                return;
+            }
+
+            await Promise.all(Array.from(joinedKeys).map((key) => {
+                const session = this.fileSessions.get(key);
+                if (!session) {
+                    return undefined;
+                }
+                return this.releaseFileSessionIfIdle(session.documentId, session.fileId);
+            }));
+            joinedKeys.clear();
+        });
+    }
+
+    private trackJoinedFileKey(connection: ISocketConnection, documentId: string, fileId: string): void {
+        const key = buildSaveKey(documentId, fileId);
+        let joinedKeys = connection.data[JOINED_FILE_KEYS] as Set<string> | undefined;
+        if (!joinedKeys) {
+            joinedKeys = new Set<string>();
+            connection.data[JOINED_FILE_KEYS] = joinedKeys;
+        }
+        joinedKeys.add(key);
+    }
+
+    private untrackJoinedFileKey(connection: ISocketConnection, documentId: string, fileId: string): void {
+        const joinedKeys = connection.data[JOINED_FILE_KEYS] as Set<string> | undefined;
+        joinedKeys?.delete(buildSaveKey(documentId, fileId));
     }
 
     private async getOrCreateFileSession(

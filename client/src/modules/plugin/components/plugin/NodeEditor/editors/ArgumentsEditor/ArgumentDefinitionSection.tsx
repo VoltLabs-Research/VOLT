@@ -528,29 +528,38 @@ const ArgumentDefinitionSection = ({
                 const displayLabel = argumentLabel || `Argument ${index + 1}`;
                 const typeBadge = ARGUMENT_TYPE_LABELS[argument.type] ?? argument.type;
 
-                const visibilityReferenceOptions = argumentDefinitions
-                    .filter((candidate, candidateIndex) => candidateIndex !== index && candidate.argument.trim().length > 0)
-                    .map((candidate) => ({
-                        value: candidate.argument,
-                        title: candidate.label?.trim() || candidate.argument
-                    }));
-                const visibilityReferenceArgument = visibilityCondition?.argument
+                // These reference lists scan every sibling argument and are only
+                // consumed inside the expanded body, so build them solely for the
+                // expanded row to avoid an O(n^2) recompute across all rows.
+                const visibilityReferenceOptions = isExpanded
+                    ? argumentDefinitions
+                        .filter((candidate, candidateIndex) => candidateIndex !== index && candidate.argument.trim().length > 0)
+                        .map((candidate) => ({
+                            value: candidate.argument,
+                            title: candidate.label?.trim() || candidate.argument
+                        }))
+                    : [];
+                const visibilityReferenceArgument = isExpanded && visibilityCondition?.argument
                     ? argumentDefinitions.find((candidate, candidateIndex) => {
                         return candidateIndex !== index && candidate.argument === visibilityCondition.argument;
                     })
                     : undefined;
 
-                const showValueSection = argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.TUPLE && !isPluginReferenceArgumentType(argument.type);
-                const scalarOptions: SelectOption[] | undefined = argument.type === ArgumentType.BOOLEAN
-                    ? BOOLEAN_ARGUMENT_VALUE_OPTIONS
-                    : argument.type === ArgumentType.SELECT
-                        ? (argument.options ?? [])
-                            .filter((option) => option.key.trim().length > 0)
-                            .map((option) => ({
-                                value: option.key,
-                                title: option.label?.trim() ? `${option.label} (${option.key})` : option.key
-                            }))
-                        : undefined;
+                // The value section and its scalar option list are only rendered
+                // inside the expanded body; skip the work for collapsed rows.
+                const showValueSection = isExpanded && argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.TUPLE && !isPluginReferenceArgumentType(argument.type);
+                const scalarOptions: SelectOption[] | undefined = !isExpanded
+                    ? undefined
+                    : argument.type === ArgumentType.BOOLEAN
+                        ? BOOLEAN_ARGUMENT_VALUE_OPTIONS
+                        : argument.type === ArgumentType.SELECT
+                            ? (argument.options ?? [])
+                                .filter((option) => option.key.trim().length > 0)
+                                .map((option) => ({
+                                    value: option.key,
+                                    title: option.label?.trim() ? `${option.label} (${option.key})` : option.key
+                                }))
+                            : undefined;
                 const scalarFieldType: 'input' | 'select' = argument.type === ArgumentType.BOOLEAN || argument.type === ArgumentType.SELECT
                     ? 'select'
                     : 'input';

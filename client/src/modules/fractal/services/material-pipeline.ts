@@ -91,6 +91,11 @@ const ensurePointCloudVisibilityAttribute = (geometry: THREE.BufferGeometry): vo
     geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Float32Array(pointCount).fill(1), 1));
 };
 
+// Mirrors debug-log's gate: the min/max/avg color stats are diagnostic-only, so we
+// skip accumulating and allocating them unless debug logging is actually enabled.
+const isColorStatsLoggingEnabled = (): boolean =>
+    import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true';
+
 const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCloudColorInfo => {
     let colorAttribute = geometry.getAttribute('color');
     const paletteIndexAttribute = geometry.getAttribute('_color_index');
@@ -154,29 +159,51 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
         };
     }
 
+    // Read the raw TypedArray directly for plain, non-normalized attributes (the case
+    // where getX/getY/getZ reduce to array[index*itemSize + channel]); fall back to the
+    // accessors for normalized/interleaved layouts so denormalization/stride stays correct.
+    const colorArray = attribute instanceof THREE.BufferAttribute && !attribute.normalized
+        ? attribute.array
+        : null;
+    const stride = attribute.itemSize;
+    // Per-vertex min/max accumulation is purely diagnostic (downstream debugFractal); skip it
+    // unless debug logging is enabled. Sums + overall max channel feed the functional dark-color
+    // guard and are always computed.
+    const collectStats = isColorStatsLoggingEnabled();
+
     let minR = Number.POSITIVE_INFINITY; let minG = Number.POSITIVE_INFINITY; let minB = Number.POSITIVE_INFINITY;
     let maxR = Number.NEGATIVE_INFINITY; let maxG = Number.NEGATIVE_INFINITY; let maxB = Number.NEGATIVE_INFINITY;
     let sumR = 0; let sumG = 0; let sumB = 0;
+    let maxChannelRunning = Number.NEGATIVE_INFINITY;
     let hasFiniteColor = false;
 
     for (let index = 0; index < attribute.count; index += 1) {
-        const r = attribute.getX(index);
-        const g = attribute.getY(index);
-        const b = attribute.getZ(index);
+        let r: number; let g: number; let b: number;
+        if (colorArray) {
+            const offset = index * stride;
+            r = colorArray[offset]; g = colorArray[offset + 1]; b = colorArray[offset + 2];
+        } else {
+            r = attribute.getX(index); g = attribute.getY(index); b = attribute.getZ(index);
+        }
         if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) continue;
         hasFiniteColor = true;
-        if (r < minR) minR = r; if (g < minG) minG = g; if (b < minB) minB = b;
-        if (r > maxR) maxR = r; if (g > maxG) maxG = g; if (b > maxB) maxB = b;
         sumR += r; sumG += g; sumB += b;
+        if (r > maxChannelRunning) maxChannelRunning = r;
+        if (g > maxChannelRunning) maxChannelRunning = g;
+        if (b > maxChannelRunning) maxChannelRunning = b;
+        if (collectStats) {
+            if (r < minR) minR = r; if (g < minG) minG = g; if (b < minB) minB = b;
+            if (r > maxR) maxR = r; if (g > maxG) maxG = g; if (b > maxB) maxB = b;
+        }
     }
 
     const denominator = hasFiniteColor ? attribute.count : 1;
     const averageColor: [number, number, number] | null = hasFiniteColor
         ? [sumR / denominator, sumG / denominator, sumB / denominator]
         : null;
-    const minColor: [number, number, number] | null = hasFiniteColor ? [minR, minG, minB] : null;
-    const maxColor: [number, number, number] | null = hasFiniteColor ? [maxR, maxG, maxB] : null;
-    const maxChannel = hasFiniteColor ? Math.max(maxR, maxG, maxB) : 0;
+    const minColor: [number, number, number] | null = (hasFiniteColor && collectStats) ? [minR, minG, minB] : null;
+    const maxColor: [number, number, number] | null = (hasFiniteColor && collectStats) ? [maxR, maxG, maxB] : null;
+    const maxChannel = hasFiniteColor ? maxChannelRunning : 0;
     const avgLuma = averageColor
         ? (averageColor[0] * 0.2126) + (averageColor[1] * 0.7152) + (averageColor[2] * 0.0722)
         : 0;

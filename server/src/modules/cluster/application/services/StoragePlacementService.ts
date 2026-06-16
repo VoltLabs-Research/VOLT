@@ -73,6 +73,18 @@ export default class StoragePlacementService implements IStoragePlacementService
     ): Promise<StoragePlacement> {
         const existingPlacement = await this.storagePlacementRepository.findByScope(scopeType, scopeId);
         const resolved = await this.resolvePlacementDefinition(scopeType, scopeId);
+        return this.persistResolvedPlacement(scopeType, scopeId, existingPlacement, resolved);
+    }
+
+    // Merges a resolved placement definition over any existing placement and
+    // upserts it. Shared by ensurePlacement() (single scope) and the batch
+    // transfer-planning path so the merge semantics stay identical.
+    private async persistResolvedPlacement(
+        scopeType: StoragePlacementScopeType,
+        scopeId: string,
+        existingPlacement: StoragePlacement | null,
+        resolved: ResolvedPlacementDefinition
+    ): Promise<StoragePlacement> {
         const nextPlacementProps = createStoragePlacementProps({
             team: existingPlacement?.props.team ?? resolved.team,
             scopeType,
@@ -221,8 +233,22 @@ export default class StoragePlacementService implements IStoragePlacementService
             }
         });
 
+        // Batch-load the existing trajectory placements once instead of a
+        // findByScope round-trip per trajectory.
+        const trajectoryPlacements = await this.loadPlacementsByScope(
+            'trajectory',
+            trajectories.map((trajectory) => trajectory._id)
+        );
+
         for (const trajectory of trajectories) {
-            const placement = await this.ensurePlacement('trajectory', trajectory._id);
+            // The trajectory is already loaded (exported above), so resolve its
+            // placement definition directly instead of re-fetching by id.
+            const placement = await this.persistResolvedPlacement(
+                'trajectory',
+                trajectory._id,
+                trajectoryPlacements.get(trajectory._id) ?? null,
+                this.resolveTrajectoryPlacementDefinition(trajectory)
+            );
             if (placement.props.primaryClusterId !== primaryClusterId) {
                 continue;
             }
@@ -231,29 +257,35 @@ export default class StoragePlacementService implements IStoragePlacementService
             trajectoryTransferIds.add(trajectory._id);
         }
 
+        // Push the source-cluster filter into the query so non-source-cluster
+        // analyses are never loaded (the old post-load discard read the same
+        // plain `storageClusterId` field this filter matches).
         const analyses = await this.analysisRepository.export({
             filter: {
-                team: teamId
+                team: teamId,
+                storageClusterId: primaryClusterId
             },
             sort: {
                 createdAt: 1
             }
         });
 
-        await this.buildTrajectoryMapForAnalyses(analyses, trajectories);
+        const candidateAnalyses = analyses.filter(
+            (analysis) => !trajectoryTransferIds.has(analysis.props.trajectory)
+        );
 
-        for (const analysis of analyses) {
-            const resolvedStorageClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        const analysisPlacements = await this.loadPlacementsByScope(
+            'analysis',
+            candidateAnalyses.map((analysis) => analysis._id)
+        );
 
-            if (resolvedStorageClusterId !== primaryClusterId) {
-                continue;
-            }
-
-            if (trajectoryTransferIds.has(analysis.props.trajectory)) {
-                continue;
-            }
-
-            const placement = await this.ensurePlacement('analysis', analysis._id);
+        for (const analysis of candidateAnalyses) {
+            const placement = await this.persistResolvedPlacement(
+                'analysis',
+                analysis._id,
+                analysisPlacements.get(analysis._id) ?? null,
+                this.resolveAnalysisPlacementDefinition(analysis)
+            );
             if (placement.props.primaryClusterId !== primaryClusterId) {
                 continue;
             }
@@ -262,6 +294,28 @@ export default class StoragePlacementService implements IStoragePlacementService
         }
 
         return [...plannedPlacements.values()];
+    }
+
+    // Loads every existing placement for the given scope ids in a single query
+    // (keyed by scopeId) so callers can avoid a findByScope round-trip per row.
+    private async loadPlacementsByScope(
+        scopeType: StoragePlacementScopeType,
+        scopeIds: string[]
+    ): Promise<Map<string, StoragePlacement>> {
+        if (!scopeIds.length) {
+            return new Map();
+        }
+
+        const placements = await this.storagePlacementRepository.export({
+            filter: {
+                scopeType,
+                scopeId: {
+                    $in: scopeIds
+                }
+            }
+        });
+
+        return new Map(placements.map((placement) => [placement.props.scopeId, placement]));
     }
 
     private async resolvePlacementDefinition(
@@ -274,19 +328,7 @@ export default class StoragePlacementService implements IStoragePlacementService
                 throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found for storage placement');
             }
 
-            const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
-            if (!storageClusterId) {
-                throw ApplicationError.conflict(
-                    'StoragePlacement::TrajectoryStorageClusterRequired',
-                    'Trajectory storage cluster is required before creating a storage placement'
-                );
-            }
-
-            return {
-                team: trajectory.props.team,
-                primaryClusterId: storageClusterId,
-                buckets: buildTrajectoryPlacementBuckets(scopeId)
-            };
+            return this.resolveTrajectoryPlacementDefinition(trajectory);
         }
 
         if (scopeType === 'analysis') {
@@ -295,19 +337,7 @@ export default class StoragePlacementService implements IStoragePlacementService
                 throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
             }
 
-            const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
-            if (!storageClusterId) {
-                throw ApplicationError.conflict(
-                    'StoragePlacement::AnalysisStorageClusterRequired',
-                    'Analysis storage cluster is required before creating a storage placement'
-                );
-            }
-
-            return {
-                team: analysis.props.team,
-                primaryClusterId: storageClusterId,
-                buckets: buildAnalysisPlacementBuckets(analysis.props.trajectory, scopeId)
-            };
+            return this.resolveAnalysisPlacementDefinition(analysis);
         }
 
         const plugin = await this.pluginRepository.findById(scopeId);
@@ -324,37 +354,40 @@ export default class StoragePlacementService implements IStoragePlacementService
         };
     }
 
-    private async buildTrajectoryMapForAnalyses(
-        analyses: Analysis[],
-        knownTrajectories: TrajectoryLike[]
-    ): Promise<Map<string, TrajectoryLike>> {
-        const trajectoryMap = new Map<string, TrajectoryLike>(
-            knownTrajectories.map((trajectory) => [trajectory._id, trajectory])
-        );
-        const missingTrajectoryIds = [...new Set(
-            analyses
-                .map((analysis) => analysis.props.trajectory)
-                .filter((trajectoryId) => typeof trajectoryId === 'string' && trajectoryId.length > 0)
-                .filter((trajectoryId) => !trajectoryMap.has(trajectoryId))
-        )];
-
-        if (!missingTrajectoryIds.length) {
-            return trajectoryMap;
+    // Resolves a trajectory's placement definition from an already-loaded entity
+    // (no findById). Shared by resolvePlacementDefinition and the batch path.
+    private resolveTrajectoryPlacementDefinition(trajectory: TrajectoryLike): ResolvedPlacementDefinition {
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'StoragePlacement::TrajectoryStorageClusterRequired',
+                'Trajectory storage cluster is required before creating a storage placement'
+            );
         }
 
-        const fetchedTrajectories = await this.trajectoryRepository.export({
-            filter: {
-                _id: {
-                    $in: missingTrajectoryIds
-                }
-            }
-        });
+        return {
+            team: trajectory.props.team,
+            primaryClusterId: storageClusterId,
+            buckets: buildTrajectoryPlacementBuckets(trajectory._id)
+        };
+    }
 
-        for (const trajectory of fetchedTrajectories) {
-            trajectoryMap.set(trajectory._id, trajectory);
+    // Resolves an analysis's placement definition from an already-loaded entity
+    // (no findById). Shared by resolvePlacementDefinition and the batch path.
+    private resolveAnalysisPlacementDefinition(analysis: Analysis): ResolvedPlacementDefinition {
+        const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'StoragePlacement::AnalysisStorageClusterRequired',
+                'Analysis storage cluster is required before creating a storage placement'
+            );
         }
 
-        return trajectoryMap;
+        return {
+            team: analysis.props.team,
+            primaryClusterId: storageClusterId,
+            buckets: buildAnalysisPlacementBuckets(analysis.props.trajectory, analysis._id)
+        };
     }
 
     private async synchronizeAnalysisPlacementsForTrajectory(

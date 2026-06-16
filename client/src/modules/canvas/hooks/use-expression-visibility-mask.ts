@@ -39,15 +39,27 @@ const toColumnView = (col: AtomColumnView): ColumnView => ({
     dtype: toDType(col.dtype)
 });
 
-const buildContext = (atomBuffer: GetAtomsOutputDTO, frameIndex: number): AtomContext => ({
-    N: atomBuffer.count,
-    Frame: frameIndex,
-    CellVolume: 0,
-    getColumn: (name: string) => {
-        const col = atomBuffer.getColumn(name);
-        return col ? toColumnView(col) : undefined;
-    }
-});
+const buildContext = (atomBuffer: GetAtomsOutputDTO, frameIndex: number): AtomContext => {
+    // Cache the resolved + wrapped column view per name so the per-atom
+    // interpreter pays the atomBuffer.getColumn lookup and the toColumnView
+    // allocation once per column (not once per atom × variable node — up to 1M
+    // atoms). Same return value for a given name, computed lazily on first use.
+    const columnCache = new Map<string, ColumnView | undefined>();
+    return {
+        N: atomBuffer.count,
+        Frame: frameIndex,
+        CellVolume: 0,
+        getColumn: (name: string) => {
+            if (columnCache.has(name)) {
+                return columnCache.get(name);
+            }
+            const col = atomBuffer.getColumn(name);
+            const view = col ? toColumnView(col) : undefined;
+            columnCache.set(name, view);
+            return view;
+        }
+    };
+};
 
 const EMPTY: UseExpressionVisibilityMaskResult = { mask: null, autoRoute: false };
 

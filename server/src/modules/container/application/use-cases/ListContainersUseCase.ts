@@ -44,7 +44,8 @@ export class ListContainersUseCase implements IUseCase<ListContainersInputDTO, L
         }
 
         if (input.search) {
-            filter.name = { $regex: input.search, $options: 'i' };
+            const escapedSearch = input.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            filter.name = { $regex: escapedSearch, $options: 'i' };
         }
 
         const result = await this.repository.findAll({

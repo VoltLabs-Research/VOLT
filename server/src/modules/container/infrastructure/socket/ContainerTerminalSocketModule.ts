@@ -35,7 +35,10 @@ interface SharedTerminalSession {
     closing: boolean;
     currentSize: ContainerTerminalSize | null;
     operationChain: Promise<void>;
+    transcriptBytes: number;
 }
+
+const TRANSCRIPT_REPLAY_BYTE_CAP = 512 * 1024;
 
 const CONTAINER_TERMINAL_EVENTS = {
     ATTACH: 'container:terminal:attach',
@@ -296,12 +299,19 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
             teamClusterId,
             participants: new Set<string>(),
             transcriptChunks: [],
+            transcriptBytes: 0,
             currentSize: null,
             operationChain: Promise.resolve(),
             closing: false,
             onData: (chunk: Buffer) => {
                 const data = chunk.toString('utf8');
                 session.transcriptChunks.push(data);
+                session.transcriptBytes += chunk.length;
+
+                while (session.transcriptBytes > TRANSCRIPT_REPLAY_BYTE_CAP && session.transcriptChunks.length > 1) {
+                    const evicted = session.transcriptChunks.shift() as string;
+                    session.transcriptBytes -= Buffer.byteLength(evicted, 'utf8');
+                }
 
                 for (const participantSocketId of session.participants) {
                     this.emitToSocket(participantSocketId, CONTAINER_TERMINAL_EVENTS.DATA, data);
@@ -364,6 +374,7 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
         const participantSocketIds = Array.from(session.participants);
         session.participants.clear();
         session.transcriptChunks.length = 0;
+        session.transcriptBytes = 0;
         session.currentSize = null;
 
         for (const participantSocketId of participantSocketIds) {
