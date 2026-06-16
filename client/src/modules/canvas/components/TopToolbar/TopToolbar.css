@@ -79,6 +79,12 @@
     display: contents;
 }
 
+/* Right cluster (peers / share / window controls). Pad its trailing edge so the
+   window controls don't sit flush against the right panel. */
+.canvas-toolbar-info {
+    padding-right: 0.75rem;
+}
+
 .canvas-toolbar-options--mobile {
     display: none;
 }
