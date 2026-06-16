@@ -50,12 +50,20 @@ interface PendingInboundCommand {
     requestId: string;
 }
 
+interface PendingCommand {
+    command: string;
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+    timeout: ReturnType<typeof setTimeout>;
+}
+
 type ParentMessage = EmitMessage | SendCommandMessage | CommandResponseMessage;
 
 const config = loadConfig();
 let socket: Socket | null = null;
 let registered = false;
 const pendingInboundCommands = new Map<string, PendingInboundCommand>();
+const pendingCommands = new Map<string, PendingCommand>();
 
 const emitSocketResponse = (requestId: string, response: SocketResponse): void => {
     socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
@@ -79,29 +87,13 @@ const sendCommand = (
 
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-            activeSocket.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
+            pendingCommands.delete(requestId);
             reject(new Error(`Timed out waiting for response to command "${command}"`));
         }, effectiveTimeout);
         timeout.unref();
 
-        const onMessage = (message: unknown): void => {
-            if (!message || typeof message !== 'object' || Array.isArray(message)) return;
-            const response = message as SocketResponse;
-            if (response.type !== 'response' || response.requestId !== requestId) return;
+        pendingCommands.set(requestId, { command, resolve, reject, timeout });
 
-            clearTimeout(timeout);
-            activeSocket.off(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
-
-            if (!response.ok) {
-                reject(new Error(response.message ?? `Command "${command}" was rejected with status ${response.status}`));
-                return;
-            }
-
-            const data = response.data as { data?: unknown } | undefined;
-            resolve(data && 'data' in data ? data.data : response.data);
-        };
-
-        activeSocket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, onMessage);
         activeSocket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
             type: 'command',
             requestId,
@@ -110,6 +102,22 @@ const sendCommand = (
             payload
         });
     });
+};
+
+const resolvePendingCommand = (response: SocketResponse): void => {
+    const pending = pendingCommands.get(response.requestId);
+    if (!pending) return;
+
+    clearTimeout(pending.timeout);
+    pendingCommands.delete(response.requestId);
+
+    if (!response.ok) {
+        pending.reject(new Error(response.message ?? `Command "${pending.command}" was rejected with status ${response.status}`));
+        return;
+    }
+
+    const data = response.data as { data?: unknown } | undefined;
+    pending.resolve(data && 'data' in data ? data.data : response.data);
 };
 
 const start = (): void => {
@@ -161,6 +169,11 @@ const start = (): void => {
                 responseType: typed.responseType,
                 payload: typed.payload
             });
+            return;
+        }
+
+        if (typed.type === 'response') {
+            resolvePendingCommand(message as SocketResponse);
             return;
         }
 

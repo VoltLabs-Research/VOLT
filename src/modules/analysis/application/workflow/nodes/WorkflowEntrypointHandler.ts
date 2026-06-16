@@ -1,7 +1,7 @@
 import type { BinaryExecutorService, PersistentPluginInvocationInput } from '@/core/runtime/infrastructure/binary-executor-service';
 import type { EntrypointType } from '@/core/runtime/contracts/http-runtime';
 import { EntrypointType as EntrypointTypeEnum } from '@/core/runtime/contracts/http-runtime';
-import type { WorkflowEntrypointData } from '@/contracts';
+import type { WorkflowDefinition, WorkflowEntrypointData } from '@/contracts';
 import { WORKFLOW_NODE_PHASE, type WorkflowNodeHandler } from '@/modules/analysis/application/workflow/NodeRegistry';
 import type { PluginBinaryCache } from '@/modules/plugin/application/binaries/PluginBinaryCache';
 import { WorkflowValueResolver } from '@/modules/analysis/application/workflow/WorkflowValueResolver';
@@ -29,6 +29,21 @@ import type { TypedColumn } from '@/modules/trajectory/application/storage/Traje
 import fs from 'node:fs/promises';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
+
+// Why: the inferFromContext key list is derived purely from the (immutable-per-run)
+// workflow definition, yet resolveEntrypointArgs runs once per plugin stage per
+// timestep. Memoize by definition reference so the workflow.nodes scan happens once
+// per run. WeakMap keeps it leak-free: entries vanish when the definition is GC'd.
+const inferFromContextKeysCache = new WeakMap<WorkflowDefinition, string[]>();
+
+const getInferFromContextArgumentKeys = (definition: WorkflowDefinition): string[] => {
+    let keys = inferFromContextKeysCache.get(definition);
+    if (keys === undefined) {
+        keys = collectInferFromContextArgumentKeys(definition);
+        inferFromContextKeysCache.set(definition, keys);
+    }
+    return keys;
+};
 
 type ProcessExecutionResult = Awaited<ReturnType<BinaryExecutorService['executeProcess']>>;
 
@@ -450,7 +465,7 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         const inferFromContextArgs = context.pipelineContext
             ? buildInferFromContextArgs(
                 context.pipelineContext,
-                collectInferFromContextArgumentKeys(context.workflow.definition)
+                getInferFromContextArgumentKeys(context.workflow.definition)
             )
             : [];
 

@@ -659,24 +659,23 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                 AttachStderr: true
             });
             const stream = await dockerExec.start({ hijack: true, stdin: hasStdin });
-            let output = '';
+            const chunks: Buffer[] = [];
             let totalBytes = 0;
             let truncated = false;
 
             const sink = new Writable({
                 write: (chunk, _encoding, callback) => {
-                    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-
                     if (!truncated) {
+                        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+
                         if (totalBytes + buffer.length > MAX_EXEC_BUFFER_SIZE) {
-                            output += buffer.slice(0, MAX_EXEC_BUFFER_SIZE - totalBytes).toString('utf8');
-                            output += '\n... [TRUNCATED] ...';
+                            chunks.push(buffer.subarray(0, MAX_EXEC_BUFFER_SIZE - totalBytes));
+                            totalBytes = MAX_EXEC_BUFFER_SIZE;
                             truncated = true;
                         } else {
-                            output += buffer.toString('utf8');
+                            chunks.push(buffer);
+                            totalBytes += buffer.length;
                         }
-
-                        totalBytes += buffer.length;
                     }
 
                     callback();
@@ -694,6 +693,10 @@ for entry in "$target"/* "$target"/.[!.]* "$target"/..?*; do
                 stream.once('end', resolve);
                 stream.once('error', reject);
             });
+
+            const output = truncated
+                ? Buffer.concat(chunks).toString('utf8') + '\n... [TRUNCATED] ...'
+                : Buffer.concat(chunks).toString('utf8');
 
             const inspection = await dockerExec.inspect();
             if (inspection.ExitCode && inspection.ExitCode !== 0) {

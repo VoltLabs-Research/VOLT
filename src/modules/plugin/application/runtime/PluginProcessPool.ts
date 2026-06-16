@@ -212,24 +212,23 @@ export class PluginProcessPool {
         const group = this.pools.get(internals.poolKey);
         if (!group) return;
 
-        this.notifyWaiters();
-
         if (this.shuttingDown || internals.closed || group.retired) {
             group.active.delete(internals);
             void this.destroyInternals(internals);
             this.deleteGroupIfDrained(group);
-            this.notifyWaiters();
+            this.notifyWaiters(group, true);
             return;
         }
 
         if (group.idle.length >= this.config.minIdle && group.active.size > this.config.minIdle) {
             group.active.delete(internals);
             void this.destroyInternals(internals);
-            this.notifyWaiters();
+            this.notifyWaiters(group, true);
             return;
         }
 
         group.idle.push(internals);
+        this.notifyWaiters(group, false);
     }
 
     async dispatchRequest(
@@ -387,9 +386,33 @@ export class PluginProcessPool {
         return new PooledProcess(internals, this);
     }
 
-    private notifyWaiters(): void {
+    private wakeOneWaiter(group: PluginProcessInternalsGroup): boolean {
+        const waiter = group.waiters.shift();
+        if (!waiter) {
+            return false;
+        }
+        waiter();
+        return true;
+    }
+
+    private notifyWaiters(releasedGroup: PluginProcessInternalsGroup, freedGlobalSlot: boolean): void {
+        // A process returned to idle frees capacity only within its own group
+        // (idle processes still count against the active/memory budget), so only
+        // that group's waiters can reuse it. Wake exactly one of them per slot.
+        if (this.wakeOneWaiter(releasedGroup)) {
+            return;
+        }
+        if (!freedGlobalSlot) {
+            return;
+        }
+        // A destroyed process frees a global slot any group may spawn into; wake a
+        // single waiter from another group. The repoll timer in waitForSlot
+        // re-evaluates the dynamic memory gate, so waking one per freed slot can
+        // never permanently stall the pool.
         for (const group of this.pools.values()) {
-            group.waiters.splice(0).forEach((resolve) => resolve());
+            if (this.wakeOneWaiter(group)) {
+                return;
+            }
         }
     }
 
@@ -633,7 +656,7 @@ export class PluginProcessPool {
         }
         this.deleteGroupIfDrained(group);
 
-        this.notifyWaiters();
+        this.notifyWaiters(group, true);
     }
 
     private async destroyInternals(internals: PooledProcessInternals): Promise<void> {

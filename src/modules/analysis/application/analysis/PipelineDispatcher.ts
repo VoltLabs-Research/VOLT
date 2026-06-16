@@ -74,6 +74,7 @@ export class PipelineDispatcher {
         // never processes it, and the server's per-analysis completion session
         // never drains → the run is stuck "queued" forever.
         const runToken = randomUUID();
+        const payloads: PipelineQueueJobPayload[] = [];
         for (const timestep of timesteps) {
             const jobId = `pipeline-${input.teamClusterId}-${input.trajectoryId}-${timestep}-${runToken}`;
             const timestamp = new Date().toISOString();
@@ -92,7 +93,7 @@ export class PipelineDispatcher {
                 updatedAt: timestamp
             };
 
-            await this.queueService.enqueue(PIPELINE_QUEUE_NAME, payload);
+            payloads.push(payload);
 
             // One QueuedJobNotification per (computing stage × timestep) so the
             // server's routePipeline can group by analysisId and seed a
@@ -113,6 +114,11 @@ export class PipelineDispatcher {
                 });
             }
         }
+
+        // Single Redis round-trip for all timestep jobs instead of one
+        // queue.add per timestep. jobIds already carry the per-run UUID token,
+        // so the BullMQ preserveExistingJob dedupe path is unnecessary here.
+        await this.queueService.enqueueBulk(PIPELINE_QUEUE_NAME, payloads);
 
         this.eventBroker.emitProgress({
             action: OrchestrationAction.PipelineStart,

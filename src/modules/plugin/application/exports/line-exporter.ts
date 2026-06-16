@@ -46,18 +46,27 @@ export const resolveEntityCategory = (entity: LineEntity, property: string): str
     return value === null || value === undefined ? '' : String(value);
 };
 
+// Writes straight into per-line typed arrays (allocated once at the edge
+// upper bound, never grown) so processLines can bulk-copy them with .set().
+// vertexOffset is baked into the emitted indices, making them global and
+// likewise copyable without a per-element rewrite.
 const createLineGeometry = (
     points: [number, number, number][],
     lineWidth: number,
-    tubularSegments: number = 8
-): { positions: number[]; normals: number[]; indices: number[] } => {
+    tubularSegments: number,
+    vertexOffset: number
+): { positions: Float32Array; normals: Float32Array; indices: Uint32Array } => {
     if (points.length < 2) {
-        return { positions: [], normals: [], indices: [] };
+        return { positions: new Float32Array(0), normals: new Float32Array(0), indices: new Uint32Array(0) };
     }
 
-    const positions: number[] = [];
-    const normals: number[] = [];
-    const indices: number[] = [];
+    const maxEdges = points.length - 1;
+    const positions = new Float32Array(maxEdges * (tubularSegments + 1) * 2 * 3);
+    const normals = new Float32Array(positions.length);
+    const indices = new Uint32Array(maxEdges * tubularSegments * 6);
+
+    let positionCursor = 0;
+    let indexCursor = 0;
 
     for (let index = 0; index < points.length - 1; index += 1) {
         const pointOne = points[index];
@@ -93,7 +102,7 @@ const createLineGeometry = (
             direction[0] * right[1] - direction[1] * right[0]
         ];
 
-        const baseVertexIndex = positions.length / 3;
+        const baseVertexIndex = vertexOffset + positionCursor / 3;
         const radius = lineWidth * 0.5;
 
         for (let segmentIndex = 0; segmentIndex <= tubularSegments; segmentIndex += 1) {
@@ -106,17 +115,30 @@ const createLineGeometry = (
                 (right[2] * cosine + up[2] * sine) * radius
             ];
 
-            positions.push(pointOne[0] + offset[0], pointOne[1] + offset[1], pointOne[2] + offset[2]);
-            positions.push(pointTwo[0] + offset[0], pointTwo[1] + offset[1], pointTwo[2] + offset[2]);
+            positions[positionCursor] = pointOne[0] + offset[0];
+            positions[positionCursor + 1] = pointOne[1] + offset[1];
+            positions[positionCursor + 2] = pointOne[2] + offset[2];
+            positions[positionCursor + 3] = pointTwo[0] + offset[0];
+            positions[positionCursor + 4] = pointTwo[1] + offset[1];
+            positions[positionCursor + 5] = pointTwo[2] + offset[2];
 
             const normalLength = Math.sqrt(offset[0] ** 2 + offset[1] ** 2 + offset[2] ** 2);
             if (normalLength > 1e-6) {
-                normals.push(offset[0] / normalLength, offset[1] / normalLength, offset[2] / normalLength);
-                normals.push(offset[0] / normalLength, offset[1] / normalLength, offset[2] / normalLength);
-                continue;
+                const nx = offset[0] / normalLength;
+                const ny = offset[1] / normalLength;
+                const nz = offset[2] / normalLength;
+                normals[positionCursor] = nx;
+                normals[positionCursor + 1] = ny;
+                normals[positionCursor + 2] = nz;
+                normals[positionCursor + 3] = nx;
+                normals[positionCursor + 4] = ny;
+                normals[positionCursor + 5] = nz;
+            } else {
+                normals[positionCursor + 1] = 1;
+                normals[positionCursor + 4] = 1;
             }
 
-            normals.push(0, 1, 0, 0, 1, 0);
+            positionCursor += 6;
         }
 
         for (let segmentIndex = 0; segmentIndex < tubularSegments; segmentIndex += 1) {
@@ -124,11 +146,21 @@ const createLineGeometry = (
             const v2 = baseVertexIndex + segmentIndex * 2 + 1;
             const v3 = baseVertexIndex + (segmentIndex + 1) * 2;
             const v4 = baseVertexIndex + (segmentIndex + 1) * 2 + 1;
-            indices.push(v1, v2, v3, v3, v2, v4);
+            indices[indexCursor] = v1;
+            indices[indexCursor + 1] = v2;
+            indices[indexCursor + 2] = v3;
+            indices[indexCursor + 3] = v3;
+            indices[indexCursor + 4] = v2;
+            indices[indexCursor + 5] = v4;
+            indexCursor += 6;
         }
     }
 
-    return { positions, normals, indices };
+    return {
+        positions: positionCursor < positions.length ? positions.subarray(0, positionCursor) : positions,
+        normals: positionCursor < normals.length ? normals.subarray(0, positionCursor) : normals,
+        indices: indexCursor < indices.length ? indices.subarray(0, indexCursor) : indices
+    };
 };
 
 const estimateLineGeometry = (
@@ -203,7 +235,7 @@ export const processLines = async (
             continue;
         }
 
-        const geometry = createLineGeometry(line.points, options.lineWidth, options.tubularSegments);
+        const geometry = createLineGeometry(line.points, options.lineWidth, options.tubularSegments, vertexOffset);
         if (geometry.positions.length === 0) {
             continue;
         }
@@ -215,17 +247,11 @@ export const processLines = async (
 
         const positionBase = vertexOffset * 3;
 
-        for (let index = 0; index < geometry.positions.length; index += 1) {
-            positions[positionBase + index] = geometry.positions[index];
-        }
-
-        for (let index = 0; index < geometry.normals.length; index += 1) {
-            normals[positionBase + index] = geometry.normals[index];
-        }
-
-        for (let index = 0; index < geometry.indices.length; index += 1) {
-            indices[indexOffset + index] = geometry.indices[index] + vertexOffset;
-        }
+        // Indices already carry vertexOffset from createLineGeometry, so all
+        // three buffers copy with the native bulk path instead of scalar loops.
+        positions.set(geometry.positions, positionBase);
+        normals.set(geometry.normals, positionBase);
+        indices.set(geometry.indices, indexOffset);
 
         entityRanges.push({
             id: line.id,
@@ -237,12 +263,18 @@ export const processLines = async (
         if (getEntityColor && colors) {
             const color = getEntityColor(line);
             const colorBase = vertexOffset * 4;
-            for (let index = 0; index < entityVertexCount; index += 1) {
-                const colorIndex = colorBase + index * 4;
-                colors[colorIndex] = color[0];
-                colors[colorIndex + 1] = color[1];
-                colors[colorIndex + 2] = color[2];
-                colors[colorIndex + 3] = color[3];
+            const colorTotal = entityVertexCount * 4;
+            colors[colorBase] = color[0];
+            colors[colorBase + 1] = color[1];
+            colors[colorBase + 2] = color[2];
+            colors[colorBase + 3] = color[3];
+            // Replicate the RGBA quad across the entity's vertices by doubling
+            // copyWithin runs (native memmove) rather than a scalar per-vertex fill.
+            let filled = 4;
+            while (filled < colorTotal) {
+                const chunk = Math.min(filled, colorTotal - filled);
+                colors.copyWithin(colorBase + filled, colorBase, colorBase + chunk);
+                filled += chunk;
             }
         }
 

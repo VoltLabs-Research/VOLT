@@ -69,6 +69,24 @@ const hashCacheKey = (ownerClusterId: string, objectKey: string): string =>
 const pluginAnalysisPrefix = (trajectoryId: string, analysisId: string): string =>
     `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
 
+// Bounded reclamation for the on-disk plugin-parquet cache this store writes.
+// downloadParquetIfNeeded only ever renames files into place, so the cache grows
+// monotonically (one file + .signature sidecar per exposure*timestep) and is
+// never reclaimed. A throttled, best-effort sweep evicts the least-recently-used
+// entries by mtime — which resolveLocalParquet refreshes on every cache hit, so
+// mtime tracks last use — once the directory exceeds a byte budget. Entries
+// touched within the min-age window are never evicted, so a just-resolved file
+// can't be raced out from under an in-flight read.
+const PARQUET_CACHE_MAX_BYTES = Math.max(
+    0,
+    Number(process.env.DAEMON_PLUGIN_PARQUET_CACHE_MAX_BYTES) || 4 * 1024 * 1024 * 1024
+);
+const PARQUET_CACHE_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+const PARQUET_CACHE_MIN_EVICT_AGE_MS = 60 * 1000;
+
+let lastParquetCacheSweepAt = 0;
+let parquetCacheSweepInFlight = false;
+
 const normalizePropertyValue = (value: unknown): string | number | boolean | null | undefined => {
     if (value === null || value === undefined) return value;
     if (typeof value === 'bigint') return Number(value);
@@ -118,10 +136,24 @@ function* validFlatRows(rows: AtomProperties[]): Iterable<AtomProperties> {
     }
 }
 
+// Memoizes flattenAtomProperties per immutable input row so the array-of-objects
+// ingest path flattens each row once across column inference and the append pass
+// instead of twice. Keyed by the row object via WeakMap, entries are reclaimed
+// automatically once the per-request rows are no longer referenced (no leak).
+const flattenedRowCache = new WeakMap<object, FlatAtomProperties>();
+
+const flattenRowOnce = (row: AtomProperties): FlatAtomProperties => {
+    const cached = flattenedRowCache.get(row);
+    if (cached) return cached;
+    const flattened = flattenAtomProperties(row);
+    flattenedRowCache.set(row, flattened);
+    return flattened;
+};
+
 const inferColumnsFromFlatRows = (rows: Iterable<AtomProperties>): PropertyColumn[] => {
     const columns = new Map<string, PropertyColumn>();
     for (const row of rows) {
-        const flattened = flattenAtomProperties(row);
+        const flattened = flattenRowOnce(row);
         for (const [key, value] of Object.entries(flattened)) {
             if (BASE_COLUMNS.has(key)) continue;
             updateColumnType(columns, key, value);
@@ -184,6 +216,50 @@ const normalizeDuckDbColumnType = (value: unknown): PluginPropertySchema['type']
     return type.includes('CHAR') || type.includes('STRING') || type.includes('TEXT')
         ? 'string'
         : 'number';
+};
+
+// Throttled, best-effort LRU reclamation of the plugin-parquet cache directory.
+// Evicts least-recently-used entries (by mtime, which is refreshed on every cache
+// hit so it tracks last use) plus their .signature sidecars once the directory
+// exceeds the byte budget. Entries newer than the min-age window are never evicted,
+// so a file that was just resolved cannot be raced out from under an in-flight read.
+const sweepPluginParquetCache = async (): Promise<void> => {
+    if (PARQUET_CACHE_MAX_BYTES <= 0) return;
+    const now = Date.now();
+    if (parquetCacheSweepInFlight || now - lastParquetCacheSweepAt < PARQUET_CACHE_SWEEP_INTERVAL_MS) {
+        return;
+    }
+    parquetCacheSweepInFlight = true;
+    lastParquetCacheSweepAt = now;
+    try {
+        const dir = DAEMON_PATHS.pluginParquetCache;
+        const entries = await fs.readdir(dir);
+        const stats = await Promise.all(
+            entries
+                .filter((name) => name.endsWith('.parquet'))
+                .map(async (name) => {
+                    const filePath = path.join(dir, name);
+                    const stat = await fs.stat(filePath);
+                    return { filePath, size: stat.size, mtimeMs: stat.mtimeMs };
+                })
+        );
+
+        let totalBytes = stats.reduce((sum, entry) => sum + entry.size, 0);
+        if (totalBytes <= PARQUET_CACHE_MAX_BYTES) return;
+
+        stats.sort((left, right) => left.mtimeMs - right.mtimeMs);
+        for (const entry of stats) {
+            if (totalBytes <= PARQUET_CACHE_MAX_BYTES) break;
+            if (now - entry.mtimeMs < PARQUET_CACHE_MIN_EVICT_AGE_MS) continue;
+            await fs.rm(entry.filePath, { force: true });
+            await fs.rm(`${entry.filePath}.signature`, { force: true });
+            totalBytes -= entry.size;
+        }
+    } catch {
+        // Best-effort reclamation; ignore races with concurrent writers/readers.
+    } finally {
+        parquetCacheSweepInFlight = false;
+    }
 };
 
 @Service('pluginPropertyStore')
@@ -566,7 +642,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         if (Array.isArray(rows)) {
             let atomIndex = 0;
             for (const row of validFlatRows(rows)) {
-                this.appendPropertyRow(appender, timestep, atomIndex, flattenAtomProperties(row), columns);
+                this.appendPropertyRow(appender, timestep, atomIndex, flattenRowOnce(row), columns);
                 atomIndex += 1;
             }
             return;
@@ -813,6 +889,10 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 fs.access(filePath)
             ]);
             if (existingSignature === signature) {
+                // Refresh mtime so the LRU sweep treats this hit as a recent use.
+                const touchedAt = new Date();
+                await fs.utimes(filePath, touchedAt, touchedAt).catch(() => {});
+                void sweepPluginParquetCache();
                 return filePath;
             }
         } catch {
@@ -830,6 +910,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         await fs.rename(tempPath, filePath);
         await fs.writeFile(signaturePath, signature);
         logger.debug(`@plugin-property-store: cached ${objectKey} at ${filePath}`);
+        void sweepPluginParquetCache();
         return filePath;
     }
 }

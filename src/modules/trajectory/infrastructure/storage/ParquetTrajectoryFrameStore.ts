@@ -33,7 +33,10 @@ import {
 
 const BASE_COLUMNS = ['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z'] as const;
 const BASE_COLUMN_SET = new Set<string>(BASE_COLUMNS);
-const PARQUET_CACHE_MAX_FRAMES = 128;
+// Frame cache is bounded by retained typed-array bytes, not entry count: a single
+// frame's footprint scales with atomCount (positions f32*3 + types u16 + ids u32 +
+// one typed array per custom property), so a fixed frame count gives no memory ceiling.
+const PARQUET_FRAME_CACHE_BYTES = 512 * 1024 * 1024;
 
 // DuckDB integer logical types map to the i32 daemon dtype (signed 32-bit and narrower);
 // everything else (FLOAT/DOUBLE/...) reads as f32. Schema v2 stores i32 columns as
@@ -51,6 +54,7 @@ const INTEGER_TYPE_IDS = new Set<DuckDBTypeId>([
 
 interface CachedFrame {
     frame: TrajectoryFrameData;
+    bytes: number;
 }
 
 const sqlString = (value: string): string =>
@@ -102,6 +106,17 @@ const getNumericValue = (value: unknown): number => {
     if (typeof value === 'number') return value;
     if (value === null || value === undefined) return 0;
     return Number(value);
+};
+
+// Retained heap footprint of a cached frame = sum of its typed-array byteLengths.
+// Drives byte-based LRU eviction so the cache has a real memory ceiling regardless
+// of atomCount or custom-property count.
+const frameByteLength = (frame: TrajectoryFrameData): number => {
+    let bytes = frame.positions.byteLength + frame.types.byteLength + (frame.ids?.byteLength ?? 0);
+    for (const property of Object.values(frame.properties)) {
+        bytes += property.values.byteLength;
+    }
+    return bytes;
 };
 
 interface ParquetBuildWorkerInput {
@@ -172,6 +187,7 @@ const runParquetBuildWorker = (input: ParquetBuildWorkerInput): Promise<ParquetB
 @Service('trajectoryFrameStore')
 export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     private readonly frameCache = new Map<string, CachedFrame>();
+    private frameCacheBytes = 0;
     private readonly localParquetPromises = new Map<string, Promise<string>>();
     private readonly elementMetadataCache = new Map<string, TrajectoryElementMetadata>();
 
@@ -428,7 +444,9 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         this.elementMetadataCache.delete(`${ownerClusterId}::${trajectoryId}`);
         for (const key of [...this.frameCache.keys()]) {
             if (key.startsWith(cacheKeyPrefix)) {
+                const evicted = this.frameCache.get(key);
                 this.frameCache.delete(key);
+                if (evicted) this.frameCacheBytes -= evicted.bytes;
             }
         }
     }
@@ -438,12 +456,16 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 
     private putFrameCache(key: string, frame: TrajectoryFrameData): void {
-        this.frameCache.set(key, { frame });
+        const bytes = frameByteLength(frame);
+        this.frameCache.set(key, { frame, bytes });
+        this.frameCacheBytes += bytes;
 
-        while (this.frameCache.size > PARQUET_CACHE_MAX_FRAMES) {
+        while (this.frameCacheBytes > PARQUET_FRAME_CACHE_BYTES && this.frameCache.size > 1) {
             const oldest = this.frameCache.keys().next().value;
             if (!oldest) break;
+            const evicted = this.frameCache.get(oldest);
             this.frameCache.delete(oldest);
+            if (evicted) this.frameCacheBytes -= evicted.bytes;
         }
     }
 

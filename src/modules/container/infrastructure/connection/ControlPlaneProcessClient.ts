@@ -156,7 +156,8 @@ export class ControlPlaneProcessClient {
                 ...process.env,
                 TEAM_CLUSTER_CONTROL_PLANE: '1'
             },
-            stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+            stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+            serialization: 'advanced'
         });
 
         this.child = child;

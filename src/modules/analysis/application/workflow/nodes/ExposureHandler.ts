@@ -11,7 +11,26 @@ import type {
     WorkflowNodeOutput
 } from '@/modules/analysis/contracts/workflow.types';
 import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
+import type { WorkflowGraph } from '@/modules/analysis/contracts/workflow.types';
 import fs from 'node:fs/promises';
+
+const exportDescendantCache = new WeakMap<WorkflowGraph, Map<string, WorkflowNode | null>>();
+
+const resolveExportDescendant = (workflow: WorkflowGraph, nodeId: string): WorkflowNode | null => {
+    let cache = exportDescendantCache.get(workflow);
+    if (!cache) {
+        cache = new Map();
+        exportDescendantCache.set(workflow, cache);
+    }
+
+    if (cache.has(nodeId)) {
+        return cache.get(nodeId) ?? null;
+    }
+
+    const exportNode = workflow.findDescendantByType(nodeId, WorkflowNodeType.Export);
+    cache.set(nodeId, exportNode);
+    return exportNode;
+};
 
 export class WorkflowExposureHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.Exposure;
@@ -51,7 +70,7 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
             return null;
         }
 
-        const exportNode = context.workflow.findDescendantByType(node.id, WorkflowNodeType.Export);
+        const exportNode = resolveExportDescendant(context.workflow, node.id);
 
         return {
             nodeId: node.id,
@@ -102,7 +121,7 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
         const inspection = await inspectWorkflowExposureOutput(execution.outputDir, exposure.results);
         execution.onInspection?.(node.id, inspection);
 
-        const linkedExportNodeId = context.workflow.findDescendantByType(node.id, WorkflowNodeType.Export)?.id;
+        const linkedExportNodeId = resolveExportDescendant(context.workflow, node.id)?.id;
 
         return {
             outputFilePath: inspection.outputFilePath,

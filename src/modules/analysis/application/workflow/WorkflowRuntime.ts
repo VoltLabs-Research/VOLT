@@ -994,16 +994,31 @@ export class WorkflowRuntime {
             (execution) => (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items
         );
 
+        // `str_json` is materialized lazily (and memoized) via enumerable
+        // getters: it is still an own enumerable property — so spread,
+        // Object.keys/entries (the trace sanitize deep-walk) and JSON.stringify
+        // all see the identical value — but the cost is deferred to the first
+        // read instead of stringifying every plugin node's full output on every
+        // timestep. `executions.str_json` is a convenience duplicate; only
+        // `execution_result.exposures.str_json` is a referenced node-type schema
+        // field, and that path reads it far less often than this runs.
+        let executionsJson: string | undefined;
+        let exposuresJson: string | undefined;
+
         return {
             pluginIds: executions.map((execution) => execution.pluginId),
             executions: {
                 items: executions,
-                str_json: JSON.stringify(executions)
+                get str_json() {
+                    return executionsJson ??= JSON.stringify(executions);
+                }
             },
             execution_result: {
                 exposures: {
                     items: allExposureItems,
-                    str_json: JSON.stringify(allExposureItems)
+                    get str_json() {
+                        return exposuresJson ??= JSON.stringify(allExposureItems);
+                    }
                 }
             }
         };

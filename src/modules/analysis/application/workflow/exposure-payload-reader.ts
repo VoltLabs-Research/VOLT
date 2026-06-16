@@ -175,11 +175,19 @@ const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadRe
 
 // Rebuilds the decoded exposure shape from a columnar per-atom Parquet table:
 // the per-atom rows feed the property store, atoms group by bucket into the
-// AtomisticExporter payload, and listings derive from those groups.
+// AtomisticExporter payload, and listings derive from those groups. Rows arrive
+// raw from getRowObjects() and are normalized here in the single consuming pass
+// (atom record + property row built together) so the whole table is never held
+// as a separate normalized .map() copy.
 const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
     const buckets = new Map<string, { structureId: number; atoms: JsonObject[] }>();
+    // Per-atom coloring rows: drop geometry/grouping columns so the property
+    // store (which owns timestep/atom_index/id) does not collide on rebuild, and
+    // drop cosmetic RGB columns so they never appear as selectable properties.
+    const propertyRows: JsonObject[] = [];
 
-    for (const row of rows) {
+    for (const rawRow of rows) {
+        const row = normalizeParquetRow(rawRow);
         const bucket = typeof row.bucket === 'string' ? row.bucket : 'All';
         const structureId = typeof row.structure_id === 'number' ? row.structure_id : 0;
         const atom: JsonObject = {
@@ -188,14 +196,19 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
             structure_id: structureId,
             structure_name: typeof row.structure_name === 'string' ? row.structure_name : bucket
         };
+        const propertyRow: JsonObject = {};
         for (const [key, value] of Object.entries(row)) {
             if (!FIXED_ATOM_COLUMNS.has(key)) {
                 atom[key] = value as JsonObject[string];
+            }
+            if (!NON_PROPERTY_COLUMNS.has(key) && !isCosmeticColorColumn(key)) {
+                propertyRow[key] = value as JsonObject[string];
             }
         }
         const entry = buckets.get(bucket) ?? { structureId, atoms: [] };
         entry.atoms.push(atom);
         buckets.set(bucket, entry);
+        propertyRows.push(propertyRow);
     }
 
     const atomisticExporter: JsonObject = {};
@@ -204,19 +217,6 @@ const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePaylo
         atomisticExporter[name] = atoms as JsonObject[string];
         structures.push({ structure_id: structureId, structure_name: name, atom_count: atoms.length });
     }
-
-    // Per-atom coloring rows: drop geometry/grouping columns so the property
-    // store (which owns timestep/atom_index/id) does not collide on rebuild, and
-    // drop cosmetic RGB columns so they never appear as selectable properties.
-    const propertyRows = rows.map((row) => {
-        const out: JsonObject = {};
-        for (const [key, value] of Object.entries(row)) {
-            if (!NON_PROPERTY_COLUMNS.has(key) && !isCosmeticColorColumn(key)) {
-                out[key] = value as JsonObject[string];
-            }
-        }
-        return out;
-    });
 
     return {
         listing: { main_listing: { total_atoms: rows.length, structure_count: buckets.size } },
@@ -276,11 +276,13 @@ export const readWorkflowExposurePayload = async (
             return reconstructFromLineTable(rows);
         }
 
-        // Columnar per-atom table.
+        // Columnar per-atom table. Rows are passed raw; reconstructFromColumnarAtoms
+        // normalizes each row inside its single consuming pass to avoid an extra
+        // full-table .map() copy.
         const reader = await connection.runAndReadAll(
             `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY atom_index`
         );
-        const rows = (reader.getRowObjects() as unknown as JsonObject[]).map(normalizeParquetRow);
+        const rows = reader.getRowObjects() as unknown as JsonObject[];
         return reconstructFromColumnarAtoms(rows);
     } finally {
         connection.closeSync();

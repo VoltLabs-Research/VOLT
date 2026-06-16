@@ -116,6 +116,7 @@ interface BuildNode {
     level: number;
     children: BuildNode[];
     atomIndices: number[];
+    atomCount: number;
     valueMin: number;
     valueMax: number;
 }
@@ -216,6 +217,7 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
         level: 0,
         children: [],
         atomIndices: [],
+        atomCount,
         valueMin: NaN,
         valueMax: NaN
     };
@@ -245,6 +247,7 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
                 level: node.level + 1,
                 children: [],
                 atomIndices: [],
+                atomCount: bucket.length,
                 valueMin: NaN,
                 valueMax: NaN
             };
@@ -291,13 +294,6 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
     return root;
 };
 
-const countAtoms = (node: BuildNode): number => {
-    if (node.children.length === 0) return node.atomIndices.length;
-    let total = 0;
-    for (const child of node.children) total += countAtoms(child);
-    return total;
-};
-
 // Flatten the tree to level-ordered cells[] + the octree-order atom permutation.
 // `atomOrder[i]` is the source atom index at output slot i; every cell's
 // [firstAtomIndex, firstAtomIndex + atomCount) is a contiguous slice of it.
@@ -311,7 +307,7 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         const cell: LODCell = {
             bounds: node.bounds,
             level: node.level,
-            atomCount: countAtoms(node),
+            atomCount: node.atomCount,
             firstAtomIndex: 0,
             childIndices: null
         };

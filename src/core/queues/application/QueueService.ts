@@ -1,6 +1,7 @@
 import { Service } from '@/core/decorators/service';
 import { ANALYSIS_QUEUE_NAME, ARTIFACT_UPLOAD_QUEUE_NAME, PIPELINE_QUEUE_NAME, PLUGIN_WARMUP_QUEUE_NAME, TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, TRAJECTORY_GLB_QUEUE_NAME, TRAJECTORY_RASTER_QUEUE_NAME } from '@/core/queues/contracts/queue-names';
 import { RedisConnection } from '@/core/storage/infrastructure/redis/RedisConnection';
+import { TTLCache } from '@isaacs/ttlcache';
 import { Queue, Worker, type Job, type JobState } from 'bullmq';
 
 export interface QueuePayload {
@@ -46,10 +47,20 @@ const isPreservedJobState = (state: JobState): state is PreservedJobState => {
 
 const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
+// Records which queue a jobId was enqueued into so findJob can target a single
+// getJob instead of fanning out across all known queues. Bounded + TTL'd so it
+// never leaks; a miss or stale entry simply falls back to the full scan.
+const JOB_QUEUE_AFFINITY_MAX = 50_000;
+const JOB_QUEUE_AFFINITY_TTL_MS = 86_400_000;
+
 @Service('queueService')
 export class QueueService {
     private readonly queues = new Map<string, Queue<QueuePayload>>();
     private readonly enqueueLocks = new Map<string, Promise<unknown>>();
+    private readonly jobQueueAffinity = new TTLCache<string, string>({
+        max: JOB_QUEUE_AFFINITY_MAX,
+        ttl: JOB_QUEUE_AFFINITY_TTL_MS
+    });
 
     constructor(
         private readonly redisConnection: RedisConnection
@@ -96,6 +107,10 @@ export class QueueService {
             removeOnFail: options.removeOnFail ?? 1000
         });
 
+        if (jobId) {
+            this.jobQueueAffinity.set(jobId, queueName);
+        }
+
         return true;
     }
 
@@ -129,6 +144,12 @@ export class QueueService {
                 removeOnFail: options.removeOnFail ?? 1000
             }
         })));
+
+        for (const payload of payloads) {
+            if (payload.jobId) {
+                this.jobQueueAffinity.set(payload.jobId, queueName);
+            }
+        }
     }
 
     createWorker = <T extends QueuePayload>(
@@ -177,6 +198,12 @@ export class QueueService {
     }
 
     async findJob(jobId: string): Promise<Job<QueuePayload> | null> {
+        const affineQueueName = this.jobQueueAffinity.get(jobId);
+        if (affineQueueName) {
+            const job = await this.getQueue(affineQueueName).getJob(jobId);
+            if (job) return job;
+        }
+
         const lookups = await Promise.all(
             KNOWN_QUEUE_NAMES.map((queueName) => this.getQueue(queueName).getJob(jobId))
         );

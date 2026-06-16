@@ -132,11 +132,14 @@ export class WorkflowSession {
     }
 
     static cloneOutputs(outputs: WorkflowOutputs): WorkflowOutputs {
-        const cloned: WorkflowOutputs = new Map();
-        for (const [nodeId, nodeOutput] of outputs.entries()) {
-            cloned.set(nodeId, structuredClone(nodeOutput));
-        }
-        return cloned;
+        // Shallow-copy the Map (not a per-entry structuredClone): nested
+        // sessions only ADD their own node keys and replace entries with
+        // freshly-built objects via setOutput/setForEachCurrentValue (spread,
+        // never in-place mutation), and otherwise just READ upstream values.
+        // An independent Map sharing value references is therefore safe and
+        // avoids the slow structuredClone deep-copy of every node output
+        // (stdout/stderr/outputFiles payloads) per pluginReference selection.
+        return new Map(outputs);
     }
 
     static resolveContextDumps(context: WorkflowExecutionContext): TrajectoryDumpDescriptor[] {
