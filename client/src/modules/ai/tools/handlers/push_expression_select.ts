@@ -1,5 +1,5 @@
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
-import { useCanvasPipelineStore } from '@/modules/canvas/stores/canvas-pipeline';
+import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '@/modules/canvas/stores/canvas-pipeline';
 import { parse as parseExpression } from '@voltstack/expressions';
 
 interface PushExpressionSelectInput {
@@ -34,7 +34,7 @@ const pushExpressionSelect: ClientToolHandler<PushExpressionSelectInput> = {
             };
         }
 
-        const stageId = useCanvasPipelineStore.getState().addStage('expression-select', { expression: formula });
+        const stageId = useCanvasPipelineStore.getState().addStage('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG, expression: formula });
         if (!stageId) {
             return {
                 ok: false,

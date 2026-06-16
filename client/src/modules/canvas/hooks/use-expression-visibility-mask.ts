@@ -2,6 +2,7 @@ import { parse, evaluate } from '@voltstack/expressions';
 import { useMemo } from 'react';
 import { useStages } from '@/modules/canvas/stores/canvas-pipeline';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/stores/canvas-pipeline';
 import type { GetAtomsOutputDTO, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
 import type { AtomContext, ColumnView, DType, Expr } from '@voltstack/expressions';
 import type { ExpressionSelectStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
@@ -17,8 +18,23 @@ interface UseExpressionVisibilityMaskParams {
 }
 
 export interface UseExpressionVisibilityMaskResult {
+    // 1 = visible, 0 = hidden. Non-null only when a 'delete' expression-select
+    // stage is active. The engine resets to all-visible on null.
     mask: Uint8Array | null;
+    // 1 = atom belongs to a 'color' selection, 0 = not selected. Non-null only
+    // when a 'color' stage is active.
+    highlightMask: Uint8Array | null;
+    // Tint applied to highlighted atoms (last enabled 'color' stage wins).
+    highlightColor: string | null;
+    // True when the frame is too large for client-side evaluation; the caller
+    // falls back to the daemon path (deletes are applied there via --select).
     autoRoute: boolean;
+}
+
+interface ExpressionSelectStageView {
+    expression: string;
+    action: 'color' | 'delete';
+    color: string;
 }
 
 const toDType = (d: AtomColumnView['dtype']): DType => {
@@ -52,17 +68,28 @@ const buildContext = (atomBuffer: GetAtomsOutputDTO, frameIndex: number): AtomCo
     };
 };
 
-const EMPTY: UseExpressionVisibilityMaskResult = { mask: null, autoRoute: false };
+const EMPTY: UseExpressionVisibilityMaskResult = {
+    mask: null,
+    highlightMask: null,
+    highlightColor: null,
+    autoRoute: false
+};
 
 /**
- * Derives a per-atom visibility mask from the enabled `expression-select`
- * modifiers in the instant-modifier stack. An atom is visible iff EVERY enabled
- * non-empty expression evaluates truthy for it (logical AND). Invalid
- * expressions are skipped (treated as no-op), never thrown.
+ * Derives the live viewer effects of the enabled `expression-select` stages.
  *
- * Returns { mask: null, autoRoute: false } when there are no active expressions
- * (engine resets to all-visible), or { mask: null, autoRoute: true } when the
- * frame exceeds CLIENT_EVAL_ATOM_LIMIT (caller falls back to the daemon path).
+ * Each stage's expression IS its selection. What happens to the selection is the
+ * stage's `action`:
+ *   - 'delete' → the matched atoms are HIDDEN (and the dump is filtered on the
+ *     daemon for any downstream plugin stage). An atom is hidden iff it matches
+ *     ANY enabled delete expression.
+ *   - 'color'  → the matched atoms are TINTED; nothing is hidden. The highlight
+ *     mask is the union of all enabled color expressions; the last one's color
+ *     wins as the tint.
+ *
+ * Invalid expressions are skipped (treated as no-op), never thrown. Returns
+ * autoRoute=true when the frame exceeds CLIENT_EVAL_ATOM_LIMIT (caller falls
+ * back to the daemon path).
  */
 const useExpressionVisibilityMask = ({
     trajectoryId,
@@ -71,14 +98,21 @@ const useExpressionVisibilityMask = ({
 }: UseExpressionVisibilityMaskParams): UseExpressionVisibilityMaskResult => {
     const stages = useStages(trajectoryId);
 
-    const expressions = useMemo(() => {
+    const activeStages = useMemo<ExpressionSelectStageView[]>(() => {
         return stages
             .filter((s) => s.type === 'expression-select' && s.enabled)
-            .map((s) => (s.config as ExpressionSelectStageConfig).expression ?? '')
-            .filter((expr) => expr.trim().length > 0);
+            .map((s) => {
+                const config = s.config as ExpressionSelectStageConfig;
+                return {
+                    expression: config.expression ?? '',
+                    action: config.action === 'delete' ? 'delete' as const : 'color' as const,
+                    color: config.color ?? DEFAULT_EXPRESSION_SELECT_COLOR
+                };
+            })
+            .filter((s) => s.expression.trim().length > 0);
     }, [stages]);
 
-    const queryEnabled = expressions.length > 0
+    const queryEnabled = activeStages.length > 0
         && Boolean(trajectoryId)
         && currentTimestep !== undefined;
 
@@ -94,45 +128,63 @@ const useExpressionVisibilityMask = ({
     );
 
     return useMemo<UseExpressionVisibilityMaskResult>(() => {
-        if (expressions.length === 0) {
-            return EMPTY;
-        }
-        if (!atomBuffer) {
+        if (activeStages.length === 0 || !atomBuffer) {
             return EMPTY;
         }
         if (atomBuffer.count > CLIENT_EVAL_ATOM_LIMIT) {
-            return { mask: null, autoRoute: true };
-        }
-
-        const asts: Expr[] = [];
-        for (const expr of expressions) {
-            try {
-                asts.push(parse(expr));
-            } catch {
-            }
-        }
-        if (asts.length === 0) {
-            return EMPTY;
+            return { ...EMPTY, autoRoute: true };
         }
 
         const context = buildContext(atomBuffer, currentTimestep ?? 0);
         const count = atomBuffer.count;
-        const mask = new Uint8Array(count).fill(1);
 
-        for (const ast of asts) {
+        let deleteMask: Uint8Array | null = null;
+        let highlightMask: Uint8Array | null = null;
+        let highlightColor: string | null = null;
+
+        const evalStage = (stage: ExpressionSelectStageView): Uint8Array | null => {
+            let ast: Expr;
+            try {
+                ast = parse(stage.expression);
+            } catch {
+                return null;
+            }
+            const matched = new Uint8Array(count);
             try {
                 for (let i = 0; i < count; i += 1) {
-                    if (mask[i] === 0) continue;
-                    if (evaluate(ast, context, i) === 0) {
-                        mask[i] = 0;
-                    }
+                    matched[i] = evaluate(ast, context, i) !== 0 ? 1 : 0;
                 }
             } catch {
+                return null;
+            }
+            return matched;
+        };
+
+        for (const stage of activeStages) {
+            const matched = evalStage(stage);
+            if (!matched) continue;
+
+            if (stage.action === 'delete') {
+                if (!deleteMask) deleteMask = new Uint8Array(count).fill(1);
+                for (let i = 0; i < count; i += 1) {
+                    if (matched[i]) deleteMask[i] = 0;
+                }
+            } else {
+                if (!highlightMask) highlightMask = new Uint8Array(count);
+                for (let i = 0; i < count; i += 1) {
+                    if (matched[i]) highlightMask[i] = 1;
+                }
+                highlightColor = stage.color;
             }
         }
 
-        return { mask, autoRoute: false };
-    }, [expressions, atomBuffer, currentTimestep]);
+        return {
+            mask: deleteMask,
+            highlightMask,
+            highlightColor,
+            autoRoute: false
+        };
+    }, [activeStages, atomBuffer, currentTimestep]);
 };
 
 export default useExpressionVisibilityMask;

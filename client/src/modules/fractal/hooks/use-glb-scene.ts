@@ -129,6 +129,10 @@ export default function useGlbScene(
                         engine.updateLineWidth(paramsRef.current.lineSettings);
                         engine.updateLineHighlight(paramsRef.current.lineHighlight);
                         engine.setVisibilityMask(paramsRef.current.visibilityMask ?? null);
+                        engine.setSelectionHighlight(
+                            paramsRef.current.selectionHighlightMask ?? null,
+                            paramsRef.current.selectionHighlightColor ?? null
+                        );
                     }
                     invalidate();
                 }
@@ -198,6 +202,15 @@ export default function useGlbScene(
         if (!engine) return;
         engine.setVisibilityMask(params.visibilityMask ?? null);
     }, [params.visibilityMask]);
+
+    useEffect(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        engine.setSelectionHighlight(
+            params.selectionHighlightMask ?? null,
+            params.selectionHighlightColor ?? null
+        );
+    }, [params.selectionHighlightMask, params.selectionHighlightColor]);
 
     useFrame(({ camera: frameCamera }) => {
         engineRef.current?.updateCameraPosition(frameCamera.position);

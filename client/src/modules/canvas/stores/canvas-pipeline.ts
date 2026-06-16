@@ -27,8 +27,17 @@ export interface ColorCodingStageConfig {
     runStatus?: AnalysisPluginRunStatus;
 }
 
+export type ExpressionSelectAction = 'color' | 'delete';
+
 export interface ExpressionSelectStageConfig {
     expression: string;
+    // What to do with the atoms matching `expression`. 'color' highlights them
+    // live in the viewer (non-destructive); 'delete' removes them (live-hidden,
+    // and the dump is filtered on the daemon for any downstream plugin stage).
+    // Undefined is treated as 'color' for backward compatibility.
+    action?: ExpressionSelectAction;
+    // Highlight color (hex) for action 'color'.
+    color?: string;
 }
 
 export interface LineStyleStageConfig {
@@ -65,6 +74,14 @@ export const DEFAULT_COLOR_CODING_STAGE_CONFIG: ColorCodingStageConfig = {
 };
 
 export const DEFAULT_LINE_STYLE_STAGE_CONFIG: LineStyleStageConfig = {};
+
+export const DEFAULT_EXPRESSION_SELECT_COLOR = '#fbbf24';
+
+export const DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG: ExpressionSelectStageConfig = {
+    expression: '',
+    action: 'color',
+    color: DEFAULT_EXPRESSION_SELECT_COLOR
+};
 
 export interface PipelineStage {
     id: string;

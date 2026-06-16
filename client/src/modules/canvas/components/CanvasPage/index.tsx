@@ -164,12 +164,9 @@ const CanvasPage = () => {
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
-    // Re-assert the canvas scope whenever it drifts back to 'global'. An external
-    // reset() (route-change cleanup, team switch, error recovery) flips the store
-    // back to 'global' while CanvasPage stays mounted — the canvas-scoped shortcuts
-    // (space/arrows/g/r...) would silently die until remount. Subscribing to
-    // currentScope re-runs this and restores it. Global shortcuts (ctrl+k, esc)
-    // never gated, which is why only they kept working.
+    // Enter canvas keyboard scope on mount. The store defaults to 'global' (only
+    // ctrl+k / esc work there); canvas shortcuts (space/arrows/g/r...) are gated on
+    // scope === 'canvas'. use-canvas-cleanup resets it back to 'global' on unmount.
     useEffect(() => {
         if (currentScope !== 'canvas') {
             setCurrentScope('canvas');

@@ -222,7 +222,11 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         void pickLineEntity(sceneConfig, event.faceIndex);
     }, [pickLineEntity, sceneConfig]);
 
-    const { mask: expressionVisibilityMask } = useExpressionVisibilityMask({
+    const {
+        mask: expressionVisibilityMask,
+        highlightMask: expressionHighlightMask,
+        highlightColor: expressionHighlightColor
+    } = useExpressionVisibilityMask({
         trajectoryId,
         analysisId: analysisId === 'default' ? undefined : analysisId,
         currentTimestep
@@ -279,6 +283,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         lineHighlight,
         sceneVisualOverrides,
         visibilityMask: expressionVisibilityMask,
+        selectionHighlightMask: expressionHighlightMask,
+        selectionHighlightColor: expressionHighlightColor,
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged,

@@ -8,7 +8,6 @@ import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import { useChatPresenceStore } from '@/modules/chat/stores/chat/use-chat-presence-store';
 import { useClusterStore } from '@/modules/cluster/stores/use-cluster-store';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { useKeyboardShortcutsStore } from '@/modules/canvas/stores/use-keyboard-shortcuts-store';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
@@ -21,10 +20,14 @@ const socketManagedStoreResetters = [
     () => useClusterStore.getState().reset()
 ] satisfies StoreResetter[];
 
+// ponytail: the keyboard-shortcuts store is NOT reset here. Its only team-scoped
+// state is `currentScope`, which must stay 'canvas' while CanvasPage is mounted —
+// team-switch/route-change/error-recovery cleanups all flow through here and would
+// otherwise silently kill canvas shortcuts (space/arrows/g/r...) mid-session.
+// CanvasPage's own unmount cleanup (use-canvas-cleanup) handles the legitimate reset.
 const teamScopedStoreResetters = [
     () => useEditorStore.getState().resetAll(),
     () => useScreenshotStore.getState().reset(),
-    () => useKeyboardShortcutsStore.getState().reset(),
     () => useChatPresenceStore.getState().reset(),
     () => usePluginBuilderStore.getState().reset(),
     () => usePluginDebugStore.getState().reset()

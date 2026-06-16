@@ -4,7 +4,8 @@ import {
     isOrderedPipelineStage,
     DEFAULT_SLICE_PLANE_STAGE_CONFIG,
     DEFAULT_COLOR_CODING_STAGE_CONFIG,
-    DEFAULT_LINE_STYLE_STAGE_CONFIG
+    DEFAULT_LINE_STYLE_STAGE_CONFIG,
+    DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG
 } from '../../stores/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
@@ -110,7 +111,7 @@ const PipelineHeaderActions = ({
                             icon={<Filter size={13} aria-hidden='true' />}
                             label='Expression Select'
                             size='sm'
-                            onClick={() => { handleAdd('expression-select', { expression: '' }); close(); }}
+                            onClick={() => { handleAdd('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG }); close(); }}
                         />
                         <PopoverMenuItem
                             icon={<Palette size={13} aria-hidden='true' />}
