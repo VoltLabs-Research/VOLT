@@ -2,6 +2,11 @@
 dev-tools/
 server/storage/
 storage/
+# `storage/` above targets runtime data dirs, but it also matched the source module
+# src/.../infrastructure/storage/, silently dropping element-table.cjs from releases
+# (the parquet-ingest worker requires it as a sibling). Keep that source dir tracked.
+!src/modules/trajectory/infrastructure/storage/
+!src/modules/trajectory/infrastructure/storage/**
 
 .ai-workflow/
 CLAUDE.md
