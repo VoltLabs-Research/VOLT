@@ -27,11 +27,11 @@
   },
   "theme": "system",
   "windowBounds": {
-    "x": 0,
-    "y": 32,
-    "width": 1920,
-    "height": 1048,
-    "maximized": true
+    "x": 92,
+    "y": 65,
+    "width": 1717,
+    "height": 937,
+    "maximized": false
   },
   "recentEndpoints": [
     "http://192.168.101.98:8100"

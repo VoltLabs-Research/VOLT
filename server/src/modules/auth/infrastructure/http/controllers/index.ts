@@ -4,6 +4,7 @@ import GetGuestIdentityController from '@modules/auth/infrastructure/http/contro
 import GetMyAccountController from '@modules/auth/infrastructure/http/controllers/GetMyAccountController';
 import GetOAuthProvidersController from '@modules/auth/infrastructure/http/controllers/GetOAuthProvidersController';
 import GetPasswordInfoController from '@modules/auth/infrastructure/http/controllers/GetPasswordInfoController';
+import LocalSignInController from '@modules/auth/infrastructure/http/controllers/LocalSignInController';
 import OAuthLoginCallbackController from '@modules/auth/infrastructure/http/controllers/OAuthLoginCallbackController';
 import SignInController from '@modules/auth/infrastructure/http/controllers/SignInController';
 import SignUpController from '@modules/auth/infrastructure/http/controllers/SignUpController';
@@ -18,6 +19,7 @@ export default createControllerRegistry({
     getMyAccount: GetMyAccountController,
     getOAuthProviders: GetOAuthProvidersController,
     getPasswordInfo: GetPasswordInfoController,
+    localSignIn: LocalSignInController,
     oauthLoginCallback: OAuthLoginCallbackController,
     signIn: SignInController,
     signUp: SignUpController,

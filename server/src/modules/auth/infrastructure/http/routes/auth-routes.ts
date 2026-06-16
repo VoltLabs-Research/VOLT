@@ -11,6 +11,9 @@ export default createHttpModule({
     basePath: '/api/auth',
     routes: (router) => {
         router.post('/sessions', RATE_LIMIT_POLICIES.authPublic, controllers.signIn.handle);
+        // Local single-tenant desktop: credential-less auto-login for the canonical
+        // local user. The use case no-ops (404) unless DEPLOYMENT_MODE=local.
+        router.post('/sessions/local', RATE_LIMIT_POLICIES.authPublic, controllers.localSignIn.handle);
         router.post('/users', controllers.signUp.handle);
         router.get('/emails/:email/availability', controllers.checkEmail.handle);
 
