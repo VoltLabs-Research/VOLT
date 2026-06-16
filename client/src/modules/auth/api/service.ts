@@ -92,6 +92,7 @@ const endpoints = {
     }),
     deleteMe: del<EmptyParams>('/me'),
     signIn: post<SignInInputDTO, SignInOutputDTO>('/sessions'),
+    localSignIn: post<EmptyParams, SignInOutputDTO>('/sessions/local'),
     signUp: post<SignUpInputDTO, SignUpOutputDTO>('/users', {
         omit: ['passwordConfirm']
     }),
