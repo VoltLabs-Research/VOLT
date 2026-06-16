@@ -42,39 +42,6 @@ export interface LineEntityHighlight {
     entityRanges: LineEntityRange[];
 }
 
-// Screen-space lasso path, in CSS pixels relative to the scene canvas. `closed`
-// flags that the polygon's last point joins back to the first for the
-// point-in-polygon test.
-export interface SelectionLasso {
-    points: Array<[x: number, y: number]>;
-    closed: boolean;
-}
-
-// Screen-space axis-aligned box, in CSS pixels relative to the scene canvas.
-export interface SelectionBox {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-}
-
-// Result of a GPU color-ID pick. `atomIndex` is the position in the fetched
-// atoms array (original, pre-morton order) — callers map it to the frame-stable
-// `id` column to drive selection. A line pick reports the entity + hit triangle
-// instead, reusing the existing ranges-sidecar resolution.
-export type AtomPickEvent = {
-    type: 'atom';
-    atomIndex: number;
-    screenX: number;
-    screenY: number;
-} | {
-    type: 'line';
-    entityId: number;
-    faceIndex: number;
-    screenX: number;
-    screenY: number;
-};
-
 export interface FractalSceneConfig {
     rendererCreate: RendererCreateState;
     rendererRuntime: RendererRuntimeState;

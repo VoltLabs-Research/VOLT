@@ -65,8 +65,7 @@ const createInitialState = (): ModelState => ({
     modelDragOffsets: {},
     showSimulationCell: true,
     isPointCloudScene: false,
-    lineEntitySelection: null,
-    atomSelectionByFrame: new Map<string, Set<number>>()
+    lineEntitySelection: null
 });
 
 export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (set, get) => ({
@@ -282,81 +281,5 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 && current.entityId === selection.entityId;
             return { lineEntitySelection: isSameEntity ? null : selection };
         });
-    },
-
-    setAtomSelection(sceneKey: string, selectedIds: Set<number>) {
-        set((state) => {
-            const next = new Map(state.atomSelectionByFrame);
-            if (selectedIds.size === 0) {
-                if (!next.has(sceneKey)) return state;
-                next.delete(sceneKey);
-            } else {
-                next.set(sceneKey, new Set(selectedIds));
-            }
-            return { atomSelectionByFrame: next };
-        });
-    },
-
-    toggleAtomSelection(sceneKey: string, atomId: number) {
-        set((state) => {
-            const next = new Map(state.atomSelectionByFrame);
-            const selection = new Set(next.get(sceneKey));
-            if (selection.has(atomId)) {
-                selection.delete(atomId);
-            } else {
-                selection.add(atomId);
-            }
-            if (selection.size === 0) {
-                next.delete(sceneKey);
-            } else {
-                next.set(sceneKey, selection);
-            }
-            return { atomSelectionByFrame: next };
-        });
-    },
-
-    addAtomSelection(sceneKey: string, atomIds: Iterable<number>) {
-        set((state) => {
-            const selection = new Set(state.atomSelectionByFrame.get(sceneKey));
-            const before = selection.size;
-            for (const atomId of atomIds) selection.add(atomId);
-            if (selection.size === before) return state;
-            const next = new Map(state.atomSelectionByFrame);
-            next.set(sceneKey, selection);
-            return { atomSelectionByFrame: next };
-        });
-    },
-
-    removeAtomSelection(sceneKey: string, atomIds: Iterable<number>) {
-        set((state) => {
-            const existing = state.atomSelectionByFrame.get(sceneKey);
-            if (!existing || existing.size === 0) return state;
-            const selection = new Set(existing);
-            let changed = false;
-            for (const atomId of atomIds) {
-                changed = selection.delete(atomId) || changed;
-            }
-            if (!changed) return state;
-            const next = new Map(state.atomSelectionByFrame);
-            if (selection.size === 0) {
-                next.delete(sceneKey);
-            } else {
-                next.set(sceneKey, selection);
-            }
-            return { atomSelectionByFrame: next };
-        });
-    },
-
-    clearAtomSelection(sceneKey: string) {
-        set((state) => {
-            if (!state.atomSelectionByFrame.has(sceneKey)) return state;
-            const next = new Map(state.atomSelectionByFrame);
-            next.delete(sceneKey);
-            return { atomSelectionByFrame: next };
-        });
-    },
-
-    getAtomSelection(sceneKey: string): Set<number> {
-        return get().atomSelectionByFrame.get(sceneKey) ?? new Set<number>();
     }
 });

@@ -66,11 +66,6 @@ export interface ModelState {
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
     lineEntitySelection: LineEntitySelection | null;
-    // Per-atom selection, keyed by scene key (frame-scoped). The set holds the
-    // frame-stable `id` column values, so the same atom stays selected across
-    // timesteps when it remains visible. Runtime-only state (not in the undo
-    // partialize); the URL deep-link is the share/restore path.
-    atomSelectionByFrame: Map<string, Set<number>>;
 }
 
 interface ModelActions {
@@ -103,13 +98,6 @@ interface ModelActions {
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
     // Selecting the already-selected entity clears the selection.
     toggleLineEntitySelection: (selection: LineEntitySelection) => void;
-    // Per-atom selection (id-keyed, frame-scoped by scene key).
-    setAtomSelection: (sceneKey: string, selectedIds: Set<number>) => void;
-    toggleAtomSelection: (sceneKey: string, atomId: number) => void;
-    addAtomSelection: (sceneKey: string, atomIds: Iterable<number>) => void;
-    removeAtomSelection: (sceneKey: string, atomIds: Iterable<number>) => void;
-    clearAtomSelection: (sceneKey: string) => void;
-    getAtomSelection: (sceneKey: string) => Set<number>;
 }
 
 export type ModelStore = ModelActions & ModelState;
