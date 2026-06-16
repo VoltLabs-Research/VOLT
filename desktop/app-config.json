@@ -41,12 +41,12 @@
   },
   "bootstrap": {
     "done": true,
-    "email": "local-4dfd047c@volt.local",
-    "password": "xVt1sGUMcZaq0wSASUbP4k8dAO4s2RPL",
-    "userId": "6a30cf644c684d82b3cee92f",
-    "teamId": "6a30cf644c684d82b3cee93f",
-    "teamClusterId": "6a30cf644c684d82b3cee952",
-    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzBjZjY0NGM2ODRkODJiM2NlZTkyZiIsImlhdCI6MTc4MTU4MzcxNiwiZXhwIjoxNzgyMTg4NTE2fQ.GAvnj0Lk12CTjlU1SlESTKboBzj8NqsVpW7Q1Ya6V9w",
-    "daemonPassword": "b8c36885a08efdfe5058cb39e749ba91f700f5c43bbb6af9"
+    "email": "local-6bcf104d@volt.local",
+    "password": "yH6hXdFlnfk9W6LRJF2D2b-QJc7XirKi",
+    "userId": "6a30d75e894589d30ebb5c50",
+    "teamId": "6a30d75e894589d30ebb5c5d",
+    "teamClusterId": "6a30d75e894589d30ebb5c70",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzBkNzVlODk0NTg5ZDMwZWJiNWM1MCIsImlhdCI6MTc4MTU4NTc1OCwiZXhwIjoxNzgyMTkwNTU4fQ.Y4ngrpR81DEGaE7LPFjO3kwDA-01ds8FwsZG1MQPZqw",
+    "daemonPassword": "5082ec3ba3d82a295091c7d83c18970e1f4caf6a119b7314"
   }
 }
