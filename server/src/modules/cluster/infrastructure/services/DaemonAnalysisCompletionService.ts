@@ -267,7 +267,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         await this.publishAnalysisStatus(analysisId, teamId, 'running', {
             trajectoryId,
             totalFrames: totalJobs,
-            completedFrames: 0,
             failedFrames: failedJobs
         });
 
@@ -399,14 +398,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             }).catch(swallow('Failed to seal frame log', { analysisId, jobId, timestep: trajectoryContext.timestep }));
         }
 
-        if (success) {
-            const completedFramesUpdate: Record<string, unknown> = {
-                $inc: { completedFrames: 1 }
-            };
-
-            await this.analysisRepo.updateById(analysisId, completedFramesUpdate)
-                .catch(swallow('Failed to increment completedFrames', { analysisId }));
-        } else {
+        if (!success) {
             await this.recordFailure(keys.failed);
         }
 
@@ -630,7 +622,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         extras: {
             trajectoryId?: string;
             totalFrames?: number;
-            completedFrames?: number;
             failedFrames?: number;
             artifactStatus?: AnalysisArtifactStatus;
             expectedArtifacts?: AnalysisExpectedArtifact[];
@@ -644,7 +635,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             teamId,
             status,
             totalFrames: extras.totalFrames,
-            completedFrames: extras.completedFrames,
             failedFrames: extras.failedFrames,
             artifactStatus: extras.artifactStatus,
             expectedArtifacts: extras.expectedArtifacts,
@@ -1178,7 +1168,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         await this.publishAnalysisStatus(analysisId, teamId, status, {
             trajectoryId: analysis?.props.trajectory,
             totalFrames: analysis?.props.totalFrames,
-            completedFrames: analysis?.props.completedFrames,
             failedFrames: failedJobs,
             artifactStatus: analysis?.props.artifactStatus,
             expectedArtifacts: analysis?.props.expectedArtifacts,

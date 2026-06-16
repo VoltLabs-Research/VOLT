@@ -10,30 +10,8 @@ import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/mo
 import type { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
 
-interface CompletedFramesAggregationItem {
-    _id: string | null;
-    count: number;
-}
-
 import type { AnalysisRuntimeTarget } from '@modules/analysis/domain/port/IAnalysisRepository';
 export type { AnalysisRuntimeTarget };
-
-interface CompletedFramesGroupStage {
-    $group: {
-        _id: unknown;
-        count: {
-            $sum: string;
-        };
-    };
-}
-
-interface CompletedFramesMatchStage {
-    $match: {
-        completedFrames: {
-            $gt: number;
-        };
-    };
-}
 
 @Singleton(ANALYSIS_TOKENS.AnalysisRepository)
 export default class AnalysisRepository
@@ -50,33 +28,6 @@ export default class AnalysisRepository
             analysisId: String(doc._id),
             computeClusterId: doc.computeClusterId || undefined
         }));
-    }
-
-    async getCompletedFramesByCluster(): Promise<Record<string, number>> {
-        const pipeline: Array<CompletedFramesMatchStage | CompletedFramesGroupStage> = [
-            {
-                $match: {
-                    completedFrames: {
-                        $gt: 0
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: '$computeClusterId',
-                    count: {
-                        $sum: '$completedFrames'
-                    }
-                }
-            }
-        ];
-
-        const aggregation = await this.model.aggregate<CompletedFramesAggregationItem>(pipeline);
-
-        return aggregation.reduce<Record<string, number>>((counts, item) => {
-            counts[item._id || 'main-cluster'] = item.count || 0;
-            return counts;
-        }, {});
     }
 
     async findByTeamAndSearch({

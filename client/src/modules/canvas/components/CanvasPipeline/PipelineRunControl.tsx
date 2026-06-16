@@ -10,6 +10,12 @@ import {
     getNearestTimestep,
     normalizeSelectedTimesteps
 } from '../../utilities/selected-timestep-analysis';
+import {
+    collectRequiredPluginGroups,
+    findUnsatisfiedPrerequisites,
+    formatPrerequisiteNames,
+    type PrerequisiteStage
+} from '../../utilities/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
 import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Button, Stack, Text } from '@voltstack/bravais';
@@ -59,7 +65,7 @@ const PipelineRunControl = ({
     onClose
 }: PipelineRunControlProps) => {
     const selectedTeamId = useSelectedTeamId();
-    const { modifiers } = usePluginSelectors();
+    const { modifiers, pluginsById, getPluginArguments } = usePluginSelectors();
     const executePipelineMutation = useExecutePipelineMutation();
     const markStagesExecuted = useCanvasPipelineStore((s) => s.markStagesExecuted);
 
@@ -77,6 +83,12 @@ const PipelineRunControl = ({
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const pluginNameById = useMemo(
         () => new Map(modifiers.map((m) => [m.pluginId, m.name])),
+        [modifiers]
+    );
+    const pluginNameByKey = useMemo(
+        () => new Map(modifiers
+            .map((m) => [m.plugin.modifier?.key, m.name] as const)
+            .filter((entry): entry is [string, string] => typeof entry[0] === 'string')),
         [modifiers]
     );
 
@@ -118,6 +130,28 @@ const PipelineRunControl = ({
             return;
         }
 
+        const prerequisiteStages: PrerequisiteStage[] = enabledOrderedStages
+            .filter((stage) => stage.type === 'analysis-plugin')
+            .map((stage) => {
+                const pluginId = (stage.config as AnalysisPluginStageConfig).pluginId;
+                const plugin = pluginsById[pluginId];
+                return {
+                    pluginKey: plugin?.modifier?.key ?? '',
+                    pluginName: pluginNameById.get(pluginId) ?? pluginId ?? 'Analysis',
+                    requires: collectRequiredPluginGroups(getPluginArguments(pluginId))
+                };
+            });
+
+        const unsatisfied = findUnsatisfiedPrerequisites(prerequisiteStages);
+        if (unsatisfied.length > 0) {
+            const first = unsatisfied[0];
+            sileo.warning({
+                title: `${first.pluginName} needs an earlier stage`,
+                description: `Add ${formatPrerequisiteNames(first.missing, pluginNameByKey)} before it in the pipeline.`
+            });
+            return;
+        }
+
         try {
             const { analysisIds } = await executePipelineMutation.mutateAsync({
                 trajectoryId,
@@ -145,7 +179,10 @@ const PipelineRunControl = ({
                     trajectoryId,
                     pluginName: pluginStageNames[index] ?? 'Analysis',
                     timestep: viewTimestep,
-                    autoSelect: index === analysisIds.length - 1
+                    // Every stage auto-selects as it completes, so the selection follows
+                    // the pipeline stage by stage until the user manually picks one (which
+                    // cancels the chain in use-canvas-sidebar-scene).
+                    autoSelect: true
                 });
             });
 
@@ -162,6 +199,7 @@ const PipelineRunControl = ({
     }, [
         trajectoryId, enabledOrderedStages, executePipelineMutation, resolvedClusterId,
         selectedTimesteps, currentTimestep, markStagesExecuted, pluginNameById,
+        pluginNameByKey, pluginsById, getPluginArguments,
         availableTimesteps, onClose
     ]);
 

@@ -1,6 +1,7 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
 import { EMPTY_GLOBAL_SEARCH_RESULTS, MIN_SEARCH_QUERY_LENGTH } from '@/modules/dashboard/api/service';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
+import { isTrajectoryNavigable } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import {
     autoUpdate,
@@ -26,6 +27,7 @@ export interface DashboardGlobalSearchItem {
     subtitle: string;
     path: string;
     teamId?: string;
+    disabled?: boolean;
 }
 
 export interface DashboardGlobalSearchSection {
@@ -60,7 +62,8 @@ const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSec
                 id: trajectory._id,
                 title: trajectory.name,
                 subtitle: trajectory.status || '',
-                path: `/canvas/${trajectory._id}`
+                path: `/canvas/${trajectory._id}`,
+                disabled: !isTrajectoryNavigable(trajectory.status)
             }))
         },
         {
@@ -194,6 +197,10 @@ const useDashboardGlobalSearch = () => {
     };
 
     const handleSelect = (item: DashboardGlobalSearchItem) => {
+        if (item.disabled) {
+            return;
+        }
+
         if (item.teamId) {
             setSelectedTeamId(item.teamId);
         }

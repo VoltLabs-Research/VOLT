@@ -21,7 +21,6 @@ export interface AnalysisStatusChangedEventPayload {
     trajectoryId: string;
     teamId: string;
     status: AnalysisProps['status'];
-    completedFrames?: number;
     totalFrames?: number;
     failedFrames?: number;
     artifactStatus?: AnalysisArtifactStatus;

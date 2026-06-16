@@ -137,6 +137,11 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const activeSceneRef = useRef(activeScene);
     const manualSelectionRef = useRef<string | null>(null);
+    // Tracks the analysis the pipeline auto-advance last selected. While the live
+    // selection still matches it, the next completing stage may take over (the chain
+    // follows the pipeline stage by stage). A manual selection clears it, stopping the
+    // chain so the user's choice is never overridden.
+    const autoSelectChainRef = useRef<string | null>(null);
 
     useEffect(() => { activeSceneRef.current = activeScene; }, [activeScene]);
 
@@ -336,7 +341,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         updateAnalysisStatusCaches({
             analysisId,
             status: normalizedStatus,
-            completedFrames: typeof update.completedFrames === 'number' ? update.completedFrames : undefined,
             totalFrames: typeof update.totalFrames === 'number' ? update.totalFrames : undefined,
             artifactStatus: update.artifactStatus as Analysis['artifactStatus'],
             expectedArtifacts: update.expectedArtifacts as Analysis['expectedArtifacts'],
@@ -378,7 +382,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         const resolvedPluginName = (update.pluginDisplayName as string | undefined)
             ?? (resolvedAnalyses.find((a) => a._id === analysisId)?.pluginDisplayName);
-        const completedFrames = typeof update.completedFrames === 'number' ? update.completedFrames : undefined;
         const totalFrames = typeof update.totalFrames === 'number' ? update.totalFrames : undefined;
         const failedFrames = typeof update.failedFrames === 'number' ? update.failedFrames : undefined;
 
@@ -393,7 +396,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             }
 
             pendingStore.update(analysisId, {
-                completedFrames,
                 totalFrames
             });
             return;
@@ -404,8 +406,16 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 const entry = pendingStore.remove(analysisId);
 
                 const currentSelectedAnalysisId = analysisConfigIdRef.current;
+                // Advance the selection when nothing is selected, this stage is already
+                // selected, or the current selection is one the auto-advance chain itself
+                // placed (so the chain can step from one stage to the next). A manual
+                // selection clears the chain ref, which falls through to "keep user choice".
+                const selectionFromAutoChain = Boolean(currentSelectedAnalysisId)
+                    && currentSelectedAnalysisId === autoSelectChainRef.current;
                 const canAutoSelect = Boolean(entry?.autoSelect)
-                    && (!currentSelectedAnalysisId || currentSelectedAnalysisId === analysisId);
+                    && (!currentSelectedAnalysisId
+                        || currentSelectedAnalysisId === analysisId
+                        || selectionFromAutoChain);
 
                 const artifactsReady = update.artifactStatus === 'ready' || update.artifactStatus === undefined;
 
@@ -413,6 +423,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     if (entry?.timestep !== undefined) {
                         setCurrentTimestep(entry.timestep);
                     }
+                    autoSelectChainRef.current = analysisId;
                     setAnalysisId(analysisId, { replace: true });
                     sileo.success({
                         title: `${pluginName} completed`,
@@ -622,23 +633,41 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [activeScenes]);
 
     const prevTimestepRef = useRef(currentTimestep);
+    const prevDeselectAnalysisIdRef = useRef(analysisConfigId);
 
     useEffect(() => {
-        const previous = prevTimestepRef.current;
+        const previousTimestep = prevTimestepRef.current;
+        const previousAnalysisId = prevDeselectAnalysisIdRef.current;
         prevTimestepRef.current = currentTimestep;
+        prevDeselectAnalysisIdRef.current = analysisConfigId;
 
-        if (previous === currentTimestep) return;
         if (currentTimestep === undefined) return;
         if (!selectedAnalysis) return;
 
         const scopedTimesteps = getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
         if (!scopedTimesteps || scopedTimesteps.includes(currentTimestep)) return;
 
+        // The analysis just became selected (deep-link, refresh, or auto-select) and the
+        // current frame is outside its scope: snap to the nearest covered frame instead of
+        // dropping the selection the user explicitly asked for.
+        if (previousAnalysisId !== analysisConfigId) {
+            const nextTimestep = getNearestTimestep(currentTimestep, scopedTimesteps);
+            if (nextTimestep !== undefined && nextTimestep !== currentTimestep) {
+                setCurrentTimestep(nextTimestep);
+            }
+            return;
+        }
+
+        // Selection was stable and the user scrubbed onto an uncovered frame: deselect.
+        if (previousTimestep === currentTimestep) return;
         setActiveScene({ sceneType: 'trajectory', source: 'default' });
         setAnalysisId(undefined, { replace: true });
-    }, [currentTimestep, selectedAnalysis, trajectoryTimesteps, setActiveScene, setAnalysisId]);
+    }, [currentTimestep, analysisConfigId, selectedAnalysis, trajectoryTimesteps, setActiveScene, setAnalysisId, setCurrentTimestep]);
 
     const onSelectScene = useCallback((scene: SceneObjectType, analysis?: Analysis) => {
+        // A manual selection breaks the pipeline auto-advance chain: from here on,
+        // completing stages no longer steal the selection.
+        autoSelectChainRef.current = null;
         if (scene.source === 'plugin' && 'analysisId' in scene) {
             manualSelectionRef.current = scene.analysisId;
         }

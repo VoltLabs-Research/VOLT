@@ -8,12 +8,11 @@ import { z } from 'zod';
 @CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListAnalysesByConfigAITool extends AITool {
     readonly name = 'list_analyses_by_config';
-    readonly description = "List a trajectory's analyses filtered by config key/value, status, and minimum completed-frame count — useful for finding duplicate or matching runs.";
+    readonly description = "List a trajectory's analyses filtered by config key/value and status — useful for finding duplicate or matching runs.";
     readonly parameters = z.object({
         trajectoryId: z.string(),
         configFilter: z.record(z.string(), z.unknown()).optional(),
-        status: z.string().optional(),
-        minCompletedFrames: z.number().optional()
+        status: z.string().optional()
     });
 
     constructor(
@@ -36,9 +35,6 @@ export class ListAnalysesByConfigAITool extends AITool {
 
         const filtered = result.value.data.filter((analysis) => {
             if (params.status && analysis.status !== params.status) {
-                return false;
-            }
-            if (typeof params.minCompletedFrames === 'number' && (analysis.completedFrames ?? 0) < params.minCompletedFrames) {
                 return false;
             }
             const config = analysis.config ?? {};

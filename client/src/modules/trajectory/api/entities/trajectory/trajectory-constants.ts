@@ -17,3 +17,8 @@ export const getStageMessage = (stage: TrajectoryStatus | string | undefined): s
 export const isProcessingStatus = (status: TrajectoryStatus | string | undefined): boolean => {
     return !!status && status !== 'completed' && status !== 'idle' && status !== 'failed';
 };
+
+// Only completed trajectories can be opened; anything still processing/queued/failed is not navigable.
+export const isTrajectoryNavigable = (status: TrajectoryStatus | string | undefined): boolean => {
+    return status === 'completed';
+};

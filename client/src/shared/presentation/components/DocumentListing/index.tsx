@@ -269,7 +269,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
         const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
-        const itemId = item._id.trim();
+        const itemId = String(item._id ?? '').trim();
 
         if (!itemId || menuOptions.some((option) => option.label === 'Copy Document ID')) {
             return menuOptions;

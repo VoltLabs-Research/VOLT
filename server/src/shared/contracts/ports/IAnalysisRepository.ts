@@ -24,7 +24,6 @@ export interface AnalysisRuntimeTarget {
 }
 
 export interface IAnalysisRepository extends IBaseRepository<Analysis, AnalysisProps> {
-    getCompletedFramesByCluster(): Promise<Record<string, number>>;
     findByTeamAndSearch(options: AnalysisTeamSearchOptions): Promise<PaginatedResult<Analysis>>;
     findRuntimeTargetsByTrajectoryId(trajectoryId: string): Promise<AnalysisRuntimeTarget[]>;
 }

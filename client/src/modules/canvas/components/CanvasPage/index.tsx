@@ -87,6 +87,7 @@ const CanvasPage = () => {
     const {
         trajectory,
         availableTimesteps,
+        selectedAnalysisTimesteps,
         currentTimestep,
         isLoading: trajectoryLoading,
         analyses,
@@ -161,10 +162,19 @@ const CanvasPage = () => {
 
     useKeyboardShortcuts({ trajectoryId, availableTimesteps, currentTimestep });
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
+    const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
+    // Re-assert the canvas scope whenever it drifts back to 'global'. An external
+    // reset() (route-change cleanup, team switch, error recovery) flips the store
+    // back to 'global' while CanvasPage stays mounted — the canvas-scoped shortcuts
+    // (space/arrows/g/r...) would silently die until remount. Subscribing to
+    // currentScope re-runs this and restores it. Global shortcuts (ctrl+k, esc)
+    // never gated, which is why only they kept working.
     useEffect(() => {
-        setCurrentScope('canvas');
-    }, [setCurrentScope]);
+        if (currentScope !== 'canvas') {
+            setCurrentScope('canvas');
+        }
+    }, [currentScope, setCurrentScope]);
 
     const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
@@ -868,6 +878,7 @@ const CanvasPage = () => {
                                 trajectoryId={trajectoryId}
                                 currentTimestep={currentTimestep}
                                 availableTimesteps={availableTimesteps}
+                                selectedAnalysisTimesteps={selectedAnalysisTimesteps}
                                 analysisId={analysisId}
                                 disableContextualTips={isNarrowViewport}
                                 onDownloadExposureListing={handleDownloadExposureListing}

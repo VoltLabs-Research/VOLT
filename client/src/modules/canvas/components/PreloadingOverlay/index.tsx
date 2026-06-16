@@ -1,4 +1,4 @@
-import { Heading, Loader, Row, Stack, Text } from '@voltstack/bravais';
+import { ProgressBar, Row } from '@voltstack/bravais';
 import './PreloadingOverlay.css';
 
 interface PreloadingOverlayProps {
@@ -16,20 +16,19 @@ const PreloadingOverlay = ({
 }: PreloadingOverlayProps) => {
     if (!active) return null;
 
-    const resolvedDescription = description
-        ?? (typeof progress === 'number' ? `${Math.round(progress * 100)}% loaded` : undefined);
+    // progress arrives as 0–1; ProgressBar expects 0–100. Undefined → indeterminate bar.
+    const hasProgress = typeof progress === 'number';
 
     return (
-        <Row justify='center' position='absolute' inset='0' className="canvas-preload-overlay">
-            <Stack align='center' gap='05' radius='lg' className="canvas-preload-card">
-                <Loader scale={0.7} />
-                <Heading level={3} size='md' style={{ marginTop: '7rem' }}>{title}</Heading>
-                {resolvedDescription && (
-                    <Text as='p' size='sm' tone='secondary'>
-                        {resolvedDescription}
-                    </Text>
-                )}
-            </Stack>
+        <Row justify='center' align='center' position='absolute' inset='0' className="canvas-preload-overlay">
+            <ProgressBar
+                className="canvas-preload-card"
+                size='sm'
+                label={description ?? title}
+                value={hasProgress ? progress * 100 : undefined}
+                showValue={hasProgress}
+                indeterminate={!hasProgress}
+            />
         </Row>
     );
 };

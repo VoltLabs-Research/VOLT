@@ -75,7 +75,7 @@ interface RightCollapsibleProps {
     title: string;
     icon?: ReactNode;
     expanded: boolean;
-    onExpandedChange: (next: boolean) => void;
+    onExpandedChange?: (next: boolean) => void;
     headerAction?: ReactNode;
     children: ReactNode;
     extraClassName?: string;
@@ -115,7 +115,6 @@ const ObjectsPanel = ({
     mode = 'default'
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
-    const [pipelineOpen, setPipelineOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(false);
     const [particleFilterOpen, setParticleFilterOpen] = useState(false);
     const [lineStyleOpen, setLineStyleOpen] = useState(false);
@@ -525,8 +524,8 @@ const ObjectsPanel = ({
         <RightCollapsible
             title="Pipeline"
             icon={<Layers style={{ width: 13, height: 13, color: PANEL_ICON_COLOR }} />}
-            expanded={pipelineOpen}
-            onExpandedChange={setPipelineOpen}
+            expanded
+            collapsible={false}
             headerAction={(
                 <PipelineHeaderActions
                     trajectory={trajectory}

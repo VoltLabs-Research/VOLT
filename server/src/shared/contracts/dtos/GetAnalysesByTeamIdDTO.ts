@@ -40,7 +40,6 @@ export interface GetAnalysesByTeamIdItemDTO {
     trajectory: string | AnalysisListTrajectory;
     createdBy: string | AnalysisListUser;
     totalFrames?: number;
-    completedFrames?: number;
     startedAt?: Date;
     finishedAt?: Date;
     team: string;

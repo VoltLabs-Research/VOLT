@@ -46,9 +46,8 @@ export class CompareAnalysesAITool extends AITool {
             same: a.status === b.status
         };
         const frameDelta = {
-            a: { completedFrames: a.completedFrames ?? 0, totalFrames: a.totalFrames ?? 0 },
-            b: { completedFrames: b.completedFrames ?? 0, totalFrames: b.totalFrames ?? 0 },
-            completedDifference: (a.completedFrames ?? 0) - (b.completedFrames ?? 0)
+            a: { totalFrames: a.totalFrames ?? 0 },
+            b: { totalFrames: b.totalFrames ?? 0 }
         };
         const artifactDelta = {
             a: this.summarizeArtifacts(a),
@@ -112,7 +111,6 @@ export class CompareAnalysesAITool extends AITool {
             plugin: analysis.plugin,
             pluginDisplayName: analysis.pluginDisplayName,
             status: analysis.status,
-            completedFrames: analysis.completedFrames ?? 0,
             totalFrames: analysis.totalFrames ?? 0,
             stageCount: analysis.stages?.length ?? 0,
             childAnalysisCount: analysis.childAnalyses?.length ?? 0,
@@ -124,10 +122,12 @@ export class CompareAnalysesAITool extends AITool {
     }
 
     private completeness(analysis: GetAnalysisByIdOutputDTO): number {
-        const total = analysis.totalFrames ?? 0;
-        const completed = analysis.completedFrames ?? 0;
-        if (total <= 0) return completed > 0 ? 1 : 0;
-        return completed / total;
+        const artifacts = analysis.expectedArtifacts ?? [];
+        if (analysis.status === 'completed') return 1;
+        if (artifacts.length > 0) {
+            return artifacts.filter((artifact) => artifact.status === 'ready').length / artifacts.length;
+        }
+        return analysis.status === 'failed' ? 0 : 0.5;
     }
 
     private buildSummary(idA: string, idB: string, a: GetAnalysisByIdOutputDTO, b: GetAnalysisByIdOutputDTO): string {
