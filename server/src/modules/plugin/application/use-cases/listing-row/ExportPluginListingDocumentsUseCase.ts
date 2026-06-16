@@ -10,7 +10,9 @@ import { buildListingExportColumns, enrichDaemonListingRows } from '@modules/plu
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
+import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
+import { Readable } from 'node:stream';
 
 import { mapDaemonRow } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
 
@@ -19,10 +21,64 @@ import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { Result } from '@shared/domain/port/Result';
 
 import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/application/dtos/listing-row/DaemonListingTypes';
-import type { ListingRowData } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
 const DAEMON_PAGE_SIZE = 200;
+
+/**
+ * Serializes enriched listing rows incrementally so the full dataset is never
+ * materialized as a single string and the event loop can breathe between
+ * batches. CSV reuses `toCsvContent` per batch (slicing off the repeated
+ * BOM/header prefix) so the streamed bytes are identical to a single
+ * `toCsvContent(allRows, columns)` call; JSON emits a compact array, matching
+ * `JSON.stringify(rows)` element-for-element.
+ */
+function* serializeListingRows(
+    format: ExportType,
+    rows: DaemonListingRow[],
+    columns: string[]
+): Generator<string> {
+    if (format === ExportType.Csv) {
+        const header = toCsvContent([], columns);
+        yield header;
+        for (let offset = 0; offset < rows.length; offset += DAEMON_PAGE_SIZE) {
+            const batch = rows.slice(offset, offset + DAEMON_PAGE_SIZE).map(mapDaemonRow);
+            const chunk = toCsvContent(batch, columns).slice(header.length);
+            if (chunk) {
+                yield chunk;
+            }
+        }
+        return;
+    }
+
+    yield '[';
+    for (let index = 0; index < rows.length; index++) {
+        yield `${index === 0 ? '' : ','}${JSON.stringify(mapDaemonRow(rows[index]))}`;
+    }
+    yield ']';
+}
+
+const createListingDownloadResponse = ({
+    filename,
+    format,
+    rows,
+    columns
+}: {
+    filename: string;
+    format: ExportType;
+    rows: DaemonListingRow[];
+    columns: string[];
+}) => {
+    const isCsv = format === ExportType.Csv;
+    const extension = isCsv ? 'csv' : 'json';
+    const contentType = isCsv ? 'text/csv; charset=utf-8' : 'application/json; charset=utf-8';
+
+    return createDownloadStreamResponse({
+        stream: Readable.from(serializeListingRows(format, rows, columns)),
+        contentType,
+        filename: `${filename}.${extension}`
+    });
+};
 
 @Singleton()
 export class ExportPluginListingDocumentsUseCase implements IUseCase<
@@ -40,7 +96,7 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
 
         const resolved = await this.resolveTeamCluster(input);
         if (!resolved) {
-            return Result.ok(createSerializedDownloadResponse({
+            return Result.ok(createListingDownloadResponse({
                 filename: `${input.pluginId}_${input.exposureId || 'unknown'}_listing`,
                 format,
                 rows: [],
@@ -79,14 +135,13 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<
             trajectoryRepository: this.trajectoryRepository,
             fallbackAnalysisId: resolved.analysisId
         });
-        const data: ListingRowData[] = rows.map(mapDaemonRow);
         const columns = buildListingExportColumns(rows);
         const exposureId = input.exposureId || rows[0]?.exposureId || '';
 
-        return Result.ok(createSerializedDownloadResponse({
+        return Result.ok(createListingDownloadResponse({
             filename: `${input.pluginId}_${exposureId}_listing`,
             format,
-            rows: data,
+            rows,
             columns
         }));
     }

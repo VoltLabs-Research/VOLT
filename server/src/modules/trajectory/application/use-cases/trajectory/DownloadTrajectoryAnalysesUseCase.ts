@@ -5,7 +5,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import type { IClusterObjectArchiveService, ClusterArchiveReference } from '@shared/contracts/ports';
+import type { IClusterObjectArchiveService, ClusterArchiveReference, ClusterArchiveObjectEntry } from '@shared/contracts/ports';
 import type { IGetPluginExposureExportUseCase } from '@shared/contracts/ports';
 import {
     DownloadTrajectoryAnalysesInputDTO,
@@ -15,6 +15,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Result } from '@shared/domain/port/Result';
 import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import { injectable } from 'tsyringe';
+import pLimit from 'p-limit';
 import { v4 } from 'uuid';
 
 import type { Analysis } from '@shared/contracts/types';
@@ -22,6 +23,8 @@ import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import type { IUseCase } from '@shared/application/IUseCase';
 
 const ANALYSIS_STATUS_COMPLETED = 'completed';
+
+const ANALYSIS_EXPORT_CONCURRENCY = 8;
 
 const readFilenameFromContentDisposition = (value: string | undefined): string | undefined => {
     if (!value) {
@@ -105,43 +108,10 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
             ));
         }
 
-        const archiveEntries = [];
-        for (const analysis of completedAnalyses) {
-            let exportArtifact: DownloadStreamOutputDTO;
-
-            try {
-                exportArtifact = await this.exportAnalysisArtifact({
-                    analysis,
-                    teamId: input.teamId
-                });
-            } catch (error: unknown) {
-                if (error instanceof ApplicationError && error.statusCode === 404) {
-                    continue;
-                }
-
-                throw error;
-            }
-
-            await exportArtifact.prepare?.();
-
-            const clusterObject = this.readClusterObjectReference(exportArtifact);
-            exportArtifact.stream.destroy();
-            if (!clusterObject) {
-                continue;
-            }
-
-            const filename = readFilenameFromContentDisposition(exportArtifact.headers['Content-Disposition'])
-                || readFilenameFromContentDisposition(exportArtifact.headers['content-disposition'])
-                || `AnalysisID-${analysis._id}.zip`;
-
-            archiveEntries.push({
-                type: 'object' as const,
-                ownerClusterId: clusterObject.teamClusterId,
-                bucket: clusterObject.bucket,
-                objectKey: clusterObject.objectKey,
-                name: filename
-            });
-        }
+        const limit = pLimit(ANALYSIS_EXPORT_CONCURRENCY);
+        const archiveEntries = (await Promise.all(completedAnalyses.map((analysis) => {
+            return limit(() => this.buildArchiveEntry(analysis, input.teamId));
+        }))).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
         if (archiveEntries.length === 0) {
             return Result.fail(ApplicationError.conflict(
@@ -157,6 +127,46 @@ export default class DownloadTrajectoryAnalysesUseCase implements IUseCase<
             filename: `${filenameBase}-analyses.zip`,
             entries: archiveEntries
         }));
+    }
+
+    private async buildArchiveEntry(
+        analysis: Analysis,
+        teamId: string
+    ): Promise<ClusterArchiveObjectEntry | null> {
+        let exportArtifact: DownloadStreamOutputDTO;
+
+        try {
+            exportArtifact = await this.exportAnalysisArtifact({
+                analysis,
+                teamId
+            });
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError && error.statusCode === 404) {
+                return null;
+            }
+
+            throw error;
+        }
+
+        await exportArtifact.prepare?.();
+
+        const clusterObject = this.readClusterObjectReference(exportArtifact);
+        exportArtifact.stream.destroy();
+        if (!clusterObject) {
+            return null;
+        }
+
+        const filename = readFilenameFromContentDisposition(exportArtifact.headers['Content-Disposition'])
+            || readFilenameFromContentDisposition(exportArtifact.headers['content-disposition'])
+            || `AnalysisID-${analysis._id}.zip`;
+
+        return {
+            type: 'object' as const,
+            ownerClusterId: clusterObject.teamClusterId,
+            bucket: clusterObject.bucket,
+            objectKey: clusterObject.objectKey,
+            name: filename
+        };
     }
 
     private async exportAnalysisArtifact(input: {

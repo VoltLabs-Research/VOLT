@@ -11,8 +11,7 @@ const NotificationSchema: Schema<NotificationDocument> = new Schema({
     recipient: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-        index: true
+        required: true
     },
     title: {
         type: String,
@@ -36,6 +35,9 @@ const NotificationSchema: Schema<NotificationDocument> = new Schema({
 }, {
     timestamps: true
 });
+
+NotificationSchema.index({ recipient: 1, createdAt: -1 });
+NotificationSchema.index({ recipient: 1, read: 1 });
 
 const NotificationModel: Model<NotificationDocument> = mongoose.model<NotificationDocument>('Notification', NotificationSchema);
 

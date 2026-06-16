@@ -46,6 +46,9 @@ const SlicePlaneHelper: FC<SlicePlaneHelperProps> = ({ config, modelWorldBounds 
     const planeGeometry = useMemo(() => new THREE.PlaneGeometry(planeSize, planeSize), [planeSize]);
     const planeEdgesGeometry = useMemo(() => new THREE.EdgesGeometry(planeGeometry), [planeGeometry]);
 
+    useEffect(() => () => planeGeometry.dispose(), [planeGeometry]);
+    useEffect(() => () => planeEdgesGeometry.dispose(), [planeEdgesGeometry]);
+
     if (!slicePlane || !config.visualizePlane || !planeQuaternion) {
         return null;
     }

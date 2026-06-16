@@ -245,41 +245,29 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         teamId: string,
         frames: TrajectoryIngestResult['frames']
     ): Promise<TrajectoryFrame[]> {
-        return Promise.all(frames.map(async (frame) => ({
-            timestep: frame.timestep,
-            natoms: frame.natoms,
-            simulationCell: await this.createSimulationCell(
-                trajectoryId,
-                teamId,
-                frame.timestep,
-                frame.simulationCell
-            )
-        })));
-    }
-
-    private async createSimulationCell(
-        trajectoryId: string,
-        teamId: string,
-        timestep: number,
-        data: Pick<SimulationCellProps, 'boundingBox' | 'geometry'> | null
-    ): Promise<string | undefined> {
-        if (!data) return undefined;
-
-        try {
-            const cell = await this.simulationCellRepo.create({
-                ...data,
+        // Why: trajectories emit up to dozens of thousands of frames. Creating
+        // one simulation cell per frame (await create() inside Promise.all)
+        // floods the connection pool with F concurrent inserts. Collect every
+        // cell payload and persist them in a single batched insertMany via
+        // createMany, then zip the returned ids back by position (createMany
+        // preserves input order).
+        const cellItems = frames
+            .filter((frame) => frame.simulationCell)
+            .map((frame) => ({
+                ...frame.simulationCell!,
                 team: teamId,
                 trajectory: trajectoryId,
-                timestep
-            });
-            return cell._id;
-        } catch (error) {
-            logger.warn(
-                error,
-                `[CommitTrajectoryUploadSessionUseCase] Failed to persist simulation cell trajectoryId=${trajectoryId} timestep=${timestep}`
-            );
-            return undefined;
-        }
+                timestep: frame.timestep
+            }));
+
+        const cells = await this.simulationCellRepo.createMany(cellItems);
+
+        let cellIndex = 0;
+        return frames.map((frame) => ({
+            timestep: frame.timestep,
+            natoms: frame.natoms,
+            simulationCell: frame.simulationCell ? cells[cellIndex++]._id : undefined
+        }));
     }
 
     private buildQueuedGlbJobs(

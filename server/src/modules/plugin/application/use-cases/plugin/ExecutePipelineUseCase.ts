@@ -47,6 +47,16 @@ const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'ChartExporter'
 ]);
 
+// Key under which the persisted analysis config carries UI-only execution
+// metadata (the timesteps this analysis was run for). The canvas right panel
+// reads `config[ANALYSIS_EXECUTION_METADATA_KEY].selectedTimesteps` to scope
+// each analysis to the frames it actually covers, so without it every analysis
+// renders at every timestep. MUST stay in sync with the client constant of the
+// same name in client/src/modules/canvas/utilities/selected-timestep-analysis.ts
+// (the two packages share no import path). Kept OUT of the stage hash and the
+// daemon dispatch config — it is bookkeeping for the UI, not an execution input.
+const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
+
 // Exposures whose node carries an `id` (length >= 1) feed ctx.sharedExposures
 // downstream. Collected so a cache-hit stage can still seed the context from a
 // reused analysis without re-running the binary.
@@ -370,7 +380,11 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             pluginDisplayName,
             computeClusterId,
             storageClusterId,
-            config: sanitizedConfig,
+            // Persist the run's selected timesteps as UI-only metadata so the
+            // canvas right panel scopes this analysis to the frames it covers.
+            // The clean `sanitizedConfig` (no metadata) is what feeds the stage
+            // hash and the daemon dispatch — this superset is persistence-only.
+            config: { ...sanitizedConfig, [ANALYSIS_EXECUTION_METADATA_KEY]: { selectedTimesteps } },
             pipelineStageHash: stageHash,
             team: input.teamId,
             trajectory: input.trajectoryId,

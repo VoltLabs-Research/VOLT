@@ -2,6 +2,7 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import type { IClusterTransferJobRepository } from '@modules/cluster/domain/port/IClusterTransferJobRepository';
 import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/domain/port/ISystemMetricsRepository';
+import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
@@ -310,14 +311,21 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
         const storageClusters = teamClusters.filter((cluster) => cluster.effectiveCapabilities.acceptsStorageWrites);
         let createdJobs = 0;
 
+        // Fetch each cluster's latest metrics once (in parallel) instead of re-reading
+        // them via a single-key Redis zrevrange inside both this loop and the per-candidate
+        // selectRebalanceDestination loop (which was O(N^2) sequential round-trips).
+        const metricsByCluster = new Map(await Promise.all(storageClusters.map(
+            async (cluster) => [cluster.id, await this.systemMetricsRepository.getLatestByClusterId(cluster.id)] as const
+        )));
+
         for (const sourceCluster of storageClusters) {
-            const metrics = await this.systemMetricsRepository.getLatestByClusterId(sourceCluster.id);
+            const metrics = metricsByCluster.get(sourceCluster.id);
             const diskUsagePct = metrics?.disk.usagePercent ?? 0;
             if (diskUsagePct < SOFT_STORAGE_LIMIT_PCT) {
                 continue;
             }
 
-            const destinationCluster = await this.selectRebalanceDestination(sourceCluster, storageClusters);
+            const destinationCluster = this.selectRebalanceDestination(sourceCluster, storageClusters, metricsByCluster);
             if (!destinationCluster) {
                 continue;
             }
@@ -842,10 +850,11 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
         return scoredPlacements[0] ?? null;
     }
 
-    private async selectRebalanceDestination(
+    private selectRebalanceDestination(
         sourceCluster: TeamCluster,
-        storageClusters: TeamCluster[]
-    ): Promise<TeamCluster | null> {
+        storageClusters: TeamCluster[],
+        metricsByCluster: Map<string, SystemMetrics | null>
+    ): TeamCluster | null {
         const candidates: Array<{ cluster: TeamCluster; diskUsage: number; }> = [];
 
         for (const candidate of storageClusters) {
@@ -853,7 +862,7 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
                 continue;
             }
 
-            const metrics = await this.systemMetricsRepository.getLatestByClusterId(candidate.id);
+            const metrics = metricsByCluster.get(candidate.id);
             const diskUsage = metrics?.disk.usagePercent ?? 0;
             if (diskUsage >= REBALANCE_TARGET_PCT) {
                 continue;

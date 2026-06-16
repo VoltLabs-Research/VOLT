@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
 import { Row } from '@voltstack/bravais';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
-import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
+import type { AtomData, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 
 interface PluginAtomsTableProps {
@@ -54,9 +54,24 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         error
     } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, { enabled });
 
+    // Each react-query page object is immutable once fetched, so convert it to
+    // AoS exactly once and cache by page identity. Without this, fetchNextPage
+    // produces a new infiniteData holding all prior pages, and a flat
+    // `pages.flatMap(atomsToAoS)` would re-materialize every page on each fetch
+    // (cumulative O(P²) object allocations as pages accumulate).
+    const aosCacheRef = useRef(new WeakMap<GetAtomsOutputDTO, AtomData[]>());
+
     const rows: AtomData[] = useMemo(() => {
         if (!infiniteData?.pages) return [];
-        return infiniteData.pages.flatMap((page) => atomsToAoS(page));
+        const cache = aosCacheRef.current;
+        return infiniteData.pages.flatMap((page) => {
+            let pageRows = cache.get(page);
+            if (!pageRows) {
+                pageRows = atomsToAoS(page);
+                cache.set(page, pageRows);
+            }
+            return pageRows;
+        });
     }, [infiniteData]);
 
     const properties: string[] = useMemo(() => {

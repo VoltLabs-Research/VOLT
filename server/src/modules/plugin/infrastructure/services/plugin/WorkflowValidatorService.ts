@@ -110,6 +110,12 @@ const resolvePluginNodeExecutionMode = (
     return PluginNodeExecutionMode.Manual;
 };
 
+interface WorkflowTopologyIndex {
+    nodeMap: Map<string, WorkflowNode>;
+    parentsByTarget: Map<string, WorkflowEdge[]>;
+    childrenBySource: Map<string, WorkflowEdge[]>;
+}
+
 @Singleton(PLUGIN_TOKENS.WorkflowValidatorService)
 export class WorkflowValidatorService implements IWorkflowValidatorService {
     constructor(
@@ -152,14 +158,15 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
 
         if (Array.isArray(workflow.edges)) {
-            this.validateRuntimeEdgeTopology(workflow, errors);
-            this.validateIfStatementTopology(workflow, errors);
-            this.validateSwitchStatementTopology(workflow, errors);
-            this.validateEntrypointTopology(workflow, errors);
-        }
+            const topology = this.buildTopologyIndex(workflow);
+            this.validateRuntimeEdgeTopology(workflow, errors, topology);
+            this.validateIfStatementTopology(workflow, errors, topology);
+            this.validateSwitchStatementTopology(workflow, errors, topology);
+            this.validateEntrypointTopology(workflow, errors, topology);
 
-        if (pluginNodes.length > 0 && Array.isArray(workflow.edges)) {
-            this.validatePluginNodeTopology(workflow, errors);
+            if (pluginNodes.length > 0) {
+                this.validatePluginNodeTopology(workflow, errors, topology);
+            }
         }
 
         const nodeIds = new Set(workflow.nodes.map((node) => node.id));
@@ -295,8 +302,35 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return false;
     }
 
-    private validateRuntimeEdgeTopology(workflow: WorkflowProps, errors: string[]): void {
-        const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    private buildTopologyIndex(workflow: WorkflowProps): WorkflowTopologyIndex {
+        const nodeMap = new Map<string, WorkflowNode>();
+        for (const node of workflow.nodes) {
+            nodeMap.set(node.id, node);
+        }
+
+        const parentsByTarget = new Map<string, WorkflowEdge[]>();
+        const childrenBySource = new Map<string, WorkflowEdge[]>();
+        for (const edge of workflow.edges) {
+            const parents = parentsByTarget.get(edge.target);
+            if (parents) {
+                parents.push(edge);
+            } else {
+                parentsByTarget.set(edge.target, [edge]);
+            }
+
+            const children = childrenBySource.get(edge.source);
+            if (children) {
+                children.push(edge);
+            } else {
+                childrenBySource.set(edge.source, [edge]);
+            }
+        }
+
+        return { nodeMap, parentsByTarget, childrenBySource };
+    }
+
+    private validateRuntimeEdgeTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
+        const { nodeMap, parentsByTarget } = topology;
 
         for (const edge of workflow.edges) {
             const sourceNode = nodeMap.get(edge.source);
@@ -320,7 +354,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 continue;
             }
 
-            const parents = workflow.edges.filter((edge) => edge.target === node.id);
+            const parents = parentsByTarget.get(node.id) ?? [];
             if (node.type === WorkflowNodeType.Entrypoint || node.type === WorkflowNodeType.Plugin || node.type === WorkflowNodeType.IfStatement || node.type === WorkflowNodeType.SwitchStatement || node.type === WorkflowNodeType.SwitchCase || node.type === WorkflowNodeType.Exposure || node.type === WorkflowNodeType.Export) {
                 if (parents.length > 1) {
                     errors.push(`Node ${node.id} does not support multiple incoming connections`);
@@ -329,13 +363,14 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
     }
 
-    private validateIfStatementTopology(workflow: WorkflowProps, errors: string[]): void {
+
+    private validateIfStatementTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
         for (const node of workflow.nodes) {
             if (node.type !== WorkflowNodeType.IfStatement) {
                 continue;
             }
 
-            const outgoingEdges = workflow.edges.filter((edge) => edge.source === node.id);
+            const outgoingEdges = topology.childrenBySource.get(node.id) ?? [];
             const invalidEdges = outgoingEdges.filter((edge) => {
                 return typeof edge.sourceHandle !== 'undefined'
                     && edge.sourceHandle !== 'output-true'
@@ -347,15 +382,15 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
     }
 
-    private validateSwitchStatementTopology(workflow: WorkflowProps, errors: string[]): void {
-        const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    private validateSwitchStatementTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
+        const { nodeMap, parentsByTarget, childrenBySource } = topology;
 
         for (const node of workflow.nodes) {
             if (node.type !== WorkflowNodeType.SwitchStatement) {
                 continue;
             }
 
-            const outgoingEdges = workflow.edges.filter((edge) => edge.source === node.id);
+            const outgoingEdges = childrenBySource.get(node.id) ?? [];
             const invalidHandles = outgoingEdges.filter((edge) => !isAllowedSwitchHandle(edge.sourceHandle));
             if (invalidHandles.length > 0) {
                 errors.push(`Switch statement ${node.id} must only use "cases" or "continue" handles`);
@@ -385,7 +420,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 continue;
             }
 
-            const parentEdges = workflow.edges.filter((edge) => edge.target === node.id);
+            const parentEdges = parentsByTarget.get(node.id) ?? [];
             if (parentEdges.length !== 1) {
                 errors.push(`Switch case ${node.id} must have exactly one parent switch statement`);
                 continue;
@@ -398,7 +433,7 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
     }
 
-    private validatePluginNodeTopology(workflow: WorkflowProps, errors: string[]): void {
+    private validatePluginNodeTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
         const argumentsDefinitions = this.getArgumentsDefinitions(workflow);
 
         for (const node of workflow.nodes) {
@@ -432,18 +467,18 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
                 }
             }
 
-            const parentEdges = workflow.edges.filter((edge) => edge.target === node.id);
+            const parentEdges = topology.parentsByTarget.get(node.id) ?? [];
             if (parentEdges.length !== 1) {
                 errors.push(`Plugin node ${node.id} must have exactly one incoming runtime connection`);
             }
 
-            if (!this.hasAncestorOfType(node.id, workflow, RUNTIME_REACHABLE_ANCESTORS)) {
+            if (!this.hasAncestorOfType(node.id, topology, RUNTIME_REACHABLE_ANCESTORS)) {
                 errors.push(`Plugin node ${node.id} must run after the workflow planning segment`);
             }
         }
     }
 
-    private validateEntrypointTopology(workflow: WorkflowProps, errors: string[]): void {
+    private validateEntrypointTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
         const entrypointNodes = workflow.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
         if (entrypointNodes.length !== 1) {
             errors.push('Workflow must have exactly one top-level entrypoint');
@@ -451,12 +486,12 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         }
 
         const entrypointNode = entrypointNodes[0];
-        const parentEdges = workflow.edges.filter((edge) => edge.target === entrypointNode.id);
+        const parentEdges = topology.parentsByTarget.get(entrypointNode.id) ?? [];
         if (parentEdges.length !== 1) {
             errors.push(`Top-level entrypoint ${entrypointNode.id} must have exactly one incoming runtime connection`);
         }
 
-        if (!this.hasAncestorOfType(entrypointNode.id, workflow, RUNTIME_REACHABLE_ANCESTORS)) {
+        if (!this.hasAncestorOfType(entrypointNode.id, topology, RUNTIME_REACHABLE_ANCESTORS)) {
             errors.push(`Top-level entrypoint ${entrypointNode.id} must run after the planning segment`);
         }
     }
@@ -610,7 +645,8 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
         return definition.listArguments.some((nestedDefinition) => this.containsPluginReferenceArgument(nestedDefinition));
     }
 
-    private hasAncestorOfType(nodeId: string, workflow: WorkflowProps, blockedTypes: Set<WorkflowNodeType>): boolean {
+    private hasAncestorOfType(nodeId: string, topology: WorkflowTopologyIndex, blockedTypes: Set<WorkflowNodeType>): boolean {
+        const { nodeMap, parentsByTarget } = topology;
         const visited = new Set<string>();
         const queue = [nodeId];
 
@@ -621,9 +657,9 @@ export class WorkflowValidatorService implements IWorkflowValidatorService {
             }
 
             visited.add(currentNodeId);
-            const parentEdges = workflow.edges.filter((edge) => edge.target === currentNodeId);
+            const parentEdges = parentsByTarget.get(currentNodeId) ?? [];
             for (const edge of parentEdges) {
-                const parentNode = workflow.nodes.find((candidate) => candidate.id === edge.source);
+                const parentNode = nodeMap.get(edge.source);
                 if (!parentNode) {
                     continue;
                 }

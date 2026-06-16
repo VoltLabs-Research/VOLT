@@ -55,18 +55,13 @@ const loadAnalyses = async (
     analysisIds: string[],
     analysisRepository: IAnalysisRepository
 ): Promise<Map<string, Analysis>> => {
-    const analysisEntries = await Promise.all(analysisIds.map(async (analysisId) => {
-        const analysis = await analysisRepository.findById(analysisId);
-        return analysis ? [analysisId, analysis] as const : null;
-    }));
+    const analysisList = await analysisRepository.export({
+        filter: { _id: { $in: analysisIds } }
+    });
 
     const analyses = new Map<string, Analysis>();
-    for (const entry of analysisEntries) {
-        if (!entry) {
-            continue;
-        }
-
-        analyses.set(entry[0], entry[1]);
+    for (const analysis of analysisList) {
+        analyses.set(analysis._id, analysis);
     }
 
     return analyses;
@@ -92,20 +87,18 @@ const loadTrajectoryNames = async (
     trajectoryIds: string[],
     trajectoryRepository: ITrajectoryRepository
 ): Promise<Map<string, string>> => {
-    const trajectoryEntries = await Promise.all(trajectoryIds.map(async (trajectoryId) => {
-        const trajectory = await trajectoryRepository.findById(trajectoryId);
-        const trajectoryName = trajectory?.props.name?.trim();
-
-        return trajectoryName ? [trajectoryId, trajectoryName] as const : null;
-    }));
+    const trajectoryList = await trajectoryRepository.export({
+        filter: { _id: { $in: trajectoryIds } }
+    });
 
     const trajectoryNames = new Map<string, string>();
-    for (const entry of trajectoryEntries) {
-        if (!entry) {
+    for (const trajectory of trajectoryList) {
+        const trajectoryName = trajectory.props.name?.trim();
+        if (!trajectoryName) {
             continue;
         }
 
-        trajectoryNames.set(entry[0], entry[1]);
+        trajectoryNames.set(trajectory._id, trajectoryName);
     }
 
     return trajectoryNames;

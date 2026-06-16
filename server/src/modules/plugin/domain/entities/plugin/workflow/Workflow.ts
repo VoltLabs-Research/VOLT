@@ -36,6 +36,14 @@ export default class Workflow {
      * Find any ancestor node of specified type (BFS).
      */
     findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
+        const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
+        const parentAdjacency = new Map<string, string[]>();
+        for (const edge of this.props.edges) {
+            const adj = parentAdjacency.get(edge.target) || [];
+            adj.push(edge.source);
+            parentAdjacency.set(edge.target, adj);
+        }
+
         const visited = new Set<string>();
         const queue = [nodeId];
 
@@ -44,11 +52,10 @@ export default class Workflow {
             if (visited.has(currentId)) continue;
             visited.add(currentId);
 
-            const parentEdges = this.props.edges.filter((edge) => edge.target === currentId);
-            for (const edge of parentEdges) {
-                const parentNode = this.props.nodes.find((node) => node.id === edge.source);
+            for (const parentId of parentAdjacency.get(currentId) || []) {
+                const parentNode = nodeMap.get(parentId);
                 if (parentNode?.type === type) return parentNode;
-                queue.push(edge.source);
+                queue.push(parentId);
             }
         }
 
@@ -59,6 +66,14 @@ export default class Workflow {
      * Find descendant node of specified type (BFS)
      */
     findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
+        const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
+        const childAdjacency = new Map<string, string[]>();
+        for (const edge of this.props.edges) {
+            const adj = childAdjacency.get(edge.source) || [];
+            adj.push(edge.target);
+            childAdjacency.set(edge.source, adj);
+        }
+
         const visited = new Set<string>();
         const queue = [nodeId];
 
@@ -67,11 +82,10 @@ export default class Workflow {
             if (visited.has(currentId)) continue;
             visited.add(currentId);
 
-            const childEdges = this.props.edges.filter((edge) => edge.source === currentId);
-            for (const edge of childEdges) {
-                const childNode = this.props.nodes.find((node) => node.id === edge.target);
+            for (const childId of childAdjacency.get(currentId) || []) {
+                const childNode = nodeMap.get(childId);
                 if (childNode?.type === type) return childNode;
-                if (childNode) queue.push(edge.target);
+                if (childNode) queue.push(childId);
             }
         }
 

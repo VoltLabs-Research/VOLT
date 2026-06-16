@@ -34,12 +34,6 @@ const buildFloat32Column = (name: string, values: readonly number[]): AtomColumn
     return { name, dtype: 'f32', buffer: new Uint8Array(buffer) };
 };
 
-const buildUint32Column = (name: string, values: readonly number[]): AtomColumn => {
-    const buffer = new ArrayBuffer(values.length * Uint32Array.BYTES_PER_ELEMENT);
-    new Uint32Array(buffer).set(values as ArrayLike<number>);
-    return { name, dtype: 'u32', buffer: new Uint8Array(buffer) };
-};
-
 // Per row: [u32 byteLen][utf8 bytes]. Byte-addressable so it needs no
 // alignment; the decoder walks it with a DataView.
 const buildStringColumn = (name: string, values: readonly unknown[]): AtomColumn => {
@@ -154,11 +148,20 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             }
 
             const rowCount = atomsPage.atoms.length;
-            const ids = new Array<number>(rowCount);
-            const types = new Array<number>(rowCount);
-            const xs = new Array<number>(rowCount);
-            const ys = new Array<number>(rowCount);
-            const zs = new Array<number>(rowCount);
+            // Write straight into the typed-array column buffers so the core
+            // columns are allocated and filled once, instead of building five
+            // intermediate number[] arrays and bulk-copying them into typed
+            // arrays a second time in build*Column.
+            const idBuffer = new ArrayBuffer(rowCount * Uint32Array.BYTES_PER_ELEMENT);
+            const typeBuffer = new ArrayBuffer(rowCount * Uint32Array.BYTES_PER_ELEMENT);
+            const xBuffer = new ArrayBuffer(rowCount * Float32Array.BYTES_PER_ELEMENT);
+            const yBuffer = new ArrayBuffer(rowCount * Float32Array.BYTES_PER_ELEMENT);
+            const zBuffer = new ArrayBuffer(rowCount * Float32Array.BYTES_PER_ELEMENT);
+            const ids = new Uint32Array(idBuffer);
+            const types = new Uint32Array(typeBuffer);
+            const xs = new Float32Array(xBuffer);
+            const ys = new Float32Array(yBuffer);
+            const zs = new Float32Array(zBuffer);
             const extraColumns = new Map<string, unknown[]>();
             for (const prop of allProps) {
                 if (prop === ID_PROPERTY_NAME
@@ -187,11 +190,11 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             }
 
             const columns: AtomColumn[] = [
-                buildUint32Column(ID_PROPERTY_NAME, ids),
-                buildUint32Column(TYPE_PROPERTY_NAME, types),
-                buildFloat32Column('x', xs),
-                buildFloat32Column('y', ys),
-                buildFloat32Column('z', zs)
+                { name: ID_PROPERTY_NAME, dtype: 'u32', buffer: new Uint8Array(idBuffer) },
+                { name: TYPE_PROPERTY_NAME, dtype: 'u32', buffer: new Uint8Array(typeBuffer) },
+                { name: 'x', dtype: 'f32', buffer: new Uint8Array(xBuffer) },
+                { name: 'y', dtype: 'f32', buffer: new Uint8Array(yBuffer) },
+                { name: 'z', dtype: 'f32', buffer: new Uint8Array(zBuffer) }
             ];
 
             // String blocks have arbitrary byte lengths and would misalign the

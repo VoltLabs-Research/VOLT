@@ -50,11 +50,35 @@ export const computeMortonCodes = (positions: Float32Array, bbox: BoundingBox): 
 
 export const buildPermutation = (codes: Uint32Array): Uint32Array => {
     const count = codes.length;
-    const indices = new Uint32Array(count);
-    for (let i = 0; i < count; i += 1) indices[i] = i;
-    const asArray = Array.from(indices);
-    asArray.sort((a, b) => codes[a] - codes[b]);
-    return Uint32Array.from(asArray);
+    // Stable LSB radix sort over the 30-bit Morton codes (8-bit digits, 4 passes).
+    // Operates directly on Uint32 index buffers: no number boxing, no closure
+    // comparator. Ties keep their original order, matching the prior stable sort.
+    let src = new Uint32Array(count);
+    for (let i = 0; i < count; i += 1) src[i] = i;
+    let dst = new Uint32Array(count);
+    const counts = new Uint32Array(256);
+    for (let shift = 0; shift < 32; shift += 8) {
+        counts.fill(0);
+        for (let i = 0; i < count; i += 1) {
+            counts[(codes[src[i]] >>> shift) & 0xff] += 1;
+        }
+        let sum = 0;
+        for (let b = 0; b < 256; b += 1) {
+            const c = counts[b];
+            counts[b] = sum;
+            sum += c;
+        }
+        for (let i = 0; i < count; i += 1) {
+            const idx = src[i];
+            const digit = (codes[idx] >>> shift) & 0xff;
+            dst[counts[digit]] = idx;
+            counts[digit] += 1;
+        }
+        const tmp = src;
+        src = dst;
+        dst = tmp;
+    }
+    return src;
 };
 
 export const computeBoundingBox = (positions: Float32Array): BoundingBox => {

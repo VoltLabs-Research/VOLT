@@ -109,7 +109,8 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
             filter = {},
             populate,
             select,
-            sort
+            sort,
+            withTotal = true
         } = options;
         const normalizedSkip = skip ?? (page - 1) * limit;
         const projection = toProjection(select);
@@ -125,7 +126,9 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
 
         const [docs, total] = await Promise.all([
             query.exec() as Promise<Array<RepositoryDocument<TDocument>>>,
-            this.model.countDocuments(filterQuery)
+            withTotal
+                ? this.model.countDocuments(filterQuery)
+                : Promise.resolve(0)
         ]);
 
         const currentPage = Math.floor(normalizedSkip / limit) + 1;

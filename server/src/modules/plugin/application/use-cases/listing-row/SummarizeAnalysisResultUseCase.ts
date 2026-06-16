@@ -244,10 +244,16 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
 
         if (isNumeric) {
             const count = numeric.length;
-            const min = Math.min(...numeric);
-            const max = Math.max(...numeric);
-            const mean = numeric.reduce((sum, value) => sum + value, 0) / count;
-            const variance = numeric.reduce((sum, value) => sum + (value - mean) ** 2, 0) / count;
+            let min = Infinity;
+            let max = -Infinity;
+            let sum = 0;
+            for (const value of numeric) {
+                if (value < min) min = value;
+                if (value > max) max = value;
+                sum += value;
+            }
+            const mean = sum / count;
+            const variance = numeric.reduce((acc, value) => acc + (value - mean) ** 2, 0) / count;
             const stddev = Math.sqrt(variance);
 
             return {

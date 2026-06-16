@@ -14,7 +14,7 @@ import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } fr
 import { getRenderableScenes } from '@/modules/fractal/utilities/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Box, Stack } from '@voltstack/bravais';
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
@@ -261,4 +261,4 @@ const Viewport = ({
     );
 };
 
-export default Viewport;
+export default memo(Viewport);
