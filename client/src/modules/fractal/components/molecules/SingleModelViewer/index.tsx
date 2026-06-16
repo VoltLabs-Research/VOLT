@@ -1,9 +1,6 @@
 import usePipelineSlicePlanes from '@/modules/canvas/hooks/use-pipeline-slice-planes';
 import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
 import useExpressionVisibilityMask from '@/modules/canvas/hooks/use-expression-visibility-mask';
-import useAtomsBuffer from '@/modules/trajectory/hooks/use-atoms-buffer';
-import useAtomPick from '@/modules/canvas/hooks/use-atom-pick';
-import { useAtomSelectionLink } from '@/modules/canvas/hooks/use-atom-selection';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
 import { useCellDisplayStore } from '@/modules/fractal/stores/cell-display-store';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
@@ -18,7 +15,7 @@ import { fitPerspectiveCameraToBox } from '@/modules/fractal/utilities/camera-fi
 import { useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useMemo, useEffect, useCallback, useRef, useState } from 'react';
+import { useMemo, useEffect, useCallback, useRef } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
 import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
@@ -267,22 +264,12 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         return { cellVectors, cellOrigin, pbc, showPbcImages };
     }, [simulationCell, cellOverride, showPbcImages]);
 
-    // Tracks whether this scene's GLB resolved to a renderable atom point cloud
-    // — the gate for atom picking. Chained to the upstream consumer so its
-    // existing behavior is unchanged.
-    const [hasPointClouds, setHasPointClouds] = useState(false);
-    const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
-        setHasPointClouds(info.hasPointClouds);
-        onContentTypeDetected?.(info);
-    }, [onContentTypeDetected]);
-
     const {
         modelBounds,
         loadError,
         deselect,
         setSelectedObject,
-        onHoverChange,
-        engineRef
+        onHoverChange
     } = useGlbScene({
         url,
         resourceKey: glbResource.resourceKey,
@@ -313,59 +300,8 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         activeModelBounds,
         onModelBoundsChanged,
         onLoadingStateChanged,
-        onContentTypeDetected: handleContentTypeDetected
+        onContentTypeDetected
     }, modelContainerRef);
-
-    // Atom picking only applies to the atoms point cloud (not line/mesh scenes,
-    // not the public canvas where per-atom data is RBAC-scoped). Gated further
-    // on the GPU pick path: the engine no-ops when no point cloud is loaded.
-    const atomPickEnabled = canvasMode !== 'public'
-        && hasPointClouds
-        && resolveLineSceneSource(sceneConfig) === null;
-
-    const {
-        ids: atomIdBuffer,
-        exceedsSelectionCap
-    } = useAtomsBuffer({
-        trajectoryId,
-        analysisId: analysisId === 'default' ? undefined : analysisId,
-        timestep: currentTimestep,
-        enabled: atomPickEnabled
-    });
-
-    const { selectionKey, selectedIds } = useAtomSelectionLink({
-        trajectoryId,
-        timestep: currentTimestep
-    });
-
-    useAtomPick({
-        engineRef,
-        selectionKey: atomPickEnabled ? selectionKey : null,
-        ids: atomIdBuffer,
-        enabled: atomPickEnabled,
-        allowLassoBox: atomPickEnabled && !exceedsSelectionCap,
-        orbitControlsRef
-    });
-
-    // Reflect the per-frame selection into the 3D view. The engine maps the
-    // frame-stable ids back to its (morton-sorted) vertices via the same id
-    // buffer the picker used, then paints the additive highlight overlay.
-    // `modelBounds` is a dependency so a deep-linked selection (URL → store
-    // before the model loads) reapplies once the cloud is present.
-    useEffect(() => {
-        const engine = engineRef.current;
-        if (!engine) return;
-        if (!atomPickEnabled || !atomIdBuffer || selectedIds.size === 0) {
-            engine.updateAtomHighlight(new Set<number>());
-            return;
-        }
-        const originalIndices = new Set<number>();
-        for (let index = 0; index < atomIdBuffer.length; index += 1) {
-            if (selectedIds.has(Number(atomIdBuffer[index]))) originalIndices.add(index);
-        }
-        engine.updateAtomHighlight(originalIndices);
-    }, [engineRef, atomPickEnabled, atomIdBuffer, selectedIds, modelBounds]);
-
 
     useEffect(() => {
         autoFitKeyRef.current = autoFitKey;
