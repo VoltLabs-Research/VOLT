@@ -73,7 +73,14 @@ export class PipelineSharedExposureStore {
             return null;
         }
 
-        const destinationPath = path.join(input.destinationDir, path.basename(objectKey));
+        // ponytail: exposures share a basename (e.g. clusters_table and
+        // clusters_transitions are both `timestep-N.table`), so the objectKey's
+        // distinguishing `shared-<exposureId>/` segment must be folded into the
+        // local filename or the second fetch clobbers the first.
+        const destinationPath = path.join(
+            input.destinationDir,
+            `${input.exposureId}__${path.basename(objectKey)}`
+        );
         const response = await this.objectStore.getStream(
             input.ownerClusterId,
             ObjectBucketName.Plugins,
