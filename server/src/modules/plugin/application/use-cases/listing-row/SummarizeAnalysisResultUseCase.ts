@@ -62,9 +62,6 @@ export class SummarizeAnalysisResultUseCase implements IUseCase<SummarizeAnalysi
         const pluginDisplayName = analysis.props.pluginDisplayName || analysis.props.plugin;
         const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
 
-        // No reachable cluster means there are no queryable results yet (analysis
-        // still pending/running, or its storage cluster is offline). Report that
-        // plainly rather than failing — the assistant should say "not ready".
         if (!teamClusterId) {
             return Result.ok(this.emptyResult(input.analysisId, pluginDisplayName, status,
                 'No results are available yet — the analysis has not produced queryable output (it may still be pending or running).'));

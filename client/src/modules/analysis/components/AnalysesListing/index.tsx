@@ -51,10 +51,6 @@ const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
     return message;
 };
 
-// Resolves the trajectory-scoped exposure listing route for a completed analysis,
-// or undefined when the analysis is not viewable yet (still running, no plugin
-// metadata loaded, or no exposure exposes a listing). Prefers the primary
-// expected artifact when it also has a listing, otherwise the first listing.
 const resolveAnalysisListingPath = (analysis: Analysis, plugin: Plugin | undefined): string | undefined => {
     if (analysis.status !== AnalysisStatus.Completed) {
         return undefined;
@@ -120,8 +116,6 @@ const AnalysesListing = () => {
     const { pluginsById } = usePluginSelectors();
     const fetchAnalysesData: (params: PaginationParams) => Promise<PaginatedResponse<Analysis>> = analysisQuery.useListQuery.fetch;
 
-    // Surface a "View results" action for completed analyses whose plugin exposes a
-    // listing, so users no longer have to hand-type the exposure listing URL.
     const columns = useMemo<ColumnConfig<Analysis>[]>(() => [
         ...BASE_COLUMNS,
         {

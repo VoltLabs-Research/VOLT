@@ -7,9 +7,6 @@ interface IncludeDictionary {
     [key: string]: string;
 }
 
-// Why: Shader registry inlines #include directives at build time (Vite's ?raw
-// import emits literal text). We preprocess includes in JS before handing to
-// three.js so shader hot-reload works reliably.
 const INCLUDE_PATTERN = /^[ \t]*#include[ \t]+<([a-zA-Z0-9_/\-.]+)>[ \t]*$/gm;
 
 const resolveIncludes = (source: string, includes: IncludeDictionary): string => {

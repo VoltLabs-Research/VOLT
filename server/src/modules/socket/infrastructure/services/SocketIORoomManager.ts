@@ -48,7 +48,6 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
             return;
         }
 
-        // Socket already in the room
         if(socket.rooms.has(room)) return;
 
         socket.join(room);
@@ -56,7 +55,7 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
     }
 
     async leave(
-        socketId: string, 
+        socketId: string,
         room: string
     ): Promise<void>{
         const socket = this.sockets.get(socketId);
@@ -91,7 +90,7 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
     }
 
     async collectPresence(
-        room: string, 
+        room: string,
         userExtractor: (connection: ISocketConnection) => PresenceUser
     ): Promise<PresenceUser[]>{
         if(!this.io) return [];

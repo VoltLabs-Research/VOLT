@@ -154,9 +154,6 @@ const endpoints = {
         body: ({ folderId }) => ({ folderId })
     }),
     listAssets: get<ListLatexAssetsParams, LatexAsset[]>('/documents/:documentId/assets'),
-    // Why: react-pdf/<img> fetch a bare URL directly, bypassing the axios auth
-    // interceptor → 401. Fetch the bytes through the authenticated client and hand
-    // the consumer a blob: URL (same pattern as compileDocument).
     getAssetContent: download<GetLatexAssetContentParams>(
         'GET',
         '/documents/:documentId/assets/content',

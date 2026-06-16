@@ -47,7 +47,6 @@ const PipelineHeaderActions = ({
     }, [addStage, trajectoryId]);
 
     return (
-        // Stop propagation so opening a control never toggles the section.
         <Row gap='025' onClick={(event) => event.stopPropagation()}>
             <ContextMenuPopover
                 id='canvas-pipeline-run'

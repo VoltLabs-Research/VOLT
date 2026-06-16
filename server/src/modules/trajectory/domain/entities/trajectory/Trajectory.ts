@@ -24,9 +24,6 @@ export interface TrajectoryFrameSimulationCellEmbed {
 export interface TrajectoryFrame {
     timestep: number;
     natoms: number;
-    // Why: accepts either the raw ObjectId string (write path) or the fully
-    // populated simulation-cell payload (read path — what HTTP consumers need
-    // to render box bounds client-side). The repository maps accordingly.
     simulationCell?: string | TrajectoryFrameSimulationCellEmbed;
 }
 
@@ -51,9 +48,6 @@ export interface TrajectoryProps {
      * pass the list around (clone source snapshot, daemon dispatch payload).
      */
     frames?: TrajectoryFrame[];
-    // Transient summary fields populated by listing use cases that cannot
-    // afford to hydrate the full `frames[]` payload per row (20 rows × N
-    // frames would re-introduce the 1 MB responses the F2.S6 refactor avoided).
     framesCount?: number;
     atoms?: number;
     firstTimestep?: number;

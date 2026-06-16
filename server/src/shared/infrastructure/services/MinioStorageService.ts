@@ -52,7 +52,6 @@ export default class MinioStorageService implements IStorageService {
             return;
         }
 
-        // stream
         await this.client.putObject(bucket, objectName, source, undefined, metadata);
     }
 

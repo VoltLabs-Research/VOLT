@@ -78,7 +78,6 @@ const UserSchema: Schema<UserDocument> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Analysis'
     }],
-    // OAuth fields
     oauthProvider: {
         type: String,
         enum: Object.values(OAuthProvider),

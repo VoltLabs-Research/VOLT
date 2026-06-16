@@ -13,15 +13,6 @@ import { Result } from '@shared/domain/port/Result';
 import { AliasOf } from '@shared/infrastructure/di/decorators';
 import { inject, injectable } from 'tsyringe';
 
-// `@injectable()` preserves the existing by-class resolution (the raster
-// controller resolves this use case by its class constructor — unchanged
-// transient lifecycle). `@AliasOf(RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase)`
-// additively exposes the neutral `Symbol.for('GetRasterMetadataUseCase')` token
-// (delegating to the same class) so the trajectory module can
-// `@inject(RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase)` against the
-// IGetRasterMetadataUseCase port without importing `@modules/raster`. A bare
-// `@injectable(token)` does not exist; using the Singleton+AliasOf pair would
-// change the lifecycle, so AliasOf-over-injectable is the minimal idiom here.
 @injectable()
 @AliasOf(RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase)
 export class GetRasterMetadataUseCase implements

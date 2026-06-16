@@ -150,8 +150,6 @@ AnalysisSchema.index({ team: 1, createdAt: -1 });
 AnalysisSchema.index({ trajectory: 1, createdAt: -1 });
 AnalysisSchema.index({ plugin: 1, team: 1, trajectory: 1, computeClusterId: 1 });
 AnalysisSchema.index({ trajectory: 1, storageClusterId: 1, createdAt: -1 });
-// Storage-placement transfer planning filters analyses by {team, storageClusterId}
-// (sorted by createdAt); the trajectory-prefixed index above does not serve it.
 AnalysisSchema.index({ team: 1, storageClusterId: 1, createdAt: 1 });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);

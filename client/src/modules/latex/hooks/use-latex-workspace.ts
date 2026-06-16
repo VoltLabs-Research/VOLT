@@ -275,8 +275,6 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                 surface: ErrorSurface.Silent,
                 fallbackTitle: 'Compilation failed'
             }).title;
-            // The 422 compiler log rides in the Blob body of the axios error, which is
-            // nested under ApiError.originalError — the ApiError itself has no .response.
             const axiosError: unknown = isApiError(error) ? error.originalError : error;
             const response = typeof axiosError === 'object'
                 && axiosError !== null
@@ -304,14 +302,12 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
                             }
                         }
                     } catch {
-                        // Keep the raw blob text when it is not JSON.
                     }
 
                     if (blobMessage) {
                         message = blobMessage;
                     }
                 } catch {
-                    // Keep the shared fallback error message when the blob cannot be read.
                 }
             }
 

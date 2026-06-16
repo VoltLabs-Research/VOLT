@@ -11,9 +11,6 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterLifecycleService } from '@modules/cluster/domain/port/ITeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-// cluster EMITS the trajectory-owned `scene-artifact.upserted` event via the
-// neutral GenericDomainEvent; the owner event class is no longer imported. Its
-// payload artifact type is taken from the neutral contract.
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -24,8 +21,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
-// cluster EMITS the analysis-owned `analysis.stage.changed` event via the
-// neutral GenericDomainEvent; the owner event class is no longer imported.
 import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
 import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types';
 import type { IEventBus } from '@shared/application/events/IEventBus';

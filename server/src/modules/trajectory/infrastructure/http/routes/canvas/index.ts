@@ -17,9 +17,6 @@ export default createHttpModule({
         router.get('/:trajectoryId/frames/:timestep', controllers.rasterFrame.handle);
         router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', controllers.analysisRasterFrame.handle);
 
-        // Why: binary transferables — see GetPublicCanvasAtomsBinaryController
-        // (F2.S4). Legacy JSON path removed; the Canvas client now decodes the
-        // columnar body directly into TypedArrays without a JSON.parse pass.
         router.get('/:trajectoryId/frame/:timestep/atoms', controllers.atomsBinary.handle);
         router.get('/:trajectoryId/simulation-cell', controllers.simulationCell.handle);
         router.get('/:trajectoryId/scene-artifacts', controllers.sceneArtifacts.handle);

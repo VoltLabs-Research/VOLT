@@ -187,8 +187,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         resetEntries();
     }, [trajectoryId, resetEntries]);
 
-    // Drop in-flight plugin toasts tied to the previous trajectory so they
-    // don't linger when the user navigates to a different canvas.
     useEffect(() => {
         if (!trajectoryId) {
             return;
@@ -590,11 +588,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [resolvedAnalyses, exposureEntries, analysisConfigId]);
 
     const filteredSections = useMemo(() => {
-        // Only surface analyses that are actually available to view: completed
-        // ones (have artifacts) or still-in-progress ones (pending/running, so
-        // the user sees live work). Failed analyses produced nothing to render,
-        // so they are excluded here — except the one currently selected in the
-        // URL, which must stay visible so its config/selection still resolves.
         const available = allAnalysisSections.filter((section) => {
             if (section.analysis._id === analysisConfigId) return true;
             const status = normalizeCanvasAnalysisStatus(section.analysis.status);
@@ -606,13 +599,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         return available.filter((section) => section.pluginDisplayName.toLowerCase().includes(query));
     }, [allAnalysisSections, searchQuery, analysisConfigId]);
 
-    // Right panel must surface ONLY analyses that have data at the timestep the
-    // user is currently viewing. An analysis with no selectedTimesteps metadata
-    // covers every frame (getSelectedTimestepsForAnalysis → undefined); a scoped
-    // one only shows when its timesteps include currentTimestep. The actively
-    // selected analysis stays visible regardless so its config/selection keeps
-    // resolving while the viewer re-clamps frames. Before the timestep resolves
-    // (undefined) we show everything rather than flashing an empty list.
     const sceneCollectionSections = useMemo(() => {
         if (currentTimestep === undefined) return filteredSections;
         return filteredSections.filter((section) => {
@@ -658,12 +644,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (analysis?._id) {
-            // Stay on the current timestep when selecting an analysis. An analysis
-            // need not cover every frame; forcing a jump to its nearest timestep
-            // (previously unconditional) reset the viewer to the first frame and
-            // broke loading the model at the frame the user was actually viewing.
-            // Only move when the current frame is genuinely outside the analysis's
-            // computed timesteps — and then to the nearest one that has data.
             const selectedAnalysisTimesteps = getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps);
             const currentTimestepHasData = selectedAnalysisTimesteps === undefined
                 || (currentTimestep !== undefined && selectedAnalysisTimesteps.includes(currentTimestep));

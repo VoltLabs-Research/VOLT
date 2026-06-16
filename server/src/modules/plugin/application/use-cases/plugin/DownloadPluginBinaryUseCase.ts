@@ -35,9 +35,6 @@ export class DownloadPluginBinaryUseCase implements IUseCase<DownloadPluginBinar
             ));
         }
 
-        // The route enforces team scope via RBAC, but we also reject
-        // cross-team lookups defensively when the caller-provided teamId
-        // does not match the plugin's owning team.
         if (plugin.props.team !== input.teamId) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,

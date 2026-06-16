@@ -19,7 +19,6 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
         const focus = useCanvasFocusStore.getState();
         const raw = input.modifierId;
 
-        // null / undefined / empty string all mean "clear the focus".
         if (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === '')) {
             focus.clearFocusedModifier();
             return {

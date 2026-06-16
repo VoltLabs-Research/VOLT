@@ -46,7 +46,6 @@ interface SimulationCellBoxProps {
     onHoverChange?: (hovered: boolean) => void;
 }
 
-// Reusable scratch vectors to avoid allocations in the hot drag path.
 const _decomposePos = new THREE.Vector3();
 const _decomposeQuat = new THREE.Quaternion();
 const _decomposeScale = new THREE.Vector3();
@@ -79,15 +78,9 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const dragRef = useRef<THREE.Group>(null!);
     const contentRef = useRef<THREE.Group>(null!);
     const isDraggingRef = useRef(false);
-    // Keep drag matrix in a ref — mutated imperatively during drag to avoid
-    // React re-renders of the entire subtree (model with millions of points).
     const dragMatrixRef = useRef(new THREE.Matrix4());
-    // Interpolation refs: remote updates move the target; a per-frame lerp
-    // chases it from the current position for visual smoothing.
     const currentDragPosRef = useRef(new THREE.Vector3());
     const targetDragPosRef = useRef(new THREE.Vector3());
-    // Position captured at drag start — used in vertical mode to freeze X/Y
-    // so only Z changes regardless of which plane DragControls picked.
     const dragStartPosRef = useRef(new THREE.Vector3());
     const showSimulationCell = useEditorStore((state) => state.showSimulationCell);
     const modelDragOffset = useEditorStore((state) => state.modelDragOffsets[sceneKey] ?? ZERO_OFFSET);
@@ -105,8 +98,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     const touchDragArmTimerRef = useRef<number | null>(null);
     axisLockRef.current = axisLock;
 
-    // Pick the vertical drag plane (XZ or YZ) whose normal points most at the
-    // camera, so the pointer has the best leverage over Z.
     const pickVerticalAxisLock = useCallback((): DragAxisLock => {
         camera.getWorldDirection(_cameraForward);
         return Math.abs(_cameraForward.x) > Math.abs(_cameraForward.y) ? 'y' : 'x';
@@ -276,7 +267,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         const target = targetDragPosRef.current;
         if (current.distanceToSquared(target) < 1e-6) return;
 
-        // Frame-rate independent smoothing: higher factor = snappier, lower = softer.
         const alpha = 1 - Math.exp(-18 * delta);
         current.lerp(target, alpha);
 
@@ -289,9 +279,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
     });
 
     const geometry = useMemo(() => {
-        // Prefer the true cell parallelepiped from edge vectors (correct for
-        // sheared/triclinic cells + optional PBC image copies); fall back to the
-        // axis-aligned box implied by boxBounds when no vectors are available.
         if (cellGeometry && hasValidCellVectors(cellGeometry.cellVectors)) {
             return buildCellWireframeGeometry(
                 cellGeometry.cellVectors!,
@@ -313,8 +300,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
         return geo;
     }, [boxBounds]);
 
-    // These geometries are caller-owned (attached via props), so R3F never
-    // disposes them — release the GPU buffers when they're replaced or unmount.
     useEffect(() => () => {
         geometry?.dispose();
     }, [geometry]);
@@ -373,10 +358,7 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     return;
                 }
 
-                // Decompose into scratch vectors — zero allocations.
                 localMatrix.decompose(_decomposePos, _decomposeQuat, _decomposeScale);
-                // In vertical mode DragControls drags on XZ or YZ; freeze the
-                // in-plane horizontal axis so the motion feels purely up/down.
                 const isVertical = axisLockRef.current !== FLOOR_AXIS_LOCK;
                 if (isVertical) {
                     _clampedPos.set(
@@ -388,8 +370,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     _clampedPos.set(_decomposePos.x, _decomposePos.y, Math.max(0, _decomposePos.z));
                 }
 
-                // Mutate the ref matrix in-place and apply directly to the
-                // DragControls group — no React state update, no re-render.
                 dragMatrixRef.current.compose(_clampedPos, _decomposeQuat, _decomposeScale);
 
                 if (dragRef.current) {

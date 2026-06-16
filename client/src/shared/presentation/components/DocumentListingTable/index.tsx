@@ -96,9 +96,6 @@ interface DocumentListingTableProps<T extends Identifiable> {
 
 const getColumnTitle = <T,>(col: ColumnConfig<T>): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
-// Memoize the row so an unrelated parent re-render (e.g. isFetchingMore/hasMore
-// toggling) skips reconciling every loaded row. The cast restores the generic
-// call signature that React.memo erases.
 const MemoizedTableRow = React.memo(TableRow) as typeof TableRow;
 
 const DocumentListingTable = <T extends Identifiable>({

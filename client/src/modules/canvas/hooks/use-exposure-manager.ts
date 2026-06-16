@@ -63,7 +63,6 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         analysisIdArray.map((analysisId) => buildParams(trajectoryId!, analysisId))
     );
 
-    // Surface errors: RBAC check + toast, tracked per analysis to avoid duplicates
     useEffect(() => {
         for (let i = 0; i < analysisIdArray.length; i++) {
             const analysisId = analysisIdArray[i];
@@ -76,16 +75,12 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
                 }
             }
 
-            // Clear error tracking when the query is no longer in error state
             if (!result.isError && reportedErrorsRef.current.has(analysisId)) {
                 reportedErrorsRef.current.delete(analysisId);
             }
         }
     }, [analysisIdArray, queryResults, checkAccessDeniedError]);
 
-    // Fallback: when any tracked analysis flips to Completed, refresh the broad
-    // scene artifacts key. Realtime artifact merging is driven by the
-    // scene-artifact.upserted socket event in useCanvasSidebarScene.
     const { statusMap } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
     const prevStatusesRef = useRef<Map<string, string>>(new Map());
 

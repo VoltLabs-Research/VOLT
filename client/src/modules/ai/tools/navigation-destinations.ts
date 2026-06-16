@@ -111,7 +111,6 @@ export const resolveDestination = (
         path = path.replace(`:${name}`, encodeURIComponent(value));
     }
 
-    // Any unresolved `:param` placeholder means a bad template/param mismatch.
     if (path.includes('/:')) {
         return { ok: false, error: `Destination "${key}" has unresolved path params.` };
     }

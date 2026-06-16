@@ -94,8 +94,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
                 return Result.fail(error);
             }
 
-            // Let the global error middleware normalize unknown errors (e.g. a Mongoose CastError
-            // from a malformed id maps to 400, not a blanket 500).
             throw error;
         }
     }
@@ -178,7 +176,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
             updatedAt: new Date()
         });
 
-        // Create LatexFile for main.tex (entrypoint).
         await this.latexFileRepository.create({
             document: document._id,
             team: input.teamId,
@@ -203,7 +200,6 @@ export class ImportLatexDocumentUseCase implements IUseCase<ImportLatexDocumentI
         const texFiles = otherFiles.filter((f) => f.path.endsWith('.tex'));
         const assetFiles = otherFiles.filter((f) => !f.path.endsWith('.tex'));
 
-        // Create additional LatexFile records for other .tex files in the ZIP.
         await Promise.allSettled(
             texFiles.map(async (texFile) => {
                 const buffer = await texFile.buffer();

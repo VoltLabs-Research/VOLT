@@ -34,8 +34,6 @@ const buildFloat32Column = (name: string, values: readonly number[]): AtomColumn
     return { name, dtype: 'f32', buffer: new Uint8Array(buffer) };
 };
 
-// Per row: [u32 byteLen][utf8 bytes]. Byte-addressable so it needs no
-// alignment; the decoder walks it with a DataView.
 const buildStringColumn = (name: string, values: readonly unknown[]): AtomColumn => {
     const encoded = values.map((value) => Buffer.from(value == null ? '' : String(value), 'utf8'));
     const buffer = Buffer.alloc(encoded.reduce((size, bytes) => size + 4 + bytes.byteLength, 0));
@@ -56,12 +54,9 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
         @inject(TRAJECTORY_TOKENS.TrajectoryReader)
         private readonly trajectoryReader: ITrajectoryReader,
 
-
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
 
-        
         @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-
 
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
     ) {}
@@ -71,10 +66,6 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             const { trajectoryId, timestep } = input;
             const analysisId = normalizeAnalysisId(input.analysisId);
             const page = input.page ?? 1;
-            // Why: callers that hit the binary endpoint for the canvas engine
-            // need the whole frame. A paginated default of 100 would silently
-            // return a sparse view; the explicit opt-in stays paginated for
-            // property-inspection tables.
             const limit = input.limit ?? 5_000_000;
 
             const pageNum = Math.max(1, page);
@@ -148,10 +139,6 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
             }
 
             const rowCount = atomsPage.atoms.length;
-            // Write straight into the typed-array column buffers so the core
-            // columns are allocated and filled once, instead of building five
-            // intermediate number[] arrays and bulk-copying them into typed
-            // arrays a second time in build*Column.
             const idBuffer = new ArrayBuffer(rowCount * Uint32Array.BYTES_PER_ELEMENT);
             const typeBuffer = new ArrayBuffer(rowCount * Uint32Array.BYTES_PER_ELEMENT);
             const xBuffer = new ArrayBuffer(rowCount * Float32Array.BYTES_PER_ELEMENT);
@@ -197,9 +184,6 @@ export class GetAtomsUseCase implements IUseCase<GetAtomsColumnarInputDTO, GetAt
                 { name: 'z', dtype: 'f32', buffer: new Uint8Array(zBuffer) }
             ];
 
-            // String blocks have arbitrary byte lengths and would misalign the
-            // TypedArray views of any numeric column emitted after them, so all
-            // numeric columns are appended first and string columns last.
             const stringColumns: AtomColumn[] = [];
             for (const [prop, values] of extraColumns) {
                 if (values.some(isNonNumericString)) {

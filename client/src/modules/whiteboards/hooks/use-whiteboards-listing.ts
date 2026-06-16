@@ -153,7 +153,6 @@ const useWhiteboardsListing = () => {
             whiteboardsListingResource.toasts.create
         );
 
-        // Open the editor for the freshly-created whiteboard (parallels openWhiteboard).
         if (whiteboard?._id) {
             navigate(`/dashboard/whiteboard/${whiteboard._id}`);
         }

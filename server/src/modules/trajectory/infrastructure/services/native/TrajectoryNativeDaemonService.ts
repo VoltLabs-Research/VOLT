@@ -18,9 +18,6 @@ import { inject } from 'tsyringe';
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
 
-// Re-exported for infrastructure consumers that historically imported these
-// daemon contracts from this service. Canonical home is
-// `@modules/trajectory/domain/contracts/native`.
 export type {
     LineExportBaseOptions,
     LineStyleFilterParam,
@@ -164,9 +161,6 @@ export default class TrajectoryNativeDaemonService implements ITrajectoryNativeD
     }
 
     async previewFilter(input: TrajectoryNativeFilterPreviewRequest): Promise<{ mask: Uint8Array; matchCount: number; totalAtoms: number; }> {
-        // Why: `externalValues` travels as a `Uint8Array` field. Socket.IO v4
-        // serializes typed-array fields as native binary attachments, so the
-        // Float32 bytes cross the wire without a base64 hop.
         const response = await this.teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
             input.teamClusterId,
             ChannelCommands.TrajectoryNativeFilterPreview,

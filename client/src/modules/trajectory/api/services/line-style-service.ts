@@ -31,7 +31,6 @@ export interface GetLineModelRangesInputDTO {
     analysisId: string;
     exposureId: string;
     timestep: number;
-    // Targets a styled model's sidecar; omitted for the exposure's baked GLB.
     style?: LineStyleSpec;
 }
 

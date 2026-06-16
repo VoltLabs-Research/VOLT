@@ -27,7 +27,7 @@ const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {
 
     run(input, ctx): ClientToolResult {
         const layer = (typeof input.layer === 'string' ? input.layer : '').trim().toLowerCase();
-        const visible = input.visible !== false; // default to showing
+        const visible = input.visible !== false;
 
         if (!layer) {
             return {

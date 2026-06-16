@@ -27,8 +27,6 @@ const AIPageExitWidgetBridge = () => {
     useEffect(() => {
         const onAIPage = isAIPagePath(pathname);
 
-        // Transition out of the AI page → carry the active conversation into the
-        // widget. Only when there's actually a conversation to carry.
         if (wasOnAIPage.current && !onAIPage && activeConversationId) {
             openWidget();
         }

@@ -29,7 +29,6 @@ const setAppearance: ClientToolHandler<SetAppearanceInput> = {
 
         if (typeof input.pointSize === 'number' && Number.isFinite(input.pointSize)) {
             store.setPointSizeMultiplier(input.pointSize);
-            // setPointSizeMultiplier clamps to [0.1, 5.0]; read back the effective value.
             const effective = useEditorStore.getState().pointSizeMultiplier;
             applied.pointSize = effective;
             changes.push(`point size ${effective}`);

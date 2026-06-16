@@ -59,7 +59,6 @@ const LatexAIPanel = ({ documentId, documentTitle, files, width, height, onClose
         onNavigateAway: onClose
     });
 
-    // Reset context injection flag when conversation changes
     useEffect(() => {
         contextInjectedRef.current = !!conversationId;
     }, [conversationId]);

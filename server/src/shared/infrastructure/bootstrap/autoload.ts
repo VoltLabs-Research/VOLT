@@ -112,13 +112,6 @@ export const autoloadModules = async (): Promise<void> => {
         }
 
         for (const file of collectFiles(absoluteRoot)) {
-            // Gate by enabled module: the first path segment under `modules/` is
-            // the module key. Skip files belonging to a disabled module so its
-            // decorators never fire (routes/sockets/runners/AI-tools/handlers).
-            // NOTE: this stops a disabled module from REGISTERING, but Node may
-            // still load its files transitively if an enabled module statically
-            // imports them — physical removal is handled by the contract-extraction
-            // phases. This gate is the runtime on/off switch.
             if (root === 'modules') {
                 const relative = file.slice(absoluteRoot.length).replace(/^[\\/]+/, '');
                 const moduleKey = relative.split(/[\\/]/)[0];

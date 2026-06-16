@@ -15,8 +15,6 @@ import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
 
 const EMPTY_PLANES: Plane[] = [];
 
-// A stage config is "pristine" (untouched defaults) → auto-center its distance on
-// the model so a freshly-added slice lands in the middle instead of at the origin.
 const isStageConfigPristine = (config: SlicePlaneStageConfig): boolean =>
     config.distance === DEFAULT_SLICE_PLANE_STAGE_CONFIG.distance
     && config.normal.x === DEFAULT_SLICE_PLANE_STAGE_CONFIG.normal.x
@@ -24,8 +22,6 @@ const isStageConfigPristine = (config: SlicePlaneStageConfig): boolean =>
     && config.normal.z === DEFAULT_SLICE_PLANE_STAGE_CONFIG.normal.z
     && config.reverseOrientation === DEFAULT_SLICE_PLANE_STAGE_CONFIG.reverseOrientation;
 
-// A stage config carries no `enabled` flag (the pipeline row's toggle gates it),
-// so present it to the resolver as an enabled SlicePlaneConfig.
 export const toSlicePlaneConfig = (
     config: SlicePlaneStageConfig,
     bounds?: ModelWorldBounds | null

@@ -6,12 +6,6 @@ import type { PluginDebugSessionRegistryEntry } from '@modules/plugin/domain/con
 import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
-// `@Singleton()` keeps the class self-registered under its own constructor so
-// the plugin-internal positional injection (PluginDebugSocketModule) keeps
-// resolving the same shared singleton. `@AliasOf(...)` adds the neutral
-// cross-module token the cluster socket module injects against. A bare
-// `@Singleton(token)` would register ONLY under the token (see decorators.ts)
-// and break the by-class injection — hence the Singleton + AliasOf idiom.
 @Singleton()
 @AliasOf(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService)
 export default class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryService, IPluginDebugSessionRegistryServicePort {

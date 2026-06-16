@@ -148,7 +148,6 @@ const OptionalConfigSection = ({
     const hasError = errorCount > 0;
     const [isExpanded, setIsExpanded] = useState(defaultExpanded || hasError);
 
-    // Reveal the section automatically when a validation error appears inside it.
     const expanded = isExpanded || hasError;
 
     return (
@@ -263,8 +262,6 @@ const ConfigurationStep = ({
     const remainingItemsLabel = `${requiredRemainingCount} required item${requiredRemainingCount === 1 ? '' : 's'} remaining before review.`;
     const customFieldErrorCount = getCustomFieldValidationErrorCount(config.customFields, config.customFieldValues);
     const hasCustomFields = config.customFields.length > 0;
-    // Keep template settings open by default when it carries required inputs, so a
-    // collapsed section never hides a field the user must complete before review.
     const templateSettingsDefaultExpanded = hasRequiredCustomField(config.customFields);
 
     return (

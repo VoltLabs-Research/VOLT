@@ -54,9 +54,6 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
                 ));
             }
 
-            // Binary fields (binaryObjectPath, binaryFileName, binary) are managed
-            // exclusively by PluginStorageService (upload/delete endpoints).
-            // Preserve them from the current DB state to prevent frontend overwrites.
             if (!input._allowBinaryFieldUpdate) {
                 const currentEntrypoint = plugin.props.workflow.props.nodes
                     .find((n) => n.type === WorkflowNodeType.Entrypoint);
@@ -86,7 +83,6 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         }
 
         if (input.status === PluginStatus.Published && !input.workflow) {
-            // No workflow provided with publish request - validate the existing workflow.
             const { isValid, errors } = await this.workflowValidator.validate(plugin.props.workflow.props, plugin.id, WorkflowValidationMode.Strict);
             if (!isValid) {
                 return Result.fail(ApplicationError.badRequest(

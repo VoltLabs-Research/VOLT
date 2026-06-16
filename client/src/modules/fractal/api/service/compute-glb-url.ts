@@ -135,8 +135,6 @@ const buildLineStyleUrl = (
     const { analysisId, exposureId, style } = scene;
     if (!analysisId || !exposureId) return null;
 
-    // Public canvases keep showing the baked plugin GLB; styled models are an
-    // authenticated-team feature for now.
     if (mode === 'public') {
         return null;
     }
@@ -196,9 +194,6 @@ export const resolveGlbResource = ({
         default:
             return {
                 url: buildBackendUrl(`/api/canvas/${trajectoryId}/glb/${currentTimestep}/${analysisId || DEFAULT_ANALYSIS_ID}`),
-                // Why: the default trajectory GLB endpoint ignores analysisId
-                // server-side, so analysis selection must not invalidate the
-                // core model identity or trigger a reload.
                 resourceKey: `trajectory:${trajectoryId}:${currentTimestep}`
             };
     }

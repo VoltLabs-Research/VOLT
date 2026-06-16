@@ -47,8 +47,6 @@ export class ManageLatexAssetsAITool extends AITool {
         });
         if (!result.success) throw result.error;
 
-        // The download is a binary stream, not JSON-serializable; surface the
-        // resolved filename/headers so the chat can report what was produced.
         if (result.value.prepare) {
             await result.value.prepare();
         }

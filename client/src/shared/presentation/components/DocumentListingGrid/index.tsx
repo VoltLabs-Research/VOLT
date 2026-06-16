@@ -195,10 +195,6 @@ const DocumentListingGrid = <T extends { _id: string },>({
             }
         })
     );
-    // Prefer the droppable under the pointer so small targets (e.g. folder
-    // breadcrumbs) win over the large grid cards, falling back to area
-    // intersection for keyboard dragging and when the pointer is outside any
-    // droppable.
     const collisionDetection = useCallback<CollisionDetection>((args) => {
         const pointerCollisions = pointerWithin(args);
         return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);

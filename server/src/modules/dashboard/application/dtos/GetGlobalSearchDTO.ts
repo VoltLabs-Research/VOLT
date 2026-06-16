@@ -1,14 +1,3 @@
-// The chat/container/plugin result shapes now come from the neutral contracts
-// layer (`@shared/contracts`). Those contract DTOs/ports are GENERIC over the
-// owner entity/props (they default to `unknown`), so this aggregator binds them
-// to its OWN structural "search view" types below — the minimal field set the
-// global-search response actually exposes — instead of importing the concrete
-// `@modules/{chat,container,plugin}` shapes.
-//
-// The analysis item view + trajectory persisted view now come from the neutral
-// contracts layer (`@shared/contracts/dtos`), so this aggregator no longer
-// imports the analysis/trajectory modules for those shapes.
-// `ListUserTeamsOutputDTO` is from the KERNEL team module and is allowed.
 import type { ListUserTeamsOutputDTO } from '@modules/team/application/dtos/team/ListUserTeamsDTO';
 import type {
     GetAnalysesByTeamIdItemDTO,

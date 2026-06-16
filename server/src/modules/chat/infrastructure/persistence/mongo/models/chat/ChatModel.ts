@@ -27,7 +27,7 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     },
     lastMessage: {
         type: Schema.Types.ObjectId,
-        ref: 'ChatMessage' 
+        ref: 'ChatMessage'
     },
     lastMessageAt: {
         type: Date
@@ -36,7 +36,6 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
         type: Boolean,
         default: true
     },
-    // Group chat fields
     isGroup: {
         type: Boolean,
         default: false

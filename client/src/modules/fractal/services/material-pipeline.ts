@@ -86,13 +86,9 @@ const ensurePointCloudVisibilityAttribute = (geometry: THREE.BufferGeometry): vo
     if (existing instanceof THREE.BufferAttribute && existing.count === pointCount) {
         return;
     }
-    // Default-fill 1.0 (all visible) so untouched scenes render identically —
-    // the engine's setVisibilityMask overwrites this once a mask is applied.
     geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Float32Array(pointCount).fill(1), 1));
 };
 
-// Mirrors debug-log's gate: the min/max/avg color stats are diagnostic-only, so we
-// skip accumulating and allocating them unless debug logging is actually enabled.
 const isColorStatsLoggingEnabled = (): boolean =>
     import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true';
 
@@ -159,16 +155,10 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
         };
     }
 
-    // Read the raw TypedArray directly for plain, non-normalized attributes (the case
-    // where getX/getY/getZ reduce to array[index*itemSize + channel]); fall back to the
-    // accessors for normalized/interleaved layouts so denormalization/stride stays correct.
     const colorArray = attribute instanceof THREE.BufferAttribute && !attribute.normalized
         ? attribute.array
         : null;
     const stride = attribute.itemSize;
-    // Per-vertex min/max accumulation is purely diagnostic (downstream debugFractal); skip it
-    // unless debug logging is enabled. Sums + overall max channel feed the functional dark-color
-    // guard and are always computed.
     const collectStats = isColorStatsLoggingEnabled();
 
     let minR = Number.POSITIVE_INFINITY; let minG = Number.POSITIVE_INFINITY; let minB = Number.POSITIVE_INFINITY;
@@ -290,10 +280,6 @@ export class MaterialPipeline {
 
         points.material = mat;
         points.frustumCulled = false;
-        // Why: hit-testing is now handled by PickingService (framebuffer based).
-        // We do NOT disable raycast here — SimulationCellBox and model-interaction
-        // still need the THREE.Points to be ignored by R3F's pointer events. We
-        // leave raycast at three.js default so callers can choose explicitly.
         return points;
     }
 

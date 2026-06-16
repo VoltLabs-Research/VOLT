@@ -88,9 +88,6 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
         headers[i] = { name, dtype, byteLen };
     }
 
-    // Skip the alignment pad declared by the encoder. The pad width itself is
-    // a u32 followed by `headerPadLen` zero bytes; together they snap the data
-    // section to a 4-byte boundary so TypedArray views are legal.
     const headerPadLen = view.getUint32(offset, true);
     offset += 4 + headerPadLen;
 

@@ -14,36 +14,26 @@
  * unchanged.
  */
 export const DOMAIN_EVENTS = Object.freeze({
-    // analysis
     AnalysisCreated: 'analysis.created',
     AnalysisDeleted: 'analysis.deleted',
     AnalysisStageChanged: 'analysis.stage.changed',
     AnalysisStatusChanged: 'analysis.status.changed',
-    // auth
     UserCreated: 'user.created',
     UserDeleted: 'user.deleted',
-    // chat
     ChatDeleted: 'chat.deleted',
-    // daily-activity
     UserActivityRecorded: 'user-activity.recorded',
-    // container
     ContainerCreated: 'container.created',
     ContainerDeleted: 'container.deleted',
     ContainerUpdated: 'container.updated',
-    // jobs
     JobStatusChanged: 'job.status.changed',
-    // latex
     LatexDocumentCreated: 'latex-document.created',
     LatexDocumentDeleted: 'latex-document.deleted',
     LatexFileContentUpdated: 'latex-file.content.updated',
-    // plugin
     PluginCreated: 'plugin.created',
     PluginDeleted: 'plugin.deleted',
     PluginPublished: 'plugin.published',
     PluginExecutionRequest: 'PluginExecutionRequest',
-    // scripting
     NotebookDeleted: 'notebook.deleted',
-    // team
     TeamCreated: 'team.created',
     TeamDeleted: 'team.deleted',
     TeamMemberDeleted: 'team-member.deleted',
@@ -53,12 +43,10 @@ export const DOMAIN_EVENTS = Object.freeze({
     SecretKeyCreated: 'secret-key.created',
     SecretKeyDeleted: 'secret-key.deleted',
     InvitationSent: 'invitation.sent',
-    // trajectory
     TrajectoryCreated: 'trajectory.created',
     TrajectoryDeleted: 'trajectory.deleted',
     TrajectoryUpdated: 'trajectory.updated',
     SceneArtifactBatchUpserted: 'scene-artifact.upserted',
-    // whiteboards
     WhiteboardCreated: 'whiteboard.created',
     WhiteboardDeleted: 'whiteboard.deleted'
 });

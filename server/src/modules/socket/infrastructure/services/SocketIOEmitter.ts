@@ -53,8 +53,8 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
     }
 
     emitToSocket(
-        socketId: string, 
-        event: string, 
+        socketId: string,
+        event: string,
         data: unknown
     ): void {
         const socket = this.sockets.get(socketId);
@@ -64,19 +64,18 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
             return;
         }
 
-        // Distributed fallback (Redis adapter)
         this.io?.to(socketId).emit(event, data);
     }
 
     emitToRoomExcept(
-        socketId: string, 
-        room: string, 
-        event: string, 
+        socketId: string,
+        room: string,
+        event: string,
         data: unknown
     ): void {
         const socket = this.sockets.get(socketId);
         if(!socket) return;
-        socket.to(room).emit(event, data);    
+        socket.to(room).emit(event, data);
     }
 
     broadcast(

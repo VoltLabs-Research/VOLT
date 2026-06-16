@@ -26,9 +26,6 @@ import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
 import type { IStoragePlacementService } from '@modules/cluster/domain/port/IStoragePlacementService';
 import { inject } from 'tsyringe';
 
-// Structural "placement view" of a plugin — the only field this service reads.
-// Binding the neutral generic IPluginRepository to this lets cluster avoid
-// importing the concrete Plugin entity class (consumer-owns-view pattern).
 interface PluginPlacementView {
     props: { team: string };
 }
@@ -39,15 +36,6 @@ interface ResolvedPlacementDefinition {
     buckets: StoragePlacementBucketRef[];
 }
 
-// `@Singleton()` keeps the class self-registered under its own constructor so the
-// existing consumers that inject it POSITIONALLY by class (no `@inject`) keep
-// resolving the same shared singleton. `@AliasOf(COMPUTE_TOKENS.StoragePlacementService)`
-// adds the neutral token binding (same `Symbol.for` resolution) so cross-module
-// consumers can `@inject(COMPUTE_TOKENS.StoragePlacementService)` against the
-// `IStoragePlacementService` port without importing this concrete class. NOTE:
-// in this codebase `@Singleton(token)` registers ONLY under the token (see
-// `decorators.ts`), so a bare `@Singleton(token)` here would have broken those
-// positional-by-class injections — hence the Singleton + AliasOf pair.
 @Singleton()
 @AliasOf(COMPUTE_TOKENS.StoragePlacementService)
 export default class StoragePlacementService implements IStoragePlacementService {
@@ -76,9 +64,6 @@ export default class StoragePlacementService implements IStoragePlacementService
         return this.persistResolvedPlacement(scopeType, scopeId, existingPlacement, resolved);
     }
 
-    // Merges a resolved placement definition over any existing placement and
-    // upserts it. Shared by ensurePlacement() (single scope) and the batch
-    // transfer-planning path so the merge semantics stay identical.
     private async persistResolvedPlacement(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
@@ -89,9 +74,6 @@ export default class StoragePlacementService implements IStoragePlacementService
             team: existingPlacement?.props.team ?? resolved.team,
             scopeType,
             scopeId,
-            // Persist the original primary owner once the placement exists.
-            // Ownership changes must go through switchPrimaryCluster() so the
-            // underlying bytes can be transferred before metadata flips.
             primaryClusterId: existingPlacement?.props.primaryClusterId ?? resolved.primaryClusterId,
             replicaClusterIds: existingPlacement?.props.replicaClusterIds ?? [],
             buckets: resolved.buckets,
@@ -233,16 +215,12 @@ export default class StoragePlacementService implements IStoragePlacementService
             }
         });
 
-        // Batch-load the existing trajectory placements once instead of a
-        // findByScope round-trip per trajectory.
         const trajectoryPlacements = await this.loadPlacementsByScope(
             'trajectory',
             trajectories.map((trajectory) => trajectory._id)
         );
 
         for (const trajectory of trajectories) {
-            // The trajectory is already loaded (exported above), so resolve its
-            // placement definition directly instead of re-fetching by id.
             const placement = await this.persistResolvedPlacement(
                 'trajectory',
                 trajectory._id,
@@ -257,9 +235,6 @@ export default class StoragePlacementService implements IStoragePlacementService
             trajectoryTransferIds.add(trajectory._id);
         }
 
-        // Push the source-cluster filter into the query so non-source-cluster
-        // analyses are never loaded (the old post-load discard read the same
-        // plain `storageClusterId` field this filter matches).
         const analyses = await this.analysisRepository.export({
             filter: {
                 team: teamId,
@@ -296,8 +271,6 @@ export default class StoragePlacementService implements IStoragePlacementService
         return [...plannedPlacements.values()];
     }
 
-    // Loads every existing placement for the given scope ids in a single query
-    // (keyed by scopeId) so callers can avoid a findByScope round-trip per row.
     private async loadPlacementsByScope(
         scopeType: StoragePlacementScopeType,
         scopeIds: string[]
@@ -354,8 +327,6 @@ export default class StoragePlacementService implements IStoragePlacementService
         };
     }
 
-    // Resolves a trajectory's placement definition from an already-loaded entity
-    // (no findById). Shared by resolvePlacementDefinition and the batch path.
     private resolveTrajectoryPlacementDefinition(trajectory: TrajectoryLike): ResolvedPlacementDefinition {
         const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
         if (!storageClusterId) {
@@ -372,8 +343,6 @@ export default class StoragePlacementService implements IStoragePlacementService
         };
     }
 
-    // Resolves an analysis's placement definition from an already-loaded entity
-    // (no findById). Shared by resolvePlacementDefinition and the batch path.
     private resolveAnalysisPlacementDefinition(analysis: Analysis): ResolvedPlacementDefinition {
         const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
         if (!storageClusterId) {

@@ -12,8 +12,6 @@ export class PublishPluginAITool extends AITool {
     readonly description = 'Publish a plugin by transitioning it from Draft to Published. The existing workflow is strictly validated first; publishing fails if it is not valid.';
     readonly parameters = z.object({ pluginId: z.string() });
 
-    // Publishing mutates plugin state and triggers a PluginPublishedEvent (makes
-    // the plugin runnable team-wide). Gate it behind explicit human approval.
     readonly needsApproval = true;
 
     constructor(

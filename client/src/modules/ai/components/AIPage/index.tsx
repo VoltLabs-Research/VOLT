@@ -120,7 +120,6 @@ const AIPage = () => {
         }
     }, []);
 
-    // Restore sidebar if user navigates away while the spreadsheet panel is open
     useEffect(() => {
         return () => {
             if (didCollapseSidebar.current) {
@@ -129,8 +128,6 @@ const AIPage = () => {
         };
     }, []);
 
-    // The page stays mounted across /dashboard/ai/* navigations, so an artifact
-    // opened in one conversation must not linger when switching to another.
     useEffect(() => {
         handleCloseArtifactPanel();
     }, [conversationId, handleCloseArtifactPanel]);
@@ -150,9 +147,6 @@ const AIPage = () => {
     const noProviderConfigured = availableModelsForProvider.length === 0 && !isProviderCatalogLoading;
     const isThreadEmpty = !isMessagesLoading && messages.length === 0;
 
-    // Row renders `items-center` by default. Only the empty/starter state may
-    // center vertically; with messages the pane must stretch so the thread
-    // starts at the top and the composer pins to the bottom.
     let workspaceClassName = 'ai-page-workspace';
     if (isThreadEmpty) {
         workspaceClassName += ' is-empty';

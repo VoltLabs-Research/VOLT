@@ -19,7 +19,6 @@ export interface GetLineStyledModelStreamInputDTO {
     timestep: string;
     analysisId: string;
     exposureId: string;
-    // JSON-encoded LineStyleSpec — it rides the GLB GET url's query string.
     style?: string;
 };
 
@@ -32,7 +31,6 @@ export interface GetLineModelRangesStreamInputDTO {
     timestep: string;
     analysisId: string;
     exposureId: string;
-    // JSON-encoded LineStyleSpec; omitted for the exposure's baked GLB.
     style?: string;
 };
 

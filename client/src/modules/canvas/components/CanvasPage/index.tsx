@@ -177,10 +177,6 @@ const CanvasPage = () => {
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
 
-    // Register the live viewer context into the canvas bridge so AI client tools
-    // (control_playback, seek_frame, reset_camera, …) can reach the active
-    // trajectory + scene ref. Cleared on unmount so off-canvas tool calls fail
-    // gracefully ("viewer not mounted").
     const activeScene = useEditorStore((s) => s.activeScene);
     const registerCanvasBridge = useCanvasBridgeStore((s) => s.register);
     const unregisterCanvasBridge = useCanvasBridgeStore((s) => s.unregister);

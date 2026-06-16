@@ -6,13 +6,8 @@ import type { GetAtomsOutputDTO, AtomColumnView } from '@/modules/trajectory/api
 import type { AtomContext, ColumnView, DType, Expr } from '@voltstack/expressions';
 import type { ExpressionSelectStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
 
-// Mirrors use-expression-evaluator: atom counts above this route to the daemon
-// instead of being evaluated in-browser.
 const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
 
-// Single-page fetch of the whole frame so every atom has a mask entry that lines
-// up 1:1 with the GLB vertices (pre morton sort) — matches the other full-frame
-// consumers and shares their TanStack Query cache.
 const FULL_FRAME_LIMIT = 50_000_000;
 
 interface UseExpressionVisibilityMaskParams {
@@ -40,10 +35,6 @@ const toColumnView = (col: AtomColumnView): ColumnView => ({
 });
 
 const buildContext = (atomBuffer: GetAtomsOutputDTO, frameIndex: number): AtomContext => {
-    // Cache the resolved + wrapped column view per name so the per-atom
-    // interpreter pays the atomBuffer.getColumn lookup and the toColumnView
-    // allocation once per column (not once per atom × variable node — up to 1M
-    // atoms). Same return value for a given name, computed lazily on first use.
     const columnCache = new Map<string, ColumnView | undefined>();
     return {
         N: atomBuffer.count,
@@ -113,13 +104,11 @@ const useExpressionVisibilityMask = ({
             return { mask: null, autoRoute: true };
         }
 
-        // Parse once per expression; skip any that fail to parse (no-op).
         const asts: Expr[] = [];
         for (const expr of expressions) {
             try {
                 asts.push(parse(expr));
             } catch {
-                // Invalid expression — treated as no-op.
             }
         }
         if (asts.length === 0) {
@@ -139,8 +128,6 @@ const useExpressionVisibilityMask = ({
                     }
                 }
             } catch {
-                // Evaluation failed mid-column — skip this expression entirely so
-                // a single bad expression never hides the whole cloud.
             }
         }
 

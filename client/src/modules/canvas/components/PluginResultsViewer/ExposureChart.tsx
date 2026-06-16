@@ -19,7 +19,6 @@ interface ExposureChartProps {
 
 const CHART_COLOR = '#3b82f6';
 
-// Detect numeric columns from the first row.
 const detectNumericColumns = (rows: ListingRow[]): string[] => {
     if (rows.length === 0) return [];
     return Object.keys(rows[0]).filter((k) => {
@@ -28,7 +27,6 @@ const detectNumericColumns = (rows: ListingRow[]): string[] => {
     });
 };
 
-// Determine chart type from exposure metadata.
 const resolveChartType = (artifact: SceneArtifact): 'line' | 'bar' | 'scatter' => {
     const meta = artifact.metadata ?? {};
     const chartType = meta.chartType as string | undefined;
@@ -46,13 +44,11 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
     const numericCols = useMemo(() => detectNumericColumns(rows), [rows]);
     const chartType = resolveChartType(artifact);
 
-    // Pick x-axis col (prefer 'frame', 'timestep', or first numeric col).
     const xKey = useMemo(() => {
         const frameKey = numericCols.find((k) => k === 'frame' || k === 'timestep' || k === 'index');
         return frameKey ?? numericCols[0] ?? '';
     }, [numericCols]);
 
-    // Y-axis cols: all numeric cols that are not the x-axis.
     const yKeys = useMemo(() => numericCols.filter((k) => k !== xKey).slice(0, 4), [numericCols, xKey]);
 
     const chartData = useMemo(() =>
@@ -68,7 +64,6 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
         if (brushStart === null || brushEnd === null) return;
         const lo = Math.min(brushStart, brushEnd);
         const hi = Math.max(brushStart, brushEnd);
-        // Dispatch an expression-select pipeline stage using the brushed frame range.
         addStage('expression-select', {
             expression: xKey ? `${xKey} >= ${lo} && ${xKey} <= ${hi}` : ''
         });

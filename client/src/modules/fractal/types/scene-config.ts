@@ -14,22 +14,12 @@ export interface LineSceneSettings {
     lineWidth: number;
 }
 
-// Bond rendering settings for a bonds exposure. A bonds GLB is a line-tube
-// cylinder mesh (daemon BondExporter delegates to the line exporter), so width
-// is expressed as LineSceneSettings; these fields carry the bond-specific inputs
-// the fractal bond primitive (BondsModelViewer) maps to that, plus the count
-// used for scale-aware render gating (see bond-render.ts).
 export interface BondSceneSettings {
-    // Per-bond cylinder radius the exposure was baked with (Å).
     radius?: number;
-    // User width override (Å) — applied in-frame via the engine's line-width path.
     widthOverride?: number;
-    // Total bond count, for the scale-aware render gate (geometry budget cap).
     count?: number;
 }
 
-// Triangle ranges per line entity, read from the GLB's `.ranges.json` sidecar.
-// Maps a listing row's entity id to the index-buffer slice of its tube.
 export interface LineEntityRange {
     id: number;
     triangleStart: number;

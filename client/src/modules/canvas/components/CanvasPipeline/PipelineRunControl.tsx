@@ -145,8 +145,6 @@ const PipelineRunControl = ({
                     trajectoryId,
                     pluginName: pluginStageNames[index] ?? 'Analysis',
                     timestep: viewTimestep,
-                    // Auto-select only the last computed result so completion toasts
-                    // don't fight over which scene to focus.
                     autoSelect: index === analysisIds.length - 1
                 });
             });

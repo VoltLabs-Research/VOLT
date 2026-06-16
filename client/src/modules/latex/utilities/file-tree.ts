@@ -111,7 +111,6 @@ export const buildFileTree = (
     const visibleAssets = assets.filter((asset) => !isFolderPlaceholderAsset(asset));
     const folderMap = new Map<string, FileTreeNode>();
 
-    // Ensure all required ancestor folders exist.
     for (const folderPath of folderPaths) {
         if (folderPath) {
             ensureFolder(folderMap, folderPath);
@@ -131,7 +130,6 @@ export const buildFileTree = (
         }
     }
 
-    // Wire up parent → child relationships between folders.
     for (const [path, node] of folderMap) {
         const parentPath = ancestorFolders(path).slice(0, -1).pop();
         if (parentPath) {
@@ -141,7 +139,6 @@ export const buildFileTree = (
 
     const rootChildren: FileTreeNode[] = [];
 
-    // Add top-level folders (no parent folder) to root.
     for (const [path, node] of folderMap) {
         const isTopLevel = ancestorFolders(path).length === 1;
         if (isTopLevel) {
@@ -149,7 +146,6 @@ export const buildFileTree = (
         }
     }
 
-    // Add file nodes under their respective folder or root.
     for (const file of files) {
         const fileNode: FileTreeNode = {
             id: `file:${file._id}`,
@@ -167,7 +163,6 @@ export const buildFileTree = (
         }
     }
 
-    // Add asset nodes under their respective folder or root.
     for (const asset of visibleAssets) {
         const fp = assetFolderPath(asset);
         const assetNode: FileTreeNode = {

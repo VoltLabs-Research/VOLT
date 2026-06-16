@@ -12,12 +12,6 @@ const buildRegistryKey = (teamClusterId: string, exposureId: string): string => 
     return `${teamClusterId}:${exposureId}`;
 };
 
-// `@Singleton()` keeps the class self-registered under its own constructor so
-// the cluster-internal positional injection (TeamClusterReverseChannelService)
-// keeps resolving the same shared singleton. `@AliasOf(...)` adds the neutral
-// cross-module token the scripting consumers inject against. A bare
-// `@Singleton(token)` would register ONLY under the token (see decorators.ts)
-// and break the by-class injection — hence the Singleton + AliasOf idiom.
 @Singleton()
 @AliasOf(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService)
 export default class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryService, ITeamClusterExposureRegistryServicePort {

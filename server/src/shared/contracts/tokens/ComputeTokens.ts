@@ -11,18 +11,13 @@
  * so there is a single source of truth.
  */
 export const COMPUTE_TOKENS = Object.freeze({
-    // analysis
     AnalysisRepository: Symbol.for('AnalysisRepository'),
     AnalysisExecutionLogService: Symbol.for('AnalysisExecutionLogService'),
     GetAnalysisFrameLogUseCase: Symbol.for('GetAnalysisFrameLogUseCase'),
-    // trajectory
     TrajectoryRepository: Symbol.for('TrajectoryRepository'),
     TrajectoryFrameRepository: Symbol.for('TrajectoryFrameRepository'),
     SceneArtifactRepository: Symbol.for('SceneArtifactRepository'),
-    // jobs
     TeamJobMaintenanceService: Symbol.for('TeamJobMaintenanceService'),
-    // plugin
     PluginRepository: Symbol.for('PluginRepository'),
-    // cluster storage placement
     StoragePlacementService: Symbol.for('StoragePlacementService')
 });

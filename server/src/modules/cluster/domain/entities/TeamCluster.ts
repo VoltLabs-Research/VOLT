@@ -1,7 +1,3 @@
-// Pure data shapes (enums + *Props interfaces + TeamClusterRole) now live in the
-// neutral contracts layer for the detachable-modules migration. Re-exported here
-// so existing `@modules/cluster/domain/entities/TeamCluster` importers — and the
-// runtime helpers/class below — keep compiling unchanged.
 export {
     TeamClusterStatus
 } from '@shared/contracts/types/TeamCluster';
@@ -29,10 +25,6 @@ import type {
     TeamClusterProps
 } from '@shared/contracts/types/TeamCluster';
 
-// Pure capability-resolution helpers now live in the neutral shared layer
-// (detachable-modules migration) so consumers needn't import this entity. Re-
-// exported here so existing `@modules/cluster/domain/entities/TeamCluster`
-// importers — and the class below — keep compiling unchanged.
 export {
     resolveTeamClusterRoleCapabilities,
     buildTeamClusterEffectiveCapabilities,

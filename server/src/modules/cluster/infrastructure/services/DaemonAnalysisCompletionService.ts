@@ -12,11 +12,6 @@ import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contrac
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { JobStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types';
-// cluster EMITS the analysis-, jobs- and trajectory-owned events
-// (analysis.stage.changed / analysis.status.changed / job.status.changed /
-// trajectory.updated) via the neutral GenericDomainEvent, dispatched by name.
-// This removes the static import of those owner modules' event classes; the
-// neutral payload contracts type the payloads.
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
@@ -66,7 +61,6 @@ const JOB_STATUS_PUBLISH_BATCH_SIZE = 50;
 const swallow = (message: string, context: Record<string, unknown>) =>
     (err: unknown) => logger.warn({ ...context, err }, `[DaemonAnalysisCompletion] ${message}`);
 
-// Returns [drained (0|1), failedJobs]; idempotent: if remainingKey is already gone, returns [0, 0].
 const DECREMENT_DRAIN_SCRIPT = `
 local ttl = tonumber(ARGV[1])
 if redis.call('EXISTS', KEYS[1]) == 0 then
@@ -84,7 +78,6 @@ end
 return {0, 0}
 `;
 
-// Returns [remainingJobs, failedJobs]; late-arriving receipts may already have drained the session.
 const INITIALIZE_SESSION_SCRIPT = `
 local remainingKey = KEYS[1]
 local failedKey = KEYS[2]
@@ -522,11 +515,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             error: input.error
         });
 
-        // Why: persist `hasPreview` so the dashboard listing can render
-        // thumbnail availability without paying a MinIO `listObjects` round-trip
-        // per row. The first successful rasterize per trajectory flips this on;
-        // it stays on until the trajectory is deleted (the document goes with
-        // it). Subsequent runs are no-ops on the value but the write is cheap.
         if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
             try {
                 await this.trajectoryRepo.updateById(resolved.trajectory._id, { hasPreview: true });

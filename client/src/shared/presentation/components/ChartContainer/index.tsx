@@ -37,8 +37,6 @@ const ChartContainer = ({
     };
 
     const renderStat = (stat: ChartStat) => {
-        // Legacy default: treat stats without an emphasis flag as secondary
-        // so old call sites keep their low-visual-weight behaviour.
         const emphasis: ChartStatEmphasis = stat.emphasis ?? 'secondary';
         const valueClassName = emphasis === 'primary'
             ? 'chart-stat-value chart-stat-value-primary'

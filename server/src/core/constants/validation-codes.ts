@@ -1,4 +1,3 @@
-// Validation Codes Format: ModelName::Property::Type
 export const ValidationCodes = {
     CONTAINER_NAME_REQUIRED: 'Container::Name::Required',
     CONTAINER_IMAGE_REQUIRED: 'Container::Image::Required',

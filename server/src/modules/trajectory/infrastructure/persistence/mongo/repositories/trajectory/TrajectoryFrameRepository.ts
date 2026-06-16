@@ -6,7 +6,6 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import mongoose from 'mongoose';
 
-
 import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
 import type { ITrajectoryFrameRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
 import type { GetFramesOptions } from '@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository';
@@ -144,9 +143,6 @@ export default class TrajectoryFrameRepository implements ITrajectoryFrameReposi
             return doc;
         });
 
-        // Why: `ordered: false` lets MongoDB finish the rest of the batch when a
-        // duplicate (trajectoryId, timestep) is re-sent — idempotent from the
-        // caller's perspective, no throw on the unique index collision.
         await TrajectoryFrameModel.collection.insertMany(documents, { ordered: false }).catch((error) => {
             if ((error as { code?: number }).code === 11000) return;
             throw error;

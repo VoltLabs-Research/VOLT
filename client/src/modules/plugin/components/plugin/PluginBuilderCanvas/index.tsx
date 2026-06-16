@@ -77,7 +77,6 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
         [themeColors]
     );
 
-    // Initialize debug socket subscriptions
     usePluginDebugSocket();
 
     const {

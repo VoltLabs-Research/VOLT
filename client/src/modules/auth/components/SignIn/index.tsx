@@ -148,8 +148,6 @@ const SignInTemplate = () => {
 
         const values = getValues();
 
-        // Client-side guards mirroring the server policy (the server remains authoritative):
-        // enforce the advertised 8-char minimum and a matching confirmation before submitting.
         if (values.password.length < 8) {
             sileo.error({
                 title: 'Password too short',

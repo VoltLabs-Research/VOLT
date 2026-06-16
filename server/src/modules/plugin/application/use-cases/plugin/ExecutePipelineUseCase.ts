@@ -47,19 +47,8 @@ const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'ChartExporter'
 ]);
 
-// Key under which the persisted analysis config carries UI-only execution
-// metadata (the timesteps this analysis was run for). The canvas right panel
-// reads `config[ANALYSIS_EXECUTION_METADATA_KEY].selectedTimesteps` to scope
-// each analysis to the frames it actually covers, so without it every analysis
-// renders at every timestep. MUST stay in sync with the client constant of the
-// same name in client/src/modules/canvas/utilities/selected-timestep-analysis.ts
-// (the two packages share no import path). Kept OUT of the stage hash and the
-// daemon dispatch config — it is bookkeeping for the UI, not an execution input.
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-// Exposures whose node carries an `id` (length >= 1) feed ctx.sharedExposures
-// downstream. Collected so a cache-hit stage can still seed the context from a
-// reused analysis without re-running the binary.
 const collectSharedExposureIds = (plugin: { props: { exposures?: unknown } }): string[] => {
     const exposures = Array.isArray(plugin.props.exposures) ? plugin.props.exposures : [];
     const ids: string[] = [];
@@ -149,31 +138,17 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 : frame.simulationCell?._id) ?? ''
         }));
 
-        // Resolve the timesteps to run. When the request omits an explicit
-        // selection, default to every trajectory frame. This mirrors the daemon's
-        // own fallback AND, crucially, ships an explicit list: the daemon resolves
-        // an empty selection by reading frames off the first plugin compute stage's
-        // payload, so an all-cache-hit pipeline (which carries no plugin payload)
-        // would otherwise crash with "no selected timesteps and no trajectory
-        // frames to resolve them from". Sending the list here keeps a valid
-        // trajectory runnable regardless of cache state.
         const resolvedSelectedTimesteps = input.selectedTimesteps?.length
             ? input.selectedTimesteps
             : trajectoryFramePayloads.map((frame) => frame.timestep);
 
         if (resolvedSelectedTimesteps.length === 0) {
-            // The trajectory genuinely has no frames to run against (still
-            // processing, or its upload produced nothing). That is a client-state
-            // problem, not a server fault — surface 422 instead of letting the
-            // daemon reject the dispatch with a raw 500.
             return Result.fail(ApplicationError.unprocessableEntity(
                 ErrorCodes.TRAJECTORY_DATA_PARSE_FAILED,
                 'This trajectory has no frames to run the pipeline on. Wait for trajectory processing to finish, or re-upload a valid trajectory.'
             ));
         }
 
-        // Walk the stages in order, accumulating the upstream content-hash chain
-        // so each plugin stage's hash captures everything that runs before it.
         const upstreamStageHashes: string[] = [];
         const stageExecutions: PipelineStageExecutionInput[] = [];
         const createdAnalyses: Analysis[] = [];
@@ -182,8 +157,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
         try {
             for (const stage of input.stages) {
                 if (stage.kind !== 'plugin') {
-                    // Dump-mutating client stage (slice / expression): no analysis,
-                    // just folds into the downstream hash chain + ships its config.
                     upstreamStageHashes.push(computeDumpStageHash(stage.kind, stage.config));
                     stageExecutions.push({ kind: stage.kind, config: stage.config });
                     continue;
@@ -223,8 +196,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
                 stages: stageExecutions
             });
         } catch (error: unknown) {
-            // Mark any analyses we created (for compute stages) as failed so they
-            // don't hang in `pending` after a dispatch error.
             await Promise.all(createdAnalyses.map((analysis) =>
                 this.analysisRepo.updateById(analysis._id, {
                     status: 'failed',
@@ -302,8 +273,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             config: sanitizedConfig
         });
 
-        // Cache lookup: a previously COMPLETED analysis with the same content
-        // hash means this stage's output is already on the cluster — reuse it.
         const cached = await this.analysisRepo.findOne({
             pipelineStageHash: stageHash,
             status: 'completed',
@@ -321,15 +290,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             };
         }
 
-        // Cache miss: resolve dependencies and create the analysis. Cross-plugin
-        // CHAINING is gone in the pipeline model, but argument-level plugin
-        // references survive for MultiSOM (its feature providers are a real
-        // user-facing feature, not a hidden dependency — see the rebuild plan).
-        // We therefore resolve the argument references from this stage's config
-        // and fold the referenced plugins (plus their transitive deps) into the
-        // dependency set, so the router ships them as nestedPlugins + the daemon
-        // can run the nested provider workflows. A plugin with no pluginReference
-        // arguments (every plugin except MultiSOM today) yields an empty set here.
         const referenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
             plugin,
             sanitizedConfig
@@ -359,9 +319,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             ));
         }
 
-        // nestedPlugins (built by the router from pluginDependencies) must contain
-        // the declared deps, the referenced provider plugins themselves, AND those
-        // providers' transitive deps — deduped by id. Mirror the debug path.
         const pluginDependencies = Array.from(new Map(
             [
                 ...dependencyResolution.dependencies,
@@ -380,10 +337,6 @@ export class ExecutePipelineUseCase implements IUseCase<ExecutePipelineInputDTO,
             pluginDisplayName,
             computeClusterId,
             storageClusterId,
-            // Persist the run's selected timesteps as UI-only metadata so the
-            // canvas right panel scopes this analysis to the frames it covers.
-            // The clean `sanitizedConfig` (no metadata) is what feeds the stage
-            // hash and the daemon dispatch — this superset is persistence-only.
             config: { ...sanitizedConfig, [ANALYSIS_EXECUTION_METADATA_KEY]: { selectedTimesteps } },
             pipelineStageHash: stageHash,
             team: input.teamId,

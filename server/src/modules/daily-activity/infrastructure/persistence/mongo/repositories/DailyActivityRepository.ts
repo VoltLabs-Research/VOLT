@@ -71,7 +71,6 @@ export default class DailyActivityRepository
             date: { $gte: startDate }
         };
 
-        // Return individual documents per user/date instead of grouping by date only
         const activities = await this.model.find(statsQuery)
             .select('date user minutesOnline activity team')
             .populate('user', 'firstName lastName avatar')

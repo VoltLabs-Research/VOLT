@@ -54,11 +54,6 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         error
     } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, { enabled });
 
-    // Each react-query page object is immutable once fetched, so convert it to
-    // AoS exactly once and cache by page identity. Without this, fetchNextPage
-    // produces a new infiniteData holding all prior pages, and a flat
-    // `pages.flatMap(atomsToAoS)` would re-materialize every page on each fetch
-    // (cumulative O(P²) object allocations as pages accumulate).
     const aosCacheRef = useRef(new WeakMap<GetAtomsOutputDTO, AtomData[]>());
 
     const rows: AtomData[] = useMemo(() => {

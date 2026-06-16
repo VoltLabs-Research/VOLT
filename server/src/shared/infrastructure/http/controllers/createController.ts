@@ -50,10 +50,6 @@ type PreparedDownloadStreamControllerOptions<
     TUseCase extends IUseCase<unknown, StreamableOutput, unknown>
 > = Omit<StreamControllerOptions<TUseCase>, 'getHeaders' | 'prepareOutput'>;
 
-// ---------------------------------------------------------------------------
-// Shared helpers — identical across every variant, defined once.
-// ---------------------------------------------------------------------------
-
 const getControllerOptions = <TUseCase extends UseCaseInstance>(
     statusCodeOrOptions: HttpStatus | ControllerOptions<TUseCase> | undefined,
     fallbackStatusCode: HttpStatus
@@ -112,13 +108,6 @@ const composeHandle = <THandler extends (req: AuthenticatedRequest, res: Respons
 
     return handle;
 };
-
-// ---------------------------------------------------------------------------
-// Public factories — each returns a concrete class type so call sites keep
-// their existing narrowed shape for tsyringe's `container.resolve` / route
-// wiring. The shared pieces above eliminate 95% of the duplication that
-// used to live inside each factory.
-// ---------------------------------------------------------------------------
 
 export const createController = <TUseCase extends UseCaseInstance>(
     useCaseToken: InjectionToken<TUseCase>,

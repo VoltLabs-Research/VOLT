@@ -38,7 +38,6 @@ export interface ExecutePipelineInputDTO {
 }
 
 export interface ExecutePipelineOutputDTO {
-    // One analysisId per COMPUTED plugin stage, in pipeline order (cache hits omitted).
     analysisIds: string[];
 }
 

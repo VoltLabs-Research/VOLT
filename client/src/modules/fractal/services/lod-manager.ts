@@ -3,37 +3,13 @@ import { geometryBudgetManager } from '@/modules/fractal/services/geometry-budge
 
 import type { LODCell, LODSettings, OctreeMetadata, TileFetchRequest } from '@/modules/fractal/types/lod-config';
 
-// LODManager — octree navigation + screen-space tier selection + visible-region
-// tile selection. Pure (no React); the hook (use-lod-streaming) owns its
-// lifecycle and the engine reads its output.
-//
-// The manager walks the flat, level-ordered cells[] the daemon baked (parent
-// before children; childIndices index into the same array). For each frame it:
-//   1. Descends from the root, keeping any cell that intersects the frustum.
-//   2. Stops descending into a cell once its projected screen-space size is at or
-//      below the target budget (adaptive) or once it reaches the chosen level
-//      (manual) — that cell is a render tier; its children are skipped.
-//   3. Returns the selected leaf-ish cells + a fetch request for those not yet
-//      cached.
-//
-// v1 octrees carry no per-cell GLB (`glbKey` absent) — the whole cloud is one
-// GLB and cells are index ranges. So selection produces index ranges the engine
-// could draw-range against; the per-cell tile fetch is the forward slot for when
-// the daemon bakes per-cell GLBs. The manager already speaks both: a cell with a
-// `glbKey` becomes a fetch target, one without is an index range.
-
 const WORLD_BOX = new THREE.Box3();
 const WORLD_SPHERE = new THREE.Sphere();
 const TMP_VEC = new THREE.Vector3();
 
 export interface LODSelection {
-    // Cells chosen to render this frame (the visible tier set).
     cells: LODCell[];
-    // Their indices into octree.cells, for cache + fetch bookkeeping.
     cellIndices: number[];
-    // Contiguous [firstAtomIndex, atomCount] ranges into the octree-ordered atom
-    // buffer for the selected cells, merged where adjacent. The engine can draw
-    // only these ranges of the single-GLB point cloud (v1 path).
     atomRanges: Array<{ start: number; count: number }>;
 }
 
@@ -41,9 +17,6 @@ export class LODManager {
     private octree: OctreeMetadata;
     private viewport: { width: number; height: number };
     private camera: THREE.Camera;
-    // Cells whose geometry the fetcher has already cached (by cell index). v1
-    // never populates this (single GLB), but the fetch/cache contract is here for
-    // per-cell tiles.
     private cachedCells = new Set<number>();
     private readonly frustum = new THREE.Frustum();
     private readonly projScreenMatrix = new THREE.Matrix4();
@@ -53,7 +26,6 @@ export class LODManager {
         this.viewport = viewport;
         this.camera = camera;
         if (octree.geometryBudget) {
-            // Honor the caps the bake assumed across all geometry features.
             geometryBudgetManager.applyBudget(octree.geometryBudget);
         }
     }
@@ -78,8 +50,6 @@ export class LODManager {
         return this.octree;
     }
 
-    // Refresh the cached frustum from the current camera. Called once per
-    // selection so every cell test reads a consistent frustum.
     private updateFrustum(): void {
         this.projScreenMatrix.multiplyMatrices(
             this.camera.projectionMatrix,
@@ -95,10 +65,6 @@ export class LODManager {
         return this.frustum.intersectsBox(WORLD_BOX);
     }
 
-    // Estimated projected size of a cell's bounding sphere, in CSS pixels. Uses
-    // the perspective relation size_px ≈ (radius / dist) * (viewportHeight /
-    // (2 tan(fov/2))). For a non-perspective camera, falls back to a large value
-    // so adaptive selection renders the cell (it cannot LOD on distance).
     estimateScreenSpaceSizePixels(cell: LODCell): number {
         const { bounds } = cell;
         WORLD_BOX.min.set(bounds.minX, bounds.minY, bounds.minZ);
@@ -114,19 +80,13 @@ export class LODManager {
         this.camera.getWorldPosition(TMP_VEC);
         const distance = TMP_VEC.distanceTo(WORLD_SPHERE.center);
         if (distance <= radius) {
-            // Camera inside the cell — treat as maximally large so we descend.
             return Number.POSITIVE_INFINITY;
         }
         const fovRad = (this.camera.fov * Math.PI) / 180;
         const projected = (radius / distance) * (this.viewport.height / (2 * Math.tan(fovRad / 2)));
-        // Diameter in pixels.
         return projected * 2;
     }
 
-    // Select the render tier set for the current camera + settings. Adaptive:
-    // descend until a cell is small enough (screen-space ≤ target) or is a leaf.
-    // Manual: render every frustum-intersecting cell at exactly settings.currentLevel
-    // (clamped to maxDepth).
     selectLODTiles(settings: LODSettings): LODSelection {
         this.updateFrustum();
         const cells = this.octree.cells;
@@ -140,7 +100,6 @@ export class LODManager {
             ? Math.max(0, Math.min(settings.currentLevel, this.octree.maxDepth))
             : -1;
 
-        // Iterative descent from the root (cell 0).
         const stack: number[] = [0];
         while (stack.length > 0) {
             const index = stack.pop()!;
@@ -168,9 +127,6 @@ export class LODManager {
         };
     }
 
-    // Build a fetch request for selected cells that carry a per-cell GLB and are
-    // not yet cached. Returns null when nothing needs fetching (the v1 single-GLB
-    // case, or all tiles cached).
     requestTiles(analysisId: string, selection: LODSelection): TileFetchRequest | null {
         const cellIndices: number[] = [];
         for (let i = 0; i < selection.cells.length; i += 1) {
@@ -185,8 +141,6 @@ export class LODManager {
     }
 }
 
-// Merge selected cells' [firstAtomIndex, atomCount) into ascending, coalesced
-// ranges so the engine draws contiguous slices of the octree-ordered buffer.
 const mergeAtomRanges = (cells: LODCell[]): Array<{ start: number; count: number }> => {
     const ranges = cells
         .map((cell) => ({ start: cell.firstAtomIndex, count: cell.atomCount }))

@@ -50,8 +50,6 @@ const detectArchiveRootPrefix = (paths: string[]): string => {
     }
 
     const [onlySegment] = [...topLevelSegments];
-    // Only treat it as a wrapper dir if at least one entry actually nests beneath it
-    // (a single flat file named "plugin.json" has one segment but no nesting).
     const isWrapperDir = paths.some((entryPath) => entryPath.startsWith(`${onlySegment}/`));
     return isWrapperDir ? `${onlySegment}/` : '';
 };
@@ -339,10 +337,6 @@ export default class PluginStorageService implements IPluginStorageService {
             );
         }
 
-        // A packaged plugin (e.g. the prebuilt kmeans-clustering.zip) usually nests everything under
-        // a single top-level directory (`kmeans-clustering/plugin.json`), while a hand-zipped one has
-        // files at the root (`plugin.json`). Detect a single common top-level prefix and strip it so
-        // both layouts import. If entries diverge at the top level, prefix is '' (treat as root).
         const archivePrefix = detectArchiveRootPrefix(directory.files.map((file) => file.path));
         const resolveEntry = (relativePath: string): unzipper.File | undefined =>
             directory.files.find((file) => file.path === `${archivePrefix}${relativePath}`);
@@ -517,7 +511,6 @@ export default class PluginStorageService implements IPluginStorageService {
             ? (await this.pluginRepo.updateById(existing.id, pluginProps)) ?? existing
             : await this.pluginRepo.create(pluginProps);
 
-        // Pin the binary placement to the cluster that downloaded and stored it.
         await this.storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
 
         newPlugin.props.workflow.updateEntrypoint({

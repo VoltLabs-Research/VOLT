@@ -33,7 +33,6 @@ import {
 
 const TOMBSTONE_TTL_SECONDS = 600;
 
-
 /**
  * Narrow, jobs-owned ports describing exactly the trajectory-side capabilities
  * this maintenance service consumes. They exist locally because no neutral
@@ -528,9 +527,7 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
             const analysisId = analysisIdsByJobId.get(job.jobId);
             const delResult = this.didRedisMutationAffect(results[index]);
             index += 1;
-            // srem projected-jobs
             index += 1;
-            // tombstone mutation (no counted affect)
             index += 1;
 
             if (analysisId) {

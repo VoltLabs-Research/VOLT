@@ -17,7 +17,6 @@ export interface ChatProps {
     updatedAt: Date;
     createdAt: Date;
 
-    // Group chat fields
     isGroup: boolean;
     groupName: string;
     groupDescription: string;

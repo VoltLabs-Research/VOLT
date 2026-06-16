@@ -319,9 +319,6 @@ const WhiteboardEditorPage = () => {
     const registerEditorHandle = useWhiteboardEditorHandleStore((state) => state.register);
     const unregisterEditorHandle = useWhiteboardEditorHandleStore((state) => state.unregister);
 
-    // Expose the live Excalidraw scene to the `draw_on_whiteboard` AI tool. The
-    // handle is a pure callback bridge (no Excalidraw types leak into the store),
-    // registered while this board is open and cleared on unmount.
     useEffect(() => {
         if (!resolvedWhiteboardId) {
             return;
@@ -497,7 +494,6 @@ const WhiteboardEditorPage = () => {
         return null;
     }
 
-    // Cast from JSON-serialized state to Excalidraw types at the boundary.
     const excalidrawInitialData = {
         elements: initialState?.elements ?? [],
         appState: normalizeWhiteboardRuntimeAppState(initialState?.appState ?? {}),

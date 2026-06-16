@@ -36,8 +36,6 @@ const useNotificationData = () => {
     }, [infiniteQuery]);
 
     const markAllAsRead = useCallback(async () => {
-        // showPromise rethrows so callers can chain; swallow here because
-        // the toast already informs the user and callers do not await.
         try {
             await showPromise(markAllReadMutation.mutateAsync(), {
                 loading: { title: 'Marking notifications as read...' },
@@ -45,7 +43,6 @@ const useNotificationData = () => {
                 error: { title: 'Failed to mark notifications as read' }
             });
         } catch {
-            // intentional no-op
         }
     }, [markAllReadMutation]);
 

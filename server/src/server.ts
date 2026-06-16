@@ -118,9 +118,6 @@ process.on('uncaughtException', (error: Error) => {
 const startServer = async () => {
     await registerAllDependencies();
 
-    // Passport strategies resolve OAuthLoginUseCase, whose dependency graph spans
-    // multiple modules (e.g. team/DefaultTeamEnroller). Configure them only after
-    // autoload has registered every module's tokens.
     configureOAuthStrategies();
 
     await startTempStorageLifecycle();
@@ -197,9 +194,6 @@ const startServer = async () => {
 
             activeSocketGateway = container.resolve(SocketGateway);
 
-            // Lifecycle runners belong to optional compute modules. Resolve/start
-            // each only when its module is enabled — otherwise autoload skipped its
-            // files and resolving would throw. (socket is kernel, always on.)
             if (isModuleEnabled('cluster')) {
                 activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
             }

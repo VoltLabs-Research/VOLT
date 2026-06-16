@@ -144,10 +144,6 @@ const AIConversationSidebar = ({
             deleteTooltip = 'Delete conversation';
         }
 
-        // The row is clickable, but while editing it hosts a text input and
-        // action buttons — nesting those inside a real <button> is invalid HTML.
-        // We expose it as role="button" only when not editing, so interactive
-        // descendants stay valid.
         const interactiveProps = isEditing
             ? {}
             : {

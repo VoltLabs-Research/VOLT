@@ -122,8 +122,6 @@ const usePluginExecution = ({
 
         const pluginName = option.title;
 
-        // Pre-flight: a missing trajectory means there is nothing to run the
-        // analysis against. Tell the user instead of silently no-op'ing.
         if (!trajectoryId) {
             sileo.warning({
                 title: `Can't run ${pluginName}`,
@@ -161,9 +159,6 @@ const usePluginExecution = ({
             const config: Record<string, unknown> = {};
 
             if (!selectedTeamClusterId) {
-                // Pre-flight: without a usable compute cluster the job cannot be
-                // dispatched. Surface a clear, actionable message rather than a
-                // generic "failed to start" toast.
                 sileo.warning({
                     title: `Can't run ${pluginName}`,
                     description: 'Connect or select a compute cluster for this team before running analyses.'

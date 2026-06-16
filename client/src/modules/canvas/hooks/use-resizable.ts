@@ -50,7 +50,6 @@ const persistSize = (storageKey: string | undefined, size: number) => {
     try {
         window.localStorage.setItem(storageKey, String(Math.round(size)));
     } catch {
-        // ignore quota/access errors
     }
 };
 

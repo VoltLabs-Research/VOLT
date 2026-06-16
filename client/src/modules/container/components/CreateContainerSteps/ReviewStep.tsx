@@ -53,8 +53,6 @@ const ReviewStep = ({
 }: ReviewStepProps) => {
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-    // Tick a simple seconds counter while a deploy is in flight so the user has a
-    // visible sign of progress even before the first lifecycle step arrives.
     useEffect(() => {
         if (!isLoading || !deployStartedAt) {
             setElapsedSeconds(0);

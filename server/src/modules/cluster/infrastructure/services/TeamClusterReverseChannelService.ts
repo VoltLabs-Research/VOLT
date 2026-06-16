@@ -238,7 +238,7 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
      * terminal sessions, etc.  Limits how much data can be buffered in a
      * single stream before backpressure kicks in.
      */
-    private readonly streamHighWaterMark = 256 * 1024; // 256 KB
+    private readonly streamHighWaterMark = 256 * 1024;
 
     constructor(
         private readonly socketEmitter: SocketIOEmitter,
@@ -860,10 +860,6 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
         this.touchSession(payload.requestId);
         const chunk = this.unwrapEnvelopeBuffer(payload.chunk);
         if (!entry.stream.write(chunk)) {
-            // Backpressure: stream buffer is full.  We log once but do not
-            // accumulate — Node's PassThrough will buffer up to highWaterMark
-            // and then start returning false.  The daemon side does not support
-            // pause/resume yet, so we accept the write but note the pressure.
             logger.debug(`[ReverseChannel] Stream backpressure hit requestId=${payload.requestId}`);
         }
     }
@@ -1328,8 +1324,6 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
      * channel. Envelope overhead is 10 B per chunk.
      */
     private wrapEnvelopeBuffer(chunk: Buffer | Uint8Array): Uint8Array {
-        // Buffer IS a Uint8Array subclass; encodeEnvelope only needs a
-        // Uint8Array view so no conversion is required.
         return encodeEnvelope(0, EnvelopeKind.StreamChunk, chunk);
     }
 

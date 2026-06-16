@@ -29,12 +29,12 @@ export interface SidebarProps {
     keepMounted?: boolean;
 };
 
-const Sidebar = ({ 
-    activeTag: activeTagId, 
+const Sidebar = ({
+    activeTag: activeTagId,
     onTagChange,
-    tags, 
-    children, 
-    overrideContent, 
+    tags,
+    children,
+    overrideContent,
     className = '',
     position = 'left',
     collapsible = true,
@@ -169,7 +169,6 @@ const Sidebar = ({
                             )}
 
                             {keepMounted ? (
-                                // Keep all tabs mounted, hide inactive ones with CSS
                                 tags.map((tag) => (
                                     <div
                                         key={tag.id}
@@ -183,7 +182,6 @@ const Sidebar = ({
                                     </div>
                                 ))
                             ) : (
-                                // Default: only render active tab
                                 activeTagConfig && (
                                     <div
                                         className='editor-sidebar-body'

@@ -16,7 +16,5 @@ export interface ListAIConversationsInputDTO {
     userId: string;
     page?: number;
     limit?: number;
-    // Express delivers query params as strings; the use-case coerces the raw
-    // value, so accept both the parsed boolean and the raw query string.
     includeArchived?: boolean | string;
 }

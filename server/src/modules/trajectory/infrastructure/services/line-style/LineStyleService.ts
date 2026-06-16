@@ -36,8 +36,6 @@ const buildClusterRequiredError = (): ApplicationError => {
     );
 };
 
-// Key-sorted stringify so equal styles always map to the same object name —
-// the styled GLB cache in MinIO falls out of the path being deterministic.
 const stableStringify = (value: unknown): string => {
     if (Array.isArray(value)) {
         return `[${value.map(stableStringify).join(',')}]`;
@@ -179,8 +177,6 @@ export default class LineStyleService implements ILineStyleService {
             ? buildLineStyleObjectName(trajectoryId, analysisId, timestep, exposureId, hashLineStyle(style))
             : await this.resolveExposureGlbObjectName(trajectoryId, analysisId, timestep, exposureId);
 
-        // The daemon keys the sidecar to the logical GLB (`<key>.glb.ranges.json`),
-        // stripping the `.zst` storage encoding the stored object name carries.
         return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.ranges.json`);
     }
 
@@ -192,14 +188,9 @@ export default class LineStyleService implements ILineStyleService {
     ): Promise<LineStyleStreamResponse> {
         const objectName = await this.resolveExposureGlbObjectName(trajectoryId, analysisId, timestep, exposureId);
 
-        // The daemon octree exporter keys the sidecar to the logical GLB
-        // (`<key>.glb.octree.json`, see buildOctreeMetadataSidecarKey), the same
-        // `.zst`-stripped base as the ranges sidecar.
         return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.octree.json`);
     }
 
-    // The export node options declared in the plugin definition (colorBy,
-    // propertyColors, material) are the daemon's styling baseline.
     private async resolveExportBaseOptions(
         analysisId: string,
         exposureId: string

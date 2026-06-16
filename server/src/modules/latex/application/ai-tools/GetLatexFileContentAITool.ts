@@ -21,8 +21,6 @@ export class GetLatexFileContentAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        // There is no single-file read use-case; ListLatexFilesUseCase already
-        // returns every file with its `content`, so resolve the target in-tool.
         const result = await this.useCase.execute({
             teamId: scope.teamId,
             documentId: params.documentId

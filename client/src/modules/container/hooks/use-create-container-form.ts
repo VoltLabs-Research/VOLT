@@ -33,8 +33,6 @@ const DEFAULT_CPU = 1;
 const DEFAULT_MEMORY = 512;
 const CREATE_CONTAINER_DRAFT_STORAGE_KEY = 'volt:create-container:draft';
 
-// Deterministic deploy lifecycle emitted by the ClusterDaemon DockerRuntime, in order.
-// Used to derive an honest completion rate for the deploy progress indicator.
 const DEPLOY_STEP_SEQUENCE = [
     'accepted',
     'pulling-image',
@@ -152,8 +150,6 @@ const useCreateContainerForm = (): UseCreateContainerFormReturn => {
 
         setDeployProgressMessage(nextMessage);
 
-        // Map the current lifecycle step onto a fraction of the known sequence so the
-        // progress bar reflects real backend progress rather than a fabricated value.
         if (event.step) {
             const stepIndex = DEPLOY_STEP_SEQUENCE.indexOf(event.step as typeof DEPLOY_STEP_SEQUENCE[number]);
             if (stepIndex >= 0) {

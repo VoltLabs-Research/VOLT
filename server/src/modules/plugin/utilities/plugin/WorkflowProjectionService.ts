@@ -32,12 +32,6 @@ export interface PluginProjection {
     exposures: ComputedExposure[];
     arguments: ArgumentDefinition[];
     listingExposures: ListingExposuresData | null;
-    // Pipeline dependency hints derived from the workflow so callers (notably the
-    // AI assistant) can order stages without hardcoded plugin knowledge.
-    // producesExposures: the stable exposure ids this plugin registers into the
-    // shared pipeline context. requiresExposures: the argument keys this plugin
-    // resolves FROM that context (inferFromContext) — each must be produced by an
-    // earlier stage. Both share one id namespace (ctx.sharedExposures[key]).
     producesExposures: string[];
     requiresExposures: string[];
 }
@@ -70,10 +64,6 @@ export default class WorkflowProjectionService {
         const argumentsNode = nodes.find((n) => n.type === WorkflowNodeType.Arguments);
         const args: ArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
 
-        // A stage publishes every exposure that carries a non-empty stable id,
-        // and consumes every argument flagged inferFromContext (its key IS the
-        // shared-exposure id the daemon injects). These let a caller satisfy a
-        // plugin's requiresExposures with an earlier stage's producesExposures.
         const producesExposures = exposures
             .map((exposure) => exposure.id)
             .filter((id): id is string => typeof id === 'string' && id.length >= 1);

@@ -74,8 +74,6 @@ export default class RedisEventBus implements IEventBus {
             const handlers = this.handlers.get(channel);
             if (!handlers || handlers.length === 0) return;
 
-            // Snapshot to avoid iterating a list that could be mutated
-            // concurrently by a subscribe() call arriving mid-dispatch.
             const snapshot = handlers.slice();
 
             let eventData: unknown;

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { Settings } from 'lucide-react';
 import './WindowControls.css';
 
-// The desktop preload (Electron) injects `window.volt`; absent in a plain browser, so the
-// whole control set renders nothing and the header stays a normal header.
 type Volt = {
     window?: { minimize: () => void; maximize: () => void; close: () => void };
     app?: { openShell?: (intent?: string) => void };
@@ -26,8 +24,6 @@ const WindowControls = () => {
 
     if (!win) return null;
 
-    // Deployment actions need the desktop shell (redeploy progress / onboarding); the menu
-    // itself stays in-place — only the chosen action hands off to the shell.
     const pick = (intent: string) => { setMenuOpen(false); openShell?.(intent); };
     const openAbout = () => { setMenuOpen(false); volt()?.shell?.openExternal?.(HOMEPAGE); };
 

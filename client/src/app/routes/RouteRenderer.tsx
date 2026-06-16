@@ -165,10 +165,6 @@ const isRouteModuleEnabled = (
 
     const serverEnabled = enabledModules === null || enabledModules.includes(route.moduleKey);
 
-    // A module hidden by the user is filtered out of the route table entirely:
-    // its lazy `loader` never runs, so its JS chunk is never fetched — full
-    // per-user decoupling, not just a hidden nav item. Its URLs fall through to
-    // the app-level NotFound catch-all.
     return serverEnabled && !hiddenModules.includes(route.moduleKey);
 };
 

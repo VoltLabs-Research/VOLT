@@ -41,7 +41,6 @@ const LatexPdfViewer = ({
 
     const committedNumPages = committedUrl ? pageCounts[committedUrl] ?? null : null;
 
-    // Clear the buffer whenever the preview is reset (compile error, no .tex yet).
     useEffect(() => {
         setPdfError(null);
 
@@ -56,8 +55,6 @@ const LatexPdfViewer = ({
         setScale(1);
     }, [pdfUrl]);
 
-    // Mount the visible buffer plus, when a newer compile arrives, a hidden one
-    // that preloads the next PDF before it is swapped in.
     const layerUrls = useMemo<string[]>(() => {
         const urls: string[] = [];
 
@@ -72,15 +69,12 @@ const LatexPdfViewer = ({
         return urls;
     }, [committedUrl, pdfUrl]);
 
-    // Promote the preloaded buffer once it has rendered. Runs after paint, so the
-    // previous PDF stays underneath until the new one fully covers it.
     useEffect(() => {
         if (readyUrl && readyUrl === pdfUrl) {
             setCommittedUrl((current) => current === readyUrl ? current : readyUrl);
         }
     }, [readyUrl, pdfUrl]);
 
-    // Drop page counts for buffers that are no longer mounted.
     useEffect(() => {
         setPageCounts((current) => {
             const next: Record<string, number> = {};
@@ -111,8 +105,6 @@ const LatexPdfViewer = ({
     }, []);
 
     const handleLayerLoadError = useCallback((url: string, nextError: Error): void => {
-        // Only surface failures for the visible PDF; ignore stale background buffers
-        // so a broken recompile keeps the last good preview on screen.
         setCommittedUrl((current) => {
             if (current === null || current === url) {
                 setPdfError(nextError.message || 'Failed to render PDF preview');

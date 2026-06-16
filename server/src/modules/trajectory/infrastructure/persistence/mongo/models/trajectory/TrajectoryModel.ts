@@ -45,10 +45,6 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         type: Boolean,
         default: true
     },
-    // Why: frames are now persisted in the `trajectoryframes` collection (see
-    // TrajectoryFrameModel). Embedding them here used to make a single
-    // trajectory document exceed 1 MB on long simulations and serialized every
-    // `$push` through the parent's write lock.
     rasterSceneViews: {
         type: Number,
         default: 0

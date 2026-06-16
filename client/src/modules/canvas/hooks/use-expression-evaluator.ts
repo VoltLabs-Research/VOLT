@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import type { GetAtomsOutputDTO, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
 import type { AtomContext, ColumnView, DType } from '@voltstack/expressions';
 
-// Atom counts above this threshold trigger auto-route to daemon evaluation.
 const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
 
 const toDType = (d: AtomColumnView['dtype']): DType => {

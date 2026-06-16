@@ -5,11 +5,9 @@ export const EntrypointDataSchema = new Schema({
     binary: {
         type: String
     },
-    // MinIO object path for the uploaded binary
     binaryObjectPath: {
         type: String
     },
-    // Original filename when uploaded
     binaryFileName: {
         type: String
     },

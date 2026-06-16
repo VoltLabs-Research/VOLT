@@ -26,8 +26,6 @@ import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject } from 'tsyringe';
 
-// --- Payload types from the client ---
-
 interface DebugStartPayload {
     pluginId: string;
     trajectoryId: string;
@@ -39,8 +37,6 @@ interface DebugStartPayload {
 interface DebugSessionPayload {
     sessionId: string;
 }
-
-// --- Response types from the daemon ---
 
 interface DaemonDebugNodeResult {
     nodeId: string;
@@ -159,12 +155,10 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
     }
 
     async onShutdown(): Promise<void> {
-        // Best-effort cleanup of all active sessions
         for (const [sessionId, entry] of this.pluginDebugSessionRegistry.listSessions()) {
             try {
                 await this.daemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId });
             } catch {
-                // Ignore errors during shutdown
             }
         }
     }
@@ -182,7 +176,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
                 const teamClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(teamId);
 
-                // Load plugin to get workflow
                 const plugin = await this.pluginRepository.findById(payload.pluginId);
                 if (!plugin) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
@@ -209,7 +202,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     : [];
                 const sanitizedConfig = sanitizeVisibleArgumentConfig(runtimeArguments, payload.config ?? {});
 
-                // Load trajectory to get frames
                 const trajectory = await this.trajectoryRepository.findById(payload.trajectoryId);
                 if (!trajectory) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
@@ -261,7 +253,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
 
                 const trajectoryFrames = await this.trajectoryFrameRepository.getFrames(payload.trajectoryId);
 
-                // Send debug.start command to daemon
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,
                     ChannelCommands.DebugStart,
@@ -279,13 +270,11 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     }
                 );
 
-                // Track session
                 this.pluginDebugSessionRegistry.registerSession(response.sessionId, {
                     socketId: conn.id,
                     teamClusterId
                 });
 
-                // Emit session:created to client
                 this.emitToSocket(conn.id, 'debug:session:created', {
                     sessionId: response.sessionId,
                     executionOrder: response.executionOrder,
@@ -293,7 +282,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     totalIterations: response.totalIterations
                 });
 
-                // Emit node:started for the first node
                 if (response.firstNode) {
                     this.emitToSocket(conn.id, 'debug:node:started', {
                         sessionId: response.sessionId,
@@ -376,12 +364,10 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     { sessionId: payload.sessionId }
                 );
 
-                // Emit results for each node sequentially
                 for (const result of response.results) {
                     this.emitNodeResult(conn.id, payload.sessionId, result);
                 }
 
-                // Check if the last result was an error — if so, don't emit session:completed
                 const lastResult = response.results[response.results.length - 1];
                 if (!lastResult || lastResult.status !== 'error') {
                     this.emitSessionCompleted(conn.id, payload.sessionId);
@@ -412,7 +398,6 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     { sessionId: payload.sessionId }
                 );
             } catch {
-                // Ignore errors when stopping
             }
 
             this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);

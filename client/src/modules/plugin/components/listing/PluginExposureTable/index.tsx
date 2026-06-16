@@ -28,8 +28,6 @@ export interface PluginExposureTableProps {
     inlineSubListings?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: ReactNode;
-    // Row interaction (compact mode only) — e.g. selecting a line entity to
-    // highlight its rendered segment in the canvas.
     onRowClick?: (row: ListingRow) => void;
     isRowSelected?: (row: ListingRow) => boolean;
 }

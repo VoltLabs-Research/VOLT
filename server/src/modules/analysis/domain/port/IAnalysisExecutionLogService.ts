@@ -1,6 +1,3 @@
-// Canonical analysis frame-log snapshot types now live in the neutral contracts
-// layer (detachable-modules migration); imported for local use + re-exported for
-// owner consumers.
 import type { AnalysisFrameLogSnapshot } from '@shared/contracts/types/AnalysisFrameLog';
 export type {
     AnalysisFrameLogStatus,

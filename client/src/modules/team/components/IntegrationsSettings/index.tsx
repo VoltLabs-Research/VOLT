@@ -312,9 +312,6 @@ export default function IntegrationsSettings() {
             payload.apiKey = apiKey;
         }
 
-        // A custom endpoint points the provider at a self-hosted gateway. Send
-        // `{ baseUrl }` when set; send `{}` to clear a previously-saved endpoint
-        // (the server keeps existing metadata when this field is undefined).
         const customEndpoint = toOptionalString(modalEndpoint);
         payload.metadata = customEndpoint ? { baseUrl: customEndpoint } : {};
 

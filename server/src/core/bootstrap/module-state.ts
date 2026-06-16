@@ -19,24 +19,16 @@ import logger from '@shared/infrastructure/logger';
  * must degrade gracefully without them.
  */
 const MODULE_MANIFESTS = [
-    // ---- KERNEL (irreducible, always on as a unit) ----
-    // No inter-kernel `requires`: the kernel modules are co-recursive and are
-    // force-enabled together by tier, so declaring requires between them would be
-    // both redundant and a validation cycle. `system` is kernel because the
-    // client reads its public /api/system/config at boot to learn the enabled
-    // set — a deployment that dropped it could not start the client.
     defineModule({ key: 'auth', tier: 'kernel', description: 'Identity, OAuth, JWT, current user' }),
     defineModule({ key: 'session', tier: 'kernel', description: 'Session lifecycle' }),
     defineModule({ key: 'socket', tier: 'kernel', description: 'Realtime gateway' }),
     defineModule({ key: 'team', tier: 'kernel', description: 'Teams, membership, RBAC, secret keys' }),
     defineModule({ key: 'system', tier: 'kernel', description: 'Deployment settings + system metrics + boot config' }),
 
-    // ---- CAPABILITY (optional, consumed via ports) ----
     defineModule({ key: 'notification', tier: 'capability', description: 'User notifications' }),
     defineModule({ key: 'jobs', tier: 'capability', requires: ['team'], optional: ['trajectory'], description: 'Background job tracking' }),
     defineModule({ key: 'ai', tier: 'capability', requires: ['team'], description: 'AI conversations + tool registry' }),
 
-    // ---- COMPUTE (mesh; detachable behind shared contracts) ----
     defineModule({ key: 'cluster', tier: 'compute', requires: ['team', 'system'], optional: ['analysis', 'trajectory'], description: 'User compute clusters + object gateway' }),
     defineModule({ key: 'container', tier: 'compute', requires: ['team', 'cluster', 'system'], description: 'Execution containers' }),
     defineModule({ key: 'trajectory', tier: 'compute', requires: ['team', 'cluster'], optional: ['analysis', 'jobs'], description: 'MD trajectories + frames' }),
@@ -45,7 +37,6 @@ const MODULE_MANIFESTS = [
     defineModule({ key: 'raster', tier: 'compute', requires: ['team', 'trajectory'], optional: ['cluster', 'container'], description: 'Offscreen rasterization' }),
     defineModule({ key: 'simulation-cell', tier: 'compute', requires: ['team'], optional: ['trajectory'], description: 'Simulation cell library' }),
 
-    // ---- LEAF (freely detachable) ----
     defineModule({ key: 'latex', tier: 'leaf', requires: ['team'], optional: ['ai', 'cluster', 'container'], description: 'LaTeX documents + compilation' }),
     defineModule({ key: 'whiteboards', tier: 'leaf', requires: ['team'], optional: ['ai', 'cluster', 'container'], description: 'Collaborative whiteboards' }),
     defineModule({ key: 'chat', tier: 'leaf', requires: ['team'], description: 'Team chat' }),

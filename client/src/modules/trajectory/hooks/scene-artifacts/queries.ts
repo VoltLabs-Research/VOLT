@@ -84,9 +84,6 @@ const fetchSceneArtifacts = (params: ListSceneArtifactsInputDTO): Promise<SceneA
 
 export const sceneArtifactsQuery = createQuery(getSceneArtifactsKey, fetchSceneArtifacts);
 
-// Why: the stored query key is prefixed by `withAccessMode` (canvas-access/<mode>/...)
-// so invalidating with the bare `SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts()` key
-// fails the prefix match and nothing refetches.
 export const invalidateSceneArtifacts = (): Promise<void> => {
     return queryClient.invalidateQueries({
         queryKey: currentAccessKey(SCENE_ARTIFACTS_QUERY_KEYS.sceneArtifacts())

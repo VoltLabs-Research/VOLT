@@ -88,19 +88,11 @@ export default class SocketGateway{
             transports: ['websocket', 'polling'],
             pingTimeout: this.pingTimeout,
             pingInterval: this.pingInterval,
-            // Why: payloads on the client↔server channel include large
-            // structured JSON (trajectory atoms pages, filter metadata).
-            // `perMessageDeflate` trims 40–80 % of the gzip-friendly text
-            // portion; binary attachments passthrough uncompressed.
-            // Safe in Socket.IO v4 — opt-in per server.
             perMessageDeflate: {
                 threshold: 1024,
                 zlibDeflateOptions: { chunkSize: 16 * 1024 },
                 zlibInflateOptions: { chunkSize: 16 * 1024 }
             },
-            // Raised from 10 MB because binary attachments now travel without
-            // base64 inflation (≈ 1.33× reduction) but we also carry masks
-            // and property columns for multi-million atom trajectories.
             maxHttpBufferSize: 512 * 1024 * 1024
         });
 
@@ -114,13 +106,10 @@ export default class SocketGateway{
         this.getSocketEmitterRuntime().setServer(this.io);
         this.getSocketRoomManagerRuntime().setServer(this.io);
 
-        // JWT authentication middleware
         this.io.use(async (socket, next) => {
             await this.authenticateSocket(socket, next);
         });
 
-        // Registered synchronously after new Server() - no await in between,
-        // so no event-loop yield where a 'connection' event could be lost.
         this.io.on('connection', (socket: Socket) => {
             this.handleConnection(socket);
         });
@@ -142,13 +131,10 @@ export default class SocketGateway{
 
         const connection = this.socketMapper.toDomain(socket);
 
-        // Notify all modules
         for(const module of this.modules){
             module.onConnection(connection);
         }
 
-        // Disconnect cleanup — routed through the event registry so only
-        // one native `socket.on('disconnect')` listener exists per socket.
         this.socketEventRegistry.onDisconnect(socket.id, () => {
             this.getSocketEmitterRuntime().unregisterConnection(socket.id);
             this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);

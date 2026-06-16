@@ -15,10 +15,6 @@ interface ExpressionSelectStageEditorProps {
 
 const TEXTAREA_ROWS = 3;
 
-// Editor body for an expression-select pipeline stage. Evaluates a boolean
-// expression over the columnar atom buffer in-browser (match count / validity),
-// then writes it to the stage config; the engine visibility mask (see
-// use-expression-visibility-mask) reads enabled stages and hides non-matching atoms.
 const ExpressionSelectStageEditor = memo(({
     stageId,
     trajectoryId,

@@ -33,9 +33,6 @@ export default class JobStatusChangedEventHandler implements IEventHandler<IDoma
         if (!trajectoryId) return;
         if (!TRAJECTORY_LIFECYCLE_QUEUE_TYPES.has(queueType)) return;
 
-        // Only trajectory-owned queues control trajectory ingestion state.
-        // Analysis jobs have their own status and must not move a trajectory
-        // back out of Completed.
         if (status === JobStatus.Running) {
             const trajectory = await this.trajectoryRepo.findById(trajectoryId);
             const currentStatus = trajectory?.props.status;

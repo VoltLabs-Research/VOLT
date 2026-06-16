@@ -44,7 +44,6 @@ export class DeleteWhiteboardUseCase implements IUseCase<DeleteWhiteboardInputDT
             try {
                 await this.objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, prefix);
             } catch {
-                // Storage cleanup is best-effort
             }
 
             await this.eventBus.publish(new WhiteboardDeletedEvent({

@@ -46,10 +46,6 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
     const { handleSendMessage, handleCreateConversation, canSendMessage } = pageState;
 
-    // Consolidated pending-message flow (previously duplicated in AIPage and the
-    // widget panel). When the user sends from the empty/draft state, we stash
-    // the text, create the conversation, then flush it once the conversation id
-    // and provider readiness arrive.
     useEffect(() => {
         if (!activeConversationId || !canSendMessage) {
             return;
@@ -83,7 +79,6 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
             await handleSendMessage(draftToSend);
         } catch {
-            // Restore the draft so the user doesn't lose their text on failure.
             setMessageDraft(draftToSend);
         }
     }, [activeConversationId, handleCreateConversation, handleSendMessage, messageDraft]);
@@ -141,7 +136,6 @@ export const useOptionalAIChatContext = (): AIChatContextValue | null => {
     return useContext(AIChatContext);
 };
 
-// Re-exported so callers (e.g. AIPage URL sync) share the exact storage key.
 export { PENDING_MESSAGE_STORAGE_KEY };
 
 export type { AIChatContextValue };

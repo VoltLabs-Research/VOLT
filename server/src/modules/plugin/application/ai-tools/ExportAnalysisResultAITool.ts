@@ -37,9 +37,6 @@ export class ExportAnalysisResultAITool extends AITool {
         });
         if (!result.success) throw result.error;
 
-        // DownloadStreamOutputDTO carries a Readable stream we must NOT pipe into
-        // chat. Surface only the descriptive headers so the user knows an export
-        // was produced and can download it through the regular export endpoint.
         const { headers } = result.value;
         const filename = headers['Content-Disposition'] ?? headers['content-disposition'];
         const contentType = headers['Content-Type'] ?? headers['content-type'];

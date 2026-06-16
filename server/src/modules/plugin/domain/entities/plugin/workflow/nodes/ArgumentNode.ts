@@ -57,11 +57,6 @@ export interface ArgumentDefinition {
     listItemLabelArgument?: string;
     required?: boolean;
     multipleSelection?: boolean;
-    // When true, the argument's value is resolved at pipeline runtime from the
-    // shared exposure context (ctx.sharedExposures[argument]) instead of from a
-    // user-entered value/default. The daemon injects `--<argument> <path>` and
-    // throws if no upstream stage registered that exposure id. The value/default
-    // inputs are hidden in the authoring UI when this is set.
     inferFromContext?: boolean;
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];

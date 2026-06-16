@@ -20,9 +20,6 @@ const baseAllowedOrigins = new Set<string>(collectAllowedClientOrigins([
     process.env.CLIENT_DEV_HOST
 ]));
 
-// The canonical public client URL this deployment serves. CLIENT_HOST may carry
-// several origins (comma/space separated); we surface the first normalized one so
-// shells like Volt Desktop can validate a server endpoint and then open its client.
 const resolvePublicClientHost = (): string | null =>
     collectAllowedClientOrigins([process.env.CLIENT_HOST])[0]
     ?? collectAllowedClientOrigins([process.env.CLIENT_DEV_HOST])[0]
@@ -65,9 +62,6 @@ const corsBaseOptions = {
     optionsSuccessStatus: 200
 };
 
-// A self-hosted VOLT server is consumed cross-origin by design (app.voltcloud.dev,
-// the desktop shell, LAN clients), so we allow any origin. We reflect the request
-// origin instead of '*' because credentialed requests reject a wildcard.
 const corsMiddleware = cors({ ...corsBaseOptions, origin: true });
 
 const isBinaryLikeResponse = (res: Response): boolean => {
@@ -100,12 +94,6 @@ const isBinaryLikeResponse = (res: Response): boolean => {
     ]).has(contentType);
 };
 
-// Streaming responses (Server-Sent Events / the AI SDK's UI-message stream)
-// must reach the client chunk-by-chunk. The compression middleware buffers
-// chunks in its zlib stream and only flushes on `res.flush()` — which the AI
-// SDK never calls — so compressing them makes the whole reply land at once,
-// when the model finishes. `text/event-stream` and the SDK's own
-// `x-accel-buffering: no` hint both signal "do not buffer this".
 const isStreamingResponse = (res: Response): boolean => {
     const contentType = String(res.getHeader('Content-Type') || '').toLowerCase();
     if (contentType.includes('text/event-stream')) {

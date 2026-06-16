@@ -128,7 +128,6 @@ export default class DemoClusterDeploymentService implements IDemoClusterDeploym
             await this.docker.getImage(image).inspect();
             return;
         } catch {
-            // image not present locally — pull
         }
 
         logger.info(`[DemoClusterDeploymentService] Pulling image image=${image}`);
@@ -160,7 +159,6 @@ export default class DemoClusterDeploymentService implements IDemoClusterDeploym
             await this.docker.getNetwork(name).inspect();
             return;
         } catch {
-            // create below
         }
 
         await this.docker.createNetwork({

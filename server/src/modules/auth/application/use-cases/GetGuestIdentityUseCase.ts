@@ -15,7 +15,6 @@ export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentit
     ) {}
 
     async execute(input: GetGuestIdentityInputDTO): Promise<Result<GetGuestIdentityOutputDTO, ApplicationError>>{
-        // `seed` comes from an untyped query param; without it crypto.update(undefined) threw a 500.
         if (typeof input.seed !== 'string' || input.seed.length === 0) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED,

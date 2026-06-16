@@ -60,7 +60,6 @@ export default class ChatRepository
             });
         }
 
-        // Ensure we return it populated
         await chat.populate('participants');
 
         return this.mapper.toDomain(chat);
