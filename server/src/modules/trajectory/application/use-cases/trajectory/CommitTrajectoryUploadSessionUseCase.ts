@@ -53,14 +53,6 @@ interface QueuedGlbJob {
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const GLB_JOB_NAME = 'Preprocess trajectory frame';
 
-// The daemon's TrajectoryIngest command throws a plain Error when every staged
-// file was unparseable (`No valid trajectory frames found in upload`). The
-// reverse-channel bridge has no typed status for a plain Error, so it ships it
-// as INTERNAL_ERROR / HTTP 500 and the daemon client faithfully rebuilds it as a
-// 500 ApplicationError. That is the user handing us a non-trajectory file (e.g.
-// a PNG), not a server fault — detect it by message so we can answer 4xx. A
-// genuine daemon/transport failure (timeout, connection drop, any other error)
-// does NOT match and stays 5xx.
 const isNoValidFramesError = (error: unknown): boolean => {
     const message = error instanceof Error ? error.message : '';
     return /no valid trajectory frames/i.test(message);
@@ -123,8 +115,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
                     teamId: input.teamId,
                     stagedObjects
                 },
-                // Disable command timeout: large ingest/materialization can
-                // exceed 60s and should not fail the trajectory commit.
                 { timeoutMs: 0 }
             );
 
@@ -170,11 +160,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         } catch (error) {
             logger.error(error, `[CommitTrajectoryUploadSessionUseCase] Commit failed for uploadSessionId=${session.id}`);
             await this.uploadSessionRepository.markStatus(session.id, 'failed').catch(() => {});
-            // Owner directive: never leave a failed trajectory orphaned in the
-            // dashboard. Delete it outright (and emit the deletion event so the
-            // storage/cleanup subscribers tear down any staged objects) instead
-            // of marking it Failed. A freshly-committing trajectory has no
-            // analyses yet, so the analysis id lists are empty.
             const trajectory = await this.trajectoryRepo.findById(trajectoryId).catch(() => null);
             await this.trajectoryRepo.deleteById(trajectoryId).catch((deleteError) => {
                 logger.warn(deleteError, `[CommitTrajectoryUploadSessionUseCase] Failed to delete orphaned trajectory ${trajectoryId}`);
@@ -189,11 +174,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
                 analysisComputeClusterIds: []
             })).catch(() => {});
 
-            // The daemon could not parse a single trajectory frame out of the
-            // uploaded file(s): the user's input is unprocessable, not a server
-            // fault. Return a typed 4xx instead of letting the 500 propagate.
-            // Anything else (transport failure, timeout, genuine daemon crash)
-            // keeps its original status class.
             if (isNoValidFramesError(error)) {
                 return Result.fail(ApplicationError.unprocessableEntity(
                     ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES,
@@ -245,12 +225,6 @@ export default class CommitTrajectoryUploadSessionUseCase implements IUseCase<
         teamId: string,
         frames: TrajectoryIngestResult['frames']
     ): Promise<TrajectoryFrame[]> {
-        // Why: trajectories emit up to dozens of thousands of frames. Creating
-        // one simulation cell per frame (await create() inside Promise.all)
-        // floods the connection pool with F concurrent inserts. Collect every
-        // cell payload and persist them in a single batched insertMany via
-        // createMany, then zip the returned ids back by position (createMany
-        // preserves input order).
         const cellItems = frames
             .filter((frame) => frame.simulationCell)
             .map((frame) => ({

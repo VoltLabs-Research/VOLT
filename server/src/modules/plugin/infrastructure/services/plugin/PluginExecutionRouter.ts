@@ -34,10 +34,6 @@ import { inject } from 'tsyringe';
 const gzipAsync = promisify(zlib.gzip);
 
 const DISPATCH_SECTION_CACHE_TTL_SECONDS = 600;
-// Plugin binaries are immutable per hash, so the daemon's local cache only
-// needs to be re-validated occasionally. 10 minutes is short enough to recover
-// from the daemon evicting the binary, long enough to skip the round-trip on
-// the realistic case of the same user repeatedly running the same plugin.
 const PLUGIN_SYNC_CACHE_TTL_SECONDS = 600;
 const PLUGIN_SYNC_CACHE_PREFIX = 'plugin-sync:';
 
@@ -147,10 +143,6 @@ interface PluginDispatchPayload extends Record<string, unknown> {
     timestep?: number;
 }
 
-// One ordered stage in the pipeline dispatch sent to the daemon. A computing
-// plugin stage carries its full per-plugin dispatch payload; a cache-hit plugin
-// stage carries only the reuse pointer; a slice/expression stage carries its
-// dump-transform config.
 interface PipelineStageDispatch {
     kind: 'plugin' | 'slice' | 'expression';
     plugin?: PluginDispatchPayload;
@@ -262,9 +254,6 @@ const dedupePluginReferenceExecutions = (
 };
 
 const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSection> => {
-    // Why: single serialization pass — the Buffer carries both the byte count
-    // and the raw bytes fed to gzip, eliminating `JSON.stringify(value)` +
-    // `Buffer.byteLength(stringified)` as distinct passes over the same data.
     const serializedBuffer = Buffer.from(JSON.stringify(value), 'utf8');
     const rawBytes = serializedBuffer.byteLength;
 
@@ -424,13 +413,6 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
         }
     }
 
-    // Daemon-orchestrated pipeline: one command carrying the ordered stage list.
-    // Computing plugin stages each ship their own dispatch payload (workflow,
-    // frames, nested plugins) and have their binaries synced first; cache-hit
-    // plugin stages and slice/expression stages ship only their lightweight
-    // descriptors. The daemon runs the stages sequentially against one mutating
-    // working dump and a shared exposure context, emitting one analysis worth of
-    // events per computing plugin stage (so each surfaces individually).
     async routePipeline(input: RoutePipelineExecutionInput): Promise<void> {
         const stageDispatches: PipelineStageDispatch[] = [];
         const syncTasks: Promise<void>[] = [];
@@ -485,9 +467,6 @@ export default class PluginExecutionRouter implements IPluginExecutionRouter {
             pipelinePayload
         );
 
-        // Each computing plugin stage is one normal analysis on the daemon, so
-        // seed a completion session per computed analysisId and project queued
-        // jobs exactly as the single-plugin path does.
         const computingStages = input.stages.filter(
             (stage): stage is PipelineStageExecutionInput & { execution: RoutePluginExecutionInput } =>
                 stage.kind === 'plugin' && !stage.cacheHit && stage.execution !== undefined

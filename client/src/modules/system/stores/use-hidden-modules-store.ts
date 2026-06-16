@@ -29,7 +29,6 @@ interface HiddenModulesStore {
 const HIDDEN_MODULES_STORAGE_KEY = 'volt:hidden-modules';
 
 const sanitize = (moduleKeys: string[]): string[] => {
-    // Dedupe + drop anything not actually hideable (protected/unknown keys).
     return Array.from(new Set(moduleKeys)).filter(isHideableModule);
 };
 
@@ -55,8 +54,6 @@ export const useHiddenModulesStore = create<HiddenModulesStore>()(
         }),
         {
             name: HIDDEN_MODULES_STORAGE_KEY,
-            // Re-sanitize whatever was persisted (older/tampered values) once
-            // the store rehydrates from localStorage.
             onRehydrateStorage: () => (state) => {
                 if (state) {
                     state.hidden = sanitize(state.hidden);

@@ -11,7 +11,6 @@ import { Result } from '@shared/domain/port/Result';
 
 import { injectable } from 'tsyringe';
 
-
 @injectable()
 export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO, ApplicationError> {
     constructor(
@@ -49,9 +48,6 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
             results.data.map((trajectory) => trajectory.id)
         );
 
-        // hasPreview is sourced from the persisted column. The DaemonAnalysisCompletionService
-        // flips it on when the rasterizer reports the first completed job for a trajectory;
-        // see `handleRasterJobStatus`. Listings no longer hit MinIO per row.
         const data = results.data.map((trajectory) => {
             const summary = summaries.get(trajectory.id);
             trajectory.props.framesCount = summary?.framesCount ?? 0;

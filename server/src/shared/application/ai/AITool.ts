@@ -39,8 +39,6 @@ export abstract class AITool<
     execute?(params: TInput, scope: AIToolScope): Promise<TResult>;
 
     build(scope: AIToolScope): Record<string, Tool> {
-        // Client-executed tools advertise schema/description/approval but carry
-        // no server `execute`; the SDK forwards the call to the browser.
         if (this.clientExecuted) {
             const clientToolDefinition = this.needsApproval === undefined
                 ? {

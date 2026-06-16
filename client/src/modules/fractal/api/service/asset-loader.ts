@@ -41,11 +41,6 @@ const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => (
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
 );
 
-// FractalAssetLoader: downloads the GLB bytes, parses, and caches both the
-// raw ArrayBuffer (for fast re-parse) and the parsed BufferGeometry (via the
-// GeometryPool). Parsed geometries avoid the GLTFLoader cost on hot paths.
-// Cache lookups use a stable resource key, not necessarily the transport URL.
-
 export class FractalAssetLoader implements IFractalAssetLoader {
     private static sharedDracoLoader: DRACOLoader | null = null;
 
@@ -123,7 +118,6 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             gltfLoader.setDRACOLoader(FractalAssetLoader.getDracoLoader());
             gltfLoader.setMeshoptDecoder(MeshoptDecoder);
         } catch {
-            // Optional decoders: swallow errors and fall back to undecorated loader.
         }
         return gltfLoader;
     }
@@ -183,7 +177,6 @@ export class FractalAssetLoader implements IFractalAssetLoader {
 
     private wrapGeometry(geometry: THREE.BufferGeometry): THREE.Group {
         const group = new THREE.Group();
-        // Why: the engine expects a THREE.Points; wrap the cached geometry.
         const points = new THREE.Points(geometry.clone(), new THREE.PointsMaterial({ size: 1 }));
         group.add(points);
         return group;

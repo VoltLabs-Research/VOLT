@@ -46,9 +46,6 @@ export class ManageSessionsAITool extends AITool<ManageSessionsParams> {
                 return { summary: `Revoked session ${params.sessionId}.`, data: { sessionId: params.sessionId } };
             }
             case 'revoke_others': {
-                // The AI tool scope carries no request session token, so there is
-                // no "current" session to preserve; this revokes every other
-                // active session for the user.
                 const result = await this.revokeAllSessionsUseCase.execute({
                     userId: scope.userId,
                     token: ''

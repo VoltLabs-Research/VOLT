@@ -6,7 +6,6 @@ type DeploymentSettingsRelations = 'defaultTeam';
 
 export interface DeploymentSettingsDocument
     extends Persistable<DeploymentSettingsProps, DeploymentSettingsRelations>, Document {
-    // Persistence-only singleton guard (not part of the domain props contract).
     key: string;
 }
 

@@ -53,40 +53,32 @@ interface ExecutionOrderItem {
 }
 
 interface PluginDebugState {
-    // Session state
     sessionId: string | null;
     isDebugging: boolean;
     isPaused: boolean;
     isStarting: boolean;
 
-    // Execution
     executionOrder: ExecutionOrderItem[];
     nodeStates: Record<string, DebugNodeState>;
     currentNodeId: string | null;
     currentNodeIndex: number;
     totalNodes: number;
 
-    // Inspector
     inspectedNodeId: string | null;
 
-    // Context snapshot (accumulated outputs from all nodes)
     contextSnapshot: DebugContextSnapshot;
 
-    // ForEach iteration info
     forEachNodeId: string | null;
     totalIterations: number;
 
-    // Arguments config
     debugConfig: Record<string, unknown>;
     showArgumentsPanel: boolean;
 
-    // Results
     totalDuration: number | null;
     sessionError: string | null;
 }
 
 interface PluginDebugActions {
-    // Session lifecycle
     setStarting: () => void;
     onSessionCreated: (sessionId: string, executionOrder: ExecutionOrderItem[], forEachNodeId: string | null, totalIterations: number) => void;
     onNodeStarted: (nodeId: string, index: number, total: number) => void;
@@ -97,7 +89,6 @@ interface PluginDebugActions {
     onSessionCompleted: (totalDuration: number) => void;
     onSessionError: (error: string) => void;
 
-    // User actions
     setInspectedNode: (nodeId: string | null) => void;
     setDebugConfigField: (key: string, value: unknown) => void;
     setDebugConfig: (config: Record<string, unknown>) => void;
@@ -218,7 +209,6 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
         return {
             isPaused: false,
             isDebugging: false,
-            // Use -1 as sentinel so the context panel stays visible (totalDuration !== null check)
             totalDuration: state.totalDuration ?? -1,
             nodeStates: {
                 ...state.nodeStates,
@@ -248,7 +238,6 @@ export const usePluginDebugStore = create<PluginDebugStore>((set) => ({
             isPaused: false,
             isStarting: false,
             sessionError: error,
-            // Preserve panel visibility if we accumulated any context before the error
             totalDuration: state.totalDuration ?? (Object.keys(state.contextSnapshot).length > 0 ? -1 : null)
         };
     }),

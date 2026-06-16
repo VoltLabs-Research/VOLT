@@ -35,8 +35,6 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
         try {
             const validFiles = (input.files ?? [])
                 .map((file, uploadIndex) => ({ file, uploadIndex }))
-                // ponytail: size >= 0 (not > 0) so legitimate empty files (.bib/.sty,
-                // folder placeholders) aren't dropped and 400 the whole batch.
                 .filter(({ file }) => file && file.name && file.size >= 0);
 
             if (validFiles.length === 0) {
@@ -132,8 +130,6 @@ export class UploadLatexAssetUseCase implements IUseCase<UploadLatexAssetInputDT
                 return Result.fail(error);
             }
 
-            // Let the global error middleware normalize unknown errors (e.g. a Mongoose CastError
-            // from a malformed id maps to 400, not a blanket 500).
             throw error;
         }
     }

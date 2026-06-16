@@ -63,9 +63,6 @@ const DashboardBottomBar = () => {
     const { clusters: liveClusters, isConnected } = useClusterMetrics();
     const teamClusters = clusterManagement.clusters;
 
-    // Averaged across clusters that are currently reporting live metrics; null
-    // when none are (segment is hidden rather than rendering an empty button).
-    // Network is summed — total fleet throughput, not a per-cluster average.
     const clusterMetrics = useMemo(() => {
         const metricsByClusterId = new Map(liveClusters.map((cluster) => [resolveClusterMetricId(cluster), cluster]));
         let cpuSum = 0;
@@ -122,10 +119,6 @@ const DashboardBottomBar = () => {
         return { online, total: members.length };
     }, [members, onlineUserIds, hasPresenceSnapshot]);
 
-    // Jobs are always surfaced — the queued/running/success/failed icons stay
-    // visible even at 0 so the workspace status is always legible. Clusters and
-    // presence only appear when there's something to show, so every divider sits
-    // after the always-present jobs segment and only needs its own guard.
     const showClusters = clusterMetrics !== null;
     const showPresence = !singleTenant && presenceCounts.total > 0;
 

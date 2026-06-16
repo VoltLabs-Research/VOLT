@@ -7,9 +7,6 @@ import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
 import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
 import type { ITeamClusterRepository } from '@modules/cluster/domain/port/ITeamClusterRepository';
-// cluster EMITS the jobs-owned `job.status.changed` event (the transfer-job
-// projection onto the team jobs history) via the neutral GenericDomainEvent,
-// so it no longer imports the jobs event class. JobStatus enum is neutral.
 import { JobStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -253,7 +250,6 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
                 reason: input.reason ?? 'manual'
             }));
         } catch (error) {
-            // Unique index on (scopeType, scopeId, open-states): another caller raced us.
             const duplicate = await this.clusterTransferJobRepository.findOpenByScope(input.scopeType, input.scopeId);
             if (duplicate) {
                 await this.publishTransferJobProjection(duplicate);
@@ -311,9 +307,6 @@ export default class ClusterTransferCoordinator implements IClusterTransferCoord
         const storageClusters = teamClusters.filter((cluster) => cluster.effectiveCapabilities.acceptsStorageWrites);
         let createdJobs = 0;
 
-        // Fetch each cluster's latest metrics once (in parallel) instead of re-reading
-        // them via a single-key Redis zrevrange inside both this loop and the per-candidate
-        // selectRebalanceDestination loop (which was O(N^2) sequential round-trips).
         const metricsByCluster = new Map(await Promise.all(storageClusters.map(
             async (cluster) => [cluster.id, await this.systemMetricsRepository.getLatestByClusterId(cluster.id)] as const
         )));

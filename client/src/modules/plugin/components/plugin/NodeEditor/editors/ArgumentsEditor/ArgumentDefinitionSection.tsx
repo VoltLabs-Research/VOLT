@@ -191,9 +191,6 @@ const ArgumentDefinitionSection = ({
                     ...currentArgument,
                     [field]: nextValue === 'true'
                 };
-                // An inferFromContext argument is resolved from the pipeline's
-                // shared exposure context at runtime, so a user-entered
-                // value/default would be meaningless — drop them when enabling.
                 if (field === 'inferFromContext' && nextValue === 'true') {
                     delete nextArgument.value;
                     delete nextArgument.default;
@@ -528,9 +525,6 @@ const ArgumentDefinitionSection = ({
                 const displayLabel = argumentLabel || `Argument ${index + 1}`;
                 const typeBadge = ARGUMENT_TYPE_LABELS[argument.type] ?? argument.type;
 
-                // These reference lists scan every sibling argument and are only
-                // consumed inside the expanded body, so build them solely for the
-                // expanded row to avoid an O(n^2) recompute across all rows.
                 const visibilityReferenceOptions = isExpanded
                     ? argumentDefinitions
                         .filter((candidate, candidateIndex) => candidateIndex !== index && candidate.argument.trim().length > 0)
@@ -545,8 +539,6 @@ const ArgumentDefinitionSection = ({
                     })
                     : undefined;
 
-                // The value section and its scalar option list are only rendered
-                // inside the expanded body; skip the work for collapsed rows.
                 const showValueSection = isExpanded && argument.type !== ArgumentType.LIST && argument.type !== ArgumentType.TUPLE && !isPluginReferenceArgumentType(argument.type);
                 const scalarOptions: SelectOption[] | undefined = !isExpanded
                     ? undefined

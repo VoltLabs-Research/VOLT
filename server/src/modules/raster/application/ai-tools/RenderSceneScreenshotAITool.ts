@@ -52,13 +52,9 @@ export class RenderSceneScreenshotAITool extends AITool {
             };
         }
 
-        // Ensure a raster exists for this trajectory. The use-case never throws —
-        // it folds failures into Result.fail with a raster error code.
         const triggered = await this.triggerRasterization.execute({ trajectoryId, teamId: scope.teamId });
 
         if (!triggered.success) {
-            // "Already queued/running" is not a real failure here — the frame is
-            // (or will be) available, so we still return the URL below.
             if (triggered.error.code !== ErrorCodes.RASTER_ALREADY_QUEUED) {
                 if (triggered.error.code === ErrorCodes.RASTER_NOT_FOUND) {
                     return {
@@ -67,8 +63,6 @@ export class RenderSceneScreenshotAITool extends AITool {
                     };
                 }
 
-                // RASTER_FAILED (and any connection-style failure) almost always
-                // means no compute daemon is enrolled/online to run the rasterizer.
                 return {
                     summary: 'Could not start rasterization. No compute cluster appears to be enrolled or online.',
                     error: 'no_compute_cluster'

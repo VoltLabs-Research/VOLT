@@ -57,7 +57,6 @@ export const patchPaginatedPage = <T extends WithId>(
     queryClient.setQueriesData<PaginatedResponse<T>>(
         { queryKey: keyPrefix },
         (current) => {
-            // Guard: skip InfiniteData entries that also match the prefix
             if (!current || !Array.isArray(current.data)) return current;
             return updater(current);
         }
@@ -83,7 +82,6 @@ export const patchInfinitePages = <T extends WithId>(
         }
     );
 };
-
 
 /**
  * Invalidate multiple query key prefixes in parallel.

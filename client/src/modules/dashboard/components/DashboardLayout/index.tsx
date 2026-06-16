@@ -40,15 +40,8 @@ interface DashboardLocationState {
     fromNotFound?: boolean;
 }
 
-// Sibling routes under these prefixes share a persistent nested layout
-// (e.g. tabs under /dashboard/containers/:id). Collapsing them to one key
-// keeps the outlet mounted across tab switches — the nested layout fades
-// its own child instead.
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
     /^\/dashboard\/containers\/[^/]+/,
-    // /dashboard/ai and /dashboard/ai/:conversationId must share one mounted
-    // page: creating a conversation navigates draft -> conversation mid-send,
-    // and a remount would drop the optimistic message and pending-send state.
     /^\/dashboard\/ai(?=\/|$)/
 ];
 

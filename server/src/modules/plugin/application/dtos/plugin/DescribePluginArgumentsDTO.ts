@@ -20,10 +20,6 @@ export interface DescribedPluginArgument {
     step?: number;
     options?: DescribedPluginArgumentOption[];
     multipleSelection?: boolean;
-    // True when this argument is NOT user-supplied: its value is injected at
-    // pipeline runtime from an upstream stage's shared exposure (the exposure id
-    // equals this argument's `key`). Do not put it in the config — instead ensure
-    // an earlier pipeline stage produces that exposure id.
     inferFromContext?: boolean;
     note?: string;
 }

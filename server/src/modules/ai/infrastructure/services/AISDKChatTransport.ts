@@ -173,9 +173,6 @@ export default class AISDKChatTransport implements IAIChatTransport {
                 await input.onFinish(finishEvent);
             },
             onError: ({ error }) => {
-                // Provider HTTP failures carry the request URL/status; without
-                // them the client only ever sees the bare statusText fallback
-                // (e.g. "NOT FOUND"), which is undiagnosable from the UI.
                 if (APICallError.isInstance(error)) {
                     logger.error(
                         'AI provider call failed: status=%s url=%s message=%s responseBody=%s',

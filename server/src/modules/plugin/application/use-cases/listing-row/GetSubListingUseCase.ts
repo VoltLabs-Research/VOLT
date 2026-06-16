@@ -42,10 +42,6 @@ const EMPTY_RESULT = (subListingName: string): GetSubListingOutputDTO => ({
     limit: 0
 });
 
-// `@AliasOf(...)` additively exposes the neutral `Symbol.for('GetSubListingUseCase')`
-// token (delegating to the same class) so the trajectory module can inject the
-// `IGetSubListingUseCase` port without importing `@modules/plugin`.
-// `@injectable()` preserves the existing by-class transient resolution.
 @injectable()
 @AliasOf(PLUGIN_USECASE_TOKENS.GetSubListingUseCase)
 export class GetSubListingUseCase implements IUseCase<GetSubListingInputDTO, GetSubListingOutputDTO>, IGetSubListingUseCase {

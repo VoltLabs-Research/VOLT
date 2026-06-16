@@ -28,10 +28,6 @@ interface ResolvedTrajectoryRasterMetadata {
     trajectory: RasterTrajectoryMetadata | null;
 }
 
-// Minimal structural view of the trajectory-frame repository: raster only needs
-// the frame count. No neutral `ITrajectoryFrameRepository` port exists in
-// `@shared/contracts/ports` yet (see follow-up), so we inject via the neutral
-// COMPUTE token and annotate with this structural type to stay decoupled.
 interface ITrajectoryFrameCounter {
     countFrames(trajectoryId: string): Promise<number>;
 }

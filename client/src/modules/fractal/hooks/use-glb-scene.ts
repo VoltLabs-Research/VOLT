@@ -111,7 +111,6 @@ export default function useGlbScene(
                         modelChildren: modelObj?.children.length ?? 0
                     });
                     modelGenerationRef.current += 1;
-                    // Apply settings imperatively on the new model.
                     const engine = engineRef.current;
                     if (engine) {
                         engine.updatePointCloudSettings(
@@ -136,12 +135,6 @@ export default function useGlbScene(
             }
         );
 
-        // Why: React Strict Mode (and any future deps change on this effect)
-        // will dispose the engine above and recreate it here. The load-trigger
-        // effect below is keyed on (updateThrottle, updateScene) — both stay
-        // the same across the double-mount, so it would not re-fire and the
-        // fresh engine would never receive `loadIfNeeded()`. Kick off the
-        // load explicitly during creation so the pipeline is always primed.
         if (paramsRef.current.url) {
             engineRef.current.loadIfNeeded();
         }
@@ -162,8 +155,6 @@ export default function useGlbScene(
         engine.setCamera(camera);
     }, [camera]);
 
-    // Single config effect — fires on primitive deps only to avoid re-running
-    // on every render. paramsRef gives the effect the latest full params.
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine) return;
@@ -202,11 +193,6 @@ export default function useGlbScene(
         params.lineHighlight
     ]);
 
-    // Push the per-atom visibility mask to the engine whenever it changes (e.g.
-    // the user edits an expression-select modifier). A null mask resets the
-    // cloud to all-visible, so — unlike the scalar effect — this must run for
-    // null too; the engine no-ops until a point cloud is present, and the mask
-    // is re-applied from paramsRef once the model loads (onModelAvailable).
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine) return;
@@ -222,9 +208,6 @@ export default function useGlbScene(
         onInvalidate: invalidate
     });
 
-    // Integrate load throttling with rAF — Why: the previous setTimeout-based
-    // throttle competed with R3F's frame loop. We now request a load and rely
-    // on the engine's internal abort/generation logic to coalesce.
     const pendingLoadRef = useRef<number | null>(null);
     const lastLoadRequestRef = useRef(0);
     const updateScene = useCallback(() => {
@@ -275,9 +258,6 @@ export default function useGlbScene(
         deselect: interaction.deselect,
         setSelectedObject: interaction.setSelectedObject,
         onHoverChange: interaction.onHoverChange,
-        // Exposed so canvas-level interaction hooks (atom picking, lasso/box,
-        // selection highlight) can reach the imperative engine for this scene.
-        // The ref is owned and disposed here; consumers must not retain it.
         engineRef
     };
 }

@@ -20,10 +20,6 @@ export class ExecutePipelineAITool extends AITool {
         reason: z.string().optional()
     });
 
-    // Running a pipeline dispatches real compute to the user's cluster — an
-    // expensive, side-effecting action, the more so for a multi-stage run. Gate
-    // it behind explicit human approval; the AI SDK pauses the stream and the
-    // continuation flow resumes on approve.
     readonly needsApproval = true;
 
     constructor(
@@ -43,8 +39,6 @@ export class ExecutePipelineAITool extends AITool {
         });
         if (!result.success) throw result.error;
 
-        // analysisIds carry only COMPUTED plugin stages in pipeline order;
-        // cache-hit stages reuse a prior analysis and are omitted.
         const analysisIds = result.value.analysisIds;
         const summary = analysisIds.length
             ? `Started a ${params.stages.length}-stage pipeline. Computed analyses (in order): ${analysisIds.join(', ')}. Track each with get_analysis.`

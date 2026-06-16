@@ -59,8 +59,6 @@ export const collectAllowedClientOrigins = (origins: Array<string | null | undef
             continue;
         }
 
-        // Split on whitespace and commas so a single env var can carry several
-        // origins (e.g. CLIENT_HOST="http://localhost:5273,http://1.2.3.4:5273").
         const tokens = rawOrigin
             .split(/[,\s]+/)
             .map((token) => token.trim())

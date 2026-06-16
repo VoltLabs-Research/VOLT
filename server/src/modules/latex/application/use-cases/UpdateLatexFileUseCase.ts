@@ -69,10 +69,6 @@ export class UpdateLatexFileUseCase implements IUseCase<UpdateLatexFileInputDTO,
                 ));
             }
 
-            // AI-authored content edits broadcast into any open editing session
-            // so collaborators see the change live. Editor/HTTP/auto-save writes
-            // (source omitted/'editor') already deliver their own live updates,
-            // so they must NOT publish — that would echo back to the editor.
             if (input.source === 'ai' && input.content !== undefined) {
                 await this.eventBus.publish(new LatexFileContentUpdatedEvent({
                     documentId: input.documentId,
@@ -97,8 +93,6 @@ export class UpdateLatexFileUseCase implements IUseCase<UpdateLatexFileInputDTO,
                 return Result.fail(error);
             }
 
-            // Let the global error middleware normalize unknown errors (e.g. a Mongoose CastError
-            // from a malformed id maps to 400, not a blanket 500).
             throw error;
         }
     }

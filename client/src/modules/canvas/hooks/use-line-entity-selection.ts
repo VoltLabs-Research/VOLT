@@ -9,9 +9,6 @@ import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
 import type { LineEntityHighlight } from '@/modules/fractal/types/scene-config';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
 
-// Row interaction for a line exposure's listing: clicking a row toggles that
-// line entity's selection so the viewport highlights the matching tube. The
-// handlers are undefined while no scene renders the exposure.
 export const useLineEntityRowSelection = (exposureId: string | null | undefined) => {
     const { activeScenes, selection, toggleLineEntitySelection } = useEditorStore(useShallow((state) => ({
         activeScenes: state.activeScenes,
@@ -42,9 +39,6 @@ export const useLineEntityRowSelection = (exposureId: string | null | undefined)
     };
 };
 
-// Reverse picking: a click on a line tube reports the triangle it hit;
-// resolving it against the ranges sidecar yields the entity to toggle. Shares
-// the highlight query's cache, so the lookup is local after the first fetch.
 export const useLineEntityPick = (
     trajectoryId: string | undefined,
     currentTimestep: number | undefined
@@ -80,8 +74,6 @@ export const useLineEntityPick = (
     }, [trajectoryId, currentTimestep, toggleLineEntitySelection]);
 };
 
-// Resolves the current line entity selection to the scene that renders it plus
-// the GLB's triangle-range sidecar, ready for the engine's highlight pass.
 export const useLineEntityHighlight = (
     trajectoryId: string | undefined,
     currentTimestep: number | undefined
@@ -116,7 +108,6 @@ export const useLineEntityHighlight = (
         {
             enabled: Boolean(rangesParams),
             retry: false,
-            // The sidecar is immutable per (analysis, exposure, timestep, style).
             staleTime: Infinity
         }
     );

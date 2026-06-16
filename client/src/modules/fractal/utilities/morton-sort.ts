@@ -1,7 +1,3 @@
-// Morton / Z-order curve utilities. Used to reorder atoms by spatial locality
-// so that setDrawRange(0, N * ratio) yields a visually uniform subset at any
-// LOD tier. The actual heavy sort runs in a worker; these helpers are reused
-// by both the worker and (for small counts) the main thread.
 
 const part1By2 = (x: number): number => {
     let v = x & 0x3ff;
@@ -50,9 +46,6 @@ export const computeMortonCodes = (positions: Float32Array, bbox: BoundingBox): 
 
 export const buildPermutation = (codes: Uint32Array): Uint32Array => {
     const count = codes.length;
-    // Stable LSB radix sort over the 30-bit Morton codes (8-bit digits, 4 passes).
-    // Operates directly on Uint32 index buffers: no number boxing, no closure
-    // comparator. Ties keep their original order, matching the prior stable sort.
     let src = new Uint32Array(count);
     for (let i = 0; i < count; i += 1) src[i] = i;
     let dst = new Uint32Array(count);

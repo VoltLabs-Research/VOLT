@@ -15,7 +15,6 @@ const DTYPE_BYTES: Record<AtomColumnDType, number> = {
     f32: 4,
     u32: 4,
     u16: 2,
-    // Length-prefixed UTF-8 blob; byte-addressable, so any length is valid.
     str: 1,
     i32: 4
 };
@@ -42,7 +41,7 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => 
     const columns = result.columns;
     const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));
 
-    let headerSize = 16 /* pagination */ + 4 /* count */ + 4 /* propsCount */;
+    let headerSize = 16 + 4 + 4;
     let dataSize = 0;
 
     for (let i = 0; i < columns.length; i += 1) {
@@ -61,7 +60,7 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => 
             throw new Error(`Atom column buffer length not aligned to dtype size: ${column.name}`);
         }
 
-        headerSize += 1 /* nameLen */ + nameBuffer.byteLength + 1 /* dtypeId */ + 4 /* byteLen */;
+        headerSize += 1 + nameBuffer.byteLength + 1 + 4;
         dataSize += column.buffer.byteLength;
     }
 
@@ -99,7 +98,6 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => 
 
     envelope.writeUInt32LE(padBytes, offset);
     offset += 4;
-    // Remaining bytes in `envelope` are already zero-filled by Buffer.alloc.
 
     const parts: Buffer[] = [envelope];
     for (const column of columns) {

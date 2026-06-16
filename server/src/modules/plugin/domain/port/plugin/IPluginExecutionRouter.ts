@@ -25,21 +25,12 @@ export interface RoutePluginExecutionInput {
     timestep?: number;
 }
 
-// One ordered stage of a pipeline run. A `plugin` stage that is NOT a cache hit
-// carries the same per-plugin dispatch material a single execution would
-// (`execution`). A cache-hit plugin stage carries only the reuse pointer. A
-// `slice`/`expression` stage carries its dump-transform config.
 export interface PipelineStageExecutionInput {
     kind: 'plugin' | 'slice' | 'expression';
-    // plugin stages:
     execution?: RoutePluginExecutionInput;
     cacheHit?: boolean;
     cacheSourceAnalysisId?: string;
-    // The exposure ids this plugin stage registers into the shared context
-    // (so a cache-hit stage can still seed ctx.sharedExposures from the reused
-    // analysis without re-running the binary).
     sharedExposureIds?: string[];
-    // slice / expression stages:
     config?: Record<string, unknown>;
 }
 
@@ -49,9 +40,6 @@ export interface RoutePipelineExecutionInput {
     trajectoryId: string;
     trajectoryName: string;
     trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
-    // The trajectory's storage cluster. Threaded explicitly so an all-cache-hit
-    // pipeline (which ships no compute-stage plugin payload) still tells the
-    // daemon where to fetch dumps / persisted shared exposures.
     storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;

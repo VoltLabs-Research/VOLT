@@ -75,7 +75,6 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
             handlers = [];
             this.disconnectHandlers.set(socketId, handlers);
 
-            // Register the single native listener that fans-out to all handlers
             socket.on('disconnect', async () => {
                 const connection = this.socketMapper.toDomain(socket);
                 const fns = this.disconnectHandlers.get(socketId);

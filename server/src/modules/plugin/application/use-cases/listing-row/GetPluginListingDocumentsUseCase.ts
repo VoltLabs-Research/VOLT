@@ -53,11 +53,6 @@ const EMPTY_RESULT: GetPluginListingDocumentsOutputDTO = {
     _meta: { pluginId: '', exposureName: '', exposureId: '', columns: [], subListingNames: [] }
 };
 
-// `@AliasOf(...)` additively exposes the neutral
-// `Symbol.for('GetPluginListingDocumentsUseCase')` token (delegating to the same
-// class) so the trajectory module can inject the
-// `IGetPluginListingDocumentsUseCase` port without importing `@modules/plugin`.
-// `@injectable()` preserves the existing by-class transient resolution.
 @injectable()
 @AliasOf(PLUGIN_USECASE_TOKENS.GetPluginListingDocumentsUseCase)
 export class GetPluginListingDocumentsUseCase implements IUseCase<

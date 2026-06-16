@@ -18,15 +18,6 @@ export interface ContainerDeploymentProgressPayload {
     timestamp: string;
 }
 
-// `@Singleton()` keeps the class self-registered under its own constructor so
-// any by-class positional injection keeps resolving the same shared singleton.
-// `@AliasOf(CONTAINER_CONTRACT_TOKENS.ContainerDeploymentProgressService)` adds
-// the neutral token binding (same `Symbol.for` resolution) so cross-module
-// consumers (the cluster reverse-channel service) can inject against the
-// `IContainerDeploymentProgressService` port without importing this concrete
-// class. A bare `@Singleton(token)` would register ONLY under the token (see
-// decorators.ts) and break by-class injection — hence the Singleton + AliasOf
-// pair.
 @Singleton()
 @AliasOf(CONTAINER_CONTRACT_TOKENS.ContainerDeploymentProgressService)
 export class ContainerDeploymentProgressService implements IContainerDeploymentProgressService {

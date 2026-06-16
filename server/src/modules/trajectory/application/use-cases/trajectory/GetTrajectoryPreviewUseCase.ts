@@ -24,9 +24,9 @@ const DASHBOARD_PREVIEW_MAX_HEIGHT = 540;
 @injectable()
 export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajectoryPreviewInputDTO, GetTrajectoryPreviewOutputDTO, ApplicationError> {
     constructor(
-        
+
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        
+
         @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ){}
 
@@ -59,9 +59,6 @@ export default class GetTrajectoryPreviewUseCase implements IUseCase<GetTrajecto
         return Result.fail(new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404));
     }
 
-    // Why: rasters are generated at 4K for the canvas workspace; the dashboard
-    // card thumbnail only renders at ~200px tall, so downscale before base64
-    // to keep payloads and browser decode cost small.
     private async createPreviewOutput(buffer: Buffer): Promise<GetTrajectoryPreviewOutputDTO> {
         const resized = await sharp(buffer)
             .resize(DASHBOARD_PREVIEW_MAX_WIDTH, DASHBOARD_PREVIEW_MAX_HEIGHT, {

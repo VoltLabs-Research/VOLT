@@ -93,9 +93,6 @@ const hslToHex = (h: number, s: number, l: number): string => {
     return `#${toHexChannel(red)}${toHexChannel(green)}${toHexChannel(blue)}`;
 };
 
-// Deterministic fallback palette shared with the daemon's line exporter:
-// unexplained category values get golden-ratio-spaced hues, indexed by their
-// position among the values without an explicit export color.
 const goldenRatioColor = (fallbackIndex: number): string => {
     const hue = (fallbackIndex * GOLDEN_RATIO) % 1;
     return hslToHex(hue, 0.65, 0.55);
@@ -120,14 +117,7 @@ const buildFilterRowId = (): string => {
     return `line-style-filter-${filterRowCounter}`;
 };
 
-// Restyles line-entity results (OpenDXA/ILDA dislocations etc.): per-value
-// visibility, category/uniform/gradient color, tube width, property filters.
-// Mirrors ColorCodingStageEditor's flow — takes pipeline-stage props directly
-// (no use-modifier-base), bakes on the daemon via lineStyleService.apply, and
-// swaps the unstyled tubes for the styled scene in the viewport.
 const useLineStyle = (options: UseLineStyleOptions = {}) => {
-    // analysisId is accepted for API symmetry with the other stage editors, but
-    // the styled source is resolved from the active line scene, not the URL.
     const { trajectoryId, currentTimestep } = options;
 
     const { activeScenes, addScene, removeScene, setActiveScene } = useEditorStore(useShallow((state) => ({
@@ -137,8 +127,6 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
         setActiveScene: state.setActiveScene
     })));
 
-    // The restyle source is whichever line scene is already in the viewport —
-    // the baked plugin exposure or a previously styled scene.
     const source = useMemo(() => {
         const styledScene = activeScenes.find(isLineStyleScene);
         if (styledScene) {
@@ -153,10 +141,6 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
         return null;
     }, [activeScenes]);
 
-    // Line exposures are deliberately excluded from the per-atom discovery
-    // endpoint (their properties are keyed by line id, not atom id), so the
-    // styleable catalog is the `properties` the exposure node declares in the
-    // plugin workflow.
     const { plugins, isLoading: isLoadingProperties } = usePluginSelectors();
 
     const sourceExposure = useMemo(() => {
@@ -184,7 +168,6 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
         return entityProperties.filter((property) => property.type === 'number');
     }, [entityProperties]);
 
-    // Export-node options declared by the plugin (colorBy, propertyColors).
     const exportOptions = sourceExposure?.export?.options;
 
     const [colorMode, setColorMode] = useState<LineColorMode>('category');
@@ -405,8 +388,6 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
                 style
             };
 
-            // Swap the unstyled tubes (or the previous style) for the new
-            // model while leaving every other composed scene untouched.
             const replaced = activeScenes.filter((scene) => (
                 isLineStyleScene(scene)
                 || (isLineSource(scene) && scene.exposureId === source.exposureId)
@@ -431,8 +412,6 @@ const useLineStyle = (options: UseLineStyleOptions = {}) => {
         }
     }, [trajectoryId, currentTimestep, source, buildStyle, activeScenes, removeScene, addScene, setActiveScene]);
 
-    // "Inspect entity" — fetches the per-entity property record from the
-    // server and shows it as a key/value list.
     const [entityIdInput, setEntityIdInput] = useState('');
     const [inspectedEntity, setInspectedEntity] = useState<InspectedLineEntity | null>(null);
     const [isInspecting, setIsInspecting] = useState(false);

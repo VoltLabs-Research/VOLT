@@ -99,9 +99,6 @@ const AutoScrollList = <T,>({
             behavior = 'smooth';
         }
 
-        // Scroll only this container. scrollIntoView would also scroll every
-        // scrollable ancestor (e.g. the dashboard content area), shifting the
-        // whole page each time new items stream in.
         container.scrollTo({ top: container.scrollHeight, behavior });
     }, [prefersReducedMotion]);
 

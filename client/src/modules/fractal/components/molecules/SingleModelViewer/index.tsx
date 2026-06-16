@@ -121,8 +121,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     const autoFitKeyRef = useRef<string | null>(null);
     const autoFitAppliedRef = useRef(!autoFit);
     const autoFitWaitLoggedRef = useRef(false);
-    // Imperative container for the 3D model — keeps the heavy Object3D out of
-    // React's reconciliation tree entirely (matches old fast architecture).
     const modelContainerRef = useRef<THREE.Group>(null!);
 
     const boxTransforms = useMemo(() => {
@@ -217,35 +215,19 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
 
     const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
 
-    // Reverse picking: clicking a tube resolves the hit triangle to its line
-    // entity (via the ranges sidecar) and toggles the selection — the same one
-    // the listing rows drive. Only line scenes register the handler (point
-    // clouds never pay the raycast), and only on team canvases — the ranges
-    // endpoint is RBAC-scoped.
     const canPickLineEntities = canvasMode !== 'public' && resolveLineSceneSource(sceneConfig) !== null;
     const pickLineEntity = useLineEntityPick(trajectoryId, currentTimestep);
     const handleLineEntityClick = useCallback((event: ThreeEvent<MouseEvent>) => {
-        // An orbit drag released over the model still emits a click; the
-        // pointer-travel delta separates it from an intentional pick.
         if (event.delta > 4 || typeof event.faceIndex !== 'number') return;
         void pickLineEntity(sceneConfig, event.faceIndex);
     }, [pickLineEntity, sceneConfig]);
 
-    // Per-atom visibility mask from the enabled expression-select modifiers.
-    // Evaluated client-side over the full-frame atom buffer the picker uses
-    // (analysisId 'default' → undefined keeps the frame — and its query cache —
-    // aligned with the rendered cloud).
     const { mask: expressionVisibilityMask } = useExpressionVisibilityMask({
         trajectoryId,
         analysisId: analysisId === 'default' ? undefined : analysisId,
         currentTimestep
     });
 
-    // Triclinic cell wireframe: read the fetched cell (cached by TanStack Query;
-    // shared with the 2D SimulationCellView) and the cell-display store (PBC-image
-    // toggle + client-side edits). The edited override wins so the 3D box reflects
-    // the user's edits immediately. Cell vectors are in simulation units, matching
-    // the boxBounds the content group already renders in.
     const { simulationCell } = useSimulationCell({
         trajectoryId,
         timestep: currentTimestep,

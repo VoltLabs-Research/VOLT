@@ -120,11 +120,6 @@ const TimestepViewer = ({
         const sceneKey = getSceneKey(scene);
         const cached = scenePositionsRef.current.get(sceneKey);
         if (cached) return cached;
-        // Why: on a direct click (replace) the store shrinks activeScenes to [scene].
-        // The ref still holds the previous scene's key until the cleanup effect runs
-        // after render, so relying on ref.size would misclassify a replace as an
-        // "add" and apply the spawn offset. Using the live scenesToRender length
-        // keeps replace collapsing to the root position.
         const isFirst = scenesToRender.length <= 1;
         let spawn: OptionalPosition;
         if (isFirst) {
@@ -155,12 +150,6 @@ const TimestepViewer = ({
                             ?? DEFAULT_LINE_WIDTH
                     }
                     : undefined;
-                // A bonds exposure is a line-tube cylinder GLB (BondExporter
-                // delegates to the line exporter). It renders through the same
-                // SingleModelViewer line path, but bond width derives from the
-                // baked bond radius (defaultLineWidth = diameter) rather than the
-                // dislocation default, and the user's per-scene width override
-                // still applies in-frame.
                 const bondLineSettings: LineSceneSettings | undefined = isBondScene
                     ? resolveBondLineSettings(
                         { radius: (scene.sceneRenderMetadata?.defaultLineWidth ?? 0) / 2 || undefined },

@@ -75,9 +75,6 @@ export const CAMERA_SUBSECTION_TITLES = {
 export const PERSPECTIVE_DEFAULTS: PerspectiveCameraSettings = {
     fov: 50,
     near: 0.01,
-    // Why: the scene includes a ground grid + sim-cell + atom cloud that can
-    // span hundreds of units after the autofit scaling. A far plane of 200
-    // clipped atoms as soon as the user zoomed out past a few meters.
     far: 10000,
     zoom: 1,
     filmGauge: 35,

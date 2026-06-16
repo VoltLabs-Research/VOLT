@@ -27,30 +27,26 @@
   },
   "theme": "system",
   "windowBounds": {
-    "x": 0,
+    "x": 108,
     "y": 32,
-    "width": 1920,
-    "height": 1048,
-    "maximized": true
+    "width": 1717,
+    "height": 937,
+    "maximized": false
   },
   "recentEndpoints": [
     "http://192.168.101.98:8100"
   ],
+  "deployment": {
+    "mode": "local"
+  },
   "bootstrap": {
     "done": true,
-    "email": "local-ec04b2bc@volt.local",
-    "password": "T_mCLRM9Ebxb9HCRwNerliG79ugrxrzy",
-    "userId": "6a2fedc4370b6a1f44ec1e79",
-    "teamId": "6a2fedc4370b6a1f44ec1e8b",
-    "teamClusterId": "6a2fedc4370b6a1f44ec1eb5",
-    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMmZlZGM0MzcwYjZhMWY0NGVjMWU3OSIsImlhdCI6MTc4MTUyNTk1NiwiZXhwIjoxNzgyMTMwNzU2fQ.xvnHaPrlmplZ7edtPytz4h-xrkRR8Qvyj0TtJrA4oXc",
-    "daemonPassword": "12ce3480361642b98776c46f1fe9bed3c1f08fa99269017f"
-  },
-  "deployment": {
-    "mode": "remote",
-    "remote": {
-      "serverEndpoint": "http://192.168.101.98:8100",
-      "clientUrl": "http://192.168.101.98:5273"
-    }
+    "email": "local-fc4fc4be@volt.local",
+    "password": "aGLsC_zpIeKWzA_xIpJfSaD0WqR4IJRG",
+    "userId": "6a30c47a1b872c18912b2792",
+    "teamId": "6a30c47a1b872c18912b279f",
+    "teamClusterId": "6a30c47a1b872c18912b27b2",
+    "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzBjNDdhMWI4NzJjMTg5MTJiMjc5MiIsImlhdCI6MTc4MTU4MDkyMiwiZXhwIjoxNzgyMTg1NzIyfQ.NbxK2f0a7e2DLVsfOtvOUIPeZYGfhqzh-qnJmRjYbn8",
+    "daemonPassword": "50ccc9d391d8374ebd30d95cf5cffebe009a14265b65a847"
   }
 }

@@ -19,11 +19,6 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoomPresenceService) private readonly teamRoomPresenceService: ITeamRoomPresenceService,
-        // Per-member content counts are contributed by feature modules through a
-        // neutral collection token (detachable-modules migration). The team
-        // (kernel) module no longer imports trajectory/analysis/latex/whiteboard
-        // repositories directly. Disabled features simply don't register a
-        // counter, so their metric is absent and treated as 0 by the UI.
         @injectAll(MEMBER_CONTENT_COUNTER_TOKEN) private readonly memberContentCounters: IMemberContentCounter[] = []
     ) {}
 
@@ -48,7 +43,6 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
             this.teamRoomPresenceService.getOnlineUserIds(teamId)
         ]);
 
-        // Merge every contributed metric into a single key -> (userId -> count) map.
         const countsByMetric = new Map<string, Map<string, number>>();
         for (const result of countResults) {
             countsByMetric.set(result.key, result.counts);

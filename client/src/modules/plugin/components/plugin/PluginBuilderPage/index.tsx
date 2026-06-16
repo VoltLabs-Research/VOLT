@@ -6,9 +6,6 @@ import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions
 import { Box, Loader } from '@voltstack/bravais';
 import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-// Why: ReactFlow (~200 KB gz), Monaco (~1 MB gz), and the builder/canvas graph
-// only load when a user opens `/plugins/builder`. The dashboard route chunk
-// stays lean for first-paint workflows that never touch the builder.
 const PluginBuilder = lazy(() => import('@/modules/plugin/components/plugin/PluginBuilder'));
 const ReactFlowProvider = lazy(() => import('@xyflow/react').then((module) => ({ default: module.ReactFlowProvider })));
 

@@ -122,13 +122,9 @@ interface CreateFolderedListingResourceOptions<TItem, TFolder> extends CreateFol
     singularName: string;
     pluralName: string;
     permissionPrefix: string;
-    // Sentence-case label used inside folder copy ("This {folderLabel} folder…"); defaults to singularName.
     folderLabel?: string;
-    // Title-case label for folder modal titles ("New {folderTitle} Folder"); defaults to subject.
     folderTitle?: string;
-    // Label used in list copy ("Failed to fetch {pluralLabel}"); defaults to pluralName.
     pluralLabel?: string;
-    // Modal id segments; default to singularName.
     folderModalNoun?: string;
     moveModalNoun?: string;
 }

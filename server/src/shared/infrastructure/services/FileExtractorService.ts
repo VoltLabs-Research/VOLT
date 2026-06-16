@@ -135,8 +135,6 @@ export default class FileExtractorService implements IFileExtractorService {
         const directory = await unzipper.Open.file(zipPath);
         const limit = pLimit(ZIP_EXTRACTION_CONCURRENCY);
 
-        // Pre-collect the unique parent directories so concurrent entries
-        // don't race on mkdir for the same path.
         const dirsToCreate = new Set<string>();
         for (const entry of directory.files) {
             if (entry.type === 'Directory' || isJunkEntry(entry.path)) continue;

@@ -99,16 +99,12 @@ const isPreservedQuery = (queryKey: readonly unknown[]): boolean => {
  * stays authenticated and WebSocket-fed components remain functional.
  */
 export const resetTeamScopedApplicationState = (): void => {
-    // 1. Reset team-scoped Zustand stores (excludes cluster & jobs
-    //    whose lifecycle is managed by their WebSocket hooks)
     resetTeamScopedStores();
 
-    // 2. Remove all cached queries except preserved prefixes
     queryClient.removeQueries({
         predicate: (query) => !isPreservedQuery(query.queryKey)
     });
 
-    // 3. Reset team-specific stores and query caches
     resetTeamDependentStores();
 };
 

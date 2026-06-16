@@ -1,9 +1,5 @@
 import * as THREE from 'three';
 
-// Cache of parsed BufferGeometry keyed by a stable GLB resource identity. The
-// transport URL may change without the underlying model changing, so the cache
-// key is deliberately decoupled from the fetch URL.
-
 interface PoolEntry {
     geometry: THREE.BufferGeometry;
     accessedAt: number;
@@ -28,7 +24,6 @@ const computeCapacityBytes = (): number => {
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     const defaultMemoryGb = 4;
     const memoryGb = typeof deviceMemory === 'number' && deviceMemory > 0 ? deviceMemory : defaultMemoryGb;
-    // Allocate 20% of estimated RAM, capped at 2 GB.
     return Math.min(2 * 1024 * 1024 * 1024, Math.floor(memoryGb * 1024 * 1024 * 1024 * 0.2));
 };
 
@@ -125,17 +120,12 @@ class GeometryPool {
             await writable.write(buffer);
             await writable.close();
         } catch {
-            // OPFS write failures are non-fatal.
         }
     }
 }
 
 export const geometryPool = new GeometryPool();
 
-// Above this atom count the per-type sphere InstancedMesh path is too heavy; the
-// renderer falls back to the existing GPU point-cloud/impostor path (plan 12 LOD).
-// Tunable: real spheres stay smooth for hundreds of thousands of atoms, while
-// large cells need the point path to keep interactive frame rates.
 export const SPHERE_RENDER_ATOM_THRESHOLD = 200_000;
 
 /**
@@ -147,8 +137,6 @@ export const SPHERE_RENDER_ATOM_THRESHOLD = 200_000;
 export const shouldRenderSpheres = (atomCount: number): boolean =>
     atomCount > 0 && atomCount <= SPHERE_RENDER_ATOM_THRESHOLD;
 
-// Sphere tessellation: 16 segments is OVITO's default-quality particle sphere —
-// smooth at interactive sizes without exploding vertex counts under instancing.
 const SPHERE_SEGMENTS = 16;
 
 /**
@@ -161,8 +149,6 @@ class SphereGeometryPool {
     private byKey = new Map<string, THREE.SphereGeometry>();
 
     private keyFor(type: number, radius: number): string {
-        // Round the radius into the key so float jitter from different element
-        // sources still collapses to one cached sphere.
         return `${type}:${radius.toFixed(4)}`;
     }
 

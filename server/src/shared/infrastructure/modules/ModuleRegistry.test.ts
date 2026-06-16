@@ -41,7 +41,6 @@ test('resolveEnabled: no overrides returns all registered + kernel', () => {
         defineModule({ key: 'latex', tier: 'leaf' })
     );
     const enabled = registry.resolveEnabled({});
-    // All six registered keys present.
     for (const key of [...KERNEL_KEYS, 'cluster', 'latex']) {
         assert.ok(enabled.has(key), `expected "${key}" to be enabled`);
     }
@@ -111,7 +110,7 @@ test('validate: flags a requires-cycle', () => {
 
 test('validate: flags an excluded kernel module', () => {
     const registry = makeRegistry();
-    const enabled = new Set<string>(['session', 'socket', 'team']); // 'auth' missing
+    const enabled = new Set<string>(['session', 'socket', 'team']);
     const result = registry.validate(enabled);
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((e) => /Kernel module "auth"/.test(e)), result.errors.join('; '));

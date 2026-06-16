@@ -101,10 +101,6 @@ const useAIChatStream = ({
         chatId = `ai-conversation:${conversationId}`;
     }
 
-    // Client-executed tools: the model streams a tool call out, `onToolCall`
-    // runs the matching browser handler and feeds the result back via
-    // `addToolResult`. `addToolResult` is part of useChat's return value, so we
-    // bridge the cycle through a ref that's populated right after the hook runs.
     const dispatchClientTool = useClientToolDispatch();
     const addToolResultRef = useRef<AddToolResultFn | null>(null);
 
@@ -130,8 +126,6 @@ const useAIChatStream = ({
             const addResult = addToolResultRef.current;
             if (!addResult) return;
 
-            // Server tools are not in the client registry; the dispatcher no-ops
-            // on those. Client tools run in the browser and resolve the call.
             return dispatchClientTool(
                 {
                     toolCallId: toolCall.toolCallId,
@@ -156,12 +150,6 @@ const useAIChatStream = ({
 
     const isSendingMessage = streamStatus === 'submitted' || streamStatus === 'streaming';
 
-    // `useChat` owns message state during a live session; the server query is
-    // only the initial loader. Hydrate the stream from server messages once per
-    // conversation (and once they actually arrive), so we never fight the stream
-    // by re-syncing on every query settle. A fresh conversation created locally
-    // sets `skipNextMessageLoadRef`, so we mark it hydrated without clobbering
-    // the just-sent message.
     useEffect(() => {
         const targetConversationId = conversationId ?? null;
 
@@ -202,9 +190,6 @@ const useAIChatStream = ({
         const normalizedText = text.trim();
         if (!normalizedText || !canSendMessage || isSendingMessage || !conversationId) return;
 
-        // Rethrow so callers can restore the draft / re-queue a pending message
-        // on failure. The error message itself is surfaced via `sendMessageError`
-        // (derived from useChat's `error`), so we don't mirror it into state here.
         try {
             await sendMessage({ text: normalizedText });
         } catch (error) {

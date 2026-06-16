@@ -45,10 +45,6 @@ import type {
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
-// ---------------------------------------------------------------------------
-// buildKeys — hierarchical keys with prefix support
-// ---------------------------------------------------------------------------
-
 const pluginBaseKeys = buildKeys<{
     all: void;
     byId: void;
@@ -70,10 +66,6 @@ const teamClusterKeys = buildKeys<{
 const registrySearchKeys = buildKeys<{
     list: SearchRegistryInputDTO;
 }>(['plugins', 'registry', 'search']);
-
-// ---------------------------------------------------------------------------
-// PLUGIN_QUERY_KEYS — public facade
-// ---------------------------------------------------------------------------
 
 export const PLUGIN_QUERY_KEYS = {
     root: pluginBaseKeys.prefix,
@@ -97,10 +89,6 @@ const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
     return pluginService.create({ workflow: input.workflow });
 };
 
-// usePluginByIdQuery resolves its queryKey/queryFn per-call against the
-// current canvas access mode (wraps the key via withAccessMode + uses the
-// mode-specific dataAccess). Kept as raw useQuery since createQuery expects
-// a stable keyFn/queryFn pair and cannot capture mode from the module scope.
 export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
@@ -130,8 +118,6 @@ export const usePluginByIdQuery = (
         ...options
     });
 };
-
-// ─── Catalog queries ─────────────────────────────────────────────────────────
 
 const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
     (params) => PLUGIN_QUERY_KEYS.catalogList(params),
@@ -164,8 +150,6 @@ export const useRegistrySearchQuery = (
     params: SearchRegistryInputDTO,
     options?: QueryOptions<RegistrySearchResponse, RegistrySearchResponse>
 ) => registrySearchQuery(params, options as QueryOptions<RegistrySearchResponse, RegistrySearchResponse> | undefined);
-
-// ─── Cache sync helpers ──────────────────────────────────────────────────────
 
 const pluginEntityCache = createEntityCacheResource<Plugin>({
     listKey: PLUGIN_QUERY_KEYS.all,
@@ -220,8 +204,6 @@ const managePluginEntityMutation = <TVariables, TData = Plugin>(
     applySuccess(data, variables);
     await invalidatePluginEntityQueries();
 });
-
-// ─── Mutation hooks ──────────────────────────────────────────────────────────
 
 export const useSavePluginMutation = managePluginEntityMutation<SavePluginInputDTO>(
     savePlugin,

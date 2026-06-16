@@ -202,7 +202,6 @@ const endpoints = {
         }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
-    // TODO: ugly fix, voltsdk need this change
     download: custom<DownloadTrajectoryInputDTO, Blob>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
             query: {

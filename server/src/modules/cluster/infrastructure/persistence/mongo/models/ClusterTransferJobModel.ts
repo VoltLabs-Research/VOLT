@@ -171,7 +171,6 @@ const ClusterTransferJobSchema = new Schema({
 ClusterTransferJobSchema.index({ team: 1, state: 1, updatedAt: 1 });
 ClusterTransferJobSchema.index({ team: 1, scopeType: 1, scopeId: 1, state: 1 });
 ClusterTransferJobSchema.index({ destinationClusterId: 1, state: 1, updatedAt: 1 });
-// Prevents two running open transfer jobs for the same scope. Idempotent requestTransfer.
 ClusterTransferJobSchema.index(
     { scopeType: 1, scopeId: 1, state: 1 },
     {

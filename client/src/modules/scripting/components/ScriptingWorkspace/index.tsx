@@ -112,8 +112,6 @@ const ScriptingWorkspace = ({ trajectoryId, notebookId, onJupyterUrlChange, onNo
     const isDeploymentRequired = Boolean(deploymentRequiredMessage);
     const errorValue = error || deploymentRequiredMessage;
 
-    // A required compute cluster is a setup step, not a failure: guide the user to
-    // connect/select one instead of showing a generic error surface.
     const deploymentRequiredView = renderWorkspaceShell(
         <RecoveryState
             tone={RecoveryStateTone.Info}

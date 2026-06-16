@@ -12,11 +12,6 @@ const isInProgressStatus = (status?: CanvasAnalysisStatus): boolean => {
     return status === CanvasAnalysisStatusEnum.Running || status === CanvasAnalysisStatusEnum.Pending;
 };
 
-// Why: mirrors use-timeline-job-activity — any analysis we observe as "in
-// progress" during this session, and later transitions to completed, gets a
-// short-lived success highlight. Analyses that were already completed on mount
-// do not. This avoids recoloring the whole tree every time the user opens the
-// canvas and makes the just-ran analysis visually stand out.
 const useAnalysisActivityTone = (
     statusMap: Map<string, CanvasAnalysisStatusEntry>
 ) => {

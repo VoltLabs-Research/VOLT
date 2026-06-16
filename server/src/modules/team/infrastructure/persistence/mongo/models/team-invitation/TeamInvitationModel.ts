@@ -64,7 +64,6 @@ const TeamInvitationSchema: Schema<TeamInvitationDocument> = new Schema({
     timestamps: true
 });
 
-// TTL index to automatically delete expired invitations after 24 hours + 1 day
 TeamInvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 });
 
 const TeamInvitationModel: Model<TeamInvitationDocument> = mongoose.model<TeamInvitationDocument>('TeamInvitation', TeamInvitationSchema);

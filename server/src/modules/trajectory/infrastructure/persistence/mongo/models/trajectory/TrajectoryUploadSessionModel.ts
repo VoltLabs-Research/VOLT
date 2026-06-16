@@ -6,8 +6,6 @@ import type {
     TrajectoryUploadSessionFileProps
 } from '@modules/trajectory/domain/contracts/trajectory/UploadSession';
 
-// Plain vocabulary lives in the domain contract (single source of truth);
-// re-exported here for existing infra importers that reference the ODM module.
 export type {
     TrajectoryUploadSessionStatus,
     TrajectoryUploadSessionPartProps,

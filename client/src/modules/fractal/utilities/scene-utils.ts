@@ -29,8 +29,6 @@ export const getRenderableScenes = (scenes: SceneObjectType[], forceDefaultScene
     return scenes.filter((scene) => !isChartScene(scene));
 };
 
-// A scene rendering LineExporter tubes — the exposure's baked GLB or a styled
-// re-export — with the identity needed to query its line entities.
 export interface LineSceneSource {
     scene: SceneObjectType;
     analysisId: string;

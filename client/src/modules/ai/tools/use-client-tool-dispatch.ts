@@ -41,7 +41,6 @@ export const useClientToolDispatch = () => {
     return useCallback(async (toolCall: ClientToolCall, addToolResult: AddToolResultFn): Promise<void> => {
         const handler = getClientTool(toolCall.toolName);
 
-        // Not a client tool → it executed server-side; nothing to do here.
         if (!handler) {
             return;
         }

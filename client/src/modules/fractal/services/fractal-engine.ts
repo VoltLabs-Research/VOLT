@@ -60,8 +60,6 @@ interface MortonSortResult {
     attributes: MortonAttributePayload[];
 }
 
-// Non-highlighted tubes keep this fraction of their baked color so the
-// selected entity reads unambiguously, screenshots included.
 const LINE_HIGHLIGHT_DIM_FACTOR = 0.15;
 
 export type FractalParams = {
@@ -187,10 +185,6 @@ export class FractalEngine {
     private mortonWorker: Worker | null = null;
     private currentSortRequestId = 0;
 
-    // Coalesces slider-driven line updates: a continuous drag fires a distinct
-    // value per step, each one an O(n) buffer rewrite. Collapsing them to one
-    // rAF keeps only the latest pending settings, so the work runs once per
-    // frame instead of once per pointer event.
     private lineUpdateRafHandle: number | null = null;
     private pendingLineWidthSettings: LineSceneSettings | undefined = undefined;
     private hasPendingLineWidth = false;
@@ -291,10 +285,6 @@ export class FractalEngine {
                 pointClouds.forEach((pointCloud) => {
                     this.materialPipeline.configurePointCloud(pointCloud);
                 });
-                // Why: the sphere-impostor promotion chops the silhouette at
-                // close zoom and misbehaves with large simulation cells. Keep
-                // the point-sprite representation that the GLB pipeline has
-                // shipped since the initial commit.
                 newMesh = this.pickPrimaryAtomNode(loadedModel);
             } else {
                 newMesh = this.materialPipeline.configureGeometry(loadedModel, this.params.sliceClippingPlanes);
@@ -309,9 +299,6 @@ export class FractalEngine {
                 useFixedReference: this.params.useFixedReference
             });
 
-            // Double-buffer swap: Why: only dispose the previous model once the
-            // new one is fully wired up, so the renderer never sees an empty
-            // scene.
             this.disposeModel();
             this.state.model = loadedModel;
             this.state.mesh = newMesh;
@@ -346,9 +333,6 @@ export class FractalEngine {
             this.mortonPermutation = null;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
-            // Apply synchronously on load so the first rendered frame already has
-            // the correct line width/highlight (no deferral flash); slider-driven
-            // calls after load go through the coalesced rAF path.
             this.applyLineWidth(this.params.lineSettings);
             this.applyLineHighlight(this.params.lineHighlight);
 
@@ -431,12 +415,6 @@ export class FractalEngine {
 
         const positionsCopy = new Float32Array(positionsSource);
 
-        // Offload the immutable per-atom attribute gathers to the worker too, so
-        // the main thread only swaps `attribute.array` references on reply.
-        // `color` is intentionally excluded: updateSceneColor can rewrite the
-        // live color buffer before the worker replies (it runs synchronously from
-        // onModelAvailable), so its gather must read the live array on the main
-        // thread to preserve an active override — see applyMortonPermutation.
         const reorderableAttributeNames = ['iRadius', '_color_index'];
         const attributePayloads: MortonAttributePayload[] = [];
         for (const name of reorderableAttributeNames) {
@@ -477,15 +455,12 @@ export class FractalEngine {
     private applyMortonPermutation(points: THREE.Points, result: MortonSortResult): void {
         const permutation = result.permutation;
 
-        // Swap in the worker-reordered position buffer (immutable post-load, so
-        // the live array still matches the snapshot the worker reordered).
         const positionAttribute = points.geometry.getAttribute('position');
         if (positionAttribute instanceof THREE.BufferAttribute && positionAttribute.count === permutation.length) {
             positionAttribute.array = result.positions;
             positionAttribute.needsUpdate = true;
         }
 
-        // Swap in the worker-reordered immutable attributes.
         for (const attribute of result.attributes) {
             const target = points.geometry.getAttribute(attribute.name);
             if (target instanceof THREE.BufferAttribute && target.count === permutation.length) {
@@ -494,16 +469,11 @@ export class FractalEngine {
             }
         }
 
-        // `color` may have been overridden after the sort kicked off, so reorder
-        // the live array on the main thread to preserve that override.
         const colorAttribute = points.geometry.getAttribute('color');
         if (colorAttribute instanceof THREE.BufferAttribute && colorAttribute.count === permutation.length) {
             applyPermutationToAttribute(colorAttribute, permutation);
         }
 
-        // Why: keep the permutation so a per-atom visibility mask applied AFTER the
-        // sort (it arrives in original parquet/vertex order) can be reordered to
-        // match the now-permuted vertices.
         this.mortonPermutation = permutation;
         points.geometry.computeBoundingBox();
         points.geometry.computeBoundingSphere();
@@ -533,10 +503,6 @@ export class FractalEngine {
             const material = pointCloud.material;
             if (!(material instanceof THREE.ShaderMaterial)) return;
 
-            // Why: `basePointScale` is written on the `THREE.Points` userData
-            // by the material pipeline, not on the material's userData — so the
-            // previous read was always `undefined` and the user's point-size
-            // slider had no effect at runtime.
             const baseScale = (pointCloud.userData as { basePointScale?: number }).basePointScale;
             if (typeof baseScale === 'number' && material.uniforms?.pointScale) {
                 material.uniforms.pointScale.value = baseScale * pointCloudSettings.pointSizeMultiplier;
@@ -637,9 +603,6 @@ export class FractalEngine {
 
         const override = color ? new THREE.Color(color) : null;
 
-        // Point cloud shaders read the baked COLOR_0 attribute directly, so a
-        // uniform override rewrites the attribute and stashes the original
-        // values for a lossless restore when the override clears.
         this.traversalCache.pointClouds.forEach((pointCloud) => {
             const attribute = pointCloud.geometry.getAttribute('color');
             if (!attribute) return;
@@ -742,8 +705,6 @@ export class FractalEngine {
     }
 
     updateLineWidth(settings?: LineSceneSettings) {
-        // Coalesce continuous slider drags: keep only the latest settings and run
-        // the O(n) geometry rewrite once per frame instead of once per step.
         this.pendingLineWidthSettings = settings;
         this.hasPendingLineWidth = true;
         this.scheduleLineUpdate();
@@ -780,11 +741,7 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    // Dims every line tube except the highlighted entity by rewriting the
-    // vertex-color buffer in place (originals stashed for a lossless restore).
-    // The triangle ranges come from the GLB's `.ranges.json` sidecar.
     updateLineHighlight(highlight?: LineEntityHighlight) {
-        // Coalesce rapid hover changes into a single per-frame rewrite.
         this.pendingLineHighlight = highlight;
         this.hasPendingLineHighlight = true;
         this.scheduleLineUpdate();
@@ -800,8 +757,6 @@ export class FractalEngine {
         this.lastLineHighlightEntityId = entityId;
         this.lastLineHighlightRanges = entityRanges;
 
-        // An entity hidden by the active style has no range — treat it as no
-        // highlight rather than dimming the whole model.
         const range = entityRanges?.find((candidate) => candidate.id === entityId) ?? null;
 
         const processedGeometries = new Set<THREE.BufferGeometry>();
@@ -954,8 +909,6 @@ export class FractalEngine {
             return;
         }
 
-        // Uniform-colored line GLBs ship without COLOR_0; highlighting needs a
-        // per-vertex channel, so synthesize an all-ones one (a no-op tint).
         let colorAttribute = geometry.getAttribute('color');
         if (!(colorAttribute instanceof THREE.BufferAttribute)) {
             const vertexCount = geometry.getAttribute('position').count;

@@ -60,7 +60,6 @@ const toSkeleton = (element: WhiteboardDrawElement): ExcalidrawElementSkeleton =
         } as ExcalidrawElementSkeleton;
     }
 
-    // rectangle | ellipse | diamond
     return {
         ...base,
         type: element.kind,
@@ -76,8 +75,6 @@ export const applyWhiteboardDrawRequest = (
 ): WhiteboardDrawResult => {
     const skeletons = request.elements.map(toSkeleton);
 
-    // Default opts regenerate scene ids (avoids collisions in append mode) while
-    // still resolving arrow start/end bindings against the skeletons' own ids.
     const newElements = convertToExcalidrawElements(skeletons) as OrderedExcalidrawElement[];
 
     if (newElements.length === 0) {

@@ -101,7 +101,6 @@ function useDocumentListingPagination<T extends { _id: string }, TContext = Reco
         }
     });
 
-    // Derive flat data from pages, deduplicate, and optionally transform
     const data = useMemo(() => {
         if (!infiniteData?.pages) {
             return [];

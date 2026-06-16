@@ -59,9 +59,6 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
     return 'Stage';
 };
 
-// Standalone bake stages (color-coding, line-style) apply on their own button
-// and are never part of the ordered run, so their row toggle is always usable
-// (the executed-gate only applies to ordered stages, which run as a pipeline).
 const isStandaloneBakeStage = (stage: PipelineStage): boolean =>
     stage.type === 'color-coding' || stage.type === 'line-style';
 
@@ -85,15 +82,8 @@ const CanvasPipeline = ({
     })();
     const isForeignTrajectory = Boolean(selectedTeamId && trajectoryTeamId && trajectoryTeamId !== selectedTeamId);
 
-    // Always-mounted: runs a pending foreign-trajectory clone-and-run intent once
-    // the user lands on the destination canvas (was the AnalyzeLauncher modal's job).
     useCloneIntentRunner({ trajectoryId, isForeignTrajectory });
 
-    // The list shows the ordered executable stages (slice / expression / plugin)
-    // PLUS the standalone bake stages (color-coding, line-style). Those bakes are
-    // NOT part of the ordered run — each applies on its own button — but they are
-    // still visible, removable stages (the run path filters them out via
-    // isOrderedPipelineStage, so they can never enter an execution).
     const allStages = useStages(trajectoryId);
     const stages = allStages.filter((stage) =>
         isOrderedPipelineStage(stage) || stage.type === 'color-coding' || stage.type === 'line-style');
@@ -102,8 +92,6 @@ const CanvasPipeline = ({
     const toggleStageEnabled = useCanvasPipelineStore((s) => s.toggleStageEnabled);
     const setActiveTrajectory = useCanvasPipelineStore((s) => s.setActiveTrajectory);
 
-    // Register the active trajectory so global getState() callers (AI tools, the
-    // exposure chart, the header Add menu) append stages to this pipeline.
     useEffect(() => {
         setActiveTrajectory(trajectoryId ?? null);
         return () => setActiveTrajectory(null);
@@ -119,8 +107,6 @@ const CanvasPipeline = ({
 
     const handleDrop = useCallback((targetId: string) => {
         if (!dragId || dragId === targetId) return;
-        // Reorder against the full store array so filtered-out (color-coding) stages
-        // keep their positions; translate the target's index in the full list.
         const targetIndex = allStages.findIndex((s) => s.id === targetId);
         if (targetIndex === -1) return;
         reorderStage(dragId, targetIndex, trajectoryId);
@@ -174,8 +160,6 @@ const CanvasPipeline = ({
         }
     }, [trajectory, trajectoryId, analysisId, currentTimestep, canMutateCanvas]);
 
-    // Nothing to show until the user adds a stage (Add lives in the section
-    // header now). Render nothing rather than an empty-state message.
     if (stages.length === 0) {
         return null;
     }

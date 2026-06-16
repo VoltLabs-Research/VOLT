@@ -23,8 +23,6 @@ export class ListAnalysesByConfigAITool extends AITool {
     }
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        // Page through all analyses for the trajectory so the in-tool filter
-        // sees the full set rather than a single page.
         const result = await this.useCase.execute({
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,

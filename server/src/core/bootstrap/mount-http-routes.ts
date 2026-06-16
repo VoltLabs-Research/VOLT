@@ -212,10 +212,6 @@ const mountHttpRoutes = (): Router => {
 
     const enabled = getEnabledModules();
 
-    // Drift guard: getEnabledModules() above ensures the registry is populated
-    // (it calls ensureRegistered()). Every route module's inline moduleKey must
-    // correspond to a registered module, or the central manifest and the routes
-    // have drifted apart.
     const knownKeys = new Set(moduleRegistry.all().map((m) => m.key));
     for (const module of HTTP_MODULES) {
         if (module.moduleKey !== undefined && !knownKeys.has(module.moduleKey)) {
@@ -225,7 +221,6 @@ const mountHttpRoutes = (): Router => {
 
     const modulesToMount = HTTP_MODULES.filter((module) => {
         const key = resolveModuleKey(module);
-        // No key → always-on (kernel/shared). Keyed → only if enabled.
         const allowed = key === undefined || enabled.has(key);
         if (!allowed) {
             logger.debug(`@http-bootstrap: skipping disabled module route basePath=${module.basePath} moduleKey=${key}`);

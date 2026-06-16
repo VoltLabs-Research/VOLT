@@ -195,7 +195,6 @@ export default class TeamJobsService {
             });
         }
 
-        // Sort trajectories by latest timestamp descending
         groups.sort((left, right) => this.compareTimestampValues(
             this.parseTimestamp(right.latestTimestamp),
             this.parseTimestamp(left.latestTimestamp)

@@ -8,7 +8,6 @@ interface FolderNameModalProps {
     id: string;
     title: string;
     description: string;
-    // When provided (rename), the field is seeded/reset from it; omit for create.
     initialName?: string | null;
     fieldLabel?: string;
     placeholder?: string;

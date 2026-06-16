@@ -54,7 +54,6 @@ export const initializeRedis = (): Promise<void> => {
             resolve();
         });
 
-        // Add a timeout in case Redis never becomes ready
         setTimeout(() => {
             if (redis?.status !== 'ready') {
                 logger.warn('Redis initialization timeout - continuing anyway');

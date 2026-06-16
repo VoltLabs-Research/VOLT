@@ -164,9 +164,6 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 fallbackDescription: UPLOAD_ERROR_DESCRIPTION
             });
 
-            // Keep the failed upload visible in the progress panel (instead of
-            // auto-removing it) so the user can read the error and dismiss it
-            // on their own terms rather than it vanishing instantly.
             failUpload(uploadId, userError.description || userError.title || UPLOAD_ERROR_DESCRIPTION);
         } finally {
             activeUploadsRef.current = Math.max(0, activeUploadsRef.current - 1);

@@ -39,7 +39,6 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
 
     const { selectedTrajectory } = useDebugTrajectorySelector();
 
-    // Extract configurable arguments from the Arguments node in the workflow
     const configurableArgs = useMemo(() => {
         const argsNode = nodes.find((n) => n.type === NodeType.ARGUMENTS);
         if (!argsNode) return [];

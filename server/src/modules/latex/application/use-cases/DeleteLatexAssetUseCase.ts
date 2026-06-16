@@ -47,9 +47,6 @@ export class DeleteLatexAssetUseCase implements IUseCase<DeleteLatexAssetInputDT
             ));
         }
 
-        // Why: an asset row whose signed upload was abandoned has no physical object,
-        // so the gateway delete 404s. Treat the storage delete as idempotent — the
-        // metadata row is the source of truth and must still be removable.
         try {
             await this.objectGatewayClient.deleteObject(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, asset.props.storageKey);
         } catch (error) {

@@ -48,10 +48,6 @@ const getRasterMetadataWithAccess = (params: GetRasterMetadataParams) => {
 const rasterMetadataKey = (params: GetRasterMetadataParams) => currentAccessKey(KEYS.metadata(params));
 export const rasterMetadataQuery = createQuery(rasterMetadataKey, getRasterMetadataWithAccess);
 
-// Kept as raw `useMutation`: needs composed `onError` alongside `onSuccess`
-// plus pre-mutation pending-state bookkeeping. `createMutation` only composes
-// `onSuccess`, so wiring the error path through the helper would lose the
-// defensive cleanup and duplicate the try/catch inside `mutationFn`.
 export const useTriggerRasterizationMutation = () => {
     return useMutation<TriggerRasterizationResponse, Error, TriggerRasterizationParams>({
         mutationFn: async (variables) => {

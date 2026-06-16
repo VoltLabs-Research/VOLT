@@ -42,18 +42,15 @@ const ModulesSettings = () => {
         for (const item of navItems) {
             const moduleKey = item.moduleKey;
 
-            // Only optional feature modules the user is allowed to hide.
             if (!isHideableModule(moduleKey) || seen.has(moduleKey)) {
                 continue;
             }
 
-            // Don't offer modules the deployment has turned off entirely.
             const serverEnabled = enabledModules === null || enabledModules.includes(moduleKey);
             if (!serverEnabled) {
                 continue;
             }
 
-            // Don't offer modules the user can't access anyway (RBAC).
             const permissionMode = item.permissionMode === RoutePermissionMode.All ? 'all' : 'any';
             if (!canAccessPermissions(item.requiredPermissions, permissionMode)) {
                 continue;

@@ -183,8 +183,6 @@ export default class LatexSocketModule extends BaseSocketModule {
         const key = buildSaveKey(documentId, fileId);
         const session = this.fileSessions.get(key);
 
-        // No live session → nobody is editing this file; the persisted content
-        // (written by the use-case) will be loaded on next open. Nothing to do.
         if (!session || session.teamId !== teamId) {
             return;
         }
@@ -466,10 +464,6 @@ export default class LatexSocketModule extends BaseSocketModule {
                 });
             }
 
-            // AI edits are already persisted to Mongo by the use-case that
-            // triggered them; re-persisting here would be a redundant write
-            // (and could race the use-case's own write). Editor/collab edits
-            // still auto-save through the debounced path.
             if (origin === AI_ORIGIN) {
                 return;
             }

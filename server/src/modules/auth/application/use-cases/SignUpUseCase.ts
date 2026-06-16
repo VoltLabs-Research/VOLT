@@ -32,8 +32,6 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
     ) {}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
-        // Trust-boundary validation: `input` is an untyped HTTP body. Guard before any string ops
-        // (e.g. User.normalizeName) so a malformed body returns 400, not a 500 from `.trim()` on undefined.
         if (typeof input.email !== 'string' || input.email.trim().length === 0) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.AUTH_EMAIL_REQUIRED,

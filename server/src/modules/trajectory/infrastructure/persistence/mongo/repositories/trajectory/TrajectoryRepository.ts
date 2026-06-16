@@ -16,9 +16,6 @@ const extractFrames = <T extends { frames?: TrajectoryFrame[] } | undefined>(
         return { sanitized: data, frames: undefined };
     }
 
-    // Why: `frames` lives in a dedicated collection now (see F2.S6 migration).
-    // Strip it from the payload handed to the parent Trajectory document so the
-    // Mongoose model never attempts to embed it again.
     const { frames, ...rest } = data as { frames?: TrajectoryFrame[] } & Record<string, unknown>;
     return {
         sanitized: rest as T,

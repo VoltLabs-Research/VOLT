@@ -27,10 +27,6 @@ import type {
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
-// ---------------------------------------------------------------------------
-// buildKeys — hierarchical keys with prefix support
-// ---------------------------------------------------------------------------
-
 const listingKeys = buildKeys<{
     detail: GetPluginListingInputDTO;
 }>(['plugins', 'listing']);
@@ -48,10 +44,6 @@ const subListingInfiniteKeys = buildKeys<{
     detail: Omit<GetSubListingInputDTO, 'page'> & { limit: number };
 }>(['plugins', 'subListing', 'infinite']);
 
-// ---------------------------------------------------------------------------
-// LISTING_QUERY_KEYS — public facade
-// ---------------------------------------------------------------------------
-
 export const LISTING_QUERY_KEYS = {
     listing: listingKeys.prefix,
     listingInfinite: listingInfiniteKeys.prefix,
@@ -63,8 +55,6 @@ export const LISTING_QUERY_KEYS = {
     analysisExportOptions: analysisExportOptionsKeys.prefix,
     analysisExportOptionsDetail: analysisExportOptionsKeys.detail
 };
-
-// ─── Listing queries ─────────────────────────────────────────────────────────
 
 const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
     const accessState = useCanvasAccessStore.getState();
@@ -80,10 +70,6 @@ export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
-// Kept as raw `useQuery`: the query key and `queryFn` derive from React hooks
-// (`useCanvasAccessMode`, `useCanvasDataAccess`, `useCanvasAccessStore`) that
-// must run inside the hook body. `createQuery` resolves key/fn from plain
-// params at module scope and cannot call hooks.
 export const usePluginListingQuery = (
     params: GetPluginListingInputDTO,
     options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
@@ -100,10 +86,6 @@ export const usePluginListingQuery = (
     });
 };
 
-// Kept as raw `useInfiniteQuery`: depends on React hooks for key/fn and uses
-// a custom response shape (not `PaginatedResponse<TEntity>`) plus a per-call
-// `getNextPageParam`. `createInfiniteQuery` is locked to `PaginatedResponse`
-// and owns pagination semantics itself.
 export const usePluginListingInfiniteQuery = (
     params: Omit<GetPluginListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetPluginListingOutputDTO) => number | undefined; enabled?: boolean }
@@ -130,10 +112,6 @@ export const usePluginListingInfiniteQuery = (
     });
 };
 
-// ─── Sub-listing queries ─────────────────────────────────────────────────────
-
-// Kept as raw `useInfiniteQuery`: same reason as `usePluginListingInfiniteQuery`
-// (React-hook-derived key/fn plus custom non-`PaginatedResponse` page shape).
 export const useSubListingInfiniteQuery = (
     params: Omit<GetSubListingInputDTO, 'page'> & { limit: number },
     options: { getNextPageParam: (lastPage: GetSubListingOutputDTO) => number | undefined; enabled?: boolean }
@@ -164,8 +142,6 @@ export const useAnalysisListingExportOptionsQuery = createQuery(
     LISTING_QUERY_KEYS.analysisExportOptionsDetail,
     (params: GetAnalysisListingExportOptionsInputDTO) => listingService.getAnalysisListingExportOptions(params)
 );
-
-// ─── Mutation hooks ──────────────────────────────────────────────────────────
 
 export const useExportListingMutation = createMutation<Blob, ExportPluginListingInputDTO>(listingService.exportListing);
 

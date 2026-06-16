@@ -25,9 +25,6 @@ interface MortonSortResponse {
     attributes: MortonAttributePayload[];
 }
 
-// Gather-by-index reorder of a flat interleaved attribute buffer. Always emits a
-// Float32Array, matching the main-thread reorder this offloads (which allocated a
-// fresh Float32Array regardless of source type).
 const gatherAttribute = (source: Float32Array, itemSize: number, permutation: Uint32Array): Float32Array => {
     const count = permutation.length;
     const reordered = new Float32Array(count * itemSize);
@@ -49,8 +46,6 @@ self.addEventListener('message', (event: MessageEvent<MortonSortRequest>) => {
     const codes = computeMortonCodes(data.positions, bbox);
     const permutation = buildPermutation(codes);
 
-    // Reorder positions (itemSize 3) and every supplied attribute in the worker so
-    // the main thread only swaps `attribute.array` references after the sort.
     const reorderedPositions = gatherAttribute(data.positions, 3, permutation);
     const reorderedAttributes: MortonAttributePayload[] = data.attributes.map((attribute) => ({
         name: attribute.name,

@@ -55,23 +55,17 @@ export default class ParticleFilterService implements IParticleFilterService {
         @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
         private readonly atomProps: IAtomPropertiesService,
 
-
         private readonly dumpStorage: TrajectoryDumpStorageService,
-
 
         private readonly sceneArtifactRepository: SceneArtifactRepository,
 
-
         private readonly trajectoryRepository: TrajectoryRepository,
-
 
         @inject(COMPUTE_TOKENS.AnalysisRepository)
         private readonly analysisRepository: IAnalysisRepository,
 
-
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
         private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-
 
         @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
         private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
@@ -379,9 +373,6 @@ export default class ParticleFilterService implements IParticleFilterService {
         }));
 
         const firstResult = results[0];
-        // Why: `new Uint8Array(firstResult.mask)` copies directly from the
-        // source typed array in a single memcpy. The legacy path went through
-        // `Array.from(...)` which boxed every byte into a number first.
         let combinedMask: Uint8Array = new Uint8Array(firstResult.mask);
 
         for (let index = 1; index < results.length; index += 1) {

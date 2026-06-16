@@ -26,9 +26,7 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
 
         private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
 
-
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly repository: ITrajectoryRepository,
-
 
         @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly frameRepository: ITrajectoryFrameRepository
     ) {}
@@ -50,8 +48,6 @@ export class GetPublicCanvasTrajectoryUseCase implements IUseCase<
 
             entity.props.frames = await this.frameRepository.getFrames(entity.id);
 
-            // hasPreview comes from the persisted column. DaemonAnalysisCompletionService
-            // flips it on after the rasterizer completes its first job per trajectory.
             return Result.ok(toPersistedOutput(entity));
         } catch (error) {
             if (error instanceof ApplicationError) {

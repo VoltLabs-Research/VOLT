@@ -51,9 +51,6 @@ export const buildTeamClusterEffectiveCapabilities = (
     return {
         acceptsComputeJobs: capabilities.canCompute && !computeDraining,
         acceptsStorageWrites: capabilities.canStore && !storageDraining,
-        // Reads stay enabled on compute-node so clusters that were demoted from
-        // storage-server can keep serving already-owned trajectories until the
-        // user transfers them elsewhere.
         servesStorageReads: servesResidualStorageReads,
         servesArtifactDownloads: servesResidualStorageReads
     };

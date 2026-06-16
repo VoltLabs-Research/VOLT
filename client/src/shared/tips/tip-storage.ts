@@ -58,7 +58,6 @@ const persistSeenTips = (tips: Set<string>): void => {
     try {
         storage.setItem(SEEN_CONTEXTUAL_TIPS_KEY, JSON.stringify(Array.from(tips).sort()));
     } catch {
-        // Ignore storage write failures and keep the in-memory cache.
     }
 };
 

@@ -7,15 +7,12 @@ export interface CellPbc {
     z: boolean;
 }
 
-// The 12 edges of a parallelepiped as index pairs into the 8-corner array. Corner
-// index bits are (a,b,c): corner = ia*1 + ib*2 + ic*4, where each i ∈ {0,1} is how
-// many cell vectors of that axis are added to the origin.
 const EDGE_CORNER_PAIRS: ReadonlyArray<readonly [number, number]> = [
-    [0, 1], [0, 2], [0, 4], // from origin along a, b, c
-    [1, 3], [1, 5],         // a + (b), a + (c)
-    [2, 3], [2, 6],         // b + (a), b + (c)
-    [4, 5], [4, 6],         // c + (a), c + (b)
-    [3, 7], [5, 7], [6, 7]  // the three edges meeting the far corner a+b+c
+    [0, 1], [0, 2], [0, 4],
+    [1, 3], [1, 5],
+    [2, 3], [2, 6],
+    [4, 5], [4, 6],
+    [3, 7], [5, 7], [6, 7]
 ];
 
 const cornerOffset = (
@@ -71,8 +68,6 @@ export const buildCellWireframeGeometry = (
         corners.push(origin.clone().add(cornerOffset(corner, a, b, c)));
     }
 
-    // Per-image translation offsets. The primary cell is offset (0,0,0); periodic
-    // images add ±1 cell vector along each periodic axis when enabled.
     const axisShifts = (enabled: boolean | undefined): number[] => (enabled ? [-1, 0, 1] : [0]);
     const { pbc, showPbcImages } = options;
     const shiftsA = showPbcImages ? axisShifts(pbc?.x) : [0];

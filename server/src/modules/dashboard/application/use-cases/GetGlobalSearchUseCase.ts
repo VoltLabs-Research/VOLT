@@ -1,8 +1,3 @@
-// Dashboard global-search is a cross-module AGGREGATOR. Its repositories are
-// injected via the neutral `@shared/contracts` ports/tokens; the generic contract
-// ports/DTOs are bound to this module's own structural "search view" types
-// (defined in `GetGlobalSearchDTO`) so it never imports the concrete
-// `@modules/{chat,container,plugin}` entity/repo classes.
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { CHAT_CONTRACT_TOKENS, CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
@@ -27,8 +22,6 @@ import type {
     ContainerSearchView,
     PluginSearchDTO
 } from '@modules/dashboard/application/dtos/GetGlobalSearchDTO';
-// Neutral plugin→DTO mapper (generic over the structural plugin shape) so
-// dashboard maps plugins without importing the concrete `@modules/plugin` entity.
 import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { IUseCase } from '@shared/application/IUseCase';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';

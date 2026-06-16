@@ -44,8 +44,6 @@ const SimulationCellView = ({ trajectory, currentTimestep }: SimulationCellViewP
     const [draftVectors, setDraftVectors] = useState<number[][]>([]);
     const [draftPbc, setDraftPbc] = useState<CellPbc>({ x: true, y: true, z: true });
 
-    // Seed the edit draft from the override (if any) or the fetched cell, so the
-    // form opens pre-filled with the values the 3D view is currently rendering.
     const fetchedVectors = cell?.geometry?.cell_vectors;
     const fetchedPbc = cell?.geometry?.periodic_boundary_conditions;
     useEffect(() => {

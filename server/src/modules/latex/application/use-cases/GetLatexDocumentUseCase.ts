@@ -41,8 +41,6 @@ export class GetLatexDocumentUseCase implements IUseCase<GetLatexDocumentInputDT
                 return Result.fail(error);
             }
 
-            // Let the global error middleware normalize unknown errors — notably a Mongoose
-            // CastError from a malformed documentId maps to 400, not a blanket 500.
             throw error;
         }
     }

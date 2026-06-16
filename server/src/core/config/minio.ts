@@ -57,7 +57,6 @@ const ensureBucketExists = async (client: Client, bucket: string): Promise<void>
     const exists = await client.bucketExists(bucket).catch(() => false);
     if (!exists) {
         await client.makeBucket(bucket, '');
-        // Buckets served by Volt expose direct object URLs.
         if (bucket === SYS_BUCKETS.AVATARS || bucket === SYS_BUCKETS.CHAT) {
             const policy = {
                 Version: '2012-10-17',

@@ -10,9 +10,6 @@ import { Result } from '@shared/domain/port/Result';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
-// Line entities share the per-id property pipeline with atoms: the exposure's
-// property table is keyed by entity id, so one store lookup serves the
-// inspector for any LineExporter exposure.
 @Singleton()
 export class GetLineEntityPropertiesUseCase implements IUseCase<GetLineEntityPropertiesInputDTO, GetLineEntityPropertiesOutputDTO, ApplicationError> {
     constructor(

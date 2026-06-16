@@ -45,7 +45,6 @@ interface TimelineProps {
     }) => void;
 }
 
-
 const Timeline = ({
     sceneRef,
     trajectory,
@@ -453,7 +452,6 @@ const Timeline = ({
     const handleRulerWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
         const ruler = rulerRef.current;
         if (!ruler) return;
-        // Translate vertical wheel into horizontal scroll
         const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
         ruler.scrollLeft += delta;
     }, []);

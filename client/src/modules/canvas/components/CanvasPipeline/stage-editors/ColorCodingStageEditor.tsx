@@ -98,8 +98,6 @@ const ColorCodingStageEditor = ({
         setIsApplying(true);
         patch({ runStatus: 'loading' });
         try {
-            // Resolve [min,max]: manual inputs win; otherwise the daemon computes the
-            // range from the parquet column (no client-side column fetch).
             let startValue: number;
             let endValue: number;
             const manualMin = parseNumericInput(minInput);

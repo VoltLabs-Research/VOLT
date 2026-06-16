@@ -2,7 +2,6 @@ import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 
-
 export enum PointCloudDetailLevel {
     Auto = 'auto',
     Performance = 'performance',
@@ -42,8 +41,6 @@ export interface ModelDragOffset {
     z: number;
 }
 
-// Line entity selected from an exposure's listing; the viewport highlights the
-// matching tube in whichever line scene renders that exposure.
 export interface LineEntitySelection {
     exposureId: string;
     entityId: number;
@@ -60,8 +57,6 @@ export interface ModelState {
     pointCloudSettings: PointCloudSettingsState;
     sceneVisualOverrides: SceneVisualOverrides;
     modelWorldBounds: ModelWorldBounds | null;
-    // Drag offset per scene key — each model has its own translation, so
-    // moving one leaves the others untouched.
     modelDragOffsets: Record<string, ModelDragOffset>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
@@ -96,7 +91,6 @@ interface ModelActions {
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
-    // Selecting the already-selected entity clears the selection.
     toggleLineEntitySelection: (selection: LineEntitySelection) => void;
 }
 
@@ -112,9 +106,6 @@ export interface PlaybackState {
     downlinkMbps?: number | null;
     rangeStart?: number;
     rangeEnd?: number;
-    // Why: frame-rate budget used to compute playback cadence. Driven from
-    // dataset metadata (LAMMPS dump frequency → FPS) so each trajectory plays
-    // at its native rhythm.
     targetFps: number;
 }
 

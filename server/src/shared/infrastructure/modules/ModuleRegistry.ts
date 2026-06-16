@@ -67,7 +67,6 @@ export class ModuleRegistry {
         const enabled = new Set<string>(seed);
         for (const kernelKey of this.kernelKeys()) enabled.add(kernelKey);
 
-        // Transitively pull in hard dependencies of everything enabled so far.
         const queue = [...enabled];
         while (queue.length > 0) {
             const key = queue.shift() as string;
@@ -94,14 +93,12 @@ export class ModuleRegistry {
     validate(enabled: Set<string>): ValidationResult {
         const errors: string[] = [];
 
-        // Kernel modules must never be excluded.
         for (const kernelKey of this.kernelKeys()) {
             if (!enabled.has(kernelKey)) {
                 errors.push(`Kernel module "${kernelKey}" must be enabled but was excluded.`);
             }
         }
 
-        // Hard-dependency integrity.
         for (const key of enabled) {
             const manifest = this.manifests.get(key);
             if (!manifest?.requires) continue;
@@ -142,13 +139,11 @@ export class ModuleRegistry {
 
             const manifest = this.manifests.get(key);
             for (const dep of manifest?.requires ?? []) {
-                // Only traverse edges to enabled, registered modules.
                 if (!enabled.has(dep) || !this.manifests.has(dep)) continue;
                 const depColor = color.get(dep) ?? WHITE;
                 if (depColor === WHITE) {
                     visit(dep);
                 } else if (depColor === GREY) {
-                    // Back-edge: slice the current stack from `dep` to form the cycle.
                     const start = stack.indexOf(dep);
                     cycles.push([...stack.slice(start), dep]);
                 }

@@ -56,9 +56,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             throw new ApplicationError(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 404);
         }
 
-        // Line-entity exposures carry per-LINE properties keyed by line id, not
-        // atom id — they must not surface as per-atom coloring/filter options.
-        // Line-specific consumers query their exposure directly instead.
         const lineExposureIds = this.getLineExposureIds(plugin);
         const exposureNodes = this.getExposureNodes(plugin)
             .filter((node) => !lineExposureIds.has(String(node.id)));
@@ -221,7 +218,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             return new Float32Array(result);
         }
 
-        // If received as an object map from the columnar payload
         const length = Object.keys(result).length;
         const arr = new Float32Array(length);
         for (let i = 0; i < length; i++) {
@@ -387,8 +383,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
                     }));
             }
         } catch {
-            // Older daemons do not expose property-schema. Fall back to the
-            // historical property-name command and treat all properties as numeric.
         }
 
         const propertyNames = await this.getPerAtomProperties(

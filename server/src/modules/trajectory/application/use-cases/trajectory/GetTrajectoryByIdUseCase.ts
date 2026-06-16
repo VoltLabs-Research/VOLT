@@ -38,13 +38,8 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
             ));
         }
 
-        // Why: frames live in a separate collection (F2.S6). Hydrate them into
-        // the props projection so existing HTTP consumers that expect
-        // `trajectory.frames` keep working.
         entity.props.frames = await this.frameRepository.getFrames(entity.id);
 
-        // hasPreview is the persisted column; DaemonAnalysisCompletionService
-        // sets it true on the first successful raster job. No bucket scan here.
         return Result.ok(toPersistedOutput(entity));
     }
 };

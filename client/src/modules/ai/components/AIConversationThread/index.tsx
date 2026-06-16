@@ -543,10 +543,6 @@ const AIConversationThread = ({
     addToolApprovalResponse,
     onRetry
 }: AIConversationThreadProps) => {
-    // Per-output-entry cache: reuse the prior normalized object (stable
-    // identity) when a cheap input signature is unchanged, so only the
-    // streaming message gets a new identity and AIMessageItem's memo holds
-    // for the rest (no markdown re-parse on every streamed token).
     const normalizedCacheRef = useRef(
         new Map<string, { signature: string; value: NormalizedConversationMessage }>()
     );
@@ -638,10 +634,6 @@ const AIConversationThread = ({
             }
         };
 
-        // Cheap, allocation-free signature over the raw parts that determine
-        // normalization output: part type + (text length | tool state). The
-        // responded-tool-call count is folded in because it can flip a tool's
-        // state to 'approval-responded' without the message's own parts changing.
         const signMessage = (message: UIMessage): string => {
             let sig = message.id;
             for (let i = 0; i < message.parts.length; i++) {
@@ -657,9 +649,6 @@ const AIConversationThread = ({
             return sig;
         };
 
-        // Group raw messages exactly as the previous reduce did: a run of
-        // consecutive assistant messages becomes a single entry, every other
-        // message is its own entry.
         const groups: UIMessage[][] = [];
         for (const msg of messages) {
             const last = groups[groups.length - 1];
@@ -711,9 +700,6 @@ const AIConversationThread = ({
         return !last || last.role === AIMessageRole.User;
     }, [isResponding, normalizedMessages]);
 
-    // The composer always lives below the thread, so the starter is only the
-    // title. The page centers it via the workspace Row (items-center on the
-    // empty state); in fixed-height hosts (floating panel) it centers itself.
     const renderPromptStarter = () => (
         <Stack flex='1' align='center' justify='center' gap='1' className='ai-thread-starter'>
             <Text as='p' size='3xl' weight='medium' tone='primary' className='ai-thread-starter-title'>
@@ -768,9 +754,6 @@ const AIConversationThread = ({
         autoScrollDependency = 'typing';
     }
 
-    // Render the empty state ourselves instead of via `renderEmpty`:
-    // AutoScrollList centers its empty slot, while the starter must stay
-    // top-aligned with the composer pinned below.
     let threadContent: ReactNode = (
         <AutoScrollList
             items={normalizedMessages}

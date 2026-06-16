@@ -9,10 +9,6 @@ import { inject } from 'tsyringe';
 
 import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
 
-// Streams an exposure's LOD octree-metadata sidecar (`<glb>.octree.json`) the
-// daemon bakes next to the point-cloud GLB. The client LOD manager reads it to
-// fetch only visible-region tiles. Reuses LineStyleService's exposure GLB
-// resolution + sidecar streaming (same contract as the ranges sidecar).
 @Singleton()
 export class GetOctreeMetadataStreamUseCase implements IUseCase<GetOctreeMetadataStreamInputDTO, StreamableOutput, ApplicationError> {
     constructor(

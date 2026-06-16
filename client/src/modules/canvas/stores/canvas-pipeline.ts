@@ -2,11 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 
-// Single OVITO-style pipeline that lives in the canvas right panel. A stage is
-// either a client-instant View transform (slice / color / expression — evaluated
-// in-browser against the columnar atom buffer) or an analysis-plugin stage (a
-// heavy cluster job that bakes an immutable result the downstream client stages
-// then read via the active analysisId). The two kinds share one reorderable list.
 export type StageType =
     | 'slice-plane'
     | 'color-coding'
@@ -15,9 +10,6 @@ export type StageType =
     | 'analysis-plugin';
 
 export interface SlicePlaneStageConfig {
-    // Per-stage clip-plane geometry (the editor store no longer holds slice state).
-    // The stage's own `enabled` flag gates whether this plane contributes — there is
-    // no separate inner enabled flag.
     distance: number;
     normal: { x: number; y: number; z: number };
     reverseOrientation: boolean;
@@ -25,14 +17,11 @@ export interface SlicePlaneStageConfig {
 }
 
 export interface ColorCodingStageConfig {
-    // Backend bake config. property/range/gradient are POSTed to the daemon, which
-    // bakes a colored GLB scene; the client never fetches the full property column.
     property?: string;
     propertyValue?: string;
     propertyType?: 'number' | 'string';
     exposureId?: string;
     gradient: string;
-    // Manual [min,max]; when absent the daemon computes the range from the parquet.
     manualRange?: { min: number; max: number };
     lastBakedKey?: string;
     runStatus?: AnalysisPluginRunStatus;
@@ -42,10 +31,6 @@ export interface ExpressionSelectStageConfig {
     expression: string;
 }
 
-// Line-style is a daemon bake driven entirely by the editor's own local state
-// (mirrors color-coding). The stage carries no required persisted config — its
-// presence in the list is the whole record. Optional `lastBakedKey` lets a future
-// caller mark the last applied style without poisoning the StageConfig union.
 export interface LineStyleStageConfig {
     lastBakedKey?: string;
 }
@@ -68,7 +53,6 @@ export type StageConfig =
     | ExpressionSelectStageConfig
     | AnalysisPluginStageConfig;
 
-// Default config when a stage is first added from the "+ Add" menu.
 export const DEFAULT_SLICE_PLANE_STAGE_CONFIG: SlicePlaneStageConfig = {
     distance: 0,
     normal: { x: 1, y: 0, z: 0 },
@@ -87,8 +71,6 @@ export interface PipelineStage {
     type: StageType;
     config: StageConfig;
     enabled: boolean;
-    // True once this stage has been run as part of a pipeline execution. The row
-    // checkbox (which toggles `enabled`) stays disabled until a stage is executed.
     executed?: boolean;
 }
 
@@ -110,8 +92,6 @@ interface CanvasPipelineStore {
 export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
     persist(
         (set, get) => {
-            // Resolve the target trajectory for a mutation: explicit arg wins, else
-            // the active trajectory the mounted panel registered.
             const resolveTrajectoryId = (trajectoryId?: string): string | null =>
                 trajectoryId ?? get().activeTrajectoryId;
 
@@ -216,19 +196,12 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
     )
 );
 
-// Selector helper: the stages for one trajectory, stable empty array when none.
-// Falls back to the active trajectory exactly like the store's resolveTrajectoryId/addStage, so a
-// stage added under the resolved id is always counted here even when the prop isn't threaded.
 export const useStages = (trajectoryId?: string): PipelineStage[] =>
     useCanvasPipelineStore((state) => {
         const target = trajectoryId ?? state.activeTrajectoryId;
         return target ? state.byTrajectory[target] ?? EMPTY_STAGES : EMPTY_STAGES;
     });
 
-// The stage types that participate in the ordered, executable pipeline list shown
-// in the CanvasPipeline UI. 'color-coding' and 'line-style' are intentionally
-// excluded — they are standalone daemon bakes (each applies on its own button),
-// not dump-mutating stages of the ordered run.
 export const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<StageType>([
     'slice-plane',
     'expression-select',
@@ -238,9 +211,6 @@ export const ORDERED_PIPELINE_STAGE_TYPES: ReadonlySet<StageType> = new Set<Stag
 export const isOrderedPipelineStage = (stage: PipelineStage): boolean =>
     ORDERED_PIPELINE_STAGE_TYPES.has(stage.type);
 
-// The server pipeline-executions endpoint speaks in stage "kinds"; map the client
-// StageType onto it. color-coding / line-style are standalone bakes (not part of
-// the ordered run), so they map to null and never reach the server.
 export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
 export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | null => {
@@ -256,9 +226,6 @@ export const stageTypeToPipelineKind = (type: StageType): PipelineStageKind | nu
     }
 };
 
-// Enabled slice-plane stages (id + config) for a trajectory — drives the engine
-// clipping planes and the visualization helpers. Returns the trajectory's stage
-// array reference (stable from the store); callers filter/map under useMemo.
 export interface SliceStageEntry {
     id: string;
     config: SlicePlaneStageConfig;
@@ -269,8 +236,6 @@ export const collectEnabledSliceStages = (stages: PipelineStage[]): SliceStageEn
         .filter((stage) => stage.type === 'slice-plane' && stage.enabled)
         .map((stage) => ({ id: stage.id, config: stage.config as SlicePlaneStageConfig }));
 
-// Reactive: the active trajectory's stage array (used by the visualization helper,
-// which is mounted without a trajectoryId prop).
 export const useActiveTrajectoryStages = (): PipelineStage[] =>
     useCanvasPipelineStore((state) =>
         state.activeTrajectoryId ? state.byTrajectory[state.activeTrajectoryId] ?? EMPTY_STAGES : EMPTY_STAGES

@@ -25,6 +25,5 @@ export const setDiscoverTeamEmailPromptState = (
     try {
         window.localStorage.setItem(getStorageKey(teamId), state);
     } catch {
-        // Ignore storage failures so the prompt still works in restricted browsers.
     }
 };
