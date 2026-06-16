@@ -1,7 +1,18 @@
-import crypto from 'node:crypto';
 import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import { setTimeout as sleep } from 'node:timers/promises';
+
+// Local desktop is single-tenant — one fixed user, nobody else connects. These
+// deterministic defaults make the account stable across restarts: even if the DB
+// is reset or app-config.json is lost, the next bootstrap re-creates (or signs
+// back into) the SAME user/team/cluster instead of minting a fresh random one.
+const LOCAL_DEFAULTS = {
+    fullName: 'Local',
+    email: 'local@volt.local',
+    password: 'volt-local-desktop', // ≥8 chars (server password policy)
+    teamName: 'Local',
+    clusterName: 'Local Cluster'
+} as const;
 
 export interface ProvisionAccount{
     fullName: string;
@@ -31,6 +42,14 @@ interface TeamClusterResponse{
     teamCluster: { _id: string };
 }
 
+// HTTP error that preserves the status code so callers can branch on it (e.g.
+// treat a 409 "email already registered" as "fall back to sign-in").
+class HttpError extends Error{
+    constructor(public readonly status: number, message: string){
+        super(message);
+    }
+}
+
 export default class Bootstrap{
     constructor(private readonly props: BootstrapProps){}
 
@@ -53,23 +72,43 @@ export default class Bootstrap{
 
     async #fullBootstrap(): Promise<BootstrapState>{
         const acc = this.props.account;
-        const email = acc?.email ?? `local-${crypto.randomBytes(4).toString('hex')}@volt.local`;
-        const password = acc?.password ?? crypto.randomBytes(24).toString('base64url');
-        const [firstName, ...rest] = (acc?.fullName ?? 'Local').trim().split(/\s+/);
+        const email = acc?.email ?? LOCAL_DEFAULTS.email;
+        const password = acc?.password ?? LOCAL_DEFAULTS.password;
+        const [firstName, ...rest] = (acc?.fullName ?? LOCAL_DEFAULTS.fullName).trim().split(/\s+/);
 
-        bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating user ${email}` });
-        const auth = await this.#signUp(email, password, firstName, rest.join(' '));
+        // Idempotent: the user may already exist (DB kept but app-config.json was
+        // lost). Try to create it; on 409 (email already registered) sign in and
+        // reuse the existing team/cluster instead of failing or duplicating.
+        let auth: AuthResponse;
+        let reused = false;
+        try{
+            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] creating user ${email}` });
+            auth = await this.#signUp(email, password, firstName, rest.join(' '));
+        }catch(err){
+            if(err instanceof HttpError && err.status === 409){
+                bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] user ${email} exists; signing in` });
+                const token = await this.#signIn(email, password);
+                auth = { token, user: await this.#me(token) };
+                reused = true;
+            }else{
+                throw err;
+            }
+        }
 
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating team' });
-        const team = await this.#createTeam(auth.token, acc?.teamName ?? 'Local');
+        const teamName = acc?.teamName ?? LOCAL_DEFAULTS.teamName;
+        const team = reused
+            ? await this.#findOrCreateTeam(auth.token, teamName)
+            : await this.#createTeam(auth.token, teamName);
 
         if(acc?.autoJoinNewUsers){
             bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] enabling auto-join for new users' });
             await this.#setDefaultTeamForNewUsers(auth.token, team._id);
         }
 
-        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating cluster' });
-        const cluster = await this.#createCluster(auth.token, team._id, acc?.clusterName ?? 'Local Cluster');
+        const clusterName = acc?.clusterName ?? LOCAL_DEFAULTS.clusterName;
+        const cluster = reused
+            ? await this.#findOrCreateCluster(auth.token, team._id, clusterName)
+            : await this.#createCluster(auth.token, team._id, clusterName);
 
         bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] revealing daemon credentials' });
         const daemonPassword = await this.#revealDaemonPassword(auth.token, team._id, cluster.teamCluster._id, password);
@@ -87,6 +126,32 @@ export default class Bootstrap{
 
         await this.props.appConfig.setBootstrap(state);
         return state;
+    }
+
+    async #me(token: string): Promise<{ _id: string }>{
+        return this.#getJson<{ _id: string }>('/api/auth/me', token);
+    }
+
+    async #findOrCreateTeam(token: string, name: string): Promise<TeamResponse>{
+        const teams = await this.#getJson<TeamResponse[]>('/api/teams', token);
+        const existing = teams?.find((team) => team?._id);
+        if(existing){
+            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] reusing team ${existing._id}` });
+            return existing;
+        }
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating team' });
+        return this.#createTeam(token, name);
+    }
+
+    async #findOrCreateCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
+        const clusters = await this.#getJson<Array<{ _id: string }>>(`/api/teams/${teamId}/clusters`, token);
+        const existing = clusters?.find((cluster) => cluster?._id);
+        if(existing){
+            bus.emit('deploy:log', { stream: 'stdout', line: `[bootstrap] reusing cluster ${existing._id}` });
+            return { teamCluster: existing };
+        }
+        bus.emit('deploy:log', { stream: 'stdout', line: '[bootstrap] creating cluster' });
+        return this.#createCluster(token, teamId, name);
     }
 
     async #signUp(email: string, password: string, firstName: string, lastName: string): Promise<AuthResponse>{
@@ -161,12 +226,27 @@ export default class Bootstrap{
             if(!res.ok){
                 const code = parsed?.code ?? parsed?.status ?? '';
                 const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
-                throw new Error(`${path} → ${res.status} ${code} ${msg}`);
+                throw new HttpError(res.status, `${path} → ${res.status} ${code} ${msg}`);
             }
 
             return (parsed?.data ?? parsed) as T;
         }
 
         throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+    }
+
+    async #getJson<T>(path: string, token: string): Promise<T>{
+        const res = await fetch(`${this.props.serverOrigin}${path}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: AbortSignal.timeout(10_000)
+        });
+        const text = await res.text();
+        let parsed: any;
+        try{ parsed = text ? JSON.parse(text) : null; }catch{ parsed = null; }
+        if(!res.ok){
+            const msg = parsed?.message ?? text ?? `HTTP ${res.status}`;
+            throw new HttpError(res.status, `${path} → ${res.status} ${msg}`);
+        }
+        return (parsed?.data ?? parsed) as T;
     }
 };

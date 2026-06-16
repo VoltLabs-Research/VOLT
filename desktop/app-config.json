@@ -27,18 +27,15 @@
   },
   "theme": "system",
   "windowBounds": {
-    "x": 113,
-    "y": 111,
-    "width": 1717,
-    "height": 937,
-    "maximized": false
+    "x": 0,
+    "y": 32,
+    "width": 1920,
+    "height": 1048,
+    "maximized": true
   },
   "recentEndpoints": [
     "http://192.168.101.98:8100"
   ],
-  "deployment": {
-    "mode": "local"
-  },
   "bootstrap": {
     "done": true,
     "email": "local-844a3e1c@volt.local",
@@ -48,5 +45,8 @@
     "teamClusterId": "6a30dff1df47435099047084",
     "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMzBkZmYxZGY0NzQzNTA5OTA0NzA2NCIsImlhdCI6MTc4MTU4Nzk1MywiZXhwIjoxNzgyMTkyNzUzfQ.yfNjXFuKtjrQcYsVdBJndVRWTO81hzzVyEEWJ8pC83Q",
     "daemonPassword": "dc0e954b2c40709b085ecb96d28ddaa12af93bf258f17730"
+  },
+  "deployment": {
+    "mode": "local"
   }
 }
