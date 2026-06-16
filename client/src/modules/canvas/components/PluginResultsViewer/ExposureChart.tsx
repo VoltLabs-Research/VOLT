@@ -8,7 +8,7 @@ import {
 import { useState, useCallback } from 'react';
 import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
 import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
-import { useCanvasPipelineStore } from '../../stores/canvas-pipeline';
+import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '../../stores/canvas-pipeline';
 
 interface ExposureChartProps {
     artifact: SceneArtifact;
@@ -65,6 +65,7 @@ const ExposureChart = ({ artifact, rows, pluginId: _pluginId, analysisId: _analy
         const lo = Math.min(brushStart, brushEnd);
         const hi = Math.max(brushStart, brushEnd);
         addStage('expression-select', {
+            ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG,
             expression: xKey ? `${xKey} >= ${lo} && ${xKey} <= ${hi}` : ''
         });
         setBrushStart(null);

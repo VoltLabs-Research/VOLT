@@ -138,6 +138,16 @@
     color: var(--status-error);
 }
 
+.expression-select-chip__color {
+    width: 28px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+}
+
 .canvas-code-input {
     width: 100%;
     font-family: var(--font-mono, ui-monospace, monospace);

@@ -704,6 +704,73 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
+    /**
+     * Tints the atoms in `mask` (original GLB-vertex order, 1 = selected) with
+     * `color`, leaving the rest at their baked color. A null mask/color restores
+     * the original per-vertex colors. Mirrors `updateSceneColor`'s backup/restore
+     * (own `preHighlightColors` key) and `setVisibilityMask`'s morton reordering.
+     *
+     * ponytail: if a scene-wide color override is also active they share the
+     * `color` buffer; last writer wins. Combine both only if a user reports it.
+     */
+    setSelectionHighlight(mask: Uint8Array | null, color: string | null) {
+        if (this.traversalCache.pointClouds.length === 0) return;
+
+        const override = mask && color ? new THREE.Color(color) : null;
+
+        this.traversalCache.pointClouds.forEach((pointCloud) => {
+            const attribute = pointCloud.geometry.getAttribute('color');
+            if (!(attribute instanceof THREE.BufferAttribute)) return;
+            const userData = pointCloud.userData as { preHighlightColors?: Float32Array | Uint8Array };
+            const array = attribute.array as Float32Array | Uint8Array;
+
+            if (!override) {
+                if (userData.preHighlightColors) {
+                    array.set(userData.preHighlightColors);
+                    delete userData.preHighlightColors;
+                    attribute.needsUpdate = true;
+                }
+                return;
+            }
+
+            if (mask && mask.length !== attribute.count) {
+                warnFractal('engine.selection-highlight-mismatch', {
+                    maskCount: mask.length,
+                    attributeCount: attribute.count
+                });
+                return;
+            }
+
+            // Always restore from the pristine snapshot first so changing the
+            // selection/color doesn't compound onto a previous highlight.
+            if (userData.preHighlightColors) {
+                array.set(userData.preHighlightColors);
+            } else {
+                userData.preHighlightColors = array.slice() as Float32Array | Uint8Array;
+            }
+
+            const isByteColor = !(array instanceof Float32Array);
+            const red = isByteColor ? Math.round(override.r * 255) : override.r;
+            const green = isByteColor ? Math.round(override.g * 255) : override.g;
+            const blue = isByteColor ? Math.round(override.b * 255) : override.b;
+            const stride = attribute.itemSize;
+            const permutation = this.mortonPermutation;
+            const permuted = permutation && permutation.length === attribute.count;
+
+            for (let i = 0; i < attribute.count; i += 1) {
+                const originalIndex = permuted ? permutation![i] : i;
+                if (!mask![originalIndex]) continue;
+                const offset = i * stride;
+                array[offset] = red;
+                array[offset + 1] = green;
+                array[offset + 2] = blue;
+            }
+            attribute.needsUpdate = true;
+        });
+
+        this.surface.invalidate();
+    }
+
     updateLineWidth(settings?: LineSceneSettings) {
         this.pendingLineWidthSettings = settings;
         this.hasPendingLineWidth = true;

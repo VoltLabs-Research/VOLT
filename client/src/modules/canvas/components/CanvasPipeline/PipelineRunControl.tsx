@@ -23,6 +23,7 @@ import { sileo } from 'sileo';
 import { useCallback, useMemo, useState } from 'react';
 import type {
     AnalysisPluginStageConfig,
+    ExpressionSelectStageConfig,
     PipelineStage,
     PipelineStageKind
 } from '../../stores/canvas-pipeline';
@@ -45,6 +46,16 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInputDTO | null => {
         const config = stage.config as AnalysisPluginStageConfig;
         if (!config.pluginId) return null;
         return { kind, pluginId: config.pluginId, config: config.argValues ?? {} };
+    }
+
+    if (stage.type === 'expression-select') {
+        const config = stage.config as ExpressionSelectStageConfig;
+        const expression = config.expression?.trim();
+        // 'color' is a live viewer highlight only — nothing for the daemon to do.
+        if (!expression || config.action !== 'delete') return null;
+        // The daemon's --select KEEPS matched atoms, so to DELETE the selection we
+        // dispatch its negation (keep everything that does NOT match).
+        return { kind, config: { expression: `!(${expression})` } };
     }
 
     return { kind, config: stage.config as unknown as Record<string, unknown> };

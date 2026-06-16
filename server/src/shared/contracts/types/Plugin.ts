@@ -40,6 +40,7 @@ export enum WorkflowNodeType {
 export interface WorkflowNodeDataLike {
     exposure?: {
         name?: string;
+        results?: string;
     };
 }
 

@@ -1,9 +1,14 @@
 import { useCanvasPipelineStore } from '../../../stores/canvas-pipeline';
 import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
-import type { ExpressionSelectStageConfig } from '../../../stores/canvas-pipeline';
+import {
+    DEFAULT_EXPRESSION_SELECT_COLOR,
+    type ExpressionSelectAction,
+    type ExpressionSelectStageConfig
+} from '../../../stores/canvas-pipeline';
 
 interface ExpressionSelectStageEditorProps {
     stageId: string;
@@ -14,6 +19,14 @@ interface ExpressionSelectStageEditorProps {
 }
 
 const TEXTAREA_ROWS = 3;
+
+const ACTION_OPTIONS = [
+    { value: 'color', title: 'Color selection' },
+    { value: 'delete', title: 'Delete selection' }
+];
+
+const isAction = (value: string): value is ExpressionSelectAction =>
+    ACTION_OPTIONS.some((option) => option.value === value);
 
 const ExpressionSelectStageEditor = memo(({
     stageId,
@@ -27,7 +40,10 @@ const ExpressionSelectStageEditor = memo(({
     );
     const updateStageConfig = useCanvasPipelineStore((s) => s.updateStageConfig);
 
-    const expression = (stage?.config as ExpressionSelectStageConfig)?.expression ?? '';
+    const config = stage?.config as ExpressionSelectStageConfig | undefined;
+    const expression = config?.expression ?? '';
+    const action: ExpressionSelectAction = config?.action === 'delete' ? 'delete' : 'color';
+    const color = config?.color ?? DEFAULT_EXPRESSION_SELECT_COLOR;
     const [draft, setDraft] = useState(expression);
 
     const { data: atomBuffer } = trajectoryAtomsQuery(
@@ -62,6 +78,17 @@ const ExpressionSelectStageEditor = memo(({
         updateStageConfig(stageId, { expression: '' } as Partial<ExpressionSelectStageConfig>, trajectoryId);
     }, [stageId, trajectoryId, updateStageConfig]);
 
+    const handleActionChange = useCallback((_fieldKey: string, value: unknown) => {
+        const next = String(value);
+        if (isAction(next)) {
+            updateStageConfig(stageId, { action: next } as Partial<ExpressionSelectStageConfig>, trajectoryId);
+        }
+    }, [stageId, trajectoryId, updateStageConfig]);
+
+    const handleColorChange = useCallback((next: string) => {
+        updateStageConfig(stageId, { color: next } as Partial<ExpressionSelectStageConfig>, trajectoryId);
+    }, [stageId, trajectoryId, updateStageConfig]);
+
     const hasExpression = draft.trim().length > 0;
 
     return (
@@ -76,11 +103,35 @@ const ExpressionSelectStageEditor = memo(({
                 aria-label='Expression formula'
                 spellCheck={false}
             />
+
+            <FormFieldRHF
+                fieldKey='expression-select-action'
+                fieldType='select'
+                label='With selection'
+                fieldValue={action}
+                onFieldChange={handleActionChange}
+                options={ACTION_OPTIONS}
+                variant='canvas'
+            />
+
+            {action === 'color' && (
+                <Row gap='05' align='center'>
+                    <Text size='xs' tone='muted'>Highlight color</Text>
+                    <input
+                        type='color'
+                        className='expression-select-chip__color'
+                        value={color}
+                        onChange={(e) => handleColorChange(e.target.value)}
+                        aria-label='Selection highlight color'
+                    />
+                </Row>
+            )}
+
             {hasExpression && !autoRoute && (
                 <Row gap='05' align='center'>
                     {isValid && matchCount !== null && (
                         <Text size='xs' tone='secondary' className='expression-select-chip__match-count'>
-                            {matchCount} atoms match
+                            {matchCount} atoms {action === 'delete' ? 'will be deleted' : 'selected'}
                         </Text>
                     )}
                     {!isValid && error && (

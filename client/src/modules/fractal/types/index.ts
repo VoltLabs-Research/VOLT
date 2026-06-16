@@ -44,6 +44,8 @@ export type UseGlbSceneParams = {
     lineSettings?: LineSceneSettings;
     lineHighlight?: LineEntityHighlight;
     visibilityMask?: Uint8Array | null;
+    selectionHighlightMask?: Uint8Array | null;
+    selectionHighlightColor?: string | null;
     sceneVisualOverrides: SceneVisualOverrides;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;

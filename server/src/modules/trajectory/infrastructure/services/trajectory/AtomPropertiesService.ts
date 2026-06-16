@@ -297,7 +297,19 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
     }
 
     private getExposureNodes(plugin: PluginLike) {
-        return plugin.props.workflow.props.nodes.filter((node) => node.type === WorkflowNodeType.Exposure);
+        return plugin.props.workflow.props.nodes
+            .filter((node) => node.type === WorkflowNodeType.Exposure)
+            .filter((node) => !this.isSharedOnlyExposureNode(node));
+    }
+
+    // Shared-only sidecar exposures (e.g. `neighbor_lattice.parquet`) exist solely
+    // to feed downstream stages via inferFromContext. Their columns are not
+    // per-atom display data, so keep them out of the color-coding / filtering
+    // property catalog (the `.table` cluster sidecars are already excluded because
+    // the DESCRIBE-based schema probe skips non-parquet files).
+    private isSharedOnlyExposureNode(node: WorkflowNodeLike): boolean {
+        const results = node?.data?.exposure?.results;
+        return typeof results === 'string' && results.endsWith('neighbor_lattice.parquet');
     }
 
     private getLineExposureIds(plugin: PluginLike): Set<string> {

@@ -62,6 +62,11 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
 const isStandaloneBakeStage = (stage: PipelineStage): boolean =>
     stage.type === 'color-coding' || stage.type === 'line-style';
 
+// Stages whose effect is applied live in the viewer (no daemon run needed before
+// they can be toggled): the bake stages plus expression-select (client mask).
+const isLiveToggleStage = (stage: PipelineStage): boolean =>
+    isStandaloneBakeStage(stage) || stage.type === 'expression-select';
+
 const CanvasPipeline = ({
     trajectory,
     trajectoryId,
@@ -230,10 +235,10 @@ const CanvasPipeline = ({
                                 </button>
                                 <Checkbox
                                     checked={stage.enabled}
-                                    disabled={isStandaloneBakeStage(stage) ? false : !stage.executed}
+                                    disabled={isLiveToggleStage(stage) ? false : !stage.executed}
                                     onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
                                     aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                                    title={(isStandaloneBakeStage(stage) || stage.executed) ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
+                                    title={(isLiveToggleStage(stage) || stage.executed) ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
                                 />
                             </Row>
                         </Row>
