@@ -26,7 +26,6 @@ const useAnalysisStatusSocketSync = (): void => {
         updateAnalysisStatusCaches({
             analysisId,
             status,
-            completedFrames: readNumber(payload.completedFrames),
             totalFrames: readNumber(payload.totalFrames)
         });
 

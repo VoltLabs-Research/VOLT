@@ -26,6 +26,7 @@ interface SimulationCardFooterProps {
     name: string;
     updatedAt: string;
     isProcessing: boolean;
+    isNavigable: boolean;
     processingMessage?: string;
     onMoveToFolder?: () => void;
     onDelete?: (_id: string) => void;
@@ -152,6 +153,7 @@ export default function SimulationCardFooter({
     name,
     updatedAt,
     isProcessing,
+    isNavigable,
     processingMessage,
     onMoveToFolder,
     onDelete,
@@ -176,12 +178,18 @@ export default function SimulationCardFooter({
     const isRasterizeDisabled = !teamId || isRasterizing || isProcessing || hasPendingRasterization || hasRequestedRasterization;
 
     const handleViewScene = useCallback(() => {
+        if (!isNavigable) {
+            return;
+        }
         navigate(`/canvas/${trajectoryId}`);
-    }, [navigate, trajectoryId]);
+    }, [isNavigable, navigate, trajectoryId]);
 
     const handleViewRaster = useCallback(() => {
+        if (!isNavigable) {
+            return;
+        }
         navigate(`/canvas/${trajectoryId}?workspace=raster`);
-    }, [navigate, trajectoryId]);
+    }, [isNavigable, navigate, trajectoryId]);
 
     const handleOpenComputeJobs = useCallback(() => {
         setJobsScope({ trajectoryId, trajectoryName: name });
@@ -247,11 +255,13 @@ export default function SimulationCardFooter({
     const popoverItems: SimulationCardActionItem[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
-        icon: <HiOutlineViewfinderCircle />
+        icon: <HiOutlineViewfinderCircle />,
+        disabled: !isNavigable
     }, {
         onClick: handleViewRaster,
         label: 'Open raster workspace',
-        icon: <ScanSearch />
+        icon: <ScanSearch />,
+        disabled: !isNavigable
     }, {
         onClick: handleOpenComputeJobs,
         label: 'Compute jobs',

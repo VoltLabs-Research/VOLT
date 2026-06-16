@@ -1,5 +1,5 @@
 import { cn } from '@/shared/utils/cn';
-import { getStageMessage, isProcessingStatus } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
+import { getStageMessage, isProcessingStatus, isTrajectoryNavigable } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
 import { JobStatus } from '@/modules/jobs/api/entities/job';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
@@ -67,6 +67,8 @@ export default function SimulationCard({
         return false;
     }, [jobGroups, trajectory._id]);
     const isProcessing = isProcessingStatus(trajectory.status);
+    const isNavigable = isTrajectoryNavigable(trajectory.status);
+    const canOpen = isNavigable && !disablePrimaryInteraction;
     const hasPersistedPreview = trajectory.hasPreview === true;
 
     const { previewBlobUrl } = useTrajectoryPreview({
@@ -87,7 +89,7 @@ export default function SimulationCard({
 
     const containerClass = cn(
         'simulation-card radius-md b-soft p-relative',
-        !disablePrimaryInteraction && 'cursor-pointer',
+        canOpen && 'cursor-pointer',
         isProcessing && 'has-jobs',
         isSelected && 'is-selected'
     );
@@ -118,11 +120,11 @@ export default function SimulationCard({
     return (
         <article
             className={containerClass}
-            onClick={disablePrimaryInteraction ? undefined : handleClick}
-            onKeyDown={disablePrimaryInteraction ? undefined : handleKeyDown}
-            tabIndex={disablePrimaryInteraction ? undefined : 0}
-            role={disablePrimaryInteraction ? undefined : 'link'}
-            aria-label={disablePrimaryInteraction ? undefined : cardAriaLabel}
+            onClick={canOpen ? handleClick : undefined}
+            onKeyDown={canOpen ? handleKeyDown : undefined}
+            tabIndex={canOpen ? 0 : undefined}
+            role={canOpen ? 'link' : undefined}
+            aria-label={canOpen ? cardAriaLabel : undefined}
             aria-busy={isProcessing}
         >
             <Row overflow='hidden' position='relative' width='max' radius='md' className='flex-center cover-container'>
@@ -144,6 +146,7 @@ export default function SimulationCard({
                 name={trajectory.name}
                 updatedAt={trajectory.updatedAt}
                 isProcessing={isProcessing}
+                isNavigable={isNavigable}
                 processingMessage={processingMessage}
                 onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
                 onDelete={onDelete}

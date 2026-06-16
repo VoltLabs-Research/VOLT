@@ -71,7 +71,6 @@ export interface AnalysisProps {
     createdBy: string;
     pipelineStageHash?: string;
     totalFrames?: number;
-    completedFrames?: number;
     startedAt?: Date;
     finishedAt?: Date;
     team: string;

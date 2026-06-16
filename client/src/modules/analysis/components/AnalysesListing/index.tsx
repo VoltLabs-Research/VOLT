@@ -33,14 +33,6 @@ const renderPluginName: NonNullable<ColumnConfig<Analysis>['render']> = (_value,
     return row.pluginDisplayName;
 };
 
-const renderFrameCount: NonNullable<ColumnConfig<Analysis>['render']> = (value) => {
-    if (typeof value !== 'number') {
-        return '-';
-    }
-
-    return value.toLocaleString();
-};
-
 const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
     let message = 'Delete this analysis? This cannot be undone.';
 
@@ -96,13 +88,6 @@ const BASE_COLUMNS: ColumnConfig<Analysis>[] = [
         sortable: true,
         render: (value) => <StatusBadge status={String(value)} />,
         skeleton: { variant: 'rounded', width: 90, height: 24 }
-    },
-    {
-        key: 'completedFrames',
-        title: 'Completed Frames',
-        sortable: true,
-        render: renderFrameCount,
-        skeleton: { variant: 'text', width: 110 }
     },
     userColumn<Analysis>('createdBy', 'Created By'),
     dateColumn<Analysis>('finishedAt', 'Finished At', { sortable: false, withTitle: true, fallback: '-' })

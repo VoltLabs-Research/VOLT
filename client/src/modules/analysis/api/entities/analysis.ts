@@ -61,7 +61,6 @@ export interface Analysis extends BaseEntity {
     teamCluster?: TeamCluster | string | null;
     createdBy?: User | string;
     totalFrames: number;
-    completedFrames: number;
     startedAt?: Date;
     finishedAt?: Date;
     status: string;

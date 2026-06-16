@@ -9,7 +9,6 @@ import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-util
 export interface PatchAnalysisStatusInput {
     analysisId: string;
     status: Analysis['status'];
-    completedFrames?: number;
     totalFrames?: number;
     artifactStatus?: Analysis['artifactStatus'];
     expectedArtifacts?: Analysis['expectedArtifacts'];
@@ -185,7 +184,6 @@ export const upsertAnalysisFromSocketPayload = (data: Record<string, unknown>, t
         config: data.config,
         trajectory: { _id: trajectoryId, name: trajectoryName },
         totalFrames: data.totalFrames,
-        completedFrames: data.completedFrames,
         status: data.status,
         artifactStatus: data.artifactStatus,
         expectedArtifacts: data.expectedArtifacts,
@@ -270,7 +268,6 @@ export const updateAnalysisStatusCaches = (patch: PatchAnalysisStatusInput): voi
     patchAnalysisCaches(patch.analysisId, (analysis) => ({
         ...analysis,
         status: patch.status,
-        completedFrames: patch.completedFrames ?? analysis.completedFrames,
         totalFrames: patch.totalFrames ?? analysis.totalFrames,
         artifactStatus: patch.artifactStatus ?? analysis.artifactStatus,
         expectedArtifacts: patch.expectedArtifacts ?? analysis.expectedArtifacts,

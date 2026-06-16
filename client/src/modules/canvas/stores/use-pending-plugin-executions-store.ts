@@ -7,7 +7,6 @@ export interface PendingPluginExecution {
     timestep?: number;
     autoSelect: boolean;
     toastId?: string;
-    completedFrames?: number;
     totalFrames?: number;
 }
 

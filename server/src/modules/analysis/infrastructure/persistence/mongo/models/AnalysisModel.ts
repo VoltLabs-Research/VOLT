@@ -56,10 +56,6 @@ const AnalysisSchema = new Schema<AnalysisDocument>({
         type: Number,
         default: 0
     },
-    completedFrames: {
-        type: Number,
-        default: 0
-    },
     status: {
         type: String,
         enum: ['pending', 'running', 'completed', 'failed'],

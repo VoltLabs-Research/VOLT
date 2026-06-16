@@ -84,7 +84,6 @@ interface DaemonAnalysisPayload {
     trajectory: string;
     createdBy: string;
     totalFrames?: number;
-    completedFrames?: number;
     startedAt?: Date;
     finishedAt?: Date;
     team: string;
@@ -104,7 +103,6 @@ const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
         trajectory: analysis.props.trajectory,
         createdBy: analysis.props.createdBy,
         totalFrames: analysis.props.totalFrames,
-        completedFrames: analysis.props.completedFrames,
         startedAt: analysis.props.startedAt,
         finishedAt: analysis.props.finishedAt,
         team: analysis.props.team,

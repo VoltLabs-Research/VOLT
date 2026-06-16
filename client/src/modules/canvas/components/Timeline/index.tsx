@@ -34,6 +34,7 @@ interface TimelineProps {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     availableTimesteps: number[];
+    selectedAnalysisTimesteps?: number[];
     analysisId: string | undefined;
     disableContextualTips?: boolean;
     onDownloadExposureListing?: (params: {
@@ -51,6 +52,7 @@ const Timeline = ({
     trajectoryId,
     currentTimestep,
     availableTimesteps,
+    selectedAnalysisTimesteps,
     analysisId,
     disableContextualTips = false,
     onDownloadExposureListing
@@ -192,6 +194,10 @@ const Timeline = ({
     }, [availableTimesteps, rangeStart, rangeEnd]);
     const safeCurrentIndex = rangedTimesteps.indexOf(currentTimestep!);
 
+    const scopedTimesteps = useMemo(() => {
+        return selectedAnalysisTimesteps ? new Set(selectedAnalysisTimesteps) : undefined;
+    }, [selectedAnalysisTimesteps]);
+
     const ticks = useMemo(() => {
         if (rangedTimesteps.length === 0) {
             const tickCount = 50;
@@ -200,9 +206,11 @@ const Timeline = ({
         return rangedTimesteps.map((frame) => ({
             frame,
             major: true,
-            tone: toneByTimestep.get(frame)
+            tone: toneByTimestep.get(frame),
+            // Frame the selected analysis didn't cover — dim it but keep it scrubbable.
+            dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false
         }));
-    }, [rangedTimesteps, toneByTimestep]);
+    }, [rangedTimesteps, toneByTimestep, scopedTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];

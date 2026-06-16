@@ -107,6 +107,9 @@ export const ArgumentDefinitionSchema = new Schema({
         type: Boolean,
         default: false
     },
+    plugins: [{
+        type: String
+    }],
     pluginReferenceFilter: [{
         type: String
     }],

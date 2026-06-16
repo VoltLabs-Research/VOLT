@@ -120,6 +120,12 @@
     cursor: pointer;
 }
 
+/* Frames the selected analysis didn't cover: visible and scrubbable, just faded. */
+.canvas-ruler-tick--dimmed {
+    opacity: 0.35;
+    transition: opacity 180ms ease;
+}
+
 .canvas-ruler-tick-label {
     color: var(--color-text-muted);
     white-space: nowrap;

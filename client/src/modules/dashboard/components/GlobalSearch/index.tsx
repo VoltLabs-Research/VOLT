@@ -124,10 +124,11 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     const renderItem = (sectionKey: GlobalSearchSectionKey, item: (typeof sections)[number]['items'][number]) => {
         itemIndex += 1;
         const isActive = itemIndex === activeIndex;
+        const isDisabled = item.disabled === true;
         const optionId = `${resultsListId}-${sectionKey}-${item.id}`;
 
         return (
-            <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}`}>
+            <Stack align='start' gap='025' width='max' radius='sm' cursor='pointer' key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title} className={`global-search-item list-item-hoverable${isActive ? ' global-search-item--active' : ''}${isDisabled ? ' global-search-item--disabled' : ''}`}>
                 <Text as='p' size='md' weight='medium' truncate className='w-max' title={item.title}>{item.title}</Text>
                 {item.subtitle ? (
                     <Text as='p' size='sm' tone='muted' truncate className='w-max' title={item.subtitle}>{item.subtitle}</Text>

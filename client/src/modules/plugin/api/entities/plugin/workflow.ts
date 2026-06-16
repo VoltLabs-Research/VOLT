@@ -95,6 +95,7 @@ export interface IArgumentDefinition {
     required?: boolean;
     multipleSelection?: boolean;
     inferFromContext?: boolean;
+    plugins?: string[];
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];
     showPluginConfiguration?: boolean;

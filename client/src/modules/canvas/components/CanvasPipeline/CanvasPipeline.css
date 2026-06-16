@@ -28,7 +28,6 @@
 .canvas-pipeline-stage__header {
     align-items: center;
     padding: 4px 6px;
-    background: var(--color-surface-1);
 }
 
 .canvas-pipeline-stage__header--disabled {

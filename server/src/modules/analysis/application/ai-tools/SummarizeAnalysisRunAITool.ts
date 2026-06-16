@@ -26,7 +26,6 @@ export class SummarizeAnalysisRunAITool extends AITool {
 
         const analysis = result.value;
         const totalFrames = analysis.totalFrames ?? 0;
-        const completedFrames = analysis.completedFrames ?? 0;
 
         const failedStageFrames = (analysis.stages ?? [])
             .filter((stage) => stage.status === 'failed' && typeof stage.timestep === 'number')
@@ -47,9 +46,7 @@ export class SummarizeAnalysisRunAITool extends AITool {
             pluginDisplayName: analysis.pluginDisplayName,
             config: analysis.config,
             frameRange: {
-                completedFrames,
-                totalFrames,
-                percentComplete: totalFrames > 0 ? Math.round((completedFrames / totalFrames) * 100) : null
+                totalFrames
             },
             status: analysis.status,
             failedFrames,
@@ -68,7 +65,7 @@ export class SummarizeAnalysisRunAITool extends AITool {
         };
 
         const runtimeText = runtimeMs !== null ? `, ran ${(runtimeMs / 1000).toFixed(1)}s` : '';
-        const summary = `${analysis.pluginDisplayName} run is ${analysis.status} (${completedFrames}/${totalFrames} frames, ${readyArtifacts}/${artifacts.length} artifacts ready, ${failedFrames.length} failed frames${runtimeText}).`;
+        const summary = `${analysis.pluginDisplayName} run is ${analysis.status} (${totalFrames} frames, ${readyArtifacts}/${artifacts.length} artifacts ready, ${failedFrames.length} failed frames${runtimeText}).`;
 
         return { summary, data };
     }

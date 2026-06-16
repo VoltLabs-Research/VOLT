@@ -11,6 +11,7 @@ import {
     type TrajectoryItemRow
 } from '@/modules/trajectory/utilities/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
+import { isTrajectoryNavigable } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
 import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -86,6 +87,9 @@ const useTrajectoriesListing = () => {
     }, [moveTrajectory]);
 
     const openTrajectory = useCallback((trajectory: Trajectory) => {
+        if (!isTrajectoryNavigable(trajectory.status)) {
+            return;
+        }
         navigate(`/canvas/${trajectory._id}`);
     }, [navigate]);
 

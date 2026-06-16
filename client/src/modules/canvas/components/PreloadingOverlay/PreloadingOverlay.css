@@ -4,7 +4,5 @@
 }
 
 .canvas-preload-card {
-    padding: 16px 20px;
-    min-width: 240px;
-    border-radius: var(--radius-lg);
+    width: min(320px, 70%);
 }
