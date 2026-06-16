@@ -39,8 +39,6 @@ const buildContext = (overrides: Partial<WorkflowExecutionContext> = {}): Workfl
     ...overrides
 });
 
-// --- planItems (planner fan-out math) -------------------------------------
-
 test('planItems mode:all yields a single job carrying every timestep', () => {
     const items = WorkflowTrajectoryWindowHandler.planItems({ mode: 'all' }, TIMESTEPS);
 
@@ -56,13 +54,12 @@ test('planItems mode:window size 3 yields one job per primary frame, clamped at 
     );
 
     assert.equal(items.length, TIMESTEPS.length);
-    // Each centered 3-window clamps at the trajectory ends.
     assert.deepEqual(items.map((item) => item.windowTimesteps), [
-        [0, 10, 20],   // primary 0 clamps forward
-        [0, 10, 20],   // primary 10 centered
-        [10, 20, 30],  // primary 20 centered
-        [20, 30, 40],  // primary 30 centered
-        [20, 30, 40]   // primary 40 clamps backward
+        [0, 10, 20],
+        [0, 10, 20],
+        [10, 20, 30],
+        [20, 30, 40],
+        [20, 30, 40]
     ]);
     assert.deepEqual(items.map((item) => item.primaryTimestep), TIMESTEPS);
 });
@@ -74,7 +71,7 @@ test('planItems mode:window trailing (centered:false) takes the window ending at
     );
 
     assert.deepEqual(items.map((item) => item.windowTimesteps), [
-        [0, 10, 20],   // clamped: cannot trail before frame 0
+        [0, 10, 20],
         [0, 10, 20],
         [0, 10, 20],
         [10, 20, 30],
@@ -89,7 +86,7 @@ test('planItems mode:referencePair pairs each primary frame with the reference t
     );
 
     assert.equal(items.length, TIMESTEPS.length);
-    assert.deepEqual(items[0].windowTimesteps, [0]); // reference == primary collapses to one
+    assert.deepEqual(items[0].windowTimesteps, [0]);
     assert.deepEqual(items[2].windowTimesteps, [0, 20]);
     assert.deepEqual(items[4].windowTimesteps, [0, 40]);
 });
@@ -107,8 +104,6 @@ test('planItems clamps windowSize larger than the trajectory length', () => {
         assert.deepEqual(item.windowTimesteps, TIMESTEPS);
     }
 });
-
-// --- execute() runtime localization ---------------------------------------
 
 test('execute resolves localized window frames + primary pointer for the current job', async () => {
     const handler = new WorkflowTrajectoryWindowHandler();

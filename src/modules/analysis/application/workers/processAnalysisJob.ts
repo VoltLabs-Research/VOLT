@@ -36,8 +36,6 @@ export interface ProcessAnalysisJobHooks {
     updateProgress?: (value: number) => Promise<void> | void;
 }
 
-// Extracted from AnalysisWorker.process so it can be reused by the desktop
-// SQLite-backed processor without duplicating orchestration logic.
 export const processAnalysisJob = async (
     payload: AnalysisQueueJobPayload,
     deps: ProcessAnalysisJobDependencies,
@@ -123,7 +121,6 @@ export const processAnalysisJob = async (
         await withJobLifecycle(
             {
                 reportStatus: (status, error) => {
-                    // started is reported by the dispatcher that enqueues the job.
                     if (status === 'started') return;
                     if (status === 'failed') {
                         logger.error(`Analysis job failed for jobId=${job.jobId}: ${error ?? 'Unknown error'}`);
@@ -208,8 +205,6 @@ export const processAnalysisJob = async (
                         })
                     );
                 } catch (error) {
-                    // Symmetric observability: surface the always-on execution
-                    // trace in the frame log on FAILURE too, not just success.
                     await emitExecutionTrace(readWorkflowTrace(error) ?? [], false);
                     throw error;
                 }

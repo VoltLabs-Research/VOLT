@@ -1,8 +1,3 @@
-// Per-trajectory element-metadata table + the typed-column dtype contract shared by
-// the daemon (in-memory + parquet), the server (wire encode), and the client (decode).
-//
-// Canonical home so all three runtimes import one definition. Pure types + pure
-// derivation helpers; no I/O, no runtime validation.
 
 import {
     PERIODIC_TABLE,

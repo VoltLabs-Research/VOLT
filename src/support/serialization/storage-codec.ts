@@ -105,16 +105,9 @@ export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWit
 export const toTrajectoryParquetObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/trajectory.parquet`;
 
-// Per-trajectory element table + units, persisted as a small JSON sidecar next to the
-// frames parquet (schema v2). Read separately from the frames so the hot atom-page path
-// never deserializes it; the server also mirrors it onto the Trajectory doc.
 export const toTrajectoryElementTableObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/elements.json`;
 
-// Property tables are keyed per entity kind: atoms keep the historical name,
-// line entities get a `.lines.parquet` suffix. The distinct names keep
-// analysis-wide per-atom merges (which glob `timestep-N.parquet`) from mixing
-// line-entity rows in by id collision.
 export type PluginExposureEntityKind = 'atoms' | 'lines';
 
 export const toPluginExposureParquetObjectKey = (

@@ -154,8 +154,6 @@ export class DirectObjectStoreClient implements RemoteClusterObjectStoreGateway 
         if (options?.skipMetadata) {
             headers[TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER] = '1';
         }
-        // Some callers read object slices via byte ranges. Forward the range
-        // so MinIO returns exactly the requested span instead of the full object.
         if (options?.range) {
             const { offset, length } = options.range;
             headers['Range'] = `bytes=${offset}-${offset + length - 1}`;

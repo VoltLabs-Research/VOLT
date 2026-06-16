@@ -344,7 +344,6 @@ export class PluginProcessPool {
             const freeMemoryMb = await this.readFreeSystemMemoryMb();
             return freeMemoryMb >= this.estMemoryMb;
         } catch (error: unknown) {
-            // Fail open: never let a transient sampling failure stall the pool.
             logger.warn({ err: error }, '@plugin-process-pool: failed to sample system memory; allowing spawn');
             return true;
         }
@@ -396,19 +395,12 @@ export class PluginProcessPool {
     }
 
     private notifyWaiters(releasedGroup: PluginProcessInternalsGroup, freedGlobalSlot: boolean): void {
-        // A process returned to idle frees capacity only within its own group
-        // (idle processes still count against the active/memory budget), so only
-        // that group's waiters can reuse it. Wake exactly one of them per slot.
         if (this.wakeOneWaiter(releasedGroup)) {
             return;
         }
         if (!freedGlobalSlot) {
             return;
         }
-        // A destroyed process frees a global slot any group may spawn into; wake a
-        // single waiter from another group. The repoll timer in waitForSlot
-        // re-evaluates the dynamic memory gate, so waking one per freed slot can
-        // never permanently stall the pool.
         for (const group of this.pools.values()) {
             if (this.wakeOneWaiter(group)) {
                 return;
@@ -665,7 +657,7 @@ export class PluginProcessPool {
 
         try {
             internals.child.stdin.end();
-        } catch { /* ignore */ }
+        } catch { }
 
         return new Promise<void>((resolve) => {
             const onClose = (): void => {
@@ -689,7 +681,7 @@ export class PluginProcessPool {
         logger.warn({ pluginId: internals.pluginId, reason }, '@plugin-process-pool: restarting plugin process');
         try {
             internals.child.kill('SIGTERM');
-        } catch { /* ignore */ }
+        } catch { }
     }
 
     private forwardProcessStderr(internals: PooledProcessInternals, chunk: Buffer): void {
@@ -735,8 +727,6 @@ export class PluginProcessPool {
                 clearTimeout(timer);
                 resolve();
             };
-            // Wake either on an explicit slot notification or after a short
-            // interval, so a memory-gated wait re-evaluates as RAM frees up.
             const timer = setTimeout(settle, SPAWN_SLOT_REPOLL_INTERVAL_MS);
             timer.unref();
             group.waiters.push(settle);

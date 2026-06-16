@@ -1,7 +1,3 @@
-// Deterministic color for the n-th category of a categorical property when the
-// plugin declares no explicit color. Golden-ratio hue stepping keeps colors
-// well-separated for any category count. The VOLT client mirrors this formula
-// (sorted unique values -> index) so panel swatches match the rendered tubes.
 const GOLDEN_RATIO = 0.618033988749895;
 
 const hueToRgb = (p: number, q: number, t: number): number => {
@@ -28,8 +24,6 @@ export const fallbackCategoryColor = (index: number): [number, number, number, n
     ];
 };
 
-// Stable category -> color assignment: explicit plugin colors win, the rest
-// get palette colors by their position among the sorted unknown categories.
 export const resolveCategoryColors = (
     categories: Iterable<string>,
     explicitColors: Record<string, [number, number, number, number]> | undefined

@@ -169,12 +169,6 @@ export class SocketChannelProcessClient {
 
             if (this.stopping) return;
 
-            // A dead child can't send the {type:'disconnected'} IPC message, so
-            // notify disconnect listeners here too. Without this the parent's
-            // connectivity view (e.g. VoltEventChannelConnection.registered)
-            // stays stale-true across a crash/respawn, and outbound events take
-            // the "connected" path and are dropped by emitMessage instead of
-            // being buffered for replay once the respawned child reconnects.
             this.disconnectedListeners.forEach((listener) => listener());
 
             logger.warn(`${this.label} process exited code=${code ?? 'null'} signal=${signal ?? 'none'}; restarting`);

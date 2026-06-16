@@ -1,10 +1,3 @@
-// AUTO-GENERATED reference data. Source values: IUPAC standard atomic weights (u),
-// Jmol/CPK element colors (the palette OVITO uses), Cordero (2008) covalent radii (Angstrom),
-// Bondi (1964) / Alvarez (2013) van der Waals radii (Angstrom). maxCoordination is the
-// close-packed default (12 for FCC/HCP) with structure-specific overrides; it is a sane
-// fallback per the typed-data substrate plan, not a hard physical constant.
-//
-// Pure data + lookup helpers. No I/O, no runtime validation (the table is literal and trusted).
 
 export type ElementSymbol =
     'H' | 'He' | 'Li' | 'Be' | 'B' | 'C' | 'N' | 'O' | 'F' | 'Ne' | 'Na' | 'Mg' | 'Al' | 'Si' | 'P' | 'S' |

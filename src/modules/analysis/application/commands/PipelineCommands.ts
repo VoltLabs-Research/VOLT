@@ -63,7 +63,6 @@ export class PipelineCommands {
         };
     }
 
-    // Decompress the same sections a single AnalysisStart carries, per stage.
     private async readPluginStage(plugin: AnalysisStartTransportRequest): Promise<AnalysisStartRequest> {
         const [
             trajectoryFrames,

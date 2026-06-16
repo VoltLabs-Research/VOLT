@@ -162,13 +162,11 @@ export const closeTerminalExec = async (
             await writeToTerminalStream(stream, '\u0003');
             await sleep(interruptDelayMs);
         } catch {
-            // Best-effort interrupt before requesting shell exit.
         }
 
         try {
             await endTerminalStream(stream, 'exit\n');
         } catch {
-            // The stream may already be closing; rely on exec polling below.
         }
     }
 
@@ -256,7 +254,7 @@ export class DockerRuntime {
                 portBindings[key] = [{ HostPort: '' }];
             }
         }
-        
+
         return { exposedPorts, portBindings };
     }
 

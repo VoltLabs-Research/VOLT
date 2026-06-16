@@ -270,10 +270,6 @@ export class WorkflowWalker {
         const startedAt = Date.now();
 
         if (node.type === WorkflowNodeType.Export) {
-            // Root persists a skip marker (delegate returns it) and records a
-            // skipped trace node; nested persists nothing (delegate returns
-            // undefined) and — like the previous nested traversal — records no
-            // trace node at all. Either way an Export node never recurses.
             const exportOutput = this.delegate.resolveExportOutput?.(node);
             if (exportOutput !== undefined) {
                 this.session.setOutput(node.id, exportOutput);

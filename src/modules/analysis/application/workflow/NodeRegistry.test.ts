@@ -9,9 +9,6 @@ import { WorkflowNodeType } from '@/modules/analysis/contracts/workflow.types';
 
 const ALL_NODE_TYPES = Object.values(WorkflowNodeType);
 
-// The canonical planning set. This is the single behavioral contract that the
-// WORKFLOW_NODE_PHASE map, the registry accessors and the node handlers must
-// all agree on.
 const EXPECTED_PLANNING_NODE_TYPES = [
     WorkflowNodeType.Modifier,
     WorkflowNodeType.Arguments,
@@ -56,10 +53,6 @@ test('isPlanningNodeType agrees with WORKFLOW_NODE_PHASE for every node type', (
 });
 
 test('createDefault() instantiates handlers (phase derived from the map) and registers the planning handlers', () => {
-    // createDefault() constructs every handler; each handler initializes its
-    // `phase` field from WORKFLOW_NODE_PHASE, so a successful construction also
-    // proves that wiring resolves at runtime. Plugin/Export are intentionally
-    // engine-handled and not registered here.
     const registry = WorkflowNodeRegistry.createDefault();
 
     for (const type of EXPECTED_PLANNING_NODE_TYPES) {

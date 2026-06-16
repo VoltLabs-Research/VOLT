@@ -10,8 +10,6 @@ export type ConfigurationExportFormat = 'lammps-dump' | 'lammps-data' | 'extxyz'
 
 export interface ConfigurationExporterOptions {
     format: ConfigurationExportFormat;
-    // Maps role names to Parquet column names.
-    // Required: x, y, z. Optional: type, symbol, vx, vy, vz, fx, fy, fz, q, custom:<name>.
     columnMapping: Record<string, string>;
     aseWriteKwargs?: Record<string, unknown>;
 }
@@ -35,8 +33,6 @@ export interface MeshInput {
     facets: MeshFacet[];
 }
 
-// One row of a line entity table: fixed id + points, every other key is a
-// per-entity property column (string/number scalars or numeric vectors).
 export interface LineEntity {
     id: number;
     points: [number, number, number][];
@@ -47,11 +43,6 @@ export interface LineExportData {
     lines: LineEntity[];
 }
 
-// One row of a bond entity table. Like a line entity, a bond carries its
-// rendered geometry inline as `points` (exactly two endpoints — the second
-// already shifted by the periodic image the bond crosses), so the GLB export is
-// self-contained and never joins against the atom table. atom_a / atom_b /
-// pbc_shift_* / distance ride along as per-bond property columns.
 export interface BondEntity {
     id: number;
     points: [number, number, number][];
@@ -90,21 +81,14 @@ export interface LineExportOptions {
     tubularSegments?: number;
     minSegmentPoints?: number;
     material?: ExportMaterial;
-    // Property whose values drive categorical coloring (e.g. burgers_family).
-    // Values map through propertyColors; unknown values get a deterministic
-    // palette color. When omitted, lines render with the material base color.
     colorBy?: string;
     propertyColors?: Record<string, [number, number, number, number]>;
 }
 
 export interface BondExportOptions {
-    // Cylinder radius in Angstrom (half the rendered diameter).
     radius?: number;
     tubularSegments?: number;
     material?: ExportMaterial;
-    // Per-bond property whose values drive categorical coloring (e.g. a `type`
-    // or quantized `bond_order` column); maps through propertyColors with a
-    // deterministic palette fallback. Omit for the material base color.
     colorBy?: string;
     propertyColors?: Record<string, [number, number, number, number]>;
 }
@@ -125,20 +109,11 @@ export interface ChartExportOptions {
     showGrid?: boolean;
 }
 
-// LOD octree bake options. The octree is a metadata sidecar (no geometry of its
-// own), staged next to a point-cloud GLB so the client can stream visible-region
-// tiles. `enabled` gates the bake so only large point clouds pay for it.
 export interface OctreeExportOptions {
     enabled?: boolean;
-    // A leaf cell holds at most this many atoms before it subdivides into 8.
     leafCellMaxAtoms?: number;
     maxDepth?: number;
-    // Min atoms before the octree is worth baking at all (small clouds render
-    // whole). Below this, the export is skipped even when enabled.
     minAtomsForOctree?: number;
-    // Render budget embedded in the metadata; the client and geometry-adding
-    // features decimate against the same caps the bake assumed. Defaults to the
-    // shared DEFAULT_GEOMETRY_BUDGET when omitted.
     geometryBudget?: GeometryBudget;
 }
 
@@ -150,8 +125,6 @@ export interface ExportExecutionInput {
     executionData: ExportExecutionData;
     exposure: AnalysisExposureDefinition;
     decodedPayload: JsonObject;
-    // Path of the exposure's results Parquet on local disk; line exports upload
-    // it as the restyle scene source.
     outputFilePath: string;
     timestep: number;
     storageClusterId: string;

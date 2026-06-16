@@ -11,7 +11,6 @@ import type {
 import type { AnalysisStartRequestWithTrace } from '@/modules/analysis/contracts/http-analysis';
 import type { WorkflowDefinition } from '@/modules/analysis/contracts/http-workflow';
 
-// Mirrors the planner's public, kept-stable return contract.
 type WorkflowPlanResult = NonNullable<Awaited<ReturnType<WorkflowEngine['planExecutionStrategy']>>>;
 
 interface FakeEngine {
@@ -19,10 +18,6 @@ interface FakeEngine {
     calls: WorkflowExecutionRequest[];
 }
 
-// A fake that records every call and returns a fixed plan. Crucially it has NO
-// Redis/cache surface: planAnalysisWorkflow can only obtain a plan by invoking
-// planExecutionStrategy, so call-count assertions prove plans are always freshly
-// computed (the deleted plan-cache can no longer short-circuit this).
 const makeFakeEngine = (plan: WorkflowPlanResult | null): FakeEngine => {
     const calls: WorkflowExecutionRequest[] = [];
     const engine = {
@@ -85,11 +80,8 @@ test('planAnalysisWorkflow calls planExecutionStrategy exactly once and maps ite
 
     const result = await planAnalysisWorkflow({ input, workflowEngine: engine });
 
-    // Plan is always freshly computed via the engine (no cache short-circuit).
     assert.equal(calls.length, 1, 'planExecutionStrategy should be called exactly once');
 
-    // One queue job per planned item, preserving order and timestep resolution
-    // (timestep ?? frame).
     assert.equal(result.jobs.length, plan.items.length);
     assert.deepEqual(result.jobs.map((job) => job.timestep), [0, 10, 20]);
     assert.deepEqual(
@@ -98,7 +90,6 @@ test('planAnalysisWorkflow calls planExecutionStrategy exactly once and maps ite
     );
     assert.deepEqual(result.jobs.map((job) => job.metadata?.itemIndex), [0, 1, 2]);
 
-    // The plan returned is the freshly computed one, threaded into executionData.
     assert.equal(result.plan, plan);
     assert.equal(result.executionData.workflow.forEachNodeId, 'foreach-1');
     assert.equal(result.executionData.identity.analysisId, 'analysis-1');

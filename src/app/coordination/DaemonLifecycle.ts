@@ -21,7 +21,6 @@ import { PluginProcessPool } from '@/modules/plugin/application/runtime/PluginPr
 import { logger } from '@/core/logger';
 import mongoose from 'mongoose';
 
-
 @Service('daemonLifecycle')
 export class DaemonLifecycle {
     constructor(
@@ -43,8 +42,6 @@ export class DaemonLifecycle {
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
         private readonly heartbeatPlaneProcess: HeartbeatPlaneProcess,
         private readonly pluginProcessPool: PluginProcessPool,
-        // Resolving `domainEventBridge` here instantiates the bridge and
-        // subscribes all registered domain-event mappers to the dispatcher.
         private readonly domainEventBridge: DomainEventBridge
     ) {
         void this.domainEventBridge;

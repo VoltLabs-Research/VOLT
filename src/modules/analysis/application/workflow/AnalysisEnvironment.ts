@@ -15,7 +15,6 @@ import type { WorkflowArgumentDefinition } from '@/modules/analysis/contracts/ht
 import { safeRemovePath } from '@/support/fs/safe-remove-path';
 import { decodeCliArgumentsToken, encodeCliArgumentsToken } from '@/support/serialization/serialization';
 
-
 export interface AnalysisEnvironmentState {
     outputDir: string;
     outputs: Map<string, WorkflowNodeOutput>;
@@ -39,8 +38,6 @@ export class AnalysisEnvironment {
 
         const runtime = await this.initialize(executionData, metadata);
 
-        // The single-frame path is a window of one: when the job carries no
-        // window metadata, windowTimesteps is just [primaryTimestep].
         const windowTimesteps = metadata.windowTimesteps?.length
             ? metadata.windowTimesteps
             : [timestep];
@@ -53,14 +50,6 @@ export class AnalysisEnvironment {
         return runtime;
     }
 
-    // Pipeline variant of prepare(): instead of downloading its own dump, the
-    // single frame is bound to the caller-supplied mutating `working.dump` (a
-    // window-of-1). The geometry (natoms/simulationCell) comes from the
-    // trajectory snapshot for that timestep, and exposure outputs land under the
-    // caller-owned `stageOutputDir`. Reuses the exact same output seeding helpers
-    // as prepare() so the workflow runs identically. Neither the working dump nor
-    // the stage output dir is added to dumpLocalPaths/outputDir for cleanup here:
-    // the pipeline driver owns those paths and removes them with the run temp dir.
     async prepareWithDump(
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
@@ -118,10 +107,6 @@ export class AnalysisEnvironment {
         return { outputDir, outputs: new Map(), dumpTargets: [], dumpLocalPaths: [], primaryFrameIndex: 0 };
     }
 
-    // Downloads every timestep in the window exactly once, deduping repeated
-    // timesteps (e.g. a referencePair where reference === current). Returns a
-    // timestep -> localized-path map; every downloaded path is also pushed into
-    // dumpLocalPaths for cleanup.
     private async downloadFrameSet(
         runtime: AnalysisEnvironmentState,
         executionData: AnalysisJobExecutionData,
@@ -152,8 +137,6 @@ export class AnalysisEnvironment {
         return timestepToLocalPath;
     }
 
-    // One WorkflowDumpTarget per window frame, in window order, each bound to its
-    // localized dump path + frame geometry from the trajectory snapshot.
     private buildFrameSetTargets(
         executionData: AnalysisJobExecutionData,
         windowTimesteps: number[],
@@ -197,9 +180,6 @@ export class AnalysisEnvironment {
         return outputs;
     }
 
-    // Existing single-frame (forEach) plugins: seed the forEach `currentValue`
-    // with the primary localized dump. With no window metadata the window is one
-    // frame, so this is the unchanged single-frame behavior.
     private seedForEachOutput(
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisJobMetadata,
@@ -226,9 +206,6 @@ export class AnalysisEnvironment {
         });
     }
 
-    // Multi-frame plugins: seed the TrajectoryWindow node output with the full
-    // localized window + primary pointer, so the entrypoint mustache resolves
-    // `{{ trajectory-window.framePaths }}` / `.primaryValue.path` / `.frames.<i>`.
     private seedTrajectoryWindowOutput(
         executionData: AnalysisJobExecutionData,
         runtime: AnalysisEnvironmentState,

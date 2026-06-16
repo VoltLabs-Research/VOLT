@@ -72,8 +72,6 @@ export class JupyterRuntime {
             jupyter: {
                 internalPath,
                 url: internalPath,
-                // Reachability/readiness is now owned by the exposure registry
-                // (readiness-gated status) — the daemon no longer reports it here.
                 ready: false,
                 containerStage: 'creating'
             }
@@ -114,21 +112,16 @@ export class JupyterRuntime {
                 { key: RUNTIME_FINGERPRINT_ENV_KEY, value: this.buildRuntimeFingerprint(input) }
             ],
             ports: [{ private: jupyterPort }],
-            // Publish to a random host port so the exposure registry detects the
-            // port; the tunnel still targets the container's internal IP.
             publishUnassignedPorts: true,
             memoryInMegabytes: containerResources.memoryMB,
             cpus: containerResources.cpus,
             labels: {
-                // volt.managed=true + volt.team-cluster.id are added by DockerRuntime.
                 [TEAM_ID_LABEL_KEY]: input.notebook.teamId,
                 [TEAM_CLUSTER_ID_LABEL_KEY]: this.config.teamClusterId,
                 [NOTEBOOK_LABEL_KIND_KEY]: NOTEBOOK_LABEL_KIND_VALUE,
                 [NOTEBOOK_ID_LABEL_KEY]: input.notebook._id,
                 [HTTP_PORTS_LABEL_KEY]: `${jupyterPort}`,
                 [WEBSOCKET_PORTS_LABEL_KEY]: `${jupyterPort}`,
-                // Readiness gating: the exposure stays Unavailable until the
-                // Jupyter API answers on the proxied base path.
                 [READINESS_HTTP_PATH_LABEL_KEY]: path.posix.join(input.publicBasePath, 'api'),
                 [READINESS_HTTP_QUERY_LABEL_KEY]: `token=${encodeURIComponent(this.config.jupyter.token)}`
             },

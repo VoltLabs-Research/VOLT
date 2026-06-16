@@ -87,7 +87,6 @@ export class TrajectoryIngestCommand {
 
         const materializedObjects = await this.materializeStagedObjects(stagedObjects, bucket);
 
-        // Phase 1: Download and parse metadata only. ZIP uploads are expanded into normal staged frames.
         const parsedFrames = await withNativeProcessingTempDir(
             'trajectory-ingest',
             async (tempDirectory) => {
@@ -104,13 +103,9 @@ export class TrajectoryIngestCommand {
         const frames = this.deduplicateFrames(parsedFrames, trajectoryId);
 
         if (frames.length === 0) {
-            // Every staged file was unparseable / not a trajectory. Surface a
-            // clear error so the server tears down the empty trajectory rather
-            // than leaving an orphan stuck in the dashboard.
             throw new Error(`No valid trajectory frames found in upload (trajectoryId=${trajectoryId})`);
         }
 
-        // Phase 2: Initialize session counter and enqueue jobs
         const sessionPrefix = `trajectory-frame-session:${trajectoryId}`;
         const framesForParquet = frames.map((f) => ({
             timestep: f.timestep,
@@ -207,7 +202,6 @@ export class TrajectoryIngestCommand {
             ? Math.min(staged.size, METADATA_READ_BYTES)
             : METADATA_READ_BYTES;
 
-        // Only the header is needed here. The queued frame job consumes the full staged object later.
         const stream = await this.minioService.getObjectRangeStream(
             bucket,
             staged.objectKey,
@@ -216,7 +210,6 @@ export class TrajectoryIngestCommand {
         );
         await pipeline(stream, createWriteStream(localMetadataPath));
 
-        // Parse metadata only (reads first ~200 lines)
         const metadata = await parseTrajectoryMetadata(localMetadataPath);
 
         return {
@@ -243,11 +236,6 @@ export class TrajectoryIngestCommand {
         try {
             return [await this.parseFrameMetadata(staged, index, bucket, tempDirectory)];
         } catch (error) {
-            // A directory upload can contain files that are not valid trajectory
-            // frames (READMEs, logs, configs, partial dumps). Ignoring the whole
-            // upload because of one bad file is wrong — silently skip any file we
-            // can't parse (unsupported format, ASE bridge unavailable, malformed
-            // header) and keep the valid frames. Only the valid dumps survive.
             logger.warn(
                 { file: staged.originalName, err: error instanceof Error ? error.message : String(error) },
                 '@trajectory-ingest: skipping unparseable staged file'
@@ -307,8 +295,6 @@ export class TrajectoryIngestCommand {
             try {
                 metadata = await parseTrajectoryMetadata(resolvedOutputPath);
             } catch (error) {
-                // Same policy as loose files: skip any ZIP entry we can't parse
-                // instead of failing the whole archive.
                 logger.warn(
                     { entry: entry.path, err: error instanceof Error ? error.message : String(error) },
                     '@trajectory-ingest: skipping unparseable ZIP entry'

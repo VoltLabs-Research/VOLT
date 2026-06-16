@@ -19,12 +19,10 @@ import type { WorkflowDefinition } from '@/modules/analysis/contracts/http-workf
 test('registerSharedExposure normalizes hyphens to underscores on write and read', () => {
     const context = createPipelineContext('/tmp/pipeline');
 
-    // Registered with a hyphenated id; resolvable by either spelling.
     registerSharedExposure(context, 'clusters-table', '/tmp/pipeline/clusters.table');
 
     assert.equal(resolveSharedExposure(context, 'clusters-table'), '/tmp/pipeline/clusters.table');
     assert.equal(resolveSharedExposure(context, 'clusters_table'), '/tmp/pipeline/clusters.table');
-    // The stored key is always normalized to underscores.
     assert.deepEqual(Object.keys(context.sharedExposures), ['clusters_table']);
 });
 
@@ -43,8 +41,6 @@ test('buildInferFromContextArgs emits --key path pairs using the requested spell
     const context = createPipelineContext('/tmp/pipeline');
     registerSharedExposure(context, 'clusters_table', '/tmp/pipeline/clusters.table');
 
-    // The flag spelling is the binary's (hyphenated); the lookup still resolves
-    // through hyphen/underscore normalization.
     const args = buildInferFromContextArgs(context, ['clusters-table']);
     assert.deepEqual(args, ['--clusters-table', '/tmp/pipeline/clusters.table']);
 });
@@ -71,7 +67,6 @@ test('collectInferFromContextArgumentKeys returns only inferFromContext argument
                             { argument: 'cutoff', type: 'number' },
                             { argument: 'clusters_table', type: 'string', inferFromContext: true },
                             { argument: 'orientations', type: 'string', inferFromContext: true },
-                            // inferFromContext true but no argument key -> excluded.
                             { type: 'string', inferFromContext: true }
                         ]
                     }

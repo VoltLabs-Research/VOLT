@@ -7,10 +7,6 @@ import { Service } from '@/core/decorators/service';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import { ObjectBucketName } from '@/core/storage/contracts/http-object-store';
 
-// Shared-exposure files produced by a computing plugin stage are persisted under
-// a deterministic key so a later analysis whose pipeline cache-hits this stage
-// can re-fetch them. The files are opaque (often plain-text `.table` files), so
-// they ride as raw bytes through putObjectStream / getStream — no parquet codec.
 const sharedExposureKey = (
     trajectoryId: string,
     analysisId: string,
@@ -49,7 +45,6 @@ export interface FetchSharedExposureInput {
 export class PipelineSharedExposureStore {
     constructor(private readonly objectStore: ClusterObjectStore) {}
 
-    // Returns the file extension under which the exposure was stored.
     async persist(input: PersistSharedExposureInput): Promise<{ objectKey: string; ext: string }> {
         const ext = this.resolveExt(input.sourcePath);
         const objectKey = sharedExposureKey(
@@ -72,10 +67,6 @@ export class PipelineSharedExposureStore {
         return { objectKey, ext };
     }
 
-    // Fetches the cached shared-exposure file for a (source analysis, exposure,
-    // timestep) into destinationDir, preserving the original basename. The stored
-    // extension is unknown to the caller, so the matching object is discovered by
-    // listing the exposure prefix. Returns the local path, or null if absent.
     async fetch(input: FetchSharedExposureInput): Promise<string | null> {
         const objectKey = await this.findObjectKey(input);
         if (!objectKey) {

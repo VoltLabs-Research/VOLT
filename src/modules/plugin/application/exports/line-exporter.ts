@@ -32,8 +32,6 @@ export interface ProcessedLineGeometry {
     };
 }
 
-// Styled re-exports (line-model command) plug into the shared geometry builder
-// through these hooks instead of duplicating the tube triangulation.
 export interface LineGeometryHooks {
     includeEntity?: (entity: LineEntity) => boolean;
     getEntityColor?: (entity: LineEntity) => [number, number, number, number];
@@ -46,10 +44,6 @@ export const resolveEntityCategory = (entity: LineEntity, property: string): str
     return value === null || value === undefined ? '' : String(value);
 };
 
-// Writes straight into per-line typed arrays (allocated once at the edge
-// upper bound, never grown) so processLines can bulk-copy them with .set().
-// vertexOffset is baked into the emitted indices, making them global and
-// likewise copyable without a per-element rewrite.
 const createLineGeometry = (
     points: [number, number, number][],
     lineWidth: number,
@@ -188,8 +182,6 @@ const estimateLineGeometry = (
     return { vertexCount: totalVertices, indexCount: totalIndices };
 };
 
-// Default categorical colors: explicit plugin colors first, then a
-// deterministic palette over the remaining sorted category values.
 const buildDefaultColorResolver = (
     lines: LineEntity[],
     options: Required<LineExportOptions>
@@ -247,8 +239,6 @@ export const processLines = async (
 
         const positionBase = vertexOffset * 3;
 
-        // Indices already carry vertexOffset from createLineGeometry, so all
-        // three buffers copy with the native bulk path instead of scalar loops.
         positions.set(geometry.positions, positionBase);
         normals.set(geometry.normals, positionBase);
         indices.set(geometry.indices, indexOffset);
@@ -268,8 +258,6 @@ export const processLines = async (
             colors[colorBase + 1] = color[1];
             colors[colorBase + 2] = color[2];
             colors[colorBase + 3] = color[3];
-            // Replicate the RGBA quad across the entity's vertices by doubling
-            // copyWithin runs (native memmove) rather than a scalar per-vertex fill.
             let filled = 4;
             while (filled < colorTotal) {
                 const chunk = Math.min(filled, colorTotal - filled);
@@ -401,8 +389,6 @@ export const encodeLineRangesSidecar = (entityRanges: LineEntityRange[]): Buffer
     return Buffer.from(JSON.stringify(sidecar), 'utf8');
 };
 
-// The exposure's line table doubles as the restyle source: persisting it next
-// to the baked GLB means styled re-exports never re-run the analysis.
 const stageSceneSourceUpload = async (
     input: ExportExecutionInput,
     ownerClusterId: string
@@ -414,8 +400,6 @@ const stageSceneSourceUpload = async (
         input.exposure.nodeId
     );
 
-    // No reportArtifact: the scene-source is an internal restyle input, not a
-    // user-visible scene.
     await input.artifactUploadBatch.stageBufferUpload({
         ownerClusterId,
         bucket: ObjectBucketName.Models,
@@ -433,7 +417,6 @@ const stageRangesSidecarUpload = async (
     entityRanges: LineEntityRange[]
 ): Promise<void> => {
     const objectKey = buildLineRangesSidecarKey(glbObjectPath);
-    // No reportArtifact: picking metadata rides next to the GLB.
     await input.artifactUploadBatch.stageBufferUpload({
         ownerClusterId,
         bucket: ObjectBucketName.Models,

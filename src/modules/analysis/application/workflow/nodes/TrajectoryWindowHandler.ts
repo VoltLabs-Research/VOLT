@@ -14,10 +14,6 @@ interface WorkflowTrajectoryWindowOutput extends WorkflowNodeOutput {
     outputPath: string | undefined;
 }
 
-// One materialized job for a window plugin: the primary frame plus the window of
-// timesteps that frame is processed with. `mode: 'all'` yields a single item
-// carrying every timestep; `window`/`referencePair` yield one item per primary
-// frame, each with its own slice.
 export interface TrajectoryWindowPlanItem {
     primaryTimestep: number;
     windowTimesteps: number[];
@@ -35,7 +31,6 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
     readonly type = WorkflowNodeType.TrajectoryWindow;
     readonly phase = WORKFLOW_NODE_PHASE[WorkflowNodeType.TrajectoryWindow];
 
-    // Planner fan-out: maps the ordered trajectory timesteps to one or more jobs.
     static planItems(
         data: WorkflowTrajectoryWindowData,
         timesteps: number[]
@@ -54,9 +49,6 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
         }));
     }
 
-    // The window of timesteps for one primary frame (by its index in the ordered
-    // trajectory). Centered windows clamp at the ends; referencePair returns the
-    // [reference, primary] pair.
     static windowSliceTimesteps(
         data: WorkflowTrajectoryWindowData,
         timesteps: number[],
@@ -89,9 +81,6 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
             throw new Error(`TrajectoryWindow node ${node.id} requires a window mode`);
         }
 
-        // Runtime: AnalysisEnvironment seeds context.windowFrames with the
-        // localized dumps for the current job; during planning the override is
-        // absent and we resolve descriptors from the full context dump set.
         const localized = context.windowFrames?.length ? context.windowFrames : null;
         const frames = localized ?? this.resolvePlanningFrames(data, context);
         const primaryIndex = context.primaryFrameIndex !== undefined
@@ -127,7 +116,6 @@ export class WorkflowTrajectoryWindowHandler implements WorkflowNodeHandler {
         selectedTimestep: number | undefined
     ): number {
         if (data.mode === 'referencePair') {
-            // [reference, primary] — the primary frame is the last entry.
             return Math.max(0, frames.length - 1);
         }
 

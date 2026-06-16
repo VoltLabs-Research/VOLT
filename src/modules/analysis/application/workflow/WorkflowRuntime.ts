@@ -44,9 +44,6 @@ import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 
-// Re-exported so existing consumers (e.g. DebugSessionManager) keep importing
-// the trace node type from WorkflowRuntime; the canonical definition now lives
-// with the traversal engine in WorkflowWalker.
 export type { InlineWorkflowTraceNode } from '@/modules/analysis/application/workflow/WorkflowWalker';
 
 interface WorkflowTraceContext {
@@ -166,8 +163,6 @@ export interface WorkflowExecuteInput {
     artifactUploadBatch: ArtifactUploadBatch;
     logSinkFactory: WorkflowLogSinkFactory;
     stageReporter?: AnalysisStageReporter;
-    // Pipeline runs only: shared per-(timestep) exposure context. Threaded into
-    // the session so the entrypoint handler can append inferFromContext CLI args.
     pipelineContext?: PipelineContext;
 }
 
@@ -392,9 +387,6 @@ export class WorkflowRuntime {
         return execution.output;
     }
 
-    // The primary frame anchors per-frame outputs and the single-frame plugin
-    // path: it is the frame the job is "centered" on (window mode) or the only
-    // frame (window-of-1). Clamped against the localized window.
     private resolvePrimaryDumpTarget(input: WorkflowExecuteInput): WorkflowDumpTarget {
         const index = Math.max(0, Math.min(input.primaryFrameIndex, input.dumpTargets.length - 1));
         return input.dumpTargets[index]!;
@@ -681,8 +673,6 @@ export class WorkflowRuntime {
             const planningOutcome = await this.workflowPlanner.plan({
                 nodes: nestedContext.workflow.topologicalSort(),
                 context: nestedContext,
-                // Nested planning skip-filter: defer ALL runtime-phase nodes
-                // (including control-flow) to the nested runtime pass below.
                 shouldSkipNode: (node) => !isPlanningNodeType(node.type),
                 hooks: {
                     afterNodeExecuted: ({ node, output, startedAt }) => {
@@ -758,9 +748,6 @@ export class WorkflowRuntime {
                 }
             });
 
-            // Empty itemization: the ForEach produced no items, so there are no
-            // nested timesteps to run. The stage was already reported completed
-            // by the onForEach hook above.
             if (planningOutcome.haltedEarly) {
                 return {
                     output: this.createNestedExecutionResult([]),
@@ -788,24 +775,12 @@ export class WorkflowRuntime {
                     workflowTraceContext !== null,
                     logSinkFactory
                 ),
-                // Share the planning counter so runtime trace ids continue from
-                // where planning left off (when tracing is enabled).
                 ...(workflowTraceContext ? { traceCounter: workflowTraceContext.traceCounter } : {})
             });
 
             try {
-                // The nested runtime pass reuses the SAME traversal engine as the
-                // root execute() path. `executionPath` seeds the walker's base
-                // path so nested log-sink breadcrumbs keep the parent prefix, and
-                // nested Plugin nodes recurse back through executePluginNode ->
-                // executeNestedPluginWorkflow -> a new walker (see
-                // createNestedWalkerDelegate), preserving the recursion.
                 await nestedWalker.walkFrom(nestedContext.workflow.getRuntimeStartNodes(), executionPath);
             } catch (error) {
-                // The walker already appended its error node and threw a
-                // trace-carrying failure, but its trace omits the planning
-                // prefix; splice the partial runtime trace onto the planning
-                // trace so the surfaced failure carries the full nested trace.
                 trace.push(...nestedWalker.getTrace());
                 if (workflowTraceContext) {
                     const message = error instanceof Error
@@ -994,14 +969,6 @@ export class WorkflowRuntime {
             (execution) => (execution.output as WorkflowExecutionResultOutput).execution_result.exposures.items
         );
 
-        // `str_json` is materialized lazily (and memoized) via enumerable
-        // getters: it is still an own enumerable property — so spread,
-        // Object.keys/entries (the trace sanitize deep-walk) and JSON.stringify
-        // all see the identical value — but the cost is deferred to the first
-        // read instead of stringifying every plugin node's full output on every
-        // timestep. `executions.str_json` is a convenience duplicate; only
-        // `execution_result.exposures.str_json` is a referenced node-type schema
-        // field, and that path reads it far less often than this runs.
         let executionsJson: string | undefined;
         let exposuresJson: string | undefined;
 

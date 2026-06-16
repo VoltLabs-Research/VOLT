@@ -28,9 +28,6 @@ export interface PlanAnalysisWorkflowResult {
     plan: WorkflowPlanResult;
 }
 
-// Pure planning pipeline used by AnalysisDispatcher. Validates the entrypoint,
-// runs the workflow engine planner, materializes the AnalysisJobExecutionData
-// snapshot and per-item queue payloads.
 export const planAnalysisWorkflow = async (
     params: PlanAnalysisWorkflowInput
 ): Promise<PlanAnalysisWorkflowResult> => {

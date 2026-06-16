@@ -48,9 +48,6 @@ export class PipelineDispatcher {
         const timesteps = this.resolveTimesteps(input);
         const storageClusterId = this.resolveStorageClusterId(input);
 
-        // Plan every stage ONCE (timestep-independent) so the per-timestep jobs
-        // share the same stored executionData reference. Compute stages are
-        // planned + persisted; cache/slice/expression stages carry their config.
         const plannedStages: PipelinePlannedStage[] = [];
         const computeStages: PreparedComputeStage[] = [];
 
@@ -67,12 +64,6 @@ export class PipelineDispatcher {
         }
 
         const jobs: QueuedJobNotification[] = [];
-        // A fresh token per pipeline run keeps the BullMQ jobId unique across
-        // re-runs of the same trajectory+timestep. Without it the second run on
-        // the same frame reuses an identical jobId, BullMQ silently no-ops the
-        // add() (the prior job lingers under removeOnComplete/Fail), the daemon
-        // never processes it, and the server's per-analysis completion session
-        // never drains → the run is stuck "queued" forever.
         const runToken = randomUUID();
         const payloads: PipelineQueueJobPayload[] = [];
         for (const timestep of timesteps) {
@@ -95,13 +86,6 @@ export class PipelineDispatcher {
 
             payloads.push(payload);
 
-            // One QueuedJobNotification per (computing stage × timestep) so the
-            // server's routePipeline can group by analysisId and seed a
-            // completion session per computing plugin stage. The jobId MUST match
-            // the per-stage jobId the daemon later reports terminal status under
-            // (`${payload.jobId}:${analysisId}` in processPipelineJob) — otherwise
-            // the projected "queued" row and the "completed/failed" row carry
-            // different jobIds and the UI shows the same stage twice.
             for (const computeStage of computeStages) {
                 jobs.push({
                     jobId: `${jobId}:${computeStage.analysisId}`,
@@ -115,9 +99,6 @@ export class PipelineDispatcher {
             }
         }
 
-        // Single Redis round-trip for all timestep jobs instead of one
-        // queue.add per timestep. jobIds already carry the per-run UUID token,
-        // so the BullMQ preserveExistingJob dedupe path is unnecessary here.
         await this.queueService.enqueueBulk(PIPELINE_QUEUE_NAME, payloads);
 
         this.eventBroker.emitProgress({
@@ -186,8 +167,6 @@ export class PipelineDispatcher {
         };
     }
 
-    // Selected timesteps if provided, else every trajectory frame's timestep
-    // taken from the first compute stage's decompressed snapshot.
     private resolveTimesteps(input: PipelineStartRequestWithTrace): number[] {
         if (input.selectedTimesteps?.length) {
             return input.selectedTimesteps;
@@ -204,10 +183,6 @@ export class PipelineDispatcher {
     }
 
     private resolveStorageClusterId(input: PipelineStartRequestWithTrace): string | undefined {
-        // Prefer the explicit storage cluster the server threaded through. Fall
-        // back to a compute stage's plugin payload for older servers — but an
-        // all-cache-hit pipeline ships no plugin payload, so the explicit field
-        // is what keeps those runs from failing with "missing a storage cluster".
         return input.storageClusterId
             ?? input.stages
                 .find((stage) => stage.kind === 'plugin' && stage.plugin)

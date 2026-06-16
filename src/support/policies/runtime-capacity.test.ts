@@ -52,21 +52,21 @@ const clearMemoryEnv = (body: () => void): void => {
 
 test('computePluginProcessMemorySlots floors the budget division', () => {
     assert.equal(computePluginProcessMemorySlots(4096, 1024), 4);
-    assert.equal(computePluginProcessMemorySlots(4500, 1024), 4); // floor(4.39)
+    assert.equal(computePluginProcessMemorySlots(4500, 1024), 4);
     assert.equal(computePluginProcessMemorySlots(2048, 1024), 2);
     assert.equal(computePluginProcessMemorySlots(1024, 1024), 1);
 });
 
 test('computePluginProcessMemorySlots never drops below 1', () => {
-    assert.equal(computePluginProcessMemorySlots(512, 1024), 1); // floor(0.5) clamped
+    assert.equal(computePluginProcessMemorySlots(512, 1024), 1);
     assert.equal(computePluginProcessMemorySlots(0, 1024), 1);
-    assert.equal(computePluginProcessMemorySlots(1024, 0), 1); // guard against divide-by-zero
+    assert.equal(computePluginProcessMemorySlots(1024, 0), 1);
     assert.equal(computePluginProcessMemorySlots(1024, -5), 1);
 });
 
 test('computeEffectivePluginProcessConcurrency selects the smaller ceiling', () => {
-    assert.equal(computeEffectivePluginProcessConcurrency(7, 11), 7); // CPU bound
-    assert.equal(computeEffectivePluginProcessConcurrency(7, 1), 1); // memory bound
+    assert.equal(computeEffectivePluginProcessConcurrency(7, 11), 7);
+    assert.equal(computeEffectivePluginProcessConcurrency(7, 1), 1);
     assert.equal(computeEffectivePluginProcessConcurrency(4, 4), 4);
 });
 
@@ -82,7 +82,6 @@ test('default budget ratio and per-process estimate match the spec', () => {
 });
 
 test('deriveDefaultPluginProcessMemoryBudgetMb takes ~70% of total RAM', () => {
-    // Compare against the same formula to stay robust against float rounding.
     assert.equal(
         deriveDefaultPluginProcessMemoryBudgetMb(10000),
         Math.max(1, Math.floor(10000 * PLUGIN_PROCESS_MEMORY_BUDGET_RATIO))
@@ -91,7 +90,6 @@ test('deriveDefaultPluginProcessMemoryBudgetMb takes ~70% of total RAM', () => {
         deriveDefaultPluginProcessMemoryBudgetMb(16384),
         Math.max(1, Math.floor(16384 * PLUGIN_PROCESS_MEMORY_BUDGET_RATIO))
     );
-    // Sanity: a 16 GB box yields a budget in the expected neighbourhood.
     assert.ok(deriveDefaultPluginProcessMemoryBudgetMb(16384) >= 11000);
     assert.ok(deriveDefaultPluginProcessMemoryBudgetMb(16384) <= 16384);
 });

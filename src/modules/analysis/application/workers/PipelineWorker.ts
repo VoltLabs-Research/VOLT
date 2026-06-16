@@ -19,8 +19,6 @@ import { processPipelineJob } from '@/modules/analysis/application/workers/proce
 @Service('pipelineWorker')
 export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
     protected readonly queueName = PIPELINE_QUEUE_NAME;
-    // Reuse the analysisProcessing per-trajectory scope so pipeline jobs share
-    // the same concurrency budget as single-plugin analyses.
     protected readonly scopeKey: QueueScopeKey = 'analysisProcessing';
 
     constructor(

@@ -74,10 +74,6 @@ const createContextItemsPlan = (
     };
 };
 
-// Window fan-out: one job for `mode:'all'` (the plugin reads every frame), one
-// job per primary frame otherwise (per-frame outputs preserved), each carrying
-// its resolved `windowTimesteps` so AnalysisEnvironment downloads exactly that
-// set. The primary dump's path/timestep drive the single-frame job fields.
 const createTrajectoryWindowPlan = (
     session: WorkflowSession,
     windowNodeId: string,
@@ -146,11 +142,6 @@ export class WorkflowEngine {
 
         logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (itemized=true)`);
 
-        // Root planning skip-filter: defer the side-effecting runtime nodes
-        // (plugin/entrypoint/exposure/export), but still EVALUATE control-flow
-        // nodes (see PLANNING_EVALUATED_RUNTIME_NODE_TYPES) so their outputs are
-        // captured in `nodeOutputSnapshots`. The shared planner stops once the
-        // ForEach node has executed.
         const outcome = await this.planner.plan({
             nodes: executionOrder,
             context: session.context,
@@ -166,9 +157,6 @@ export class WorkflowEngine {
             };
         }
 
-        // Window plugins replace the ForEach itemization: the TrajectoryWindow
-        // node's mode drives the per-job fan-out + the windowTimesteps each job
-        // downloads.
         if (windowNode?.data.trajectoryWindow?.mode) {
             return createTrajectoryWindowPlan(
                 session,

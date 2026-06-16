@@ -32,9 +32,6 @@ export interface WorkflowNode {
 
 export type WorkflowEdge = WorkflowEdgeDefinition
 
-// Intentionally permissive (`object` lets domain objects like
-// `PluginExecutionOutput` flow through `WorkflowNodeOutput`). Narrower
-// JSON-only flavours live in `support/types/json.ts`.
 export type WorkflowValue =
     | boolean
     | null
@@ -69,11 +66,6 @@ export interface WorkflowEntrypointExecutionOptions {
     outputDir: string;
     pluginBinaryCache: PluginBinaryCache;
     binaryExecutorService: BinaryExecutorService;
-    // Why: optional dependencies enabling the persistent Python pool path.
-    // When both frame store + cluster id are present and the entrypoint is a
-    // Python/packaged plugin, the handler routes through the pool + result
-    // cache + shared-memory bridge; otherwise it routes through direct process
-    // execution.
     trajectoryFrameStore?: TrajectoryFrameStore;
     ownerClusterId?: string;
     logSink?: ProcessExecutionLogSink;
@@ -121,18 +113,11 @@ export interface WorkflowExecutionContext {
     selectedFrameOnly?: boolean;
     selectedTimesteps?: number[];
     selectedTimestep?: number;
-    // Multi-frame execution: the localized window of dumps handed to the current
-    // job (a window, the whole trajectory, or a reference + current pair) and the
-    // index of the primary frame within that window. Empty/undefined for the
-    // single-frame (window-of-1) path that does not declare a TrajectoryWindow.
     windowFrames?: TrajectoryDumpDescriptor[];
     primaryFrameIndex?: number;
     workflow: WorkflowGraph;
     nestedWorkflows: Map<string, WorkflowDefinition>;
     execution?: WorkflowExecutionOptions;
-    // Present only for daemon-orchestrated pipeline runs. Carries the per-(timestep)
-    // shared-exposure context so an entrypoint with `inferFromContext` arguments can
-    // resolve its upstream-produced exposure file paths into extra CLI flags.
     pipelineContext?: PipelineContext;
 }
 

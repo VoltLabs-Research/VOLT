@@ -34,7 +34,6 @@ export const stopProcess = (jobId: string): boolean => {
             try {
                 child.kill('SIGKILL');
             } catch {
-                // ignore
             }
         }
     }, SIGKILL_GRACE_PERIOD_MS).unref();

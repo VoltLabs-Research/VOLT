@@ -6,11 +6,8 @@ import type {
     ParsedSimulationCell
 } from '@/modules/trajectory/application/parsing/TrajectoryParserFactory';
 
-// Path to the Python bridge script (sibling file, shipped as source).
 const BRIDGE_SCRIPT = path.join(__dirname, 'ase_import_bridge.py');
 
-// Resolved at module load; callers may override via ASE_PYTHON env for testing.
-// Default: the ecosystem-root .venv-pyatomsk (7 levels up from this file's directory).
 const ASE_PYTHON = process.env['ASE_PYTHON'] ??
     path.join(__dirname, '../../../../../../../.venv-pyatomsk/bin/python');
 
@@ -39,12 +36,10 @@ const runBridge = (filePath: string): Promise<AseFrame[]> => new Promise((resolv
         try {
             frames.push(JSON.parse(line) as AseFrame);
         } catch {
-            // malformed line — skip
         }
     });
 
     proc.stderr?.on('data', (chunk: Buffer) => {
-        // diagnostics only; suppress in production
         process.stderr.write(chunk);
     });
 

@@ -70,10 +70,8 @@ export type WorkflowTrajectoryWindowMode = 'window' | 'all' | 'referencePair';
 
 export interface WorkflowTrajectoryWindowData {
     mode: WorkflowTrajectoryWindowMode;
-    // window mode: number of dumps in the window (odd when centered).
     windowSize?: number;
     centered?: boolean;
-    // referencePair mode: the fixed reference frame timestep.
     referenceTimestep?: number;
 }
 
@@ -100,8 +98,6 @@ export interface WorkflowSwitchCaseData {
 export interface WorkflowExposureData {
     name?: string;
     results?: string;
-    // Optional shared-exposure key (see server ExposureNodeData.id). When set,
-    // the pipeline registers this exposure's output path under ctx.sharedExposures[id].
     id?: string;
 }
 

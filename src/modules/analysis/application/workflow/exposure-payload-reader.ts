@@ -8,8 +8,6 @@ export interface WorkflowExposurePayloadReadResult {
     subListingNames: string[];
     subListings: Record<string, JsonObject[]>;
     perAtomProperties: PerAtomProperties | null;
-    // Which entity the property rows describe — drives the property-store key
-    // so line-entity rows never merge into per-atom data by id collision.
     entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
@@ -22,18 +20,9 @@ export interface WorkflowExposureInspectionResult {
 }
 
 const PER_ATOM_KEY = 'per-atom-properties';
-// Columns kept out of the AtomisticExporter atom record (already first-class there).
 const FIXED_ATOM_COLUMNS = new Set(['atom_index', 'id', 'x', 'y', 'z', 'bucket', 'structure_id', 'structure_name']);
-// Geometry / grouping columns that are not per-atom coloring properties; excluded
-// from the property-store rows (the store owns atom_index itself and the GLB path
-// owns positions/buckets).
 const NON_PROPERTY_COLUMNS = new Set(['atom_index', 'x', 'y', 'z', 'bucket']);
 
-// Cosmetic per-atom RGB columns a plugin bakes for its own GLB rendering (e.g.
-// coordination's `color` / `coordination_color`). They are NOT analysis
-// properties — surfacing them as selectable coloring/filter options is the
-// "redundant per-atom-properties" the UI should never show. Kept in the GLB
-// export payload, dropped from the property-store rows / discovery catalog.
 const isCosmeticColorColumn = (key: string): boolean =>
     key === 'color' || key.endsWith('_color');
 
@@ -46,14 +35,9 @@ export const createWorkflowExposureOutputFilePath = (
 
 const sqlString = (value: string): string => `'${value.replace(/'/g, "''")}'`;
 
-// DuckDB returns UINTEGER/UBIGINT columns as JS BigInt, which is not
-// JSON-serializable downstream (Mongo persistence, socket payloads). Coerce to
-// Number — atom ids/counts stay well within Number.MAX_SAFE_INTEGER.
 const normalizeValue = (value: unknown): unknown => {
     if (typeof value === 'bigint') return Number(value);
     if (Array.isArray(value)) return value.map(normalizeValue);
-    // DuckDB returns LIST columns (e.g. an RGB `color`) as `{ items: [...] }`;
-    // unwrap to a plain array so consumers see the original vector shape.
     if (value && typeof value === 'object' && Array.isArray((value as { items?: unknown[] }).items)) {
         return (value as { items: unknown[] }).items.map(normalizeValue);
     }
@@ -118,13 +102,6 @@ const extractFromDocument = (document: JsonObject): WorkflowExposurePayloadReadR
     };
 };
 
-// Rebuilds the decoded exposure shape from a bond entity table. A bond carries
-// its two rendered endpoints inline in `points` (the same self-contained shape
-// as a line), so the GLB export never joins against the atom table; atom_a /
-// atom_b / pbc_shift_* / distance ride along as per-bond property columns. The
-// property rows feed the same store as lines (keyed by bond id), under the
-// non-atom `'lines'` storage suffix so analysis-wide per-atom merges never mix
-// bond rows in by id collision — bonds need that isolation exactly as lines do.
 const reconstructFromBondTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
     const bonds: JsonObject[] = [];
     const propertyRows: JsonObject[] = [];
@@ -146,10 +123,6 @@ const reconstructFromBondTable = (rows: JsonObject[]): WorkflowExposurePayloadRe
     };
 };
 
-// Rebuilds the decoded exposure shape from a line entity table (fixed id +
-// points columns; every other column is a per-entity property). Properties
-// feed the same property store as per-atom data — keyed by entity id — so
-// discovery, stats, unique values and id lookups work identically for lines.
 const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
     const lines: JsonObject[] = [];
     const propertyRows: JsonObject[] = [];
@@ -173,17 +146,8 @@ const reconstructFromLineTable = (rows: JsonObject[]): WorkflowExposurePayloadRe
     };
 };
 
-// Rebuilds the decoded exposure shape from a columnar per-atom Parquet table:
-// the per-atom rows feed the property store, atoms group by bucket into the
-// AtomisticExporter payload, and listings derive from those groups. Rows arrive
-// raw from getRowObjects() and are normalized here in the single consuming pass
-// (atom record + property row built together) so the whole table is never held
-// as a separate normalized .map() copy.
 const reconstructFromColumnarAtoms = (rows: JsonObject[]): WorkflowExposurePayloadReadResult => {
     const buckets = new Map<string, { structureId: number; atoms: JsonObject[] }>();
-    // Per-atom coloring rows: drop geometry/grouping columns so the property
-    // store (which owns timestep/atom_index/id) does not collide on rebuild, and
-    // drop cosmetic RGB columns so they never appear as selectable properties.
     const propertyRows: JsonObject[] = [];
 
     for (const rawRow of rows) {
@@ -238,7 +202,6 @@ export const readWorkflowExposurePayload = async (
         );
         const columnNames = schemaReader.getRows().map((row) => String(row[0]));
 
-        // Summary / export / mesh results carry the JSON document in a single `payload` column.
         if (columnNames.length === 1 && columnNames[0] === 'payload') {
             const reader = await connection.runAndReadAll(
                 `SELECT payload FROM read_parquet(${sqlString(filePath)}) LIMIT 1`
@@ -252,8 +215,6 @@ export const readWorkflowExposurePayload = async (
             return isRecord(document) ? extractFromDocument(document as JsonObject) : emptyResult();
         }
 
-        // Bond entity table: fixed id + points geometry + atom_a/atom_b
-        // references. Checked before the line branch (it is also id + points).
         if (
             columnNames.includes('points')
             && columnNames.includes('id')
@@ -267,7 +228,6 @@ export const readWorkflowExposurePayload = async (
             return reconstructFromBondTable(rows);
         }
 
-        // Line entity table: fixed id + points geometry column.
         if (columnNames.includes('points') && columnNames.includes('id')) {
             const reader = await connection.runAndReadAll(
                 `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY id`
@@ -276,9 +236,6 @@ export const readWorkflowExposurePayload = async (
             return reconstructFromLineTable(rows);
         }
 
-        // Columnar per-atom table. Rows are passed raw; reconstructFromColumnarAtoms
-        // normalizes each row inside its single consuming pass to avoid an extra
-        // full-table .map() copy.
         const reader = await connection.runAndReadAll(
             `SELECT * FROM read_parquet(${sqlString(filePath)}) ORDER BY atom_index`
         );
@@ -295,9 +252,6 @@ export const inspectWorkflowExposureOutput = async (
 ): Promise<WorkflowExposureInspectionResult> => {
     const outputFilePath = createWorkflowExposureOutputFilePath(outputDir, resultsFileName);
 
-    // Opaque shared-context exposures (plain-text `*.table` cluster-graph files)
-    // are not Parquet — DuckDB read_parquet would throw on them. They carry no
-    // listing or export payload, so report an empty inspection rather than fail.
     if (!resultsFileName.toLowerCase().endsWith('.parquet')) {
         return {
             outputFilePath,

@@ -78,7 +78,6 @@ describe('configuration-exporter round-trip', () => {
 
         const content = await fs.readFile(outputPath, 'utf-8');
         const lines = content.trim().split('\n');
-        // extXYZ first line is atom count
         assert.equal(Number(lines[0].trim()), 8, 'atom count in extXYZ should be 8');
     });
 
@@ -90,7 +89,6 @@ describe('configuration-exporter round-trip', () => {
         });
 
         const content = await fs.readFile(outputPath, 'utf-8');
-        // extXYZ comment line (line 2) contains properties info
         assert.ok(content.includes('cluster_id'), 'cluster_id column should appear in extXYZ output');
     });
 

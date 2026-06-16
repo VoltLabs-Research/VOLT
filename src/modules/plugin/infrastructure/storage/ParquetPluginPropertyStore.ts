@@ -69,14 +69,6 @@ const hashCacheKey = (ownerClusterId: string, objectKey: string): string =>
 const pluginAnalysisPrefix = (trajectoryId: string, analysisId: string): string =>
     `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
 
-// Bounded reclamation for the on-disk plugin-parquet cache this store writes.
-// downloadParquetIfNeeded only ever renames files into place, so the cache grows
-// monotonically (one file + .signature sidecar per exposure*timestep) and is
-// never reclaimed. A throttled, best-effort sweep evicts the least-recently-used
-// entries by mtime — which resolveLocalParquet refreshes on every cache hit, so
-// mtime tracks last use — once the directory exceeds a byte budget. Entries
-// touched within the min-age window are never evicted, so a just-resolved file
-// can't be raced out from under an in-flight read.
 const PARQUET_CACHE_MAX_BYTES = Math.max(
     0,
     Number(process.env.DAEMON_PLUGIN_PARQUET_CACHE_MAX_BYTES) || 4 * 1024 * 1024 * 1024
@@ -136,10 +128,6 @@ function* validFlatRows(rows: AtomProperties[]): Iterable<AtomProperties> {
     }
 }
 
-// Memoizes flattenAtomProperties per immutable input row so the array-of-objects
-// ingest path flattens each row once across column inference and the append pass
-// instead of twice. Keyed by the row object via WeakMap, entries are reclaimed
-// automatically once the per-request rows are no longer referenced (no leak).
 const flattenedRowCache = new WeakMap<object, FlatAtomProperties>();
 
 const flattenRowOnce = (row: AtomProperties): FlatAtomProperties => {
@@ -218,11 +206,6 @@ const normalizeDuckDbColumnType = (value: unknown): PluginPropertySchema['type']
         : 'number';
 };
 
-// Throttled, best-effort LRU reclamation of the plugin-parquet cache directory.
-// Evicts least-recently-used entries (by mtime, which is refreshed on every cache
-// hit so it tracks last use) plus their .signature sidecars once the directory
-// exceeds the byte budget. Entries newer than the min-age window are never evicted,
-// so a file that was just resolved cannot be raced out from under an in-flight read.
 const sweepPluginParquetCache = async (): Promise<void> => {
     if (PARQUET_CACHE_MAX_BYTES <= 0) return;
     const now = Date.now();
@@ -256,7 +239,6 @@ const sweepPluginParquetCache = async (): Promise<void> => {
             totalBytes -= entry.size;
         }
     } catch {
-        // Best-effort reclamation; ignore races with concurrent writers/readers.
     } finally {
         parquetCacheSweepInFlight = false;
     }
@@ -796,9 +778,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         };
     }
 
-    // Resolves an exposure's property table trying the atoms key first, then
-    // the line-entity key — callers address an exposure without knowing which
-    // entity kind it produced.
     private async resolveExposureLocalParquet(request: PluginModifierAnalysisRequest): Promise<string> {
         const atomsKey = toPluginExposureParquetObjectKey(
             request.trajectoryId,
@@ -889,14 +868,12 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
                 fs.access(filePath)
             ]);
             if (existingSignature === signature) {
-                // Refresh mtime so the LRU sweep treats this hit as a recent use.
                 const touchedAt = new Date();
                 await fs.utimes(filePath, touchedAt, touchedAt).catch(() => {});
                 void sweepPluginParquetCache();
                 return filePath;
             }
         } catch {
-            // Cache miss; fall through and refresh from object storage.
         }
 
         const response = await this.objectStore.getStream(

@@ -16,10 +16,6 @@ import type { PluginMongoRow, PluginMongoValue } from '@/modules/plugin/infrastr
 import type { PluginPropertyStore } from '@/modules/plugin/application/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
 
-// Exposure result files the scene/property pipeline can decode are Parquet.
-// Anything else (e.g. the plain-text `*.table` cluster-graph files PTM/ACNA emit
-// for downstream OpenDXA/Elastic Strain) is an opaque shared-context payload and
-// must not be fed to DuckDB read_parquet.
 const isParquetExposure = (resultsFileName: string): boolean =>
     resultsFileName.toLowerCase().endsWith('.parquet');
 
@@ -56,14 +52,6 @@ export class DefaultResultProcessor implements ResultProcessorService {
             return;
         }
 
-        // Opaque shared-context exposures (PTM/ACNA `clusters.table` +
-        // `cluster_transitions.table`) are plain-text cluster-graph files, NOT
-        // Parquet — they exist only to feed ctx.sharedExposures for a downstream
-        // plugin (OpenDXA, Elastic Strain) that reads them by path. Parsing them
-        // as Parquet throws "No magic bytes found at end of file" and fails the
-        // whole stage. They carry no scene artifact (no export node) and no
-        // per-atom listing, so there is nothing to process here; the pipeline's
-        // registerStageExposures persists + registers them by path separately.
         if (!isParquetExposure(exposure.results)) {
             logger.debug(
                 { exposure: exposure.name, results: exposure.results },
@@ -206,9 +194,6 @@ async function precomputeListingRows(
 
     const mainListing = decoded.main_listing;
     if (!isRecord(mainListing) || Object.keys(mainListing).length === 0) {
-        // Plugins that don't emit a main_listing (e.g. PTM Analysis exposure
-        // emits per-atom data only) hit this path on every timestep — it is a
-        // normal case, not a problem worth waking anyone up for.
         logger.debug(`No main_listing in decoded payload for objectKey=${objectKey}`);
         return;
     }

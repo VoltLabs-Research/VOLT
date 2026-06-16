@@ -8,10 +8,6 @@ import type {
     TrajectoryFrameStore
 } from '@/modules/trajectory/application/storage/TrajectoryFrameStore';
 
-// T2.2 + T3.2: the daemon carries TypedColumn end-to-end and the reverse-WS response
-// shapers report per-column dtype + the per-type element table + units. A fake frame
-// store feeds a mixed int/float frame so we assert the typed contract without storage.
-
 const buildFrame = (): TrajectoryFrameData => ({
     timestep: 1000,
     atomCount: 4,
@@ -55,7 +51,6 @@ describe('TrajectoryParser typed-column contract', () => {
         assert.equal(page.propertyDtypes.q, 'f32');
         assert.equal(page.units, 'metal');
         assert.equal(page.elementTable[0].symbol, 'Fe');
-        // The integer molecule id is carried byte-exact through the typed column.
         assert.equal(page.atoms[0].mol, 1000003);
         assert.equal(page.atoms[2].structuretype, 0);
     });

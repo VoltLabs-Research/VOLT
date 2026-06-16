@@ -11,8 +11,6 @@ interface StagedUpload {
     contentType: string;
 }
 
-// An interleaved xyz buffer of `count` atoms on a deterministic lattice, the
-// exact shape the atomistic exporter hands the octree builder.
 const buildPositions = (count: number): Float32Array => {
     const positions = new Float32Array(count * 3);
     const side = Math.ceil(Math.cbrt(count));
@@ -99,7 +97,6 @@ describe('exportOctreeMetadata', () => {
         assert.ok(parsed.geometryBudget, 'embeds the default geometry budget');
         assert.equal(parsed.geometryBudget?.perFeature.points.maxGeometry, 100_000_000);
 
-        // The root cell holds every atom; leaves partition them.
         const root = parsed.cells[0];
         assert.equal(root.level, 0);
         assert.equal(root.atomCount, atomCount);

@@ -22,8 +22,6 @@ const FRAMES: TrajectoryFrame[] = [
     { timestep: 10, natoms: 12, simulationCell: 'cell-10' }
 ];
 
-// Mirrors WorkflowSession.resolveContextDumps for the default (no-override,
-// all-frames) path so the expectation is derived, not hand-copied.
 const expectedDumps = (): TrajectoryDumpDescriptor[] => FRAMES.map((frame) => ({
     ...frame,
     path: `trajectory-${TRAJECTORY_ID}/timestep-${frame.timestep}.dump.zst`
@@ -69,7 +67,6 @@ const exposureNode = () => ({
     data: { exposure: { name: 'result', results: '{{ entrypoint-1 }}' } }
 });
 
-// Modifier -> Arguments -> Context -> ForEach -> Entrypoint -> Exposure
 const buildForEachWorkflow = (): WorkflowDefinition => ({
     nodes: [
         modifierNode(),
@@ -93,7 +90,6 @@ const buildForEachWorkflow = (): WorkflowDefinition => ({
     ]
 });
 
-// Modifier -> Arguments -> Context -> Entrypoint -> Exposure (no ForEach)
 const buildContextOnlyWorkflow = (): WorkflowDefinition => ({
     nodes: [
         modifierNode(),
@@ -134,8 +130,6 @@ test('planExecutionStrategy (with ForEach): items come from the ForEach output a
 test('planExecutionStrategy (with ForEach): snapshots exactly the executed planning nodes', async () => {
     const plan = await createEngine().planExecutionStrategy(buildRequest(buildForEachWorkflow()));
 
-    // Runtime nodes (entrypoint/exposure) are skipped during planning and never
-    // reached because traversal stops after ForEach.
     assert.deepEqual(
         Object.keys(plan!.nodeOutputSnapshots).sort(),
         ['arguments-1', 'context-1', 'foreach-1', 'modifier-1']
@@ -159,15 +153,12 @@ test('planExecutionStrategy (context-only, no ForEach): snapshots the executed p
     );
 });
 
-// --- TrajectoryWindow planning fan-out (multi-frame execution mode) --------
-
 const WINDOW_FRAMES: TrajectoryFrame[] = [
     { timestep: 0, natoms: 10, simulationCell: 'cell-0' },
     { timestep: 10, natoms: 10, simulationCell: 'cell-10' },
     { timestep: 20, natoms: 10, simulationCell: 'cell-20' }
 ];
 
-// Modifier -> Arguments -> Context -> TrajectoryWindow -> Entrypoint -> Exposure
 const buildWindowWorkflow = (
     trajectoryWindow: { mode: 'window' | 'all' | 'referencePair'; windowSize?: number; centered?: boolean; referenceTimestep?: number }
 ): WorkflowDefinition => ({
@@ -233,9 +224,9 @@ test('planExecutionStrategy (window mode:window size 3): one job per primary fra
     const items = plan!.items as Array<{ timestep?: number; windowTimesteps?: number[] }>;
     assert.deepEqual(items.map((item) => item.timestep), [0, 10, 20]);
     assert.deepEqual(items.map((item) => item.windowTimesteps), [
-        [0, 10, 20], // primary 0 clamps forward
-        [0, 10, 20], // primary 10 centered
-        [0, 10, 20]  // primary 20 clamps backward (only 3 frames)
+        [0, 10, 20],
+        [0, 10, 20],
+        [0, 10, 20]
     ]);
 });
 
@@ -247,7 +238,7 @@ test('planExecutionStrategy (window mode:referencePair): each job carries [refer
     assert.ok(plan, 'expected a non-null plan');
     const items = plan!.items as Array<{ timestep?: number; windowTimesteps?: number[]; referenceTimestep?: number }>;
     assert.deepEqual(items.map((item) => item.windowTimesteps), [
-        [0],       // reference == primary
+        [0],
         [0, 10],
         [0, 20]
     ]);

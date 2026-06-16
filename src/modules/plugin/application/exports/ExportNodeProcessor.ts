@@ -45,11 +45,6 @@ const narrowConfigurationExporterOptions = (options: Record<string, unknown>): C
     };
 };
 
-// The octree bake is opt-in via the AtomisticExporter's `octree` option block.
-// Plugin JSON is untyped at the wire; this narrows it to OctreeExportOptions
-// (not a redundant re-validation of an already-typed value — it crosses the
-// JSON boundary, like the other narrow* helpers here). Returns undefined when
-// absent or disabled so the exporter skips the bake.
 const narrowOctreeOptions = (raw: unknown): OctreeExportOptions | undefined => {
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
         return undefined;

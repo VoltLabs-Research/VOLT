@@ -24,11 +24,8 @@ import type {
  *  - and the hook points the nested caller relies on.
  */
 
-// The planner never reads the context; the fake executor ignores it too.
 const CONTEXT = {} as WorkflowExecutionContext;
 
-// Mirrors the root skip-filter: defer side-effecting runtime nodes but still
-// EVALUATE control-flow nodes during planning.
 const PLANNING_EVALUATED_RUNTIME = new Set<WorkflowNodeType>([
     WorkflowNodeType.IfStatement,
     WorkflowNodeType.SwitchStatement,
@@ -37,7 +34,6 @@ const PLANNING_EVALUATED_RUNTIME = new Set<WorkflowNodeType>([
 const rootSkip = (node: WorkflowNode): boolean =>
     WORKFLOW_NODE_PHASE[node.type] === 'runtime' && !PLANNING_EVALUATED_RUNTIME.has(node.type);
 
-// Mirrors the nested skip-filter: defer ALL runtime nodes (incl. control-flow).
 const nestedSkip = (node: WorkflowNode): boolean => !isPlanningNodeType(node.type);
 
 const node = (id: string, type: WorkflowNodeType): WorkflowNode => ({
@@ -116,7 +112,6 @@ test('stops traversal after the ForEach node and exposes its items', async () =>
         shouldSkipNode: rootSkip
     });
 
-    // Nodes after ForEach are never executed (traversal stopped).
     assert.deepEqual(executedOrder, ['modifier-1', 'arguments-1', 'context-1', 'foreach-1']);
     assert.deepEqual(
         outcome.executed.map((result) => result.node.id),
@@ -151,7 +146,6 @@ test('onForEach returning true requests an early halt', async () => {
 
     assert.equal(outcome.haltedEarly, true);
     assert.deepEqual(observedItems, []);
-    // Still stops at ForEach regardless of the halt request.
     assert.deepEqual(executedOrder, ['context-1', 'foreach-1']);
 });
 
@@ -162,7 +156,6 @@ test('afterNodeExecuted may replace output; skip-filter is silent while executor
         node('context-1', WorkflowNodeType.Context),
         node('entrypoint-1', WorkflowNodeType.Entrypoint)
     ];
-    // arguments-1 has "no handler" -> executor-skip; entrypoint-1 is skip-filtered.
     const { executor, executedOrder } = makeRecordingExecutor({ skipNodeIds: new Set(['arguments-1']) });
     const skippedEvents: Array<{ id: string; reason?: string }> = [];
 
@@ -181,8 +174,6 @@ test('afterNodeExecuted may replace output; skip-filter is silent while executor
         }
     });
 
-    // Only the executor-skipped node fires afterNodeSkipped; the skip-filtered
-    // runtime node (entrypoint-1) is silent and never executed.
     assert.deepEqual(skippedEvents.map((event) => event.id), ['arguments-1']);
     assert.match(skippedEvents[0]!.reason ?? '', /no handler/);
     assert.deepEqual(executedOrder, ['modifier-1', 'context-1']);
@@ -201,11 +192,9 @@ test('skip-filter governs control-flow: executed under root semantics, deferred 
 
     const root = makeRecordingExecutor();
     await new WorkflowPlanner(root.executor).plan({ nodes, context: CONTEXT, shouldSkipNode: rootSkip });
-    // Root EVALUATES control-flow during planning; entrypoint stays deferred.
     assert.deepEqual(root.executedOrder, ['modifier-1', 'context-1', 'if-1']);
 
     const nested = makeRecordingExecutor();
     await new WorkflowPlanner(nested.executor).plan({ nodes, context: CONTEXT, shouldSkipNode: nestedSkip });
-    // Nested defers control-flow (and entrypoint) to the runtime pass.
     assert.deepEqual(nested.executedOrder, ['modifier-1', 'context-1']);
 });

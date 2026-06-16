@@ -7,8 +7,6 @@ import { AnalysisEnvironment } from './AnalysisEnvironment';
 import type { ClusterObjectStore } from '@/core/storage/application/ClusterObjectStore';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@/modules/analysis/contracts/http-analysis';
 
-// A minimal zstd-compressed payload (real .dump content is irrelevant — the
-// environment only localizes paths; parsing happens in the plugin binary).
 const zstdCompress = (text: string): Buffer => {
     const result = spawnSync('zstd', ['-q', '-c'], { input: Buffer.from(text), maxBuffer: 1 << 20 });
     if (result.status !== 0) {
@@ -89,7 +87,6 @@ test('prepare downloads each window timestep once and builds one target per fram
         assert.equal(runtime.primaryFrameIndex, 1, 'primary frame 10 is index 1 in the window');
         assert.equal(requestedKeys.length, 3, 'three distinct dumps downloaded');
 
-        // The TrajectoryWindow node output is seeded with the localized window.
         const windowOutput = runtime.outputs.get('window-1');
         assert.ok(windowOutput, 'window node output seeded');
         assert.equal(windowOutput!.count, 3);
@@ -135,7 +132,6 @@ test('prepare single-frame path (no window metadata) downloads exactly one dump'
         assert.equal(runtime.dumpTargets[0].timestep, 20);
         assert.equal(runtime.primaryFrameIndex, 0);
 
-        // forEach currentValue is localized to the primary dump (unchanged single-frame behavior).
         const forEachOutput = runtime.outputs.get('foreach-1');
         assert.ok(forEachOutput, 'forEach node output seeded');
         assert.equal((forEachOutput!.currentValue as { path: string }).path, runtime.dumpTargets[0].localPath);

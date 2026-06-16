@@ -33,14 +33,8 @@ import {
 
 const BASE_COLUMNS = ['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z'] as const;
 const BASE_COLUMN_SET = new Set<string>(BASE_COLUMNS);
-// Frame cache is bounded by retained typed-array bytes, not entry count: a single
-// frame's footprint scales with atomCount (positions f32*3 + types u16 + ids u32 +
-// one typed array per custom property), so a fixed frame count gives no memory ceiling.
 const PARQUET_FRAME_CACHE_BYTES = 512 * 1024 * 1024;
 
-// DuckDB integer logical types map to the i32 daemon dtype (signed 32-bit and narrower);
-// everything else (FLOAT/DOUBLE/...) reads as f32. Schema v2 stores i32 columns as
-// INTEGER and f32 as FLOAT, so this is an exact round-trip with no value heuristic.
 const INTEGER_TYPE_IDS = new Set<DuckDBTypeId>([
     DuckDBTypeId.TINYINT,
     DuckDBTypeId.SMALLINT,
@@ -108,9 +102,6 @@ const getNumericValue = (value: unknown): number => {
     return Number(value);
 };
 
-// Retained heap footprint of a cached frame = sum of its typed-array byteLengths.
-// Drives byte-based LRU eviction so the cache has a real memory ceiling regardless
-// of atomCount or custom-property count.
 const frameByteLength = (frame: TrajectoryFrameData): number => {
     let bytes = frame.positions.byteLength + frame.types.byteLength + (frame.ids?.byteLength ?? 0);
     for (const property of Object.values(frame.properties)) {
@@ -244,9 +235,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     }
 
     public async readFrame(input: TrajectoryFrameLookupInput): Promise<TrajectoryFrameData> {
-        // A null/undefined timestep would otherwise blow up on BigInt(input.timestep)
-        // with a cryptic "Cannot convert null to a BigInt". Surface a clear,
-        // typed not-found instead so callers (and the UI) get an actionable error.
         if (input.timestep === null || input.timestep === undefined || !Number.isFinite(Number(input.timestep))) {
             throw this.rethrowNotFound(
                 new Error(`trajectory frame lookup requires a numeric timestep, got ${String(input.timestep)}`),
@@ -310,8 +298,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         return metadata;
     }
 
-    // Map each parquet column to the daemon dtype by its DuckDB logical type. Integer
-    // logical types → i32, everything else → f32. No value-shape guessing.
     private readColumnDtypes(reader: { columnCount: number; columnName(i: number): string; columnTypeId(i: number): DuckDBTypeId }): Record<string, ColumnDType> {
         const dtypes: Record<string, ColumnDType> = {};
         for (let index = 0; index < reader.columnCount; index++) {
@@ -420,7 +406,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
                 return filePath;
             }
         } catch {
-            // Cache miss; fall through and refresh from object storage.
         }
 
         const response = await this.objectStore.getStream(

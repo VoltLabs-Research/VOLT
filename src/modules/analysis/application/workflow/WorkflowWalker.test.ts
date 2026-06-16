@@ -184,7 +184,6 @@ test('visits children in the scheduler-returned activation order, not raw graph 
     const harness = createHarness({
         nodes: ['a', 'c1', 'c2', 'c3'].map((id) => node(id, WorkflowNodeType.Entrypoint)),
         children: { a: ['c1', 'c2', 'c3'] },
-        // The scheduler re-orders the active children; the walker must follow it.
         resolveActive: (target, _output, childIds) =>
             target.id === 'a' ? ['c3', 'c1', 'c2'] : childIds
     });
@@ -247,7 +246,6 @@ test('Export nodes persist the delegate output, emit a skipped trace, and never 
 
     await harness.run(['a']);
 
-    // The node executor is never invoked for the Export node and recursion stops.
     assert.deepEqual(harness.executedOrder, ['a']);
     assert.deepEqual(harness.outputs.get('x'), exportOutput);
     const exportTrace = harness.nodeTrace('x')!;
@@ -393,7 +391,6 @@ test('a node returning skipped output is persisted, traced as skipped, and still
     const exposureTrace = harness.nodeTrace('ex')!;
     assert.equal(exposureTrace.status, 'skipped');
     assert.equal(exposureTrace.reason, 'no results file');
-    // Root behavior is preserved: a skipped-output node still recurses into children.
     assert.ok(harness.trace().some((entry) => entry.nodeId === 'exp'));
 });
 
@@ -433,7 +430,6 @@ test('a failing node reports failure, appends an error trace, and throws a trace
         (error: unknown) => {
             assert.ok(error instanceof ApplicationError);
             assert.equal(error.code, WORKFLOW_TRACE_ERROR_CODE);
-            // The original failure message is preserved for unchanged error propagation.
             assert.equal(error.message, 'kaboom');
             const trace = readWorkflowTrace(error);
             assert.ok(trace, 'expected the failure to carry the partial trace');
@@ -442,7 +438,6 @@ test('a failing node reports failure, appends an error trace, and throws a trace
         }
     );
 
-    // running:a, completed:a (a succeeds), running:b, failed:b (b throws).
     assert.deepEqual(reports, ['running:a', 'completed:a', 'running:b', 'failed:b:kaboom']);
 });
 
@@ -466,24 +461,19 @@ test('truncates noisy and oversized string fields in the trace output but leaves
 
     const traceOutput = harness.trace()[0]!.output as Record<string, unknown>;
 
-    // The noisy `stdout` field is truncated to the cap + a note.
     const truncatedStdout = traceOutput.stdout as string;
     assert.ok(truncatedStdout.length < bigStdout.length);
     assert.ok(truncatedStdout.startsWith('S'.repeat(MAX_TRACE_STRING_LENGTH)));
     assert.match(truncatedStdout, /\[truncated 5000 of \d+ chars\]/);
 
-    // Other noisy fields and any oversized generic string are truncated too,
-    // including nested ones.
     assert.match(traceOutput.pluginResult as string, /\[truncated 10 of \d+ chars\]/);
     assert.match(traceOutput.summary as string, /\[truncated 100 of \d+ chars\]/);
     assert.match((traceOutput.nested as Record<string, string>).stdout, /\[truncated 1 of \d+ chars\]/);
 
-    // Short strings and non-strings are left untouched.
     assert.equal(traceOutput.stderr, 'short-stderr');
     assert.equal(traceOutput.small, 'ok');
     assert.equal(traceOutput.count, 3);
 
-    // The persisted node output is never mutated by trace sanitization.
     const persisted = harness.outputs.get('a') as Record<string, unknown>;
     assert.equal((persisted.stdout as string).length, bigStdout.length);
     assert.equal(persisted.stdout, bigStdout);
@@ -500,16 +490,11 @@ test('truncates noisy and oversized string fields in the trace output but leaves
  */
 
 test('nested usage: a plugin callback drives a child walker and surfaces its sub-trace as children', async () => {
-    // Inner (nested) graph: an entrypoint feeding an exposure — the shape the
-    // nested runtime pass walks.
     const inner = createHarness({
         nodes: [node('inner-entry', WorkflowNodeType.Entrypoint), node('inner-expo', WorkflowNodeType.Exposure)],
         children: { 'inner-entry': ['inner-expo'] }
     });
 
-    // Outer graph: a single Plugin node whose callback runs the inner walker,
-    // exactly how executeNestedPluginWorkflow reuses the walker from inside the
-    // plugin execution path (walker -> plugin callback -> nested walker).
     const outer = createHarness({
         nodes: [node('outer-plugin', WorkflowNodeType.Plugin)],
         delegate: {
@@ -522,9 +507,7 @@ test('nested usage: a plugin callback drives a child walker and surfaces its sub
 
     await outer.run(['outer-plugin']);
 
-    // The inner walker actually traversed the nested graph (recursion happened).
     assert.deepEqual(inner.executedOrder, ['inner-entry', 'inner-expo']);
-    // The outer Plugin trace node carries the inner walker's trace as children.
     const pluginTrace = outer.nodeTrace('outer-plugin')!;
     assert.equal(pluginTrace.status, 'completed');
     assert.deepEqual(pluginTrace.children, inner.trace());
@@ -544,7 +527,6 @@ test('nested usage: walkFrom basePath prefixes the execution path handed to the 
         }
     });
 
-    // The nested pass seeds the walk with the parent plugin's executionPath.
     await harness.run(['a'], ['root-plugin', 'parent']);
 
     assert.deepEqual(seenPaths.a, ['root-plugin', 'parent', 'a']);
@@ -578,15 +560,11 @@ test('nested usage: an Export node whose delegate returns no output persists not
             node('y', WorkflowNodeType.Entrypoint)
         ],
         children: { a: ['x'], x: ['y'] },
-        // Nested delegates persist nothing for Export nodes.
         delegate: { resolveExportOutput: () => undefined }
     });
 
     await harness.run(['a']);
 
-    // Only the entrypoint runs; the Export persists nothing, contributes no
-    // trace node, and recursion stops there (so 'y' never runs) — matching the
-    // previous nested traversal exactly.
     assert.deepEqual(harness.executedOrder, ['a']);
     assert.equal(harness.outputs.has('x'), false);
     assert.equal(harness.nodeTrace('x'), undefined);

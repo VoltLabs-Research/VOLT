@@ -1,14 +1,3 @@
-// LOD spatial-streaming substrate (shared schema + pure-TS builder).
-//
-// The single source of truth for OctreeMetadata, the JSON sidecar the daemon
-// bakes next to a point-cloud GLB and the client LOD manager reads to fetch
-// only visible-region tiles at a screen-space budget. That streaming is what
-// earns VOLT's 100M-atom claim.
-//
-// `buildOctreeMetadata` is the octree builder for VOLT: it defines the
-// subdivision rule, the Z-order (Morton) leaf sort, and the flat `cells[]`
-// serialization. The daemon uses this TS path because it builds GLBs in TS
-// (@voltstack/spatial-assembler) and never links CoreToolkit.
 
 export interface BoundsCell {
     minX: number;
@@ -19,25 +8,14 @@ export interface BoundsCell {
     maxZ: number;
 }
 
-// One node of the flat, level-ordered cells[] array (parent before children).
-// `childIndices` indexes into the same array; null/undefined marks a leaf.
-// `firstAtomIndex` + `atomCount` define a contiguous slice of the octree-ordered
-// atom buffer, so a tile fetch reads one contiguous range.
 export interface LODCell {
     bounds: BoundsCell;
     level: number;
     childIndices?: number[] | null;
     atomCount: number;
     firstAtomIndex: number;
-    // Path to this cell's own GLB, when tiles are baked per-cell (future engine
-    // slot). Absent in v1, where the whole point cloud is one GLB and cells are
-    // index ranges into it.
     glbKey?: string;
-    // Screen-space size (px) the renderer compares against its LOD threshold.
     screenSpaceBudget?: number;
-    // Per-cell scalar [min, max] when built with a scalar channel (soft dep on
-    // the typed-data substrate, plan 04): lets the client LOD-switch on a
-    // color/filter range without fetching the tile.
     valueMin?: number;
     valueMax?: number;
 }
@@ -47,9 +25,6 @@ export interface FeatureBudget {
     decimation?: number;
 }
 
-// Render budget embedded in the metadata so the client and the geometry-adding
-// features (vector glyphs 09, bonds 13, instanced spheres 14) decimate against
-// the same caps the bake assumed.
 export interface GeometryBudget {
     maxTriangles: number;
     maxDrawCalls: number;
@@ -65,20 +40,15 @@ export interface OctreeMetadata {
 }
 
 export interface OctreeBuildOptions {
-    // A node subdivides into 8 octants while it holds more than this many atoms
-    // and its level is below maxDepth; otherwise it is a leaf.
     leafCellMaxAtoms: number;
     maxDepth: number;
     geometryBudget?: GeometryBudget;
-    // Optional per-atom scalar channel reduced to a per-cell [min, max] range.
     scalar?: Float32Array | Float64Array | number[];
 }
 
 export const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
     maxTriangles: 1_000_000,
     maxDrawCalls: 100,
-    // Default per-feature budgets. Points scale to 100M+ as a raw buffer; glyphs
-    // and bonds are triangulated geometry and decimate aggressively above caps.
     perFeature: {
         points: { maxGeometry: 100_000_000 },
         vectors: { maxGeometry: 2_000_000, decimation: 10 },
@@ -89,13 +59,6 @@ export const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
 
 const MORTON_GRID = (1 << 10) - 1;
 
-// Interleave the low 10 bits of `a` into every third bit (standard 10-bit
-// Morton → a 30-bit key for three axes). JS bitwise ops are 32-bit, so 10 bits
-// per axis is the widest spread that stays exact; that is far finer than any
-// leaf needs (1024³ grid cells ≫ leafCellMaxAtoms), and the key is only ever
-// compared for ordering. CoreToolkit's C++ twin uses a wider 21-bit spread, but
-// both yield a valid Z-order within a leaf — the bit width only sets intra-leaf
-// resolution, not the cells[] schema the two paths must agree on.
 const splitBy3 = (a: number): number => {
     let x = a & MORTON_GRID;
     x = (x | (x << 16)) & 0x030000ff;
@@ -105,8 +68,6 @@ const splitBy3 = (a: number): number => {
     return x;
 };
 
-// 10-bit lattice coords → 30-bit Morton key, safely within JS exact-integer
-// range. Used only to order atoms within a leaf for spatial locality.
 const mortonEncode = (x: number, y: number, z: number): number => (
     splitBy3(x) | (splitBy3(y) << 1) | (splitBy3(z) << 2)
 );
@@ -172,9 +133,6 @@ const octantBounds = (parent: BoundsCell, o: number): BoundsCell => {
     };
 };
 
-// Morton-sort a leaf's atom indices in place: quantize each position to a 21-bit
-// lattice over the cell, encode, sort by key. Identity-preserving — only the
-// index list is reordered, atom data is never touched.
 const mortonSortLeaf = (positions: Float32Array, bounds: BoundsCell, indices: number[]): void => {
     if (indices.length < 2) return;
     const ex = bounds.maxX - bounds.minX;
@@ -200,10 +158,6 @@ const mortonSortLeaf = (positions: Float32Array, bounds: BoundsCell, indices: nu
     for (let n = 0; n < keyed.length; n += 1) indices[n] = keyed[n].i;
 };
 
-// Build the in-memory tree from an interleaved xyz position buffer (length
-// 3*atomCount). Explicit stack subdivision (no
-// recursion), tight bounds for non-empty octants, geometric extent for empty
-// ones, Morton-sorted leaves.
 const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBuildOptions): BuildNode | null => {
     if (atomCount === 0) return null;
     const leafMax = Math.max(1, options.leafCellMaxAtoms);
@@ -294,10 +248,6 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
     return root;
 };
 
-// Flatten the tree to level-ordered cells[] + the octree-order atom permutation.
-// `atomOrder[i]` is the source atom index at output slot i; every cell's
-// [firstAtomIndex, firstAtomIndex + atomCount) is a contiguous slice of it.
-// Flatten the tree to level-ordered cells[] (BFS + a parent-fixup pass).
 const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: number[] } => {
     const cells: LODCell[] = [];
     const atomOrder: number[] = [];
@@ -339,7 +289,6 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
         cells[cellIndex].childIndices = childIndices;
     }
 
-    // Internal node firstAtomIndex = start of its first descendant leaf.
     for (let i = cells.length - 1; i >= 0; i -= 1) {
         const cell = cells[i];
         if (!cell.childIndices || cell.childIndices.length === 0) continue;
@@ -353,13 +302,9 @@ const flattenOctree = (root: BuildNode | null): { cells: LODCell[]; atomOrder: n
 
 interface BuiltOctree {
     metadata: OctreeMetadata;
-    // Octree-order atom permutation: atomOrder[i] is the source atom index at
-    // output slot i. The daemon can write atoms pre-sorted so later tile reads
-    // slice contiguous ranges.
     atomOrder: number[];
 }
 
-// Build OctreeMetadata + the atom permutation from an interleaved xyz buffer.
 export const buildOctree = (
     positions: Float32Array,
     atomCount: number,
@@ -379,7 +324,6 @@ export const buildOctree = (
     return { metadata, atomOrder };
 };
 
-// Convenience: just the metadata (the sidecar payload).
 export const buildOctreeMetadata = (
     positions: Float32Array,
     atomCount: number,

@@ -77,13 +77,11 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             const localRawPath = path.join(tempDirectory, `timestep-${timestep}.dump`);
             const localCompressedPath = `${localRawPath}.zst`;
 
-            // 1. Download raw dump from staging in local MinIO
             const stream = await this.minioService.getObjectStream(bucket, stagingObjectKey);
             await pipeline(stream, createWriteStream(localRawPath));
 
             await bullJob.updateProgress(10);
 
-            // 2. Compress with zstd and store in final path
             await compressFileWithZstd(localRawPath, localCompressedPath);
             const compressedStat = await fs.stat(localCompressedPath);
             const finalObjectKey = `trajectory-${trajectoryId}/timestep-${timestep}.dump.zst`;
@@ -98,17 +96,14 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             await fs.unlink(localCompressedPath).catch(() => {});
             await bullJob.updateProgress(30);
 
-            // 3. Generate GLB directly from raw dump
             await this.generateGlb(trajectoryId, timestep, ownerClusterId, localRawPath, tempDirectory);
 
             await bullJob.updateProgress(80);
 
-            // 4. Delete staging object
             await this.minioService.removeObject(bucket, stagingObjectKey).catch((err) => {
                 logger.debug(`@trajectory-frame-processing: staging cleanup failed ${stagingObjectKey}: ${String(err)}`);
             });
 
-            // 5. Queue auto-preview rasterization
             try {
                 await this.trajectoryRasterQueue.queueRasterizationJobs({
                     trajectoryId,
@@ -123,7 +118,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             }
         });
 
-        // 6. Decrement session counter — if all frames done, trigger parquet ingest
         await this.decrementAndCheckDrain(payload);
     }
 

@@ -13,9 +13,6 @@ export class NotebookCommands {
     @Command('session.create', { status: 201 })
     async createSession(payload: CreateNotebookSessionRequest) {
         const response = await this.jupyterRuntime.ensureSession(payload);
-        // Publish the new notebook container as an exposure immediately instead
-        // of waiting for the next 5s registry sync, so the cloud can resolve it
-        // (readiness-gated) without extra latency.
         await this.daemonExposureRegistry.sync().catch(() => {});
         return response;
     }

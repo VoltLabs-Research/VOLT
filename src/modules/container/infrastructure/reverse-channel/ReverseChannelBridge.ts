@@ -845,8 +845,6 @@ export class ReverseChannelBridge {
         tunnelState.socket.removeListener('close', tunnelState.onClose);
         tunnelState.socket.removeListener('timeout', tunnelState.onTimeout);
 
-        // Keep a fallback error listener in place while destroying the socket to
-        // avoid uncaught socket errors during teardown races.
         tunnelState.socket.on('error', () => undefined);
 
         this.clearPendingTunnelAcks(tunnelState);

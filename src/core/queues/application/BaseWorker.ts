@@ -57,15 +57,6 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
         const current = this.worker.concurrency;
         if (current === next) return;
 
-        // BullMQ's concurrency setter only mutates the internal value; it does
-        // not activate idle slots until a running job completes. We hot-swap the
-        // worker for both directions but with different sequencing:
-        //   - RAISING: spin up the new worker first so the new slots become
-        //     available immediately, then drain the old one in the background.
-        //   - LOWERING: stop accepting new jobs on the old worker, wait for it
-        //     to drain, THEN start the new one. This guarantees the cluster is
-        //     never running more than max(current,next) jobs simultaneously
-        //     while the change is in flight.
         const draining = this.worker;
         this.worker = null;
 

@@ -47,9 +47,6 @@ const isPreservedJobState = (state: JobState): state is PreservedJobState => {
 
 const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
-// Records which queue a jobId was enqueued into so findJob can target a single
-// getJob instead of fanning out across all known queues. Bounded + TTL'd so it
-// never leaks; a miss or stale entry simply falls back to the full scan.
 const JOB_QUEUE_AFFINITY_MAX = 50_000;
 const JOB_QUEUE_AFFINITY_TTL_MS = 86_400_000;
 
@@ -167,9 +164,6 @@ export class QueueService {
             {
                 connection: this.redisConnection.getConnectionOptions(),
                 concurrency: options.concurrency,
-                // Generous lock settings to survive GC pauses and heavy processing.
-                // Default 30s is far too short, long GC mark-compact cycles (1s+)
-                // cause lock renewal failures and stalled-job misdetection.
                 lockDuration: 300_000,
                 stalledInterval: 300_000
             }

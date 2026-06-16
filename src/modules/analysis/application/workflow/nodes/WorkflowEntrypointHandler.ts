@@ -30,10 +30,6 @@ import fs from 'node:fs/promises';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 
-// Why: the inferFromContext key list is derived purely from the (immutable-per-run)
-// workflow definition, yet resolveEntrypointArgs runs once per plugin stage per
-// timestep. Memoize by definition reference so the workflow.nodes scan happens once
-// per run. WeakMap keeps it leak-free: entries vanish when the definition is GC'd.
 const inferFromContextKeysCache = new WeakMap<WorkflowDefinition, string[]>();
 
 const getInferFromContextArgumentKeys = (definition: WorkflowDefinition): string[] => {
@@ -195,21 +191,13 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         executionRuntime: Awaited<ReturnType<PluginBinaryCache['getExecutionRuntime']>>,
         execution: WorkflowEntrypointExecutionOptions
     ): boolean {
-        // Why: the pool only speaks the JSON IPC protocol to the Python stub.
-        // Packaged native executables are extracted and invoked directly.
         if (entrypointType !== EntrypointTypeEnum.PythonScript) {
             return false;
         }
         if (!executionRuntime.projectPath) return false;
 
-        // Why: without the trajectory frame store we cannot load a frame to
-        // hand to the plugin; without an ownerClusterId the store cannot
-        // locate the trajectory in MinIO. Route through direct execution which feeds the
-        // plugin via CLI arguments + local dump files instead.
         if (!execution.trajectoryFrameStore || !execution.ownerClusterId) return false;
 
-        // Why: python-script with no entrypointScript means a CLI script the
-        // user invokes directly; the stub would have no user module to import.
         return true;
     }
 
@@ -280,10 +268,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
         entrypoint: WorkflowEntrypointConfig,
         executionRuntime: Awaited<ReturnType<PluginBinaryCache['getExecutionRuntime']>>
     ): string {
-        // Why: the stub imports the user's module relative to pluginRoot. The
-        // cache's argsPrefix holds the absolute scriptPath for python-script
-        // entrypoints; for packaged-executable we fall back to the raw
-        // entrypointScript (already a relative path within the project).
         const scriptArg = executionRuntime.argsPrefix[0];
         if (scriptArg && scriptArg.length > 0) return scriptArg;
         if (entrypoint.entrypointScript) return entrypoint.entrypointScript;
@@ -458,10 +442,6 @@ export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
             ? execution.prepareArgs(parsedArgs)
             : { args: parsedArgs };
 
-        // Pipeline runs only: append `--<key> <path>` for each inferFromContext
-        // argument, resolving the path from the shared pipeline context that
-        // upstream plugin stages populated. Throws if a required upstream
-        // exposure was never produced (stage ordering should guarantee it ran).
         const inferFromContextArgs = context.pipelineContext
             ? buildInferFromContextArgs(
                 context.pipelineContext,

@@ -109,18 +109,12 @@ test('bench: encode+decode 10M float payload in under 50 ms combined', () => {
     const decoded = decodeEnvelope(encoded);
     const decodeMs = performance.now() - decodeStart;
 
-    // Why: header is 10 bytes so the payload view is not 4-byte aligned for
-    // a Float32Array cast. Production consumers copy into a fresh buffer; we
-    // mirror that here to validate payload bytes end-to-end.
     const aligned = new Uint8Array(decoded.payload);
     const reconstructed = new Float32Array(aligned.buffer);
     assert.equal(reconstructed.length, count);
     assert.equal(reconstructed[0], floats[0]);
     assert.equal(reconstructed[count - 1], floats[count - 1]);
-    // Header overhead must be exactly 10 bytes (<128 B per plan).
     assert.equal(encoded.byteLength - payload.byteLength, BINARY_ENVELOPE_HEADER_BYTES);
 
-    // 50 ms is a generous ceiling for the combined path on cold CI hardware.
-    // The encode step copies the full payload; decode is O(1).
     assert.ok(encodeMs + decodeMs < 200, `encode+decode too slow: ${(encodeMs + decodeMs).toFixed(2)} ms`);
 });

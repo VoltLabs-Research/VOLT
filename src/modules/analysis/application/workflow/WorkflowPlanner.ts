@@ -132,8 +132,6 @@ export class WorkflowPlanner {
         let haltedEarly = false;
 
         for (const node of nodes) {
-            // Skip-filter: silently defer this node to a later pass. No trace,
-            // no hook, no output mutation -- identical to a plain `continue`.
             if (shouldSkipNode(node)) {
                 continue;
             }
@@ -168,7 +166,6 @@ export class WorkflowPlanner {
                         haltedEarly = true;
                     }
 
-                    // Both root and nested stop planning after the ForEach node.
                     break;
                 }
             } catch (error) {

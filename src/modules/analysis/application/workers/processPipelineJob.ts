@@ -53,17 +53,8 @@ export interface ProcessPipelineJobHooks {
 
 const ATOMS_PARQUET_SUFFIX = 'atoms.parquet';
 
-// Reserved shared-exposure id under which each compute stage persists a snapshot
-// of the working dump AS IT STANDS AFTER that stage ran. A later pipeline run
-// that cache-hits the stage restores this snapshot instead of re-deriving the
-// working-dump mutation — a faithful replay for any stage type (annotated-dump
-// promotion or per-atom merge), since a cache hit guarantees an identical
-// upstream chain (and therefore an identical working-dump state).
 const WORKING_DUMP_EXPOSURE_ID = '__working_dump__';
 
-// One BullMQ job == one timestep == the whole ordered stage chain run
-// sequentially against a single mutating working.dump, sharing one
-// PipelineContext for the run.
 export const processPipelineJob = async (
     payload: PipelineQueueJobPayload,
     deps: ProcessPipelineJobDependencies,
@@ -84,15 +75,6 @@ export const processPipelineJob = async (
     const pipelineTempPath = pipelineTemp.path;
     const context = createPipelineContext(pipelineTempPath);
 
-    // Every compute plugin stage gets its own server-side completion session
-    // (seeded per analysisId by the server's routePipeline). The whole ordered
-    // chain runs in ONE BullMQ job, so if a stage throws (a slice that can't cut
-    // the dump, a missing shared exposure, a failing binary) the stages AFTER it
-    // never run their own withJobLifecycle — their analysis sessions would then
-    // never receive a terminal event and hang in "queued" forever. We therefore
-    // track which compute analysisIds have already reported a terminal status and,
-    // on ANY failure, emit `failed` for every compute stage that hasn't, so the
-    // server always drains. A compute stage records itself reported via this set.
     const reportedAnalysisIds = new Set<string>();
     const computeAnalysisIds = payload.stages
         .filter((stage): stage is PipelinePlannedStage & { analysisId: string } =>
@@ -109,8 +91,6 @@ export const processPipelineJob = async (
     };
 
     try {
-        // Download the original dump for this timestep once, then copy it to the
-        // mutating working.dump that every stage transforms in place.
         const downloadedDump = await downloadCompressedDump(
             deps.objectStore,
             `trajectory-${payload.trajectoryId}/timestep-${timestep}.dump.zst`,
@@ -137,12 +117,6 @@ export const processPipelineJob = async (
                     if (stage.cacheHit) {
                         await runCacheHitStage(payload, deps, context, stage, index, storageClusterId, workingDump, stageDir);
                     } else {
-                        // runComputeStage marks itself in reportedAnalysisIds the
-                        // moment its withJobLifecycle emits a terminal status, so a
-                        // throw BEFORE the lifecycle (e.g. executionData fetch) is
-                        // still drained by the catch below. The drain jobId matches
-                        // the per-stage report jobId (`${jobId}:${analysisId}`), so
-                        // the queued row is replaced — never duplicated.
                         await runComputeStage(payload, deps, context, stage, workingDump, stageDir, reportedAnalysisIds);
                     }
                     break;
@@ -151,11 +125,6 @@ export const processPipelineJob = async (
 
         await setProgress(95);
     } catch (error) {
-        // Drain every compute stage that never reached its own withJobLifecycle:
-        // emit a terminal `failed` so each analysis' server session resolves
-        // instead of hanging in "queued". runComputeStage already reports its own
-        // failure (and added itself to reportedAnalysisIds before throwing), so
-        // this only fires for stages upstream/downstream of the failure point.
         const message = error instanceof Error ? error.message : 'Pipeline stage failed';
         for (const analysisId of computeAnalysisIds) {
             if (reportedAnalysisIds.has(analysisId)) continue;
@@ -185,10 +154,6 @@ const readExpression = (config: AnalysisValueMap | undefined): string => {
     return expression;
 };
 
-// Cache-hit plugin stage: re-fetch the prior analysis' persisted shared-exposure
-// files for this timestep, register them into the shared context, and merge its
-// per-atom parquet (if any) into the working dump. The server created NO analysis
-// for this stage, so we report it cached and emit no job completion / artifacts.
 const runCacheHitStage = async (
     payload: PipelineQueueJobPayload,
     deps: ProcessPipelineJobDependencies,
@@ -227,11 +192,6 @@ const runCacheHitStage = async (
         registerSharedExposure(context, exposureId, localPath);
     }
 
-    // Restore the working-dump snapshot this stage produced (annotated-dump
-    // promotion or per-atom merge), so downstream stages see the exact same dump
-    // state a fresh run would have produced. Older cached analyses persisted no
-    // snapshot — fall back to merging any atoms.parquet shared exposure so the
-    // cache hit still advances the dump rather than silently passing it through.
     const restoredDump = await deps.pipelineSharedExposureStore.fetch({
         ownerClusterId: storageClusterId,
         trajectoryId: payload.trajectoryId,
@@ -262,10 +222,6 @@ const runCacheHitStage = async (
     });
 };
 
-// Compute plugin stage: run the plugin workflow against the CURRENT working dump
-// (window-of-1), mirroring processAnalysisJob's lifecycle for THIS stage's
-// analysisId. After it completes: register + persist id-bearing exposures into
-// the shared context, and merge any Per-Atom-Properties exposure into the dump.
 const runComputeStage = async (
     payload: PipelineQueueJobPayload,
     deps: ProcessPipelineJobDependencies,
@@ -312,11 +268,6 @@ const runComputeStage = async (
         plugin: executionData.identity.pluginId,
         totalItems: 1,
         timestep: payload.timestep,
-        // The pipeline runs one timestep per job (a window-of-1), so seed the
-        // forEach item this single frame maps to. AnalysisEnvironment.seedForEachOutput
-        // requires forEachItem + forEachIndex whenever the plugin has a forEach
-        // node (every per-frame plugin does); its `path` is overridden with the
-        // localized working-dump path, so only the timestep needs to be carried.
         forEachItem: { timestep: payload.timestep },
         forEachIndex: 0
     };
@@ -328,9 +279,6 @@ const runComputeStage = async (
                 if (status === 'failed') {
                     logger.error(`Pipeline compute stage failed for jobId=${stageJobId}: ${error ?? 'Unknown error'}`);
                 }
-                // Mark self-reported only once a terminal status is actually
-                // emitted, so the top-level catch drains this stage if it threw
-                // before reaching the lifecycle (no double-report either way).
                 reportedAnalysisIds.add(analysisId);
                 reportAnalysisStatus(status, error);
             },
@@ -383,17 +331,6 @@ const runComputeStage = async (
     );
 };
 
-// After a compute stage completes: for each id-bearing exposure, register its
-// output file into the shared context AND persist it to MinIO (so future cache
-// hits can re-fetch it). Then advance the working dump for downstream stages:
-// reconstruction producers (PTM/ACNA/PSM) emit an `_annotated.dump` that is the
-// input frame PLUS structure_type/cluster_id/neighbor-topology columns — that
-// full superset becomes the working dump so reconstruction consumers (OpenDXA,
-// Elastic Strain) get the neighbor topology they require. Non-reconstruction
-// plugins have no annotated dump, so their per-atom-properties exposure
-// (atoms.parquet) is merged into the working dump by atom id instead. We keep
-// the heavy neighbor columns OUT of atoms.parquet (the UI property store) so
-// per-atom properties stay minimal.
 const ANNOTATED_DUMP_SUFFIX = 'annotated.dump';
 
 const registerStageExposures = async (
@@ -430,9 +367,6 @@ const registerStageExposures = async (
         }
     }
 
-    // Advance the working dump. Prefer a reconstruction producer's annotated
-    // dump (a complete superset incl. neighbor topology); else merge the per-atom
-    // properties parquet so downstream stages still see this plugin's columns.
     const annotatedDump = `${outputDir}_${ANNOTATED_DUMP_SUFFIX}`;
     let advancedFromAnnotatedDump = false;
     try {
@@ -440,12 +374,9 @@ const registerStageExposures = async (
         await fs.copyFile(annotatedDump, workingDump);
         advancedFromAnnotatedDump = true;
     } catch {
-        // No annotated dump (non-reconstruction plugin); fall through to merge.
     }
 
     if (!advancedFromAnnotatedDump) {
-        // Merge each distinct per-atom file once (a plugin may expose atoms.parquet
-        // for several exposures — the 3D scene, a chart, the merge — same file).
         const mergedPaths = new Set<string>();
         for (const exposure of executionData.workflow.exposures) {
             if (!isPerAtomPropertiesExposure(exposure)) {
@@ -460,13 +391,10 @@ const registerStageExposures = async (
                 await deps.dumpTransformService.merge(workingDump, filePath);
                 mergedPaths.add(filePath);
             } catch {
-                // No per-atom output produced for this timestep; nothing to merge.
             }
         }
     }
 
-    // Persist the post-stage working dump so a future pipeline run that cache-hits
-    // this stage can restore the exact dump state instead of re-deriving it.
     if (storageClusterId) {
         await deps.pipelineSharedExposureStore.persist({
             ownerClusterId: storageClusterId,

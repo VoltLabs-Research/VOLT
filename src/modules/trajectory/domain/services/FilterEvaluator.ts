@@ -86,8 +86,6 @@ interface ResolvedTrajectoryValues {
     valueType: 'number' | 'string';
 }
 
-// Codes are the wire contract with SpatialAssembler's native GRADIENT_LUT
-// (glb_exporter.cpp GRADIENT_DEFS) — keep both sides in sync.
 enum GradientCode {
     Viridis = 0,
     Plasma = 1,
@@ -149,10 +147,6 @@ const selectCmp = (operator: ComparisonOperator): ScalarComparator => {
     }
 };
 
-// Why: hoisting the switch out of the loop avoids one branch per atom.
-// For 10M-atom sweeps (property filter) this alone is ~20-30% faster in
-// warm V8 benchmarks because the inner call site monomorphizes to the
-// selected comparator.
 const evaluateComparison = (
     values: Float32Array,
     operator: ComparisonOperator,
@@ -412,10 +406,6 @@ export class FilterEvaluator {
             const bytes = input.externalValues instanceof Uint8Array
                 ? input.externalValues
                 : toUint8Array(input.externalValues);
-            // Why: the sender may align the Float32 data on arbitrary offsets
-            // (e.g. inside a binary envelope payload). A typed-array cast is
-            // only legal when the byte offset is a multiple of 4; copy once
-            // when that precondition fails.
             if ((bytes.byteOffset % Float32Array.BYTES_PER_ELEMENT) === 0) {
                 return {
                     type: 'number',

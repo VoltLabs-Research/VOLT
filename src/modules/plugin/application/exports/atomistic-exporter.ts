@@ -208,9 +208,6 @@ export const exportAtomisticArtifact = async (
         ownerClusterId
     });
 
-    // LOD octree metadata rides next to the GLB (a no-op below the atom
-    // threshold or when disabled). positions.length / 3 is the atom count: the
-    // buffer is interleaved xyz, the exact shape the octree builder reads.
     if (octreeOptions) {
         await exportOctreeMetadata(
             input,

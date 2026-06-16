@@ -45,8 +45,6 @@ export interface LineStyleFilter {
     value: number | string;
 }
 
-// Property-generic styling: every knob names a discovered per-entity property
-// instead of baking in any plugin's domain (Burgers families, lengths, ...).
 export interface LineStyleInput {
     lineWidth?: number;
     tubularSegments?: number;
@@ -68,8 +66,6 @@ export interface ExportLineModelInput {
     timestep: number;
     ownerClusterId: string;
     objectKey: string;
-    // Export-node options from the plugin definition (colorBy, propertyColors,
-    // material); the style overlays them.
     baseOptions?: LineExportOptions;
     style?: LineStyleInput;
 }
@@ -78,7 +74,6 @@ export interface ExportLineModelResult {
     objectKey: string;
     entitiesRendered: number;
     entitiesTotal: number;
-    // Entity count per value of the categorical color property, when one applies.
     categoryCounts: Record<string, number>;
 }
 

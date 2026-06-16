@@ -13,9 +13,6 @@ interface StagedUpload {
     contentType: string;
 }
 
-// A bond is a two-vertex polyline whose endpoints already carry the periodic
-// image shift; these fixtures sit a clean Angstrom apart so the tube path
-// produces a non-degenerate cylinder.
 const buildBondData = (): BondExportData => ({
     bonds: [
         { id: 0, points: [[0, 0, 0], [1.5, 0, 0]], atom_a: 0, atom_b: 1, distance: 1.5, bond_order: 1 },

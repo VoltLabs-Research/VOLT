@@ -38,9 +38,6 @@ interface RegistryEntrypointNode {
     data?: { entrypoint?: { type?: string; binary?: string; binaryFileName?: string } };
 }
 
-// archiver@8 is ESM with named class exports (ZipArchive); the installed
-// @types/archiver@7 only types the legacy callable default, so reach the v8
-// class through require (Node returns the ESM namespace) with a local type.
 interface ProjectArchive {
     pipe(destination: NodeJS.WritableStream): unknown;
     file(filepath: string, data: { name: string }): unknown;
@@ -111,8 +108,6 @@ export class PluginCommands {
             const extractDir = path.join(dir, 'extracted');
             await fs.writeFile(tgzPath, tarball);
             await fs.mkdir(extractDir, { recursive: true });
-            // Registry artifacts are tar compressed with zstd (.tar.zst). node-tar
-            // only auto-detects gzip/brotli, so decompress zstd ourselves first.
             const isZstd = tarball[0] === 0x28 && tarball[1] === 0xb5 && tarball[2] === 0x2f && tarball[3] === 0xfd;
             const archiveStream = createReadStream(tgzPath);
             await (isZstd
@@ -122,8 +117,6 @@ export class PluginCommands {
             const workflow = await this.readWorkflow(extractDir);
             const entrypoint = this.resolveEntrypoint(workflow);
             const fileName = path.basename(entrypoint.binaryFileName ?? entrypoint.binary ?? '');
-            // executable → upload the native binary directly; packaged entrypoints
-            // (e.g. opendxa, which needs bundled data) ship the project as a zip.
             let body: Buffer;
             if (entrypoint.type === 'executable') {
                 body = await fs.readFile(await this.locateExecutable(extractDir, fileName));
@@ -204,7 +197,6 @@ export class PluginCommands {
     }
 
     private async packageProjectZip(extractDir: string, destPath: string): Promise<void> {
-        // Exclude the workflow manifest; the zip is the runnable project (bin/lib/scripts).
         await fs.rm(path.join(extractDir, 'plugin.json'), { force: true });
         const { ZipArchive } = require('archiver') as { ZipArchive: ZipArchiveConstructor };
         const output = createWriteStream(destPath);
@@ -215,9 +207,6 @@ export class PluginCommands {
         });
 
         archive.pipe(output);
-        // Dereference symlinks (lib/*.so chains) into real files: the daemon's
-        // unzipper extraction does not restore symlinks, which would leave shared
-        // libraries as short stub files (the link target string).
         const files = await fg('**/*', { cwd: extractDir, onlyFiles: true, followSymbolicLinks: true, dot: true });
         for (const relativePath of files) {
             archive.file(await fs.realpath(path.join(extractDir, relativePath)), { name: relativePath });

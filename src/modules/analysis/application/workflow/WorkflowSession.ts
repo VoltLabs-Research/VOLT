@@ -132,13 +132,6 @@ export class WorkflowSession {
     }
 
     static cloneOutputs(outputs: WorkflowOutputs): WorkflowOutputs {
-        // Shallow-copy the Map (not a per-entry structuredClone): nested
-        // sessions only ADD their own node keys and replace entries with
-        // freshly-built objects via setOutput/setForEachCurrentValue (spread,
-        // never in-place mutation), and otherwise just READ upstream values.
-        // An independent Map sharing value references is therefore safe and
-        // avoids the slow structuredClone deep-copy of every node output
-        // (stdout/stderr/outputFiles payloads) per pluginReference selection.
         return new Map(outputs);
     }
 
@@ -250,10 +243,6 @@ export class WorkflowSession {
                 nodeId: node.id,
                 name: exposureData.name!,
                 results: exposureData.results!,
-                // Carry the exposure node's shared-exposure `id` through to the
-                // runtime so registerStageExposures can register id-bearing
-                // outputs (e.g. PTM/ACNA `clusters_table` / `clusters_transitions`)
-                // into the pipeline's shared context for downstream stages.
                 id: exposureData.id,
                 export: exportNode ? exportNode.data.export : undefined
             });

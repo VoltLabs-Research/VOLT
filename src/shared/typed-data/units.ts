@@ -1,11 +1,3 @@
-// LAMMPS units conventions. Source: the LAMMPS `units` command documentation
-// (https://docs.lammps.org/units.html). Each convention fixes the physical unit of
-// every quantity LAMMPS reports; VOLT records the trajectory's convention so the
-// View stack can label axes and convert lengths to Angstrom (the engine's internal
-// length unit).
-//
-// Pure data + a lookup helper. No I/O, no runtime validation (the table is literal
-// and trusted per the no-redundant-validation rule).
 
 export type LammpsUnits =
     'lj' | 'real' | 'metal' | 'si' | 'cgs' | 'electron' | 'micro' | 'nano';

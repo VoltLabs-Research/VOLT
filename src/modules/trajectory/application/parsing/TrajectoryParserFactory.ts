@@ -2,12 +2,6 @@ import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { parseAseMetadata } from '@/modules/trajectory/infrastructure/parsing/AseImportBridge';
 
-// LAMMPS metadata heuristics (dump vs data detection + header → cell/natoms/timestep)
-// live here, in the daemon, mirroring the C++ native parsers in `packages/LammpsIO`.
-// This module is self-contained for the native-LAMMPS fast path and adds the import
-// router seam: when the header is not native LAMMPS, ingest falls back to the Python
-// ASE conversion bridge.
-
 export type LammpsMetadataFormat = 'dump' | 'data';
 
 export interface ParsedSimulationCellGeometry {
@@ -268,6 +262,5 @@ export const parseTrajectoryMetadata = async (filePath: string): Promise<ParsedF
     if (lammpsFormat === 'data') {
         return parseDataMetadataOnly(headerLines);
     }
-    // Non-LAMMPS: delegate to ASE bridge.
     return parseAseMetadata(filePath);
 };
