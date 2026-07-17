@@ -1,5 +1,5 @@
 import EditableTrajectoryName from '../EditableTrajectoryName';
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/types/job';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -7,8 +7,8 @@ import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import { IconButton, Loader, Popover, Row, Stack, Text, PopoverMenu, PopoverMenuItem, openModal } from '@voltstack/bravais';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { formatDistanceToNow } from 'date-fns';
 import { Download, FolderInput, ListChecks, Play, ScanSearch } from 'lucide-react';
@@ -18,7 +18,7 @@ import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { TrajectoryJobGroup } from '@/modules/jobs/api/entities/job';
+import type { TrajectoryJobGroup } from '@/modules/jobs/api/types/job';
 import './SimulationCardFooter.css';
 import { useNavigate } from 'react-router-dom';
 interface SimulationCardFooterProps {

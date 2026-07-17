@@ -5,7 +5,7 @@ import {
     isPowerPreference,
     PERFORMANCE_PRESET_OPTIONS,
     POWER_PREFERENCE_OPTIONS
-} from '@/shared/domain/rendering/performance';
+} from '@/shared/rendering/performance';
 import { Select, Box } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { MdSpeed } from 'react-icons/md';

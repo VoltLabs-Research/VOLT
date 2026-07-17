@@ -6,7 +6,7 @@ import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentF
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import type { AnalysisPluginStageConfig } from '../../../stores/canvas-pipeline';
 
 interface AnalysisPluginStageEditorProps {

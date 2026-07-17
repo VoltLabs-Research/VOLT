@@ -3,7 +3,7 @@ import type {
     OrthographicCameraSettings,
     OrbitControlsSettings,
     PerspectiveCameraSettings
-} from '@/shared/domain/rendering/camera';
+} from '@/shared/rendering/camera';
 import type {
     BloomSettings,
     ChromaticAberrationSettings,
@@ -13,8 +13,8 @@ import type {
     SSAOEffectSettings,
     SepiaSettings,
     VignetteSettings
-} from '@/shared/domain/rendering/effects';
-import type { EnvironmentSettings, FogSettings } from '@/shared/domain/rendering/environment';
+} from '@/shared/rendering/effects';
+import type { EnvironmentSettings, FogSettings } from '@/shared/rendering/environment';
 
 
 export interface CameraUpdateState {

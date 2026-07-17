@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useRetryFailedFramesMutation } from '@/modules/analysis/hooks/queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 
 const useRetryJobAnalysis = () => {
     const mutation = useRetryFailedFramesMutation();

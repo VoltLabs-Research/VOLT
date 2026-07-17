@@ -1,4 +1,4 @@
-import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { ArgumentType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { resolveArgumentRuntimeValue } from '@/modules/plugin/utilities/plugin/argument-values';
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import { sileo } from 'sileo';
@@ -6,8 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
 import useCanvasUrlState from './use-canvas-url-state';
 
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
 
 export enum ExecState {
     Idle = 'idle',

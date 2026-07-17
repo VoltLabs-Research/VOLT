@@ -4,7 +4,7 @@ import {
     createInvalidatingMutation,
     createMutation,
     createQuery
-} from '@/shared/infrastructure/query';
+} from '@/shared/query';
 import type {
     CreateScriptingNotebookParams,
     CreateScriptingNotebookSessionParams,
@@ -13,8 +13,8 @@ import type {
     ListScriptingNotebooksParams,
     UpdateScriptingNotebookParams
 } from '../api/scripting-service';
-import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
-import type { ScriptingSession } from '../api/entities/scripting-session';
+import type { ScriptingNotebook } from '../api/types/scripting-notebook';
+import type { ScriptingSession } from '../api/types/scripting-session';
 
 interface ScriptingQueryKeys {
     notebooks: ListScriptingNotebooksParams;

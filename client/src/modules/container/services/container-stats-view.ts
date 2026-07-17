@@ -1,4 +1,4 @@
-import type { NetworkData } from '@/shared/presentation/components/NetworkChart';
+import type { NetworkData } from '@/shared/ui/components/NetworkChart';
 
 export interface CpuData {
     usage: number;

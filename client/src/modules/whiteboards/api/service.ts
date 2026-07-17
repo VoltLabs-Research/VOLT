@@ -9,9 +9,9 @@ import {
 } from '@/shared/api/folder-endpoints';
 
 import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Whiteboard } from './entities/whiteboard';
-import type { WhiteboardFolder } from './entities/whiteboard-folder';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Whiteboard } from './types/whiteboard';
+import type { WhiteboardFolder } from './types/whiteboard-folder';
 
 export interface CreateWhiteboardParams {
     teamId: string;

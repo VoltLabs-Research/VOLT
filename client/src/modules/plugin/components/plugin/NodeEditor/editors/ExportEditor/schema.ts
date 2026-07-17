@@ -1,4 +1,4 @@
-import { Exporter, ExportType_ as ExportType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter, ExportType_ as ExportType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 
 export interface ExportEditorFormValues {
     exporter: string;

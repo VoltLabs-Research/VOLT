@@ -1,5 +1,5 @@
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import ChartContainer from '@/shared/ui/components/ChartContainer';
+import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { Box } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import {
@@ -11,7 +11,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Cpu } from 'lucide-react';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
 
 interface CpuDistributionProps {
     history: ClusterMetrics[];

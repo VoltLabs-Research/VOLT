@@ -1,9 +1,9 @@
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import DiscoverTeamEmailPrompt from '@/modules/early-access/components/DiscoverTeamEmailPrompt';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Heading, SearchInput, Text } from '@voltstack/bravais';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import usePaginationParams from '@/shared/presentation/hooks/use-pagination-params';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
+import usePaginationParams from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { ChangeEvent } from 'react';

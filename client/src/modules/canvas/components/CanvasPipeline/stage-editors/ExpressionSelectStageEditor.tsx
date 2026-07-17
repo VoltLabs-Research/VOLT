@@ -1,7 +1,7 @@
 import { useCanvasPipelineStore } from '../../../stores/canvas-pipeline';
 import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
 import {

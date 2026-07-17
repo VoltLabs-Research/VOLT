@@ -1,4 +1,4 @@
-import type { IExposureComputed } from '@/modules/plugin/api/entities/plugin/exposure';
+import type { IExposureComputed } from '@/modules/plugin/api/types/plugin/exposure';
 
 export interface ListingRelevantExposure {
     exposureId: string;

@@ -1,12 +1,12 @@
 import { matchesQuery } from '@/shared/utils/matches-query';
 import { EmptyState, IconButton, Row, SearchInput, Skeleton, Stack, Text, Tooltip } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import SidebarNavItem from '@/shared/ui/components/SidebarNavItem';
+import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { useMemo, useState } from 'react';
 import { CiChat1 } from 'react-icons/ci';
 import { IoPencilOutline, IoTrashOutline } from 'react-icons/io5';
-import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
+import type { AIConversation } from '@/modules/ai/api/types/ai-conversation';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import './AIConversationSidebar.css';
 

@@ -8,7 +8,7 @@ import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
 import * as THREE from 'three';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 
 interface LocalGlbViewerProps {
     url: string;

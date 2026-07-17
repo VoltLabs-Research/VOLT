@@ -7,11 +7,11 @@ import {
     resolveAdaptiveDprProps,
     resolveCanvasDpr,
     resolveCanvasRuntimeProps
-} from '@/shared/domain/rendering/performance';
+} from '@/shared/rendering/performance';
 
 import type { EditorStore } from './types';
 import type { PerformanceSettingsStore } from '@/modules/fractal/stores/contracts/editor/performance-types';
-import type { AdaptiveEventsSettings, CanvasPerformanceProp, DprSettings, InteractionDegradeSettings, PerformanceSettingsState } from '@/shared/domain/rendering/performance';
+import type { AdaptiveEventsSettings, CanvasPerformanceProp, DprSettings, InteractionDegradeSettings, PerformanceSettingsState } from '@/shared/rendering/performance';
 import type { StateCreator } from 'zustand';
 
 export interface PerformanceSlice {

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import SlicePlaneHelper from '@/modules/fractal/components/atoms/SlicePlaneHelper';
 import { useActiveTrajectoryStages, collectEnabledSliceStages } from '@/modules/canvas/stores/canvas-pipeline';
 import { toSlicePlaneConfig } from '@/modules/canvas/hooks/use-pipeline-slice-planes';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { FC } from 'react';
 
 interface PipelineSlicePlaneHelpersProps {

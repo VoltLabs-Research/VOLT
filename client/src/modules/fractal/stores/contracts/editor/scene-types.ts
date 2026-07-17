@@ -1,5 +1,5 @@
-import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/api/types/model';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 
 export enum PointCloudDetailLevel {

@@ -4,8 +4,8 @@ import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities
 import { useCallback, useMemo } from 'react';
 import { AnalysisStatus, isCanvasAnalysisInProgress } from '../utilities/analysis-status';
 
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { Job } from '@/modules/jobs/api/entities/job';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { Job } from '@/modules/jobs/api/types/job';
 import type { CanvasAnalysisStatusEntry } from '../utilities/analysis-status';
 
 interface UseAnalysisStatusProps {

@@ -3,16 +3,16 @@ import BondsModelViewer from '@/modules/fractal/components/molecules/BondsModelV
 import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utilities/scene-utils';
 import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utilities/plugin-exposure-export';
 import { resolveBondLineSettings } from '@/modules/fractal/services/bond-render';
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useState, useRef, useEffect } from 'react';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
-import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { BoxBounds, ModelLoadingState } from '@/modules/fractal/api/types/model';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { RefObject } from 'react';
 
 interface OptionalPosition {

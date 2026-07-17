@@ -1,4 +1,4 @@
-import { EntrypointType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { EntrypointType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 
 export interface EntrypointEditorFormValues {
     binary: string;

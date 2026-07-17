@@ -1,5 +1,5 @@
-import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import SettingsPage from '@/shared/ui/components/SettingsPage';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { Stack } from '@voltstack/bravais';
 import ThemeSelector from '@/modules/auth/components/ThemeSelector';
 

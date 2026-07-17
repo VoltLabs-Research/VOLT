@@ -13,13 +13,13 @@ import {
 } from '@/modules/whiteboards/hooks/queries';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
-import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
-import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
-import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-listing';
+import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
+import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { FolderInput, Pencil, SquarePen } from 'lucide-react';
 import { useCallback } from 'react';
 import { getDeleteConfirmationMessage } from '../utilities/whiteboards';
@@ -32,7 +32,7 @@ import {
     isWhiteboardItemRow,
     type WhiteboardItemRow
 } from '../utilities/listing';
-import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 import { useNavigate } from 'react-router-dom';
 
 export const RENAME_WHITEBOARD_MODAL_ID = 'rename-whiteboard-modal';

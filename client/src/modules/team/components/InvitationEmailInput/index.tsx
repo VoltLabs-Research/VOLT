@@ -1,6 +1,6 @@
 import { InviteButton } from '../InviteButton';
 import type { InviteButtonState } from '../InviteButton';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import type { ChangeEvent, FormEvent } from 'react';
 import './InvitationEmailInput.css';
 

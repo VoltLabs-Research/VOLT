@@ -1,5 +1,5 @@
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
-import type { TrajectoryFolder } from '@/modules/trajectory/api/entities/trajectory/trajectory-folder';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { TrajectoryFolder } from '@/modules/trajectory/api/types/trajectory/trajectory-folder';
 
 export enum TrajectoryListingRowType {
     Folder = 'folder',

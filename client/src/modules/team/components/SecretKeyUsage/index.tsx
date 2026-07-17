@@ -3,9 +3,9 @@ import { createTooltipRenderer } from '@/modules/team/components/secret-key/shar
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartContainer from '@/shared/ui/components/ChartContainer';
 import { SecretKeyEmptyView, SecretKeyRecoveryView } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';

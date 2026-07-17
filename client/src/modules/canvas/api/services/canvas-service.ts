@@ -3,41 +3,41 @@ import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-r
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import { base64ToBlob } from '@/shared/utils/file';
 
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
-import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
+import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
 import { buildSceneArtifactQuery } from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { buildPreviewQuery } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
 import type {
-    ListSceneArtifactsInputDTO,
+    ListSceneArtifactsInput,
     RenderableExposurePayload
 } from '@/modules/trajectory/api/services/scene-artifacts-service';
 import type {
     ColorCodingProperties,
     ColorCodingStats,
-    GetColorCodingPropertiesInputDTO,
-    GetColorCodingStatsInputDTO
+    GetColorCodingPropertiesInput,
+    GetColorCodingStatsInput
 } from '@/modules/trajectory/api/services/color-coding-service';
 import type {
     FilterPropertiesData,
-    GetFilterPropertiesInputDTO,
-    GetUniqueValuesInputDTO,
-    GetUniqueValuesOutputDTO,
-    PreviewFilterInputDTO,
-    PreviewFilterOutputDTO
+    GetFilterPropertiesInput,
+    GetUniqueValuesInput,
+    GetUniqueValuesResponse,
+    PreviewFilterInput,
+    PreviewFilterResponse
 } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
 import type {
-    GetPluginListingInputDTO,
-    GetPluginListingOutputDTO
+    GetPluginListingInput,
+    GetPluginListingResponse
 } from '@/modules/plugin/api/services/listing-service';
 import type {
-    GetSubListingInputDTO,
-    GetSubListingOutputDTO
+    GetSubListingInput,
+    GetSubListingResponse
 } from '@/modules/plugin/api/services/listing-service';
 import type { RawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import type {
@@ -49,8 +49,8 @@ import type {
     GetRasterMetadataResponse
 } from '@/modules/raster/api/service';
 import type {
-    GetPreviewInputDTO,
-    GetPreviewOutputDTO
+    GetPreviewInput,
+    GetPreviewResponse
 } from '@/modules/trajectory/api/services/trajectory-service';
 
 export enum PublicCanvasAccessMode {
@@ -119,11 +119,11 @@ interface PublicCanvasPluginInput {
     pluginId: string;
 }
 
-interface PublicCanvasListingInput extends GetPluginListingInputDTO {
+interface PublicCanvasListingInput extends GetPluginListingInput {
     trajectoryId: string;
 }
 
-interface PublicCanvasSubListingInput extends GetSubListingInputDTO {
+interface PublicCanvasSubListingInput extends GetSubListingInput {
     trajectoryId: string;
 }
 
@@ -134,7 +134,7 @@ interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
 const endpoints = {
     getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),
     getTrajectory: get<GetCanvasTrajectoryParams, Trajectory>('/:trajectoryId'),
-    getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
+    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/:trajectoryId/preview', {
         query: ({ frame, quality }) => ({
             ...(frame !== undefined ? { frame } : {}),
             ...(quality ? { quality } : {})
@@ -151,7 +151,7 @@ const endpoints = {
     getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep'),
     getAnalysisRasterFrame: download<GetCanvasAnalysisRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/:analysisId/:model'),
     getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
-    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(getAtomsBinary),
+    getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
     getSimulationCell: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
         '/:trajectoryId/simulation-cell',
         {
@@ -159,14 +159,14 @@ const endpoints = {
             query: ({ timestep }) => timestep === undefined ? undefined : { timestep }
         }
     ),
-    listSceneArtifacts: get<ListSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
+    listSceneArtifacts: get<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
         '/:trajectoryId/scene-artifacts',
         {
             unwrap: 'raw',
             query: buildSceneArtifactQuery
         }
     ),
-    getColorCodingProperties: get<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(
+    getColorCodingProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/color-coding/properties/${analysisId}`
             : `/${trajectoryId}/color-coding/properties`,
@@ -175,7 +175,7 @@ const endpoints = {
             query: ({ timestep }) => ({ timestep })
         }
     ),
-    getColorCodingStats: get<GetColorCodingStatsInputDTO, ColorCodingStats>(
+    getColorCodingStats: get<GetColorCodingStatsInput, ColorCodingStats>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/color-coding/stats/${analysisId}`
             : `/${trajectoryId}/color-coding/stats`,
@@ -183,7 +183,7 @@ const endpoints = {
             omit: ['trajectoryId', 'analysisId']
         }
     ),
-    getParticleFilterProperties: get<GetFilterPropertiesInputDTO, FilterPropertiesData>(
+    getParticleFilterProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/particle-filter/properties/${analysisId}`
             : `/${trajectoryId}/particle-filter/properties`,
@@ -192,7 +192,7 @@ const endpoints = {
             query: ({ timestep }) => ({ timestep })
         }
     ),
-    getParticleFilterUniqueValues: get<GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO>(
+    getParticleFilterUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/particle-filter/unique-values/${analysisId}`
             : `/${trajectoryId}/particle-filter/unique-values`,
@@ -200,7 +200,7 @@ const endpoints = {
             omit: ['trajectoryId', 'analysisId']
         }
     ),
-    getParticleFilterPreview: get<PreviewFilterInputDTO, PreviewFilterOutputDTO>(
+    getParticleFilterPreview: get<PreviewFilterInput, PreviewFilterResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/particle-filter/preview/${analysisId}`
             : `/${trajectoryId}/particle-filter/preview`,
@@ -210,7 +210,7 @@ const endpoints = {
         }
     ),
     getPlugin: get<PublicCanvasPluginInput, Plugin>('/:trajectoryId/plugins/:pluginId'),
-    getPluginListing: get<PublicCanvasListingInput, GetPluginListingOutputDTO, RawListingResponse>(
+    getPluginListing: get<PublicCanvasListingInput, GetPluginListingResponse, RawListingResponse>(
         '/:trajectoryId/plugins/:pluginId/listings',
         {
             unwrap: 'raw',
@@ -225,7 +225,7 @@ const endpoints = {
             map: mapRawListingResponse
         }
     ),
-    getSubListing: get<PublicCanvasSubListingInput, GetSubListingOutputDTO>(
+    getSubListing: get<PublicCanvasSubListingInput, GetSubListingResponse>(
         '/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
     ),
     getFrameLog: get<PublicCanvasFrameLogParams, GetAnalysisFrameLogResponse>(

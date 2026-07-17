@@ -19,17 +19,17 @@ import {
     getTeamClusterRoleSummary,
     isTeamClusterRoleTransitionPending
 } from '@/modules/cluster/utilities/team-cluster-role';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { ArrowRightLeft, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
 import '@/modules/cluster/components/ClustersListing/ServerTable.css';
 import { useNavigate } from 'react-router-dom';

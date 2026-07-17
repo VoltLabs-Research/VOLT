@@ -1,7 +1,7 @@
 import './ThemeSelector.css';
 import ThemeCard from '@/modules/auth/components/ThemeCard';
 import { Box } from '@voltstack/bravais';
-import { Theme, useTheme } from '@/shared/presentation/hooks/use-theme';
+import { Theme, useTheme } from '@/shared/ui/hooks/use-theme';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';

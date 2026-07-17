@@ -4,8 +4,8 @@ import { useSocketTerminalSession } from '@/modules/socket/hooks/use-socket-term
 import { SOCKET_CONTAINER_TERMINAL_EVENTS } from '@/modules/socket/events/container';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { Box, Button, Row, Stack, Tooltip } from '@voltstack/bravais';
-import Terminal from '@/shared/presentation/components/Terminal';
-import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
+import Terminal from '@/shared/ui/components/Terminal';
+import type { TerminalHandle } from '@/shared/ui/components/Terminal';
 import './ContainerTerminal.css';
 
 interface ContainerTerminalProps {

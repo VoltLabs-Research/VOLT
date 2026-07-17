@@ -1,12 +1,12 @@
 import { Box, Stack, Row, Modal, resetModal, Callout } from '@voltstack/bravais';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import CopyableField from '@/shared/presentation/components/CopyableField';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import { runAction } from '@/shared/ui/actions/run-action';
+import CopyableField from '@/shared/ui/components/CopyableField';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCreateSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 

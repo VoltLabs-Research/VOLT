@@ -1,5 +1,5 @@
 import { useImportLatexDocumentMutation } from '@/modules/latex/hooks/queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useRef } from 'react';
 
 const IMPORT_TOAST = {

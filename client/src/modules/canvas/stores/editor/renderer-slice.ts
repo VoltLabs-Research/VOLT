@@ -2,10 +2,10 @@ import { mergeNestedSectionState, resetSectionState } from './store-section';
 import {
     getDefaultRendererCreateSettings,
     getDefaultRendererRuntimeSettings
-} from '@/shared/domain/rendering/renderer';
+} from '@/shared/rendering/renderer';
 
 import type { EditorStore } from './types';
-import type { RendererCreateState, RendererRuntimeState, RendererSettingsState, RendererSettingsStore } from '@/shared/domain/rendering/renderer';
+import type { RendererCreateState, RendererRuntimeState, RendererSettingsState, RendererSettingsStore } from '@/shared/rendering/renderer';
 import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {

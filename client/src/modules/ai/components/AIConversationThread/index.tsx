@@ -1,7 +1,7 @@
 import {
     AIMessageArtifactKind,
     AIMessageRole
-} from '@/modules/ai/api/entities/ai-conversation';
+} from '@/modules/ai/api/types/ai-conversation';
 import {
     parseTableFromChildren
 } from '@/modules/ai/utilities/message-content';
@@ -9,15 +9,15 @@ import { resolveImagePayload } from '@/modules/ai/utilities/message-artifacts';
 import { presentToolCall } from '@/modules/ai/utilities/tool-presentation';
 import type { ToolActionPhase } from '@/modules/ai/utilities/tool-presentation';
 import { isRecord } from '@/shared/utils/type-guards';
-import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
-import RecoveryState from '@/shared/presentation/components/RecoveryState';
+import AutoScrollList from '@/shared/ui/components/AutoScrollList';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { Box, Button, IconButton, Row, SectionLabel, Skeleton, Stack, StatusDot, Text, ThinkingDots, Tooltip, VisuallyHidden } from '@voltstack/bravais';
 import { isToolUIPart } from 'ai';
 import { IoCheckmarkOutline, IoCopyOutline, IoExpandOutline } from 'react-icons/io5';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
 import type { ParsedMarkdownTable } from '@/modules/ai/utilities/message-content';
 import type { UIMessage } from 'ai';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';

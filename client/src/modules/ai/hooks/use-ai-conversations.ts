@@ -1,6 +1,6 @@
 import { conversationQuery, invalidateConversationsQueries } from '@/modules/ai/hooks/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import type { CreateAIConversationParams } from '@/modules/ai/api/service';
 import { useNavigate } from 'react-router-dom';

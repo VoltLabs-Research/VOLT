@@ -1,11 +1,11 @@
 import service from '@/modules/early-access/api/service';
-import { createMutation } from '@/shared/infrastructure/query';
+import { createMutation } from '@/shared/query';
 import type {
-    CreateEarlyAccessSubscriptionInputDTO,
-    CreateEarlyAccessSubscriptionOutputDTO
+    CreateEarlyAccessSubscriptionInput,
+    CreateEarlyAccessSubscriptionResponse
 } from '@/modules/early-access/api/service';
 
 export const useCreateEarlyAccessSubscriptionMutation = createMutation<
-    CreateEarlyAccessSubscriptionOutputDTO,
-    CreateEarlyAccessSubscriptionInputDTO
+    CreateEarlyAccessSubscriptionResponse,
+    CreateEarlyAccessSubscriptionInput
 >(service.createSubscription);

@@ -1,6 +1,6 @@
-import { ClusterStatus } from '@/modules/cluster/api/entities/cluster-metrics';
-import { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import { ClusterStatus } from '@/modules/cluster/api/types/cluster-metrics';
+import { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
 
 export enum ClusterLiveMetricsLabel {
     Healthy = 'Active',

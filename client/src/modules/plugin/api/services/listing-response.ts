@@ -1,6 +1,6 @@
-import type { PaginationMeta } from '@/shared/domain/pagination/PaginationResponse';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
-import type { GetPluginListingOutputDTO } from '@/modules/plugin/api/services/listing-service';
+import type { PaginationMeta } from '@/shared/pagination/PaginationResponse';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
+import type { GetPluginListingResponse } from '@/modules/plugin/api/services/listing-service';
 
 export interface RawListingData {
     data: ListingRow[];
@@ -8,7 +8,7 @@ export interface RawListingData {
     page: number;
     totalPages: number;
     limit: number;
-    _meta?: GetPluginListingOutputDTO['_meta'];
+    _meta?: GetPluginListingResponse['_meta'];
 }
 
 export interface RawListingResponse {
@@ -17,7 +17,7 @@ export interface RawListingResponse {
     pagination?: PaginationMeta;
 }
 
-export const mapRawListingResponse = (result: RawListingResponse): GetPluginListingOutputDTO => {
+export const mapRawListingResponse = (result: RawListingResponse): GetPluginListingResponse => {
     const inner = result.data;
     const pagination: PaginationMeta = {
         page: inner.page,

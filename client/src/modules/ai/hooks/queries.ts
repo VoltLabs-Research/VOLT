@@ -1,6 +1,6 @@
 import service from '../api/service';
-import { buildKeys, createPaginatedQuery, createQuery } from '@/shared/infrastructure/query';
-import type { AIConversation } from '@/modules/ai/api/entities/ai-conversation';
+import { buildKeys, createPaginatedQuery, createQuery } from '@/shared/query';
+import type { AIConversation } from '@/modules/ai/api/types/ai-conversation';
 import type {
     CreateAIConversationParams,
     ListAIConversationMessagesParams,

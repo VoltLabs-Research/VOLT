@@ -2,7 +2,7 @@ import './ArgumentDefinitionSection.css';
 import {
     ArgumentType,
     ArgumentVisibilityOperator
-} from '@/modules/plugin/api/entities/plugin/workflow-enums';
+} from '@/modules/plugin/api/types/plugin/workflow-enums';
 import {
     createDefaultArgumentDefinition,
     isPluginReferenceArgumentType
@@ -26,8 +26,8 @@ import {
     parseValueMapInput
 } from './argument-definition-helpers';
 import type { ArgumentFieldChangeEvent, ArgumentFieldProps } from './argument-field.types';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import FormSection from '@/shared/presentation/components/FormSection';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import FormSection from '@/shared/ui/components/FormSection';
 import { DashedActionBox, Row, Select, Stack, Tag, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
@@ -37,7 +37,7 @@ import type {
     IArgumentOption,
     IPluginReferenceArgumentMapping,
     IArgumentVisibilityCondition
-} from '@/modules/plugin/api/entities/plugin/workflow';
+} from '@/modules/plugin/api/types/plugin/workflow';
 
 interface ArgumentDefinitionSectionProps {
     arguments: IArgumentDefinition[];

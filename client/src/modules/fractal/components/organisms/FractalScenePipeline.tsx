@@ -7,15 +7,15 @@ import DynamicEffects from '@/modules/fractal/components/molecules/DynamicEffect
 import DynamicEnvironment from '@/modules/fractal/components/molecules/DynamicEnvironment';
 import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights';
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
-import { LightingPreset } from '@/shared/domain/rendering/lights';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { LightingPreset } from '@/shared/rendering/lights';
+import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
-import { DprMode } from '@/shared/domain/rendering/performance';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
+import { DprMode } from '@/shared/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';

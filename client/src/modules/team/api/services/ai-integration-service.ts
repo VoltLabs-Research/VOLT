@@ -1,13 +1,13 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 
-import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { AIProvider } from '@/modules/ai/api/types/ai-provider';
 import type {
     AIProviderCatalogItem,
     TeamAIIntegration,
     TeamAIModelListItem,
     TeamAIModelMetadata,
     TeamAIProviderModelsCatalog
-} from '../entities/ai-integration/team-ai-integration';
+} from '../types/ai-integration/team-ai-integration';
 
 export interface CreateTeamAIIntegrationParams {
     apiKey?: string;
@@ -21,12 +21,12 @@ export interface CreateTeamAIIntegrationResponse {
     integration: TeamAIIntegration;
 }
 
-export type CreateTeamAIIntegrationInputDTO = {
+export type CreateTeamAIIntegrationInput = {
     teamId: string;
     provider: AIProvider;
 } & CreateTeamAIIntegrationParams;
 
-export interface DeleteTeamAIIntegrationInputDTO {
+export interface DeleteTeamAIIntegrationInput {
     teamId: string;
     provider: AIProvider;
 }
@@ -37,7 +37,7 @@ export interface ListTeamAIIntegrationModelsResponse {
     models: TeamAIModelListItem[];
 }
 
-export interface GetTeamAIIntegrationModelsInputDTO {
+export interface GetTeamAIIntegrationModelsInput {
     teamId: string;
 }
 
@@ -47,7 +47,7 @@ export interface ListTeamAIIntegrationsResponse {
     providers: AIProviderCatalogItem[];
 }
 
-export interface GetTeamAIIntegrationsInputDTO {
+export interface GetTeamAIIntegrationsInput {
     teamId: string;
 }
 
@@ -57,25 +57,25 @@ export interface UpdateTeamAIIntegrationResponse {
     integration: TeamAIIntegration;
 }
 
-export type UpdateTeamAIIntegrationInputDTO = {
+export type UpdateTeamAIIntegrationInput = {
     teamId: string;
     provider: AIProvider;
 } & UpdateTeamAIIntegrationParams;
 
 const endpoints = {
-    listByTeamId: get<GetTeamAIIntegrationsInputDTO, ListTeamAIIntegrationsResponse>(
+    listByTeamId: get<GetTeamAIIntegrationsInput, ListTeamAIIntegrationsResponse>(
         '/:teamId/ai-integrations'
     ),
-    createByProvider: post<CreateTeamAIIntegrationInputDTO, CreateTeamAIIntegrationResponse>(
+    createByProvider: post<CreateTeamAIIntegrationInput, CreateTeamAIIntegrationResponse>(
         '/:teamId/ai-integrations/:provider'
     ),
-    updateByProvider: patch<UpdateTeamAIIntegrationInputDTO, UpdateTeamAIIntegrationResponse>(
+    updateByProvider: patch<UpdateTeamAIIntegrationInput, UpdateTeamAIIntegrationResponse>(
         '/:teamId/ai-integrations/:provider'
     ),
-    deleteByProvider: del<DeleteTeamAIIntegrationInputDTO>(
+    deleteByProvider: del<DeleteTeamAIIntegrationInput>(
         '/:teamId/ai-integrations/:provider'
     ),
-    listModels: get<GetTeamAIIntegrationModelsInputDTO, ListTeamAIIntegrationModelsResponse>(
+    listModels: get<GetTeamAIIntegrationModelsInput, ListTeamAIIntegrationModelsResponse>(
         '/:teamId/ai-integrations/models'
     )
 };

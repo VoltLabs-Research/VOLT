@@ -1,4 +1,4 @@
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import CanvasEmptyState from '@/modules/plugin/components/plugin/CanvasEmptyState';
 import DebugContextPanel from '@/modules/plugin/components/plugin/DebugContextPanel';
 import DebugToolbar from '@/modules/plugin/components/plugin/DebugToolbar';

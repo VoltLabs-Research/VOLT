@@ -18,7 +18,7 @@ import PluginExposureTable from '@/modules/plugin/components/listing/PluginExpos
 import { Box, Stack } from '@voltstack/bravais';
 import type { TimelineTabOption } from '../TimelineHeader';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 import './Timeline.css';
 

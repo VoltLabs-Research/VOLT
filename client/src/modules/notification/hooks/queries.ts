@@ -4,9 +4,9 @@ import {
     buildKeys,
     createPaginatedQuery,
     withSuccess
-} from '@/shared/infrastructure/query';
-import type { MutationOptions } from '@/shared/infrastructure/query';
-import type { Notification } from '../api/entities/notification';
+} from '@/shared/query';
+import type { MutationOptions } from '@/shared/query';
+import type { Notification } from '../api/types/notification';
 
 export interface NotificationQueryParams {
     limit: number;

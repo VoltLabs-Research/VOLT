@@ -32,14 +32,14 @@ import {
 } from './workspace/toasts';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import { confirmAction, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
+import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { ChangeEvent } from 'react';
-import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
+import type { LatexFile } from '@/modules/latex/api/types/latex-file';
 
 interface UseLatexWorkspaceInput {
     documentId: string;

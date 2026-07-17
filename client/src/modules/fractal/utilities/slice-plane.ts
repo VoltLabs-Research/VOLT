@@ -1,6 +1,6 @@
 import { Plane, Quaternion, Vector3 } from 'three';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/types/scene';
 
 const DEFAULT_PLANE_GEOMETRY_NORMAL = new Vector3(0, 0, 1);
 

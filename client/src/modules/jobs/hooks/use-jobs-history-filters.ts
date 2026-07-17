@@ -1,6 +1,6 @@
-import { JobStatus } from '../api/entities/job';
+import { JobStatus } from '../api/types/job';
 import { useMemo } from 'react';
-import type { Job, TrajectoryJobGroup } from '../api/entities/job';
+import type { Job, TrajectoryJobGroup } from '../api/types/job';
 
 interface UseJobsHistoryFiltersArgs {
     groups: TrajectoryJobGroup[];

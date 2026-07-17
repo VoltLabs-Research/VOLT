@@ -1,4 +1,4 @@
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/types/job';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import { isQueuedJobStatus, isRunningJobStatus } from '@/modules/canvas/utilities/analysis-job-status';
 import { useMemo } from 'react';

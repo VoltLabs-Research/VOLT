@@ -3,7 +3,7 @@ import useAIConversationMessages from '@/modules/ai/hooks/use-ai-conversation-me
 import useAIConversations from '@/modules/ai/hooks/use-ai-conversations';
 import useAIModelSelection from '@/modules/ai/hooks/use-ai-model-selection';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useRef } from 'react';
 
 interface UseAIPageOptions {

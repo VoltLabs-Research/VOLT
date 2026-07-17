@@ -1,4 +1,4 @@
-import { FrameJobGroupStatus, JobStatus } from '@/modules/jobs/api/entities/job';
+import { FrameJobGroupStatus, JobStatus } from '@/modules/jobs/api/types/job';
 
 const JOB_STATUS_LABELS: Record<JobStatus, string> = {
     [JobStatus.Queued]: 'Queued',

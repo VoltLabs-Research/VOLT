@@ -1,16 +1,16 @@
-import { buildKeys, createQuery } from '@/shared/infrastructure/query';
+import { buildKeys, createQuery } from '@/shared/query';
 import lineStyleService from '@/modules/trajectory/api/services/line-style-service';
 
 import type {
-    GetLineModelRangesInputDTO,
-    GetLineModelRangesOutputDTO
+    GetLineModelRangesInput,
+    GetLineModelRangesResponse
 } from '@/modules/trajectory/api/services/line-style-service';
 
 const KEYS = buildKeys<{
-    lineModelRanges: GetLineModelRangesInputDTO;
+    lineModelRanges: GetLineModelRangesInput;
 }>('line-style');
 
-export const lineModelRangesQuery = createQuery<GetLineModelRangesInputDTO, GetLineModelRangesOutputDTO>(
+export const lineModelRangesQuery = createQuery<GetLineModelRangesInput, GetLineModelRangesResponse>(
     KEYS.lineModelRanges,
     (params) => lineStyleService.getRanges(params)
 );

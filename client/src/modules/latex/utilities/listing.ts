@@ -1,5 +1,5 @@
-import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
-import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
+import type { LatexFolder } from '@/modules/latex/api/types/latex-folder';
+import type { LatexDocument } from '@/modules/latex/api/types/latex-document';
 
 export enum LatexListingRowType {
     Folder = 'folder',

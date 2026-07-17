@@ -1,5 +1,5 @@
 import useExpressionEvaluator from './use-expression-evaluator';
-import type { GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 
 export interface UseExpressionSelectResult {
     matchCount: number | null;
@@ -16,7 +16,7 @@ export interface UseExpressionSelectResult {
  */
 const useExpressionSelect = (
     expression: string,
-    atomBuffer: GetAtomsOutputDTO | null | undefined,
+    atomBuffer: GetAtomsResponse | null | undefined,
     frameIndex?: number,
     cellVolume?: number
 ): UseExpressionSelectResult => {

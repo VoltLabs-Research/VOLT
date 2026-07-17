@@ -4,7 +4,7 @@ import {
     type UseQueryOptions
 } from '@tanstack/react-query';
 import { createEntityCacheResource } from '@/shared/api/query-resources';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
@@ -17,30 +17,30 @@ import {
     patchPaginatedPage,
     patchInfinitePages,
     batchInvalidateQueries
-} from '@/shared/infrastructure/query/cache-utils';
-import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/query';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+} from '@/shared/query/cache-utils';
+import { createMutation, createQuery, buildKeys } from '@/shared/query';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import pluginService from '../../api/services/plugin-service';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import type { RegistrySearchResponse } from '@/modules/plugin/api/entities/plugin/registry';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { RegistrySearchResponse } from '@/modules/plugin/api/types/plugin/registry';
 import type {
-    ClonePluginInputDTO,
-    DeletePluginInputDTO,
-    ExecutePipelineInputDTO,
-    ExecutePipelineOutputDTO,
-    ExportAnalysisResultsInputDTO,
-    ExportPluginInputDTO,
-    GetPluginInputDTO,
-    GetPluginsInputDTO,
-    ImportPluginInputDTO,
-    InstallRegistryPluginInputDTO,
-    ListPluginTeamClustersInputDTO,
-    ListPluginTeamClustersOutputDTO,
-    SavePluginInputDTO,
-    SearchRegistryInputDTO,
-    UpdatePluginInputDTO,
-    UploadBinaryInputDTO,
-    UploadBinaryOutputDTO
+    ClonePluginInput,
+    DeletePluginInput,
+    ExecutePipelineInput,
+    ExecutePipelineResponse,
+    ExportAnalysisResultsInput,
+    ExportPluginInput,
+    GetPluginInput,
+    GetPluginsInput,
+    ImportPluginInput,
+    InstallRegistryPluginInput,
+    ListPluginTeamClustersInput,
+    ListPluginTeamClustersResponse,
+    SavePluginInput,
+    SearchRegistryInput,
+    UpdatePluginInput,
+    UploadBinaryInput,
+    UploadBinaryResponse
 } from '../../api/services/plugin-service';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
@@ -48,11 +48,11 @@ type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<
 const pluginBaseKeys = buildKeys<{
     all: void;
     byId: void;
-    pluginById: GetPluginInputDTO;
+    pluginById: GetPluginInput;
 }>('plugins');
 
 const catalogKeys = buildKeys<{
-    list: GetPluginsInputDTO;
+    list: GetPluginsInput;
 }>(['plugins', 'catalog']);
 
 const catalogInfiniteKeys = buildKeys<{
@@ -60,11 +60,11 @@ const catalogInfiniteKeys = buildKeys<{
 }>(['plugins', 'catalog', 'infinite']);
 
 const teamClusterKeys = buildKeys<{
-    list: ListPluginTeamClustersInputDTO;
+    list: ListPluginTeamClustersInput;
 }>(['plugins', 'team-clusters']);
 
 const registrySearchKeys = buildKeys<{
-    list: SearchRegistryInputDTO;
+    list: SearchRegistryInput;
 }>(['plugins', 'registry', 'search']);
 
 export const PLUGIN_QUERY_KEYS = {
@@ -82,14 +82,14 @@ export const PLUGIN_QUERY_KEYS = {
     registrySearchList: registrySearchKeys.list
 };
 
-const savePlugin = async (input: SavePluginInputDTO): Promise<Plugin> => {
+const savePlugin = async (input: SavePluginInput): Promise<Plugin> => {
     if (input._id) {
         return pluginService.update({ _id: input._id, workflow: input.workflow });
     }
     return pluginService.create({ workflow: input.workflow });
 };
 
-export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => {
+export const buildPluginByIdQueryOptions = (params: GetPluginInput) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
     const trajectoryId = accessState.trajectoryId ?? '';
@@ -100,7 +100,7 @@ export const buildPluginByIdQueryOptions = (params: GetPluginInputDTO) => {
 };
 
 export const fetchPluginById = (
-    params: GetPluginInputDTO,
+    params: GetPluginInput,
     options?: { staleTime?: number }
 ) => {
     return queryClient.fetchQuery<Plugin>({
@@ -110,7 +110,7 @@ export const fetchPluginById = (
 };
 
 export const usePluginByIdQuery = (
-    params: GetPluginInputDTO,
+    params: GetPluginInput,
     options?: QueryOptions<Plugin, Plugin>
 ) => {
     return useQuery<Plugin, Error, Plugin, QueryKey>({
@@ -119,35 +119,35 @@ export const usePluginByIdQuery = (
     });
 };
 
-const pluginsQuery = createQuery<GetPluginsInputDTO, PaginatedResponse<Plugin>>(
+const pluginsQuery = createQuery<GetPluginsInput, PaginatedResponse<Plugin>>(
     (params) => PLUGIN_QUERY_KEYS.catalogList(params),
     (params) => pluginService.getAll(params)
 );
 
-export const fetchPlugins = (params: GetPluginsInputDTO) => pluginsQuery.fetch(params);
+export const fetchPlugins = (params: GetPluginsInput) => pluginsQuery.fetch(params);
 
 export const usePluginsCatalogQuery = (
-    params: GetPluginsInputDTO,
+    params: GetPluginsInput,
     options?: QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>>
 ) => pluginsQuery(params, options as QueryOptions<PaginatedResponse<Plugin>, PaginatedResponse<Plugin>> | undefined);
 
-const teamClustersQuery = createQuery<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>(
+const teamClustersQuery = createQuery<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>(
     (params) => PLUGIN_QUERY_KEYS.teamClustersList(params),
     (params) => pluginService.listTeamClusters(params)
 );
 
 export const usePluginTeamClustersQuery = (
-    params: ListPluginTeamClustersInputDTO,
-    options?: QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO>
-) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersOutputDTO, ListPluginTeamClustersOutputDTO> | undefined);
+    params: ListPluginTeamClustersInput,
+    options?: QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse>
+) => teamClustersQuery(params, options as QueryOptions<ListPluginTeamClustersResponse, ListPluginTeamClustersResponse> | undefined);
 
-const registrySearchQuery = createQuery<SearchRegistryInputDTO, RegistrySearchResponse>(
+const registrySearchQuery = createQuery<SearchRegistryInput, RegistrySearchResponse>(
     (params) => PLUGIN_QUERY_KEYS.registrySearchList(params),
     (params) => pluginService.searchRegistry(params)
 );
 
 export const useRegistrySearchQuery = (
-    params: SearchRegistryInputDTO,
+    params: SearchRegistryInput,
     options?: QueryOptions<RegistrySearchResponse, RegistrySearchResponse>
 ) => registrySearchQuery(params, options as QueryOptions<RegistrySearchResponse, RegistrySearchResponse> | undefined);
 
@@ -205,42 +205,42 @@ const managePluginEntityMutation = <TVariables, TData = Plugin>(
     await invalidatePluginEntityQueries();
 });
 
-export const useSavePluginMutation = managePluginEntityMutation<SavePluginInputDTO>(
+export const useSavePluginMutation = managePluginEntityMutation<SavePluginInput>(
     savePlugin,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useDeletePluginMutation = managePluginEntityMutation<DeletePluginInputDTO, void>(
+export const useDeletePluginMutation = managePluginEntityMutation<DeletePluginInput, void>(
     pluginService.delete,
     (_data, { _id }) => removePluginEntityCaches(_id)
 );
 
-export const useExportPluginMutation = createMutation<Blob, ExportPluginInputDTO>(pluginService.exportPlugin);
+export const useExportPluginMutation = createMutation<Blob, ExportPluginInput>(pluginService.exportPlugin);
 
-export const useImportPluginMutation = managePluginEntityMutation<ImportPluginInputDTO>(
+export const useImportPluginMutation = managePluginEntityMutation<ImportPluginInput>(
     pluginService.importPlugin,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useInstallRegistryPluginMutation = managePluginEntityMutation<InstallRegistryPluginInputDTO>(
+export const useInstallRegistryPluginMutation = managePluginEntityMutation<InstallRegistryPluginInput>(
     pluginService.installRegistryPlugin,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useExecutePipelineMutation = createMutation<ExecutePipelineOutputDTO, ExecutePipelineInputDTO>(pluginService.executePipeline);
+export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineInput>(pluginService.executePipeline);
 
-export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInputDTO>(
+export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInput>(
     pluginService.clone,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginInputDTO>(
+export const useUpdatePluginMutation = managePluginEntityMutation<UpdatePluginInput>(
     pluginService.update,
     (plugin) => syncPluginEntityCaches(plugin)
 );
 
-export const useUploadBinaryMutation = createMutation<UploadBinaryOutputDTO, UploadBinaryInputDTO>(pluginService.uploadBinary);
+export const useUploadBinaryMutation = createMutation<UploadBinaryResponse, UploadBinaryInput>(pluginService.uploadBinary);
 
 export const useDeleteBinaryMutation = createMutation<void, { pluginId: string }>(pluginService.deleteBinary);
 
-export const useExportAnalysisResultsMutation = createMutation<Blob, ExportAnalysisResultsInputDTO>(pluginService.exportAnalysisResults);
+export const useExportAnalysisResultsMutation = createMutation<Blob, ExportAnalysisResultsInput>(pluginService.exportAnalysisResults);

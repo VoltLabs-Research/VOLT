@@ -1,12 +1,12 @@
 import { decodeAtomsBinary } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
 import type { ServiceExecutionContext } from '@voltstack/voltclient';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 
 export const getAtomsBinary = async (
     { getClient }: ServiceExecutionContext,
-    params: GetAtomsInputDTO
-): Promise<GetAtomsOutputDTO> => {
+    params: GetAtomsInput
+): Promise<GetAtomsResponse> => {
     const blob = await getClient().request<Blob>(
         'GET',
         `/${params.trajectoryId}/frame/${params.timestep}/atoms`,

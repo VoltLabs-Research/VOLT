@@ -5,7 +5,7 @@ import { Row } from '@voltstack/bravais';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utilities/decode-atoms-binary';
 
-import type { AtomData, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { AtomData, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import formatAtomValue from '@/modules/trajectory/shared/format-atom-value';
 
 interface PluginAtomsTableProps {
@@ -54,7 +54,7 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         error
     } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, { enabled });
 
-    const aosCacheRef = useRef(new WeakMap<GetAtomsOutputDTO, AtomData[]>());
+    const aosCacheRef = useRef(new WeakMap<GetAtomsResponse, AtomData[]>());
 
     const rows: AtomData[] = useMemo(() => {
         if (!infiniteData?.pages) return [];

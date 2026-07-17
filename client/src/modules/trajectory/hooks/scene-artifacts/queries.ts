@@ -1,16 +1,16 @@
 import { useQueries } from '@tanstack/react-query';
-import { buildKeys, createQuery } from '@/shared/infrastructure/query';
-import { snapshotQueries } from '@/shared/infrastructure/query/cache-utils';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { buildKeys, createQuery } from '@/shared/query';
+import { snapshotQueries } from '@/shared/query/cache-utils';
+import queryClient from '@/shared/query/query-client';
 import {
     currentCanvasDataAccess,
     currentAccessKey
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
-import type { SceneArtifact } from '../../api/entities/scene-artifacts/scene-artifact';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
+import type { SceneArtifact } from '../../api/types/scene-artifacts/scene-artifact';
 import type {
-    ListSceneArtifactsInputDTO,
+    ListSceneArtifactsInput,
     RenderableExposurePayload
 } from '../../api/services/scene-artifacts-service';
 
@@ -19,7 +19,7 @@ type SceneArtifactsPage = PaginatedResponse<SceneArtifact | RenderableExposurePa
 const BASE_KEY = 'trajectory';
 
 const KEYS = buildKeys<{
-    sceneArtifacts: ListSceneArtifactsInputDTO;
+    sceneArtifacts: ListSceneArtifactsInput;
 }>(BASE_KEY);
 
 export const SCENE_ARTIFACTS_QUERY_KEYS = {
@@ -75,10 +75,10 @@ const removeAnalysisItemsFromSceneArtifactPage = (
     };
 };
 
-const getSceneArtifactsKey = (params: ListSceneArtifactsInputDTO) =>
+const getSceneArtifactsKey = (params: ListSceneArtifactsInput) =>
     currentAccessKey(KEYS.sceneArtifacts(params));
 
-const fetchSceneArtifacts = (params: ListSceneArtifactsInputDTO): Promise<SceneArtifactsPage> => {
+const fetchSceneArtifacts = (params: ListSceneArtifactsInput): Promise<SceneArtifactsPage> => {
     return currentCanvasDataAccess().listSceneArtifacts(params);
 };
 
@@ -117,7 +117,7 @@ export const removeSceneArtifactsForAnalysisFromCache = (analysisId: string): vo
 
 export const buildSceneArtifactsQueryOptions = sceneArtifactsQuery.buildOptions;
 
-export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInputDTO[]) => {
+export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInput[]) => {
     return useQueries({
         queries: paramsList.map((params) => ({
             ...sceneArtifactsQuery.buildOptions(params),

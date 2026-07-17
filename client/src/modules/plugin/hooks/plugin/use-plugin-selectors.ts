@@ -1,8 +1,8 @@
 import { useMemo, useCallback } from 'react';
 import { usePluginCatalogQuery } from './catalog-query';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import { PluginStatus } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
 
 export interface RenderableExposure {
     pluginId: string;

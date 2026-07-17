@@ -1,4 +1,4 @@
-import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { PluginStatus } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
     getPluginReferenceValue,
@@ -11,8 +11,8 @@ import { useCallback, useMemo } from 'react';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection
-} from '@/modules/plugin/api/entities/plugin/workflow';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
+} from '@/modules/plugin/api/types/plugin/workflow';
+import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
 
 interface PluginConfigFieldProps {
     argument: IArgumentDefinition;

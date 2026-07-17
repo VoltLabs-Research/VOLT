@@ -1,31 +1,31 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { TeamInvitation } from '../entities/invitation/team-invitation';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { TeamInvitation } from '../types/invitation/team-invitation';
 
-export interface AcceptInvitationInputDTO {
+export interface AcceptInvitationInput {
     invitationId: string;
     teamId?: string;
 }
 
-export interface CancelInvitationInputDTO {
+export interface CancelInvitationInput {
     teamId: string;
     invitationId: string;
 }
 
-export interface GetInvitationDetailsInputDTO {
+export interface GetInvitationDetailsInput {
     invitationId: string;
 }
 
-export interface GetPendingInvitationsInputDTO {
+export interface GetPendingInvitationsInput {
     teamId: string;
 }
 
-export interface RejectInvitationInputDTO {
+export interface RejectInvitationInput {
     invitationId: string;
     teamId?: string;
 }
 
-export interface SendInvitationInputDTO {
+export interface SendInvitationInput {
     teamId: string;
     email: string;
     roleId?: string;
@@ -44,10 +44,10 @@ const isPendingInvitationsPage = (value: unknown): value is PendingInvitationsPa
 };
 
 const endpoints = {
-    getDetails: get<GetInvitationDetailsInputDTO, TeamInvitation>(
+    getDetails: get<GetInvitationDetailsInput, TeamInvitation>(
         '/:invitationId', { client: 'invitations' }
     ),
-    getPending: get<GetPendingInvitationsInputDTO, TeamInvitation[]>(
+    getPending: get<GetPendingInvitationsInput, TeamInvitation[]>(
         '/:teamId/invitations?status=pending', {
             client: 'team',
             map: (result) => {
@@ -59,16 +59,16 @@ const endpoints = {
             }
         }
     ),
-    send: post<SendInvitationInputDTO, void>(
+    send: post<SendInvitationInput, void>(
         '/:teamId/invitations', { client: 'team', unwrap: 'void' }
     ),
-    cancel: del<CancelInvitationInputDTO>(
+    cancel: del<CancelInvitationInput>(
         '/:teamId/invitations/:invitationId', { client: 'team' }
     ),
-    accept: patch<AcceptInvitationInputDTO, void>(
+    accept: patch<AcceptInvitationInput, void>(
         '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
     ),
-    reject: patch<RejectInvitationInputDTO, void>(
+    reject: patch<RejectInvitationInput, void>(
         '/:invitationId/status', { client: 'invitations', unwrap: 'void' }
     )
 };

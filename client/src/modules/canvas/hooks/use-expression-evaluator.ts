@@ -1,6 +1,6 @@
 import { parse, evaluate, ExpressionError } from '@voltstack/expressions';
 import { useMemo } from 'react';
-import type { GetAtomsOutputDTO, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
+import type { GetAtomsResponse, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
 import type { AtomContext, ColumnView, DType } from '@voltstack/expressions';
 
 const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
@@ -19,7 +19,7 @@ const toColumnView = (col: AtomColumnView): ColumnView => ({
 });
 
 const buildContext = (
-    atomBuffer: GetAtomsOutputDTO,
+    atomBuffer: GetAtomsResponse,
     frameIndex: number,
     cellVolume: number
 ): AtomContext => ({
@@ -46,7 +46,7 @@ export interface UseExpressionEvaluatorResult {
  */
 const useExpressionEvaluator = (
     formula: string,
-    atomBuffer: GetAtomsOutputDTO | null | undefined,
+    atomBuffer: GetAtomsResponse | null | undefined,
     frameIndex = 0,
     cellVolume = 0
 ): UseExpressionEvaluatorResult => {

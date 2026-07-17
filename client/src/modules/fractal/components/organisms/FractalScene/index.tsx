@@ -1,12 +1,12 @@
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
 import { VisuallyHidden } from '@voltstack/bravais';
-import { resolveCanvasRuntimeProps } from '@/shared/domain/rendering/performance';
+import { resolveCanvasRuntimeProps } from '@/shared/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
 import './FractalScene.css';
 import { Canvas } from '@react-three/fiber';
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { FractalSceneConfig } from '@/modules/fractal/types/scene-config';

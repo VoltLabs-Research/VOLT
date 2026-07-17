@@ -16,7 +16,7 @@ import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
 import { emitOrSwallow, emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
-import type { ChatMessage } from '../../api/entities/message';
+import type { ChatMessage } from '../../api/types/message';
 
 const MAX_CACHED_CHAT_ROOMS = 4;
 

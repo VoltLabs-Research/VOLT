@@ -2,11 +2,11 @@ import {
     resolveOutputColorSpace,
     resolveShadowMapType,
     resolveToneMapping
-} from '@/shared/domain/rendering/renderer';
+} from '@/shared/rendering/renderer';
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 
-import type { RendererRuntimeState } from '@/shared/domain/rendering/renderer';
+import type { RendererRuntimeState } from '@/shared/rendering/renderer';
 import type { WebGLRenderer } from 'three';
 
 interface DynamicRendererProps {

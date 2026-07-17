@@ -1,5 +1,5 @@
 import { useExportPluginMutation } from './queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 import { isAccessDeniedError } from '@/shared/errors/core';

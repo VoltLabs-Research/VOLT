@@ -1,6 +1,6 @@
-import { EntrypointType, NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { EntrypointType, NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import type { NodeProps } from '@xyflow/react';
-import type { IEntrypointData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IEntrypointData } from '@/modules/plugin/api/types/plugin/workflow';
 import BaseNode from '@/modules/plugin/components/plugin/BaseNode';
 
 const EntrypointNode = (props: NodeProps) => {

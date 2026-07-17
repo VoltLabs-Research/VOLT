@@ -1,4 +1,4 @@
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { filterPropertiesQuery } from './queries';
 import type { FilterPropertiesData } from '../../api/services/particle-filter-service';
 

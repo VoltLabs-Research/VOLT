@@ -1,9 +1,9 @@
 import { canAccessByPermissions } from '@/modules/team/utilities/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { Loader } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';

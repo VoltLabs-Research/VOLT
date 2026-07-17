@@ -6,7 +6,7 @@ import {
     RENDERER_TONE_MAPPING_OPTIONS,
     ShadowType,
     ToneMappingMode
-} from '@/shared/domain/rendering/renderer';
+} from '@/shared/rendering/renderer';
 
 import { Box } from '@voltstack/bravais';
 

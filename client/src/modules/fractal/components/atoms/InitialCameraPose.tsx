@@ -6,7 +6,7 @@ import {
     getCaptureBounds
 } from '@/modules/fractal/utilities/camera-framing';
 
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { MutableRefObject } from 'react';
 

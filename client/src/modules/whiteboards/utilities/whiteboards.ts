@@ -1,4 +1,4 @@
-import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 import { reconcileElements } from '@excalidraw/excalidraw';
 
 /**

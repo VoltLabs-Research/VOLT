@@ -9,8 +9,8 @@ import type {
     AnalysisChildAnalysis,
     AnalysisStage,
     AnalysisStageStatus
-} from '@/modules/analysis/api/entities/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+} from '@/modules/analysis/api/types/analysis';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 export interface AnalysisExecutionOverlayRow {
     key: string;

@@ -1,8 +1,8 @@
 import { useMarkAllReadMutation, useNotificationsInfiniteQuery, DEFAULT_LIMIT } from './queries';
 import useNotificationSocket from './use-notification-socket';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import type { Notification } from '../api/entities/notification';
+import type { Notification } from '../api/types/notification';
 
 const useNotificationData = () => {
     useNotificationSocket();

@@ -1,9 +1,9 @@
 import { formatNetworkSpeed } from './format-network';
 import { formatUptime } from './format-uptime';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import type { ClusterMetrics } from '../api/entities/cluster-metrics';
-import type { ClusterTransferJob } from '../api/entities/team-cluster-transfer';
-import type { TeamCluster, TeamClusterRole, TeamClusterStatus } from '../api/entities/team-cluster';
+import type { ClusterMetrics } from '../api/types/cluster-metrics';
+import type { ClusterTransferJob } from '../api/types/team-cluster-transfer';
+import type { TeamCluster, TeamClusterRole, TeamClusterStatus } from '../api/types/team-cluster';
 import type { ClusterLiveMetricsLabel } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 
 export interface ServerRow {

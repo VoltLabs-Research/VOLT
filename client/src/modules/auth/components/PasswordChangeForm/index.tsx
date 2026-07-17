@@ -1,16 +1,16 @@
 import './PasswordChangeForm.css';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Callout, Box, Button } from '@voltstack/bravais';
 import { AlertCircle, Lock, Key } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ChangePasswordInputDTO, GetPasswordInfoOutputDTO } from '@/modules/auth/api/service';
+import type { ChangePasswordInput, GetPasswordInfoResponse } from '@/modules/auth/api/service';
 import type { PasswordChangeForm as PasswordChangeFormType } from './validation-schema';
 
 interface PasswordChangeFormProps {
-    passwordInfo: GetPasswordInfoOutputDTO | null;
+    passwordInfo: GetPasswordInfoResponse | null;
     isOpen: boolean;
-    onSubmit: (data: ChangePasswordInputDTO) => Promise<void>;
+    onSubmit: (data: ChangePasswordInput) => Promise<void>;
     onCancel: () => void;
 }
 

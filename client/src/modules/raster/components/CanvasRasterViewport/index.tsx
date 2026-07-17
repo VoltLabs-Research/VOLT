@@ -1,14 +1,14 @@
 import { useRasterWorkspace } from '@/modules/raster/hooks/use-raster-workspace';
 import { createDefaultRasterContainerSelection, createInitialRasterContainerSelections } from '@/modules/raster/types/container-selection';
 import { EmptyState, Loader, Row, Stack, Text } from '@voltstack/bravais';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { ImageOff } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/types/container-selection';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 import './CanvasRasterViewport.css';
 

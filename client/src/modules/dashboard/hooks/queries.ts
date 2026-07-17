@@ -1,9 +1,9 @@
 import service from '../api/service';
-import { buildKeys, createQuery } from '@/shared/infrastructure/query';
-import type { GlobalSearchInputDTO } from '@/modules/dashboard/api/service';
+import { buildKeys, createQuery } from '@/shared/query';
+import type { GlobalSearchInput } from '@/modules/dashboard/api/service';
 
 interface DashboardQueryKeys {
-    globalSearch: GlobalSearchInputDTO;
+    globalSearch: GlobalSearchInput;
     metrics: void;
 }
 

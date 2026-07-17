@@ -3,7 +3,7 @@ import { getCustomImageValidationError } from '../../utilities/container-form';
 import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
 import { useStepper } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Heading, Modal, closeModal, openModal, Row, Stack, Stepper, Text } from '@voltstack/bravais';
 import type { StepIndicator } from '@voltstack/bravais';
 import { ArrowLeft } from 'lucide-react';

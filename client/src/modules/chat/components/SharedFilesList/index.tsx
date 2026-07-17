@@ -1,8 +1,8 @@
-import { ChatMessageType } from '@/modules/chat/api/entities/message';
+import { ChatMessageType } from '@/modules/chat/api/types/message';
 import { formatDistanceToNow } from 'date-fns';
-import FileAttachment from '@/shared/presentation/components/FileAttachment';
+import FileAttachment from '@/shared/ui/components/FileAttachment';
 import { Box, Stack, Text } from '@voltstack/bravais';
-import type { ChatMessage } from '@/modules/chat/api/entities/message';
+import type { ChatMessage } from '@/modules/chat/api/types/message';
 import './SharedFilesList.css';
 
 interface SharedFilesListProps {

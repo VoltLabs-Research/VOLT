@@ -1,4 +1,4 @@
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/types/job';
 import { getJobStatusLabel } from '@/modules/jobs/utilities/job-status-label';
 import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
 import { Box, Button, Heading, Loader, Row, Stack, StatusBadge, Text } from '@voltstack/bravais';
@@ -8,7 +8,7 @@ import { sileo } from 'sileo';
 import { CiRedo } from 'react-icons/ci';
 import { IoCheckmark, IoCloseOutline, IoTimeOutline, IoWarningOutline } from 'react-icons/io5';
 import type { ReactNode } from 'react';
-import type { Job } from '@/modules/jobs/api/entities/job';
+import type { Job } from '@/modules/jobs/api/types/job';
 
 interface JobQueueProps {
     job: Job;

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
+import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/types/model';
 import { Plane } from 'three';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utilities/resource-disposal';
 import { debugFractal, warnFractal } from '@/modules/fractal/utilities/debug-log';
-import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
-import type { SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
+import type { SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import { ModelTransform } from '@/modules/fractal/utilities/model-transform';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
 import {

@@ -21,7 +21,7 @@ import {
     upsertAnalysisFromSocketPayload
 } from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import {
     cancelSceneArtifactCacheQueries,
     invalidateSceneArtifacts,
@@ -34,20 +34,20 @@ import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useCanvasCanCollaborate } from '@/modules/canvas/api/access';
 import useRetryFailedFrames from '@/modules/analysis/hooks/use-retry-failed-frames';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { usePendingPluginExecutionsStore } from '../stores/use-pending-plugin-executions-store';
 import { DEFAULT_SCENE } from '@/modules/fractal/utilities/scene-utils';
-import { restoreQueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
+import { restoreQueryDataSnapshot } from '@/shared/query/cache-utils';
 
 import type { ExposureEntry } from './use-exposure-manager';
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
-import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { SceneObjectType } from '@/modules/fractal/api/types/scene';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 
 export interface AnalysisSectionData {
     analysis: Analysis;

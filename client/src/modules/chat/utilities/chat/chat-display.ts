@@ -1,6 +1,6 @@
-import { PresenceStatus } from '../../api/entities/shared/chat-events';
-import type { Chat } from '../../api/entities/chat';
-import type { User } from '@/modules/auth/api/entities/user';
+import { PresenceStatus } from '../../api/types/shared/chat-events';
+import type { Chat } from '../../api/types/chat';
+import type { User } from '@/modules/auth/api/types/user';
 
 export const getOtherParticipant = (chat: Chat, currentUserId?: string): User | undefined => {
     return chat.participants.find((p) => p._id !== currentUserId);

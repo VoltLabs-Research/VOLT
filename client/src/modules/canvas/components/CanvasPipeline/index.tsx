@@ -13,14 +13,14 @@ import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEd
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import LineStyleStageEditor from './stage-editors/LineStyleStageEditor';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Box, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Spline, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage } from '../../stores/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../stores/canvas-pipeline';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface CanvasPipelineProps {
     trajectory?: Trajectory | null;

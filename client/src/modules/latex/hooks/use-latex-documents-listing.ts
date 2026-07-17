@@ -13,13 +13,13 @@ import {
 } from '@/modules/latex/hooks/queries';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { SOCKET_LATEX_DOCUMENT_EVENTS } from '@/modules/socket/events/latex';
-import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
-import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
-import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-listing';
+import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
+import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { FileText, FolderInput, Pencil } from 'lucide-react';
 import { useCallback } from 'react';
 import { getDeleteConfirmationMessage } from '../utilities/documents';
@@ -32,8 +32,8 @@ import {
     isLatexFolderRow,
     type LatexDocumentRow
 } from '../utilities/listing';
-import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
-import type { LatexFolder } from '@/modules/latex/api/entities/latex-folder';
+import type { LatexDocument } from '@/modules/latex/api/types/latex-document';
+import type { LatexFolder } from '@/modules/latex/api/types/latex-folder';
 import { useNavigate } from 'react-router-dom';
 
 export const RENAME_LATEX_DOCUMENT_MODAL_ID = 'rename-latex-document-modal';

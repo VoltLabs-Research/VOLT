@@ -1,12 +1,12 @@
-import { PresenceStatus } from '@/modules/chat/api/entities/shared/chat-events';
+import { PresenceStatus } from '@/modules/chat/api/types/shared/chat-events';
 import { getChatDisplayName, getChatStatusText } from '@/modules/chat/utilities/chat/chat-display';
 import ChatAvatar from '../ChatAvatar';
 import SharedFilesList from '../SharedFilesList';
 import { IoChatbubblesOutline, IoPeopleOutline } from 'react-icons/io5';
 import { Box, Button, SectionLabel, Stack, Text, EmptyState } from '@voltstack/bravais';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import type { Chat } from '@/modules/chat/api/entities/chat';
-import type { ChatMessage } from '@/modules/chat/api/entities/message';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
+import type { Chat } from '@/modules/chat/api/types/chat';
+import type { ChatMessage } from '@/modules/chat/api/types/message';
 import './ChatDetailsPanel.css';
 
 interface ChatDetailsPanelProps {

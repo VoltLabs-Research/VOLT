@@ -1,4 +1,4 @@
-import type { TeamAIModelListItem } from '@/modules/team/api/entities/ai-integration/team-ai-integration';
+import type { TeamAIModelListItem } from '@/modules/team/api/types/ai-integration/team-ai-integration';
 import type { SelectOption } from '@voltstack/bravais';
 
 export const toAIModelSelectOptions = (models: TeamAIModelListItem[]): SelectOption[] => {

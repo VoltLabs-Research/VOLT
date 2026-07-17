@@ -1,6 +1,6 @@
 import { Box, Modal, closeModal } from '@voltstack/bravais';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import type { KeyboardEvent } from 'react';
 import './EditMessageModal.css';
 

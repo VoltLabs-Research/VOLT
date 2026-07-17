@@ -6,8 +6,8 @@ import {
     resolveScreenshotSize
 } from '@/modules/canvas/utilities/screenshot';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
 import { useMemo, useState } from 'react';
 

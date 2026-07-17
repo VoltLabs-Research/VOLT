@@ -1,8 +1,8 @@
 import rasterService from '@/modules/raster/api/service';
 import useTeamJobsStore from '@/modules/jobs/stores/use-team-jobs-store';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-import { buildKeys, createQuery } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { buildKeys, createQuery } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
 import { useMutation } from '@tanstack/react-query';
 import {
     currentCanvasDataAccess,

@@ -1,41 +1,41 @@
 import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
-import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from './entities/team-cluster';
-import type { ClusterTransferJob, ClusterTransferJobState } from './entities/team-cluster-transfer';
+import type { ClusterResourceLimits } from '@/modules/container/api/types/cluster-resource-limits';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from './types/team-cluster';
+import type { ClusterTransferJob, ClusterTransferJobState } from './types/team-cluster-transfer';
 
-export interface CreateTeamClusterInputDTO {
+export interface CreateTeamClusterInput {
     teamId: string;
     name: string;
 }
 
-export interface CreateTeamClusterOutputDTO {
+export interface CreateTeamClusterResponse {
     teamCluster: TeamCluster;
     enrollmentToken: string;
 }
 
-export interface CreateTeamClusterTransferRequestInputDTO {
+export interface CreateTeamClusterTransferRequestInput {
     teamId: string;
     teamClusterId: string;
     destinationClusterId: string;
 }
 
-export interface CreateTeamClusterTransferRequestOutputDTO {
+export interface CreateTeamClusterTransferRequestResponse {
     message: string;
     sourceClusterId: string;
     destinationClusterId: string;
     requestedJobs: ClusterTransferJob[];
 }
 
-export interface DeleteTeamClusterInputDTO {
+export interface DeleteTeamClusterInput {
     teamId: string;
     teamClusterId: string;
     password: string;
 }
 
-export interface DeleteTeamClusterOutputDTO {
+export interface DeleteTeamClusterResponse {
     success: boolean;
     deleted: boolean;
     manualUninstallRequired: boolean;
@@ -44,33 +44,33 @@ export interface DeleteTeamClusterOutputDTO {
     teamCluster?: TeamCluster;
 }
 
-export interface DeleteDemoTeamClusterInputDTO {
+export interface DeleteDemoTeamClusterInput {
     teamId: string;
 }
 
-export interface DeleteDemoTeamClusterOutputDTO {
+export interface DeleteDemoTeamClusterResponse {
     teardownScheduled: boolean;
 }
 
-export interface GetTeamClusterResourceLimitsInputDTO {
+export interface GetTeamClusterResourceLimitsInput {
     teamId: string;
     teamClusterId: string;
 }
 
-export interface GetTeamClusterResourceLimitsOutputDTO {
+export interface GetTeamClusterResourceLimitsResponse {
     resourceLimits: ClusterResourceLimits;
 }
 
-export interface ListTeamClustersInputDTO {
+export interface ListTeamClustersInput {
     teamId: string;
     page?: number;
     limit?: number;
     search?: string;
 }
 
-export type ListTeamClustersOutputDTO = PaginatedResponse<TeamCluster>;
+export type ListTeamClustersResponse = PaginatedResponse<TeamCluster>;
 
-export interface ListTeamClusterTransferJobsInputDTO {
+export interface ListTeamClusterTransferJobsInput {
     teamId: string;
     teamClusterId: string;
     page?: number;
@@ -78,29 +78,29 @@ export interface ListTeamClusterTransferJobsInputDTO {
     state?: ClusterTransferJobState;
 }
 
-export type ListTeamClusterTransferJobsOutputDTO = PaginatedResponse<ClusterTransferJob>;
+export type ListTeamClusterTransferJobsResponse = PaginatedResponse<ClusterTransferJob>;
 
-export interface RegenerateTeamClusterEnrollmentTokenInputDTO {
+export interface RegenerateTeamClusterEnrollmentTokenInput {
     teamId: string;
     teamClusterId: string;
 }
 
-export interface RegenerateTeamClusterEnrollmentTokenOutputDTO {
+export interface RegenerateTeamClusterEnrollmentTokenResponse {
     enrollmentToken: string;
 }
 
-export interface RevealTeamClusterCredentialsInputDTO {
+export interface RevealTeamClusterCredentialsInput {
     teamId: string;
     teamClusterId: string;
     password: string;
 }
 
-export interface RevealTeamClusterCredentialsOutputDTO {
+export interface RevealTeamClusterCredentialsResponse {
     teamClusterId: string;
     services: TeamClusterCredentialServices;
 }
 
-export interface TeamClusterQueueConcurrencyInputDTO {
+export interface TeamClusterQueueConcurrencyInput {
     analysis: number;
     rasterizer: number;
     glbPreprocessing: number;
@@ -108,46 +108,46 @@ export interface TeamClusterQueueConcurrencyInputDTO {
     pluginWarmup: number;
 }
 
-export interface TeamClusterQueueScopeLimitInputDTO {
+export interface TeamClusterQueueScopeLimitInput {
     maxRunningPerTrajectory: number;
 }
 
-export interface TeamClusterQueueScopeLimitsInputDTO {
-    analysisProcessing: TeamClusterQueueScopeLimitInputDTO;
-    artifactUpload: TeamClusterQueueScopeLimitInputDTO;
-    trajectoryRasterization: TeamClusterQueueScopeLimitInputDTO;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimitInputDTO;
+export interface TeamClusterQueueScopeLimitsInput {
+    analysisProcessing: TeamClusterQueueScopeLimitInput;
+    artifactUpload: TeamClusterQueueScopeLimitInput;
+    trajectoryRasterization: TeamClusterQueueScopeLimitInput;
+    trajectoryGlbConversion: TeamClusterQueueScopeLimitInput;
 }
 
-export interface UpdateTeamClusterQueueConcurrencyInputDTO {
+export interface UpdateTeamClusterQueueConcurrencyInput {
     teamId: string;
     teamClusterId: string;
-    queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
-    queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
+    queueConcurrency: TeamClusterQueueConcurrencyInput;
+    queueScopeLimits: TeamClusterQueueScopeLimitsInput;
 }
 
-export interface UpdateTeamClusterQueueConcurrencyOutputDTO {
+export interface UpdateTeamClusterQueueConcurrencyResponse {
     message: string;
     restartRequested: boolean;
     teamCluster: TeamCluster;
 }
 
-export interface UpdateTeamClusterRoleInputDTO {
+export interface UpdateTeamClusterRoleInput {
     teamId: string;
     teamClusterId: string;
     role: TeamClusterRole;
 }
 
-export interface UpdateTeamClusterRoleOutputDTO {
+export interface UpdateTeamClusterRoleResponse {
     message: string;
     teamCluster: TeamCluster;
 }
 
-export interface ProvisionDemoTeamClusterInputDTO {
+export interface ProvisionDemoTeamClusterInput {
     teamId: string;
 }
 
-export interface ProvisionDemoTeamClusterOutputDTO {
+export interface ProvisionDemoTeamClusterResponse {
     teamCluster: TeamCluster;
 }
 
@@ -159,34 +159,34 @@ export const requestClusterHistory = async (minutes: number | undefined, cluster
 };
 
 const teamClusterEndpoints = {
-    create: post<CreateTeamClusterInputDTO, CreateTeamClusterOutputDTO>('/:teamId/clusters'),
-    listByTeamId: paginated<ListTeamClustersInputDTO, ListTeamClustersOutputDTO>('/:teamId/clusters'),
-    deleteById: post<DeleteTeamClusterInputDTO, DeleteTeamClusterOutputDTO>('/:teamId/clusters/:teamClusterId/delete-requests'),
-    getResourceLimits: get<GetTeamClusterResourceLimitsInputDTO, GetTeamClusterResourceLimitsOutputDTO>(
+    create: post<CreateTeamClusterInput, CreateTeamClusterResponse>('/:teamId/clusters'),
+    listByTeamId: paginated<ListTeamClustersInput, ListTeamClustersResponse>('/:teamId/clusters'),
+    deleteById: post<DeleteTeamClusterInput, DeleteTeamClusterResponse>('/:teamId/clusters/:teamClusterId/delete-requests'),
+    getResourceLimits: get<GetTeamClusterResourceLimitsInput, GetTeamClusterResourceLimitsResponse>(
         '/:teamId/clusters/:teamClusterId/resource-limits'
     ),
-    revealCredentials: post<RevealTeamClusterCredentialsInputDTO, RevealTeamClusterCredentialsOutputDTO>(
+    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>(
         '/:teamId/clusters/:teamClusterId/credentials/reveal'
     ),
-    listTransferJobs: get<ListTeamClusterTransferJobsInputDTO, ListTeamClusterTransferJobsOutputDTO>(
+    listTransferJobs: get<ListTeamClusterTransferJobsInput, ListTeamClusterTransferJobsResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'
     ),
-    createTransferRequest: post<CreateTeamClusterTransferRequestInputDTO, CreateTeamClusterTransferRequestOutputDTO>(
+    createTransferRequest: post<CreateTeamClusterTransferRequestInput, CreateTeamClusterTransferRequestResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'
     ),
-    regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInputDTO, RegenerateTeamClusterEnrollmentTokenOutputDTO>(
+    regenerateEnrollmentToken: post<RegenerateTeamClusterEnrollmentTokenInput, RegenerateTeamClusterEnrollmentTokenResponse>(
         '/:teamId/clusters/:teamClusterId/enrollment-token/regenerate'
     ),
-    updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyInputDTO, UpdateTeamClusterQueueConcurrencyOutputDTO>(
+    updateQueueConcurrency: patch<UpdateTeamClusterQueueConcurrencyInput, UpdateTeamClusterQueueConcurrencyResponse>(
         '/:teamId/clusters/:teamClusterId/queue-concurrency'
     ),
-    updateRole: patch<UpdateTeamClusterRoleInputDTO, UpdateTeamClusterRoleOutputDTO>(
+    updateRole: patch<UpdateTeamClusterRoleInput, UpdateTeamClusterRoleResponse>(
         '/:teamId/clusters/:teamClusterId/role'
     ),
-    provisionDemo: post<ProvisionDemoTeamClusterInputDTO, ProvisionDemoTeamClusterOutputDTO>(
+    provisionDemo: post<ProvisionDemoTeamClusterInput, ProvisionDemoTeamClusterResponse>(
         '/:teamId/clusters/demo'
     ),
-    deleteDemo: del<DeleteDemoTeamClusterInputDTO, DeleteDemoTeamClusterOutputDTO>(
+    deleteDemo: del<DeleteDemoTeamClusterInput, DeleteDemoTeamClusterResponse>(
         '/:teamId/clusters/demo'
     )
 };

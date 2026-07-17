@@ -10,7 +10,7 @@ import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/
 import { useEffect, useMemo } from 'react';
 
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface FallbackListingExposure {
     exposureId: string;

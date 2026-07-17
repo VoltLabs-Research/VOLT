@@ -1,9 +1,9 @@
 import { createEntityCacheResource } from '@/shared/api/query-resources';
-import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery } from '@/shared/query';
 import chatService from '../../api/services/chat-service';
 import type { QueryClient } from '@tanstack/react-query';
-import type { Chat } from '../../api/entities/chat';
-import type { GetOrCreateChatInputDTO } from '../../api/services/chat-service';
+import type { Chat } from '../../api/types/chat';
+import type { GetOrCreateChatInput } from '../../api/services/chat-service';
 
 type ChatQueryKeyMap = {
     chats: void;
@@ -17,7 +17,7 @@ export const CHAT_QUERY_KEYS = {
     detail: KEYS.detail
 };
 
-export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateChatInputDTO>(chatService.getOrCreate);
+export const useGetOrCreateChatMutation = createMutation<Chat, GetOrCreateChatInput>(chatService.getOrCreate);
 
 export const chatsQuery = createQuery(KEYS.chats, () => chatService.getAll({}));
 

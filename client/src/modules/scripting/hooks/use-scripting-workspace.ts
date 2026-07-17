@@ -14,17 +14,17 @@ import {
     getJupyterStartErrorMessage,
     pickActiveNotebook
 } from '../utilities/workspace';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingNotebookDeploymentModal';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@voltstack/bravais';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ScriptingNotebook } from '../api/entities/scripting-notebook';
-import type { ScriptingSession, NotebookContainerStage } from '../api/entities/scripting-session';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ScriptingNotebook } from '../api/types/scripting-notebook';
+import type { ScriptingSession, NotebookContainerStage } from '../api/types/scripting-session';
 import type {
     ScriptingNotebookDeploymentModalRequest,
     ScriptingNotebookDeploymentSelection

@@ -1,5 +1,5 @@
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 export const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 

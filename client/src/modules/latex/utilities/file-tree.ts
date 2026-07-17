@@ -1,5 +1,5 @@
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 import { getAssetDisplayName, isFolderPlaceholderAsset } from '@/modules/latex/utilities/workspace';
 
 const FILE_TREE_NODE_ORDER: Record<FileTreeNode['type'], number> = {

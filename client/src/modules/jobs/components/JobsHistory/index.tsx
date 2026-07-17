@@ -5,7 +5,7 @@ import { EmptyState, Stack } from '@voltstack/bravais';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/api/entities/job';
+import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/api/types/job';
 
 interface JobsHistoryProps {
     trajectoryId?: string;

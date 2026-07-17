@@ -1,21 +1,21 @@
-import { createMutation } from '@/shared/infrastructure/query';
+import { createMutation } from '@/shared/query';
 import groupService from '../../api/services/group-service';
-import type { Chat } from '../../api/entities/chat';
+import type { Chat } from '../../api/types/chat';
 import type {
-    AddUsersToGroupInputDTO,
-    CreateGroupChatDTO,
-    RemoveUsersFromGroupInputDTO,
-    UpdateGroupAdminsInputDTO,
-    UpdateGroupInfoInputDTO
+    AddUsersToGroupInput,
+    CreateGroupChat,
+    RemoveUsersFromGroupInput,
+    UpdateGroupAdminsInput,
+    UpdateGroupInfoInput
 } from '../../api/services/group-service';
 
 interface LeaveGroupParams {
     chatId: string;
 }
 
-export const useCreateGroupMutation = createMutation<Chat, CreateGroupChatDTO>(groupService.createGroup);
-export const useAddUsersToGroupMutation = createMutation<Chat, AddUsersToGroupInputDTO>(groupService.addUsersToGroup);
-export const useRemoveUsersFromGroupMutation = createMutation<Chat, RemoveUsersFromGroupInputDTO>(groupService.removeUsersFromGroup);
-export const useUpdateGroupInfoMutation = createMutation<Chat, UpdateGroupInfoInputDTO>(groupService.updateGroupInfo);
-export const useUpdateGroupAdminsMutation = createMutation<Chat, UpdateGroupAdminsInputDTO>(groupService.updateGroupAdmins);
+export const useCreateGroupMutation = createMutation<Chat, CreateGroupChat>(groupService.createGroup);
+export const useAddUsersToGroupMutation = createMutation<Chat, AddUsersToGroupInput>(groupService.addUsersToGroup);
+export const useRemoveUsersFromGroupMutation = createMutation<Chat, RemoveUsersFromGroupInput>(groupService.removeUsersFromGroup);
+export const useUpdateGroupInfoMutation = createMutation<Chat, UpdateGroupInfoInput>(groupService.updateGroupInfo);
+export const useUpdateGroupAdminsMutation = createMutation<Chat, UpdateGroupAdminsInput>(groupService.updateGroupAdmins);
 export const useLeaveGroupMutation = createMutation<void, LeaveGroupParams>(groupService.leaveGroup);

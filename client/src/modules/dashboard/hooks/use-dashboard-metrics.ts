@@ -1,7 +1,7 @@
 import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
-import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
+import type { DashboardCard, DashboardMetrics } from '@/modules/dashboard/api/types/dashboard';
 
 interface DashboardYDomain {
     min: number;

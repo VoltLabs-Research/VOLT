@@ -1,5 +1,5 @@
 import { del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 
 export interface FolderCreateParams {
     title: string;

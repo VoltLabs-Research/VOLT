@@ -12,8 +12,8 @@ import {
     useProvisionDemoTeamClusterMutation,
     useTeamClustersQuery
 } from '@/modules/cluster/hooks/team-cluster/queries';
-import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import ProcessingLoader from '@/shared/ui/components/ProcessingLoader';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { sileo } from 'sileo';
 import { reportError, ErrorSurface } from '@/shared/errors/core';
 const POLL_INTERVAL_MS = 1500;

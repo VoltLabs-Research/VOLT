@@ -4,13 +4,13 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utilities/member/presence';
 import { AsyncBoundary, Avatar, Box, Button, Modal, Row, Skeleton, Stack, EmptyState, closeModal } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 import { GoArrowRight } from 'react-icons/go';
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 import { useNavigate } from 'react-router-dom';
 
 interface TeamPresenceMember {

@@ -1,7 +1,7 @@
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import { Heading, Modal, closeModal, Row, Stack, StatusBadge, Text, Select } from '@voltstack/bravais';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
 import {
     describeTeamClusterDraining,
     getTeamClusterRoleBadgeVariant,
@@ -12,12 +12,12 @@ import {
     TEAM_CLUSTER_ROLE_OPTIONS
 } from '@/modules/cluster/utilities/team-cluster-role';
 import { useEffect, useMemo, useState } from 'react';
-import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import type { UpdateTeamClusterRoleOutputDTO } from '@/modules/cluster/api/service';
+import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
+import type { UpdateTeamClusterRoleResponse } from '@/modules/cluster/api/service';
 
 interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;
-    onSave: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleOutputDTO>;
+    onSave: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleResponse>;
     onClose: () => void;
 }
 

@@ -4,17 +4,9 @@ import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-clus
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
 import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import type { ClusterPageState } from '@/modules/cluster/hooks/use-cluster-page-state';
-export interface ClusterMonitoringPageViewModel extends ClusterPageState {
-    metrics: ClusterMetrics | null;
-    history: ClusterMetrics[];
-    metricsByClusterId: Record<string, ClusterMetrics>;
-    hasClusters: boolean;
-    isMetricsConnected: boolean;
-}
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
 
-const useClusterMonitoringPage = (): ClusterMonitoringPageViewModel => {
+const useClusterMonitoringPage = () => {
     const state = useClusterPageState();
     const params = useParams<{ clusterId: string }>();
     const navigate = useNavigate();

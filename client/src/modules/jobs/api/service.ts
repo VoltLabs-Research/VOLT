@@ -1,5 +1,5 @@
 
-import type { TrajectoryJobGroup } from './entities/job';
+import type { TrajectoryJobGroup } from './types/job';
 import { createService, del, post } from '@/app/core/http/utilities/create-service';
 
 export interface RemoveRunningJobsParams {
@@ -14,7 +14,7 @@ export interface TeamClusterFailureDetail {
     message?: string;
 }
 
-export interface RemoveRunningJobsOutputDTO {
+export interface RemoveRunningJobsResponse {
     deletedJobs: number;
     deletedAnalyses: number;
     affectedClusters: number;
@@ -27,15 +27,15 @@ export interface RetryFailedJobsParams {
     trajectoryId: string;
 }
 
-export interface RetryFailedJobsOutputDTO {
+export interface RetryFailedJobsResponse {
     retriedFrames: number;
 }
 
 const endpoints = {
-    removeRunningJobs: del<RemoveRunningJobsParams, RemoveRunningJobsOutputDTO>('/:trajectoryId/running', {
+    removeRunningJobs: del<RemoveRunningJobsParams, RemoveRunningJobsResponse>('/:trajectoryId/running', {
         unwrap: 'data'
     }),
-    retryFailedJobs: post<RetryFailedJobsParams, RetryFailedJobsOutputDTO>('/:trajectoryId/failed/retries')
+    retryFailedJobs: post<RetryFailedJobsParams, RetryFailedJobsResponse>('/:trajectoryId/failed/retries')
 };
 
 export default createService({

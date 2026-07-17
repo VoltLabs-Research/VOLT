@@ -20,7 +20,7 @@ import {
 } from 'three';
 
 import type { ScreenshotRequest } from '@/modules/canvas/utilities/screenshot';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 import type { OrbitControlsHandle } from '@/modules/fractal/types';
 import type { ScreenshotComposition } from '@/modules/fractal/types/screenshot-composition';
 import type { MutableRefObject } from 'react';

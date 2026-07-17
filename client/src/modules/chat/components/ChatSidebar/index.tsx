@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { useState, useMemo } from 'react';
 import { IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { EmptyState, Skeleton, IconButton, Row, SearchInput, Stack, Text, Tooltip } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import '../ChatListSkeleton/ChatListSkeleton.css';
 import ChatListItem from '../ChatListItem';
 import TeamMemberList from '../TeamMemberList';
 import { matchesQuery } from '@/shared/utils/matches-query';
-import type { User } from '@/modules/auth/api/entities/user';
-import type { Chat } from '@/modules/chat/api/entities/chat';
+import type { User } from '@/modules/auth/api/types/user';
+import type { Chat } from '@/modules/chat/api/types/chat';
 import './ChatSidebar.css';
 
 interface ChatSidebarProps {

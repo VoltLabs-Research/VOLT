@@ -1,10 +1,10 @@
 import useCanvasRenderGroups from '../CanvasRenderSections/useCanvasRenderGroups';
 import RenderGroupSubmenuContent from './RenderGroupSubmenuContent';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Row, Tooltip } from '@voltstack/bravais';
 import { Monitor } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 
 import './RenderMenuPopover.css';
 

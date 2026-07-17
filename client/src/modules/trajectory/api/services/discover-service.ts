@@ -1,6 +1,6 @@
 import { createService, paginated } from '@/app/core/http/utilities/create-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 export interface DiscoverTeamSummary {
     _id: string;
@@ -11,21 +11,21 @@ export interface DiscoverTeamTrajectoriesMeta {
     team: DiscoverTeamSummary;
 }
 
-export interface ListPublicTeamTrajectoriesInputDTO {
+export interface ListPublicTeamTrajectoriesInput {
     teamId: string;
     page: number;
     limit: number;
     search?: string;
 }
 
-export type ListPublicTeamTrajectoriesOutputDTO = PaginatedResponse<Trajectory> & {
+export type ListPublicTeamTrajectoriesResponse = PaginatedResponse<Trajectory> & {
     _meta?: DiscoverTeamTrajectoriesMeta;
 };
 
 const endpoints = {
     listPublicTeamTrajectories: paginated<
-        ListPublicTeamTrajectoriesInputDTO,
-        ListPublicTeamTrajectoriesOutputDTO
+        ListPublicTeamTrajectoriesInput,
+        ListPublicTeamTrajectoriesResponse
     >('/:teamId/trajectories', {
         omit: ['teamId'],
         query: ({ page, limit, search }) => ({

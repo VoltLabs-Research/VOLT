@@ -8,7 +8,7 @@ import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utilities/plugin
 import { SOCKET_PLUGIN_DEBUG_EVENTS } from '@/modules/socket/events/plugin';
 import { sileo } from 'sileo';
 import { useSearchParams } from 'react-router-dom';
-import type { IWorkflow } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IWorkflow } from '@/modules/plugin/api/types/plugin/workflow';
 import type {
     DebugExecutionLogSegment,
     DebugTraceNode

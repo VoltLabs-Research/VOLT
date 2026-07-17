@@ -1,4 +1,4 @@
-import type { ScriptingSession } from '@/modules/scripting/api/entities/scripting-session';
+import type { ScriptingSession } from '@/modules/scripting/api/types/scripting-session';
 
 export interface WaitForReadyScriptingSessionOptions {
     intervalMs?: number;

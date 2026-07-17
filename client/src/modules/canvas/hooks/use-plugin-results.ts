@@ -8,11 +8,11 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
 import { isAccessDeniedError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
 
 interface UsePluginResultsOptions {
     pluginId: string;

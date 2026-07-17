@@ -6,7 +6,7 @@ import { useDeleteBinaryMutation, useUploadBinaryMutation } from '@/modules/plug
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useSearchParams } from 'react-router-dom';
 import type { EntrypointEditorFormValues } from './schema';
 

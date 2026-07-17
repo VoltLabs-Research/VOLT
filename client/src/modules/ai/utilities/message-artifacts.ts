@@ -1,5 +1,5 @@
-import { AIMessageArtifactKind } from '@/modules/ai/api/entities/ai-conversation';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import { AIMessageArtifactKind } from '@/modules/ai/api/types/ai-conversation';
+import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
 import { getBackendOrigin } from '@/app/core/http/utilities/backend-origin';
 import { isRecord } from '@/shared/utils/type-guards';
 

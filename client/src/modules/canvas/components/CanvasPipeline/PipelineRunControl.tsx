@@ -17,7 +17,7 @@ import {
     type PrerequisiteStage
 } from '../../utilities/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { useCallback, useMemo, useState } from 'react';
@@ -27,8 +27,8 @@ import type {
     PipelineStage,
     PipelineStageKind
 } from '../../stores/canvas-pipeline';
-import type { PipelineStageInputDTO } from '@/modules/plugin/api/services/plugin-service';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { PipelineStageInput } from '@/modules/plugin/api/services/plugin-service';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface PipelineRunControlProps {
     trajectory?: Trajectory | null;
@@ -38,7 +38,7 @@ interface PipelineRunControlProps {
     onClose: () => void;
 }
 
-const toStagePayload = (stage: PipelineStage): PipelineStageInputDTO | null => {
+const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
     const kind: PipelineStageKind | null = stageTypeToPipelineKind(stage.type);
     if (!kind) return null;
 
@@ -134,7 +134,7 @@ const PipelineRunControl = ({
 
         const stagePayloads = enabledOrderedStages
             .map(toStagePayload)
-            .filter((payload): payload is PipelineStageInputDTO => payload !== null);
+            .filter((payload): payload is PipelineStageInput => payload !== null);
 
         if (stagePayloads.length === 0) {
             sileo.warning({ title: 'Nothing to run', description: 'Enable at least one pipeline stage.' });

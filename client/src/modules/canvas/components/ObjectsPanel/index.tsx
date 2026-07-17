@@ -29,9 +29,9 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { MenuOption } from '@/shared/ui/types/menu';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/types/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 

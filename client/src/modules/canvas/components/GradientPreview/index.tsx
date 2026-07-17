@@ -1,4 +1,4 @@
-import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
+import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
 import { GRADIENT_CSS, formatLegendValue } from '../../utilities/gradient-legend';
 import { Box, Row } from '@voltstack/bravais';
 import { useState, useRef } from 'react';

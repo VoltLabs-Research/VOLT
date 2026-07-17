@@ -1,4 +1,4 @@
-import { PresenceStatus } from '../../api/entities/shared/chat-events';
+import { PresenceStatus } from '../../api/types/shared/chat-events';
 import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
 import { getOtherParticipant } from '../../utilities/chat/chat-display';
 import useChatData from './use-chat-data';
@@ -14,7 +14,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamMemberData from '@/modules/team/hooks/member/use-team-member-data';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 
 const useMessagesPage = (chatId?: string) => {
     const { handleSelectChat, navigateToMessages } = useChatNavigation();

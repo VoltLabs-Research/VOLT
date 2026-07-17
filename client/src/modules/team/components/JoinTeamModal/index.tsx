@@ -1,19 +1,19 @@
 import { useJoinByCodeMutation } from '@/modules/team/hooks/team/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import { runAction } from '@/shared/presentation/actions/run-action';
+import { runAction } from '@/shared/ui/actions/run-action';
 import { useState } from 'react';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal, resetModal, Text } from '@voltstack/bravais';
 import { useForm } from 'react-hook-form';
-import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
+import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
 import type { JoinTeamForm } from './validation-schema';
 
 const MODAL_ID = 'join-team-modal';
 const JOIN_TEAM_FORM_ID = 'join-team-form';
 
 interface JoinTeamModalProps {
-    onSuccess?: (result: JoinByInviteCodeOutputDTO) => void | Promise<void>;
+    onSuccess?: (result: JoinByInviteCodeResponse) => void | Promise<void>;
     onClose?: () => void;
 }
 

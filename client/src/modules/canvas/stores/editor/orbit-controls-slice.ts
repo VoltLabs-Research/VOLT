@@ -1,5 +1,5 @@
 import { resetSectionState, setSectionFieldState, mergeSectionState } from './store-section';
-import { getDefaultOrbitControlsSettings } from '@/shared/domain/rendering/camera';
+import { getDefaultOrbitControlsSettings } from '@/shared/rendering/camera';
 
 import type { EditorStore } from './types';
 import type { OrbitControlsState, OrbitControlsStore } from '@/modules/fractal/stores/contracts/editor/visual-types';

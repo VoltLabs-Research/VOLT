@@ -2,7 +2,7 @@ import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelC
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
 import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
 import { VisuallyHidden, IconButton, Row, Surface, Tooltip } from '@voltstack/bravais';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { IoAddOutline, IoExpandOutline, IoSparklesOutline } from 'react-icons/io5';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';

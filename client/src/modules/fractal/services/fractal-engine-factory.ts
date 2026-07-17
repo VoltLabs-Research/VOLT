@@ -1,9 +1,9 @@
 import type * as THREE from 'three';
 import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
 import { FractalEngine } from '@/modules/fractal/services/fractal-engine';
-import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
+import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { ModelLoadingState } from '@/modules/fractal/api/entities/model';
+import type { ModelLoadingState } from '@/modules/fractal/api/types/model';
 import type { FractalParams } from '@/modules/fractal/services/fractal-engine';
 
 interface FractalSurface {

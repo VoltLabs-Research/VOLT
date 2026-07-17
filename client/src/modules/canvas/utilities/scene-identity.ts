@@ -1,9 +1,9 @@
 import {
     ParticleFilterSceneCombinator
-} from '@/modules/fractal/api/entities/scene';
+} from '@/modules/fractal/api/types/scene';
 
-import type { LineStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { LineStyleSpec, SceneObjectType, ParticleFilterSceneCondition, SceneRenderMetadata } from '@/modules/fractal/api/types/scene';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
 
 interface MaybeParticleFilterCondition {
     property?: string;

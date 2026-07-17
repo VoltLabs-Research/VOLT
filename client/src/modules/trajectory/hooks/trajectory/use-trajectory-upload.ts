@@ -6,7 +6,7 @@ import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';
-import type { CreateTrajectoryUploadSessionOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { CreateTrajectoryUploadSessionResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import type { FileWithPath } from '@/shared/utils/file';
 
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';
@@ -88,7 +88,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
             totalBytes
         });
 
-        let session: CreateTrajectoryUploadSessionOutputDTO | null = null;
+        let session: CreateTrajectoryUploadSessionResponse | null = null;
         const authTokenSnapshot = tokenStorage.getToken();
         let commitStarted = false;
 

@@ -1,6 +1,6 @@
 import { usePendingInvitationsQuery } from '@/modules/team/hooks/invitation/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useQueryState from '@/shared/presentation/hooks/use-query-state';
+import useQueryState from '@/shared/ui/hooks/use-query-state';
 
 export default function useTeamInvitationData() {
     const teamId = useSelectedTeamId();

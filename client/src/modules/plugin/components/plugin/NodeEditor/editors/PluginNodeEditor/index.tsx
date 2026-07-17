@@ -4,7 +4,7 @@ import {
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode,
     PluginStatus
-} from '@/modules/plugin/api/entities/plugin/workflow-enums';
+} from '@/modules/plugin/api/types/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import PluginExecutionConfigFields from '@/modules/plugin/components/plugin/PluginExecutionConfigFields';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
@@ -15,8 +15,8 @@ import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { getUserConfigurableArguments } from '@/modules/plugin/utilities/plugin/argument-values';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import FormSection from '@/shared/presentation/components/FormSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormSection from '@/shared/ui/components/FormSection';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { normalizeSelectedTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
@@ -26,9 +26,9 @@ import { useSearchParams } from 'react-router-dom';
 import type {
     IArgumentDefinition,
     IPluginNodeData
-} from '@/modules/plugin/api/entities/plugin/workflow';
+} from '@/modules/plugin/api/types/plugin/workflow';
 import type { EditorProps } from '../types';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
+import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
 
 const EXECUTION_MODE_OPTIONS = [{
     value: PluginNodeExecutionMode.MANUAL,

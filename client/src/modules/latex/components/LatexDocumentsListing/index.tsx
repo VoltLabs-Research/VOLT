@@ -3,20 +3,20 @@ import useLatexDocumentsListing, {
     RENAME_LATEX_DOCUMENT_MODAL_ID,
     latexListingResource
 } from '@/modules/latex/hooks/use-latex-documents-listing';
-import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
-import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
+import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';
 import { Heading } from '@voltstack/bravais';
 import {
     FolderedDocumentListing,
     FolderedListingModals,
     createFolderedListingColumns,
     useFolderedListingDashboardBreadcrumb
-} from '@/shared/presentation/components/DocumentListing/foldered-listing';
+} from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useTip from '@/shared/tips/use-tip';
 import { Upload } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { LatexDocument } from '@/modules/latex/api/entities/latex-document';
+import type { MenuOption } from '@/shared/ui/types/menu';
+import type { LatexDocument } from '@/modules/latex/api/types/latex-document';
 import type { LatexListingRow } from '@/modules/latex/utilities/listing';
 import { isLatexFolderRow } from '@/modules/latex/utilities/listing';
 

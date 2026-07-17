@@ -19,11 +19,11 @@ import {
 import { Atom, Box } from 'lucide-react';
 import { Stack } from '@voltstack/bravais';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
 import type { CanvasAnalysisStatusEntry } from '../../utilities/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { MenuOption } from '@/shared/ui/types/menu';
+import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
 
 interface SceneCollectionProps {

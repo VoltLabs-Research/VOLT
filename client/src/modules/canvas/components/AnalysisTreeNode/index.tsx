@@ -19,7 +19,7 @@ import {
 } from '../../utilities/plugin-exposure-export';
 import { isSameScene } from '@/modules/canvas/utilities/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utilities/scene-utils';
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
@@ -45,12 +45,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
 import type { CanvasAnalysisStatus } from '../../utilities/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { Analysis, AnalysisExpectedArtifact } from '@/modules/analysis/api/entities/analysis';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { Analysis, AnalysisExpectedArtifact } from '@/modules/analysis/api/types/analysis';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import type { RasterSelectableScene } from '@/modules/raster/types/container-selection';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 
 interface AnalysisTreeNodeProps {
     section: AnalysisSectionData;

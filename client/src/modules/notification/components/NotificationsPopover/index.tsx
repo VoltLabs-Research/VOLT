@@ -2,7 +2,7 @@ import useNotificationData from '../../hooks/use-notification-data';
 import './NotificationBadge.css';
 import NotificationList from '../NotificationList';
 import { Button, IconButton, Popover, Row } from '@voltstack/bravais';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';
 import { IoNotificationsOutline } from 'react-icons/io5';
 import type { MouseEvent } from 'react';

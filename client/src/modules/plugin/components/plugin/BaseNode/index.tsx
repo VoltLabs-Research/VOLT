@@ -1,9 +1,9 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
-import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
+import DynamicIcon from '@/shared/ui/components/DynamicIcon';
 import { Box, Button, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import type { DebugTraceNode } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
-import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import {
     createReactFlowHandleStyle,
@@ -11,7 +11,7 @@ import {
     resolveNodeHandlePlacement,
     toReactFlowHandlePosition
 } from '@/modules/plugin/utilities/plugin/node-handles';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { Handle, useUpdateNodeInternals } from '@xyflow/react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Database, SkipForward, Terminal } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

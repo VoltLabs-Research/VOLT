@@ -2,7 +2,7 @@ import './ClusterOnboardingPage.css';
 import ClusterListPanel from '@/modules/cluster/components/ClusterListPanel';
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
 import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
 import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { hasUsableTeamCluster } from '@/modules/cluster/utilities/is-team-cluster-usable';
@@ -11,13 +11,13 @@ import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import { Box, Button, Heading, Modal, closeModal, openModal, Row, Stack, StatusDot, Text } from '@voltstack/bravais';
 import type { StatusDotTone } from '@voltstack/bravais';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { DeleteTeamClusterResponse } from '@/modules/cluster/api/service';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 import type { FormEvent, ReactNode } from 'react';
 
 enum OnboardingStep {
@@ -158,7 +158,7 @@ const ClusterOnboardingPage = () => {
         openModal(DELETE_CLUSTER_MODAL_ID);
     };
 
-    const handleDeleteCluster = async (password: string): Promise<DeleteTeamClusterOutputDTO> => {
+    const handleDeleteCluster = async (password: string): Promise<DeleteTeamClusterResponse> => {
         if (!deleteTarget) {
             throw new Error('No delete target');
         }

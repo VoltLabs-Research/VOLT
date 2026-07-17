@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { removeAnalysisCaches, updateAnalysisStatusCaches } from '../services/cache';
 import { analysisQuery, KEYS } from './queries';
 import {

@@ -1,5 +1,5 @@
 import { extractTrajectoryTimesteps } from '@/modules/canvas/utilities/selected-timestep-analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import {
     createTrajectoryFolderRow,
     createTrajectoryItemRow,
@@ -11,17 +11,17 @@ import {
     type TrajectoryItemRow
 } from '@/modules/trajectory/utilities/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
-import { isTrajectoryNavigable } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
+import { isTrajectoryNavigable } from '@/modules/trajectory/api/types/trajectory/trajectory-constants';
 import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
-import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
+import { runAction } from '@/shared/ui/actions/run-action';
+import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-listing';
+import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import { Download, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { RiTableLine } from 'react-icons/ri';

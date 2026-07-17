@@ -1,119 +1,119 @@
 import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utilities/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Plugin } from '../entities/plugin/plugin';
-import type { PluginTeamClusterOption } from '../entities/plugin/team-cluster';
-import type { RegistrySearchResponse } from '../entities/plugin/registry';
-import type { IWorkflow } from '../entities/plugin/workflow';
-import type { PluginStatus } from '../entities/plugin/workflow-enums';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Plugin } from '../types/plugin/plugin';
+import type { PluginTeamClusterOption } from '../types/plugin/team-cluster';
+import type { RegistrySearchResponse } from '../types/plugin/registry';
+import type { IWorkflow } from '../types/plugin/workflow';
+import type { PluginStatus } from '../types/plugin/workflow-enums';
 
-export interface ClonePluginInputDTO {
+export interface ClonePluginInput {
     pluginId: string;
     teamId?: string;
 }
 
-export interface CreatePluginInputDTO {
+export interface CreatePluginInput {
     workflow: IWorkflow;
 }
 
-export interface DeletePluginInputDTO {
+export interface DeletePluginInput {
     _id: string;
 }
 
 export type PipelineStageKind = 'plugin' | 'slice' | 'expression';
 
-export interface PipelineStageInputDTO {
+export interface PipelineStageInput {
     kind: PipelineStageKind;
     pluginId?: string;
     config: Record<string, unknown>;
 }
 
-export interface ExecutePipelineInputDTO {
+export interface ExecutePipelineInput {
     trajectoryId: string;
     teamClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
-    stages: PipelineStageInputDTO[];
+    stages: PipelineStageInput[];
 }
 
-export interface ExecutePipelineOutputDTO {
+export interface ExecutePipelineResponse {
     analysisIds: string[];
 }
 
-export interface ExportAnalysisResultsInputDTO {
+export interface ExportAnalysisResultsInput {
     pluginId: string;
     analysisId: string;
 }
 
-export interface ExportPluginInputDTO {
+export interface ExportPluginInput {
     _id: string;
 }
 
-export interface GetPluginInputDTO {
+export interface GetPluginInput {
     _id: string;
 }
 
-export interface GetPluginsInputDTO {
+export interface GetPluginsInput {
     page: number;
     limit: number;
     search?: string;
     status?: string;
 }
 
-export interface ImportPluginInputDTO {
+export interface ImportPluginInput {
     file: File;
 }
 
-export interface SearchRegistryInputDTO {
+export interface SearchRegistryInput {
     q?: string;
     page?: number;
     limit?: number;
 }
 
-export interface InstallRegistryPluginInputDTO {
+export interface InstallRegistryPluginInput {
     name: string;
     version?: string;
 }
 
-export interface ListPluginTeamClustersInputDTO {
+export interface ListPluginTeamClustersInput {
     teamId: string;
     page: number;
     limit: number;
 }
 
-export type ListPluginTeamClustersOutputDTO = PaginatedResponse<PluginTeamClusterOption>;
+export type ListPluginTeamClustersResponse = PaginatedResponse<PluginTeamClusterOption>;
 
-export interface SavePluginInputDTO {
+export interface SavePluginInput {
     _id?: string;
     workflow: IWorkflow;
 }
 
-export interface UpdatePluginInputDTO {
+export interface UpdatePluginInput {
     _id: string;
     workflow?: IWorkflow;
     status?: PluginStatus;
 }
 
-export interface UploadBinaryInputDTO {
+export interface UploadBinaryInput {
     pluginId: string;
     teamId: string;
     file: File;
     onProgress?: (progress: number) => void;
 }
 
-export interface UploadBinaryOutputDTO {
+export interface UploadBinaryResponse {
     objectPath: string;
     fileName: string;
     size: number;
     binaryHash: string;
 }
 
-interface DeleteBinaryInputDTO {
+interface DeleteBinaryInput {
     pluginId: string;
 }
 
-interface UploadBinaryTarget extends UploadBinaryOutputDTO {
+interface UploadBinaryTarget extends UploadBinaryResponse {
     uploadUrl: string;
     expiresAt: string;
 }
@@ -125,25 +125,25 @@ interface UploadBinaryTargetApiResponse {
 
 interface UploadBinaryCommitApiResponse {
     status: 'success';
-    data: UploadBinaryOutputDTO;
+    data: UploadBinaryResponse;
 }
 
-export interface NodeTypesSchemaOutputDTO {
+export interface NodeTypesSchemaResponse {
     nodeTypes: Record<string, string[]>;
 }
 
 const endpoints = {
-    getAll: paginated<GetPluginsInputDTO, PaginatedResponse<Plugin>>('/'),
-    getById: get<GetPluginInputDTO, Plugin>('/:_id'),
-    create: post<CreatePluginInputDTO, Plugin>('/', {
+    getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>('/'),
+    getById: get<GetPluginInput, Plugin>('/:_id'),
+    create: post<CreatePluginInput, Plugin>('/', {
         unwrap: { field: 'plugin' }
     }),
-    update: patch<UpdatePluginInputDTO, Plugin>('/:_id'),
-    clone: post<ClonePluginInputDTO, Plugin>('/:pluginId/clones', {
+    update: patch<UpdatePluginInput, Plugin>('/:_id'),
+    clone: post<ClonePluginInput, Plugin>('/:pluginId/clones', {
         unwrap: { field: 'plugin' }
     }),
-    delete: del<DeletePluginInputDTO>('/:_id'),
-    uploadBinary: custom<UploadBinaryInputDTO, UploadBinaryOutputDTO>(async ({ getClient }, params) => {
+    delete: del<DeletePluginInput>('/:_id'),
+    uploadBinary: custom<UploadBinaryInput, UploadBinaryResponse>(async ({ getClient }, params) => {
         const targetResponse = await getClient().request<UploadBinaryTargetApiResponse>(
             'PATCH',
             `/${params.pluginId}/binary`,
@@ -186,26 +186,26 @@ const endpoints = {
 
         return commitResponse.data;
     }),
-    deleteBinary: del<DeleteBinaryInputDTO>('/:pluginId/binary'),
-    exportPlugin: download<ExportPluginInputDTO>('GET', '/:_id/export'),
-    exportAnalysisResults: download<ExportAnalysisResultsInputDTO>('GET', '/listings/analyses/:analysisId/export'),
-    importPlugin: request<ImportPluginInputDTO, Plugin>('POST', '/import', {
+    deleteBinary: del<DeleteBinaryInput>('/:pluginId/binary'),
+    exportPlugin: download<ExportPluginInput>('GET', '/:_id/export'),
+    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', '/listings/analyses/:analysisId/export'),
+    importPlugin: request<ImportPluginInput, Plugin>('POST', '/import', {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    searchRegistry: get<SearchRegistryInputDTO, RegistrySearchResponse>('/registry/search', {
+    searchRegistry: get<SearchRegistryInput, RegistrySearchResponse>('/registry/search', {
         query: ({ q, page, limit }) => ({
             ...(q?.trim() ? { q: q.trim() } : {}),
             ...(page ? { page } : {}),
             ...(limit ? { limit } : {})
         })
     }),
-    installRegistryPlugin: post<InstallRegistryPluginInputDTO, Plugin>('/registry/install'),
-    executePipeline: post<ExecutePipelineInputDTO, ExecutePipelineOutputDTO>('/trajectories/:trajectoryId/pipeline-executions'),
-    listTeamClusters: paginated<ListPluginTeamClustersInputDTO, ListPluginTeamClustersOutputDTO>('/:teamId/clusters', {
+    installRegistryPlugin: post<InstallRegistryPluginInput, Plugin>('/registry/install'),
+    executePipeline: post<ExecutePipelineInput, ExecutePipelineResponse>('/trajectories/:trajectoryId/pipeline-executions'),
+    listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),
-    getNodeTypesSchema: get<void, NodeTypesSchemaOutputDTO>('/node-types/schema')
+    getNodeTypesSchema: get<void, NodeTypesSchemaResponse>('/node-types/schema')
 };
 
 export default createService({

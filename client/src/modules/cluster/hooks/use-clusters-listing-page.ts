@@ -6,13 +6,13 @@ import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-clus
 import { transformClustersToRows } from '@/modules/cluster/utilities/transform-cluster-row';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { ListTeamClustersInputDTO } from '@/modules/cluster/api/service';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { ListTeamClustersInput } from '@/modules/cluster/api/service';
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 import type { ServerRow } from '@/modules/cluster/utilities/transform-cluster-row';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { InfiniteData } from '@tanstack/react-query';
 
 type ClusterListingCache = InfiniteData<PaginatedResponse<ServerRow>, number>;
@@ -90,7 +90,7 @@ const useClustersListingPage = () => {
             return createEmptyPaginatedResponse<ServerRow>({ page, limit });
         }
 
-        const query: ListTeamClustersInputDTO = {
+        const query: ListTeamClustersInput = {
             teamId: selectedTeamId,
             page,
             limit

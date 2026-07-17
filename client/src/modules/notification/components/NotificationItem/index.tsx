@@ -1,6 +1,6 @@
 import { Button, Row, Text } from '@voltstack/bravais';
 import './NotificationItem.css';
-import type { Notification } from '@/modules/notification/api/entities/notification';
+import type { Notification } from '@/modules/notification/api/types/notification';
 import { useNavigate } from 'react-router-dom';
 interface NotificationItemProps {
     notification: Notification;

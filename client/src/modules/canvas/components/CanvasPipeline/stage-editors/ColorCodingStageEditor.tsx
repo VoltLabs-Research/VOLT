@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Button, Stack, Text } from '@voltstack/bravais';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GradientPreview from '../../GradientPreview';
 import { useCanvasPipelineStore } from '../../../stores/canvas-pipeline';
 import usePropertySelector from '@/modules/trajectory/hooks/particle-filter/use-property-selector';
@@ -8,8 +8,8 @@ import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/q
 import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 import { parseNumericInput } from '../../../utilities/parse-numeric-input';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import type { ColorCodingStageConfig } from '../../../stores/canvas-pipeline';
 

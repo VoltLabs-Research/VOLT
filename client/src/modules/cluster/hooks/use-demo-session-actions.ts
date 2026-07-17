@@ -1,16 +1,16 @@
 import { getClusterOnboardingRedirectPath } from '@/modules/auth/services/post-auth-destination-storage';
-import type { DeleteDemoTeamClusterOutputDTO } from '@/modules/cluster/api/service';
+import type { DeleteDemoTeamClusterResponse } from '@/modules/cluster/api/service';
 import { useDeleteDemoTeamClusterMutation } from '@/modules/cluster/hooks/team-cluster/queries';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const END_DEMO_SESSION_TOAST = {
     loading: { title: 'Ending demo session...' },
-    success: (result: DeleteDemoTeamClusterOutputDTO) => ({
+    success: (result: DeleteDemoTeamClusterResponse) => ({
         title: result.teardownScheduled ? 'Demo session ended' : 'No active demo session',
         description: result.teardownScheduled
             ? 'Your temporary cluster is shutting down.'

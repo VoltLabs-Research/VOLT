@@ -1,9 +1,9 @@
 import service, {
     type CreateContainerParams,
-    type GetContainerFilesInputDTO,
+    type GetContainerFilesInput,
     type GetContainersParams,
     type MoveContainerParams,
-    type ReadContainerFileInputDTO,
+    type ReadContainerFileInput,
     type UpdateContainerFields
 } from '../api/service';
 import { teamClusterService } from '@/modules/cluster/api/service';
@@ -13,7 +13,7 @@ import {
     createFolderResourceQueries,
     createPaginatedQuery,
     createQuery
-} from '@/shared/infrastructure/query';
+} from '@/shared/query';
 import type {
     FolderCreateParams,
     FolderDeleteParams,
@@ -21,17 +21,17 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
-import type { Container } from '../api/entities/container';
-import type { ContainerFolder } from '../api/entities/container-folder';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ClusterResourceLimits } from '../api/types/cluster-resource-limits';
+import type { Container } from '../api/types/container';
+import type { ContainerFolder } from '../api/types/container-folder';
 
 const BASE_KEY = 'container';
 
 interface ContainerQueryKeys {
     detail: string;
-    files: GetContainerFilesInputDTO;
-    fileContent: ReadContainerFileInputDTO;
+    files: GetContainerFilesInput;
+    fileContent: ReadContainerFileInput;
     folder: FolderGetParams;
     folders: FolderListParams;
     processes: string;

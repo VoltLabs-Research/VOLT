@@ -1,6 +1,6 @@
 import { useCanvasPipelineStore } from '../../stores/canvas-pipeline';
 import { EmptyState, Row, SearchInput, Stack, Surface, Text } from '@voltstack/bravais';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { useEffect, useMemo, useRef, useState } from 'react';

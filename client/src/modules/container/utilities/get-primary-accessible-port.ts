@@ -1,4 +1,4 @@
-import type { ContainerAccessiblePort } from '@/modules/container/api/entities/container-accessible-port';
+import type { ContainerAccessiblePort } from '@/modules/container/api/types/container-accessible-port';
 
 export const getPrimaryAccessiblePort = (
     accessiblePorts?: ContainerAccessiblePort[]

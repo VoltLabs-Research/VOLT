@@ -3,8 +3,8 @@ import { Button, Heading, Text, Box, Loader, Stack } from '@voltstack/bravais';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utilities/cluster-live-metrics-status';
-import RecoveryState from '@/shared/presentation/components/RecoveryState';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import RecoveryState from '@/shared/ui/components/RecoveryState';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
@@ -15,7 +15,7 @@ interface IdleCallbackHandle {
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/CpuDistribution'));
 const DiskOperations = lazy(() => import('@/modules/cluster/components/DiskOperations'));
 const ResourceUsage = lazy(() => import('@/modules/cluster/components/ResourceUsage'));
-const NetworkChart = lazy(() => import('@/shared/presentation/components/NetworkChart'));
+const NetworkChart = lazy(() => import('@/shared/ui/components/NetworkChart'));
 
 const createIdleCallbackHandle = (onIdle: () => void, timeoutMs: number): IdleCallbackHandle => {
     if (typeof window.requestIdleCallback === 'function') {

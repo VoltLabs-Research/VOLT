@@ -7,8 +7,8 @@ import {
     EntrypointType,
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode
-} from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+} from '@/modules/plugin/api/types/plugin/workflow-enums';
+import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import { v4 } from 'uuid';
 import type { Node } from '@xyflow/react';
 

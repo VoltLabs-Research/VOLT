@@ -1,6 +1,6 @@
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
 
-import type { LineStyleSpec, SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { LineStyleSpec, SceneObjectType } from '@/modules/fractal/api/types/scene';
 
 export interface SceneKeyConfig {
     source: string;

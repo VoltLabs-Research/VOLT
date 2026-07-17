@@ -5,9 +5,9 @@ import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from '../utilities
 import { AnalysisStatus } from '@/modules/fractal/types';
 import { useMemo } from 'react';
 
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
-import type { Job } from '@/modules/jobs/api/entities/job';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
+import type { Job } from '@/modules/jobs/api/types/job';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface AnalysisActivitySummary {
     runningCount: number;

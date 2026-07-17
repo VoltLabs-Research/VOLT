@@ -2,7 +2,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import {
     getPerformancePresetLabel,
     PERFORMANCE_PRESET_OPTIONS
-} from '@/shared/domain/rendering/performance';
+} from '@/shared/rendering/performance';
 import { Button, Popover, Row, Tooltip, PopoverMenu } from '@voltstack/bravais';
 import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';

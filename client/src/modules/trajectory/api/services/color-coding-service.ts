@@ -8,14 +8,14 @@ export interface ColorCodingPayload {
     exposureId?: string;
 }
 
-export interface ApplyColorCodingInputDTO {
+export interface ApplyColorCodingInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
     payload: ColorCodingPayload;
 }
 
-export interface GetColorCodingPropertiesInputDTO {
+export interface GetColorCodingPropertiesInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -27,7 +27,7 @@ export interface ColorCodingProperties {
     modifierTypes?: Record<string, Record<string, 'number' | 'string'>>;
 }
 
-export interface GetColorCodingStatsInputDTO {
+export interface GetColorCodingStatsInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -42,19 +42,19 @@ export interface ColorCodingStats {
 }
 
 const endpoints = {
-    getProperties: get<GetColorCodingPropertiesInputDTO, ColorCodingProperties>(
+    getProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/properties/${analysisId}`
             : `/${trajectoryId}/properties`,
         { query: ({ timestep }) => ({ timestep }) }
     ),
-    getStats: get<GetColorCodingStatsInputDTO, ColorCodingStats>(
+    getStats: get<GetColorCodingStatsInput, ColorCodingStats>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/stats/${analysisId}`
             : `/${trajectoryId}/stats`,
         { omit: ['trajectoryId', 'analysisId'] }
     ),
-    apply: post<ApplyColorCodingInputDTO, void>(
+    apply: post<ApplyColorCodingInput, void>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/${analysisId}`
             : `/${trajectoryId}`,

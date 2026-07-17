@@ -9,16 +9,16 @@ import {
     getClusterTransferScopeLabel,
     isClusterTransferJobOpen
 } from '@/modules/cluster/utilities/team-cluster-transfer';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
 import { useEffect, useMemo, useState } from 'react';
-import type { CreateTeamClusterTransferRequestOutputDTO } from '@/modules/cluster/api/service';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { CreateTeamClusterTransferRequestResponse } from '@/modules/cluster/api/service';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
 interface ClusterTransferModalProps {
     teamCluster: TeamCluster | null;
     clusters: TeamCluster[];
     teamId: string | null;
-    onSave: (destinationClusterId: string) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
+    onSave: (destinationClusterId: string) => Promise<CreateTeamClusterTransferRequestResponse>;
     onClose: () => void;
 }
 

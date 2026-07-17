@@ -10,7 +10,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartContainer from '@/shared/ui/components/ChartContainer';
 import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
 import { CHART_COLORS } from '@/modules/team/utilities/secret-key/chart-helpers';
 import { createTooltipRenderer } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';

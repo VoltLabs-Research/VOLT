@@ -1,5 +1,5 @@
-import FormSection from '@/shared/presentation/components/FormSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormSection from '@/shared/ui/components/FormSection';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import { CONTEXT_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import type { EditorProps } from '../types';

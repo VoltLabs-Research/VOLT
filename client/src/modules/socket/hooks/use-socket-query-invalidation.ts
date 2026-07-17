@@ -1,5 +1,5 @@
 import useSocket from './use-socket';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { useEffect, useRef } from 'react';
 import type { QueryKey } from '@tanstack/react-query';
 

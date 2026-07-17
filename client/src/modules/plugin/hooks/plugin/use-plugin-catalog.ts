@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { PLUGIN_CATALOG_ALL_QUERY_KEY, usePluginCatalogQuery } from './catalog-query';
 
 const usePluginCatalog = () => {

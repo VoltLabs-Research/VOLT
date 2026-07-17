@@ -5,21 +5,21 @@ import {
     createInvalidatingMutation,
     createQuery,
     queryClient
-} from '@/shared/infrastructure/query';
-import type { QueryOptions } from '@/shared/infrastructure/query';
+} from '@/shared/query';
+import type { QueryOptions } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
-import type { Team } from '../../api/entities/team/team';
+import type { Team } from '../../api/types/team/team';
 import type {
-    CreateTeamInputDTO,
-    DeleteInviteCodeInputDTO,
-    GenerateInviteCodeInputDTO,
-    JoinByInviteCodeInputDTO,
-    JoinByInviteCodeOutputDTO,
-    LeaveTeamInputDTO,
-    PreviewJoinByInviteCodeInputDTO,
-    PreviewJoinByInviteCodeOutputDTO,
-    UpdateTeamInputDTO
+    CreateTeamInput,
+    DeleteInviteCodeInput,
+    GenerateInviteCodeInput,
+    JoinByInviteCodeInput,
+    JoinByInviteCodeResponse,
+    LeaveTeamInput,
+    PreviewJoinByInviteCodeInput,
+    PreviewJoinByInviteCodeResponse,
+    UpdateTeamInput
 } from '../../api/services/team-service';
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
@@ -129,21 +129,21 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     });
 };
 
-const usePreviewJoinByCodeQueryBase = createQuery<PreviewJoinByInviteCodeInputDTO, PreviewJoinByInviteCodeOutputDTO>(
+const usePreviewJoinByCodeQueryBase = createQuery<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>(
     (params) => TEAM_QUERY_KEYS.joinByCodePreview(params.code),
     (params) => teamService.previewJoinByCode(params)
 );
 
 export const usePreviewJoinByCodeQuery = (
-    params: PreviewJoinByInviteCodeInputDTO,
-    options?: QueryOptions<PreviewJoinByInviteCodeOutputDTO>
+    params: PreviewJoinByInviteCodeInput,
+    options?: QueryOptions<PreviewJoinByInviteCodeResponse>
 ) => {
     return usePreviewJoinByCodeQueryBase(params, options);
 };
 
 /** Team mutations. */
 
-export const useCreateTeamMutation = createMutation<Team, CreateTeamInputDTO>(
+export const useCreateTeamMutation = createMutation<Team, CreateTeamInput>(
     teamService.create,
     (newTeam) => {
         setTeamsQueryData((previous) => {
@@ -153,7 +153,7 @@ export const useCreateTeamMutation = createMutation<Team, CreateTeamInputDTO>(
     }
 );
 
-export const useUpdateTeamMutation = createMutation<Team, UpdateTeamInputDTO>(
+export const useUpdateTeamMutation = createMutation<Team, UpdateTeamInput>(
     teamService.update,
     (updatedTeam) => {
         setTeamsQueryData((previous) => {
@@ -164,7 +164,7 @@ export const useUpdateTeamMutation = createMutation<Team, UpdateTeamInputDTO>(
 );
 
 export const useLeaveTeamMutation = () => {
-    return useMutation<void, Error, LeaveTeamInputDTO, { previousTeams?: Team[] }>({
+    return useMutation<void, Error, LeaveTeamInput, { previousTeams?: Team[] }>({
         mutationFn: teamService.leave,
         onMutate: async (variables) => {
             await queryClient.cancelQueries({ queryKey: TEAM_QUERY_KEYS.teams() });
@@ -193,7 +193,7 @@ export const useLeaveTeamMutation = () => {
     });
 };
 
-export const useGenerateInviteCodeMutation = createMutation<Team, GenerateInviteCodeInputDTO>(
+export const useGenerateInviteCodeMutation = createMutation<Team, GenerateInviteCodeInput>(
     teamService.generateInviteCode,
     (updatedTeam) => {
         setTeamsQueryData((previous) => {
@@ -203,7 +203,7 @@ export const useGenerateInviteCodeMutation = createMutation<Team, GenerateInvite
     }
 );
 
-export const useDeleteInviteCodeMutation = createMutation<void, DeleteInviteCodeInputDTO>(
+export const useDeleteInviteCodeMutation = createMutation<void, DeleteInviteCodeInput>(
     teamService.deleteInviteCode,
     (_data, variables) => {
         setTeamsQueryData((previous) => {
@@ -216,7 +216,7 @@ export const useDeleteInviteCodeMutation = createMutation<void, DeleteInviteCode
     }
 );
 
-export const useJoinByCodeMutation = createInvalidatingMutation<JoinByInviteCodeOutputDTO, JoinByInviteCodeInputDTO>(
+export const useJoinByCodeMutation = createInvalidatingMutation<JoinByInviteCodeResponse, JoinByInviteCodeInput>(
     teamService.joinByCode,
     [TEAM_QUERY_KEYS.teams()]
 );

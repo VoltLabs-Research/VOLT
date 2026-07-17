@@ -2,37 +2,37 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import { CollapsibleSection, Modal, closeModal, Stack, Table, Text } from '@voltstack/bravais';
 import type { Column } from '@voltstack/bravais';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 import type {
-    TeamClusterQueueConcurrencyInputDTO,
-    TeamClusterQueueScopeLimitInputDTO,
-    TeamClusterQueueScopeLimitsInputDTO,
-    UpdateTeamClusterQueueConcurrencyOutputDTO
+    TeamClusterQueueConcurrencyInput,
+    TeamClusterQueueScopeLimitInput,
+    TeamClusterQueueScopeLimitsInput,
+    UpdateTeamClusterQueueConcurrencyResponse
 } from '@/modules/cluster/api/service';
 
 interface QueueFieldDefinition {
-    key: keyof TeamClusterQueueConcurrencyInputDTO;
+    key: keyof TeamClusterQueueConcurrencyInput;
     label: string;
     description: string;
 }
 
 interface QueueScopeFieldDefinition {
-    key: keyof TeamClusterQueueScopeLimitsInputDTO;
+    key: keyof TeamClusterQueueScopeLimitsInput;
     label: string;
 }
 
-type QueueConcurrencyValues = Record<keyof TeamClusterQueueConcurrencyInputDTO, string>;
-type QueueScopeLimitValues = Record<keyof TeamClusterQueueScopeLimitInputDTO, string>;
-type QueueScopeValues = Record<keyof TeamClusterQueueScopeLimitsInputDTO, QueueScopeLimitValues>;
+type QueueConcurrencyValues = Record<keyof TeamClusterQueueConcurrencyInput, string>;
+type QueueScopeLimitValues = Record<keyof TeamClusterQueueScopeLimitInput, string>;
+type QueueScopeValues = Record<keyof TeamClusterQueueScopeLimitsInput, QueueScopeLimitValues>;
 
 interface ClusterQueueConcurrencyModalProps {
     teamCluster: TeamCluster | null;
     onSave: (input: {
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
-        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
-    }) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
+        queueConcurrency: TeamClusterQueueConcurrencyInput;
+        queueScopeLimits: TeamClusterQueueScopeLimitsInput;
+    }) => Promise<UpdateTeamClusterQueueConcurrencyResponse>;
     onClose: () => void;
 }
 
@@ -97,7 +97,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         onClose();
     };
 
-    const handleFieldChange = (key: keyof TeamClusterQueueConcurrencyInputDTO, nextValue: string) => {
+    const handleFieldChange = (key: keyof TeamClusterQueueConcurrencyInput, nextValue: string) => {
         setValues((currentValues) => ({
             ...currentValues,
             [key]: nextValue
@@ -109,7 +109,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
     };
 
     const handleScopeFieldChange = (
-        key: keyof TeamClusterQueueScopeLimitsInputDTO,
+        key: keyof TeamClusterQueueScopeLimitsInput,
         nextValue: string
     ) => {
         setScopeValues((currentValues) => ({
@@ -125,8 +125,8 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         }
     };
 
-    const parseValues = (): TeamClusterQueueConcurrencyInputDTO | null => {
-        const parsedValues: TeamClusterQueueConcurrencyInputDTO = {
+    const parseValues = (): TeamClusterQueueConcurrencyInput | null => {
+        const parsedValues: TeamClusterQueueConcurrencyInput = {
             analysis: 0,
             rasterizer: 0,
             glbPreprocessing: 0,
@@ -153,8 +153,8 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         return parsedValues;
     };
 
-    const parseScopeValues = (): TeamClusterQueueScopeLimitsInputDTO | null => {
-        const parsedValues = {} as TeamClusterQueueScopeLimitsInputDTO;
+    const parseScopeValues = (): TeamClusterQueueScopeLimitsInput | null => {
+        const parsedValues = {} as TeamClusterQueueScopeLimitsInput;
 
         for (const field of QUEUE_SCOPE_FIELDS) {
             const currentValues = scopeValues[field.key];

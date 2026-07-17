@@ -3,7 +3,7 @@ import ChatAvatar from '../ChatAvatar';
 import { ListRow, Row, Stack, Text } from '@voltstack/bravais';
 import { cn } from '@/shared/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
-import type { Chat } from '@/modules/chat/api/entities/chat';
+import type { Chat } from '@/modules/chat/api/types/chat';
 import './ChatListItem.css';
 
 interface ChatListItemProps {

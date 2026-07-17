@@ -1,8 +1,8 @@
 import useTrajectoryUpload from '@/modules/trajectory/hooks/trajectory/use-trajectory-upload';
 import { useCallback } from 'react';
-import FileUploaderContainer, { type FileDropUpload } from '@/shared/presentation/components/FileUploaderContainer';
+import FileUploaderContainer, { type FileDropUpload } from '@/shared/ui/components/FileUploaderContainer';
 import { useLocalGlbStore } from '@/modules/canvas/stores/use-local-glb-store';
-import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
+import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useNavigate } from 'react-router-dom';
 
 interface TrajectoryUploaderContainerProps {

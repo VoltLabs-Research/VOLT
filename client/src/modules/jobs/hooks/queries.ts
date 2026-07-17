@@ -1,19 +1,19 @@
-import { JobStatus } from '../api/entities/job';
+import { JobStatus } from '../api/types/job';
 import { computeGroupStatus } from '../utilities/job-group-updates';
 import { TEAM_JOBS_QUERY_KEYS } from '../utilities/query-keys';
 import service from '../api/service';
-import { createSocketQuery, withSuccess } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { createSocketQuery, withSuccess } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
 import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { useMutation } from '@tanstack/react-query';
-import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/entities/job';
+import type { FrameJobGroup, Job, TrajectoryJobGroup } from '../api/types/job';
 import type {
-    RemoveRunningJobsOutputDTO,
+    RemoveRunningJobsResponse,
     RemoveRunningJobsParams,
-    RetryFailedJobsOutputDTO,
+    RetryFailedJobsResponse,
     RetryFailedJobsParams
 } from '../api/service';
-import type { MutationOptions } from '@/shared/infrastructure/query';
+import type { MutationOptions } from '@/shared/query';
 import type { QueryClient } from '@tanstack/react-query';
 
 export interface TeamJobsMutationContext {
@@ -177,12 +177,12 @@ const useOptimisticTrajectoryMutation = <TData, TVariables extends { trajectoryI
 };
 
 export const useRemoveRunningJobsMutation = (
-    options?: MutationOptions<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>
+    options?: MutationOptions<RemoveRunningJobsResponse, RemoveRunningJobsParams>
 ) => {
-    return useMutation<RemoveRunningJobsOutputDTO, Error, RemoveRunningJobsParams>({
+    return useMutation<RemoveRunningJobsResponse, Error, RemoveRunningJobsParams>({
         ...options,
         mutationFn: (params) => service.removeRunningJobs(params),
-        onSuccess: withSuccess<RemoveRunningJobsOutputDTO, RemoveRunningJobsParams>((result) => {
+        onSuccess: withSuccess<RemoveRunningJobsResponse, RemoveRunningJobsParams>((result) => {
             setTeamJobsGroupsQueryData(result.groups);
             useTeamJobsStore.getState().setLatestAppliedRevision(result.revision);
         }, options)
@@ -190,9 +190,9 @@ export const useRemoveRunningJobsMutation = (
 };
 
 export const useRetryFailedJobsMutation = (
-    options?: MutationOptions<RetryFailedJobsOutputDTO, RetryFailedJobsParams>
+    options?: MutationOptions<RetryFailedJobsResponse, RetryFailedJobsParams>
 ) => {
-    return useOptimisticTrajectoryMutation<RetryFailedJobsOutputDTO, RetryFailedJobsParams>({
+    return useOptimisticTrajectoryMutation<RetryFailedJobsResponse, RetryFailedJobsParams>({
         mutationFn: (params) => service.retryFailedJobs(params),
         applyOptimisticUpdate: markFailedJobsForRetryInTrajectory,
         shouldRollbackOnSuccess: (result) => result.retriedFrames === 0

@@ -2,10 +2,10 @@ import { Box, Button, Row, CollapsibleSection } from '@voltstack/bravais';
 import { useCallback, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import type { Node } from '@xyflow/react';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/entities/plugin/workflow';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import type { INodeData, NodeConnectorSide } from '@/modules/plugin/api/types/plugin/workflow';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import {
     CONNECTOR_SIDE_OPTIONS,
     createNodeHandlePlacement,

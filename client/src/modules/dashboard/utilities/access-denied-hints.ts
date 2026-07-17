@@ -1,4 +1,4 @@
-import type { Team } from '@/modules/team/api/entities/team/team';
+import type { Team } from '@/modules/team/api/types/team/team';
 
 /**
  * Friendly labels for the RBAC permission keys surfaced by dashboard denials.

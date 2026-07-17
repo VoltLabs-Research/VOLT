@@ -1,6 +1,6 @@
 import { debugTrajectoriesQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 

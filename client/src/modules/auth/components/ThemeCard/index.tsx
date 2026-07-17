@@ -1,6 +1,6 @@
 import './ThemeCard.css';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
-import themeTokensStylesheet from '@/shared/presentation/assets/stylesheets/theme.css?raw';
+import { Theme } from '@/shared/ui/hooks/use-theme';
+import themeTokensStylesheet from '@/shared/ui/assets/stylesheets/theme.css?raw';
 import { Row, SelectableCard } from '@voltstack/bravais';
 import { Check } from 'lucide-react';
 import { forwardRef } from 'react';

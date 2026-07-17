@@ -4,7 +4,7 @@ import {
     EFFECT_SECTION_ORDER,
     EFFECT_SECTION_TITLES,
     EffectSectionId
-} from '@/shared/domain/rendering/effects';
+} from '@/shared/rendering/effects';
 
 import { useMemo } from 'react';
 import { MdAutoFixHigh } from 'react-icons/md';

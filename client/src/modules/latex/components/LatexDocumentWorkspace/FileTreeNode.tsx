@@ -1,5 +1,5 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import EditableTag from '@/shared/presentation/components/EditableTag';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import EditableTag from '@/shared/ui/components/EditableTag';
 import { IconButton, Row, Stack } from '@voltstack/bravais';
 import WorkspaceCreationInputs from './WorkspaceCreationInputs';
 import WorkspaceTreeRow from './WorkspaceTreeRow';
@@ -28,14 +28,14 @@ import { useCallback, useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/shared/utils/cn';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type {
     LatexWorkspaceDragData,
     LatexWorkspaceDropData
 } from '@/modules/latex/utilities/workspace-dnd';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import type { DragEvent, KeyboardEvent, ReactNode } from 'react';
 
 interface RenameTarget {

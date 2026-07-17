@@ -1,5 +1,5 @@
 import { mergeNestedSectionState, resetSectionState } from './store-section';
-import { getDefaultLightsState } from '@/shared/domain/rendering/lights';
+import { getDefaultLightsState } from '@/shared/rendering/lights';
 
 import type { EditorStore } from './types';
 import type {
@@ -10,7 +10,7 @@ import type {
     PointLight,
     RectAreaLightCfg,
     SpotLight
-} from '@/shared/domain/rendering/lights';
+} from '@/shared/rendering/lights';
 import type { StateCreator } from 'zustand';
 
 export interface LightsSlice {

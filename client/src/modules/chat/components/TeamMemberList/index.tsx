@@ -1,7 +1,7 @@
 import { cn } from '@/shared/utils/cn';
 import { IoCheckmark } from 'react-icons/io5';
 import { Avatar, Box, ListRow, Row, Stack, Text } from '@voltstack/bravais';
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 import './TeamMemberList.css';
 
 interface TeamMemberListProps {

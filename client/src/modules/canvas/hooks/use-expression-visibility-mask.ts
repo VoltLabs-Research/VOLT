@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useStages } from '@/modules/canvas/stores/canvas-pipeline';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/stores/canvas-pipeline';
-import type { GetAtomsOutputDTO, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
+import type { GetAtomsResponse, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
 import type { AtomContext, ColumnView, DType, Expr } from '@voltstack/expressions';
 import type { ExpressionSelectStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
 
@@ -50,7 +50,7 @@ const toColumnView = (col: AtomColumnView): ColumnView => ({
     dtype: toDType(col.dtype)
 });
 
-const buildContext = (atomBuffer: GetAtomsOutputDTO, frameIndex: number): AtomContext => {
+const buildContext = (atomBuffer: GetAtomsResponse, frameIndex: number): AtomContext => {
     const columnCache = new Map<string, ColumnView | undefined>();
     return {
         N: atomBuffer.count,

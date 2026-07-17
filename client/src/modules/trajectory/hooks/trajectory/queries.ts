@@ -9,9 +9,9 @@ import {
     createMutation,
     createPaginatedQuery,
     createQuery
-} from '@/shared/infrastructure/query';
-import { batchInvalidateQueries } from '@/shared/infrastructure/query/cache-utils';
-import queryClient from '@/shared/infrastructure/query/query-client';
+} from '@/shared/query';
+import { batchInvalidateQueries } from '@/shared/query/cache-utils';
+import queryClient from '@/shared/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type {
     FolderCreateParams,
@@ -27,22 +27,22 @@ import {
     currentCanvasDataAccess,
     currentAccessKey
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type {
-    CreateTrajectoryInputDTO,
-    CreateTrajectoryOutputDTO,
-    CreateTrajectoryUploadSessionOutputDTO,
-    DownloadTrajectoryAnalysesInputDTO,
-    DownloadTrajectoryInputDTO,
-    GetAtomsInputDTO,
-    GetAtomsOutputDTO,
-    GetPreviewInputDTO,
-    GetTrajectoriesInputDTO
+    CreateTrajectoryInput,
+    CreateTrajectoryResponse,
+    CreateTrajectoryUploadSessionResponse,
+    DownloadTrajectoryAnalysesInput,
+    DownloadTrajectoryInput,
+    GetAtomsInput,
+    GetAtomsResponse,
+    GetPreviewInput,
+    GetTrajectoriesInput
 } from '../../api/services/trajectory-service';
 import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';
-import type { Trajectory } from '../../api/entities/trajectory/trajectory';
-import type { TrajectoryFolder } from '../../api/entities/trajectory/trajectory-folder';
-import type { InfiniteQueryOptions, QueryOptions } from '@/shared/infrastructure/query';
+import type { Trajectory } from '../../api/types/trajectory/trajectory';
+import type { TrajectoryFolder } from '../../api/types/trajectory/trajectory-folder';
+import type { InfiniteQueryOptions, QueryOptions } from '@/shared/query';
 
 const BASE_KEY = 'trajectory';
 
@@ -54,7 +54,7 @@ interface TrajectoryByIdParams {
     trajectoryId: string;
 }
 
-interface TrajectoryAtomsInfiniteParams extends Omit<GetAtomsInputDTO, 'page'> {
+interface TrajectoryAtomsInfiniteParams extends Omit<GetAtomsInput, 'page'> {
     limit: number;
 }
 
@@ -62,9 +62,9 @@ const KEYS = buildKeys<{
     detail: string;
     debug: void;
     simulationGrid: void;
-    preview: GetPreviewInputDTO;
-    publicPreview: GetPreviewInputDTO;
-    atoms: GetAtomsInputDTO;
+    preview: GetPreviewInput;
+    publicPreview: GetPreviewInput;
+    atoms: GetAtomsInput;
     atomsInfinite: void;
     perAtom: void;
     samples: void;
@@ -72,14 +72,14 @@ const KEYS = buildKeys<{
     folders: FolderListParams;
 }>(BASE_KEY);
 
-const stripTrajectoryPage = ({ page: _page, ...params }: GetTrajectoriesInputDTO) => params;
+const stripTrajectoryPage = ({ page: _page, ...params }: GetTrajectoriesInput) => params;
 
 export const trajectoryQuery = createPaginatedQuery<
     Trajectory,
-    GetTrajectoriesInputDTO,
-    CreateTrajectoryInputDTO,
+    GetTrajectoriesInput,
+    CreateTrajectoryInput,
     Partial<Trajectory>,
-    CreateTrajectoryOutputDTO
+    CreateTrajectoryResponse
 >({
     baseKey: BASE_KEY,
     detailKey: KEYS.detail,
@@ -114,8 +114,8 @@ export const trajectoryQuery = createPaginatedQuery<
 });
 
 export const createTrajectoryUploadSessionMutation = createMutation<
-    CreateTrajectoryUploadSessionOutputDTO,
-    CreateTrajectoryInputDTO
+    CreateTrajectoryUploadSessionResponse,
+    CreateTrajectoryInput
 >(trajectoryService.createUploadSession, (result) => {
         queryClient.removeQueries({
             queryKey: KEYS.detail(result.trajectory._id)
@@ -137,10 +137,10 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
 export const publicTrajectoryPreviewQuery = createQuery(KEYS.publicPreview, canvasService.getPreview);
-const getAtomsWithAccess = (params: GetAtomsInputDTO) => {
+const getAtomsWithAccess = (params: GetAtomsInput) => {
     return currentCanvasDataAccess().getAtoms(params);
 };
-const getAtomsKey = (params: GetAtomsInputDTO) => currentAccessKey(KEYS.atoms(params));
+const getAtomsKey = (params: GetAtomsInput) => currentAccessKey(KEYS.atoms(params));
 export const trajectoryAtomsQuery = createQuery(getAtomsKey, getAtomsWithAccess);
 const trajectorySamplesQuery = createQuery(KEYS.samples, () => trajectoryService.listSamples({}));
 
@@ -175,7 +175,7 @@ export const useMoveTrajectoryMutation = createInvalidatingMutation<void, MoveTr
     [trajectoryQuery.QUERY_KEYS.lists()]
 );
 
-const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInputDTO, Trajectory>(
+const trajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInput, Trajectory>(
     (params) => [...trajectoryQuery.QUERY_KEYS.infiniteLists(), stripTrajectoryPage(params)],
     (params, { page, limit }) => trajectoryService.getAll({
         ...params,
@@ -201,11 +201,11 @@ export const TRAJECTORY_QUERY_KEYS = {
 
 export const fetchTrajectoryAtoms = trajectoryAtomsQuery.fetch;
 export const fetchTrajectorySamples = () => trajectorySamplesQuery.fetch(undefined);
-export const useDownloadTrajectoryAnalysesMutation = createMutation<Blob, DownloadTrajectoryAnalysesInputDTO>(trajectoryService.downloadAnalyses);
-export const useDownloadTrajectoryMutation = createMutation<Blob, DownloadTrajectoryInputDTO>(trajectoryService.download);
+export const useDownloadTrajectoryAnalysesMutation = createMutation<Blob, DownloadTrajectoryAnalysesInput>(trajectoryService.downloadAnalyses);
+export const useDownloadTrajectoryMutation = createMutation<Blob, DownloadTrajectoryInput>(trajectoryService.download);
 
 export const useTrajectoriesInfiniteQuery = (
-    params: GetTrajectoriesInputDTO,
+    params: GetTrajectoriesInput,
     options?: InfiniteQueryOptions<PaginatedResponse<Trajectory>> & {
         getNextPageParam?: (lastPage: PaginatedResponse<Trajectory>, allPages: PaginatedResponse<Trajectory>[]) => number | undefined;
     }
@@ -237,7 +237,7 @@ export const useTrajectoryAtomsInfiniteQuery = (
             page: pageParam
         }),
         initialPageParam: 1,
-        getNextPageParam: (lastPage: GetAtomsOutputDTO) => {
+        getNextPageParam: (lastPage: GetAtomsResponse) => {
             if (lastPage.page < lastPage.totalPages) {
                 return lastPage.page + 1;
             }

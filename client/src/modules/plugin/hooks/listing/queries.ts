@@ -4,8 +4,8 @@ import {
     type QueryKey,
     type UseQueryOptions
 } from '@tanstack/react-query';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import { createMutation, createQuery, buildKeys } from '@/shared/infrastructure/query';
+import queryClient from '@/shared/query/query-client';
+import { createMutation, createQuery, buildKeys } from '@/shared/query';
 import {
     buildCanvasDataAccess,
     DEFAULT_CANVAS_ACCESS_STATE,
@@ -16,32 +16,32 @@ import {
 } from '@/modules/canvas/api/access';
 import listingService from '../../api/services/listing-service';
 import type {
-    ExportListingByAnalysisInputDTO,
-    ExportPluginListingInputDTO,
-    GetAnalysisListingExportOptionsInputDTO,
-    GetPluginListingInputDTO,
-    GetPluginListingOutputDTO,
-    GetSubListingInputDTO,
-    GetSubListingOutputDTO
+    ExportListingByAnalysisInput,
+    ExportPluginListingInput,
+    GetAnalysisListingExportOptionsInput,
+    GetPluginListingInput,
+    GetPluginListingResponse,
+    GetSubListingInput,
+    GetSubListingResponse
 } from '../../api/services/listing-service';
 
 type QueryOptions<TQueryFnData, TData = TQueryFnData> = Partial<UseQueryOptions<TQueryFnData, Error, TData>>;
 
 const listingKeys = buildKeys<{
-    detail: GetPluginListingInputDTO;
+    detail: GetPluginListingInput;
 }>(['plugins', 'listing']);
 
 const listingInfiniteKeys = buildKeys<{
-    detail: Omit<GetPluginListingInputDTO, 'page'> & { limit: number };
+    detail: Omit<GetPluginListingInput, 'page'> & { limit: number };
 }>(['plugins', 'listing', 'infinite']);
 
 const subListingKeys = buildKeys<Record<string, never>>(['plugins', 'subListing']);
 const analysisExportOptionsKeys = buildKeys<{
-    detail: GetAnalysisListingExportOptionsInputDTO;
+    detail: GetAnalysisListingExportOptionsInput;
 }>(['plugins', 'analysis-export-options']);
 
 const subListingInfiniteKeys = buildKeys<{
-    detail: Omit<GetSubListingInputDTO, 'page'> & { limit: number };
+    detail: Omit<GetSubListingInput, 'page'> & { limit: number };
 }>(['plugins', 'subListing', 'infinite']);
 
 export const LISTING_QUERY_KEYS = {
@@ -56,7 +56,7 @@ export const LISTING_QUERY_KEYS = {
     analysisExportOptionsDetail: analysisExportOptionsKeys.detail
 };
 
-const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
+const buildPluginListingQueryOptions = (params: GetPluginListingInput) => {
     const accessState = useCanvasAccessStore.getState();
     const dataAccess = buildCanvasDataAccess({ ...DEFAULT_CANVAS_ACCESS_STATE, mode: accessState.mode });
     const trajectoryId = params.trajectoryId ?? accessState.trajectoryId ?? '';
@@ -66,20 +66,20 @@ const buildPluginListingQueryOptions = (params: GetPluginListingInputDTO) => {
     };
 };
 
-export const fetchPluginListing = (params: GetPluginListingInputDTO) => {
+export const fetchPluginListing = (params: GetPluginListingInput) => {
     return queryClient.fetchQuery(buildPluginListingQueryOptions(params));
 };
 
 export const usePluginListingQuery = (
-    params: GetPluginListingInputDTO,
-    options?: QueryOptions<GetPluginListingOutputDTO, GetPluginListingOutputDTO>
+    params: GetPluginListingInput,
+    options?: QueryOptions<GetPluginListingResponse, GetPluginListingResponse>
 ) => {
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();
     const storeTrajectoryId = useCanvasAccessStore((state) => state.trajectoryId);
     const trajectoryId = params.trajectoryId ?? storeTrajectoryId ?? '';
 
-    return useQuery<GetPluginListingOutputDTO, Error, GetPluginListingOutputDTO, QueryKey>({
+    return useQuery<GetPluginListingResponse, Error, GetPluginListingResponse, QueryKey>({
         ...options,
         queryKey: withAccessMode(mode, LISTING_QUERY_KEYS.listingDetail(params)),
         queryFn: () => dataAccess.getPluginListing({ ...params, trajectoryId })
@@ -87,8 +87,8 @@ export const usePluginListingQuery = (
 };
 
 export const usePluginListingInfiniteQuery = (
-    params: Omit<GetPluginListingInputDTO, 'page'> & { limit: number },
-    options: { getNextPageParam: (lastPage: GetPluginListingOutputDTO) => number | undefined; enabled?: boolean }
+    params: Omit<GetPluginListingInput, 'page'> & { limit: number },
+    options: { getNextPageParam: (lastPage: GetPluginListingResponse) => number | undefined; enabled?: boolean }
 ) => {
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();
@@ -113,8 +113,8 @@ export const usePluginListingInfiniteQuery = (
 };
 
 export const useSubListingInfiniteQuery = (
-    params: Omit<GetSubListingInputDTO, 'page'> & { limit: number },
-    options: { getNextPageParam: (lastPage: GetSubListingOutputDTO) => number | undefined; enabled?: boolean }
+    params: Omit<GetSubListingInput, 'page'> & { limit: number },
+    options: { getNextPageParam: (lastPage: GetSubListingResponse) => number | undefined; enabled?: boolean }
 ) => {
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();
@@ -140,9 +140,9 @@ export const useSubListingInfiniteQuery = (
 
 export const useAnalysisListingExportOptionsQuery = createQuery(
     LISTING_QUERY_KEYS.analysisExportOptionsDetail,
-    (params: GetAnalysisListingExportOptionsInputDTO) => listingService.getAnalysisListingExportOptions(params)
+    (params: GetAnalysisListingExportOptionsInput) => listingService.getAnalysisListingExportOptions(params)
 );
 
-export const useExportListingMutation = createMutation<Blob, ExportPluginListingInputDTO>(listingService.exportListing);
+export const useExportListingMutation = createMutation<Blob, ExportPluginListingInput>(listingService.exportListing);
 
-export const useExportListingByAnalysisMutation = createMutation<Blob, ExportListingByAnalysisInputDTO>(listingService.exportListingByAnalysis);
+export const useExportListingByAnalysisMutation = createMutation<Blob, ExportListingByAnalysisInput>(listingService.exportListingByAnalysis);

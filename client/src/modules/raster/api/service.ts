@@ -1,5 +1,5 @@
 import { createService, get, post } from '@/app/core/http/utilities/create-service';
-import type { RasterMetadata } from '@/modules/raster/api/entities/raster';
+import type { RasterMetadata } from '@/modules/raster/api/types/raster';
 
 export interface GetRasterMetadataParams {
     trajectoryId: string;

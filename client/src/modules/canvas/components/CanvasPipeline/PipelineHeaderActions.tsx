@@ -10,12 +10,12 @@ import {
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Popover, PopoverMenu, PopoverMenuItem, Row, SectionLabel, Stack, Text } from '@voltstack/bravais';
 import { useCallback } from 'react';
 import { Filter, FlaskConical, Palette, Play, Plus, Scissors, Spline } from 'lucide-react';
 import type { StageType, StageConfig } from '../../stores/canvas-pipeline';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface PipelineHeaderActionsProps {
     trajectory?: Trajectory | null;

@@ -1,20 +1,20 @@
 import { useDownloadTrajectoryMutation } from './queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 
-import type { DownloadTrajectoryInputDTO } from '../../api/services/trajectory-service';
+import type { DownloadTrajectoryInput } from '../../api/services/trajectory-service';
 
 interface UseDownloadTrajectoryReturn {
-    downloadTrajectory: (params: DownloadTrajectoryInputDTO) => Promise<void>;
+    downloadTrajectory: (params: DownloadTrajectoryInput) => Promise<void>;
     isDownloading: boolean;
 }
 
 const useDownloadTrajectory = (): UseDownloadTrajectoryReturn => {
     const downloadTrajectoryMutation = useDownloadTrajectoryMutation();
 
-    const downloadTrajectory = useCallback(async (params: DownloadTrajectoryInputDTO) => {
+    const downloadTrajectory = useCallback(async (params: DownloadTrajectoryInput) => {
         try {
             await showPromise(
                 (async () => {

@@ -4,7 +4,7 @@ import { CursorTooltip, Box, Row, Stack, Text } from '@voltstack/bravais';
 import 'react-calendar-heatmap/dist/styles.css';
 import React from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import type { DailyActivity } from '@/modules/daily-activity/api/entities/daily-activity';
+import type { DailyActivity } from '@/modules/daily-activity/api/types/daily-activity';
 import type { ActivityHeatmapChartDataItem } from '@/modules/daily-activity/hooks/use-activity-heatmap';
 import type { FocusEvent, FocusEventHandler, MouseEvent, MouseEventHandler, ReactElement } from 'react';
 import type { HeatmapValue } from 'react-calendar-heatmap';

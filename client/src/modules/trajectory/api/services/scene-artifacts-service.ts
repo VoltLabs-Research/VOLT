@@ -1,8 +1,8 @@
 import { createService, get, paginated } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { SceneArtifact } from '../entities/scene-artifacts/scene-artifact';
-import type { SceneArtifactSourceType } from '../entities/scene-artifacts/scene-artifact';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { SceneArtifact } from '../types/scene-artifacts/scene-artifact';
+import type { SceneArtifactSourceType } from '../types/scene-artifacts/scene-artifact';
 
 export interface RenderableExposurePayload {
     pluginId?: string;
@@ -21,7 +21,7 @@ export interface RenderableExposurePayload {
     };
 }
 
-export interface ListSceneArtifactsInputDTO {
+export interface ListSceneArtifactsInput {
     trajectoryId: string;
     sourceType?: SceneArtifactSourceType;
     analysisId?: string;
@@ -31,7 +31,7 @@ export interface ListSceneArtifactsInputDTO {
     limit?: number;
 }
 
-export interface ListTeamSceneArtifactsInputDTO {
+export interface ListTeamSceneArtifactsInput {
     page?: number;
     limit?: number;
     sourceType?: SceneArtifactSourceType;
@@ -40,7 +40,7 @@ export interface ListTeamSceneArtifactsInputDTO {
 }
 
 export const buildSceneArtifactQuery = (
-    params: Pick<ListSceneArtifactsInputDTO, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType'>
+    params: Pick<ListSceneArtifactsInput, 'analysisId' | 'projection' | 'timestep' | 'page' | 'limit' | 'sourceType'>
 ) => {
     const sourceType = params.sourceType;
     return {
@@ -54,7 +54,7 @@ export const buildSceneArtifactQuery = (
 };
 
 const buildTeamSceneArtifactQuery = (
-    params: Pick<ListTeamSceneArtifactsInputDTO, 'analysisId' | 'timestep' | 'page' | 'limit' | 'sourceType'>
+    params: Pick<ListTeamSceneArtifactsInput, 'analysisId' | 'timestep' | 'page' | 'limit' | 'sourceType'>
 ) => {
     const sourceType = params.sourceType;
     return {
@@ -67,13 +67,13 @@ const buildTeamSceneArtifactQuery = (
 };
 
 const endpoints = {
-    listByTrajectory: get<ListSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
+    listByTrajectory: get<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
         '/:trajectoryId/scene-artifacts', {
             unwrap: 'raw',
             query: buildSceneArtifactQuery
         }
     ),
-    listByTeam: paginated<ListTeamSceneArtifactsInputDTO, PaginatedResponse<SceneArtifact>>('/scene-artifacts', {
+    listByTeam: paginated<ListTeamSceneArtifactsInput, PaginatedResponse<SceneArtifact>>('/scene-artifacts', {
         unwrap: 'raw',
         query: buildTeamSceneArtifactQuery
     })

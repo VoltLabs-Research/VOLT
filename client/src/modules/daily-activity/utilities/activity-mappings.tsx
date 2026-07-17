@@ -1,5 +1,5 @@
 import { GoBeaker, GoContainer, GoFileCode, GoKey, GoPencil, GoShieldCheck, GoTrash, GoUpload } from 'react-icons/go';
-import type { ActivityItem } from '@/modules/daily-activity/api/entities/daily-activity';
+import type { ActivityItem } from '@/modules/daily-activity/api/types/daily-activity';
 import type { ReactNode } from 'react';
 
 export const ACTIVITY_ICON: Record<ActivityItem['type'], ReactNode> = {

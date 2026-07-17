@@ -9,9 +9,9 @@ import {
 import { addChatToCache, removeChatFromCache, replaceChatInCache } from '../chat/queries';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
-import type { CreateGroupChatDTO, UpdateGroupAdminsDTO, UpdateGroupInfoDTO } from '../../api/services/group-service';
+import { runAction } from '@/shared/ui/actions/run-action';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { CreateGroupChat, UpdateGroupAdmins, UpdateGroupInfo } from '../../api/services/group-service';
 import { useNavigate } from 'react-router-dom';
 
 const useGroupActions = () => {
@@ -25,7 +25,7 @@ const useGroupActions = () => {
     const updateGroupAdminsMutationResult = useUpdateGroupAdminsMutation();
     const leaveGroupMutationResult = useLeaveGroupMutation();
 
-    const createGroup = useCallback(async (dto: CreateGroupChatDTO) => {
+    const createGroup = useCallback(async (dto: CreateGroupChat) => {
         return runAction({
             action: () => createGroupMutationResult.mutateAsync(dto),
             toast: createPromiseToastOptions({
@@ -68,7 +68,7 @@ const useGroupActions = () => {
         });
     }, [queryClient, removeUsersFromGroupMutationResult]);
 
-    const updateGroupInfo = useCallback(async (chatId: string, dto: UpdateGroupInfoDTO) => {
+    const updateGroupInfo = useCallback(async (chatId: string, dto: UpdateGroupInfo) => {
         return runAction({
             action: () => updateGroupInfoMutationResult.mutateAsync({ chatId, ...dto }),
             toast: createPromiseToastOptions({
@@ -82,7 +82,7 @@ const useGroupActions = () => {
         });
     }, [queryClient, updateGroupInfoMutationResult]);
 
-    const updateGroupAdmins = useCallback(async (chatId: string, dto: UpdateGroupAdminsDTO) => {
+    const updateGroupAdmins = useCallback(async (chatId: string, dto: UpdateGroupAdmins) => {
         return runAction({
             action: () => updateGroupAdminsMutationResult.mutateAsync({ chatId, ...dto }),
             toast: createPromiseToastOptions({

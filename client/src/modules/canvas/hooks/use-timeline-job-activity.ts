@@ -1,11 +1,11 @@
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/types/job';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { isQueuedJobStatus, isRunningJobStatus, resolveJobAnalysisId } from '../utilities/analysis-job-status';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { Job } from '@/modules/jobs/api/entities/job';
+import type { Job } from '@/modules/jobs/api/types/job';
 
 export type TimelineTickTone = 'queued' | 'running' | 'completed';
 export type AnalysisFrameActivityStatus = 'queued' | 'running' | 'completed' | 'failed';

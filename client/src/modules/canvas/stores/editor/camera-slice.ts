@@ -2,7 +2,7 @@ import { mergeNestedSectionState, resetSectionState, setSectionFieldState } from
 import {
     CameraType,
     getDefaultCameraSettings
-} from '@/shared/domain/rendering/camera';
+} from '@/shared/rendering/camera';
 
 import type { EditorStore } from './types';
 import type { CameraSettingsState, CameraSettingsStore, CameraUpdateState } from '@/modules/fractal/stores/contracts/editor/visual-types';

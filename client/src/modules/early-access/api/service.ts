@@ -4,14 +4,14 @@ export enum EarlyAccessSubscriptionSource {
     DiscoverTeam = 'discover_team'
 }
 
-export interface CreateEarlyAccessSubscriptionInputDTO {
+export interface CreateEarlyAccessSubscriptionInput {
     teamId: string;
     email: string;
     source?: EarlyAccessSubscriptionSource;
     referrer?: string;
 }
 
-export interface CreateEarlyAccessSubscriptionOutputDTO {
+export interface CreateEarlyAccessSubscriptionResponse {
     email: string;
     teamId: string;
     teamName: string;
@@ -20,8 +20,8 @@ export interface CreateEarlyAccessSubscriptionOutputDTO {
 
 const endpoints = {
     createSubscription: post<
-        CreateEarlyAccessSubscriptionInputDTO,
-        CreateEarlyAccessSubscriptionOutputDTO
+        CreateEarlyAccessSubscriptionInput,
+        CreateEarlyAccessSubscriptionResponse
     >('/teams/:teamId/subscriptions', {
         omit: ['teamId']
     })

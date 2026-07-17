@@ -1,4 +1,4 @@
-import CopyableField from '@/shared/presentation/components/CopyableField';
+import CopyableField from '@/shared/ui/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
 import { CloseButton, Divider, Heading, Row, Stack, Text } from '@voltstack/bravais';
 

@@ -1,7 +1,7 @@
-import { JobStatus } from '@/modules/jobs/api/entities/job';
+import { JobStatus } from '@/modules/jobs/api/types/job';
 import { AnalysisStatus } from './analysis-status';
 
-import type { Job } from '@/modules/jobs/api/entities/job';
+import type { Job } from '@/modules/jobs/api/types/job';
 
 export const resolveJobAnalysisId = (job: Job): string | undefined => {
     if (typeof job.analysisId === 'string' && job.analysisId.trim().length > 0) {

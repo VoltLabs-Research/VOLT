@@ -6,8 +6,8 @@ import {
     ReferenceArea
 } from 'recharts';
 import { useState, useCallback } from 'react';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
 import { useCanvasPipelineStore, DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG } from '../../stores/canvas-pipeline';
 
 interface ExposureChartProps {

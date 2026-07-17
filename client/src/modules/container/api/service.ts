@@ -7,14 +7,14 @@ import {
     type FolderListParams,
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Container } from './entities/container';
-import type { ContainerFile } from './entities/container-file';
-import type { ContainerFolder } from './entities/container-folder';
-import type { ContainerPortAccessUrl } from './entities/container-port-access-url';
-import type { ContainerStatsResponse } from './entities/container-stats';
-import type { EnvVariable } from './entities/env-variable';
-import type { PortMapping } from './entities/port-mapping';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Container } from './types/container';
+import type { ContainerFile } from './types/container-file';
+import type { ContainerFolder } from './types/container-folder';
+import type { ContainerPortAccessUrl } from './types/container-port-access-url';
+import type { ContainerStatsResponse } from './types/container-stats';
+import type { EnvVariable } from './types/env-variable';
+import type { PortMapping } from './types/port-mapping';
 
 export enum ContainerAction {
     Start = 'start',
@@ -64,21 +64,21 @@ export interface MoveContainerParams {
     folderId: string | null;
 }
 
-export interface GetContainerFilesInputDTO {
+export interface GetContainerFilesInput {
     containerId: string;
     path?: string;
 }
 
-export interface GetContainerFilesOutputDTO {
+export interface GetContainerFilesResponse {
     files: ContainerFile[];
 }
 
-export interface ReadContainerFileInputDTO {
+export interface ReadContainerFileInput {
     containerId: string;
     path: string;
 }
 
-export interface ReadContainerFileOutputDTO {
+export interface ReadContainerFileResponse {
     content: string;
 }
 
@@ -133,10 +133,10 @@ const endpoints = {
     move: patch<MoveContainerParams, void>('/:containerId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getFiles: get<GetContainerFilesInputDTO, GetContainerFilesOutputDTO>('/:containerId/files', {
+    getFiles: get<GetContainerFilesInput, GetContainerFilesResponse>('/:containerId/files', {
         query: ({ path }) => path ? { path } : undefined
     }),
-    readFile: get<ReadContainerFileInputDTO, ReadContainerFileOutputDTO>('/:containerId/files/content', {
+    readFile: get<ReadContainerFileInput, ReadContainerFileResponse>('/:containerId/files/content', {
         query: ({ path }) => ({ path })
     }),
     ...createFolderCrudEndpoints<

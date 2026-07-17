@@ -1,38 +1,38 @@
 import { createService, paginated, request, post, patch, del } from '@/app/core/http/utilities/create-service';
 
 import { buildFileFormData } from '@/shared/utils/file';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ChatMessage, ChatMessageType } from '../entities/message';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ChatMessage, ChatMessageType } from '../types/message';
 
-export interface DeleteMessageInputDTO {
+export interface DeleteMessageInput {
     chatId: string;
     messageId: string;
 }
 
-export interface EditMessageInputDTO {
+export interface EditMessageInput {
     chatId: string;
     messageId: string;
     content: string;
 }
 
-export interface GetChatMessagesInputDTO {
+export interface GetChatMessagesInput {
     chatId: string;
     page: number;
     limit: number;
 }
 
-export interface SendFileMessageInputDTO {
+export interface SendFileMessageInput {
     chatId: string;
     file: File;
 }
 
-export interface SendMessageInputDTO {
+export interface SendMessageInput {
     chatId: string;
     content: string;
     messageType: ChatMessageType;
 }
 
-export interface ToggleReactionInputDTO {
+export interface ToggleReactionInput {
     chatId: string;
     messageId: string;
     emoji: string;
@@ -43,11 +43,11 @@ interface MarkAsReadParams {
 }
 
 const endpoints = {
-    getMessages: paginated<GetChatMessagesInputDTO, PaginatedResponse<ChatMessage>>('/:chatId/messages'),
-    sendMessage: post<SendMessageInputDTO, ChatMessage>('/:chatId/messages'),
-    editMessage: patch<EditMessageInputDTO, ChatMessage>('/:chatId/messages/:messageId'),
-    deleteMessage: del<DeleteMessageInputDTO>('/:chatId/messages/:messageId'),
-    sendFileMessage: request<SendFileMessageInputDTO, ChatMessage>('POST', '/:chatId/messages/file', {
+    getMessages: paginated<GetChatMessagesInput, PaginatedResponse<ChatMessage>>('/:chatId/messages'),
+    sendMessage: post<SendMessageInput, ChatMessage>('/:chatId/messages'),
+    editMessage: patch<EditMessageInput, ChatMessage>('/:chatId/messages/:messageId'),
+    deleteMessage: del<DeleteMessageInput>('/:chatId/messages/:messageId'),
+    sendFileMessage: request<SendFileMessageInput, ChatMessage>('POST', '/:chatId/messages/file', {
         body: ({ file }) => buildFileFormData([{ name: 'file', file }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
@@ -55,7 +55,7 @@ const endpoints = {
         unwrap: 'void',
         body: () => ({})
     }),
-    toggleReaction: patch<ToggleReactionInputDTO, ChatMessage>('/:chatId/messages/:messageId/reactions')
+    toggleReaction: patch<ToggleReactionInput, ChatMessage>('/:chatId/messages/:messageId/reactions')
 };
 
 export default createService({

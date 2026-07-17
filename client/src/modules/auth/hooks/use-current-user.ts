@@ -1,6 +1,6 @@
 import { useCurrentUserQuery } from './queries';
 import { useAuthStore } from '../stores/use-auth-store';
-import type { User } from '../api/entities/user';
+import type { User } from '../api/types/user';
 
 export const useCurrentUser = (): User | null => {
     const isInitialized = useAuthStore((state) => state.isInitialized);

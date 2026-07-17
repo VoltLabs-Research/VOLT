@@ -2,7 +2,7 @@ import CameraMenuPopover from '../CameraMenuPopover';
 import PerformanceMenuPopover from '../PerformanceMenuPopover';
 import RenderMenuPopover from '../RenderMenuPopover';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
-import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
+import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
 import { useChatSurfaceStore } from '@/modules/ai/stores/use-chat-surface-store';
 import { FloatingToolbar, IconButton, Tooltip } from '@voltstack/bravais';
 import { useMedia } from '@voltstack/bravais';

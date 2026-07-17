@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
-import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
+import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import pluginService from '@/modules/plugin/api/services/plugin-service';

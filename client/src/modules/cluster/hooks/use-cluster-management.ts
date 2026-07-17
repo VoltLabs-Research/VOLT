@@ -10,18 +10,18 @@ import {
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { isTeamClusterWaiting } from '@/modules/cluster/utilities/is-team-cluster-waiting';
 import { resolveSelectedClusterId } from '@/modules/cluster/utilities/resolve-selected-cluster-id';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useRequiredSelectedTeamId from '@/modules/team/hooks/ai-integration/use-required-selected-team-id';
 import { useMemo } from 'react';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
 import type {
-    CreateTeamClusterTransferRequestOutputDTO,
-    DeleteTeamClusterOutputDTO,
-    TeamClusterQueueConcurrencyInputDTO,
-    TeamClusterQueueScopeLimitsInputDTO,
-    UpdateTeamClusterQueueConcurrencyOutputDTO,
-    UpdateTeamClusterRoleOutputDTO
+    CreateTeamClusterTransferRequestResponse,
+    DeleteTeamClusterResponse,
+    TeamClusterQueueConcurrencyInput,
+    TeamClusterQueueScopeLimitsInput,
+    UpdateTeamClusterQueueConcurrencyResponse,
+    UpdateTeamClusterRoleResponse
 } from '@/modules/cluster/api/service';
 
 interface ClusterCreateToastOptions {
@@ -32,7 +32,7 @@ interface ClusterCreateToastOptions {
 
 interface DeleteClusterToastOptions {
     loading: { title: string };
-    success: (result: DeleteTeamClusterOutputDTO) => {
+    success: (result: DeleteTeamClusterResponse) => {
         title: string;
         description: string;
     };
@@ -76,7 +76,7 @@ const UPDATE_CLUSTER_ROLE_TOAST_OPTIONS: ClusterCreateToastOptions = {
 
 const CREATE_CLUSTER_TRANSFER_TOAST_OPTIONS = {
     loading: { title: 'Queueing transfer jobs...' },
-    success: (result: CreateTeamClusterTransferRequestOutputDTO) => ({
+    success: (result: CreateTeamClusterTransferRequestResponse) => ({
         title: result.requestedJobs.length === 1 ? 'Transfer job queued' : 'Transfer jobs queued',
         description: result.message
     }),
@@ -93,20 +93,20 @@ export interface ClusterManagementResult {
     error: Error | null;
     createCluster: (name: string) => Promise<{ teamCluster: TeamCluster; enrollmentToken: string }>;
     revealCredentials: (teamClusterId: string, password: string) => Promise<TeamClusterCredentialServices>;
-    deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterOutputDTO>;
+    deleteCluster: (teamClusterId: string, password: string) => Promise<DeleteTeamClusterResponse>;
     updateQueueConcurrency: (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
-        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO
-    ) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
+        queueConcurrency: TeamClusterQueueConcurrencyInput,
+        queueScopeLimits: TeamClusterQueueScopeLimitsInput
+    ) => Promise<UpdateTeamClusterQueueConcurrencyResponse>;
     updateRole: (
         teamClusterId: string,
         role: TeamClusterRole
-    ) => Promise<UpdateTeamClusterRoleOutputDTO>;
+    ) => Promise<UpdateTeamClusterRoleResponse>;
     createTransferRequest: (
         teamClusterId: string,
         destinationClusterId: string
-    ) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
+    ) => Promise<CreateTeamClusterTransferRequestResponse>;
 }
 
 const useClusterManagement = (): ClusterManagementResult => {
@@ -172,8 +172,8 @@ const useClusterManagement = (): ClusterManagementResult => {
 
     const updateQueueConcurrency = async (
         teamClusterId: string,
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO,
-        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO
+        queueConcurrency: TeamClusterQueueConcurrencyInput,
+        queueScopeLimits: TeamClusterQueueScopeLimitsInput
     ) => {
         return showPromise(updateQueueConcurrencyMutation.mutateAsync({
             teamId: requireSelectedTeamId(),

@@ -7,7 +7,7 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Box, Heading, Loader, Row, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';

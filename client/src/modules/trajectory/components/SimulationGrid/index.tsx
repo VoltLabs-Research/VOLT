@@ -9,16 +9,16 @@ import {
     getTrajectoryListingFolderDroppableId,
     isTrajectoryFolderRow
 } from '@/modules/trajectory/utilities/listing';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import { FolderedListingModals } from '@/shared/presentation/components/DocumentListing/foldered-listing';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
+import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
+import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
 import { Box } from '@voltstack/bravais';
 import { ChevronRight, Download, Upload } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { DiscoverTeamSummary } from '@/modules/trajectory/api/services/discover-service';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 import './SimulationGrid.css';
 

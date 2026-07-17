@@ -10,8 +10,8 @@ import {
     resolveSlicePlaneDefinition
 } from '@/modules/fractal/utilities/slice-plane';
 import type { SlicePlaneStageConfig } from '@/modules/canvas/stores/canvas-pipeline';
-import type { SlicePlaneConfig } from '@/modules/fractal/api/entities/scene';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { SlicePlaneConfig } from '@/modules/fractal/api/types/scene';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 
 const EMPTY_PLANES: Plane[] = [];
 

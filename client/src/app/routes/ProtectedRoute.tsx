@@ -15,7 +15,7 @@ import { resetTeamSessionState, useTeamStore } from '@/modules/team/stores/team/
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';
-import ConfirmActionModal from '@/shared/presentation/components/ConfirmActionModal';
+import ConfirmActionModal from '@/shared/ui/components/ConfirmActionModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { Loader } from '@voltstack/bravais';
 import { useEffect, useRef } from 'react';

@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { temporal } from 'zundo';
 import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
-import type { IWorkflow, INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
-import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import type { IWorkflow, INodeData } from '@/modules/plugin/api/types/plugin/workflow';
+import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { NODE_CONFIGS, createNode } from '@/modules/plugin/utilities/plugin/node-registry';
 
 type ValidationResult = {

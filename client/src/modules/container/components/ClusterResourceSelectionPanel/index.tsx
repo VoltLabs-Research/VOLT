@@ -1,13 +1,13 @@
 import { EmptyState, Box, Row, Slider, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import './ClusterResourceSelectionPanel.css';
 import { Cpu, HardDrive, ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/utilities/resource-allocation';
 import { useMemo } from 'react';
-import type { ClusterResourceLimits } from '@/modules/container/api/entities/cluster-resource-limits';
-import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
+import type { ClusterResourceLimits } from '@/modules/container/api/types/cluster-resource-limits';
+import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
 
 interface ClusterResourceSelectionPanelProps {
     teamClusters: TeamClusterOption[];

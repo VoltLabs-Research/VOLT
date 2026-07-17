@@ -5,7 +5,7 @@ import { TEAM_ROLE_QUERY_KEYS } from '@/modules/team/hooks/role/queries';
 import teamStorage from '@/modules/team/services/team/team-storage';
 import { useTeamPresenceStore } from '@/modules/team/stores/team/use-team-presence-store';
 import { resetTeamScopedStores } from '@/shared/utils/application-store-cleanups';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { getPreservedQueryPrefixes, runManualAppCleanup } from '@/shared/utils/app-cleanup-registry';
 import { create } from 'zustand';
 

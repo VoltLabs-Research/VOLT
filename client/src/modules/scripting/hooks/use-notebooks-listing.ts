@@ -8,13 +8,13 @@ import {
 } from '@/modules/scripting/hooks/queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
 import { SOCKET_NOTEBOOK_EVENTS } from '@/modules/socket/events/scripting';
-import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
+import { ScriptingNotebookScope } from '@/modules/scripting/api/types/scripting-notebook-scope';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { closeModal, openModal } from '@voltstack/bravais';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
-import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useRenameEntityModal from '@/shared/presentation/hooks/use-rename-entity-modal';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
+import useListingActions from '@/shared/ui/hooks/use-listing-actions';
+import useRenameEntityModal from '@/shared/ui/hooks/use-rename-entity-modal';
 import {
     JUPYTER_SESSION_PENDING_MESSAGE,
     JUPYTER_SESSION_TIMEOUT_MESSAGE,
@@ -30,13 +30,13 @@ import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '../components/ScriptingN
 import { FolderOpen, Pencil } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { sileo } from 'sileo';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type {
     ScriptingNotebook
-} from '@/modules/scripting/api/entities/scripting-notebook';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+} from '@/modules/scripting/api/types/scripting-notebook';
+import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type {
     ScriptingNotebookDeploymentModalRequest
 } from '../components/ScriptingNotebookDeploymentModal';

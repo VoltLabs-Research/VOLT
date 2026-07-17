@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { analysisQuery } from '@/modules/analysis/hooks/queries';
-import { confirm } from '@/shared/presentation/hooks/use-confirm';
-import { runCrudMutation } from '@/shared/presentation/hooks/toast';
+import { confirm } from '@/shared/ui/hooks/use-confirm';
+import { runCrudMutation } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
 import { isAccessDeniedError } from '@/shared/errors/core';
 
 const useDeletePluginListingAnalyses = () => {

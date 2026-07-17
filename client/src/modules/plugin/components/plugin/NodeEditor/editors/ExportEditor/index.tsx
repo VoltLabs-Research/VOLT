@@ -1,11 +1,11 @@
 import { useCallback, useState, useMemo, useEffect } from 'react';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
-import FormSection from '@/shared/presentation/components/FormSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import CodeEditor from '@/shared/presentation/components/CodeEditor';
-import type { IExportData } from '@/modules/plugin/api/entities/plugin/workflow';
+import FormSection from '@/shared/ui/components/FormSection';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import CodeEditor from '@/shared/ui/components/CodeEditor';
+import type { IExportData } from '@/modules/plugin/api/types/plugin/workflow';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import type { EditorProps } from '../types';
 import { EXPORT_EDITOR_DEFAULT_VALUES } from './schema';

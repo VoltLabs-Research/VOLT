@@ -1,6 +1,6 @@
 
 import { createService, get } from '@/app/core/http/utilities/create-service';
-import type { DailyActivity } from './entities/daily-activity';
+import type { DailyActivity } from './types/daily-activity';
 
 export interface GetDailyActivityParams {
     range?: number;

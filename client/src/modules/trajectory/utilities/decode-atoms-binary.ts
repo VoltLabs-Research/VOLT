@@ -1,4 +1,4 @@
-import type { AtomColumnDType, AtomColumnView, AtomData, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
+import type { AtomColumnDType, AtomColumnView, AtomData, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 
 const DTYPE_BY_ID: Record<number, AtomColumnDType> = {
     0: 'f32',
@@ -44,7 +44,7 @@ const createTypedArrayView = (
  * The returned columns share the response `ArrayBuffer`; callers must not
  * mutate the buffer while views are alive.
  */
-export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
+export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsResponse => {
     const view = new DataView(buffer);
     let offset = 0;
 
@@ -140,7 +140,7 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsOutputDTO => {
  * Only use this in tables/debug UIs that cannot consume TypedArrays directly —
  * it allocates one object per atom and defeats the point of binary transfer.
  */
-export const atomsToAoS = (result: GetAtomsOutputDTO): AtomData[] => {
+export const atomsToAoS = (result: GetAtomsResponse): AtomData[] => {
     const rows: AtomData[] = new Array(result.count);
     const columns = result.columns;
 

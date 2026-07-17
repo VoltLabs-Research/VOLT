@@ -1,4 +1,4 @@
-import { SessionActivityType } from '../api/entities/session';
+import { SessionActivityType } from '../api/types/session';
 import { Globe, KeyRound, LogIn, LogOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 

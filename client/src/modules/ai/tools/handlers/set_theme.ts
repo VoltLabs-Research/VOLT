@@ -1,4 +1,4 @@
-import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { Theme } from '@/shared/ui/hooks/use-theme';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
 
 interface SetThemeInput {

@@ -1,4 +1,4 @@
-import { queryClient } from '@/shared/infrastructure/query';
+import { queryClient } from '@/shared/query';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 interface EntityCacheResourceConfig<TEntity extends { _id: string }> {

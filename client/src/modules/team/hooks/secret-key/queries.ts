@@ -1,7 +1,7 @@
 import secretKeyService from '../../api/services/secret-key-service';
-import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
-import type { CreateSecretKeyInputDTO, CreateSecretKeyResponse, DeleteSecretKeyInputDTO, RevokeSecretKeyInputDTO } from '../../api/services/secret-key-service';
-import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/entities/secret-key/secret-key-metrics';
+import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/query';
+import type { CreateSecretKeyInput, CreateSecretKeyResponse, DeleteSecretKeyInput, RevokeSecretKeyInput } from '../../api/services/secret-key-service';
+import type { KeyUsageMetrics, TeamUsageMetrics } from '../../api/types/secret-key/secret-key-metrics';
 
 interface SecretKeyUsageQueryParams {
     teamId: string;
@@ -74,17 +74,17 @@ export const useSecretKeyTeamMetricsQuery = createQuery<SecretKeyTeamMetricsQuer
     secretKeyService.getTeamMetrics
 );
 
-export const useCreateSecretKeyMutation = createInvalidatingMutation<CreateSecretKeyResponse, CreateSecretKeyInputDTO>(
+export const useCreateSecretKeyMutation = createInvalidatingMutation<CreateSecretKeyResponse, CreateSecretKeyInput>(
     secretKeyService.create,
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );
 
-export const useDeleteSecretKeyMutation = createInvalidatingMutation<void, DeleteSecretKeyInputDTO>(
+export const useDeleteSecretKeyMutation = createInvalidatingMutation<void, DeleteSecretKeyInput>(
     secretKeyService.deleteById,
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );
 
-export const useRevokeSecretKeyMutation = createInvalidatingMutation<void, RevokeSecretKeyInputDTO>(
+export const useRevokeSecretKeyMutation = createInvalidatingMutation<void, RevokeSecretKeyInput>(
     secretKeyService.revokeById,
     (_data, variables) => [SECRET_KEY_QUERY_KEYS.secretKeysListing(variables.teamId)]
 );

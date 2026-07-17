@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import type { ChangeEvent } from 'react';
 
 /**

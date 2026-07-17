@@ -1,5 +1,5 @@
 import './GlobalSearch.css';
-import { useFloatingRoot } from '@/shared/presentation/contexts/FloatingRootContext';
+import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import { Box, Breadcrumbs, Loader, Row, SearchInput, Stack, Text, EmptyState } from '@voltstack/bravais';

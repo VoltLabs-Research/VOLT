@@ -1,8 +1,8 @@
 import { createService, del, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 
-import type { AIProvider } from './entities/ai-provider';
-import type { AIConversation, AIConversationMessage } from './entities/ai-conversation';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { AIProvider } from './types/ai-provider';
+import type { AIConversation, AIConversationMessage } from './types/ai-conversation';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { ChatTransport, UIMessage } from 'ai';
 
 export interface CreateAIConversationParams {

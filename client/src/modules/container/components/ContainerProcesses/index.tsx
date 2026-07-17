@@ -2,9 +2,9 @@ import { useContainerProcessesQuery } from '../../hooks/queries';
 import { useContainerHeaderActions } from '../../hooks/use-container-details-context';
 import { useMemo } from 'react';
 import './ContainerProcesses.css';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import RefreshButton from '@/shared/ui/components/RefreshButton';
 import { Stack, Table } from '@voltstack/bravais';
 import type { Column } from '@voltstack/bravais';
 

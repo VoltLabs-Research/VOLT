@@ -7,9 +7,9 @@ import {
 } from '@/modules/latex/utilities/workspace-dnd';
 import { joinWorkspacePath, normalizeWorkspaceFolderPath } from '@/modules/latex/utilities/workspace';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
-import FileExplorer from '@/shared/presentation/components/FileExplorer';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import FileExplorer from '@/shared/ui/components/FileExplorer';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { Popover, PopoverMenu, PopoverMenuItem, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import FileTreeNode from './FileTreeNode';
 import WorkspaceCreationInputs from './WorkspaceCreationInputs';
@@ -18,13 +18,13 @@ import { cn } from '@/shared/utils/cn';
 import { processFileSystemEntry } from '@/shared/utils/file';
 import { FilePlus, FolderOpen, FolderPlus, Upload } from 'lucide-react';
 import { sileo } from 'sileo';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
 import type { LatexWorkspaceDragData, LatexWorkspaceDropData } from '@/modules/latex/utilities/workspace-dnd';
 import type { FileTreeNode as FileTreeNodeType } from '@/modules/latex/utilities/file-tree';
 import type { FileWithPath } from '@/shared/utils/file';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import type { ChangeEvent, DragEvent, MouseEvent, RefObject } from 'react';
 
 interface LatexFilePanelProps {

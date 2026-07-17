@@ -1,5 +1,5 @@
 import { useRemoveRunningJobsMutation, useRetryFailedJobsMutation } from './queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
 
 const useJobGroupActions = (trajectoryId: string) => {

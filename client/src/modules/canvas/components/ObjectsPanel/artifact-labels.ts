@@ -1,4 +1,4 @@
-import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { SceneArtifact, SceneArtifactParticleFilterCondition } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
 
 const PARTICLE_FILTER_ACTION_LABELS = {
     delete: 'Delete',

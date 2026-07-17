@@ -3,19 +3,19 @@ import useWhiteboardsListing, {
     RENAME_WHITEBOARD_MODAL_ID,
     whiteboardsListingResource
 } from '@/modules/whiteboards/hooks/use-whiteboards-listing';
-import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
-import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
+import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';
 import {
     FolderedDocumentListing,
     FolderedListingModals,
     createFolderedListingColumns,
     useFolderedListingDashboardBreadcrumb
-} from '@/shared/presentation/components/DocumentListing/foldered-listing';
+} from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useTip from '@/shared/tips/use-tip';
 import './WhiteboardsListing.css';
 import { SquarePen } from 'lucide-react';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import type { MenuOption } from '@/shared/ui/types/menu';
+import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 import type { WhiteboardListingRow } from '@/modules/whiteboards/utilities/listing';
 import { WhiteboardListingRowType } from '@/modules/whiteboards/utilities/listing';
 import { useMemo } from 'react';

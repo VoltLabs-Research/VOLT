@@ -1,6 +1,6 @@
 import { dailyActivityQuery } from './queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect } from 'react';
 
 interface UseDailyActivityDataOptions {

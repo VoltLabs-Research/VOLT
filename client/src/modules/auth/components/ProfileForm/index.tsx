@@ -1,4 +1,4 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { InlineStatus, Loader, Stack } from '@voltstack/bravais';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

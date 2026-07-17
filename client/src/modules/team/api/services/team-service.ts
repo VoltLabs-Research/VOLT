@@ -1,49 +1,49 @@
 import { createService, get, post, patch, del } from '@/app/core/http/utilities/create-service';
 
 import type { EmptyParams, UnwrapMode } from '@voltstack/voltclient';
-import type { Team } from '../entities/team/team';
+import type { Team } from '../types/team/team';
 
-export interface CreateTeamInputDTO {
+export interface CreateTeamInput {
     name: string;
     description: string;
 }
 
-export interface DeleteInviteCodeInputDTO {
+export interface DeleteInviteCodeInput {
     teamId: string;
 }
 
-export interface DeleteTeamInputDTO {
+export interface DeleteTeamInput {
     teamId: string;
 }
 
-export interface GenerateInviteCodeInputDTO {
+export interface GenerateInviteCodeInput {
     teamId: string;
 }
 
-export interface GetTeamPermissionsInputDTO {
+export interface GetTeamPermissionsInput {
     teamId: string;
 }
 
-export type GetTeamPermissionsOutputDTO = string[];
+export type GetTeamPermissionsResponse = string[];
 
-export interface JoinByInviteCodeInputDTO {
+export interface JoinByInviteCodeInput {
     code: string;
 }
 
-export interface JoinByInviteCodeOutputDTO {
+export interface JoinByInviteCodeResponse {
     message: string;
     teamId: string;
 }
 
-export interface LeaveTeamInputDTO {
+export interface LeaveTeamInput {
     teamId: string;
 }
 
-export interface PreviewJoinByInviteCodeInputDTO {
+export interface PreviewJoinByInviteCodeInput {
     code: string;
 }
 
-export interface PreviewJoinByInviteCodeOutputDTO {
+export interface PreviewJoinByInviteCodeResponse {
     message: string;
     teamId: string;
     teamName: string;
@@ -51,7 +51,7 @@ export interface PreviewJoinByInviteCodeOutputDTO {
     isAlreadyMember: boolean;
 }
 
-export interface UpdateTeamInputDTO {
+export interface UpdateTeamInput {
     teamId: string;
     name?: string;
     description?: string;
@@ -61,15 +61,15 @@ const TEAM_PERMISSIONS_UNWRAP: UnwrapMode = { field: 'permissions' };
 
 const endpoints = {
     getAll: get<EmptyParams, Team[]>('/'),
-    create: post<CreateTeamInputDTO, Team>('/'),
-    update: patch<UpdateTeamInputDTO, Team>('/:teamId'),
-    delete: del<DeleteTeamInputDTO>('/:teamId'),
-    generateInviteCode: post<GenerateInviteCodeInputDTO, Team>('/:teamId/invite-code'),
-    deleteInviteCode: del<DeleteInviteCodeInputDTO>('/:teamId/invite-code'),
-    previewJoinByCode: post<PreviewJoinByInviteCodeInputDTO, PreviewJoinByInviteCodeOutputDTO>('/join/preview'),
-    joinByCode: post<JoinByInviteCodeInputDTO, JoinByInviteCodeOutputDTO>('/join'),
-    leave: del<LeaveTeamInputDTO>('/:teamId/self/membership', { unwrap: 'void' }),
-    getMyPermissions: get<GetTeamPermissionsInputDTO, GetTeamPermissionsOutputDTO>(
+    create: post<CreateTeamInput, Team>('/'),
+    update: patch<UpdateTeamInput, Team>('/:teamId'),
+    delete: del<DeleteTeamInput>('/:teamId'),
+    generateInviteCode: post<GenerateInviteCodeInput, Team>('/:teamId/invite-code'),
+    deleteInviteCode: del<DeleteInviteCodeInput>('/:teamId/invite-code'),
+    previewJoinByCode: post<PreviewJoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>('/join/preview'),
+    joinByCode: post<JoinByInviteCodeInput, JoinByInviteCodeResponse>('/join'),
+    leave: del<LeaveTeamInput>('/:teamId/self/membership', { unwrap: 'void' }),
+    getMyPermissions: get<GetTeamPermissionsInput, GetTeamPermissionsResponse>(
         '/:teamId/self/permissions', {
             unwrap: TEAM_PERMISSIONS_UNWRAP
         }

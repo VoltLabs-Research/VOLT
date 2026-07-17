@@ -6,7 +6,7 @@ import {
     describeEndpointFailure,
     probeEndpointHealth
 } from '@/modules/auth/services/endpoint-health';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Heading, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { Server } from 'lucide-react';

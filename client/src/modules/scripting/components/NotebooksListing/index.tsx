@@ -1,12 +1,12 @@
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
 import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
-import { ScriptingNotebookScope } from '@/modules/scripting/api/entities/scripting-notebook-scope';
+import { ScriptingNotebookScope } from '@/modules/scripting/api/types/scripting-notebook-scope';
 import { getPrimaryTrajectory } from '@/modules/scripting/utilities/notebooks';
-import { clusterColumn, dateColumn, userColumn } from '@/shared/presentation/utilities/column-presets';
-import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import RenameEntityModal from '@/shared/presentation/components/RenameEntityModal';
-import DocumentListing, { type DocumentListingTab } from '@/shared/presentation/components/DocumentListing';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utilities/column-presets';
+import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
+import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
+import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { Text } from '@voltstack/bravais';
 import { useCallback, useMemo, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
@@ -14,7 +14,7 @@ import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-note
 import type {
     ScriptingNotebook,
     ScriptingNotebookTrajectory
-} from '@/modules/scripting/api/entities/scripting-notebook';
+} from '@/modules/scripting/api/types/scripting-notebook';
 
 enum NotebooksListingTabId {
     List = 'list',

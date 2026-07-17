@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import type { Container } from '../api/entities/container';
-import type { EnvVariable } from '../api/entities/env-variable';
-import type { PortMapping } from '../api/entities/port-mapping';
+import type { Container } from '../api/types/container';
+import type { EnvVariable } from '../api/types/env-variable';
+import type { PortMapping } from '../api/types/port-mapping';
 import type { ContainerStatsViewData } from '../services/container-stats-view';
 
 export interface ContainerDetailsContext {

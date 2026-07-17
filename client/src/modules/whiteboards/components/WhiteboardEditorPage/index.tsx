@@ -12,7 +12,7 @@ import {
     filterPersistableAppState,
     normalizeWhiteboardRuntimeAppState
 } from '@/modules/whiteboards/utilities/whiteboards';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import type { ChangeEvent, ClipboardEvent, ComponentProps, CSSProperties, DragEvent, ReactNode } from 'react';

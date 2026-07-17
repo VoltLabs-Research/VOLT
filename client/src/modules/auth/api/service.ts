@@ -1,48 +1,48 @@
 import { createService, del, get, patch, post, request } from '@/app/core/http/utilities/create-service';
 import { buildFileFormData } from '@/shared/utils/file';
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { User } from './entities/user';
+import type { User } from './types/user';
 
-export interface ChangePasswordInputDTO {
+export interface ChangePasswordInput {
     passwordCurrent?: string;
     password: string;
 }
 
-export interface ChangePasswordOutputDTO {
+export interface ChangePasswordResponse {
     token: string;
     user: User;
 }
 
-export interface CheckEmailInputDTO {
+export interface CheckEmailInput {
     email: string;
 }
 
-export interface CheckEmailOutputDTO {
+export interface CheckEmailResponse {
     exists: boolean;
 }
 
 export type OAuthProviderKey = 'github' | 'google' | 'microsoft';
 
-export interface GetAvailableOAuthProvidersOutputDTO {
+export interface GetAvailableOAuthProvidersResponse {
     providers: OAuthProviderKey[];
 }
 
-export interface GetPasswordInfoOutputDTO {
+export interface GetPasswordInfoResponse {
     hasPassword: boolean;
     lastChanged?: string;
 }
 
-export interface SignInInputDTO {
+export interface SignInInput {
     email: string;
     password: string;
 }
 
-export interface SignInOutputDTO {
+export interface SignInResponse {
     user: User;
     token: string;
 }
 
-export interface SignUpInputDTO {
+export interface SignUpInput {
     email: string;
     firstName: string;
     lastName: string;
@@ -50,35 +50,35 @@ export interface SignUpInputDTO {
     passwordConfirm: string;
 }
 
-export interface SignUpOutputDTO {
+export interface SignUpResponse {
     user: User;
     token: string;
 }
 
-export interface UpdateAvatarInputDTO {
+export interface UpdateAvatarInput {
     avatar: File;
 }
 
-export interface UpdateProfileInputDTO {
+export interface UpdateProfileInput {
     fullName: string;
     email: string;
 }
 
-type UpdateMeInput = UpdateProfileInputDTO | UpdateAvatarInputDTO;
+type UpdateMeInput = UpdateProfileInput | UpdateAvatarInput;
 
-const isUpdateAvatarInputDTO = (data: UpdateMeInput): data is UpdateAvatarInputDTO => (
+const isUpdateAvatarInput = (data: UpdateMeInput): data is UpdateAvatarInput => (
     'avatar' in data && data.avatar instanceof File
 );
 
-const buildUpdateMeBody = (data: UpdateMeInput): UpdateProfileInputDTO | FormData => {
-    if (!isUpdateAvatarInputDTO(data)) {
+const buildUpdateMeBody = (data: UpdateMeInput): UpdateProfileInput | FormData => {
+    if (!isUpdateAvatarInput(data)) {
         return data;
     }
     return buildFileFormData([{ name: 'avatar', file: data.avatar }]);
 };
 
 const buildUpdateMeHeaders = (data: UpdateMeInput) => {
-    if (isUpdateAvatarInputDTO(data)) {
+    if (isUpdateAvatarInput(data)) {
         return { 'Content-Type': 'multipart/form-data' };
     }
     return undefined;
@@ -91,15 +91,15 @@ const endpoints = {
         headers: buildUpdateMeHeaders
     }),
     deleteMe: del<EmptyParams>('/me'),
-    signIn: post<SignInInputDTO, SignInOutputDTO>('/sessions'),
-    localSignIn: post<EmptyParams, SignInOutputDTO>('/sessions/local'),
-    signUp: post<SignUpInputDTO, SignUpOutputDTO>('/users', {
+    signIn: post<SignInInput, SignInResponse>('/sessions'),
+    localSignIn: post<EmptyParams, SignInResponse>('/sessions/local'),
+    signUp: post<SignUpInput, SignUpResponse>('/users', {
         omit: ['passwordConfirm']
     }),
-    checkEmail: get<CheckEmailInputDTO, CheckEmailOutputDTO>('/emails/:email/availability'),
-    getAvailableOAuthProviders: get<EmptyParams, GetAvailableOAuthProvidersOutputDTO>('/oauth/providers'),
-    getPasswordInfo: get<EmptyParams, GetPasswordInfoOutputDTO>('/password/info'),
-    changePassword: patch<ChangePasswordInputDTO, ChangePasswordOutputDTO>('/me/password')
+    checkEmail: get<CheckEmailInput, CheckEmailResponse>('/emails/:email/availability'),
+    getAvailableOAuthProviders: get<EmptyParams, GetAvailableOAuthProvidersResponse>('/oauth/providers'),
+    getPasswordInfo: get<EmptyParams, GetPasswordInfoResponse>('/password/info'),
+    changePassword: patch<ChangePasswordInput, ChangePasswordResponse>('/me/password')
 };
 
 export default createService({

@@ -1,6 +1,6 @@
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { useEffect, useMemo, useRef } from 'react';
-import type { INodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import type { Node } from '@xyflow/react';
 import { useForm } from 'react-hook-form';
 import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form';

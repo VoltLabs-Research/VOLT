@@ -12,7 +12,7 @@ import {
 } from '@/modules/cluster/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import type { ClusterMetrics, ClusterHistoryMetric } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { ClusterMetrics, ClusterHistoryMetric } from '@/modules/cluster/api/types/cluster-metrics';
 
 interface ClusterMetricsHistoryEvent {
     clusterId: string;

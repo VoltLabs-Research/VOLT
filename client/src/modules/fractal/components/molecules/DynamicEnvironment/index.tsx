@@ -1,4 +1,4 @@
-import { resolveEnvironmentColor, EnvironmentColorField } from '@/shared/domain/rendering/environment';
+import { resolveEnvironmentColor, EnvironmentColorField } from '@/shared/rendering/environment';
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color, Fog } from 'three';

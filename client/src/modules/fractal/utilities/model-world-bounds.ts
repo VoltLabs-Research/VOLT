@@ -1,4 +1,4 @@
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 
 const areVectorsEqual = (
     left: ModelWorldBounds['min'],

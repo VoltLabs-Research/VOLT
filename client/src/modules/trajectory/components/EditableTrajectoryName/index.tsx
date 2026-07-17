@@ -1,6 +1,6 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUpdateTrajectory from '@/modules/trajectory/hooks/trajectory/use-update-trajectory';
-import EditableTag from '@/shared/presentation/components/EditableTag';
+import EditableTag from '@/shared/ui/components/EditableTag';
 import { Text } from '@voltstack/bravais';
 import { useCallback } from 'react';
 

@@ -8,8 +8,8 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import { Box, IconButton, Row, Tooltip } from '@voltstack/bravais';
-import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import WindowControls from '@/shared/presentation/components/WindowControls';
+import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { IoMenuOutline } from 'react-icons/io5';
 import { GoPersonAdd } from 'react-icons/go';
 

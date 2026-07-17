@@ -1,6 +1,6 @@
 import { buildConversationMessagesQueryParams, invalidateConversationMessagesQuery, messagesQuery } from '@/modules/ai/hooks/queries';
 import { useCallback, useMemo } from 'react';
-import type { AIConversationMessage, AIMessageRole } from '@/modules/ai/api/entities/ai-conversation';
+import type { AIConversationMessage, AIMessageRole } from '@/modules/ai/api/types/ai-conversation';
 import type { UIMessage } from 'ai';
 
 const toUIMessageRole = (role: AIMessageRole): UIMessage['role'] => {

@@ -1,20 +1,20 @@
 import useTrajectoriesListing, { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import type { TrajectoryListingRow } from '@/modules/trajectory/utilities/listing';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utilities/listing';
-import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/presentation/components/FolderedListingHeaderControls';
+import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';
 import {
     createFolderedTitleColumn,
     FolderedDocumentListing,
     FolderedListingModals,
     useFolderedListingDashboardBreadcrumb
-} from '@/shared/presentation/components/DocumentListing/foldered-listing';
+} from '@/shared/ui/components/DocumentListing/foldered-listing';
 import { Heading, StatusBadge, Text } from '@voltstack/bravais';
-import { clusterColumn, dateColumn } from '@/shared/presentation/utilities/column-presets';
+import { clusterColumn, dateColumn } from '@/shared/ui/utilities/column-presets';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@voltstack/bravais';
 import { useMemo } from 'react';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/ui/types/menu';
 
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     createFolderedTitleColumn<TrajectoryListingRow>({

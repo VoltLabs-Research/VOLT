@@ -1,10 +1,10 @@
 import useCameraGroup from '../CanvasRenderSections/groups/camera';
 import CanvasRenderSubsectionContent from '../CanvasRenderSections/CanvasRenderSubsectionContent';
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Button, Row, Stack, Tooltip } from '@voltstack/bravais';
 import { Settings } from 'lucide-react';
 import { useMemo } from 'react';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 
 import './CameraMenuPopover.css';
 

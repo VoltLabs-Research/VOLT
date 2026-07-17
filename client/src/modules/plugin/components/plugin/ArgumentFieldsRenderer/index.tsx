@@ -1,6 +1,6 @@
 import { Button, CollapsibleSection, Row, Select, Stack, Text, getMultiSelectTriggerLabel } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { ArgumentType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import {
     coerceArgumentInputValue,
     createDefaultListItem,
@@ -14,13 +14,13 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import { getVisibleArguments } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import PluginConfigField from '@/modules/plugin/components/plugin/PluginConfigField';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { FormFieldAutocompleteOption } from '@/shared/presentation/components/FormFieldRHF/FormFieldRHF.types';
+import type { FormFieldAutocompleteOption } from '@/shared/ui/components/FormFieldRHF/FormFieldRHF.types';
 import { isRecord } from '@/shared/utils/type-guards';
 import './ArgumentFieldsRenderer.css';
 

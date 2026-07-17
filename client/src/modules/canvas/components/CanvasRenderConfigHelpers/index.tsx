@@ -1,4 +1,4 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Select, Stack, Text } from '@voltstack/bravais';
 
 import type { ReactNode } from 'react';

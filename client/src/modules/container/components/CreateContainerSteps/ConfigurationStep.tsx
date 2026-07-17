@@ -1,19 +1,19 @@
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
-import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import EditableKeyValueCard from '@/shared/ui/components/EditableKeyValueCard';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { Box, Button, CollapsibleSection, Heading, Row, Stack, Tag, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { getCustomFieldValidationError } from '../../utilities/container-form';
-import { ContainerTemplateCustomFieldType } from '../../api/entities/container-template';
+import { ContainerTemplateCustomFieldType } from '../../api/types/container-template';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
-import type { ClusterResourceLimits } from '../../api/entities/cluster-resource-limits';
-import type { ContainerTemplateCustomField } from '../../api/entities/container-template';
-import type { FieldConfig } from '@/shared/presentation/components/EditableKeyValueCard';
-import type { Team } from '@/modules/team/api/entities/team/team';
-import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
+import type { ClusterResourceLimits } from '../../api/types/cluster-resource-limits';
+import type { ContainerTemplateCustomField } from '../../api/types/container-template';
+import type { FieldConfig } from '@/shared/ui/components/EditableKeyValueCard';
+import type { Team } from '@/modules/team/api/types/team/team';
+import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
 import { useDemoClusterStore } from '@/modules/cluster/stores/use-demo-cluster-store';
 
 interface PortMappingFormItem extends Record<string, unknown> {

@@ -1,7 +1,7 @@
 import type {
     IArgumentDefinition,
     IArgumentVisibilityCondition
-} from '@/modules/plugin/api/entities/plugin/workflow';
+} from '@/modules/plugin/api/types/plugin/workflow';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;

@@ -1,4 +1,4 @@
-import type { DefaultScene, PluginScene } from '@/modules/fractal/api/entities/scene';
+import type { DefaultScene, PluginScene } from '@/modules/fractal/api/types/scene';
 
 export type RasterContainerId = 'container-1' | 'container-2';
 

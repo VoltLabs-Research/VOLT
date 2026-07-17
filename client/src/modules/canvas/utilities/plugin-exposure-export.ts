@@ -1,7 +1,7 @@
-import type { IExposureExport } from '@/modules/plugin/api/entities/plugin/exposure';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import type { PluginScene, SceneRenderMetadata } from '@/modules/fractal/api/entities/scene';
-import { Exporter } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import type { IExposureExport } from '@/modules/plugin/api/types/plugin/exposure';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { PluginScene, SceneRenderMetadata } from '@/modules/fractal/api/types/scene';
+import { Exporter } from '@/modules/plugin/api/types/plugin/workflow-enums';
 
 export const DEFAULT_LINE_WIDTH = 0.08;
 const RENDERABLE_SCENE_EXPORTERS = new Set<string>([

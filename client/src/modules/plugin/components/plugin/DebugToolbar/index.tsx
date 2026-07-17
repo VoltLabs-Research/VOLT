@@ -1,5 +1,5 @@
 import { Button, Divider, Loader, Row, Stack, StatusDot, Text, Tooltip, Select } from '@voltstack/bravais';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
@@ -9,7 +9,7 @@ import { isUserConfigurableArgument } from '@/modules/plugin/utilities/plugin/ar
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
 import './DebugToolbar.css';
 
 interface ArgumentsNodeArguments {

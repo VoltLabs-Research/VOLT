@@ -11,13 +11,13 @@ import {
 import { base64ToBlob } from '@/shared/utils/file';
 import { getAtomsBinary } from './atoms-binary-request';
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type { VoltClient } from '@voltstack/voltclient';
-import type { DashboardMetrics } from '@/modules/dashboard/api/entities/dashboard';
-import type { Trajectory } from '../entities/trajectory/trajectory';
-import type { TrajectoryFolder } from '../entities/trajectory/trajectory-folder';
+import type { DashboardMetrics } from '@/modules/dashboard/api/types/dashboard';
+import type { Trajectory } from '../types/trajectory/trajectory';
+import type { TrajectoryFolder } from '../types/trajectory/trajectory-folder';
 
-export interface CreateTrajectoryInputDTO {
+export interface CreateTrajectoryInput {
     name: string;
     folderId?: string | null;
     files: Array<{
@@ -27,9 +27,9 @@ export interface CreateTrajectoryInputDTO {
     }>;
 }
 
-export type CreateTrajectoryOutputDTO = Trajectory;
+export type CreateTrajectoryResponse = Trajectory;
 
-export interface TrajectoryUploadPartDTO {
+export interface TrajectoryUploadPart {
     partNumber: number;
     offset: number;
     size: number;
@@ -37,50 +37,50 @@ export interface TrajectoryUploadPartDTO {
     expiresAt: string;
 }
 
-export interface TrajectoryUploadSessionFileDTO {
+export interface TrajectoryUploadSessionFile {
     index: number;
     originalName: string;
     size: number;
     contentType?: string;
     finalObjectKey: string;
-    parts: TrajectoryUploadPartDTO[];
+    parts: TrajectoryUploadPart[];
 }
 
-export interface CreateTrajectoryUploadSessionOutputDTO {
+export interface CreateTrajectoryUploadSessionResponse {
     trajectory: Trajectory;
     uploadSession: {
         id: string;
         chunkSize: number;
         expiresAt: string;
-        files: TrajectoryUploadSessionFileDTO[];
+        files: TrajectoryUploadSessionFile[];
     };
 }
 
-export interface CommitTrajectoryUploadSessionInputDTO {
+export interface CommitTrajectoryUploadSessionInput {
     uploadSessionId: string;
     authToken?: string;
 }
 
-export interface DeleteTrajectoryInputDTO {
+export interface DeleteTrajectoryInput {
     trajectoryId: string;
 }
 
-export interface DownloadSampleInputDTO {
+export interface DownloadSampleInput {
     filename: string;
 }
 
-export interface DownloadTrajectoryAnalysesInputDTO {
+export interface DownloadTrajectoryAnalysesInput {
     trajectoryId: string;
     filename?: string;
 }
 
-export interface DownloadTrajectoryInputDTO {
+export interface DownloadTrajectoryInput {
     trajectoryId: string;
     filename?: string;
     archive?: boolean;
 }
 
-export interface GetAtomsInputDTO {
+export interface GetAtomsInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -96,7 +96,7 @@ export interface AtomColumnView {
     values: Float32Array | Uint32Array | Uint16Array | Int32Array | string[];
 }
 
-export interface GetAtomsOutputDTO {
+export interface GetAtomsResponse {
     count: number;
     total: number;
     page: number;
@@ -116,17 +116,17 @@ export interface AtomData {
     [key: string]: unknown;
 }
 
-export interface GetPreviewInputDTO {
+export interface GetPreviewInput {
     trajectoryId: string;
     frame?: number;
     quality?: 'low' | 'medium' | 'high';
 }
 
-export interface GetPreviewOutputDTO {
+export interface GetPreviewResponse {
     blob: Blob;
 }
 
-export interface GetTrajectoriesInputDTO {
+export interface GetTrajectoriesInput {
     page: number;
     limit: number;
     folderId?: string;
@@ -138,7 +138,7 @@ export interface MoveTrajectoryParams {
     folderId: string | null;
 }
 
-export interface UpdateTrajectoryInputDTO {
+export interface UpdateTrajectoryInput {
     trajectoryId: string;
     name?: string;
     isPublic?: boolean;
@@ -150,7 +150,7 @@ interface GetTrajectoryByIdParams {
 
 interface CreateTrajectoryUploadSessionApiResponse {
     status: 'success';
-    data: CreateTrajectoryUploadSessionOutputDTO;
+    data: CreateTrajectoryUploadSessionResponse;
 }
 
 type RequestArgsWithTimeout = NonNullable<Parameters<VoltClient['request']>[2]> & {
@@ -167,15 +167,15 @@ const folderEndpoints = createFolderCrudEndpoints<
 >();
 
 const endpoints = {
-    getAll: paginated<GetTrajectoriesInputDTO, PaginatedResponse<Trajectory>>('/'),
+    getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>('/'),
     getById: get<GetTrajectoryByIdParams, Trajectory>('/:trajectoryId'),
-    createUploadSession: custom<CreateTrajectoryInputDTO, CreateTrajectoryUploadSessionOutputDTO>(async ({ getClient }, params) => {
+    createUploadSession: custom<CreateTrajectoryInput, CreateTrajectoryUploadSessionResponse>(async ({ getClient }, params) => {
         const response = await getClient().request<CreateTrajectoryUploadSessionApiResponse>('POST', '/upload-sessions', {
             body: params
         });
         return response.data;
     }),
-    commitUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, { trajectoryId: string }>(async ({ getClient }, params) => {
+    commitUploadSession: custom<CommitTrajectoryUploadSessionInput, { trajectoryId: string }>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
             timeoutMs: 0,
             ...(params.authToken ? { headers: { Authorization: `Bearer ${params.authToken}` } } : {})
@@ -183,26 +183,26 @@ const endpoints = {
 
         return getClient().request('POST', `/upload-sessions/${params.uploadSessionId}/commit`, requestArgs);
     }),
-    cancelUploadSession: custom<CommitTrajectoryUploadSessionInputDTO, void>(async ({ getClient }, params) => {
+    cancelUploadSession: custom<CommitTrajectoryUploadSessionInput, void>(async ({ getClient }, params) => {
         const requestArgs = params.authToken
             ? { headers: { Authorization: `Bearer ${params.authToken}` } }
             : undefined;
 
         return getClient().request('DELETE', `/upload-sessions/${params.uploadSessionId}`, requestArgs);
     }),
-    update: patch<UpdateTrajectoryInputDTO, Trajectory>('/:trajectoryId'),
-    delete: del<DeleteTrajectoryInputDTO>('/:trajectoryId'),
+    update: patch<UpdateTrajectoryInput, Trajectory>('/:trajectoryId'),
+    delete: del<DeleteTrajectoryInput>('/:trajectoryId'),
     move: patch<{ trajectoryId: string; folderId: string | null }, void>('/:trajectoryId/folder', {
         body: ({ folderId }) => ({ folderId })
     }),
-    getPreview: get<GetPreviewInputDTO, GetPreviewOutputDTO, string>('/:trajectoryId/preview', {
+    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/:trajectoryId/preview', {
         query: ({ frame, quality }) => ({
             ...(frame !== undefined ? { frame } : {}),
             ...(quality ? { quality } : {})
         }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
-    download: custom<DownloadTrajectoryInputDTO, Blob>(async ({ getClient }, params) => {
+    download: custom<DownloadTrajectoryInput, Blob>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
             query: {
                 ...(params.filename ? { name: params.filename } : {}),
@@ -214,7 +214,7 @@ const endpoints = {
 
         return getClient().request('GET', `/${params.trajectoryId}/download`, requestArgs);
     }),
-    downloadAnalyses: custom<DownloadTrajectoryAnalysesInputDTO, Blob>(async ({ getClient }, params) => {
+    downloadAnalyses: custom<DownloadTrajectoryAnalysesInput, Blob>(async ({ getClient }, params) => {
         const requestArgs: RequestArgsWithTimeout = {
             query: {
                 ...(params.filename ? { name: params.filename } : {})
@@ -225,11 +225,11 @@ const endpoints = {
 
         return getClient().request('GET', `/${params.trajectoryId}/analyses/download`, requestArgs);
     }),
-    getAtoms: custom<GetAtomsInputDTO, GetAtomsOutputDTO>(getAtomsBinary),
+    getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
     ...folderEndpoints,
     getMetrics: get<EmptyParams, DashboardMetrics>('/metrics'),
     listSamples: get<EmptyParams, string[]>('/samples'),
-    downloadSample: download<DownloadSampleInputDTO>('GET', '/samples/:filename')
+    downloadSample: download<DownloadSampleInput>('GET', '/samples/:filename')
 };
 
 export default createService({

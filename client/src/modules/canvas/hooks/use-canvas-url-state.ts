@@ -1,4 +1,4 @@
-import { applySearchParamUpdates } from '@/shared/presentation/hooks/use-search-params';
+import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 

@@ -5,10 +5,10 @@ import {
     normalizeWorkspaceFolderPath,
     splitWorkspacePath
 } from '@/modules/latex/utilities/workspace';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LatexFileEntry } from '@/modules/latex/hooks/use-latex-workspace';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 import type { FileTreeNode } from '@/modules/latex/utilities/file-tree';
 
 interface RenameTarget {

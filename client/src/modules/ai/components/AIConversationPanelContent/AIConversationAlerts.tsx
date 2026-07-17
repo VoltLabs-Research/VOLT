@@ -1,4 +1,4 @@
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Box } from '@voltstack/bravais';
 
 interface AIConversationAlertsProps {

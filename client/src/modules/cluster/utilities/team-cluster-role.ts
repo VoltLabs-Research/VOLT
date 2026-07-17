@@ -1,4 +1,4 @@
-import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
 import type { SelectOption, StatusBadgeProps } from '@voltstack/bravais';
 
 export interface TeamClusterRoleOption extends SelectOption {

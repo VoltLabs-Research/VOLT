@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { BoxBounds } from '@/modules/fractal/api/entities/model';
+import type { BoxBounds } from '@/modules/fractal/api/types/model';
 
 export interface CellPbc {
     x: boolean;

@@ -14,7 +14,7 @@ import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';
 import { sileo } from 'sileo';
 import { useState } from 'react';

@@ -1,4 +1,4 @@
-import type { ScriptingNotebook } from '@/modules/scripting/api/entities/scripting-notebook';
+import type { ScriptingNotebook } from '@/modules/scripting/api/types/scripting-notebook';
 import { isRecord } from '@/shared/utils/type-guards';
 
 const JUPYTER_START_ERROR_MESSAGE = 'Failed to start Jupyter';

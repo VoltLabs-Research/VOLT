@@ -6,7 +6,7 @@ import { Box, Row, StatusBadge, Text } from '@voltstack/bravais';
 import { motion } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { FrameJobGroup, Job } from '@/modules/jobs/api/entities/job';
+import type { FrameJobGroup, Job } from '@/modules/jobs/api/types/job';
 
 interface FrameGroupProps {
     frame: FrameJobGroup;

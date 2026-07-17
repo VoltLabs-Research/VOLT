@@ -1,7 +1,7 @@
 import { createService, paginated, get, post, del } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Analysis } from './entities/analysis';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Analysis } from './types/analysis';
 
 export interface GetAnalysesByTrajectoryParams {
     trajectoryId: string;

@@ -7,14 +7,14 @@ import {
     parseSessionUserAgent,
     SESSION_ACTION_LABELS
 } from '@/modules/session/utilities/session-display';
-import SettingsPage from '@/shared/presentation/components/SettingsPage';
+import SettingsPage from '@/shared/ui/components/SettingsPage';
 import { Stack, EmptyState, Button, Modal, Skeleton, Text } from '@voltstack/bravais';
-import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import useSessionData from '@/modules/session/hooks/use-session-data';
 import useTip from '@/shared/tips/use-tip';
 import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
-import { SessionActivityType } from '@/modules/session/api/entities/session';
-import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/entities/session';
+import { SessionActivityType } from '@/modules/session/api/types/session';
+import type { ActiveSession, LoginActivityEntry } from '@/modules/session/api/types/session';
 import type { FC, ReactNode } from 'react';
 import './SessionSettings.css';
 

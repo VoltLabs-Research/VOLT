@@ -6,7 +6,7 @@ import {
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from './queries';
-import useAccessDenied, { createAccessDeniedRetry } from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied, { createAccessDeniedRetry } from '@/shared/ui/hooks/use-access-denied';
 import useCanvasUrlState from './use-canvas-url-state';
 import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';

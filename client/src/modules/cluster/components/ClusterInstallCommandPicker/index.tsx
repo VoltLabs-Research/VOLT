@@ -1,5 +1,5 @@
 import './ClusterInstallCommandPicker.css';
-import CopyableField from '@/shared/presentation/components/CopyableField';
+import CopyableField from '@/shared/ui/components/CopyableField';
 import { SegmentedTabs, Stack } from '@voltstack/bravais';
 import {
     CLUSTER_INSTALL_PLATFORM_OPTIONS,

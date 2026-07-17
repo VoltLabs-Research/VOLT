@@ -1,8 +1,8 @@
 import invitationService from '../../api/services/invitation-service';
 import { invalidateTeamsQuery } from '../team/queries';
-import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
-import type { AcceptInvitationInputDTO, CancelInvitationInputDTO, RejectInvitationInputDTO, SendInvitationInputDTO } from '../../api/services/invitation-service';
-import type { TeamInvitation } from '../../api/entities/invitation/team-invitation';
+import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
+import type { AcceptInvitationInput, CancelInvitationInput, RejectInvitationInput, SendInvitationInput } from '../../api/services/invitation-service';
+import type { TeamInvitation } from '../../api/types/invitation/team-invitation';
 
 interface TeamInvitationQueryKeyMap {
     invitations: void;
@@ -56,21 +56,21 @@ export const useInvitationDetailsQuery = createQuery<string, TeamInvitation>(
     }
 );
 
-export const useSendInvitationMutation = createMutation<void, SendInvitationInputDTO>(
+export const useSendInvitationMutation = createMutation<void, SendInvitationInput>(
     invitationService.send,
     async (_data, variables) => {
         await invalidatePendingInvitationsQuery(variables.teamId);
     }
 );
 
-export const useCancelInvitationMutation = createMutation<void, CancelInvitationInputDTO>(
+export const useCancelInvitationMutation = createMutation<void, CancelInvitationInput>(
     invitationService.cancel,
     async (_data, variables) => {
         await invalidatePendingInvitationsQuery(variables.teamId);
     }
 );
 
-export const useAcceptInvitationMutation = createMutation<void, AcceptInvitationInputDTO>(
+export const useAcceptInvitationMutation = createMutation<void, AcceptInvitationInput>(
     invitationService.accept,
     async (_data, variables) => {
         await invalidateTeamsQuery();
@@ -79,7 +79,7 @@ export const useAcceptInvitationMutation = createMutation<void, AcceptInvitation
     }
 );
 
-export const useRejectInvitationMutation = createMutation<void, RejectInvitationInputDTO>(
+export const useRejectInvitationMutation = createMutation<void, RejectInvitationInput>(
     invitationService.reject,
     async (_data, variables) => {
         await invalidateInvitationCollectionQuery(variables.teamId);

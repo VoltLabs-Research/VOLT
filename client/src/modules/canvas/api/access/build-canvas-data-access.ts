@@ -9,39 +9,39 @@ import listingService from '@/modules/plugin/api/services/listing-service';
 import analysisService from '@/modules/analysis/api/service';
 import rasterService from '@/modules/raster/api/service';
 import type { CanvasAccessState } from './types';
-import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/api/services/trajectory-service';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
+import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
 import type {
-    ListSceneArtifactsInputDTO,
+    ListSceneArtifactsInput,
     RenderableExposurePayload
 } from '@/modules/trajectory/api/services/scene-artifacts-service';
 import type {
     ColorCodingProperties,
     ColorCodingStats,
-    GetColorCodingPropertiesInputDTO,
-    GetColorCodingStatsInputDTO
+    GetColorCodingPropertiesInput,
+    GetColorCodingStatsInput
 } from '@/modules/trajectory/api/services/color-coding-service';
 import type {
     FilterPropertiesData,
-    GetFilterPropertiesInputDTO,
-    GetUniqueValuesInputDTO,
-    GetUniqueValuesOutputDTO,
-    PreviewFilterInputDTO,
-    PreviewFilterOutputDTO
+    GetFilterPropertiesInput,
+    GetUniqueValuesInput,
+    GetUniqueValuesResponse,
+    PreviewFilterInput,
+    PreviewFilterResponse
 } from '@/modules/trajectory/api/services/particle-filter-service';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
 import type {
-    GetPluginListingInputDTO,
-    GetPluginListingOutputDTO
+    GetPluginListingInput,
+    GetPluginListingResponse
 } from '@/modules/plugin/api/services/listing-service';
 import type {
-    GetSubListingInputDTO,
-    GetSubListingOutputDTO
+    GetSubListingInput,
+    GetSubListingResponse
 } from '@/modules/plugin/api/services/listing-service';
-import type { Analysis } from '@/modules/analysis/api/entities/analysis';
+import type { Analysis } from '@/modules/analysis/api/types/analysis';
 import type {
     GetAnalysesByTrajectoryParams,
     GetAnalysisFrameLogParams,
@@ -57,17 +57,17 @@ interface TrajectoryScopedParams {
 }
 
 export interface CanvasDataAccess {
-    getAtoms: (params: GetAtomsInputDTO) => Promise<GetAtomsOutputDTO>;
+    getAtoms: (params: GetAtomsInput) => Promise<GetAtomsResponse>;
     getSimulationCell: (params: GetSimulationCellByTrajectoryParams) => Promise<SimulationCell | null>;
-    listSceneArtifacts: (params: ListSceneArtifactsInputDTO) => Promise<PaginatedResponse<SceneArtifact | RenderableExposurePayload>>;
-    getColorCodingProperties: (params: GetColorCodingPropertiesInputDTO) => Promise<ColorCodingProperties>;
-    getColorCodingStats: (params: GetColorCodingStatsInputDTO) => Promise<ColorCodingStats>;
-    getParticleFilterProperties: (params: GetFilterPropertiesInputDTO) => Promise<FilterPropertiesData>;
-    getParticleFilterUniqueValues: (params: GetUniqueValuesInputDTO) => Promise<GetUniqueValuesOutputDTO>;
-    previewParticleFilter: (params: PreviewFilterInputDTO) => Promise<PreviewFilterOutputDTO>;
+    listSceneArtifacts: (params: ListSceneArtifactsInput) => Promise<PaginatedResponse<SceneArtifact | RenderableExposurePayload>>;
+    getColorCodingProperties: (params: GetColorCodingPropertiesInput) => Promise<ColorCodingProperties>;
+    getColorCodingStats: (params: GetColorCodingStatsInput) => Promise<ColorCodingStats>;
+    getParticleFilterProperties: (params: GetFilterPropertiesInput) => Promise<FilterPropertiesData>;
+    getParticleFilterUniqueValues: (params: GetUniqueValuesInput) => Promise<GetUniqueValuesResponse>;
+    previewParticleFilter: (params: PreviewFilterInput) => Promise<PreviewFilterResponse>;
     getPluginById: (params: TrajectoryScopedParams & { pluginId: string }) => Promise<Plugin>;
-    getPluginListing: (params: TrajectoryScopedParams & GetPluginListingInputDTO) => Promise<GetPluginListingOutputDTO>;
-    getSubListing: (params: TrajectoryScopedParams & GetSubListingInputDTO) => Promise<GetSubListingOutputDTO>;
+    getPluginListing: (params: TrajectoryScopedParams & GetPluginListingInput) => Promise<GetPluginListingResponse>;
+    getSubListing: (params: TrajectoryScopedParams & GetSubListingInput) => Promise<GetSubListingResponse>;
     getAnalysesByTrajectory: (params: GetAnalysesByTrajectoryParams) => Promise<PaginatedResponse<Analysis>>;
     getAnalysisFrameLog: (params: TrajectoryScopedParams & GetAnalysisFrameLogParams) => Promise<GetAnalysisFrameLogResponse>;
     getRasterMetadata: (params: GetRasterMetadataParams) => Promise<GetRasterMetadataResponse>;

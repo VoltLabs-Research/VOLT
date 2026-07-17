@@ -1,6 +1,6 @@
 import { Box, Button, Stack, Callout } from '@voltstack/bravais';
 import { IoExitOutline } from 'react-icons/io5';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
 interface GeneralTabProps {
     groupName: string;

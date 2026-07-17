@@ -2,7 +2,7 @@ import './ActivityDrawer.css';
 import { AsyncBoundary, Box, Modal, SegmentedTabs, Skeleton, Stack, Text, Timeline, TimelineItem, EmptyState } from '@voltstack/bravais';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utilities/activity-mappings';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { formatDuration } from '@voltstack/bravais';
@@ -19,7 +19,7 @@ import {
     Tooltip
 } from 'recharts';
 import { GoBeaker } from 'react-icons/go';
-import type { DailyActivity, ActivityItem, PopulatedUser } from '@/modules/daily-activity/api/entities/daily-activity';
+import type { DailyActivity, ActivityItem, PopulatedUser } from '@/modules/daily-activity/api/types/daily-activity';
 import type { ReactNode } from 'react';
 
 type DashboardActivityTabId = 'activity' | 'in-app-activity';

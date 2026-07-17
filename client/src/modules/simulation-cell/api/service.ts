@@ -1,7 +1,7 @@
 import { createService, paginated, get } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { SimulationCell } from './entities/simulation-cell';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { SimulationCell } from './types/simulation-cell';
 
 export interface GetSimulationCellByTrajectoryParams {
     trajectoryId: string;

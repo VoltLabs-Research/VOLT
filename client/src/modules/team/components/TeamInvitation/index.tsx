@@ -9,8 +9,8 @@ import {
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { runAction } from '@/shared/ui/actions/run-action';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';

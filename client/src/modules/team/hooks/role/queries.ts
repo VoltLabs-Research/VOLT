@@ -1,8 +1,8 @@
 import roleService from '../../api/services/role-service';
-import { createInvalidatingMutation, createQuery } from '@/shared/infrastructure/query';
+import { createInvalidatingMutation, createQuery } from '@/shared/query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
-import type { TeamRole } from '../../api/entities/role/team-role';
-import type { CreateTeamRoleInputDTO, DeleteTeamRoleInputDTO, UpdateTeamRoleInputDTO } from '../../api/services/role-service';
+import type { TeamRole } from '../../api/types/role/team-role';
+import type { CreateTeamRoleInput, DeleteTeamRoleInput, UpdateTeamRoleInput } from '../../api/services/role-service';
 
 interface TeamRolesAggregateQueryParams {
     teamId: string;
@@ -28,17 +28,17 @@ export const useAllTeamRolesQuery = createQuery<TeamRolesAggregateQueryParams, T
     getAllTeamRoles
 );
 
-export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleInputDTO>(
+export const useCreateTeamRoleMutation = createInvalidatingMutation<TeamRole, CreateTeamRoleInput>(
     roleService.create,
     (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleInputDTO>(
+export const useUpdateTeamRoleMutation = createInvalidatingMutation<TeamRole, UpdateTeamRoleInput>(
     roleService.update,
     (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );
 
-export const useDeleteTeamRoleMutation = createInvalidatingMutation<void, DeleteTeamRoleInputDTO>(
+export const useDeleteTeamRoleMutation = createInvalidatingMutation<void, DeleteTeamRoleInput>(
     roleService.delete,
     (_data, variables) => [getTeamRolesListingQueryKey({ teamId: variables.teamId })]
 );

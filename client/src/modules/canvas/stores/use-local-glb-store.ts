@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ModelWorldBounds } from '@/modules/fractal/api/entities/model';
+import type { ModelWorldBounds } from '@/modules/fractal/api/types/model';
 
 interface LocalGlbState {
     localGlbUrl: string | null;

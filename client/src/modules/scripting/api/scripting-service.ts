@@ -1,9 +1,9 @@
 import { createService, del, get, paginated, patch, post } from '@/app/core/http/utilities/create-service';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ScriptingNotebook, ScriptingNotebookContainerResources } from './entities/scripting-notebook';
-import type { ScriptingNotebookScope } from './entities/scripting-notebook-scope';
-import type { ScriptingSession } from './entities/scripting-session';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ScriptingNotebook, ScriptingNotebookContainerResources } from './types/scripting-notebook';
+import type { ScriptingNotebookScope } from './types/scripting-notebook-scope';
+import type { ScriptingSession } from './types/scripting-session';
 
 export interface CreateScriptingNotebookParams {
     teamId: string;

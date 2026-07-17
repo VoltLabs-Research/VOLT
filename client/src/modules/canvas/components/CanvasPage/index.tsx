@@ -37,7 +37,7 @@ import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useAuthStore } from '@/modules/auth/stores/use-auth-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
@@ -48,11 +48,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import ScriptingWorkspace from '@/modules/scripting/components/ScriptingWorkspace';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import NotFoundState from '@/shared/presentation/components/NotFoundState';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import AccessDenied from '@/shared/ui/components/AccessDenied';
+import NotFoundState from '@/shared/ui/components/NotFoundState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { EmptyState, Box, Button, openModal, Row, Stack, Tooltip } from '@voltstack/bravais';
-import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
+import ErrorBoundary from '@/shared/ui/components/ErrorBoundary';
 import { useMedia } from '@voltstack/bravais';
 import useTip from '@/shared/tips/use-tip';
 

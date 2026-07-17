@@ -5,7 +5,7 @@ import {
     CAMERA_TYPE_OPTIONS,
     CameraType,
     isCameraType
-} from '@/shared/domain/rendering/camera';
+} from '@/shared/rendering/camera';
 
 import { useMemo } from 'react';
 import { MdCameraAlt } from 'react-icons/md';

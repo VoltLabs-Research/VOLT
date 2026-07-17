@@ -1,5 +1,5 @@
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
 export const isTeamClusterUsable = (cluster: Pick<TeamCluster, 'status'>): boolean => {
     return cluster.status === TeamClusterStatus.Connected;

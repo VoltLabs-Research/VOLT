@@ -1,5 +1,5 @@
 import { useUpdateTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
-import type { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import type { AIProvider } from '@/modules/ai/api/types/ai-provider';
 import type { UpdateTeamAIIntegrationParams } from '@/modules/team/api/services/ai-integration-service';
 import { useCallback } from 'react';
 import useRequiredSelectedTeamId from './use-required-selected-team-id';

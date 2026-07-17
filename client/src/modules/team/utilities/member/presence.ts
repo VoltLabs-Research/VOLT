@@ -1,4 +1,4 @@
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 
 export const resolveTeamUserOnline = (
     user: Pick<User, '_id' | 'isOnline'>,

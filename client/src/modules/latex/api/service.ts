@@ -10,11 +10,11 @@ import {
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { LatexAsset } from './entities/latex-asset';
-import type { LatexDocument } from './entities/latex-document';
-import type { LatexFile } from './entities/latex-file';
-import type { LatexFolder } from './entities/latex-folder';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { LatexAsset } from './types/latex-asset';
+import type { LatexDocument } from './types/latex-document';
+import type { LatexFile } from './types/latex-file';
+import type { LatexFolder } from './types/latex-folder';
 
 export interface CompileLatexDocumentParams {
     documentId: string;

@@ -1,32 +1,32 @@
 
 import { createService, del, get } from '@/app/core/http/utilities/create-service';
-import type { ActiveSession, LoginActivityEntry } from './entities/session';
+import type { ActiveSession, LoginActivityEntry } from './types/session';
 import type { EmptyParams } from '@voltstack/voltclient';
 
-export interface GetLoginActivityInputDTO {
+export interface GetLoginActivityInput {
     limit?: number;
 }
 
-export interface GetLoginActivityOutputDTO {
+export interface GetLoginActivityResponse {
     activities: LoginActivityEntry[];
     total: number;
 }
 
-export interface RevokeAllOtherSessionsOutputDTO {
+export interface RevokeAllOtherSessionsResponse {
     revokedCount: number;
 }
 
-export interface RevokeSessionInputDTO {
+export interface RevokeSessionInput {
     sessionId: string;
 }
 
 const endpoints = {
     getActiveSessions: get<EmptyParams, ActiveSession[]>('/'),
-    revokeSession: del<RevokeSessionInputDTO, void>('/:sessionId', { unwrap: 'void' }),
-    revokeAllOtherSessions: del<EmptyParams, RevokeAllOtherSessionsOutputDTO>('/', {
+    revokeSession: del<RevokeSessionInput, void>('/:sessionId', { unwrap: 'void' }),
+    revokeAllOtherSessions: del<EmptyParams, RevokeAllOtherSessionsResponse>('/', {
         unwrap: 'data'
     }),
-    getLoginActivity: get<GetLoginActivityInputDTO | undefined, GetLoginActivityOutputDTO>('/activity', {
+    getLoginActivity: get<GetLoginActivityInput | undefined, GetLoginActivityResponse>('/activity', {
         query: (params) => ({ limit: params?.limit ?? 20 })
     })
 };

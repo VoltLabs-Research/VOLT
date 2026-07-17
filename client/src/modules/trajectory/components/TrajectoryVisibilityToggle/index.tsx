@@ -2,7 +2,7 @@ import { Heading, LiquidToggle, Row, Stack, Text } from '@voltstack/bravais';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { sileo } from 'sileo';
 import { useCallback, useState } from 'react';
 

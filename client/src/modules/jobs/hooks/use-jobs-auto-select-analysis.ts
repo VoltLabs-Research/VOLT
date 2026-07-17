@@ -1,9 +1,9 @@
-import { JobStatus } from '../api/entities/job';
+import { JobStatus } from '../api/types/job';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import useGetTrajectoryById from '@/modules/trajectory/hooks/trajectory/use-get-trajectory-by-id';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import type { Job } from '../api/entities/job';
+import type { Job } from '../api/types/job';
 
 interface UseJobsAutoSelectAnalysisArgs {
     enabled?: boolean;

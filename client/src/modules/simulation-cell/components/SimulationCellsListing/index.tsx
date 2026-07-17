@@ -1,12 +1,12 @@
 import { simulationCellsQuery, simulationCellsQueryKey } from '@/modules/simulation-cell/hooks/queries';
-import { dateColumn } from '@/shared/presentation/utilities/column-presets';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import PopulatedCellPopover from '@/shared/presentation/components/PopulatedCellPopover';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import { dateColumn } from '@/shared/ui/utilities/column-presets';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
+import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { Row, Tag } from '@voltstack/bravais';
 import { Box } from 'lucide-react';
-import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
+import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { formatNumber } from '@voltstack/bravais';
 
 interface PeriodicAxisStatus {

@@ -1,8 +1,8 @@
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { isPerformancePreset } from '@/shared/domain/rendering/performance';
+import { isPerformancePreset } from '@/shared/rendering/performance';
 
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/types';
-import type { PerformancePreset } from '@/shared/domain/rendering/performance';
+import type { PerformancePreset } from '@/shared/rendering/performance';
 
 interface SetAppearanceInput {
     pointSize?: number;

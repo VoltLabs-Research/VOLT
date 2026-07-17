@@ -1,4 +1,4 @@
-import { ArgumentVisibilityOperator } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { ArgumentVisibilityOperator } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/utilities/plugin/node-registry';
 import type { SelectOption } from '@voltstack/bravais';
 

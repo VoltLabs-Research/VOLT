@@ -1,8 +1,8 @@
 import type { RefObject } from 'react';
 import type { Camera, Plane, Vector3 } from 'three';
 import type { BoundsInfo } from '@/modules/fractal/utilities/model-transform';
-import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/entities/model';
-import type { SceneVisualOverrides } from '@/modules/fractal/api/entities/scene';
+import type { BoxBounds, Pos3D, ModelLoadingState } from '@/modules/fractal/api/types/model';
+import type { SceneVisualOverrides } from '@/modules/fractal/api/types/scene';
 import type { LineEntityHighlight, LineSceneSettings, PointCloudSceneSettings } from '@/modules/fractal/types/scene-config';
 
 export enum AnalysisStatus {

@@ -11,7 +11,7 @@ import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/stores/plugin/use-plugin-debug-store';
 import { useScreenshotStore } from '@/modules/canvas/stores/use-screenshot-store';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 
 type StoreResetter = () => void;
 

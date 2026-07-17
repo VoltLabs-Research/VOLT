@@ -1,12 +1,12 @@
-import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
+import ProcessingLoader from '@/shared/ui/components/ProcessingLoader';
 import { Box, Button, Heading, KeyValueList, KeyValueRow, Row, Stack, Text } from '@voltstack/bravais';
 import { formatDistanceToNow } from 'date-fns';
 import { Box as BoxIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getMaskedCustomFieldValue, mergeContainerEnvVariables } from '../../utilities/container-form';
 import type { ContainerConfig } from '../../hooks/use-create-container-form';
-import type { Team } from '@/modules/team/api/entities/team/team';
-import type { TeamClusterOption } from '@/modules/container/api/entities/team-cluster-option';
+import type { Team } from '@/modules/team/api/types/team/team';
+import type { TeamClusterOption } from '@/modules/container/api/types/team-cluster-option';
 
 interface ReviewStepProps {
     config: ContainerConfig;

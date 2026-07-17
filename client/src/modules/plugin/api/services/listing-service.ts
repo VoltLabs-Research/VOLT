@@ -1,14 +1,14 @@
 import { createService, download, get } from '@/app/core/http/utilities/create-service';
 import { mapRawListingResponse } from './listing-response';
 
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
 import type { RawListingResponse } from './listing-response';
 
 export type ExportType = 'json' | 'csv';
 
-export interface ExportListingByAnalysisInputDTO {
+export interface ExportListingByAnalysisInput {
     analysisId: string;
     format: ExportType;
     includeConfig?: boolean;
@@ -16,7 +16,7 @@ export interface ExportListingByAnalysisInputDTO {
     selectedSubListingIds?: string[];
 }
 
-export interface ExportPluginListingInputDTO {
+export interface ExportPluginListingInput {
     pluginId: string;
     exposureId?: string;
     trajectoryId?: string;
@@ -25,14 +25,14 @@ export interface ExportPluginListingInputDTO {
     format: ExportType;
 }
 
-export interface AnalysisListingExportOptionDTO {
+export interface AnalysisListingExportOption {
     id: string;
     listingId: string;
     listingName: string;
     label: string;
 }
 
-export interface AnalysisSubListingExportOptionDTO {
+export interface AnalysisSubListingExportOption {
     id: string;
     exposureId: string;
     exposureName: string;
@@ -41,15 +41,15 @@ export interface AnalysisSubListingExportOptionDTO {
     label: string;
 }
 
-export interface GetAnalysisListingExportOptionsInputDTO {
+export interface GetAnalysisListingExportOptionsInput {
     analysisId: string;
 }
 
-export interface GetAnalysisListingExportOptionsOutputDTO {
+export interface GetAnalysisListingExportOptionsResponse {
     analysisId: string;
     hasConfig: boolean;
-    listings: AnalysisListingExportOptionDTO[];
-    subListings: AnalysisSubListingExportOptionDTO[];
+    listings: AnalysisListingExportOption[];
+    subListings: AnalysisSubListingExportOption[];
 }
 
 export interface PluginListingMeta extends Record<string, unknown> {
@@ -60,7 +60,7 @@ export interface PluginListingMeta extends Record<string, unknown> {
     subListingNames: string[];
 }
 
-export interface GetPluginListingInputDTO {
+export interface GetPluginListingInput {
     pluginId: string;
     exposureName?: string;
     exposureId?: string;
@@ -70,11 +70,11 @@ export interface GetPluginListingInputDTO {
     limit?: number;
 }
 
-export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
+export interface GetPluginListingResponse extends PaginatedResponse<ListingRow> {
     _meta?: PluginListingMeta;
 }
 
-export interface GetSubListingInputDTO {
+export interface GetSubListingInput {
     analysisId: string;
     exposureId: string;
     timestep: number;
@@ -88,7 +88,7 @@ export interface SubListingColumn {
     sortable: boolean;
 }
 
-export interface GetSubListingOutputDTO {
+export interface GetSubListingResponse {
     subListingName: string;
     columns: SubListingColumn[];
     rows: Record<string, unknown>[];
@@ -111,7 +111,7 @@ const requireExposureSelector = (params: ExposureSelectorParams, message: string
     }
 };
 
-const buildExportListingPath = ({ pluginId, trajectoryId }: ExportPluginListingInputDTO) => {
+const buildExportListingPath = ({ pluginId, trajectoryId }: ExportPluginListingInput) => {
     let path = `/${pluginId}/listings/export`;
 
     if (trajectoryId) {
@@ -122,19 +122,19 @@ const buildExportListingPath = ({ pluginId, trajectoryId }: ExportPluginListingI
 };
 
 const endpoints = {
-    getListing: get<GetPluginListingInputDTO, GetPluginListingOutputDTO, RawListingResponse>('/:pluginId/listings', {
+    getListing: get<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>('/:pluginId/listings', {
         unwrap: 'raw',
         omit: ['pluginId'],
         validate: (params) => requireExposureSelector(params, 'Exposure::IdRequired'),
         map: mapRawListingResponse
     }),
-    getSubListing: get<GetSubListingInputDTO, GetSubListingOutputDTO>(
+    getSubListing: get<GetSubListingInput, GetSubListingResponse>(
         '/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
     ),
-    getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsInputDTO, GetAnalysisListingExportOptionsOutputDTO>(
+    getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsInput, GetAnalysisListingExportOptionsResponse>(
         '/listings/analyses/:analysisId/export/options'
     ),
-    exportListing: download<ExportPluginListingInputDTO>('GET',
+    exportListing: download<ExportPluginListingInput>('GET',
         buildExportListingPath,
         {
             query: ({ analysisId, exposureId, exposureName, format }) => ({
@@ -146,7 +146,7 @@ const endpoints = {
             validate: (params) => requireExposureSelector(params, 'Exposure::SelectorRequired')
         }
     ),
-    exportListingByAnalysis: download<ExportListingByAnalysisInputDTO>('GET',
+    exportListingByAnalysis: download<ExportListingByAnalysisInput>('GET',
         '/listings/analyses/:analysisId/export',
         {
             query: ({ format, includeConfig, selectedListingIds, selectedSubListingIds }) => ({

@@ -4,7 +4,7 @@ import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { Box, Loader } from '@voltstack/bravais';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 const PluginBuilder = lazy(() => import('@/modules/plugin/components/plugin/PluginBuilder'));
 const ReactFlowProvider = lazy(() => import('@xyflow/react').then((module) => ({ default: module.ReactFlowProvider })));

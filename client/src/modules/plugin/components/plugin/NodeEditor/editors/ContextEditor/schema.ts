@@ -1,4 +1,4 @@
-import { ModifierContext } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { ModifierContext } from '@/modules/plugin/api/types/plugin/workflow-enums';
 
 export interface ContextEditorFormValues {
     source: string;

@@ -6,7 +6,7 @@ import useSceneInteraction from '../../hooks/use-scene-interaction';
 
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Stack, Surface } from '@voltstack/bravais';
 
 import './ExposureSettingsWidget.css';

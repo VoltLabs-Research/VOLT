@@ -12,7 +12,7 @@ import {
 import type { PreparedWhiteboardImageAsset } from '@/modules/whiteboards/utilities/excalidraw-images';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 
 type ExcalidrawElements = Record<string, unknown>[];
 type AppState = Record<string, unknown>;

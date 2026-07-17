@@ -1,16 +1,16 @@
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Box, Modal, closeModal, Stack, Text } from '@voltstack/bravais';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { useState } from 'react';
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
-import type { DeleteTeamClusterOutputDTO } from '@/modules/cluster/api/service';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
+import type { DeleteTeamClusterResponse } from '@/modules/cluster/api/service';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
 export const DELETE_CLUSTER_MODAL_ID = 'delete-cluster-modal';
 
 interface DeleteClusterModalProps {
     teamCluster: TeamCluster | null;
-    onDelete: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
+    onDelete: (password: string) => Promise<DeleteTeamClusterResponse>;
     onClose: () => void;
 }
 
@@ -18,7 +18,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [result, setResult] = useState<DeleteTeamClusterOutputDTO | null>(null);
+    const [result, setResult] = useState<DeleteTeamClusterResponse | null>(null);
 
     const isConnectedCluster = teamCluster?.status === TeamClusterStatus.Connected;
 

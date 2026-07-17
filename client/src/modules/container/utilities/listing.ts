@@ -1,5 +1,5 @@
-import type { Container } from '@/modules/container/api/entities/container';
-import type { ContainerFolder } from '@/modules/container/api/entities/container-folder';
+import type { Container } from '@/modules/container/api/types/container';
+import type { ContainerFolder } from '@/modules/container/api/types/container-folder';
 
 export enum ContainerListingRowType {
     Folder = 'folder',

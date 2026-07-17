@@ -1,6 +1,6 @@
-import { PresenceStatus } from '../../api/entities/shared/chat-events';
+import { PresenceStatus } from '../../api/types/shared/chat-events';
 import { create } from 'zustand';
-import type { TypingUser } from '../../api/entities/shared/chat-events';
+import type { TypingUser } from '../../api/types/shared/chat-events';
 
 type Presence = PresenceStatus.Online | PresenceStatus.Offline;
 

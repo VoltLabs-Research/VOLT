@@ -1,4 +1,4 @@
-import { resolveSSAOSettings } from '@/shared/domain/rendering/effects';
+import { resolveSSAOSettings } from '@/shared/rendering/effects';
 import {
     Bloom,
     ChromaticAberration,

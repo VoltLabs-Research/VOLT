@@ -4,11 +4,11 @@ import {
 } from '@/modules/cluster/hooks/team-cluster/queries';
 import { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import { openModal } from '@voltstack/bravais';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices } from '@/modules/cluster/api/types/team-cluster';
 interface SidebarClustersResult {
     clusters: TeamCluster[];
     selectedTeamId: string | null;

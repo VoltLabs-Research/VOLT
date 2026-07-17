@@ -1,7 +1,7 @@
 import { trajectoryQuery } from './queries';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { runCrudMutation } from '@/shared/presentation/hooks/toast';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
+import { runCrudMutation } from '@/shared/ui/hooks/toast';
+import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
 import { useCallback } from 'react';
 
 export default function useDeleteSelectedTrajectories() {

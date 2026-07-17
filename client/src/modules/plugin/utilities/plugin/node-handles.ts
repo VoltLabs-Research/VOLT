@@ -5,8 +5,8 @@ import type {
     INodeConnectorPlacement,
     INodeData,
     NodeConnectorSide
-} from '@/modules/plugin/api/entities/plugin/workflow';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+} from '@/modules/plugin/api/types/plugin/workflow';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { isRecord } from '@/shared/utils/type-guards';
 import type { SelectOption } from '@voltstack/bravais';
 

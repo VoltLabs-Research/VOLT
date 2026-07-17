@@ -1,24 +1,24 @@
 import { updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
-import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery } from '@/shared/query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import queryClient from '@/shared/query/query-client';
 import { tokenStorage } from '@/shared/auth/token-storage';
 import type {
-    ChangePasswordInputDTO,
-    ChangePasswordOutputDTO,
-    CheckEmailInputDTO,
-    CheckEmailOutputDTO,
-    GetAvailableOAuthProvidersOutputDTO,
-    SignInInputDTO,
-    SignInOutputDTO,
-    SignUpInputDTO,
-    SignUpOutputDTO,
-    UpdateAvatarInputDTO,
-    UpdateProfileInputDTO
+    ChangePasswordInput,
+    ChangePasswordResponse,
+    CheckEmailInput,
+    CheckEmailResponse,
+    GetAvailableOAuthProvidersResponse,
+    SignInInput,
+    SignInResponse,
+    SignUpInput,
+    SignUpResponse,
+    UpdateAvatarInput,
+    UpdateProfileInput
 } from '../api/service';
-import type { User } from '../api/entities/user';
-import type { QueryOptions } from '@/shared/infrastructure/query';
+import type { User } from '../api/types/user';
+import type { QueryOptions } from '@/shared/query';
 
 type AuthQueryKeyMap = Record<'currentUser' | 'passwordInfo' | 'oauthProviders', void>;
 
@@ -31,7 +31,7 @@ export const passwordInfoQuery = createQuery(KEYS.passwordInfo, () => service.ge
 const oauthProviders = createQuery(KEYS.oauthProviders, () => service.getAvailableOAuthProviders({}));
 
 export const useCurrentUserQuery = (options?: QueryOptions<User>) => currentUser(undefined, { staleTime: Infinity, ...options });
-export const useOAuthProvidersQuery = (options?: QueryOptions<GetAvailableOAuthProvidersOutputDTO>) =>
+export const useOAuthProvidersQuery = (options?: QueryOptions<GetAvailableOAuthProvidersResponse>) =>
     oauthProviders(undefined, { staleTime: Infinity, ...options });
 export const fetchCurrentUser = () => currentUser.fetch(undefined, { staleTime: 0 });
 export const clearCurrentUserQueryData = async () => {
@@ -39,19 +39,19 @@ export const clearCurrentUserQueryData = async () => {
     currentUser.clear(undefined);
 };
 
-export const useSignInMutation = createMutation<SignInOutputDTO, SignInInputDTO>(
+export const useSignInMutation = createMutation<SignInResponse, SignInInput>(
     service.signIn,
     (data) => currentUser.set(undefined, data.user)
 );
 
-export const useSignUpMutation = createMutation<SignUpOutputDTO, SignUpInputDTO>(
+export const useSignUpMutation = createMutation<SignUpResponse, SignUpInput>(
     service.signUp,
     (data) => currentUser.set(undefined, data.user)
 );
 
-export const useCheckEmailMutation = createMutation<CheckEmailOutputDTO, CheckEmailInputDTO>(service.checkEmail);
+export const useCheckEmailMutation = createMutation<CheckEmailResponse, CheckEmailInput>(service.checkEmail);
 
-export const useUpdateMeMutation = createMutation<User, UpdateProfileInputDTO | UpdateAvatarInputDTO>(
+export const useUpdateMeMutation = createMutation<User, UpdateProfileInput | UpdateAvatarInput>(
     service.updateMe,
     (data) => currentUser.set(undefined, data)
 );
@@ -61,7 +61,7 @@ export const useDeleteMeMutation = createMutation<void, void>(
     () => currentUser.clear(undefined)
 );
 
-export const useChangePasswordMutation = createMutation<ChangePasswordOutputDTO, ChangePasswordInputDTO>(
+export const useChangePasswordMutation = createMutation<ChangePasswordResponse, ChangePasswordInput>(
     async (data) => {
         const result = await service.changePassword(data);
         tokenStorage.setToken(result.token);

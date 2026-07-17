@@ -2,7 +2,7 @@ import { Box, Button, IconButton, EmptyState, Row, Stack, Text } from '@voltstac
 import { Plus, Trash2 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 
-import type { IArgumentOption } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IArgumentOption } from '@/modules/plugin/api/types/plugin/workflow';
 import type { KeyboardEvent } from 'react';
 
 import './ArgumentOptionsEditor.css';

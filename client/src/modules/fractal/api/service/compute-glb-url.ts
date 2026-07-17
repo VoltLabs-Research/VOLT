@@ -7,7 +7,7 @@ import type {
     LineStyleScene,
     ParticleFilterScene,
     ParticleFilterSceneCondition
-} from '@/modules/fractal/api/entities/scene';
+} from '@/modules/fractal/api/types/scene';
 
 export interface ComputeGlbUrlParams {
     teamId: string;

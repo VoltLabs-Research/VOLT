@@ -4,7 +4,7 @@ import useSocket from './use-socket';
 import useSocketEvent from './use-socket-event';
 
 import type { MutableRefObject } from 'react';
-import type { TerminalHandle } from '@/shared/presentation/components/Terminal';
+import type { TerminalHandle } from '@/shared/ui/components/Terminal';
 
 interface UseSocketTerminalSessionOptions<TAttachPayload> {
     attachEvent: string;

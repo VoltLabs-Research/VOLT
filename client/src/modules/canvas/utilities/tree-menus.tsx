@@ -1,7 +1,7 @@
 import { Droplet, Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import { Button, Row, Slider } from '@voltstack/bravais';
 
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 
 interface SliderSubmenuProps {
     label: string;

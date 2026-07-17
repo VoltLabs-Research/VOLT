@@ -1,44 +1,12 @@
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import { useState } from 'react';
-import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster, TeamClusterCredentialServices, TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
 import type {
-    CreateTeamClusterTransferRequestOutputDTO,
-    DeleteTeamClusterOutputDTO,
-    TeamClusterQueueConcurrencyInputDTO,
-    TeamClusterQueueScopeLimitsInputDTO,
-    UpdateTeamClusterQueueConcurrencyOutputDTO,
-    UpdateTeamClusterRoleOutputDTO
+    TeamClusterQueueConcurrencyInput,
+    TeamClusterQueueScopeLimitsInput
 } from '@/modules/cluster/api/service';
 
-export interface ClusterPageState {
-    clusters: TeamCluster[];
-    selectedTeamId: string | null;
-    selectedCluster: TeamCluster | null;
-    selectedClusterId: string | null;
-    setSelectedClusterId: (clusterId: string | null) => void;
-    revealCredentials: (password: string) => Promise<void>;
-    deleteCluster: (password: string) => Promise<DeleteTeamClusterOutputDTO>;
-    updateQueueConcurrency: (input: {
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
-        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
-    }) => Promise<UpdateTeamClusterQueueConcurrencyOutputDTO>;
-    updateRole: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleOutputDTO>;
-    createTransferRequest: (destinationClusterId: string) => Promise<CreateTeamClusterTransferRequestOutputDTO>;
-    credentials: TeamClusterCredentialServices | null;
-    credentialsCluster: TeamCluster | null;
-    deleteTarget: TeamCluster | null;
-    queueConcurrencyTarget: TeamCluster | null;
-    roleTarget: TeamCluster | null;
-    transferTarget: TeamCluster | null;
-    setCredentialsCluster: (teamCluster: TeamCluster | null) => void;
-    setDeleteTarget: (teamCluster: TeamCluster | null) => void;
-    setQueueConcurrencyTarget: (teamCluster: TeamCluster | null) => void;
-    setRoleTarget: (teamCluster: TeamCluster | null) => void;
-    setTransferTarget: (teamCluster: TeamCluster | null) => void;
-    isLoading: boolean;
-}
-
-const useClusterPageState = (): ClusterPageState => {
+const useClusterPageState = () => {
     const management = useClusterManagement();
     const [credentials, setCredentials] = useState<TeamClusterCredentialServices | null>(null);
     const [credentialsCluster, setCredentialsCluster] = useState<TeamCluster | null>(null);
@@ -65,8 +33,8 @@ const useClusterPageState = (): ClusterPageState => {
     };
 
     const updateQueueConcurrency = async (input: {
-        queueConcurrency: TeamClusterQueueConcurrencyInputDTO;
-        queueScopeLimits: TeamClusterQueueScopeLimitsInputDTO;
+        queueConcurrency: TeamClusterQueueConcurrencyInput;
+        queueScopeLimits: TeamClusterQueueScopeLimitsInput;
     }) => {
         if (!queueConcurrencyTarget) {
             throw new Error('Missing cluster queue concurrency target');
@@ -112,7 +80,7 @@ const useClusterPageState = (): ClusterPageState => {
         queueConcurrencyTarget,
         roleTarget,
         transferTarget,
-        setCredentialsCluster: (teamCluster) => {
+        setCredentialsCluster: (teamCluster: TeamCluster | null) => {
             setCredentials(null);
             setCredentialsCluster(teamCluster);
         },

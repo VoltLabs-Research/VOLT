@@ -7,7 +7,7 @@ import {
     useTrajectoryCloneFlowStore,
     type PendingExecutionIntent
 } from '../stores/use-trajectory-clone-flow-store';
-import type { Job } from '@/modules/jobs/api/entities/job';
+import type { Job } from '@/modules/jobs/api/types/job';
 import { useNavigate } from 'react-router-dom';
 const CLONE_QUEUE_TYPE = 'trajectory_clone';
 

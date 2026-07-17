@@ -1,5 +1,5 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { LiquidToggle, Modal, closeModal, Row, Stack, Text } from '@voltstack/bravais';
 import './AnalysisListingDownloadModal.css';
 import { useEffect, useMemo, useState } from 'react';

@@ -4,7 +4,7 @@ import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
 import { Trash2 } from 'lucide-react';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { NODE_CONFIGS } from '@/modules/plugin/utilities/plugin/node-registry';
 import ModifierEditor from './editors/ModifierEditor';
 import ArgumentsEditor from './editors/ArgumentsEditor';

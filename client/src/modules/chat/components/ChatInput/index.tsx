@@ -3,7 +3,7 @@ import { useId, useState } from 'react';
 import useFilePreview from '@/modules/chat/hooks/use-file-preview';
 import { formatSize } from '@voltstack/bravais';
 import { Box, Button, IconButton, Popover, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
-import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import EmojiPicker from '@/shared/ui/components/EmojiPicker';
 import useTip from '@/shared/tips/use-tip';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import './ChatInput.css';

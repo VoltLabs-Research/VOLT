@@ -1,9 +1,9 @@
-import { LightingPreset, LightsColorField, resolveLightsColor } from '@/shared/domain/rendering/lights';
+import { LightingPreset, LightsColorField, resolveLightsColor } from '@/shared/rendering/lights';
 import { useThree } from '@react-three/fiber';
 import { Color, DirectionalLight, DirectionalLightHelper, HemisphereLight, HemisphereLightHelper, PointLight, PointLightHelper, RectAreaLight, SpotLight, SpotLightHelper } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { useEffect, useMemo, useRef } from 'react';
-import type { LightsState } from '@/shared/domain/rendering/lights';
+import type { LightsState } from '@/shared/rendering/lights';
 import type { FC } from 'react';
 
 interface ResolvedLightConfig {

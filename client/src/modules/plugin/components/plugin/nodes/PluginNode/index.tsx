@@ -1,6 +1,6 @@
-import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType, PluginNodeExecutionMode } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import BaseNode from '@/modules/plugin/components/plugin/BaseNode';
-import type { IPluginNodeData } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IPluginNodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { NodeProps } from '@xyflow/react';
 

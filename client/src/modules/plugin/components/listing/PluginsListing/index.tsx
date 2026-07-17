@@ -6,21 +6,21 @@ import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plug
 import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { PluginStatus } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { PluginStatus } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { SOCKET_PLUGIN_EVENTS } from '@/modules/socket/events/plugin';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { runAction } from '@/shared/ui/actions/run-action';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
+import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
-import { dateColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import { dateColumn, statusColumn } from '@/shared/ui/utilities/column-presets';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { GetPluginsInputDTO } from '@/modules/plugin/api/services/plugin-service';
-import type { Plugin } from '@/modules/plugin/api/entities/plugin/plugin';
-import type { BaseEntity } from '@/shared/domain/entities/BaseEntity';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { GetPluginsInput } from '@/modules/plugin/api/services/plugin-service';
+import type { Plugin } from '@/modules/plugin/api/types/plugin/plugin';
+import type { BaseEntity } from '@/shared/types/BaseEntity';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import './PluginsListing.css';
 import { useNavigate } from 'react-router-dom';
 interface PluginListingRow extends BaseEntity {
@@ -69,7 +69,7 @@ const PluginsListing = () => {
     const exportPlugin = useExportPlugin();
     const importPluginMutation = useImportPluginMutation();
 
-    const fetchData = useCallback(async (params: GetPluginsInputDTO) => {
+    const fetchData = useCallback(async (params: GetPluginsInput) => {
         return await fetchPlugins(params);
     }, []);
 

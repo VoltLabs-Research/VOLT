@@ -1,6 +1,6 @@
 import { colorField, row } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import { ENVIRONMENT_SUBSECTION_TITLES } from '@/shared/domain/rendering/environment';
+import { ENVIRONMENT_SUBSECTION_TITLES } from '@/shared/rendering/environment';
 
 import { useMemo } from 'react';
 import { MdNature } from 'react-icons/md';

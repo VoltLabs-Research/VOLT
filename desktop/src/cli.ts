@@ -7,8 +7,7 @@ import { mkdir } from 'node:fs/promises';
 import * as p from '@clack/prompts';
 import AppConfig from '@/services/AppConfig';
 import type { DeployMode } from '@/services/AppConfig';
-import SourceResolver from '@/services/SourceResolver';
-import Repository from '@/services/Repository';
+import { createSourceResolver } from '@/services/sources';
 import DockerPreflight from '@/services/DockerPreflight';
 import Deploy from '@/services/Deploy';
 import DeployProgress from '@/services/DeployProgress';
@@ -140,14 +139,7 @@ const main = async () => {
     const composeFile = process.env.VOLT_COMPOSE_FILE ?? path.join(moduleDir, '..', 'stack', 'compose.yml');
     const docker = new DockerPreflight();
     const progress = new DeployProgress();
-    const sources = new SourceResolver({
-        appConfig,
-        downloadDir,
-        repos: [
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }), envKey: 'VOLT_SOURCE_DIR' },
-            { repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }), envKey: 'CLUSTER_DAEMON_SOURCE_DIR' }
-        ]
-    });
+    const sources = createSourceResolver(appConfig, downloadDir);
 
     const existing = await appConfig.getBootstrap();
 

@@ -7,7 +7,7 @@ import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
 import { Button, openModal } from '@voltstack/bravais';
 import type { ReactNode } from 'react';
-import type { JoinByInviteCodeOutputDTO } from '@/modules/team/api/services/team-service';
+import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
 
 interface OnboardingLayoutProps {
     children: ReactNode;
@@ -28,7 +28,7 @@ const OnboardingLayout = ({
 }: OnboardingLayoutProps) => {
     const user = useCurrentUser();
 
-    const handleJoinTeamSuccess = async ({ teamId }: JoinByInviteCodeOutputDTO) => {
+    const handleJoinTeamSuccess = async ({ teamId }: JoinByInviteCodeResponse) => {
         switchSelectedTeam(teamId);
         await refreshSocketSession();
     };

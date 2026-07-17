@@ -5,7 +5,7 @@ export enum ParticleFilterCombinator {
     Or = 'OR'
 }
 
-export interface ParticleFilterConditionDTO {
+export interface ParticleFilterCondition {
     kind?: 'property';
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
@@ -15,7 +15,7 @@ export interface ParticleFilterConditionDTO {
 
 export type FilterAction = 'delete' | 'highlight';
 
-export interface ApplyFilterInputDTO {
+export interface ApplyFilterInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -25,16 +25,16 @@ export interface ApplyFilterInputDTO {
     exposureId?: string;
     action: FilterAction;
     combinator?: ParticleFilterCombinator;
-    conditions?: ParticleFilterConditionDTO[];
+    conditions?: ParticleFilterCondition[];
 }
 
-export interface ApplyFilterOutputDTO {
+export interface ApplyFilterResponse {
     fileId: string;
     atomsResult: number;
     action: string;
 }
 
-export interface GetFilterPropertiesInputDTO {
+export interface GetFilterPropertiesInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -47,7 +47,7 @@ export interface FilterPropertiesData {
     exposureNames: Record<string, string>;
 }
 
-export interface GetUniqueValuesInputDTO {
+export interface GetUniqueValuesInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -56,11 +56,11 @@ export interface GetUniqueValuesInputDTO {
     maxValues?: number;
 }
 
-export interface GetUniqueValuesOutputDTO {
+export interface GetUniqueValuesResponse {
     values: Array<number | string>;
 }
 
-export interface PreviewFilterInputDTO {
+export interface PreviewFilterInput {
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
@@ -69,15 +69,15 @@ export interface PreviewFilterInputDTO {
     value?: number | string;
     exposureId?: string;
     combinator?: ParticleFilterCombinator;
-    conditions?: ParticleFilterConditionDTO[];
+    conditions?: ParticleFilterCondition[];
 }
 
-export interface PreviewFilterOutputDTO {
+export interface PreviewFilterResponse {
     matchCount: number;
     totalAtoms: number;
 }
 
-export const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
+export const buildPreviewQuery = (input: PreviewFilterInput) => {
     if (input.conditions && input.conditions.length > 0) {
         return {
             timestep: input.timestep,
@@ -95,7 +95,7 @@ export const buildPreviewQuery = (input: PreviewFilterInputDTO) => {
     };
 };
 
-const buildApplyFilterBody = (input: ApplyFilterInputDTO) => {
+const buildApplyFilterBody = (input: ApplyFilterInput) => {
     if (input.conditions && input.conditions.length > 0) {
         return {
             timestep: String(input.timestep),
@@ -116,13 +116,13 @@ const buildApplyFilterBody = (input: ApplyFilterInputDTO) => {
 };
 
 const endpoints = {
-    getProperties: get<GetFilterPropertiesInputDTO, FilterPropertiesData>(
+    getProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/properties/${analysisId}`
             : `/${trajectoryId}/properties`,
         { query: ({ timestep }) => ({ timestep }) }
     ),
-    preview: get<PreviewFilterInputDTO, PreviewFilterOutputDTO>(
+    preview: get<PreviewFilterInput, PreviewFilterResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/previews/${analysisId}`
             : `/${trajectoryId}/previews`,
@@ -131,7 +131,7 @@ const endpoints = {
             query: buildPreviewQuery
         }
     ),
-    applyAction: post<ApplyFilterInputDTO, ApplyFilterOutputDTO>(
+    applyAction: post<ApplyFilterInput, ApplyFilterResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/${analysisId}`
             : `/${trajectoryId}`,
@@ -139,7 +139,7 @@ const endpoints = {
             body: buildApplyFilterBody
         }
     ),
-    getUniqueValues: get<GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO>(
+    getUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
         ({ trajectoryId, analysisId }) => analysisId
             ? `/${trajectoryId}/unique-values/${analysisId}`
             : `/${trajectoryId}/unique-values`,

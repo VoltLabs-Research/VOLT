@@ -1,13 +1,13 @@
 import service from '../api/service';
-import { patchPaginatedPage, removeEntityFromList } from '@/shared/infrastructure/query/cache-utils';
-import queryClient from '@/shared/infrastructure/query/query-client';
+import { patchPaginatedPage, removeEntityFromList } from '@/shared/query/cache-utils';
+import queryClient from '@/shared/query/query-client';
 import {
     buildKeys,
     createInvalidatingMutation,
     createPaginatedQuery,
     createQuery,
     type QueryOptions
-} from '@/shared/infrastructure/query';
+} from '@/shared/query';
 import {
     useCanvasAccessMode,
     useCanvasDataAccess,
@@ -15,8 +15,8 @@ import {
     type CanvasAccessMode,
     type CanvasDataAccess
 } from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Analysis } from '../api/entities/analysis';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Analysis } from '../api/types/analysis';
 import type {
     GetAnalysesByTrajectoryParams,
     GetAnalysesParams,

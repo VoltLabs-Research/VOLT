@@ -1,6 +1,6 @@
 import service from '../api/service';
-import { buildKeys, createMutation, createQuery } from '@/shared/infrastructure/query';
-import type { RevokeAllOtherSessionsOutputDTO, RevokeSessionInputDTO } from '../api/service';
+import { buildKeys, createMutation, createQuery } from '@/shared/query';
+import type { RevokeAllOtherSessionsResponse, RevokeSessionInput } from '../api/service';
 
 type SessionQueryKeyMap = Record<string, unknown> & {
     activeSessions: void;
@@ -14,12 +14,12 @@ export const loginActivityQuery = createQuery(SESSION_QUERY_KEYS.loginActivity, 
 
 const invalidateActiveSessionsQuery = () => activeSessionsQuery.invalidate(undefined);
 
-export const useRevokeSessionMutation = createMutation<void, RevokeSessionInputDTO>(
+export const useRevokeSessionMutation = createMutation<void, RevokeSessionInput>(
     service.revokeSession,
     () => invalidateActiveSessionsQuery()
 );
 
-export const useRevokeAllOtherSessionsMutation = createMutation<RevokeAllOtherSessionsOutputDTO, void>(
+export const useRevokeAllOtherSessionsMutation = createMutation<RevokeAllOtherSessionsResponse, void>(
     () => service.revokeAllOtherSessions({}),
     () => invalidateActiveSessionsQuery()
 );

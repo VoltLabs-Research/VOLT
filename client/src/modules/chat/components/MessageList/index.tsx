@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { EmptyState, Skeleton, Stack, Box, Text } from '@voltstack/bravais';
-import AutoScrollList from '@/shared/presentation/components/AutoScrollList';
+import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import '../MessageListSkeleton/MessageListSkeleton.css';
-import type { ChatMessage } from '@/modules/chat/api/entities/message';
+import type { ChatMessage } from '@/modules/chat/api/types/message';
 import './MessageList.css';
 
 interface MessageListProps {

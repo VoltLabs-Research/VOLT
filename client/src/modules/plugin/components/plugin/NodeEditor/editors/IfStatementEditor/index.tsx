@@ -1,11 +1,11 @@
 import { Button, CollapsibleSection } from '@voltstack/bravais';
 import { useCallback } from 'react';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Plus } from 'lucide-react';
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import type { ICondition } from '@/modules/plugin/api/entities/plugin/workflow';
-import type { ConditionType, ConditionHandler } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import type { ICondition } from '@/modules/plugin/api/types/plugin/workflow';
+import type { ConditionType, ConditionHandler } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import type { EditorProps } from '../types';
 
 const CONDITION_TYPE_OPTIONS = [

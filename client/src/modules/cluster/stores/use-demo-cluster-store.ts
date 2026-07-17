@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
 interface DemoClusterState {
     isDemo: boolean;

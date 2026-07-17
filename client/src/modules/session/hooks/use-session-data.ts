@@ -5,10 +5,10 @@ import {
     useRevokeSessionMutation
 } from './queries';
 import { closeModal, openModal } from '@voltstack/bravais';
-import { confirmAction, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useMemo } from 'react';
-import type { ActiveSession } from '../api/entities/session';
+import type { ActiveSession } from '../api/types/session';
 
 export const REVOKE_ALL_MODAL_ID = 'revoke-all-sessions-modal';
 

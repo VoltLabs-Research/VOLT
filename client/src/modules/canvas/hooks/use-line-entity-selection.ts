@@ -5,9 +5,9 @@ import { lineModelRangesQuery } from '@/modules/trajectory/hooks/line-style/quer
 import { getSceneKey, resolveLineSceneSource } from '@/modules/fractal/utilities/scene-utils';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 
-import type { SceneObjectType } from '@/modules/fractal/api/entities/scene';
+import type { SceneObjectType } from '@/modules/fractal/api/types/scene';
 import type { LineEntityHighlight } from '@/modules/fractal/types/scene-config';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
 
 export const useLineEntityRowSelection = (exposureId: string | null | undefined) => {
     const { activeScenes, selection, toggleLineEntitySelection } = useEditorStore(useShallow((state) => ({

@@ -5,10 +5,10 @@ import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { getClusterLiveMetricsStatus } from '@/modules/cluster/utilities/cluster-live-metrics-status';
 import { formatNetworkSpeed } from '@/modules/cluster/utilities/format-network';
 import { resolveClusterMetricId } from '@/modules/cluster/utilities/resolve-cluster-metric-id';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/stores/use-jobs-drawer-store';
 import { useCallback, useMemo, useState } from 'react';
-import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
 import type { ReactNode } from 'react';
 
 type ClusterMetricTabId = 'cpu' | 'memory' | 'disk' | 'network';

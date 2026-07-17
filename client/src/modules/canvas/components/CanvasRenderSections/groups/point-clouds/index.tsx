@@ -1,6 +1,6 @@
 import { valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Select, Box, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
 

@@ -4,10 +4,10 @@ import {
     fetchPluginListing,
     usePluginListingQuery
 } from './queries';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { MenuOption } from '@/shared/presentation/types/menu';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ListingRow } from '@/modules/plugin/api/entities/listing/listing-row';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { MenuOption } from '@/shared/ui/types/menu';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ListingRow } from '@/modules/plugin/api/types/listing/listing-row';
 import formatSnakeCaseToTitle from '@/modules/plugin/utilities/listing/format-snake-case';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utilities/build-atoms-viewer-path';
 import { buildSubListingsPath } from '@/modules/plugin/utilities/listing/build-sub-listings-path';

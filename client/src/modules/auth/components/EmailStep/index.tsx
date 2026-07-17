@@ -1,4 +1,4 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GoogleIcon from '@/modules/auth/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/modules/auth/components/icons/MicrosoftIcon';
 import { Button, Row, Stack } from '@voltstack/bravais';

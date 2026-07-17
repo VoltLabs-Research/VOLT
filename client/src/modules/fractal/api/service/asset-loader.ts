@@ -8,7 +8,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { geometryPool } from '@/modules/fractal/services/geometry-pool';
 import { decompress } from 'fzstd';
-import type IFractalAssetLoader from '@/modules/fractal/api/entities/asset-loader';
+import type IFractalAssetLoader from '@/modules/fractal/api/types/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const summarizeRenderableContent = (root: THREE.Object3D) => {

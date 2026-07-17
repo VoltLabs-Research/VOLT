@@ -4,9 +4,9 @@ import {
     createInvalidatingMutation,
     createFolderResourceQueries,
     createQuery
-} from '@/shared/infrastructure/query';
-import { createMutation } from '@/shared/infrastructure/query';
-import queryClient from '@/shared/infrastructure/query/query-client';
+} from '@/shared/query';
+import { createMutation } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
 import type {
     FolderCreateParams,
     FolderDeleteParams,
@@ -14,7 +14,7 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type {
     CompileLatexDocumentParams,
     CreateLatexDocumentParams,
@@ -37,10 +37,10 @@ import type {
     UploadLatexAssetParams,
     UploadLatexAssetsResult
 } from '../api/service';
-import type { LatexAsset } from '../api/entities/latex-asset';
-import type { LatexDocument } from '../api/entities/latex-document';
-import type { LatexFile } from '../api/entities/latex-file';
-import type { LatexFolder } from '../api/entities/latex-folder';
+import type { LatexAsset } from '../api/types/latex-asset';
+import type { LatexDocument } from '../api/types/latex-document';
+import type { LatexFile } from '../api/types/latex-file';
+import type { LatexFolder } from '../api/types/latex-folder';
 
 interface LatexQueryKeys {
     documents: ListLatexDocumentsParams;

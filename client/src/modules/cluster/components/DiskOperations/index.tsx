@@ -1,6 +1,6 @@
 import { CHART_COLORS } from '@/modules/cluster/utilities/chart-colors';
-import ChartContainer from '@/shared/presentation/components/ChartContainer';
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import ChartContainer from '@/shared/ui/components/ChartContainer';
+import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { useMemo } from 'react';
 import {
     AreaChart,
@@ -12,7 +12,7 @@ import {
     Legend
 } from 'recharts';
 import { HardDrive } from 'lucide-react';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
 
 interface DataPoint {
     read: number;

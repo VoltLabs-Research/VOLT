@@ -1,12 +1,12 @@
 import { resolveTabularPayload } from '@/modules/ai/utilities/message-artifacts';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { Box, Divider, IconButton, Row, Stack, Text, Tooltip, VisuallyHidden } from '@voltstack/bravais';
-import PanelHeader from '@/shared/presentation/components/PanelHeader';
-import { copyTextToClipboard } from '@/shared/presentation/utilities/copy-to-clipboard';
+import PanelHeader from '@/shared/ui/components/PanelHeader';
+import { copyTextToClipboard } from '@/shared/ui/utilities/copy-to-clipboard';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IoCheckmarkOutline, IoClipboardOutline } from 'react-icons/io5';
 import { PiFileCsv, PiFileXls } from 'react-icons/pi';
-import type { AIMessageArtifact } from '@/modules/ai/api/entities/ai-conversation';
+import type { AIMessageArtifact } from '@/modules/ai/api/types/ai-conversation';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import './AIArtifactSpreadsheetPanel.css';
 

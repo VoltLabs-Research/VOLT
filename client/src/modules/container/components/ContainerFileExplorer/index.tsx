@@ -2,13 +2,13 @@ import { useContainerFilesQuery, useContainerFileContentQuery } from '../../hook
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
 import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
-import FileExplorer from '@/shared/presentation/components/FileExplorer';
-import FileExplorerRow from '@/shared/presentation/components/FileExplorer/FileExplorerRow';
-import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import FileExplorer from '@/shared/ui/components/FileExplorer';
+import FileExplorerRow from '@/shared/ui/components/FileExplorer/FileExplorerRow';
+import RefreshButton from '@/shared/ui/components/RefreshButton';
 import { Button, Row, Stack, Text, Tooltip } from '@voltstack/bravais';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { ContainerFile } from '@/modules/container/api/entities/container-file';
+import type { ContainerFile } from '@/modules/container/api/types/container-file';
 import './ContainerFileExplorer.css';
 
 interface ContainerFileExplorerProps {

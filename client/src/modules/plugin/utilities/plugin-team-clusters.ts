@@ -1,5 +1,5 @@
-import type { TeamClusterRole } from '@/modules/cluster/api/entities/team-cluster';
-import type { PluginTeamClusterOption } from '@/modules/plugin/api/entities/plugin/team-cluster';
+import type { TeamClusterRole } from '@/modules/cluster/api/types/team-cluster';
+import type { PluginTeamClusterOption } from '@/modules/plugin/api/types/plugin/team-cluster';
 
 const EXECUTION_CLUSTER_ROLES = new Set<TeamClusterRole>(['cluster', 'compute-node']);
 

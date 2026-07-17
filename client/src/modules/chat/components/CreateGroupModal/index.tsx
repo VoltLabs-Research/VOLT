@@ -1,10 +1,10 @@
 import TeamMemberList from '../TeamMemberList';
 import { useState } from 'react';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal, Stack, Text } from '@voltstack/bravais';
 import { toggleSelection } from '@/shared/utils/selection';
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 
 interface CreateGroupModalProps {
     teamMembers: User[];

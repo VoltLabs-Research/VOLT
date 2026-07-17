@@ -1,6 +1,6 @@
 import { Box, Button, IconButton, Row, Stack, Text } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import { NodeType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { NodeType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin-builder-store';
@@ -11,7 +11,7 @@ import {
 } from '@/modules/plugin/utilities/plugin/argument-values';
 import { X, Play, Settings2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
 import './DebugArgumentsPanel.css';
 
 interface DebugArgumentsPanelProps {

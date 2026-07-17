@@ -1,5 +1,5 @@
 import UserBadge from '../UserBadge';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Stack } from '@voltstack/bravais';
 import { ArrowLeft, Lock } from 'lucide-react';
 import type { FormEventHandler } from 'react';

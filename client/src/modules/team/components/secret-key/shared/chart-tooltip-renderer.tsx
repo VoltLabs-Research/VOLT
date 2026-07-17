@@ -1,4 +1,4 @@
-import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
+import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { TooltipContentProps } from 'recharts';
 import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';

@@ -6,25 +6,25 @@ import { ErrorSurface, reportError } from '@/shared/errors/core';
 import { useCreateTeamAIIntegrationMutation, useDeleteTeamAIIntegrationMutation } from '@/modules/team/hooks/ai-integration/queries';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import useUpdateTeamAIIntegration from '@/modules/team/hooks/ai-integration/use-update-team-ai-integration';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
-import SettingsPage from '@/shared/presentation/components/SettingsPage';
-import SettingsSectionHeader from '@/shared/presentation/components/SettingsSectionHeader';
-import { confirm, ConfirmActionTone } from '@/shared/presentation/hooks/use-confirm';
-import { runAction } from '@/shared/presentation/actions/run-action';
-import { createPromiseToastOptions } from '@/shared/presentation/utilities/toast-options';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import SettingsPage from '@/shared/ui/components/SettingsPage';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
+import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
+import { runAction } from '@/shared/ui/actions/run-action';
+import { createPromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import { Settings2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { IoAddOutline } from 'react-icons/io5';
 import { sileo } from 'sileo';
 import useTip from '@/shared/tips/use-tip';
-import { AIProvider } from '@/modules/ai/api/entities/ai-provider';
+import { AIProvider } from '@/modules/ai/api/types/ai-provider';
 import type { CreateTeamAIIntegrationParams, UpdateTeamAIIntegrationParams } from '@/modules/team/api/services/ai-integration-service';
 import type {
     AIProviderCatalogItem,
     TeamAIIntegration,
     TeamAIModelMetadata
-} from '@/modules/team/api/entities/ai-integration/team-ai-integration';
+} from '@/modules/team/api/types/ai-integration/team-ai-integration';
 import type { FormEvent, KeyboardEvent } from 'react';
 import './IntegrationsSettings.css';
 

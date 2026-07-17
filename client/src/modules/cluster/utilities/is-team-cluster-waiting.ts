@@ -1,4 +1,4 @@
-import { TeamClusterStatus } from '@/modules/cluster/api/entities/team-cluster';
+import { TeamClusterStatus } from '@/modules/cluster/api/types/team-cluster';
 
 export const isTeamClusterWaiting = (status: TeamClusterStatus): boolean => {
     return status === TeamClusterStatus.WaitingForConnection

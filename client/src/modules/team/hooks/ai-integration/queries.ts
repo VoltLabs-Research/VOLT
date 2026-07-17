@@ -1,12 +1,12 @@
 import aiIntegrationService from '../../api/services/ai-integration-service';
-import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/infrastructure/query';
+import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
 import type {
-    CreateTeamAIIntegrationInputDTO,
+    CreateTeamAIIntegrationInput,
     CreateTeamAIIntegrationResponse,
-    DeleteTeamAIIntegrationInputDTO,
+    DeleteTeamAIIntegrationInput,
     ListTeamAIIntegrationModelsResponse,
     ListTeamAIIntegrationsResponse,
-    UpdateTeamAIIntegrationInputDTO,
+    UpdateTeamAIIntegrationInput,
     UpdateTeamAIIntegrationResponse
 } from '../../api/services/ai-integration-service';
 
@@ -54,7 +54,7 @@ export const useTeamAIIntegrationModelsQuery = createQuery<string, ListTeamAIInt
 
 export const useCreateTeamAIIntegrationMutation = createMutation<
     CreateTeamAIIntegrationResponse,
-    CreateTeamAIIntegrationInputDTO
+    CreateTeamAIIntegrationInput
 >(
     aiIntegrationService.createByProvider,
     async (_data, variables) => {
@@ -64,7 +64,7 @@ export const useCreateTeamAIIntegrationMutation = createMutation<
 
 export const useUpdateTeamAIIntegrationMutation = createMutation<
     UpdateTeamAIIntegrationResponse,
-    UpdateTeamAIIntegrationInputDTO
+    UpdateTeamAIIntegrationInput
 >(
     aiIntegrationService.updateByProvider,
     async (_data, variables) => {
@@ -72,7 +72,7 @@ export const useUpdateTeamAIIntegrationMutation = createMutation<
     }
 );
 
-export const useDeleteTeamAIIntegrationMutation = createMutation<void, DeleteTeamAIIntegrationInputDTO>(
+export const useDeleteTeamAIIntegrationMutation = createMutation<void, DeleteTeamAIIntegrationInput>(
     aiIntegrationService.deleteByProvider,
     async (_data, variables) => {
         await invalidateTeamAIIntegrationsQuery(variables.teamId);

@@ -1,7 +1,7 @@
 import MetricBar from '../MetricBar';
 import './ResourceUsage.css';
 import { Box, Heading, Row, Skeleton, Stack, Text } from '@voltstack/bravais';
-import type { ClusterMetrics } from '@/modules/cluster/api/entities/cluster-metrics';
+import type { ClusterMetrics } from '@/modules/cluster/api/types/cluster-metrics';
 
 interface ResourceUsageProps {
     metrics: ClusterMetrics | null;

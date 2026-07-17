@@ -1,6 +1,6 @@
 import { DragControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { BoxBounds } from '@/modules/fractal/api/entities/model';
+import type { BoxBounds } from '@/modules/fractal/api/types/model';
 import { getBoxDimensions } from '@/modules/fractal/utilities/box-utils';
 import {
     buildAabbWireframeGeometry,
@@ -8,9 +8,9 @@ import {
     hasValidCellVectors
 } from '@/modules/fractal/utilities/cell-wireframe';
 import type { CellPbc } from '@/modules/fractal/utilities/cell-wireframe';
-import { Theme } from '@/shared/presentation/hooks/use-theme';
+import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@voltstack/bravais';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useRef, useEffect, forwardRef, useState, useCallback } from 'react';

@@ -1,19 +1,19 @@
-import ContextMenuPopover from '@/shared/presentation/components/ContextMenuPopover';
+import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { Callout, Box, Button, IconButton, Loader, Row, Stack, Text, EmptyState } from '@voltstack/bravais';
-import { applyMonacoTheme, getMonacoThemeName } from '@/shared/presentation/utilities/ensure-monaco';
-import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/presentation/utilities/app-theme';
+import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utilities/ensure-monaco';
+import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utilities/app-theme';
 import Editor from '@monaco-editor/react';
 import type { BeforeMount, OnMount } from '@monaco-editor/react';
 import { Download, File, FileCode, FileImage, FileText, PanelBottom, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import type { DragEvent, ReactNode } from 'react';
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 import type { LatexEditorGroupId, LatexFileEntry, LatexWorkspaceSelection, LatexWorkspaceTab } from '@/modules/latex/hooks/use-latex-workspace';
 import { getAssetDisplayName, isWorkspaceImageFile, isWorkspacePdfFile, isWorkspaceTextLikeFile } from '@/modules/latex/utilities/workspace';
 import latexService from '@/modules/latex/api/service';
 import LatexPdfViewer from './LatexPdfViewer';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import type { MenuOption } from '@/shared/ui/types/menu';
 interface LatexEditorPanelProps {
     groupId: LatexEditorGroupId;
     isGroupActive: boolean;

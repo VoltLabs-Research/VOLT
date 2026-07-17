@@ -9,7 +9,7 @@ import { useOpenContainerPort } from '@/modules/container/hooks/use-open-contain
 import { getPrimaryAccessiblePort } from '@/modules/container/utilities/get-primary-accessible-port';
 import { ContainerAction } from '@/modules/container/api/service';
 import type { ReactNode } from 'react';
-import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
+import type { Container as ContainerEntity } from '@/modules/container/api/types/container';
 import './ContainerDetailsHeader.css';
 type ContainerDetailsTabId = 'overview' | 'processes' | 'terminal' | 'storage';
 

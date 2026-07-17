@@ -2,7 +2,7 @@ import { createService, get } from '@/app/core/http/utilities/create-service';
 
 import type { OctreeMetadata } from '@/modules/fractal/types/lod-config';
 
-export interface GetOctreeMetadataInputDTO {
+export interface GetOctreeMetadataInput {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
@@ -10,7 +10,7 @@ export interface GetOctreeMetadataInputDTO {
 }
 
 const endpoints = {
-    get: get<GetOctreeMetadataInputDTO, OctreeMetadata>(
+    get: get<GetOctreeMetadataInput, OctreeMetadata>(
         ({ trajectoryId, analysisId, exposureId }) => `/${trajectoryId}/${analysisId}/${exposureId}/octree-metadata`,
         {
             query: ({ timestep }) => ({ timestep })
@@ -29,11 +29,11 @@ const octreeMetadataService = createService({
 
 const cache = new Map<string, OctreeMetadata>();
 
-const cacheKey = (input: GetOctreeMetadataInputDTO): string =>
+const cacheKey = (input: GetOctreeMetadataInput): string =>
     `${input.trajectoryId}:${input.analysisId}:${input.exposureId}:${input.timestep}`;
 
 export const fetchOctreeMetadata = async (
-    input: GetOctreeMetadataInputDTO
+    input: GetOctreeMetadataInput
 ): Promise<OctreeMetadata | null> => {
     const key = cacheKey(input);
     const cached = cache.get(key);

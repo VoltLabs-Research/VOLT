@@ -1,13 +1,13 @@
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
 import useScriptingWorkspace from '@/modules/scripting/hooks/use-scripting-workspace';
 import useTip from '@/shared/tips/use-tip';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import AccessDenied from '@/shared/ui/components/AccessDenied';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { AsyncBoundary, Box, Button, Heading, Loader, Stack, Text } from '@voltstack/bravais';
 import './ScriptingWorkspace.css';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { NotebookContainerStage } from '@/modules/scripting/api/entities/scripting-session';
+import type { NotebookContainerStage } from '@/modules/scripting/api/types/scripting-session';
 
 interface ScriptingWorkspaceProps {
     trajectoryId: string;

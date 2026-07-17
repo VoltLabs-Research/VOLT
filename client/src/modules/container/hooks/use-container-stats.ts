@@ -1,6 +1,6 @@
 import { useContainerStatsQuery } from './queries';
 import { useState, useRef, useEffect } from 'react';
-import type { NetworkData } from '@/shared/presentation/components/NetworkChart';
+import type { NetworkData } from '@/shared/ui/components/NetworkChart';
 import type { ContainerStatsViewData, CpuData, MemoryData } from '../services/container-stats-view';
 
 interface PreviousCpuStats {

@@ -6,9 +6,9 @@ import {
     useToggleReactionMutation
 } from './queries';
 import { useCallback } from 'react';
-import { ChatMessageType } from '../../api/entities/message';
+import { ChatMessageType } from '../../api/types/message';
 import { ErrorSurface, isAccessDeniedError, isApiError, reportError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
 
 interface UseMessageActionsOptions {

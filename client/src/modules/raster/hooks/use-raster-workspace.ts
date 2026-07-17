@@ -1,12 +1,12 @@
-import { RasterFrameScope } from '@/modules/raster/api/entities/raster';
+import { RasterFrameScope } from '@/modules/raster/api/types/raster';
 import { useRasterFrame } from '@/modules/raster/hooks/use-raster-frame';
 import { rasterMetadataQuery } from '@/modules/raster/hooks/queries';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { isApiError } from '@/shared/errors/core';
 
-import type { RasterAnalysisMetadata, RasterSceneFrame } from '@/modules/raster/api/entities/raster';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { RasterAnalysisMetadata, RasterSceneFrame } from '@/modules/raster/api/types/raster';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 
 interface RasterModelOption {
     value: string;

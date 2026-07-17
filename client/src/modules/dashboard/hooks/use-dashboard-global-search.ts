@@ -1,7 +1,7 @@
 import { useGlobalSearchQuery } from '@/modules/dashboard/hooks/queries';
 import { EMPTY_GLOBAL_SEARCH_RESULTS, MIN_SEARCH_QUERY_LENGTH } from '@/modules/dashboard/api/service';
 import { getListingRelevantExposures } from '@/modules/plugin/utilities/listing/listing-exposures';
-import { isTrajectoryNavigable } from '@/modules/trajectory/api/entities/trajectory/trajectory-constants';
+import { isTrajectoryNavigable } from '@/modules/trajectory/api/types/trajectory/trajectory-constants';
 import { useTeamStore } from '@/modules/team/stores/team/use-team-store';
 import {
     autoUpdate,
@@ -15,7 +15,7 @@ import {
 } from '@floating-ui/react';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GlobalSearchOutputDTO, GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
+import type { GlobalSearchResponse, GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 const SEARCH_DEBOUNCE_MS = 500;
@@ -45,7 +45,7 @@ const formatSearchDate = (value: string): string => {
     return format(date, 'P');
 };
 
-const buildSections = (results: GlobalSearchOutputDTO): DashboardGlobalSearchSection[] => {
+const buildSections = (results: GlobalSearchResponse): DashboardGlobalSearchSection[] => {
     return [
         {
             key: 'analyses',

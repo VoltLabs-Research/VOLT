@@ -1,7 +1,7 @@
 import type {
     ScriptingNotebook,
     ScriptingNotebookTrajectory
-} from '@/modules/scripting/api/entities/scripting-notebook';
+} from '@/modules/scripting/api/types/scripting-notebook';
 
 const getTrajectoryId = (trajectory: ScriptingNotebookTrajectory | string): string => {
     if (typeof trajectory === 'string') {

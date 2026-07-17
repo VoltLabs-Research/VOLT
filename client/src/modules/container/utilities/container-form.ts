@@ -1,12 +1,12 @@
 import { CONTAINER_TEMPLATES } from '../services/container-templates';
-import { ContainerTemplateCustomFieldType } from '../api/entities/container-template';
+import { ContainerTemplateCustomFieldType } from '../api/types/container-template';
 import type {
     ContainerTemplate,
     ContainerTemplateCustomField,
     ContainerTemplateCustomFieldValues
-} from '../api/entities/container-template';
-import type { EnvVariable } from '../api/entities/env-variable';
-import type { PortMapping } from '../api/entities/port-mapping';
+} from '../api/types/container-template';
+import type { EnvVariable } from '../api/types/env-variable';
+import type { PortMapping } from '../api/types/port-mapping';
 
 const DOCKER_IMAGE_REFERENCE_PATTERN = /^(?:(?:[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)(?:\/[a-z0-9]+(?:(?:[._-][a-z0-9]+)+)?)*)(?::[\w][\w.-]{0,127})?(?:@[A-Za-z][A-Za-z0-9]*:[0-9a-fA-F]{32,})?$/;
 

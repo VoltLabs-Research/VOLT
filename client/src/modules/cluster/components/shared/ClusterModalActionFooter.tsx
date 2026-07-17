@@ -1,4 +1,4 @@
-import ModalFooterActions from '@/shared/presentation/components/ModalFooterActions';
+import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 
 interface ClusterModalActionFooterProps {
     cancelLabel?: string;

@@ -1,5 +1,5 @@
-import { FrameJobGroupStatus, JobStatus } from '../api/entities/job';
-import type { Job, TrajectoryJobGroup } from '../api/entities/job';
+import { FrameJobGroupStatus, JobStatus } from '../api/types/job';
+import type { Job, TrajectoryJobGroup } from '../api/types/job';
 
 export const computeGroupStatus = (jobs: Job[]): FrameJobGroupStatus => {
     const hasRunning = jobs.some((job) => job.status === JobStatus.Running);

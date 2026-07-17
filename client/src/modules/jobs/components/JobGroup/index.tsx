@@ -7,7 +7,7 @@ import JobGroupHeader from './JobGroupHeader';
 import JobGroupMenu from './JobGroupMenu';
 import '@/modules/jobs/components/JobGroup/JobGroup.css';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/entities/job';
+import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from '@/modules/jobs/api/types/job';
 
 interface JobGroupProps {
     group: TrajectoryJobGroupType;

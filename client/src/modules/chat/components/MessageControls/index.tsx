@@ -1,6 +1,6 @@
-import { COMMON_REACTIONS } from '@/modules/chat/api/entities/shared/chat-reactions';
+import { COMMON_REACTIONS } from '@/modules/chat/api/types/shared/chat-reactions';
 import { IoHappyOutline, IoEllipsisVerticalOutline, IoCreateOutline, IoTrashOutline } from 'react-icons/io5';
-import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import EmojiPicker from '@/shared/ui/components/EmojiPicker';
 import { Box, IconButton, Popover, PopoverMenuItem, PopoverMenu } from '@voltstack/bravais';
 import './MessageControls.css';
 

@@ -9,7 +9,7 @@ import type { StatusDotTone } from '@voltstack/bravais';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { TeamCluster } from '@/modules/cluster/api/entities/team-cluster';
+import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
 interface ClusterListPanelProps {
     clusters: TeamCluster[];

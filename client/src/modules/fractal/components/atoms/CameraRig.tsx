@@ -1,4 +1,4 @@
-import { CameraType } from '@/shared/domain/rendering/camera';
+import { CameraType } from '@/shared/rendering/camera';
 import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';

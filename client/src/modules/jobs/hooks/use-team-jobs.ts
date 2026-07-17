@@ -5,7 +5,7 @@ import useSocket from '@/modules/socket/hooks/use-socket';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
-import { JobStatus } from '../api/entities/job';
+import { JobStatus } from '../api/types/job';
 import useTeamJobsStore from '../stores/use-team-jobs-store';
 import { applyJobUpdate } from '../utilities/job-group-updates';
 import {
@@ -14,7 +14,7 @@ import {
     updateTeamJobsGroupsQueryData,
     teamJobsGroups
 } from './queries';
-import type { Job, TrajectoryJobGroup } from '../api/entities/job';
+import type { Job, TrajectoryJobGroup } from '../api/types/job';
 
 interface TeamJobsEventPayload {
     revision: number;

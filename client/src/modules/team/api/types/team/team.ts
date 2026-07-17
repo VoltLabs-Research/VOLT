@@ -1,0 +1,9 @@
+import type { BaseEntity } from '@/shared/types/BaseEntity';
+import type { User } from '@/modules/auth/api/types/user';
+
+export interface Team extends BaseEntity {
+    name: string;
+    description?: string;
+    owner: User;
+    inviteCode?: string;
+}

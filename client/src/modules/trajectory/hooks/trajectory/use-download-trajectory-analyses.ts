@@ -1,20 +1,20 @@
 import { useDownloadTrajectoryAnalysesMutation } from './queries';
 import { isAccessDeniedError } from '@/shared/errors/core';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';
 
-import type { DownloadTrajectoryAnalysesInputDTO } from '../../api/services/trajectory-service';
+import type { DownloadTrajectoryAnalysesInput } from '../../api/services/trajectory-service';
 
 interface UseDownloadTrajectoryAnalysesReturn {
-    downloadTrajectoryAnalyses: (params: DownloadTrajectoryAnalysesInputDTO) => Promise<void>;
+    downloadTrajectoryAnalyses: (params: DownloadTrajectoryAnalysesInput) => Promise<void>;
     isDownloading: boolean;
 }
 
 const useDownloadTrajectoryAnalyses = (): UseDownloadTrajectoryAnalysesReturn => {
     const downloadTrajectoryAnalysesMutation = useDownloadTrajectoryAnalysesMutation();
 
-    const downloadTrajectoryAnalyses = useCallback(async (params: DownloadTrajectoryAnalysesInputDTO) => {
+    const downloadTrajectoryAnalyses = useCallback(async (params: DownloadTrajectoryAnalysesInput) => {
         try {
             await showPromise(
                 (async () => {

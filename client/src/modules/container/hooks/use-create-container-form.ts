@@ -6,18 +6,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTeamsQuery } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
-import type { ClusterResourceLimits } from '../api/entities/cluster-resource-limits';
+import type { ClusterResourceLimits } from '../api/types/cluster-resource-limits';
 import type {
     ContainerTemplate,
     ContainerTemplateCustomField,
     ContainerTemplateCustomFieldValues
-} from '../api/entities/container-template';
-import type { EnvVariable } from '../api/entities/env-variable';
-import type { PortMapping } from '../api/entities/port-mapping';
-import type { TeamClusterOption } from '../api/entities/team-cluster-option';
-import type { Team } from '@/modules/team/api/entities/team/team';
+} from '../api/types/container-template';
+import type { EnvVariable } from '../api/types/env-variable';
+import type { PortMapping } from '../api/types/port-mapping';
+import type { TeamClusterOption } from '../api/types/team-cluster-option';
+import type { Team } from '@/modules/team/api/types/team/team';
 import { v4 as uuidv4 } from 'uuid';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB, clampClusterResourceValue } from '../utilities/resource-allocation';
 import {

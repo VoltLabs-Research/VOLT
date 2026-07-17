@@ -1,6 +1,6 @@
 import { Select, Row } from '@voltstack/bravais';
 import type { SelectOption } from '@voltstack/bravais';
-import '@/shared/presentation/components/FormFieldRHF/FormField.css';
+import '@/shared/ui/components/FormFieldRHF/FormField.css';
 import { useMemo, useCallback } from 'react';
 
 interface SelectedTimestepsFieldProps {

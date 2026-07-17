@@ -1,4 +1,4 @@
-import type { Container as ContainerEntity } from '@/modules/container/api/entities/container';
+import type { Container as ContainerEntity } from '@/modules/container/api/types/container';
 import {
     containerFolderQuery,
     containerFoldersQuery,
@@ -19,14 +19,14 @@ import {
 } from '@/modules/container/utilities/listing';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { SocketInvalidationConfig } from '@/shared/presentation/components/DocumentListing';
+import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { SOCKET_CONTAINER_EVENTS } from '@/modules/socket/events/container';
-import useFolderedResourceListing from '@/shared/presentation/hooks/use-foldered-resource-listing';
-import { createFolderedListingResource } from '@/shared/presentation/hooks/foldered-resource-listing-helpers';
-import type { ActionConfig } from '@/shared/presentation/hooks/use-listing-actions';
-import { showPromise } from '@/shared/presentation/hooks/toast';
-import { createCrudToastOptions } from '@/shared/presentation/utilities/toast-options';
-import type { MenuOption } from '@/shared/presentation/types/menu';
+import useFolderedResourceListing from '@/shared/ui/hooks/use-foldered-resource-listing';
+import { createFolderedListingResource } from '@/shared/ui/hooks/foldered-resource-listing-helpers';
+import type { ActionConfig } from '@/shared/ui/hooks/use-listing-actions';
+import { showPromise } from '@/shared/ui/hooks/toast';
+import { createCrudToastOptions } from '@/shared/ui/utilities/toast-options';
+import type { MenuOption } from '@/shared/ui/types/menu';
 import { sileo } from 'sileo';
 import { Box, FolderInput, Play, RotateCcw, Square } from 'lucide-react';
 import { useCallback, useState } from 'react';

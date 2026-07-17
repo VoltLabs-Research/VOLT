@@ -7,7 +7,7 @@ import { Activity as ActivityIcon } from 'lucide-react';
 import { FaArrowDownLong, FaArrowUpLong } from 'react-icons/fa6';
 import { GoArrowRight } from 'react-icons/go';
 import { useMemo } from 'react';
-import type { DailyActivity } from '@/modules/daily-activity/api/entities/daily-activity';
+import type { DailyActivity } from '@/modules/daily-activity/api/types/daily-activity';
 
 const ACTIVITY_LOOKBACK_DAYS = 7;
 const ACTIVITY_REFRESH_INTERVAL_MS = 10_000;

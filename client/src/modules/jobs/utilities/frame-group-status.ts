@@ -1,4 +1,4 @@
-import { FrameJobGroupStatus } from '@/modules/jobs/api/entities/job';
+import { FrameJobGroupStatus } from '@/modules/jobs/api/types/job';
 
 export const frameGroupStatusClassNames: Record<FrameJobGroupStatus, string> = {
     [FrameJobGroupStatus.Queued]: 'status-queued',

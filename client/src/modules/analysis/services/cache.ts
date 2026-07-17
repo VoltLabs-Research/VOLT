@@ -1,10 +1,10 @@
 import { analysisQuery, KEYS } from '../hooks/queries';
-import { patchPaginatedPage, removeEntityFromList, snapshotQueries } from '@/shared/infrastructure/query/cache-utils';
-import queryClient from '@/shared/infrastructure/query/query-client';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Analysis } from '../api/entities/analysis';
+import { patchPaginatedPage, removeEntityFromList, snapshotQueries } from '@/shared/query/cache-utils';
+import queryClient from '@/shared/query/query-client';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Analysis } from '../api/types/analysis';
 import type { GetAnalysesByTrajectoryParams } from '../api/service';
-import type { QueryDataSnapshot } from '@/shared/infrastructure/query/cache-utils';
+import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 
 export interface PatchAnalysisStatusInput {
     analysisId: string;

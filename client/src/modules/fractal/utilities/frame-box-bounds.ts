@@ -1,7 +1,7 @@
-import type { BoxBounds } from '@/modules/fractal/api/entities/model';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
-import type { TimestepInfo } from '@/modules/trajectory/api/entities/trajectory/timestep-info';
-import type { SimulationCell } from '@/modules/simulation-cell/api/entities/simulation-cell';
+import type { BoxBounds } from '@/modules/fractal/api/types/model';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
+import type { TimestepInfo } from '@/modules/trajectory/api/types/trajectory/timestep-info';
+import type { SimulationCell } from '@/modules/simulation-cell/api/types/simulation-cell';
 
 const getSimulationCellBoxBounds = (simulationCell?: SimulationCell): BoxBounds | undefined => {
     if (!simulationCell) {

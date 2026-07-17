@@ -1,11 +1,11 @@
 import useLatexWorkspace from '@/modules/latex/hooks/use-latex-workspace';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
-import AccessDenied from '@/shared/presentation/components/AccessDenied';
-import EditableTag from '@/shared/presentation/components/EditableTag';
+import AccessDenied from '@/shared/ui/components/AccessDenied';
+import EditableTag from '@/shared/ui/components/EditableTag';
 import { EmptyState, Row, Avatar, Box, Button, Loader, SaveStatusIndicator, Stack, Text } from '@voltstack/bravais';
-import ThemeToggleButton from '@/shared/presentation/components/ThemeToggleButton';
-import '@/shared/presentation/assets/stylesheets/resize-handle.css';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
+import '@/shared/ui/assets/stylesheets/resize-handle.css';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import LatexEditorPanel from './LatexEditorPanel';
 import LatexFilePanel from './LatexFilePanel';

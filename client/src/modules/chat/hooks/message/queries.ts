@@ -1,15 +1,15 @@
-import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/infrastructure/query';
+import { buildKeys, createInfiniteQuery, createMutation } from '@/shared/query';
 import messageService from '../../api/services/message-service';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ChatMessage } from '../../api/entities/message';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ChatMessage } from '../../api/types/message';
 import type {
-    DeleteMessageInputDTO,
-    EditMessageInputDTO,
-    GetChatMessagesInputDTO,
-    SendFileMessageInputDTO,
-    SendMessageInputDTO,
-    ToggleReactionInputDTO
+    DeleteMessageInput,
+    EditMessageInput,
+    GetChatMessagesInput,
+    SendFileMessageInput,
+    SendMessageInput,
+    ToggleReactionInput
 } from '../../api/services/message-service';
 
 const DEFAULT_MESSAGES_LIMIT = 50;
@@ -19,7 +19,7 @@ interface InfiniteMessagesParams {
 }
 
 type MessageQueryKeyMap = {
-    messages: GetChatMessagesInputDTO;
+    messages: GetChatMessagesInput;
     infiniteMessages: InfiniteMessagesParams;
 };
 
@@ -39,11 +39,11 @@ interface UseChatMessagesInfiniteQueryOptions {
 const KEYS = buildKeys<MessageQueryKeyMap>('chat');
 
 export const useMarkAsReadMutation = createMutation<void, MarkAsReadParams>(messageService.markAsRead);
-export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInputDTO>(messageService.sendMessage);
-export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInputDTO>(messageService.sendFileMessage);
-export const useEditMessageMutation = createMutation<ChatMessage, EditMessageInputDTO>(messageService.editMessage);
-export const useDeleteMessageMutation = createMutation<void, DeleteMessageInputDTO>(messageService.deleteMessage);
-export const useToggleReactionMutation = createMutation<ChatMessage, ToggleReactionInputDTO>(messageService.toggleReaction);
+export const useSendMessageMutation = createMutation<ChatMessage, SendMessageInput>(messageService.sendMessage);
+export const useSendFileMutation = createMutation<ChatMessage, SendFileMessageInput>(messageService.sendFileMessage);
+export const useEditMessageMutation = createMutation<ChatMessage, EditMessageInput>(messageService.editMessage);
+export const useDeleteMessageMutation = createMutation<void, DeleteMessageInput>(messageService.deleteMessage);
+export const useToggleReactionMutation = createMutation<ChatMessage, ToggleReactionInput>(messageService.toggleReaction);
 
 const getChatMessagesInfiniteQueryKey = (chatId: string) => KEYS.infiniteMessages({ chatId });
 

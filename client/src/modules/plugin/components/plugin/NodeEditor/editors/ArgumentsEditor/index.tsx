@@ -1,7 +1,7 @@
 import useNodeCollectionForm from '@/modules/plugin/hooks/plugin/use-node-collection-form';
 import { createDefaultArgumentDefinition } from '@/modules/plugin/utilities/plugin/argument-values';
 import ArgumentDefinitionSection from './ArgumentDefinitionSection';
-import type { IArgumentDefinition } from '@/modules/plugin/api/entities/plugin/workflow';
+import type { IArgumentDefinition } from '@/modules/plugin/api/types/plugin/workflow';
 import type { EditorProps } from '../types';
 
 const ArgumentsEditor = ({ node }: EditorProps) => {

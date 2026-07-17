@@ -10,10 +10,10 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import type { RenderableExposurePayload, ListSceneArtifactsInputDTO } from '@/modules/trajectory/api/services/scene-artifacts-service';
+import type { RenderableExposurePayload, ListSceneArtifactsInput } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
 export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -36,7 +36,7 @@ interface UseExposureManagerReturn {
     resetEntries: () => void;
 }
 
-const buildParams = (trajectoryId: string, analysisId: string): ListSceneArtifactsInputDTO => ({
+const buildParams = (trajectoryId: string, analysisId: string): ListSceneArtifactsInput => ({
     trajectoryId,
     analysisId,
     sourceType: 'plugin-exposure',

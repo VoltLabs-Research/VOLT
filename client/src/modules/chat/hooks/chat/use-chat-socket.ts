@@ -1,12 +1,12 @@
 import { SOCKET_CHAT_EVENTS } from '@/modules/socket/events/chat';
-import { PresenceStatus } from '../../api/entities/shared/chat-events';
+import { PresenceStatus } from '../../api/types/shared/chat-events';
 import { CHAT_QUERY_KEYS, invalidateChatsQuery, updateChatInCache } from './queries';
 import { useChatPresenceStore } from '../../stores/chat/use-chat-presence-store';
 import { useQueryClient } from '@tanstack/react-query';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import type { ChatLastMessage } from '../../api/entities/chat';
-import type { ChatMessage } from '../../api/entities/message';
-import type { TypingUser } from '../../api/entities/shared/chat-events';
+import type { ChatLastMessage } from '../../api/types/chat';
+import type { ChatMessage } from '../../api/types/message';
+import type { TypingUser } from '../../api/types/shared/chat-events';
 
 interface NewMessageEvent {
     chatId: string;

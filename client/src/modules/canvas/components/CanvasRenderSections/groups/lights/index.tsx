@@ -8,7 +8,7 @@ import { updateVec3Value } from '../../utilities';
 
 import type { RenderGroup } from '../../types';
 import type { Vec3 } from '../../utilities';
-import type { DirLight, HemiLight, PointLight, RectAreaLightCfg, SpotLight } from '@/shared/domain/rendering/lights';
+import type { DirLight, HemiLight, PointLight, RectAreaLightCfg, SpotLight } from '@/shared/rendering/lights';
 
 const setVec3 = <T extends { position: Vec3 }>(
     setter: (patch: Partial<T>) => void,

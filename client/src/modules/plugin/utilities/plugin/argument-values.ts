@@ -1,10 +1,10 @@
-import { ArgumentType } from '@/modules/plugin/api/entities/plugin/workflow-enums';
+import { ArgumentType } from '@/modules/plugin/api/types/plugin/workflow-enums';
 import { getVisibleArguments, isArgumentVisible } from '@/modules/plugin/utilities/plugin/argument-visibility';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection,
     IPluginReferenceValue
-} from '@/modules/plugin/api/entities/plugin/workflow';
+} from '@/modules/plugin/api/types/plugin/workflow';
 import { isRecord } from '@/shared/utils/type-guards';
 
 interface ArgumentObjectValue {

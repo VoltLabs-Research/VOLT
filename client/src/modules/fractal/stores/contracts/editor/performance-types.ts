@@ -8,7 +8,7 @@ import type {
     PerformancePreset,
     PerformanceSettingsState,
     ResolvedCanvasRuntimeProps
-} from '@/shared/domain/rendering/performance';
+} from '@/shared/rendering/performance';
 
 export interface PerformanceSettingsActions {
     setPreset: (preset: PerformancePreset) => void;

@@ -1,7 +1,7 @@
 import { Avatar, Box, IconButton, Row, Text, Tooltip } from '@voltstack/bravais';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
-import type { User } from '@/modules/auth/api/entities/user';
+import type { User } from '@/modules/auth/api/types/user';
 
 import './WorkspacePeerAvatars.css';
 

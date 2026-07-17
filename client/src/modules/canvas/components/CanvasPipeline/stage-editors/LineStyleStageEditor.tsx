@@ -1,5 +1,5 @@
 import { Button, Checkbox, Row, Stack, Text } from '@voltstack/bravais';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { COLORMAP_NAMES } from '@/modules/fractal/services/colormaps';
 import useLineStyle from '../../../hooks/use-line-style';
 import './LineStyleStageEditor.css';

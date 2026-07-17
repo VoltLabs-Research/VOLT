@@ -1,4 +1,4 @@
-import type { LatexAsset } from '@/modules/latex/api/entities/latex-asset';
+import type { LatexAsset } from '@/modules/latex/api/types/latex-asset';
 
 export const LATEX_FOLDER_PLACEHOLDER_NAME = '.volt-folder';
 

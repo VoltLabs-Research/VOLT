@@ -1,5 +1,5 @@
 import { Box, Stack, Text } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { ReactNode } from 'react';
 
 interface SecretKeyPageShellProps {

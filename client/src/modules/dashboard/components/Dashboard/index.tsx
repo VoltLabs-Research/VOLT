@@ -5,19 +5,19 @@ import DashboardActivityTile from '@/modules/dashboard/components/DashboardActiv
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
 import { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
-import useFolderSearchParam from '@/shared/presentation/hooks/use-folder-search-param';
+import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import { Box, Button, Heading, Row, EmptyState, openModal } from '@voltstack/bravais';
-import RecoveryState, { RecoveryStateTone } from '@/shared/presentation/components/RecoveryState';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utilities/access-denied-hints';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
+import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import './Dashboard.css';
 import { FlaskConical, FolderPlus, Upload } from 'lucide-react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
-import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/entities/dashboard';
+import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/api/types/dashboard';
 import type { ReactNode } from 'react';
 
 const CARD_ICONS: Record<string, ReactNode> = {

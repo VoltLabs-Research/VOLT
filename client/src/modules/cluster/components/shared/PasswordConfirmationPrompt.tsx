@@ -1,4 +1,4 @@
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Text } from '@voltstack/bravais';
 
 interface PasswordConfirmationPromptProps {

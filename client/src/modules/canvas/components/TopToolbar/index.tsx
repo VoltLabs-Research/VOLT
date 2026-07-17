@@ -8,7 +8,7 @@ import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
-import WindowControls from '@/shared/presentation/components/WindowControls';
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useEditorStore } from '@/modules/canvas/stores/editor';
 import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
@@ -21,7 +21,7 @@ import './TopToolbar.css';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import { useNavigate } from 'react-router-dom';
 interface TopToolbarShareInfo {
     trajectoryId: string;

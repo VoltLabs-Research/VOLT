@@ -1,4 +1,4 @@
-import { buildKeys, createQuery } from '@/shared/infrastructure/query';
+import { buildKeys, createQuery } from '@/shared/query';
 import {
     currentCanvasDataAccess,
     currentAccessKey

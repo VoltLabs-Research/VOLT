@@ -1,10 +1,10 @@
 import { useTrajectoriesInfiniteQuery } from './queries';
-import useAccessDenied from '@/shared/presentation/hooks/use-access-denied';
+import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { SelectOption } from '@voltstack/bravais';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { Trajectory } from '../../api/entities/trajectory/trajectory';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { Trajectory } from '../../api/types/trajectory/trajectory';
 
 export interface UseTrajectorySelectorOptions {
     allowEmpty?: boolean;

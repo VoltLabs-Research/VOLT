@@ -1,6 +1,6 @@
-import FormSection from '@/shared/presentation/components/FormSection';
-import FormFieldRHF from '@/shared/presentation/components/FormFieldRHF';
-import IconPicker from '@/shared/presentation/components/IconPicker';
+import FormSection from '@/shared/ui/components/FormSection';
+import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import IconPicker from '@/shared/ui/components/IconPicker';
 import { Controller } from 'react-hook-form';
 import { createNodeEditorForm } from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '../types';

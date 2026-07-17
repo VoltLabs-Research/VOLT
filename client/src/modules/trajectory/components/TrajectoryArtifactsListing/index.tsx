@@ -1,13 +1,13 @@
 import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts-service';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { Text } from '@voltstack/bravais';
-import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/presentation/utilities/column-presets';
-import type { SceneArtifact } from '@/modules/trajectory/api/entities/scene-artifacts/scene-artifact';
-import { createEmptyPaginatedResponse } from '@/shared/domain/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { ColumnConfig } from '@/shared/presentation/components/DocumentListingTable';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
+import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/ui/utilities/column-presets';
+import type { SceneArtifact } from '@/modules/trajectory/api/types/scene-artifacts/scene-artifact';
+import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback, useMemo } from 'react';
 
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [

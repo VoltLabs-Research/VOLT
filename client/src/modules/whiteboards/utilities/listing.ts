@@ -1,5 +1,5 @@
-import type { WhiteboardFolder } from '@/modules/whiteboards/api/entities/whiteboard-folder';
-import type { Whiteboard } from '@/modules/whiteboards/api/entities/whiteboard';
+import type { WhiteboardFolder } from '@/modules/whiteboards/api/types/whiteboard-folder';
+import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 
 export enum WhiteboardListingRowType {
     Folder = 'folder',

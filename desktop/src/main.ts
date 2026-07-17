@@ -2,8 +2,7 @@ import { app, BrowserWindow, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import AppConfig, { WindowBounds } from '@/services/AppConfig';
-import Repository from '@/services/Repository';
-import SourceResolver from '@/services/SourceResolver';
+import { createSourceResolver } from '@/services/sources';
 import Deploy from '@/services/Deploy';
 import DockerPreflight from '@/services/DockerPreflight';
 import RemoteProbe from '@/services/RemoteProbe';
@@ -117,20 +116,7 @@ app.whenReady().then(async () => {
 
     const appConfig = new AppConfig({ configFile: paths.configFile });
 
-    const sources = new SourceResolver({
-        appConfig,
-        downloadDir: paths.downloadDir,
-        repos: [
-            {
-                repo: new Repository({ owner: 'voltlabs-research', repo: 'volt' }),
-                envKey: 'VOLT_SOURCE_DIR'
-            },
-            {
-                repo: new Repository({ owner: 'voltlabs-research', repo: 'clusterdaemon' }),
-                envKey: 'CLUSTER_DAEMON_SOURCE_DIR'
-            }
-        ]
-    });
+    const sources = createSourceResolver(appConfig, paths.downloadDir);
 
     const docker = new DockerPreflight();
 

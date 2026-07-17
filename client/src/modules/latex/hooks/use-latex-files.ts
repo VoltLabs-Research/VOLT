@@ -1,7 +1,7 @@
 import { latexFilesQuery, useCreateLatexFileMutation, useDeleteLatexFileMutation, useSetLatexFileEntrypointMutation, useUpdateLatexFileMutation } from '@/modules/latex/hooks/queries';
-import { showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
-import type { LatexFile } from '@/modules/latex/api/entities/latex-file';
+import type { LatexFile } from '@/modules/latex/api/types/latex-file';
 
 interface UseLatexFilesInput {
     documentId: string;

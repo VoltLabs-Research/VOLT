@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { sileo } from 'sileo';
-import { JobStatus } from '../api/entities/job';
-import type { Job } from '../api/entities/job';
+import { JobStatus } from '../api/types/job';
+import type { Job } from '../api/types/job';
 
 interface UseJobsCompletionToastArgs {
     trajectoryId?: string;

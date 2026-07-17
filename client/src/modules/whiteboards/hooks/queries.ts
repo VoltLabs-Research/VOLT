@@ -5,7 +5,7 @@ import {
     createInvalidatingMutation,
     createPaginatedQuery,
     createQuery
-} from '@/shared/infrastructure/query';
+} from '@/shared/query';
 import type {
     FolderCreateParams,
     FolderDeleteParams,
@@ -13,7 +13,7 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
 import type {
     CreateWhiteboardParams,
     DeleteWhiteboardParams,
@@ -21,8 +21,8 @@ import type {
     MoveWhiteboardParams,
     UpdateWhiteboardParams
 } from '../api/service';
-import type { WhiteboardFolder } from '../api/entities/whiteboard-folder';
-import type { Whiteboard } from '../api/entities/whiteboard';
+import type { WhiteboardFolder } from '../api/types/whiteboard-folder';
+import type { Whiteboard } from '../api/types/whiteboard';
 
 const BASE_KEY = 'whiteboards';
 

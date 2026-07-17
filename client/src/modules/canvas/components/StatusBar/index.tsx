@@ -5,8 +5,8 @@ import { normalizeCanvasAnalysisStatus } from '../../utilities/analysis-status';
 import { formatSize } from '@voltstack/bravais';
 import { Divider, Row, Text } from '@voltstack/bravais';
 import { useMemo } from 'react';
-import type { Analysis, AnalysisStage } from '@/modules/analysis/api/entities/analysis';
-import type { Trajectory } from '@/modules/trajectory/api/entities/trajectory/trajectory';
+import type { Analysis, AnalysisStage } from '@/modules/analysis/api/types/analysis';
+import type { Trajectory } from '@/modules/trajectory/api/types/trajectory/trajectory';
 import type { ReactNode } from 'react';
 
 import './StatusBar.css';
