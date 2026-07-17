@@ -1,0 +1,8 @@
+{
+  "name": "@volt/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared wire contracts (routes, request/response types, error tables) consumed by VOLT server + client + tests. Raw TypeScript source — no build step; consumers import via the @volt/contracts tsconfig path / Vite alias.",
+  "types": "./src/index.ts",
+  "sideEffects": false
+}

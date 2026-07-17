@@ -1,9 +1,8 @@
 import type { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 
-export interface UpdatePasswordInputDTO{
+export interface UpdatePasswordInputDTO extends UpdatePasswordInput{
     userId: string;
-    passwordCurrent?: string,
-    password: string;
     userAgent: string;
     ip: string;
 }

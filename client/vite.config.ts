@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
             allowedHosts: ['5173--main--volt-development--rodyherrera--frda5i519n648.pit-1.try.coder.app'],
             port: 5173,
             strictPort: true,
+            // Allow importing the sibling @volt/contracts raw source (outside client/).
+            fs: {
+                allow: [path.resolve(__dirname, '..')]
+            },
             proxy: {
                 '/api': {
                     target: backendTarget,
@@ -29,6 +33,7 @@ export default defineConfig(({ mode }) => {
         },
         resolve: {
             alias: {
+                '@volt/contracts': path.resolve(__dirname, '../contracts/src'),
                 '@': path.resolve(__dirname, './src')
             },
             dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom']

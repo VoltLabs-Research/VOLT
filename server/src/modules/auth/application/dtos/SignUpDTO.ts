@@ -1,10 +1,7 @@
 import type { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import type { SignUpInput } from '@volt/contracts/modules/auth/http';
 
-export interface SignUpInputDTO{
-    email: string;
-    firstName: string;
-    lastName: string;
-    password: string;
+export interface SignUpInputDTO extends SignUpInput{
     ip: string;
     userAgent: string;
 }

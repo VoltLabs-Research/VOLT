@@ -2,11 +2,12 @@ import { createService, del, get, patch, post, request } from '@/app/core/http/u
 import { buildFileFormData } from '@/shared/utils/file';
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { User } from './types/user';
+// Wire request/response shapes are the single source of truth in @volt/contracts;
+// these local names re-export them so a contract change breaks the client at compile time.
+import type { SignInInput as SignInInputContract, SignUpInput as SignUpInputContract, UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
+import type { CheckEmailResponse as CheckEmailResponseContract, PasswordInfo, OAuthProviders, OAuthProviderId } from '@volt/contracts/modules/auth/domain';
 
-export interface ChangePasswordInput {
-    passwordCurrent?: string;
-    password: string;
-}
+export type ChangePasswordInput = UpdatePasswordInput;
 
 export interface ChangePasswordResponse {
     token: string;
@@ -17,36 +18,22 @@ export interface CheckEmailInput {
     email: string;
 }
 
-export interface CheckEmailResponse {
-    exists: boolean;
-}
+export type CheckEmailResponse = CheckEmailResponseContract;
 
-export type OAuthProviderKey = 'github' | 'google' | 'microsoft';
+export type OAuthProviderKey = OAuthProviderId;
 
-export interface GetAvailableOAuthProvidersResponse {
-    providers: OAuthProviderKey[];
-}
+export type GetAvailableOAuthProvidersResponse = OAuthProviders;
 
-export interface GetPasswordInfoResponse {
-    hasPassword: boolean;
-    lastChanged?: string;
-}
+export type GetPasswordInfoResponse = PasswordInfo;
 
-export interface SignInInput {
-    email: string;
-    password: string;
-}
+export type SignInInput = SignInInputContract;
 
 export interface SignInResponse {
     user: User;
     token: string;
 }
 
-export interface SignUpInput {
-    email: string;
-    firstName: string;
-    lastName: string;
-    password: string;
+export interface SignUpInput extends SignUpInputContract {
     passwordConfirm: string;
 }
 

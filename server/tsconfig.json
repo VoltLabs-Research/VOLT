@@ -22,6 +22,12 @@
       "@shared/*": [
         "src/shared/*"
       ],
+      "@volt/contracts": [
+        "../contracts/src/index.ts"
+      ],
+      "@volt/contracts/*": [
+        "../contracts/src/*"
+      ],
       "@/*": [
         "./*"
       ]

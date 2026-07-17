@@ -1,11 +1,8 @@
 import type { PersistedUserDTO } from '@modules/auth/application/dtos/PersistedUserDTO';
+import type { UpdateAccountInput } from '@volt/contracts/modules/auth/http';
 
-export interface UpdateAccountInputDTO{
+export interface UpdateAccountInputDTO extends UpdateAccountInput{
     userId: string;
-    firstName?: string;
-    lastName?: string;
-    fullName?: string;
-    email?: string;
     file?: Express.Multer.File;
 }
 
