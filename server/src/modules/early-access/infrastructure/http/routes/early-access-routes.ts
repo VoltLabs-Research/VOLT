@@ -1,6 +1,9 @@
-import controllers from '@modules/early-access/infrastructure/http/controllers';
+import EarlyAccessController from '@modules/early-access/infrastructure/http/controllers/EarlyAccessController';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(EarlyAccessController);
 
 export default createHttpModule({
     moduleKey: 'early-access',
@@ -10,7 +13,7 @@ export default createHttpModule({
         router.post(
             '/teams/:teamId/subscriptions',
             RATE_LIMIT_POLICIES.earlyAccessPublic,
-            controllers.createSubscription.handle
+            controller.createSubscription
         );
     }
 });

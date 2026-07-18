@@ -1,4 +1,4 @@
-import {
+import type {
     CreateEarlyAccessSubscriptionInputDTO,
     CreateEarlyAccessSubscriptionOutputDTO
 } from '@modules/early-access/application/dtos/CreateEarlyAccessSubscriptionDTO';
@@ -11,31 +11,32 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamRepository } from '@modules/team/domain/port/team/ITeamRepository';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IUseCase } from '@shared/application/IUseCase';
-import { Result } from '@shared/domain/port/Result';
-import { inject, injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
 
-@injectable()
-export default class CreateEarlyAccessSubscriptionUseCase implements IUseCase<
-    CreateEarlyAccessSubscriptionInputDTO,
-    CreateEarlyAccessSubscriptionOutputDTO,
-    ApplicationError
-> {
+/**
+ * The single application service for the early-access module. Folds the exact
+ * logic of the former CreateEarlyAccessSubscriptionUseCase, converting the
+ * Result error channel to thrown `ApplicationError`s so Express 5 forwards them
+ * to the global error middleware.
+ */
+@Singleton(EARLY_ACCESS_TOKENS.EarlyAccessService)
+export default class EarlyAccessService {
     constructor(
         @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
         @inject(EARLY_ACCESS_TOKENS.EarlyAccessSubscriptionRepository) private readonly earlyAccessSubscriptionRepository: IEarlyAccessSubscriptionRepository
     ) {}
 
-    async execute(input: CreateEarlyAccessSubscriptionInputDTO): Promise<Result<CreateEarlyAccessSubscriptionOutputDTO, ApplicationError>> {
+    async createSubscription(input: CreateEarlyAccessSubscriptionInputDTO): Promise<CreateEarlyAccessSubscriptionOutputDTO> {
         const team = await this.teamRepository.findById(input.teamId, {
             select: ['name']
         });
 
         if (!team) {
-            return Result.fail(ApplicationError.notFound(
+            throw ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'
-            ));
+            );
         }
 
         const email = EarlyAccessSubscription.normalizeEmail(input.email);
@@ -48,11 +49,11 @@ export default class CreateEarlyAccessSubscriptionUseCase implements IUseCase<
             lastSubmittedAt: new Date()
         });
 
-        return Result.ok({
+        return {
             email: result.subscription.props.email,
             teamId: team.id,
             teamName: team.props.name,
             alreadySubscribed: result.alreadySubscribed
-        });
+        };
     }
 }

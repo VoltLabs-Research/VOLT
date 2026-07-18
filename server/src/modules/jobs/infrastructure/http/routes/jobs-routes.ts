@@ -1,7 +1,10 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/jobs/infrastructure/http/controllers';
+import JobsController from '@modules/jobs/infrastructure/http/controllers/JobsController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(JobsController);
 
 export default createHttpModule({
     basePath: '/api/jobs/:teamId',
@@ -9,7 +12,7 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.delete('/:trajectoryId/running', controllers.removeRunningJobs.handle);
-        router.post('/:trajectoryId/failed/retries', controllers.retryFailedJobs.handle);
+        router.delete('/:trajectoryId/running', controller.removeRunningJobs);
+        router.post('/:trajectoryId/failed/retries', controller.retryFailedJobs);
     }
 });
