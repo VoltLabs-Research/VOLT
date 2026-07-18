@@ -1,4 +1,5 @@
 export const CONTAINER_TOKENS = Object.freeze({
+    ContainerService: Symbol.for('ContainerService'),
     ContainerRepository: Symbol.for('ContainerRepository'),
     ContainerFolderRepository: Symbol.for('ContainerFolderRepository'),
     TeamClusterSelectionService: Symbol.for('TeamClusterSelectionService'),

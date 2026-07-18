@@ -1,4 +1,4 @@
-import controllers from '@modules/container/infrastructure/http/controllers';
+import ContainerController from '@modules/container/infrastructure/http/controllers/ContainerController';
 import type { DeleteContainerFolderInputDTO } from '@modules/container/application/dtos/DeleteContainerFolderDTO';
 import { DeleteContainerFolderUseCase } from '@modules/container/application/use-cases/DeleteContainerFolderUseCase';
 import { ContainerFolderRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerFolderRepository';
@@ -8,6 +8,8 @@ import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpMod
 import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container as diContainer } from 'tsyringe';
+
+const controller = diContainer.resolve(ContainerController);
 
 const folderHandlers = createCatalogFolderRouteHandlers({
     repository: diContainer.resolve(ContainerFolderRepository),
@@ -31,8 +33,8 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.route('/')
-            .post(controllers.create.handle)
-            .get(controllers.listByTeamId.handle);
+            .post(controller.create)
+            .get(controller.listByTeamId);
 
         router.get('/folders', folderHandlers.list);
         router.get('/folders/:folderId', folderHandlers.get);
@@ -41,17 +43,17 @@ export default createHttpModule({
         router.delete('/folders/:folderId', folderHandlers.delete);
 
         router.route('/:containerId')
-            .get(controllers.getById.handle)
-            .patch(controllers.updateById.handle)
-            .delete(controllers.deleteById.handle);
+            .get(controller.getById)
+            .patch(controller.updateById)
+            .delete(controller.deleteById);
 
-        router.post('/:containerId/ports/:privatePort/access-url', controllers.createPortAccessUrl.handle);
+        router.post('/:containerId/ports/:privatePort/access-url', controller.createPortAccessUrl);
 
-        router.patch('/:containerId/folder', controllers.move.handle);
+        router.patch('/:containerId/folder', controller.move);
 
-        router.get('/:containerId/files', controllers.getFilesById.handle);
-        router.get('/:containerId/processes', controllers.getProcessesById.handle);
-        router.get('/:containerId/stats', controllers.getStatsById.handle);
-        router.get('/:containerId/files/content', controllers.readFileById.handle);
+        router.get('/:containerId/files', controller.getFilesById);
+        router.get('/:containerId/processes', controller.getProcessesById);
+        router.get('/:containerId/stats', controller.getStatsById);
+        router.get('/:containerId/files/content', controller.readFileById);
     }
 });

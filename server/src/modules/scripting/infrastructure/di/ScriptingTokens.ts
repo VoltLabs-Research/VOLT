@@ -5,5 +5,6 @@ export const SCRIPTING_TOKENS = Object.freeze({
     JupyterNotebookService: Symbol.for('JupyterNotebookService'),
     ScriptingJupyterAccessTokenService: Symbol.for('ScriptingJupyterAccessTokenService'),
     NotebookCredentialService: Symbol.for('NotebookCredentialService'),
-    NotebookRuntimeTerminator: Symbol.for('NotebookRuntimeTerminator')
+    NotebookRuntimeTerminator: Symbol.for('NotebookRuntimeTerminator'),
+    ScriptingService: Symbol.for('ScriptingService')
 });

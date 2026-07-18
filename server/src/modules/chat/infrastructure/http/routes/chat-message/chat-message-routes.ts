@@ -1,28 +1,31 @@
+import ChatController from '@modules/chat/infrastructure/http/controllers/ChatController';
 import { uploadToStorage } from '@modules/chat/infrastructure/http/middlewares/upload-to-storage';
 import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
-import controllers from '@modules/chat/infrastructure/http/controllers/chat-message';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(ChatController);
 
 export default createHttpModule({
     moduleKey: 'chat',
     basePath: '/api/chat-messages',
     protected: true,
     routes: (router) => {
-        router.get('/:chatId/messages', controllers.getChatMessages.handle);
+        router.get('/:chatId/messages', controller.getChatMessages);
         router.post(
             '/:chatId/messages',
-            controllers.sendChatMessage.handle
+            controller.sendChatMessage
         );
         router.route('/:chatId/messages/:messageId')
-            .patch(controllers.editMessage.handle)
-            .delete(controllers.delete.handle);
-        router.patch('/:chatId/messages/read', controllers.markMessagesAsRead.handle);
-        router.patch('/:chatId/messages/:messageId/reactions', controllers.toggleMessageReaction.handle);
+            .patch(controller.editMessage)
+            .delete(controller.deleteMessage);
+        router.patch('/:chatId/messages/read', controller.markMessagesAsRead);
+        router.patch('/:chatId/messages/:messageId/reactions', controller.toggleMessageReaction);
         router.post(
             '/:chatId/messages/file',
             uploadChatSingleFile('file'),
             uploadToStorage,
-            controllers.sendFileMessage.handle
+            controller.sendFileMessage
         );
     }
 });
