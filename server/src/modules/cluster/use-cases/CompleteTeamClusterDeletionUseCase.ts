@@ -1,7 +1,7 @@
 import { CompleteTeamClusterDeletionInputDTO } from '@modules/cluster/dtos/CompleteTeamClusterDeletionDTO';
 import type { ITeamClusterLifecycleService } from '@modules/cluster/ports/ITeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import type { OperationSuccessDTO } from '@modules/team/dtos/common';
+import type { OperationSuccessDTO } from '@modules/cluster/dtos/_teamScoped';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Singleton } from '@shared/infrastructure/di/decorators';

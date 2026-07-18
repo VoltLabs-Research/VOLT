@@ -4,16 +4,16 @@ import type {
     ParticleFilterCondition,
     ParticleFilterRequest
 } from '@modules/trajectory/ports/particle-filter/IParticleFilterService';
-import type { ParticleFilterConditionDTO } from '@modules/trajectory/dtos/particle-filter';
+import type { ParticleFilterConditionInput } from '@modules/trajectory/contracts/trajectory';
 
 interface ParticleFilterRequestInputLike {
     combinator: ParticleFilterCombinator;
-    conditions: ParticleFilterConditionDTO[] | string;
+    conditions: ParticleFilterConditionInput[] | string;
 }
 
 const normalizeConditions = (
-    conditions: ParticleFilterConditionDTO[] | string
-): ParticleFilterConditionDTO[] => {
+    conditions: ParticleFilterConditionInput[] | string
+): ParticleFilterConditionInput[] => {
     if (typeof conditions !== 'string') {
         return Array.isArray(conditions) ? conditions : [];
     }

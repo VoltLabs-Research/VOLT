@@ -3,22 +3,20 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { inject } from 'tsyringe';
 import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
-import type { IPluginRepository } from '@modules/plugin/ports/plugin/IPluginRepository';
+import type { IPluginRepository } from '@modules/plugin/services/PluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
-import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/dtos/listing-row/DaemonListingTypes';
+import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import {
     AnalysisListingExportOptionDTO,
     AnalysisSubListingExportOptionDTO,
-    GetAnalysisListingExportOptionsOutputDTO
-} from '@modules/plugin/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
-import {
+    GetAnalysisListingExportOptionsOutputDTO,
     AnalysisListingExportData,
     AnalysisSubListingExportData,
     ExportListingRowsByAnalysisIdInputDTO,
     ExportListingRowsByAnalysisIdOutputDTO,
     ListingRowByAnalysisData
-} from '@modules/plugin/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
-import { enrichDaemonListingRows } from '@modules/plugin/use-cases/listing-row/listing-row-enrichment';
+} from '@modules/plugin/utilities/listing-row/listing-row-types';
+import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/listing-row-enrichment';
 import { Exporter } from '@modules/plugin/entities/plugin/workflow/nodes/ExportNode';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';

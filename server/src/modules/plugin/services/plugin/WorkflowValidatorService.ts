@@ -8,14 +8,26 @@ import {
 } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
 import { EntrypointNodeType } from '@modules/plugin/entities/plugin/workflow/nodes/EntrypointNode';
 import { PluginNodeExecutionMode } from '@modules/plugin/entities/plugin/workflow/nodes/PluginNode';
-import {
-    IWorkflowValidatorService,
-    WorkflowValidationMode,
-    WorkflowValidationResult
-} from '@modules/plugin/ports/plugin/IWorkflowValidatorService';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+
+export interface WorkflowValidationPluginReference {
+    nodeId: string;
+    pluginId: string;
+}
+
+export enum WorkflowValidationMode {
+    Draft = 'draft',
+    Strict = 'strict'
+}
+
+export interface WorkflowValidationResult {
+    isValid: boolean;
+    errors?: string[];
+    modifier?: WorkflowNode;
+    pluginReferences?: WorkflowValidationPluginReference[];
+}
 
 const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
     WorkflowNodeType.Context,
@@ -117,7 +129,7 @@ interface WorkflowTopologyIndex {
 }
 
 @Singleton(PLUGIN_TOKENS.WorkflowValidatorService)
-export class WorkflowValidatorService implements IWorkflowValidatorService {
+export class WorkflowValidatorService {
     constructor(
         private readonly pluginDependencyResolverService: PluginDependencyResolverService
     ) {}

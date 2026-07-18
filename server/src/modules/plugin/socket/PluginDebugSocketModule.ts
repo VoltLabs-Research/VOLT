@@ -1,10 +1,10 @@
 import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 import Workflow, { type WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
-import type { PluginReferenceExecutionRequest } from '@modules/plugin/ports/plugin/IPluginExecutionRouter';
+import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import {
     WorkflowValidationMode
-} from '@modules/plugin/ports/plugin/IWorkflowValidatorService';
-import PluginRepository from '@modules/plugin/repositories/plugin/PluginRepository';
+} from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import PluginDebugSessionRegistryService from '@modules/plugin/services/PluginDebugSessionRegistryService';

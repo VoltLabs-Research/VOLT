@@ -1,5 +1,5 @@
 import type { ClusterTransferJobState } from '@modules/cluster/entities/ClusterTransferJob';
-import type { PaginatedOutputDTO } from '@modules/team/dtos/common';
+import type { PaginatedOutputDTO } from '@modules/cluster/dtos/_teamScoped';
 import type { ClusterTransferJobDTO } from '@modules/cluster/dtos/ClusterTransferJobDTO';
 
 export interface ListTeamClusterTransferJobsInputDTO {

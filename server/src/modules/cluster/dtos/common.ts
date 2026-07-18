@@ -1,4 +1,4 @@
-import type { TeamUserScopedEntityIdInputDTO } from '@modules/team/dtos/common';
+import type { TeamUserScopedEntityIdInputDTO } from '@modules/cluster/dtos/_teamScoped';
 import type { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 
 export type TeamUserScopedClusterInputDTO = TeamUserScopedEntityIdInputDTO<'teamClusterId'>;

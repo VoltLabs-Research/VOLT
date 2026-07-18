@@ -1,7 +1,19 @@
-import type { AIConversationProps } from '@modules/ai/entities/AIConversation';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
+
+/** Persisted shape of an AI conversation (the Mongoose model is the record). */
+export interface AIConversationProps {
+    userId: string;
+    teamId: string;
+    title: string;
+    lastMessageAt?: Date | null;
+    lastProvider?: string | null;
+    lastModel?: string | null;
+    isArchived: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 type AIConversationRelations = 'userId' | 'teamId';
 

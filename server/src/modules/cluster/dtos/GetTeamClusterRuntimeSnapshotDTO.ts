@@ -1,4 +1,4 @@
-import type { TeamScopedEntityIdInputDTO } from '@modules/team/dtos/common';
+import type { TeamScopedEntityIdInputDTO } from '@modules/cluster/dtos/_teamScoped';
 import type { TeamClusterQueueConcurrencyProps } from '@modules/cluster/entities/TeamCluster';
 
 export type GetTeamClusterRuntimeSnapshotInputDTO = TeamScopedEntityIdInputDTO<'teamClusterId'>;

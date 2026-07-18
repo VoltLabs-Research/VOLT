@@ -1,8 +1,7 @@
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
 import { isPopulatedTeamMemberRole } from '@modules/team/entities/team-member/TeamMember';
-import CreateSecretKeyUseCase from '@modules/team/use-cases/secret-key/CreateSecretKeyUseCase';
-import DeleteSecretKeyByIdUseCase from '@modules/team/use-cases/secret-key/DeleteSecretKeyByIdUseCase';
+import SecretKeyService from '@modules/team/services/SecretKeyService';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import type { ScriptingNotebookDocument } from '@modules/scripting/models/ScriptingNotebookModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -23,10 +22,10 @@ import { inject } from 'tsyringe';
  */
 @Singleton()
 export class NotebookCredentialService {
+    readonly #secretKeys = new SecretKeyService();
+
     constructor(
-        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        private readonly createSecretKeyUseCase: CreateSecretKeyUseCase,
-        private readonly deleteSecretKeyByIdUseCase: DeleteSecretKeyByIdUseCase
+        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository
     ) {}
 
     /**
@@ -41,11 +40,9 @@ export class NotebookCredentialService {
         const teamId = String(notebook.team);
         const roleId = await this.resolveLauncherRoleId(teamId, userId);
 
-        const { secretKeyId, secretKey } = await this.createSecretKeyUseCase.execute({
-            teamId,
+        const { secretKeyId, secretKey } = await this.#secretKeys.create(teamId, userId, {
             roleId,
-            name: `notebook:${String(notebook._id)}`,
-            userId
+            name: `notebook:${String(notebook._id)}`
         });
         await ScriptingNotebookModel.updateOne(
             { _id: notebook._id },
@@ -65,11 +62,11 @@ export class NotebookCredentialService {
         }
 
         try {
-            await this.deleteSecretKeyByIdUseCase.execute({
+            await this.#secretKeys.deleteById(
+                String(notebook.team),
                 secretKeyId,
-                teamId: String(notebook.team),
-                userId: String(notebook.createdBy)
-            });
+                String(notebook.createdBy)
+            );
         } catch (err) {
             logger.warn(
                 { secretKeyId, notebookId: String(notebook._id), err },

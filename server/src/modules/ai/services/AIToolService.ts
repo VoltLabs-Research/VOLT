@@ -1,4 +1,3 @@
-import type { IAIToolService } from '@modules/ai/ports/IAIToolService';
 import { AI_TOKENS } from '@modules/ai/di/AITokens';
 import type { AITool } from '@shared/application/ai/AITool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
@@ -7,7 +6,7 @@ import type { ToolSet } from 'ai';
 import { injectAll } from 'tsyringe';
 
 @Singleton(AI_TOKENS.AIToolService)
-export default class AIToolService implements IAIToolService {
+export default class AIToolService {
     constructor(
         @injectAll(AI_TOKENS.AITool)
         private readonly aiTools: AITool[] = []

@@ -1,7 +1,7 @@
 import type {
     AtomColumnDType,
     GetAtomsColumnarOutputDTO
-} from '@modules/trajectory/dtos/trajectory/GetAtomsDTO';
+} from '@modules/trajectory/contracts/trajectory';
 
 const DTYPE_ID: Record<AtomColumnDType, number> = {
     f32: 0,

@@ -14,9 +14,9 @@ import { createXai } from '@ai-sdk/xai';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
-import type { AIMessageToolCall, AIMessageToolResult } from '@modules/ai/entities/AIMessage';
-import type { AIChatFinishEvent, AIChatReplyStream, GenerateAIChatReplyInput, IAIChatTransport } from '@modules/ai/ports/IAIChatTransport';
-import type { IAIToolService } from '@modules/ai/ports/IAIToolService';
+import type { AIMessageToolCall, AIMessageToolResult, AIMessageToolStep } from '@modules/ai/models/AIMessageModel';
+import type AIToolService from '@modules/ai/services/AIToolService';
+import type { TeamAIProvider } from '@modules/team/entities/ai-integration/TeamAIIntegration';
 import TeamAIIntegrationRepository from '@modules/team/repositories/ai-integration/TeamAIIntegrationRepository';
 import TeamAIIntegrationSecretCipher from '@modules/team/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -120,6 +120,35 @@ const toAIMessageToolResult = (toolResult: AIStreamToolResult): AIMessageToolRes
     };
 };
 
+export interface AIChatReplyStream {
+    pipeToResponse(response: Response): void;
+}
+
+export interface AIChatReplyUsage {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+}
+
+export interface AIChatFinishEvent {
+    text: string;
+    totalUsage?: AIChatReplyUsage | null;
+    finishReason: string;
+    steps: AIMessageToolStep[];
+    responseMessages: unknown[];
+    provider: string;
+    model: string;
+}
+
+export interface GenerateAIChatReplyInput {
+    teamId: string;
+    userId: string;
+    provider?: TeamAIProvider;
+    model?: string;
+    messages: AIConversationMessage[];
+    onFinish?: (event: AIChatFinishEvent) => Promise<void>;
+}
+
 class AISDKReplyStream implements AIChatReplyStream {
     constructor(private readonly result: AIStreamResult) {}
 
@@ -129,9 +158,9 @@ class AISDKReplyStream implements AIChatReplyStream {
 }
 
 @Singleton(AI_TOKENS.AIChatTransport)
-export default class AISDKChatTransport implements IAIChatTransport {
+export default class AISDKChatTransport {
     constructor(
-        @inject(AI_TOKENS.AIToolService) private readonly toolService: IAIToolService,
+        @inject(AI_TOKENS.AIToolService) private readonly toolService: AIToolService,
         private readonly integrationRepo: TeamAIIntegrationRepository,
         private readonly secretCipher: TeamAIIntegrationSecretCipher
     ) {}

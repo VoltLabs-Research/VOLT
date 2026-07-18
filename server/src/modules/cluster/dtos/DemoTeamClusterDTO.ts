@@ -1,4 +1,4 @@
-import type { TeamUserScopedInputDTO } from '@modules/team/dtos/common';
+import type { TeamUserScopedInputDTO } from '@modules/cluster/dtos/_teamScoped';
 import type { TeamClusterDTO } from '@modules/cluster/dtos/TeamClusterDTO';
 
 export type ProvisionDemoTeamClusterInputDTO = TeamUserScopedInputDTO;

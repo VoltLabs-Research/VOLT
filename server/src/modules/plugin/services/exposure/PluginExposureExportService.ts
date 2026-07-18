@@ -23,10 +23,12 @@ import { v4 } from 'uuid';
 import { inject } from 'tsyringe';
 
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
-import type {
-    IPluginExposureExportService,
-    PluginExposureExportParams
-} from '@modules/plugin/ports/exposure/IPluginExposureExportService';
+
+export interface PluginExposureExportParams {
+    analysisId: string;
+    trajectoryId: string;
+    pluginName: string;
+}
 
 interface PrefixCollectionConfig {
     bucket: string;
@@ -41,7 +43,7 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
 };
 
 @Singleton(PLUGIN_TOKENS.PluginExposureExportService)
-export class PluginExposureExportService implements IPluginExposureExportService {
+export class PluginExposureExportService {
     constructor(
         @inject(COMPUTE_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepository: ITrajectoryRepository,

@@ -1,8 +1,7 @@
 import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
-import { BinaryUploadResult, BinaryUploadTarget, IPluginStorageService, PluginImportResult } from '@modules/plugin/ports/plugin/IPluginStorageService';
-import { WorkflowValidationMode } from '@modules/plugin/ports/plugin/IWorkflowValidatorService';
+import { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
@@ -18,7 +17,7 @@ import { inject } from 'tsyringe';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import PluginRepository from '@modules/plugin/repositories/plugin/PluginRepository';
+import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
@@ -28,6 +27,23 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
+
+export interface BinaryUploadResult {
+    objectPath: string;
+    fileName: string;
+    size: number;
+    binaryHash: string;
+}
+
+export interface BinaryUploadTarget extends BinaryUploadResult {
+    uploadUrl: string;
+    expiresAt: string;
+}
+
+export interface PluginImportResult {
+    plugin: Plugin;
+    binaryImported: boolean;
+}
 
 /**
  * If every archive entry lives under one shared top-level directory (e.g. `kmeans-clustering/...`),
@@ -80,7 +96,7 @@ const normalizeBinaryFileName = (fileName: string): string => {
 };
 
 @Singleton(PLUGIN_TOKENS.PluginStorageService)
-export default class PluginStorageService implements IPluginStorageService {
+export default class PluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,
         @inject(COMPUTE_TOKENS.StoragePlacementService)

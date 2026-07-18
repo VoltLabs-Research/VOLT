@@ -1,5 +1,3 @@
-import type { TeamScopedEntityIdInputDTO } from '@modules/team/dtos/common';
-
 export interface CatalogFolderDTO {
     _id: string;
     title: string;
@@ -8,4 +6,7 @@ export interface CatalogFolderDTO {
     updatedAt: Date;
 }
 
-export type DeleteCatalogFolderInputDTO = TeamScopedEntityIdInputDTO<'folderId'>;
+export interface DeleteCatalogFolderInputDTO {
+    teamId: string;
+    folderId: string;
+}

@@ -1,10 +1,10 @@
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/dtos/trajectory/GetTrajectoryPreviewDTO';
+import type { TrajectoryPreviewResult } from '@modules/trajectory/contracts/trajectory';
 import type { Response } from 'express';
 
 export const sendTrajectoryPreview = (
     res: Response,
-    value: GetTrajectoryPreviewOutputDTO
+    value: TrajectoryPreviewResult
 ): void => {
     const request = res.req;
 

@@ -2,14 +2,52 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
 import type Plugin from '@modules/plugin/entities/plugin/Plugin';
-import type {
-    IPluginExecutionRouter,
-    PluginReferenceExecutionRequest,
-    PipelineStageExecutionInput,
-    RoutePipelineExecutionInput,
-    RoutePluginExecutionInput
-} from '@modules/plugin/ports/plugin/IPluginExecutionRouter';
 import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
+
+export interface PluginReferenceExecutionRequest {
+    referencePath: string;
+    pluginId: string;
+    config: Record<string, unknown>;
+}
+
+export interface RoutePluginExecutionInput {
+    teamClusterId: string;
+    analysis: Analysis;
+    analysisId: string;
+    pluginDisplayName: string;
+    trajectoryId: string;
+    trajectoryName: string;
+    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    teamId: string;
+    plugin: Plugin;
+    pluginDependencies: Plugin[];
+    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
+    config: Record<string, unknown>;
+    selectedFrameOnly?: boolean;
+    selectedTimesteps?: number[];
+    timestep?: number;
+}
+
+export interface PipelineStageExecutionInput {
+    kind: 'plugin' | 'slice' | 'expression';
+    execution?: RoutePluginExecutionInput;
+    cacheHit?: boolean;
+    cacheSourceAnalysisId?: string;
+    sharedExposureIds?: string[];
+    config?: Record<string, unknown>;
+}
+
+export interface RoutePipelineExecutionInput {
+    teamClusterId: string;
+    teamId: string;
+    trajectoryId: string;
+    trajectoryName: string;
+    trajectoryFrames: Array<{ timestep: number; natoms: number; simulationCell: string; }>;
+    storageClusterId?: string;
+    selectedTimesteps?: number[];
+    timestep?: number;
+    stages: PipelineStageExecutionInput[];
+}
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
@@ -265,7 +303,7 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
 };
 
 @Singleton(PLUGIN_TOKENS.PluginExecutionRouter)
-export default class PluginExecutionRouter implements IPluginExecutionRouter {
+export default class PluginExecutionRouter {
     constructor(
         @inject(COMPUTE_TOKENS.StoragePlacementService)
         private readonly storagePlacementService: IStoragePlacementService,

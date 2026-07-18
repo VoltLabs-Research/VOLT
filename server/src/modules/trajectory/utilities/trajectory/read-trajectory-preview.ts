@@ -1,11 +1,11 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/dtos/trajectory/GetTrajectoryPreviewDTO';
+import type { TrajectoryPreviewResult } from '@modules/trajectory/contracts/trajectory';
 
 type PreviewOutputFactory = (
     buffer: Buffer
-) => GetTrajectoryPreviewOutputDTO | Promise<GetTrajectoryPreviewOutputDTO>;
+) => TrajectoryPreviewResult | Promise<TrajectoryPreviewResult>;
 
 interface ReadTrajectoryPreviewInput {
     trajectoryId: string;
@@ -36,7 +36,7 @@ const firstSortedPreviewKey = async (
 
 export const readTrajectoryPreview = async (
     input: ReadTrajectoryPreviewInput
-): Promise<GetTrajectoryPreviewOutputDTO | null> => {
+): Promise<TrajectoryPreviewResult | null> => {
     const previewKey = await firstSortedPreviewKey(
         input.objectGatewayClient,
         input.storageClusterId,

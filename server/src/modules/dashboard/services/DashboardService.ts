@@ -15,7 +15,8 @@ import type { Analysis, ChatParticipant } from '@shared/contracts/types';
 import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
-import type { ListUserTeamsOutputDTO } from '@modules/team/dtos/team/ListUserTeamsDTO';
+import type { TeamProps } from '@modules/team/entities/team/Team';
+import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 import type {
     GetAnalysesByTeamIdItemDTO,
     ListContainersOutputDTO,
@@ -86,7 +87,7 @@ export interface GetGlobalSearchResult {
     analyses: GetAnalysesByTeamIdItemDTO[];
     containers: ListContainersOutputDTO<ContainerSearchView>['data'];
     trajectories: TrajectoryPersistedDTO[];
-    teams: ListUserTeamsOutputDTO[];
+    teams: PersistedEntityOutput<TeamProps>[];
     plugins: PluginSearchDTO[];
     chats: PersistedChatDTO<ChatSearchView>[];
 }

@@ -20,7 +20,7 @@ import type {
     AnalysisListingExportData,
     AnalysisSubListingExportData,
     ExportListingRowsByAnalysisIdOutputDTO
-} from '@modules/plugin/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+} from '@modules/plugin/utilities/listing-row/listing-row-types';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
 /**

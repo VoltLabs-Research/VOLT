@@ -1,4 +1,4 @@
-import type { TeamScopedEntityIdInputDTO } from '@modules/team/dtos/common';
+import type { TeamScopedEntityIdInputDTO } from '@modules/cluster/dtos/_teamScoped';
 import type { SystemStatus } from '@modules/system/value-objects/SystemMetrics';
 
 export type GetClusterResourceLimitsInputDTO = TeamScopedEntityIdInputDTO<'teamClusterId'>;
