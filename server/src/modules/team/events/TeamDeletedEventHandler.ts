@@ -6,10 +6,9 @@ import SecretKeyUsageLogModel from '@modules/team/models/secret-key/SecretKeyUsa
 import TeamAIIntegrationModel from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('team.deleted')
-export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{
+class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{
     async handle(event: TeamDeletedEvent): Promise<void>{
         const { teamId } = event.payload;
         const query = { team: teamId };
@@ -23,3 +22,8 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
         ]);
     }
 }
+
+const teamDeletedEventHandler = new TeamDeletedEventHandler();
+subscribeHandler('team.deleted', teamDeletedEventHandler);
+
+export default teamDeletedEventHandler;

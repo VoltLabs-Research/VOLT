@@ -4,14 +4,13 @@ import analysisExecutionLogService from '@modules/analysis/services/AnalysisExec
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 
-@Subscribe('analysis.deleted')
-export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
+class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
         private readonly redis = redisClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -105,3 +104,8 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         return `daemon-analysis:${analysisId}:terminal-keys`;
     }
 }
+
+const analysisDeletedEventHandler = new AnalysisDeletedEventHandler();
+subscribeHandler('analysis.deleted', analysisDeletedEventHandler);
+
+export default analysisDeletedEventHandler;

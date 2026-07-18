@@ -2,7 +2,7 @@ import AnalysisService from '@modules/analysis/services/AnalysisService';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 interface AnalysisIdRecord {
     readonly _id: string;
@@ -14,8 +14,7 @@ interface AnalysisIdRecord {
  * the real teardown (storage/daemon cleanup via the `analysis.deleted` event) to
  * a `new AnalysisService()` — no use case, no DI.
  */
-@Subscribe('team.deleted')
-export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<AnalysisIdRecord> {
+class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<AnalysisIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<AnalysisIdRecord[]> => {
             const docs = await AnalysisModel.find(filter).select('_id').exec();
@@ -34,3 +33,8 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
         });
     }
 }
+
+const teamDeletedEventHandler = new TeamDeletedEventHandler();
+subscribeHandler('team.deleted', teamDeletedEventHandler);
+
+export default teamDeletedEventHandler;

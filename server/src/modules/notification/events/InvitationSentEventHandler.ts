@@ -1,10 +1,9 @@
 import NotificationService from '@modules/notification/services/NotificationService';
 import type { InvitationSentIntegrationEvent } from '@shared/application/contracts/events/InvitationSentIntegrationEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('invitation.sent')
-export default class InvitationSentEventHandler implements IEventHandler<InvitationSentIntegrationEvent> {
+class InvitationSentEventHandler implements IEventHandler<InvitationSentIntegrationEvent> {
     #notifications = new NotificationService();
 
     async handle(event: InvitationSentIntegrationEvent): Promise<void>{
@@ -18,3 +17,8 @@ export default class InvitationSentEventHandler implements IEventHandler<Invitat
         });
     }
 }
+
+const invitationSentEventHandler = new InvitationSentEventHandler();
+subscribeHandler('invitation.sent', invitationSentEventHandler);
+
+export default invitationSentEventHandler;

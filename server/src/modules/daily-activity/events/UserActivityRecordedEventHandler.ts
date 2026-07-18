@@ -3,11 +3,10 @@ import type { UserActivityRecordedPayload } from '@shared/contracts/events';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe(DOMAIN_EVENTS.UserActivityRecorded)
-export default class UserActivityRecordedEventHandler implements IEventHandler<IDomainEvent<UserActivityRecordedPayload>> {
+class UserActivityRecordedEventHandler implements IEventHandler<IDomainEvent<UserActivityRecordedPayload>> {
     #service = new DailyActivityService();
 
     async handle(event: IDomainEvent<UserActivityRecordedPayload>): Promise<void> {
@@ -19,4 +18,9 @@ export default class UserActivityRecordedEventHandler implements IEventHandler<I
             logger.error(error, `[UserActivityRecordedEventHandler] Failed to update activity for user ${userId}`);
         }
     }
-};
+}
+
+const userActivityRecordedEventHandler = new UserActivityRecordedEventHandler();
+subscribeHandler(DOMAIN_EVENTS.UserActivityRecorded, userActivityRecordedEventHandler);
+
+export default userActivityRecordedEventHandler;

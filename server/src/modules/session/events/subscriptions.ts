@@ -1,5 +1,5 @@
 import SessionModel from '@modules/session/models/SessionModel';
-import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import type UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
 
@@ -9,4 +9,4 @@ class SessionsDeletedOnUserDeletedHandler implements IEventHandler<UserDeletedEv
     }
 }
 
-subscribeHandlerClass('user.deleted', SessionsDeletedOnUserDeletedHandler);
+subscribeHandler('user.deleted', new SessionsDeletedOnUserDeletedHandler());

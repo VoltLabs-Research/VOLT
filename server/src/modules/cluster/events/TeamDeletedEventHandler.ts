@@ -13,11 +13,10 @@ import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe('team.deleted')
-export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
+class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
     private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
     private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
@@ -69,3 +68,8 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
         ]);
     }
 }
+
+const teamDeletedEventHandler = new TeamDeletedEventHandler();
+subscribeHandler('team.deleted', teamDeletedEventHandler);
+
+export default teamDeletedEventHandler;

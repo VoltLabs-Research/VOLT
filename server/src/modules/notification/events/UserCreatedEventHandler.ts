@@ -1,10 +1,9 @@
 import NotificationService from '@modules/notification/services/NotificationService';
 import type { UserCreatedIntegrationEvent } from '@shared/application/contracts/events/UserCreatedIntegrationEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('user.created')
-export default class UserCreatedEventHandler implements IEventHandler<UserCreatedIntegrationEvent> {
+class UserCreatedEventHandler implements IEventHandler<UserCreatedIntegrationEvent> {
     #notifications = new NotificationService();
 
     async handle(event: UserCreatedIntegrationEvent): Promise<void> {
@@ -19,3 +18,8 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
         });
     }
 }
+
+const userCreatedEventHandler = new UserCreatedEventHandler();
+subscribeHandler('user.created', userCreatedEventHandler);
+
+export default userCreatedEventHandler;

@@ -2,10 +2,9 @@ import NotificationService from '@modules/notification/services/NotificationServ
 import DeploymentSettingsRepository from '@modules/system/repositories/DeploymentSettingsRepository';
 import type { UserCreatedIntegrationEvent } from '@shared/application/contracts/events/UserCreatedIntegrationEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('user.created')
-export default class TeamOnboardingNotificationHandler implements IEventHandler<UserCreatedIntegrationEvent> {
+class TeamOnboardingNotificationHandler implements IEventHandler<UserCreatedIntegrationEvent> {
     #notifications = new NotificationService();
     #deploymentSettingsRepository = new DeploymentSettingsRepository();
 
@@ -23,3 +22,8 @@ export default class TeamOnboardingNotificationHandler implements IEventHandler<
         });
     }
 };
+
+const teamOnboardingNotificationHandler = new TeamOnboardingNotificationHandler();
+subscribeHandler('user.created', teamOnboardingNotificationHandler);
+
+export default teamOnboardingNotificationHandler;

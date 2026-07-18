@@ -2,7 +2,7 @@ import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
 import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 interface WhiteboardIdRecord {
     readonly _id: string;
@@ -14,8 +14,7 @@ interface WhiteboardIdRecord {
  * the real teardown (object-storage cleanup + `whiteboard.deleted` event) to a
  * `new WhiteboardService()` — no use case, no repository, no DI.
  */
-@Subscribe('team.deleted')
-export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<WhiteboardIdRecord> {
+class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<WhiteboardIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<WhiteboardIdRecord[]> => {
             const docs = await WhiteboardModel.find(filter).select('_id').exec();
@@ -30,3 +29,8 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
         await this.#service.deleteWhiteboard(event.payload.teamId, whiteboardId, event.payload.userId ?? '');
     }
 }
+
+const teamDeletedEventHandler = new TeamDeletedEventHandler();
+subscribeHandler('team.deleted', teamDeletedEventHandler);
+
+export default teamDeletedEventHandler;

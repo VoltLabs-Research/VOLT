@@ -7,15 +7,14 @@ import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryMod
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
     'trajectory_glb_conversion',
     'trajectory_clone'
 ]);
 
-@Subscribe('job.status.changed')
-export default class JobStatusChangedEventHandler implements IEventHandler<IDomainEvent<JobStatusChangedEventPayload>> {
+class JobStatusChangedEventHandler implements IEventHandler<IDomainEvent<JobStatusChangedEventPayload>> {
     #eventBus = eventBus;
 
     async handle(event: IDomainEvent<JobStatusChangedEventPayload>): Promise<void> {
@@ -44,3 +43,8 @@ export default class JobStatusChangedEventHandler implements IEventHandler<IDoma
         }
     }
 }
+
+const jobStatusChangedEventHandler = new JobStatusChangedEventHandler();
+subscribeHandler('job.status.changed', jobStatusChangedEventHandler);
+
+export default jobStatusChangedEventHandler;

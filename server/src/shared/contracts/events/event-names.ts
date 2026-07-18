@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (see ECOSYSTEM "VOLT Apps" migration):
  * domain events are dispatched and subscribed-to by string name. Subscribers
- * (`@Subscribe('team.deleted')`) and emitters (`super('team.deleted', ...)`)
+ * (`subscribeHandler('team.deleted', ...)`) and emitters (`super('team.deleted', ...)`)
  * currently hard-code these strings. Centralising the names here lets either
  * side reference a single neutral constant instead of a magic string, without
  * importing the emitter module.

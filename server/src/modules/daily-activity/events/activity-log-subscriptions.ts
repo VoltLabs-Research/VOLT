@@ -1,6 +1,6 @@
 import { ActivityType } from '@modules/daily-activity/models/DailyActivityModel';
 import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
-import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
@@ -37,7 +37,7 @@ const registerDailyActivityLog = <TPayload extends DailyActivityPayload>({
     }
 
     Object.defineProperty(DailyActivityLogHandler, 'name', { value: className, configurable: true });
-    subscribeHandlerClass(eventName, DailyActivityLogHandler as unknown as new () => IEventHandler<IDomainEvent>);
+    subscribeHandler(eventName, new DailyActivityLogHandler());
 };
 
 registerDailyActivityLog<DailyActivityPayload & { pluginDisplayName: string }>({

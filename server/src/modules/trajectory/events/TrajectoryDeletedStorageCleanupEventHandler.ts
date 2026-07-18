@@ -5,11 +5,10 @@ import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/Trajec
 import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe('trajectory.deleted')
-export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
+class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     private readonly storagePlacementRepository = new StoragePlacementRepository();
     private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
     private readonly objectGatewayClient = objectGatewayClient;
@@ -69,3 +68,8 @@ export default class TrajectoryDeletedStorageCleanupEventHandler implements IEve
         });
     }
 }
+
+const trajectoryDeletedStorageCleanupEventHandler = new TrajectoryDeletedStorageCleanupEventHandler();
+subscribeHandler('trajectory.deleted', trajectoryDeletedStorageCleanupEventHandler);
+
+export default trajectoryDeletedStorageCleanupEventHandler;

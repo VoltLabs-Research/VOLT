@@ -1,7 +1,7 @@
 import DailyActivityModel from '@modules/daily-activity/models/DailyActivityModel';
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
 import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 /**
  * On team / user deletion, purge that scope's daily-activity records. Backed by
@@ -16,12 +16,13 @@ const modelDeleteMany = {
     }
 };
 
-@Subscribe('team.deleted')
-export class DailyActivityTeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {
+class DailyActivityTeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {
     protected readonly repository = modelDeleteMany;
 }
 
-@Subscribe('user.deleted')
-export class DailyActivityUserDeletedEventHandler extends DeleteManyOnUserDeletedHandler {
+class DailyActivityUserDeletedEventHandler extends DeleteManyOnUserDeletedHandler {
     protected readonly repository = modelDeleteMany;
 }
+
+subscribeHandler('team.deleted', new DailyActivityTeamDeletedEventHandler());
+subscribeHandler('user.deleted', new DailyActivityUserDeletedEventHandler());

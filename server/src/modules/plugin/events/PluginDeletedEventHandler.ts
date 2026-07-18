@@ -1,11 +1,10 @@
 import PluginDeletedEvent from '@modules/plugin/events/PluginDeletedEvent';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 
-@Subscribe('plugin.deleted')
-export default class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
+class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
     async handle(event: PluginDeletedEvent): Promise<void> {
         const { pluginId } = event.payload;
         const query = { plugin: pluginId };
@@ -13,3 +12,8 @@ export default class PluginDeletedEventHandler implements IEventHandler<PluginDe
         await SceneArtifactModel.deleteMany({ ...query, sourceType: 'plugin-exposure' }).exec();
     }
 }
+
+const pluginDeletedEventHandler = new PluginDeletedEventHandler();
+subscribeHandler('plugin.deleted', pluginDeletedEventHandler);
+
+export default pluginDeletedEventHandler;

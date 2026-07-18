@@ -1,12 +1,16 @@
 import CascadeDeleteAIConversationsHandler from '@modules/ai/events/CascadeDeleteAIConversationsHandler';
 import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('user.deleted')
-export default class UserDeletedEventHandler extends CascadeDeleteAIConversationsHandler<UserDeletedEvent> {
+class UserDeletedEventHandler extends CascadeDeleteAIConversationsHandler<UserDeletedEvent> {
     protected readonly ownerField = 'userId' as const;
 
     protected resolveOwnerId(event: UserDeletedEvent): string {
         return event.payload.userId;
     }
 }
+
+const userDeletedEventHandler = new UserDeletedEventHandler();
+subscribeHandler('user.deleted', userDeletedEventHandler);
+
+export default userDeletedEventHandler;

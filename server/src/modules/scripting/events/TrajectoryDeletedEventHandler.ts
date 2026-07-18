@@ -4,10 +4,9 @@ import notebookCredentialService from '@modules/scripting/services/NotebookCrede
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('trajectory.deleted')
-export default class TrajectoryDeletedEventHandler implements IEventHandler<IDomainEvent<TrajectoryDeletedEventPayload>> {
+class TrajectoryDeletedEventHandler implements IEventHandler<IDomainEvent<TrajectoryDeletedEventPayload>> {
     #scriptingSessionOrchestrator = scriptingSessionOrchestrator;
     #notebookCredentialService = notebookCredentialService;
 
@@ -42,3 +41,8 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<IDom
         }).exec();
     }
 }
+
+const trajectoryDeletedEventHandler = new TrajectoryDeletedEventHandler();
+subscribeHandler('trajectory.deleted', trajectoryDeletedEventHandler);
+
+export default trajectoryDeletedEventHandler;

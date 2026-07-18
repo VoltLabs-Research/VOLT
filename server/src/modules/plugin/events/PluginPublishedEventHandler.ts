@@ -4,7 +4,7 @@ import type { IStoragePlacementService } from '@shared/contracts/ports';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import PluginPublishedEvent from '@modules/plugin/events/PluginPublishedEvent';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -24,8 +24,7 @@ interface PluginWarmupCommandResponse {
     jobId: string;
 }
 
-@Subscribe('plugin.published')
-export default class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
+class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
     private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
@@ -83,3 +82,8 @@ export default class PluginPublishedEventHandler implements IEventHandler<Plugin
         }));
     }
 }
+
+const pluginPublishedEventHandler = new PluginPublishedEventHandler();
+subscribeHandler('plugin.published', pluginPublishedEventHandler);
+
+export default pluginPublishedEventHandler;

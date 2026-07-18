@@ -2,7 +2,7 @@ import ContainerService from '@modules/container/services/ContainerService';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 interface ContainerIdRecord {
     readonly _id: string;
@@ -14,8 +14,7 @@ interface ContainerIdRecord {
  * the real teardown (docker + relays) to a `new ContainerService()` — no
  * use case, no repository, no DI.
  */
-@Subscribe('team.deleted')
-export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ContainerIdRecord> {
+class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ContainerIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<ContainerIdRecord[]> => {
             const docs = await ContainerModel.find(filter).select('_id').exec();
@@ -30,3 +29,8 @@ export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDele
         await this.#service.delete(event.payload.teamId, containerId, event.payload.userId ?? '');
     }
 }
+
+const teamDeletedEventHandler = new TeamDeletedEventHandler();
+subscribeHandler('team.deleted', teamDeletedEventHandler);
+
+export default teamDeletedEventHandler;

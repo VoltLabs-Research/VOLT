@@ -3,7 +3,7 @@ import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
 import { CascadeDeleteEachOnTrajectoryDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTrajectoryDeletedHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
 interface AnalysisIdRecord {
     readonly _id: string;
@@ -14,8 +14,7 @@ interface AnalysisIdRecord {
  * Enumerates ids from the Mongoose {@link AnalysisModel} and delegates teardown
  * to a `new AnalysisService()` — no use case, no DI.
  */
-@Subscribe('trajectory.deleted')
-export default class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTrajectoryDeletedHandler<AnalysisIdRecord> {
+class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTrajectoryDeletedHandler<AnalysisIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<AnalysisIdRecord[]> => {
             const docs = await AnalysisModel.find(filter).select('_id').exec();
@@ -34,3 +33,8 @@ export default class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTr
         });
     }
 }
+
+const trajectoryDeletedEventHandler = new TrajectoryDeletedEventHandler();
+subscribeHandler('trajectory.deleted', trajectoryDeletedEventHandler);
+
+export default trajectoryDeletedEventHandler;

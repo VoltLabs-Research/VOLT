@@ -5,11 +5,10 @@ import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent'
 import type { AnalysisStorageCleanupTarget } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe('analysis.deleted')
-export default class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
+class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     private readonly storagePlacementRepository = new StoragePlacementRepository();
     private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
     private readonly objectGatewayClient = objectGatewayClient;
@@ -72,3 +71,8 @@ export default class AnalysisDeletedStorageCleanupEventHandler implements IEvent
         });
     }
 }
+
+const analysisDeletedStorageCleanupEventHandler = new AnalysisDeletedStorageCleanupEventHandler();
+subscribeHandler('analysis.deleted', analysisDeletedStorageCleanupEventHandler);
+
+export default analysisDeletedStorageCleanupEventHandler;

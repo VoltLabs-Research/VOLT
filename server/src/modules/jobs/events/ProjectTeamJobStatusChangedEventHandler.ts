@@ -3,11 +3,10 @@ import teamJobProjectionService from '@modules/jobs/services/TeamJobProjectionSe
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe('job.status.changed')
-export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
+class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     async handle(event: JobStatusChangedEvent): Promise<void> {
         const { jobId } = event.payload;
         let snapshot: TeamJobSnapshot | null;
@@ -33,3 +32,8 @@ export default class ProjectTeamJobStatusChangedEventHandler implements IEventHa
         }
     }
 }
+
+const projectTeamJobStatusChangedEventHandler = new ProjectTeamJobStatusChangedEventHandler();
+subscribeHandler('job.status.changed', projectTeamJobStatusChangedEventHandler);
+
+export default projectTeamJobStatusChangedEventHandler;

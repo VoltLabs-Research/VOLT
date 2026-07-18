@@ -3,15 +3,14 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
 type DaemonListingDocumentType = 'listing' | 'sub-listing';
 
 const DAEMON_LISTING_DOCUMENT_TYPES: DaemonListingDocumentType[] = ['listing', 'sub-listing'];
 
-@Subscribe('analysis.deleted')
-export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
+class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -39,3 +38,8 @@ export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IE
         }
     }
 }
+
+const analysisDeletedDaemonListingPurgeEventHandler = new AnalysisDeletedDaemonListingPurgeEventHandler();
+subscribeHandler('analysis.deleted', analysisDeletedDaemonListingPurgeEventHandler);
+
+export default analysisDeletedDaemonListingPurgeEventHandler;

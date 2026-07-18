@@ -5,10 +5,9 @@ import LatexFileModel from '@modules/latex/models/LatexFileModel';
 import type LatexDocumentDeletedEvent from '@modules/latex/events/LatexDocumentDeletedEvent';
 import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@modules/latex/utilities/latex-storage';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 
-@Subscribe('latex-document.deleted')
-export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
+class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
     #objectGatewayClient = objectGatewayClient;
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {
@@ -25,3 +24,8 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
         ]);
     }
 }
+
+const latexDocumentDeletedEventHandler = new LatexDocumentDeletedEventHandler();
+subscribeHandler('latex-document.deleted', latexDocumentDeletedEventHandler);
+
+export default latexDocumentDeletedEventHandler;

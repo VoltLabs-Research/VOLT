@@ -17,9 +17,9 @@ import { BaseDomainEvent } from './BaseDomainEvent';
  * ```
  *
  * The bus dispatches by `name` (string), so subscribers — including the owner
- * module's `@Subscribe('job.status.changed')` handlers — receive it identically
- * to the owner-constructed class. Runtime behaviour is unchanged; only the
- * static import of the owner's event class is removed.
+ * module's `subscribeHandler('job.status.changed', ...)` registrations — receive it
+ * identically to the owner-constructed class. Runtime behaviour is unchanged; only
+ * the static import of the owner's event class is removed.
  */
 export class GenericDomainEvent<T> extends BaseDomainEvent<T> {
     constructor(name: string, payload: T) {

@@ -1,11 +1,10 @@
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import type TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { Subscribe } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
-@Subscribe('trajectory.deleted')
-export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
+class TrajectoryDeletedJobCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { teamId, trajectoryId } = event.payload;
         if (!teamId) {
@@ -22,3 +21,8 @@ export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHa
         }
     }
 }
+
+const trajectoryDeletedJobCleanupEventHandler = new TrajectoryDeletedJobCleanupEventHandler();
+subscribeHandler('trajectory.deleted', trajectoryDeletedJobCleanupEventHandler);
+
+export default trajectoryDeletedJobCleanupEventHandler;

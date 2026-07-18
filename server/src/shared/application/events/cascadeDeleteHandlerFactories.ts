@@ -1,10 +1,7 @@
-import { container, injectable } from 'tsyringe';
-import type { InjectionToken } from 'tsyringe';
-
 import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
 import { DeleteManyOnUserDeletedHandler } from '@shared/application/events/DeleteManyOnUserDeletedHandler';
 import { DeleteManyOnTrajectoryDeletedHandler } from '@shared/application/events/DeleteManyOnTrajectoryDeletedHandler';
-import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
+import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
@@ -19,31 +16,24 @@ interface HandlerFactoryOptions {
 
 type AnyCtor = abstract new (...args: any[]) => any;
 
-const assignClassName = (cls: Function, name: string): void => {
-    Object.defineProperty(cls, 'name', { value: name, configurable: true });
-};
-
 const buildCascadeHandler = (
     BaseClass: AnyCtor,
-    repositoryToken: InjectionToken<DeletableRepository>,
-    options: HandlerFactoryOptions,
-    defaultName: string
-): new () => IEventHandler<IDomainEvent> => {
-    @injectable()
-    class Generated extends (BaseClass as unknown as new (...args: any[]) => any) {
-        protected readonly repository: DeletableRepository;
-
-        constructor() {
-            super();
-            this.repository = container.resolve<DeletableRepository>(repositoryToken);
-            if (options.filterField) {
-                (this as unknown as { filterField: string }).filterField = options.filterField;
-            }
-        }
+    repository: DeletableRepository,
+    options: HandlerFactoryOptions
+): IEventHandler<IDomainEvent> => {
+    class Generated extends (BaseClass as unknown as new () => any) {
+        protected readonly repository = repository;
     }
 
-    assignClassName(Generated, options.className ?? defaultName);
-    return Generated as unknown as new () => IEventHandler<IDomainEvent>;
+    if (options.className) {
+        Object.defineProperty(Generated, 'name', { value: options.className, configurable: true });
+    }
+
+    const instance = new Generated();
+    if (options.filterField) {
+        (instance as unknown as { filterField: string }).filterField = options.filterField;
+    }
+    return instance as unknown as IEventHandler<IDomainEvent>;
 };
 
 /**
@@ -52,32 +42,14 @@ const buildCascadeHandler = (
  * old pattern where the returned class had to be listed in a subscribers
  * manifest.
  */
-export const deleteManyOnTeamDeleted = (
-    repositoryToken: InjectionToken<DeletableRepository>,
-    options: HandlerFactoryOptions = {}
-): void => {
-    subscribeHandlerClass(
-        'team.deleted',
-        buildCascadeHandler(DeleteManyOnTeamDeletedHandler, repositoryToken, options, 'TeamDeletedEventHandler')
-    );
+export const deleteManyOnTeamDeleted = (repository: DeletableRepository, options: HandlerFactoryOptions = {}): void => {
+    subscribeHandler('team.deleted', buildCascadeHandler(DeleteManyOnTeamDeletedHandler, repository, options));
 };
 
-export const deleteManyOnUserDeleted = (
-    repositoryToken: InjectionToken<DeletableRepository>,
-    options: HandlerFactoryOptions = {}
-): void => {
-    subscribeHandlerClass(
-        'user.deleted',
-        buildCascadeHandler(DeleteManyOnUserDeletedHandler, repositoryToken, options, 'UserDeletedEventHandler')
-    );
+export const deleteManyOnUserDeleted = (repository: DeletableRepository, options: HandlerFactoryOptions = {}): void => {
+    subscribeHandler('user.deleted', buildCascadeHandler(DeleteManyOnUserDeletedHandler, repository, options));
 };
 
-export const deleteManyOnTrajectoryDeleted = (
-    repositoryToken: InjectionToken<DeletableRepository>,
-    options: HandlerFactoryOptions = {}
-): void => {
-    subscribeHandlerClass(
-        'trajectory.deleted',
-        buildCascadeHandler(DeleteManyOnTrajectoryDeletedHandler, repositoryToken, options, 'TrajectoryDeletedEventHandler')
-    );
+export const deleteManyOnTrajectoryDeleted = (repository: DeletableRepository, options: HandlerFactoryOptions = {}): void => {
+    subscribeHandler('trajectory.deleted', buildCascadeHandler(DeleteManyOnTrajectoryDeletedHandler, repository, options));
 };
