@@ -1,9 +1,35 @@
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
-import type { ScriptingNotebookProps } from '@modules/scripting/entities/ScriptingNotebook';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type ScriptingNotebookRelations = 'team' | 'teamCluster' | 'containerResources' | 'runtimeNotebookId' | 'trajectory' | 'createdBy';
+export interface ScriptingNotebookContainerResources {
+    cpus: number;
+    memoryMB: number;
+}
+
+/**
+ * The scripting notebook's persisted property shape. Previously lived in the
+ * (now-deleted) `entities/ScriptingNotebook` file; inlined here since the model
+ * is the only remaining consumer (the service talks to the model directly).
+ */
+export interface ScriptingNotebookProps {
+    team: string;
+    teamCluster?: string;
+    containerResources?: ScriptingNotebookContainerResources;
+    runtimeNotebookId?: string;
+    title: string;
+    notebookPath: string;
+    trajectory?: string | null;
+    createdBy: string;
+    content: Record<string, unknown>;
+    secretKeyId?: string;
+    secretKeyEncrypted?: string;
+    lastOpenedAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+type ScriptingNotebookRelations = 'team' | 'teamCluster' | 'trajectory' | 'createdBy';
 
 export interface ScriptingNotebookDocument extends Persistable<ScriptingNotebookProps, ScriptingNotebookRelations>, Document {};
 

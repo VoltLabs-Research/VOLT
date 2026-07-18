@@ -2,7 +2,6 @@ import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceT
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 
 export const CLUSTER_TOKENS = Object.freeze({
-    ClusterHttpService: Symbol.for('ClusterHttpService'),
     TeamClusterRepository: CLUSTER_SERVICE_TOKENS.TeamClusterRepository,
     ClusterTransferJobRepository: CLUSTER_SERVICE_TOKENS.ClusterTransferJobRepository,
     StoragePlacementRepository: CLUSTER_SERVICE_TOKENS.StoragePlacementRepository,

@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetSimulationCellByTrajectoryUseCase from '@modules/simulation-cell/use-cases/GetSimulationCellByTrajectoryUseCase';
+import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -11,14 +11,10 @@ export class GetSimulationCellAITool extends AITool {
     readonly description = 'Get the simulation cell for a trajectory.';
     readonly parameters = z.object({ trajectoryId: z.string(), timestep: z.number().optional() });
 
-    constructor(
-        protected readonly useCase: GetSimulationCellByTrajectoryUseCase
-    ) {
-        super();
-    }
+    #service = new SimulationCellService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.getByTrajectory({
             teamId: scope.teamId,
             trajectoryId: params.trajectoryId,
             timestep: params.timestep

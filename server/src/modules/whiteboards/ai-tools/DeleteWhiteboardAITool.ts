@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { DeleteWhiteboardUseCase } from '@modules/whiteboards/use-cases/DeleteWhiteboardUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -10,9 +11,10 @@ export class DeleteWhiteboardAITool extends AITool {
     readonly description = 'Delete a whiteboard.';
     readonly parameters = z.object({ whiteboardId: z.string() });
 
-    constructor(
-        protected readonly useCase: DeleteWhiteboardUseCase
-    ) {
-        super();
+    #service = new WhiteboardService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        await this.#service.deleteWhiteboard(scope.teamId, params.whiteboardId, scope.userId);
+        return { summary: `Deleted whiteboard ${params.whiteboardId}.`, data: null };
     }
 }

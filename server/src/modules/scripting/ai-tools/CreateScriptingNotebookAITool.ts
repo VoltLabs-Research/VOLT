@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { CreateScriptingNotebookUseCase } from '@modules/scripting/use-cases/CreateScriptingNotebookUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ScriptingService from '@modules/scripting/services/ScriptingService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -13,9 +14,14 @@ export class CreateScriptingNotebookAITool extends AITool {
         title: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: CreateScriptingNotebookUseCase
-    ) {
-        super();
+    #service = new ScriptingService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.createNotebook({
+            teamId: scope.teamId,
+            userId: scope.userId,
+            title: params.title,
+            teamClusterId: params.teamClusterId
+        });
     }
 }

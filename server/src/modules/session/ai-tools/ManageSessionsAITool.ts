@@ -1,8 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetActiveSessionsUseCase from '@modules/session/use-cases/GetActiveSessionsUseCase';
-import RevokeSessionUseCase from '@modules/session/use-cases/RevokeSessionUseCase';
-import RevokeAllSessionsUseCase from '@modules/session/use-cases/RevokeAllSessionsUseCase';
+import SessionService from '@modules/session/services/SessionService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -21,33 +19,21 @@ export class ManageSessionsAITool extends AITool<ManageSessionsParams> {
     readonly parameters = parameters;
     protected readonly needsApproval = (input: ManageSessionsParams) => input.action === 'revoke' || input.action === 'revoke_others';
 
-    constructor(
-        protected readonly getActiveSessionsUseCase: GetActiveSessionsUseCase,
-        protected readonly revokeSessionUseCase: RevokeSessionUseCase,
-        protected readonly revokeAllSessionsUseCase: RevokeAllSessionsUseCase
-    ) {
-        super();
-    }
+    #service = new SessionService();
 
     async execute(params: ManageSessionsParams, scope: AIToolScope) {
         switch (params.action) {
             case 'list': {
-                const value = await this.getActiveSessionsUseCase.execute({ userId: scope.userId });
+                const value = await this.#service.getActiveSessions(scope.userId);
                 return { summary: `Found ${value.length} active session(s).`, data: value };
             }
             case 'revoke': {
                 if (!params.sessionId) throw new Error('sessionId is required to revoke a session.');
-                await this.revokeSessionUseCase.execute({
-                    sessionId: params.sessionId,
-                    userId: scope.userId
-                });
+                await this.#service.revokeSession(params.sessionId, scope.userId);
                 return { summary: `Revoked session ${params.sessionId}.`, data: { sessionId: params.sessionId } };
             }
             case 'revoke_others': {
-                const value = await this.revokeAllSessionsUseCase.execute({
-                    userId: scope.userId,
-                    token: ''
-                });
+                const value = await this.#service.revokeAllSessions(scope.userId, '');
                 return { summary: `Revoked ${value.revokedCount} other active session(s).`, data: value };
             }
         }

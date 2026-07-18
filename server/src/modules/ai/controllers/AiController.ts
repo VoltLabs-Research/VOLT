@@ -1,66 +1,125 @@
-import type AiService from '@modules/ai/services/AiService';
-import type { CreateAIConversationInputDTO } from '@modules/ai/dtos/CreateAIConversationDTO';
-import type { DeleteAIConversationInputDTO } from '@modules/ai/dtos/DeleteAIConversationDTO';
-import type { ListAIConversationMessagesInputDTO } from '@modules/ai/dtos/ListAIConversationMessagesDTO';
-import type { ListAIConversationsInputDTO } from '@modules/ai/dtos/ListAIConversationsDTO';
-import type { SendAIConversationMessageInputDTO } from '@modules/ai/dtos/SendAIConversationMessageDTO';
-import type { UpdateAIConversationInputDTO } from '@modules/ai/dtos/UpdateAIConversationDTO';
-import { AI_TOKENS } from '@modules/ai/di/AITokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import AiService from '@modules/ai/services/AiService';
+import { aiRoutes } from '@volt/contracts/modules/ai/routes';
+import type {
+    CreateAIConversationInput,
+    UpdateAIConversationInput,
+    SendAIConversationMessageInput
+} from '@volt/contracts/modules/ai/http';
+import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
+import type { TeamAIProvider } from '@modules/team/entities/ai-integration/TeamAIIntegration';
+import express from 'express';
 import type { Response } from 'express';
 
+const streamBodyParser = express.json({ limit: '5mb' });
+
 /**
- * The single HTTP controller for the ai module. One Express handler per route,
- * assembling the use-case input exactly as `buildControllerParams` did for the
- * generated controllers, delegating to {@link AiService}, and responding via
- * {@link BaseResponse}. Handlers are arrow-function properties so `this` stays
- * bound when passed by reference to the router. Thrown `ApplicationError`s
- * propagate to `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the ai module (pollium style). Class-level
+ * `@Middleware(protect, teamScoped(Resource.AI_CONVERSATION))` reproduces the old
+ * `teamScope: Param` enforcement on the `:teamId` path segment. `streamMessage`
+ * pipes the AI-SDK reply stream straight to the response via `@Res()` (SSE) and
+ * keeps the 5mb JSON body parser as method middleware; the base `Controller`
+ * skips its own send once the stream owns the response.
  */
-@injectable()
-export default class AiController {
-    constructor(
-        @inject(AI_TOKENS.AiService) private readonly aiService: AiService
-    ) {}
+@Middleware(protect, teamScoped(Resource.AI_CONVERSATION))
+export default class AiController extends Controller {
+    #service = new AiService();
 
-    listConversations = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListAIConversationsInputDTO;
-        const value = await this.aiService.listConversations(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(aiRoutes.listConversations)
+    listConversations(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Query() query: Record<string, string>
+    ) {
+        return this.#service.listConversations({
+            teamId,
+            userId,
+            page: query.page !== undefined ? Number(query.page) : undefined,
+            limit: query.limit !== undefined ? Number(query.limit) : undefined,
+            includeArchived: query.includeArchived
+        });
+    }
 
-    createConversation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateAIConversationInputDTO;
-        const value = await this.aiService.createConversation(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(aiRoutes.createConversation)
+    @Status(201)
+    createConversation(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateAIConversationInput
+    ) {
+        return this.#service.createConversation({
+            teamId,
+            userId,
+            title: body.title,
+            message: body.message
+        });
+    }
 
-    listMessages = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListAIConversationMessagesInputDTO;
-        const value = await this.aiService.listMessages(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(aiRoutes.listMessages)
+    listMessages(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string,
+        @Query() query: Record<string, string>
+    ) {
+        return this.#service.listMessages({
+            teamId,
+            userId,
+            conversationId,
+            page: query.page !== undefined ? Number(query.page) : undefined,
+            limit: query.limit !== undefined ? Number(query.limit) : undefined
+        });
+    }
 
-    streamMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SendAIConversationMessageInputDTO;
-        const value = await this.aiService.streamMessage(input);
+    @Route(aiRoutes.streamMessage)
+    @Middleware(streamBodyParser)
+    async streamMessage(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string,
+        @Body() body: SendAIConversationMessageInput,
+        @Res() res: Response
+    ): Promise<void> {
+        const value = await this.#service.streamMessage({
+            teamId,
+            conversationId,
+            userId,
+            message: body.message,
+            messages: body.messages as AIConversationMessage[] | undefined,
+            title: body.title,
+            provider: body.provider as TeamAIProvider | undefined,
+            model: body.model
+        });
         value.streamResult.pipeToResponse(res);
-    };
+    }
 
-    updateConversation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateAIConversationInputDTO;
-        const value = await this.aiService.updateConversation(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(aiRoutes.updateConversation)
+    updateConversation(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UpdateAIConversationInput
+    ) {
+        return this.#service.updateConversation({
+            teamId,
+            userId,
+            conversationId,
+            title: body.title,
+            isArchived: body.isArchived
+        });
+    }
 
-    deleteConversation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteAIConversationInputDTO;
-        await this.aiService.deleteConversation(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(aiRoutes.deleteConversation)
+    async deleteConversation(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string
+    ) {
+        await this.#service.deleteConversation({ teamId, userId, conversationId });
+    }
 }

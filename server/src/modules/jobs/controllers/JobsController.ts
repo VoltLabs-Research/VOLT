@@ -1,37 +1,33 @@
-import type JobsService from '@modules/jobs/services/JobsService';
-import type { RemoveTeamRunningJobsInputDTO } from '@modules/jobs/dtos/RemoveTeamRunningJobsDTO';
-import type { RetryTeamFailedJobsInputDTO } from '@modules/jobs/dtos/RetryTeamFailedJobsDTO';
-import { JOBS_TOKENS } from '@modules/jobs/di/JobsTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Param } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import JobsService from '@modules/jobs/services/JobsService';
+import { jobsRoutes } from '@volt/contracts/modules/jobs/routes';
 
 /**
- * The single HTTP controller for the jobs module. One Express handler per route,
- * assembling the use-case input via the shared `buildControllerParams`,
- * delegating to {@link JobsService}, and responding via {@link BaseResponse}.
- * Handlers are arrow-function properties so `this` stays bound when passed by
- * reference to the router. Thrown `ApplicationError`s propagate to
- * `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the jobs module (pollium style): every route is
+ * bound with `@Route(jobsRoutes.x)` and delegates to a {@link JobsService} the
+ * controller `new`s itself. The class-level `@Middleware(protect, teamScoped(Resource.TRAJECTORY))`
+ * replaces the old mount-time auth + team-scope layer — note the guard resource
+ * is TRAJECTORY (matching `createHttpModule({ basePath: '/api/jobs/:teamId', resource: Resource.TRAJECTORY })`),
+ * not a jobs-specific resource. Both endpoints returned 200, so no `@Status`
+ * override is needed. `buildRouter()` turns the decorated methods into the
+ * Express router mounted directly in `mount-http-routes`.
  */
-@injectable()
-export default class JobsController {
-    constructor(
-        @inject(JOBS_TOKENS.JobsService) private readonly jobsService: JobsService
-    ) {}
+@Middleware(protect, teamScoped(Resource.TRAJECTORY))
+export default class JobsController extends Controller {
+    #service = new JobsService();
 
-    removeRunningJobs = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RemoveTeamRunningJobsInputDTO;
-        const value = await this.jobsService.removeRunningJobs(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(jobsRoutes.removeRunningJobs)
+    removeRunningJobs(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+        return this.#service.removeRunningJobs({ teamId, trajectoryId });
+    }
 
-    retryFailedJobs = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RetryTeamFailedJobsInputDTO;
-        const value = await this.jobsService.retryFailedJobs(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(jobsRoutes.retryFailedJobs)
+    retryFailedJobs(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+        return this.#service.retryFailedJobs({ teamId, trajectoryId });
+    }
 }

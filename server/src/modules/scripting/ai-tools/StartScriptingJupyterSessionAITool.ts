@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { CreateScriptingJupyterSessionUseCase } from '@modules/scripting/use-cases/CreateScriptingJupyterSessionUseCase';
+import ScriptingService from '@modules/scripting/services/ScriptingService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -15,14 +15,10 @@ export class StartScriptingJupyterSessionAITool extends AITool {
         teamClusterId: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: CreateScriptingJupyterSessionUseCase
-    ) {
-        super();
-    }
+    #service = new ScriptingService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.createJupyterSession({
             teamId: scope.teamId,
             userId: scope.userId,
             notebookId: params.notebookId,

@@ -1,59 +1,89 @@
-import type {
-    CreateEarlyAccessSubscriptionInputDTO,
-    CreateEarlyAccessSubscriptionOutputDTO
-} from '@modules/early-access/dtos/CreateEarlyAccessSubscriptionDTO';
-import EarlyAccessSubscription, {
-    EarlyAccessSubscriptionSource
-} from '@modules/early-access/entities/EarlyAccessSubscription';
-import type { IEarlyAccessSubscriptionRepository } from '@modules/early-access/ports/IEarlyAccessSubscriptionRepository';
-import { EARLY_ACCESS_TOKENS } from '@modules/early-access/di/EarlyAccessTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import TeamModel from '@modules/team/models/team/TeamModel';
+import EarlyAccessSubscriptionModel, {
+    EarlyAccessSubscriptionSource
+} from '@modules/early-access/models/EarlyAccessSubscriptionModel';
+import type { IEarlyAccessSubscription } from '@modules/early-access/models/EarlyAccessSubscriptionModel';
+import type { CreateEarlyAccessSubscriptionInput } from '@volt/contracts/modules/early-access/http';
+import type { CreateEarlyAccessSubscriptionResponse } from '@volt/contracts/modules/early-access/domain';
+import mongoose from 'mongoose';
+import type { HydratedDocument } from 'mongoose';
+
+type SubscriptionDoc = HydratedDocument<IEarlyAccessSubscription>;
+
+interface RecordInterestInput {
+    team: mongoose.Types.ObjectId;
+    email: string;
+    source: EarlyAccessSubscriptionSource;
+    referrer?: string;
+    lastSubmittedAt: Date;
+}
+
+const normalizeEmail = (email: string): string => email.trim().toLowerCase();
+
+const isDuplicateKeyError = (error: unknown): boolean =>
+    Boolean(error && typeof error === 'object' && 'code' in error && Reflect.get(error, 'code') === 11000);
 
 /**
- * The single application service for the early-access module. Folds the exact
- * logic of the former CreateEarlyAccessSubscriptionUseCase, converting the
- * Result error channel to thrown `ApplicationError`s so Express 5 forwards them
- * to the global error middleware.
+ * The single application service for the early-access module (pollium style):
+ * holds the whole create-subscription use case, `new`ed by the controller, and
+ * talks to the Mongoose {@link EarlyAccessSubscriptionModel} / TeamModel
+ * directly — no repository, entity, mapper, use case or DI. Throws typed
+ * {@link ApplicationError}s (no Result channel).
  */
-@Singleton(EARLY_ACCESS_TOKENS.EarlyAccessService)
 export default class EarlyAccessService {
-    constructor(
-        @inject(TEAM_CONTRACT_TOKENS.TeamRepository) private readonly teamRepository: ITeamRepository,
-        @inject(EARLY_ACCESS_TOKENS.EarlyAccessSubscriptionRepository) private readonly earlyAccessSubscriptionRepository: IEarlyAccessSubscriptionRepository
-    ) {}
-
-    async createSubscription(input: CreateEarlyAccessSubscriptionInputDTO): Promise<CreateEarlyAccessSubscriptionOutputDTO> {
-        const team = await this.teamRepository.findById(input.teamId, {
-            select: ['name']
-        });
-
+    async createSubscription(teamId: string, input: CreateEarlyAccessSubscriptionInput): Promise<CreateEarlyAccessSubscriptionResponse> {
+        const team = await TeamModel.findById(teamId).select('name').exec();
         if (!team) {
-            throw ApplicationError.notFound(
-                ErrorCodes.TEAM_NOT_FOUND,
-                'Team not found'
-            );
+            throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
 
-        const email = EarlyAccessSubscription.normalizeEmail(input.email);
+        const email = normalizeEmail(input.email);
         const referrer = input.referrer?.trim() || undefined;
-        const result = await this.earlyAccessSubscriptionRepository.recordInterest({
-            team: team.id,
+        const source = (input.source as EarlyAccessSubscriptionSource | undefined) ?? EarlyAccessSubscriptionSource.DiscoverTeam;
+
+        const { subscription, alreadySubscribed } = await this.#recordInterest({
+            team: team._id as mongoose.Types.ObjectId,
             email,
-            source: input.source ?? EarlyAccessSubscriptionSource.DiscoverTeam,
+            source,
             referrer,
             lastSubmittedAt: new Date()
         });
 
         return {
-            email: result.subscription.props.email,
-            teamId: team.id,
-            teamName: team.props.name,
-            alreadySubscribed: result.alreadySubscribed
+            email: subscription.email,
+            teamId: String(team._id),
+            teamName: team.name,
+            alreadySubscribed
         };
+    }
+
+    async #recordInterest(input: RecordInterestInput): Promise<{ subscription: SubscriptionDoc; alreadySubscribed: boolean }> {
+        const existing = await EarlyAccessSubscriptionModel.findOne({ team: input.team, email: input.email });
+
+        if (existing) {
+            existing.source = input.source;
+            existing.referrer = input.referrer;
+            existing.lastSubmittedAt = input.lastSubmittedAt;
+            await existing.save();
+            return { subscription: existing, alreadySubscribed: true };
+        }
+
+        try {
+            const subscription = await EarlyAccessSubscriptionModel.create(input);
+            return { subscription, alreadySubscribed: false };
+        } catch (error) {
+            if (!isDuplicateKeyError(error)) {
+                throw error;
+            }
+
+            const subscription = await EarlyAccessSubscriptionModel.findOne({ team: input.team, email: input.email });
+            if (!subscription) {
+                throw error;
+            }
+
+            return { subscription, alreadySubscribed: true };
+        }
     }
 }

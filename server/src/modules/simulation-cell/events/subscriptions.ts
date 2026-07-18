@@ -1,5 +1,5 @@
-import SimulationCellRepository from '@modules/simulation-cell/repositories/SimulationCellRepository';
+import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
 import { deleteManyOnTeamDeleted, deleteManyOnTrajectoryDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
 
-deleteManyOnTeamDeleted(SimulationCellRepository);
-deleteManyOnTrajectoryDeleted(SimulationCellRepository);
+deleteManyOnTeamDeleted(SimulationCellRepositoryAdapter);
+deleteManyOnTrajectoryDeleted(SimulationCellRepositoryAdapter);

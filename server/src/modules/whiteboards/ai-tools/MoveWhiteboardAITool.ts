@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { MoveWhiteboardUseCase } from '@modules/whiteboards/use-cases/MoveWhiteboardUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -13,9 +14,10 @@ export class MoveWhiteboardAITool extends AITool {
         folderId: z.string().nullable()
     });
 
-    constructor(
-        protected readonly useCase: MoveWhiteboardUseCase
-    ) {
-        super();
+    #service = new WhiteboardService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        await this.#service.moveWhiteboard(scope.teamId, params.whiteboardId, params.folderId);
+        return { summary: `Moved whiteboard ${params.whiteboardId}.`, data: null };
     }
 }

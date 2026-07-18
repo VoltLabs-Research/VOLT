@@ -54,88 +54,86 @@ import { GetPublicCanvasSubListingUseCase } from '@modules/trajectory/use-cases/
 import { GetPublicCanvasTrajectoryUseCase } from '@modules/trajectory/use-cases/canvas/GetPublicCanvasTrajectoryUseCase';
 import { ListPublicCanvasAnalysesUseCase } from '@modules/trajectory/use-cases/canvas/ListPublicCanvasAnalysesUseCase';
 import { ListPublicCanvasSceneArtifactsUseCase } from '@modules/trajectory/use-cases/canvas/ListPublicCanvasSceneArtifactsUseCase';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container } from 'tsyringe';
 
 import type { IUseCase, UseCaseInput, UseCaseOutput } from '@shared/application/IUseCase';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 /**
- * The single HTTP-facing application service for the trajectory module. Each
- * method is a thin delegator to a retained use case: it runs the use case,
- * which throws `ApplicationError`s directly (they propagate to
- * `httpErrorMiddleware` via Express 5 async forwarding), mirroring the
- * auth/latex/raster modules.
+ * The single HTTP-facing application service for the trajectory module, `new`ed
+ * directly by the module's controllers (pollium style — no DI decorator, no
+ * `@inject` constructor, so it is trivially `new`-able).
  *
- * No heavy domain logic lives here — the native daemon, trajectory
- * reader/parser, particle-filter, LOD, color-coding, canvas realtime/collab and
- * scene-artifact services all remain in their own classes and are only reached
- * transitively through the use cases delegated to below. Every use case is
- * kept (many are also consumed by AI tools, event handlers, socket modules and
- * cross-module contract ports), so this service adds a delegation surface
- * without moving or removing any behaviour.
+ * Each method is a thin delegator to a retained use case resolved once from the
+ * DI container in a private field: the use case throws `ApplicationError`s
+ * directly (they propagate to `httpErrorMiddleware` via Express 5 async
+ * forwarding). The heavy stateful collaborators (native daemon, trajectory
+ * reader/parser, particle-filter / color-coding / line-style render services,
+ * dump storage, canvas realtime state and scene-artifact services) stay in
+ * their own `@Singleton` classes and are reached transitively through those use
+ * cases — they hold caches / daemon connections that must be shared with the
+ * socket modules and event handlers, so they are NOT re-`new`ed per request.
  */
-@Singleton(TRAJECTORY_TOKENS.TrajectoryService)
 export default class TrajectoryService {
-    constructor(
-        @inject(CreateTrajectoryUploadSessionUseCase) private readonly createTrajectoryUploadSessionUseCase: CreateTrajectoryUploadSessionUseCase,
-        @inject(CommitTrajectoryUploadSessionUseCase) private readonly commitTrajectoryUploadSessionUseCase: CommitTrajectoryUploadSessionUseCase,
-        @inject(CancelTrajectoryUploadSessionUseCase) private readonly cancelTrajectoryUploadSessionUseCase: CancelTrajectoryUploadSessionUseCase,
-        @inject(DeleteTrajectoryByIdUseCase) private readonly deleteTrajectoryByIdUseCase: DeleteTrajectoryByIdUseCase,
-        @inject(GetTeamMetricsUseCase) private readonly getTeamMetricsUseCase: GetTeamMetricsUseCase,
-        @inject(GetTrajectoriesByTeamIdUseCase) private readonly getTrajectoriesByTeamIdUseCase: GetTrajectoriesByTeamIdUseCase,
-        @inject(GetTrajectoryByIdUseCase) private readonly getTrajectoryByIdUseCase: GetTrajectoryByIdUseCase,
-        @inject(UpdateTrajectoryByIdUseCase) private readonly updateTrajectoryByIdUseCase: UpdateTrajectoryByIdUseCase,
-        @inject(MoveTrajectoryUseCase) private readonly moveTrajectoryUseCase: MoveTrajectoryUseCase,
-        @inject(ListSampleSimulationsUseCase) private readonly listSampleSimulationsUseCase: ListSampleSimulationsUseCase,
-        @inject(CloneTrajectoryUseCase) private readonly cloneTrajectoryUseCase: CloneTrajectoryUseCase,
-        @inject(GetTrajectoryPreviewUseCase) private readonly getTrajectoryPreviewUseCase: GetTrajectoryPreviewUseCase,
-        @inject(DownloadTrajectoryUseCase) private readonly downloadTrajectoryUseCase: DownloadTrajectoryUseCase,
-        @inject(DownloadTrajectoryAnalysesUseCase) private readonly downloadTrajectoryAnalysesUseCase: DownloadTrajectoryAnalysesUseCase,
-        @inject(DownloadSampleSimulationsUseCase) private readonly downloadSampleSimulationsUseCase: DownloadSampleSimulationsUseCase,
-        @inject(GetAtomsUseCase) private readonly getAtomsUseCase: GetAtomsUseCase,
-        @inject(ListTrajectorySceneArtifactsUseCase) private readonly listTrajectorySceneArtifactsUseCase: ListTrajectorySceneArtifactsUseCase,
-        @inject(ListTeamSceneArtifactsUseCase) private readonly listTeamSceneArtifactsUseCase: ListTeamSceneArtifactsUseCase,
-        @inject(GetColorCodingPropertiesUseCase) private readonly getColorCodingPropertiesUseCase: GetColorCodingPropertiesUseCase,
-        @inject(GetColorCodingStatsUseCase) private readonly getColorCodingStatsUseCase: GetColorCodingStatsUseCase,
-        @inject(CreateColoredModelUseCase) private readonly createColoredModelUseCase: CreateColoredModelUseCase,
-        @inject(GetColoredModelStreamUseCase) private readonly getColoredModelStreamUseCase: GetColoredModelStreamUseCase,
-        @inject(GetParticleFilterPropertiesUseCase) private readonly getParticleFilterPropertiesUseCase: GetParticleFilterPropertiesUseCase,
-        @inject(PreviewParticleFilterUseCase) private readonly previewParticleFilterUseCase: PreviewParticleFilterUseCase,
-        @inject(ApplyParticleFilterActionUseCase) private readonly applyParticleFilterActionUseCase: ApplyParticleFilterActionUseCase,
-        @inject(GetFilteredModelStreamUseCase) private readonly getFilteredModelStreamUseCase: GetFilteredModelStreamUseCase,
-        @inject(GetParticleFilterUniqueValuesUseCase) private readonly getParticleFilterUniqueValuesUseCase: GetParticleFilterUniqueValuesUseCase,
-        @inject(CreateLineStyledModelUseCase) private readonly createLineStyledModelUseCase: CreateLineStyledModelUseCase,
-        @inject(GetLineStyledModelStreamUseCase) private readonly getLineStyledModelStreamUseCase: GetLineStyledModelStreamUseCase,
-        @inject(GetLineModelRangesStreamUseCase) private readonly getLineModelRangesStreamUseCase: GetLineModelRangesStreamUseCase,
-        @inject(GetLineEntityPropertiesUseCase) private readonly getLineEntityPropertiesUseCase: GetLineEntityPropertiesUseCase,
-        @inject(GetOctreeMetadataStreamUseCase) private readonly getOctreeMetadataStreamUseCase: GetOctreeMetadataStreamUseCase,
-        @inject(ListPublicTeamTrajectoriesUseCase) private readonly listPublicTeamTrajectoriesUseCase: ListPublicTeamTrajectoriesUseCase,
-        @inject(GetPublicCanvasBootstrapUseCase) private readonly getPublicCanvasBootstrapUseCase: GetPublicCanvasBootstrapUseCase,
-        @inject(GetPublicCanvasTrajectoryUseCase) private readonly getPublicCanvasTrajectoryUseCase: GetPublicCanvasTrajectoryUseCase,
-        @inject(GetPublicCanvasPreviewUseCase) private readonly getPublicCanvasPreviewUseCase: GetPublicCanvasPreviewUseCase,
-        @inject(GetPublicCanvasRasterFrameUseCase) private readonly getPublicCanvasRasterFrameUseCase: GetPublicCanvasRasterFrameUseCase,
-        @inject(GetPublicCanvasDumpUseCase) private readonly getPublicCanvasDumpUseCase: GetPublicCanvasDumpUseCase,
-        @inject(GetPublicCanvasGLBUseCase) private readonly getPublicCanvasGLBUseCase: GetPublicCanvasGLBUseCase,
-        @inject(ListPublicCanvasAnalysesUseCase) private readonly listPublicCanvasAnalysesUseCase: ListPublicCanvasAnalysesUseCase,
-        @inject(GetPublicCanvasSimulationCellUseCase) private readonly getPublicCanvasSimulationCellUseCase: GetPublicCanvasSimulationCellUseCase,
-        @inject(ListPublicCanvasSceneArtifactsUseCase) private readonly listPublicCanvasSceneArtifactsUseCase: ListPublicCanvasSceneArtifactsUseCase,
-        @inject(GetPublicCanvasColorCodingPropertiesUseCase) private readonly getPublicCanvasColorCodingPropertiesUseCase: GetPublicCanvasColorCodingPropertiesUseCase,
-        @inject(GetPublicCanvasColorCodingStatsUseCase) private readonly getPublicCanvasColorCodingStatsUseCase: GetPublicCanvasColorCodingStatsUseCase,
-        @inject(GetPublicCanvasColoredModelStreamUseCase) private readonly getPublicCanvasColoredModelStreamUseCase: GetPublicCanvasColoredModelStreamUseCase,
-        @inject(GetPublicCanvasParticleFilterPropertiesUseCase) private readonly getPublicCanvasParticleFilterPropertiesUseCase: GetPublicCanvasParticleFilterPropertiesUseCase,
-        @inject(GetPublicCanvasParticleFilterUniqueValuesUseCase) private readonly getPublicCanvasParticleFilterUniqueValuesUseCase: GetPublicCanvasParticleFilterUniqueValuesUseCase,
-        @inject(GetPublicCanvasParticleFilterPreviewUseCase) private readonly getPublicCanvasParticleFilterPreviewUseCase: GetPublicCanvasParticleFilterPreviewUseCase,
-        @inject(GetPublicCanvasFilteredModelStreamUseCase) private readonly getPublicCanvasFilteredModelStreamUseCase: GetPublicCanvasFilteredModelStreamUseCase,
-        @inject(GetPublicCanvasPluginUseCase) private readonly getPublicCanvasPluginUseCase: GetPublicCanvasPluginUseCase,
-        @inject(GetPublicCanvasPluginListingUseCase) private readonly getPublicCanvasPluginListingUseCase: GetPublicCanvasPluginListingUseCase,
-        @inject(GetPublicCanvasSubListingUseCase) private readonly getPublicCanvasSubListingUseCase: GetPublicCanvasSubListingUseCase,
-        @inject(GetPublicCanvasPluginExposureGLBUseCase) private readonly getPublicCanvasPluginExposureGLBUseCase: GetPublicCanvasPluginExposureGLBUseCase,
-        @inject(GetPublicCanvasAnalysisFrameLogUseCase) private readonly getPublicCanvasAnalysisFrameLogUseCase: GetPublicCanvasAnalysisFrameLogUseCase,
-        @inject(GetPublicCanvasRasterMetadataUseCase) private readonly getPublicCanvasRasterMetadataUseCase: GetPublicCanvasRasterMetadataUseCase,
-        @inject(GetPublicCanvasAtomsUseCase) private readonly getPublicCanvasAtomsUseCase: GetPublicCanvasAtomsUseCase
-    ) {}
+    // Use cases resolved once from the DI container (they and the heavy
+    // stateful services they depend on self-register via `@Singleton` /
+    // `@injectable` at autoload).
+    private readonly createTrajectoryUploadSessionUseCase = container.resolve(CreateTrajectoryUploadSessionUseCase);
+    private readonly commitTrajectoryUploadSessionUseCase = container.resolve(CommitTrajectoryUploadSessionUseCase);
+    private readonly cancelTrajectoryUploadSessionUseCase = container.resolve(CancelTrajectoryUploadSessionUseCase);
+    private readonly deleteTrajectoryByIdUseCase = container.resolve(DeleteTrajectoryByIdUseCase);
+    private readonly getTeamMetricsUseCase = container.resolve(GetTeamMetricsUseCase);
+    private readonly getTrajectoriesByTeamIdUseCase = container.resolve(GetTrajectoriesByTeamIdUseCase);
+    private readonly getTrajectoryByIdUseCase = container.resolve(GetTrajectoryByIdUseCase);
+    private readonly updateTrajectoryByIdUseCase = container.resolve(UpdateTrajectoryByIdUseCase);
+    private readonly moveTrajectoryUseCase = container.resolve(MoveTrajectoryUseCase);
+    private readonly listSampleSimulationsUseCase = container.resolve(ListSampleSimulationsUseCase);
+    private readonly cloneTrajectoryUseCase = container.resolve(CloneTrajectoryUseCase);
+    private readonly getTrajectoryPreviewUseCase = container.resolve(GetTrajectoryPreviewUseCase);
+    private readonly downloadTrajectoryUseCase = container.resolve(DownloadTrajectoryUseCase);
+    private readonly downloadTrajectoryAnalysesUseCase = container.resolve(DownloadTrajectoryAnalysesUseCase);
+    private readonly downloadSampleSimulationsUseCase = container.resolve(DownloadSampleSimulationsUseCase);
+    private readonly getAtomsUseCase = container.resolve(GetAtomsUseCase);
+    private readonly listTrajectorySceneArtifactsUseCase = container.resolve(ListTrajectorySceneArtifactsUseCase);
+    private readonly listTeamSceneArtifactsUseCase = container.resolve(ListTeamSceneArtifactsUseCase);
+    private readonly getColorCodingPropertiesUseCase = container.resolve(GetColorCodingPropertiesUseCase);
+    private readonly getColorCodingStatsUseCase = container.resolve(GetColorCodingStatsUseCase);
+    private readonly createColoredModelUseCase = container.resolve(CreateColoredModelUseCase);
+    private readonly getColoredModelStreamUseCase = container.resolve(GetColoredModelStreamUseCase);
+    private readonly getParticleFilterPropertiesUseCase = container.resolve(GetParticleFilterPropertiesUseCase);
+    private readonly previewParticleFilterUseCase = container.resolve(PreviewParticleFilterUseCase);
+    private readonly applyParticleFilterActionUseCase = container.resolve(ApplyParticleFilterActionUseCase);
+    private readonly getFilteredModelStreamUseCase = container.resolve(GetFilteredModelStreamUseCase);
+    private readonly getParticleFilterUniqueValuesUseCase = container.resolve(GetParticleFilterUniqueValuesUseCase);
+    private readonly createLineStyledModelUseCase = container.resolve(CreateLineStyledModelUseCase);
+    private readonly getLineStyledModelStreamUseCase = container.resolve(GetLineStyledModelStreamUseCase);
+    private readonly getLineModelRangesStreamUseCase = container.resolve(GetLineModelRangesStreamUseCase);
+    private readonly getLineEntityPropertiesUseCase = container.resolve(GetLineEntityPropertiesUseCase);
+    private readonly getOctreeMetadataStreamUseCase = container.resolve(GetOctreeMetadataStreamUseCase);
+    private readonly listPublicTeamTrajectoriesUseCase = container.resolve(ListPublicTeamTrajectoriesUseCase);
+    private readonly getPublicCanvasBootstrapUseCase = container.resolve(GetPublicCanvasBootstrapUseCase);
+    private readonly getPublicCanvasTrajectoryUseCase = container.resolve(GetPublicCanvasTrajectoryUseCase);
+    private readonly getPublicCanvasPreviewUseCase = container.resolve(GetPublicCanvasPreviewUseCase);
+    private readonly getPublicCanvasRasterFrameUseCase = container.resolve(GetPublicCanvasRasterFrameUseCase);
+    private readonly getPublicCanvasDumpUseCase = container.resolve(GetPublicCanvasDumpUseCase);
+    private readonly getPublicCanvasGLBUseCase = container.resolve(GetPublicCanvasGLBUseCase);
+    private readonly listPublicCanvasAnalysesUseCase = container.resolve(ListPublicCanvasAnalysesUseCase);
+    private readonly getPublicCanvasSimulationCellUseCase = container.resolve(GetPublicCanvasSimulationCellUseCase);
+    private readonly listPublicCanvasSceneArtifactsUseCase = container.resolve(ListPublicCanvasSceneArtifactsUseCase);
+    private readonly getPublicCanvasColorCodingPropertiesUseCase = container.resolve(GetPublicCanvasColorCodingPropertiesUseCase);
+    private readonly getPublicCanvasColorCodingStatsUseCase = container.resolve(GetPublicCanvasColorCodingStatsUseCase);
+    private readonly getPublicCanvasColoredModelStreamUseCase = container.resolve(GetPublicCanvasColoredModelStreamUseCase);
+    private readonly getPublicCanvasParticleFilterPropertiesUseCase = container.resolve(GetPublicCanvasParticleFilterPropertiesUseCase);
+    private readonly getPublicCanvasParticleFilterUniqueValuesUseCase = container.resolve(GetPublicCanvasParticleFilterUniqueValuesUseCase);
+    private readonly getPublicCanvasParticleFilterPreviewUseCase = container.resolve(GetPublicCanvasParticleFilterPreviewUseCase);
+    private readonly getPublicCanvasFilteredModelStreamUseCase = container.resolve(GetPublicCanvasFilteredModelStreamUseCase);
+    private readonly getPublicCanvasPluginUseCase = container.resolve(GetPublicCanvasPluginUseCase);
+    private readonly getPublicCanvasPluginListingUseCase = container.resolve(GetPublicCanvasPluginListingUseCase);
+    private readonly getPublicCanvasSubListingUseCase = container.resolve(GetPublicCanvasSubListingUseCase);
+    private readonly getPublicCanvasPluginExposureGLBUseCase = container.resolve(GetPublicCanvasPluginExposureGLBUseCase);
+    private readonly getPublicCanvasAnalysisFrameLogUseCase = container.resolve(GetPublicCanvasAnalysisFrameLogUseCase);
+    private readonly getPublicCanvasRasterMetadataUseCase = container.resolve(GetPublicCanvasRasterMetadataUseCase);
+    private readonly getPublicCanvasAtomsUseCase = container.resolve(GetPublicCanvasAtomsUseCase);
 
     /**
      * Runs a use case, delegating to its `execute`. Use cases throw

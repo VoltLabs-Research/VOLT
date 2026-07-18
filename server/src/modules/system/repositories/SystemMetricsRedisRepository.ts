@@ -1,7 +1,7 @@
 import { redis } from '@core/config/redis';
 import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import { SYSTEM_TOKENS } from '@modules/system/di/SystemTokens';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import {
     deserializeSystemMetrics,
     serializeSystemMetrics
@@ -10,7 +10,7 @@ import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveS
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-@Singleton(SYSTEM_TOKENS.SystemMetricsRepository)
+@Singleton(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository)
 export default class SystemMetricsRedisRepository implements ISystemMetricsRepository {
     private readonly metricsHistoryKey = 'metrics-history';
     private readonly clusterId: string;

@@ -1,41 +1,86 @@
-import type {
-    GetMyNotificationsInputDTO,
-    GetMyNotificationsOutputDTO,
-    MarkAllMyNotificationsAsReadInputDTO
-} from '@modules/notification/dtos';
-import GetMyNotificationsUseCase from '@modules/notification/use-cases/GetMyNotificationsUseCase';
-import type { INotificationRepository } from '@modules/notification/ports/INotificationRepository';
-import { NOTIFICATION_TOKENS } from '@modules/notification/di/NotificationTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import NotificationModel from '@modules/notification/models/NotificationModel';
+import type { NotificationDocument } from '@modules/notification/models/NotificationModel';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
+
+interface NotificationView{
+    _id: string;
+    recipient: string;
+    title: string;
+    content: string;
+    read: boolean;
+    link?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface GetMyNotificationsInput{
+    userId: string;
+    page?: number;
+    limit?: number;
+}
+
+interface CreateNotificationInput{
+    recipient: string;
+    title: string;
+    content: string;
+    link?: string;
+}
 
 /**
- * The single application service for the notification module. Each method folds
- * the exact logic of a previously separate use case, converting the Result error
- * channel to thrown `ApplicationError`s so Express 5 forwards them to the global
- * error middleware. `getMyNotifications` delegates to the retained
- * {@link GetMyNotificationsUseCase} (still consumed by the notifications AI
- * tool), mirroring the auth module's `updateAccount` delegator.
+ * The single application service for the notification module (pollium style:
+ * holds ALL the notification domain logic, talks to the Mongoose
+ * {@link NotificationModel} directly — no repository, entity, mapper, use case
+ * or DI). `getMyNotifications` + `markAllAsRead` back the HTTP controller and the
+ * `get_notifications` AI tool; `create` backs the module's event handlers
+ * (welcome / onboarding / invitation notifications). Notification has no
+ * cross-module DI consumers, so there is no neutral-token adapter — only the
+ * cascade-delete adapter in `repositories/NotificationRepository.ts`.
  */
-@Singleton(NOTIFICATION_TOKENS.NotificationService)
-export default class NotificationService {
-    constructor(
-        @inject(NOTIFICATION_TOKENS.NotificationRepository) private readonly notificationRepo: INotificationRepository,
-        @inject(GetMyNotificationsUseCase) private readonly getMyNotificationsUseCase: GetMyNotificationsUseCase
-    ) {}
+export default class NotificationService{
+    async getMyNotifications(input: GetMyNotificationsInput): Promise<PaginatedResult<NotificationView>>{
+        const page = input.page ?? 1;
+        const limit = input.limit ?? 100;
+        const filter = { recipient: input.userId };
 
-    /**
-     * Thin delegator to the retained {@link GetMyNotificationsUseCase} (still
-     * used by the notifications AI tool). Unwraps the Result to the thrown-error
-     * channel used by every other NotificationService method.
-     */
-    async getMyNotifications(input: GetMyNotificationsInputDTO): Promise<GetMyNotificationsOutputDTO> {
-        return this.getMyNotificationsUseCase.execute(input);
+        const [docs, total] = await Promise.all([
+            NotificationModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).exec(),
+            NotificationModel.countDocuments(filter)
+        ]);
+
+        return {
+            data: docs.map((doc) => this.#toView(doc)),
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
+        };
     }
 
-    async markAllAsRead(input: MarkAllMyNotificationsAsReadInputDTO): Promise<void> {
-        const { userId } = input;
-        const result = await this.notificationRepo.markAllAsRead(userId);
-        return result;
+    async markAllAsRead(userId: string): Promise<void>{
+        await NotificationModel.updateMany({ recipient: userId, read: false }, { read: true });
+    }
+
+    async create(input: CreateNotificationInput): Promise<NotificationView>{
+        const notification = await NotificationModel.create({
+            recipient: input.recipient,
+            title: input.title,
+            content: input.content,
+            link: input.link,
+            read: false
+        });
+        return this.#toView(notification);
+    }
+
+    #toView(doc: NotificationDocument): NotificationView{
+        return {
+            _id: String(doc._id),
+            recipient: String(doc.recipient),
+            title: doc.title,
+            content: doc.content,
+            read: doc.read,
+            link: doc.link,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt
+        };
     }
 }

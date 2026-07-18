@@ -1,8 +1,43 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { ChatMessageType } from '@modules/chat/entities/chat-message/ChatMessage';
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import type { ChatMessageProps } from '@modules/chat/entities/chat-message/ChatMessage';
+import type { ChatUserReference } from '@shared/contracts/types/Chat';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+
+/**
+ * Chat-message domain types. Formerly lived in `entities/chat-message/ChatMessage`
+ * — inlined here (pollium style) so the model is self-contained after the
+ * domain-entity layer was removed.
+ */
+export enum ChatMessageType {
+    Text = 'text',
+    File = 'file'
+}
+
+export interface ChatMessageMetadata {
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    fileUrl: string;
+    filePath: string;
+}
+
+export interface ChatReaction {
+    emoji: string;
+    users: string[];
+}
+
+export interface ChatMessageProps {
+    chat: string;
+    sender: string | ChatUserReference;
+    content: string;
+    messageType: ChatMessageType;
+    readBy: string[];
+    metadata: ChatMessageMetadata;
+    deleted: boolean;
+    reactions: ChatReaction[];
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 enum ChatMessageRelation {
     Chat = 'chat',

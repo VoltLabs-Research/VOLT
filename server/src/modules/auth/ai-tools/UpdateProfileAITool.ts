@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import UpdateAccountUseCase from '@modules/auth/use-cases/UpdateAccountUseCase';
+import AuthService from '@modules/auth/services/AuthService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -19,15 +19,10 @@ export class UpdateProfileAITool extends AITool<UpdateProfileParams> {
     readonly parameters = parameters;
     protected readonly needsApproval = true;
 
-    constructor(
-        protected readonly useCase: UpdateAccountUseCase
-    ) {
-        super();
-    }
+    #service = new AuthService();
 
     async execute(params: UpdateProfileParams, scope: AIToolScope) {
-        const value = await this.useCase.execute({
-            userId: scope.userId,
+        const value = await this.#service.updateAccount(scope.userId, {
             fullName: params.name,
             email: params.email
         });

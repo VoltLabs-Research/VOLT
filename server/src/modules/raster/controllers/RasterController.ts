@@ -1,70 +1,94 @@
-import type RasterService from '@modules/raster/services/RasterService';
-import type { GetRasterFramePNGInputDTO } from '@modules/raster/dtos/GetRasterFramePNGDTO';
-import type { TriggerRasterizationInputDTO } from '@modules/raster/dtos/TriggerRasterizationDTO';
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
-import type { GetRasterMetadataInputDTO } from '@shared/contracts/dtos/GetRasterMetadataDTO';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Param, Res } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import RasterService from '@modules/raster/services/RasterService';
+import { rasterRoutes } from '@volt/contracts/modules/raster/routes';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import type { Response } from 'express';
 
 /**
- * The single HTTP controller for the raster module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link RasterService}, and
- * responding via {@link BaseResponse}. `getRasterFramePNG` reproduces the
- * former `createPreparedDownloadStreamController` behaviour verbatim: it awaits
- * the prepared output's `prepare()`, applies the response's `headers`, wires the
- * request-close and stream-error handlers, then pipes the binary stream to the
- * response. Handlers are arrow-function properties so `this` stays bound when
- * passed by reference to the router.
+ * The single HTTP controller for the raster module (pollium style): every route
+ * is bound with `@Route(rasterRoutes.x)` and delegates to a {@link RasterService}
+ * the controller `new`s itself. The class-level
+ * `@Middleware(protect, teamScoped(Resource.RASTER))` replaces the old mount-time
+ * auth + team-scope layer (`basePath /api/rasters/:teamId`, `resource RASTER`).
+ * `triggerRasterization` returns 202 (Accepted) via `@Status`.
+ * `getRasterFramePNG` handles BOTH the frame-only and analysis+model wire routes
+ * and streams the PNG via `@Res()`, reproducing the former prepared-download
+ * stream controller verbatim (prepare → headers → close/error handlers → pipe);
+ * because it writes and awaits the response itself, the `Controller` base's
+ * responder no-ops on its `headersSent`/`writableEnded` guard.
  */
-@injectable()
-export default class RasterController {
-    constructor(
-        @inject(RASTER_TOKENS.RasterService) private readonly rasterService: RasterService
-    ) {}
+@Middleware(protect, teamScoped(Resource.RASTER))
+export default class RasterController extends Controller {
+    #service = new RasterService();
 
-    triggerRasterization = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as TriggerRasterizationInputDTO;
-        const value = await this.rasterService.triggerRasterization(input);
-        BaseResponse.success(res, value, HttpStatus.Accepted);
-    };
+    @Route(rasterRoutes.triggerRasterization)
+    @Status(202)
+    triggerRasterization(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+        return this.#service.triggerRasterization({ trajectoryId, teamId });
+    }
 
-    getRasterMetadata = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetRasterMetadataInputDTO;
-        const value = await this.rasterService.getRasterMetadata(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(rasterRoutes.getRasterMetadata)
+    getRasterMetadata(@Param('teamId') teamId: string, @Param('trajectoryId') trajectoryId: string) {
+        return this.#service.getRasterMetadata({ trajectoryId, teamId });
+    }
 
-    getRasterFramePNG = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetRasterFramePNGInputDTO;
-        const output = await this.rasterService.getRasterFramePNG(input);
+    @Route(rasterRoutes.getRasterFramePNG)
+    @Route(rasterRoutes.getRasterFrameAnalysisPNG)
+    async getRasterFramePNG(
+        @Param('teamId') teamId: string,
+        @Param('trajectoryId') trajectoryId: string,
+        @Param('timestep') timestep: string,
+        @Param('analysisId') analysisId: string | undefined,
+        @Param('model') model: string | undefined,
+        @Res() res: Response
+    ): Promise<void> {
+        const output = await this.#service.getRasterFramePNG({
+            trajectoryId,
+            teamId,
+            timestep: Number(timestep),
+            analysisId,
+            model
+        });
 
         await output.prepare?.();
+        await this.#pipeStream(res, output);
+    }
 
-        for (const [name, value] of Object.entries(output.headers)) {
-            res.setHeader(name, value);
-        }
-
-        res.on('close', () => {
-            output.stream.destroy();
-        });
-
-        output.stream.on('error', (error: unknown) => {
-            logger.error(error);
-
-            if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
-                return;
+    #pipeStream(res: Response, output: DownloadStreamOutputDTO): Promise<void> {
+        return new Promise<void>((resolve) => {
+            for (const [name, value] of Object.entries(output.headers)) {
+                res.setHeader(name, value);
             }
 
-            res.destroy(error instanceof Error ? error : undefined);
-        });
+            res.on('close', () => {
+                output.stream.destroy();
+                resolve();
+            });
 
-        output.stream.pipe(res);
-    };
+            res.on('finish', () => {
+                resolve();
+            });
+
+            output.stream.on('error', (error: unknown) => {
+                logger.error(error);
+
+                if (!res.headersSent) {
+                    BaseResponse.fromError(res, error);
+                } else {
+                    res.destroy(error instanceof Error ? error : undefined);
+                }
+
+                resolve();
+            });
+
+            output.stream.pipe(res);
+        });
+    }
 }

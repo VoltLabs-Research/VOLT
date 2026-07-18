@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetMyNotificationsUseCase from '@modules/notification/use-cases/GetMyNotificationsUseCase';
+import NotificationService from '@modules/notification/services/NotificationService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -16,14 +16,10 @@ export class GetNotificationsAITool extends AITool {
         unreadOnly: z.boolean().optional().describe('When true, return only notifications that have not been read yet.')
     });
 
-    constructor(
-        protected readonly useCase: GetMyNotificationsUseCase
-    ) {
-        super();
-    }
+    #service = new NotificationService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.getMyNotifications({
             userId: scope.userId,
             page: params.page,
             limit: params.limit

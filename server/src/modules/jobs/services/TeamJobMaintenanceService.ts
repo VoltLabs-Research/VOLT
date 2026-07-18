@@ -1,4 +1,3 @@
-import { JOBS_TOKENS } from '@modules/jobs/di/JobsTokens';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import JobStatusChangedEvent from '@modules/jobs/events/JobStatusChangedEvent';
 import type {
@@ -80,7 +79,7 @@ interface GlbFrameDescriptor {
     ownerClusterId: string;
 }
 
-@Singleton(JOBS_TOKENS.TeamJobMaintenanceService)
+@Singleton(COMPUTE_TOKENS.TeamJobMaintenanceService)
 export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,

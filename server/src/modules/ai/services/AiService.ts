@@ -5,9 +5,6 @@ import { AIMessageDTO, ListAIConversationMessagesInputDTO } from '@modules/ai/dt
 import { AIConversationDTO, ListAIConversationsInputDTO } from '@modules/ai/dtos/ListAIConversationsDTO';
 import { SendAIConversationMessageInputDTO, SendAIConversationMessageOutputDTO } from '@modules/ai/dtos/SendAIConversationMessageDTO';
 import type { UpdateAIConversationInputDTO } from '@modules/ai/dtos/UpdateAIConversationDTO';
-import DeleteAIConversationUseCase from '@modules/ai/use-cases/DeleteAIConversationUseCase';
-import ListAIConversationsUseCase from '@modules/ai/use-cases/ListAIConversationsUseCase';
-import UpdateAIConversationUseCase from '@modules/ai/use-cases/UpdateAIConversationUseCase';
 import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
 import { AIConversationMessageRole } from '@modules/ai/contracts/AIConversationMessage';
 import type { AIConversationProps } from '@modules/ai/entities/AIConversation';
@@ -21,14 +18,13 @@ import { AI_TOKENS } from '@modules/ai/di/AITokens';
 import AIMessageDTOMapper from '@modules/ai/utilities/AIMessageDTOMapper';
 import AIResponseMessagePartsMapper from '@modules/ai/utilities/AIResponseMessagePartsMapper';
 import AIUIMessageUtils from '@modules/ai/utilities/AIUIMessageUtils';
-import type { TeamMemberProps } from '@modules/team/entities/team-member/TeamMember';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
+import type { TeamMemberProps } from '@modules/team/entities/team-member/TeamMember';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 interface ConversationUpdatePayload {
     lastMessageAt: Date;
@@ -47,36 +43,67 @@ interface LastAssistantMessageFilter extends Partial<AIMessageProps> {
     role: AIMessageRole;
 }
 
-/**
- * The single application service for the ai module. Each method folds the exact
- * logic of a previously separate use case, converting the Result error channel
- * to thrown `ApplicationError`s so Express 5 forwards them to the global error
- * middleware. `listConversations`, `updateConversation` and `deleteConversation`
- * delegate to the retained use cases (still consumed by the AI tool registry),
- * mirroring the auth module's `updateAccount` delegator.
- */
-@Singleton(AI_TOKENS.AiService)
-export default class AiService {
-    constructor(
-        @inject(AI_TOKENS.AIConversationRepository) private readonly conversationRepository: IAIConversationRepository,
-        @inject(AI_TOKENS.AIMessageRepository) private readonly messageRepository: IAIMessageRepository,
-        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        @inject(AI_TOKENS.AIChatTransport) private readonly aiChatTransport: IAIChatTransport,
-        @inject(AI_TOKENS.AIMessageDTOMapper) private readonly messageDTOMapper: AIMessageDTOMapper,
-        @inject(AI_TOKENS.AIUIMessageUtils) private readonly uiMessageUtils: AIUIMessageUtils,
-        @inject(AI_TOKENS.AIResponseMessagePartsMapper) private readonly responseMessagePartsMapper: AIResponseMessagePartsMapper,
-        @inject(ListAIConversationsUseCase) private readonly listConversationsUseCase: ListAIConversationsUseCase,
-        @inject(UpdateAIConversationUseCase) private readonly updateConversationUseCase: UpdateAIConversationUseCase,
-        @inject(DeleteAIConversationUseCase) private readonly deleteConversationUseCase: DeleteAIConversationUseCase
-    ) {}
+interface ListAIConversationsFilter extends Partial<AIConversationProps> {
+    teamId: string;
+    userId: string;
+}
 
-    /**
-     * Thin delegator to the retained {@link ListAIConversationsUseCase} (still
-     * used by the list-conversations AI tool). Unwraps the Result to the
-     * thrown-error channel used by every other AiService method.
-     */
+/**
+ * The single application service for the ai module (pollium style): folds every
+ * ai HTTP use case verbatim (including the former List/Update/Delete
+ * conversation use cases, now inlined here and reused by the conversation AI
+ * tools). Its collaborators are genuinely-stateful / complex shared singletons —
+ * the AI-SDK chat transport (streaming + tool registry), the conversation /
+ * message repositories, the cross-module team-member repository, and the
+ * message DTO / UI-message / response-parts mappers — resolved once from the DI
+ * container via their neutral tokens. Throws typed `ApplicationError`s (no
+ * Result channel).
+ */
+export default class AiService {
+    #conversationRepository = diContainer.resolve<IAIConversationRepository>(AI_TOKENS.AIConversationRepository);
+    #messageRepository = diContainer.resolve<IAIMessageRepository>(AI_TOKENS.AIMessageRepository);
+    #teamMemberRepository = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
+    // Lazy: the transport resolves the AI-tool collection, and AI tools `new AiService()`,
+    // so eager resolution here would be a construction-time cycle. Deferred to first chat use.
+    #aiChatTransportCache?: IAIChatTransport;
+    get #aiChatTransport(): IAIChatTransport {
+        return (this.#aiChatTransportCache ??= diContainer.resolve<IAIChatTransport>(AI_TOKENS.AIChatTransport));
+    }
+    #messageDTOMapper = diContainer.resolve<AIMessageDTOMapper>(AI_TOKENS.AIMessageDTOMapper);
+    #uiMessageUtils = diContainer.resolve<AIUIMessageUtils>(AI_TOKENS.AIUIMessageUtils);
+    #responseMessagePartsMapper = diContainer.resolve<AIResponseMessagePartsMapper>(AI_TOKENS.AIResponseMessagePartsMapper);
+
     async listConversations(input: ListAIConversationsInputDTO): Promise<PaginatedResult<AIConversationDTO>> {
-        return this.listConversationsUseCase.execute(input);
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(200, input.limit ?? 50));
+        const includeArchived = input.includeArchived === true || input.includeArchived === 'true';
+
+        const filter: ListAIConversationsFilter = {
+            teamId: input.teamId,
+            userId: input.userId
+        };
+
+        if (!includeArchived) {
+            filter.isArchived = false;
+        }
+
+        const result = await this.#conversationRepository.findAll({
+            filter,
+            page,
+            limit,
+            sort: {
+                lastMessageAt: -1,
+                updatedAt: -1
+            }
+        });
+
+        return {
+            ...result,
+            data: result.data.map((conversation) => ({
+                _id: conversation._id,
+                ...conversation.props
+            }))
+        };
     }
 
     async createConversation(input: CreateAIConversationInputDTO): Promise<CreateAIConversationOutputDTO> {
@@ -100,10 +127,10 @@ export default class AiService {
                 ? now
                 : null
         };
-        const conversation = await this.conversationRepository.create(conversationData);
+        const conversation = await this.#conversationRepository.create(conversationData);
 
         const userMessage = normalizedMessage
-            ? await this.messageRepository.create({
+            ? await this.#messageRepository.create({
                 conversationId: conversation._id,
                 role: AIMessageRole.User,
                 parts: [
@@ -126,7 +153,7 @@ export default class AiService {
                 ...conversation.props
             },
             userMessage: userMessage
-                ? this.messageDTOMapper.toDTO(userMessage)
+                ? this.#messageDTOMapper.toDTO(userMessage)
                 : undefined
         };
     }
@@ -135,7 +162,7 @@ export default class AiService {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
 
-        const conversation = await this.conversationRepository.findOwnedByUser(
+        const conversation = await this.#conversationRepository.findOwnedByUser(
             input.conversationId,
             input.teamId,
             input.userId
@@ -148,7 +175,7 @@ export default class AiService {
             );
         }
 
-        const result = await this.messageRepository.findAll({
+        const result = await this.#messageRepository.findAll({
             filter: {
                 conversationId: conversation._id
             },
@@ -159,16 +186,14 @@ export default class AiService {
             }
         });
 
-        const data: AIMessageDTO[] = result.data.map((msg) => this.messageDTOMapper.toDTO(msg));
-
         return {
             ...result,
-            data
+            data: result.data.map((msg) => this.#messageDTOMapper.toDTO(msg))
         };
     }
 
     async streamMessage(input: SendAIConversationMessageInputDTO): Promise<SendAIConversationMessageOutputDTO> {
-        const uiMessages = this.uiMessageUtils.normalizeUIMessages(input.messages);
+        const uiMessages = this.#uiMessageUtils.normalizeUIMessages(input.messages);
 
         if (!uiMessages) {
             throw ApplicationError.badRequest(
@@ -177,7 +202,7 @@ export default class AiService {
             );
         }
 
-        const member = await this.teamMemberRepository.findOne({
+        const member = await this.#teamMemberRepository.findOne({
             team: input.teamId,
             user: input.userId
         } satisfies TeamMemberLookupFilter);
@@ -189,7 +214,7 @@ export default class AiService {
             );
         }
 
-        const conversation = await this.conversationRepository.findOwnedByUser(
+        const conversation = await this.#conversationRepository.findOwnedByUser(
             input.conversationId,
             input.teamId,
             input.userId
@@ -202,24 +227,24 @@ export default class AiService {
             );
         }
 
-        const isContinuation = this.isContinuationRequest(uiMessages);
+        const isContinuation = this.#isContinuationRequest(uiMessages);
 
         let userMessage: AIMessage | null = null;
         let existingAssistantMessage: AIMessage | null = null;
 
         if (isContinuation) {
-            existingAssistantMessage = await this.findLastAssistantMessage(conversation._id);
+            existingAssistantMessage = await this.#findLastAssistantMessage(conversation._id);
             logger.debug(
                 'AI conversation %s: continuation detected, existing assistant message %s',
                 conversation._id,
                 existingAssistantMessage?._id ?? 'not found'
             );
         } else {
-            const userText = input.message?.trim() || this.uiMessageUtils.extractLastUserMessageText(uiMessages);
+            const userText = input.message?.trim() || this.#uiMessageUtils.extractLastUserMessageText(uiMessages);
 
             if (userText) {
                 const now = new Date();
-                userMessage = await this.messageRepository.create({
+                userMessage = await this.#messageRepository.create({
                     conversationId: conversation._id,
                     role: AIMessageRole.User,
                     parts: [
@@ -251,7 +276,7 @@ export default class AiService {
         });
 
         try {
-            const streamResult = await this.aiChatTransport.generateReplyStream({
+            const streamResult = await this.#aiChatTransport.generateReplyStream({
                 teamId: input.teamId,
                 userId: input.userId,
                 provider: input.provider,
@@ -259,7 +284,7 @@ export default class AiService {
                 messages: uiMessages,
                 onFinish: async (event) => {
                     try {
-                        const persistedAssistantMessage = await this.persistAssistantResponse(
+                        const persistedAssistantMessage = await this.#persistAssistantResponse(
                             conversation._id,
                             event,
                             existingAssistantMessage
@@ -271,7 +296,7 @@ export default class AiService {
                             title: input.title?.trim() || conversation.props.title
                         };
 
-                        await this.conversationRepository.updateById(conversation._id, conversationUpdate);
+                        await this.#conversationRepository.updateById(conversation._id, conversationUpdate);
                         resolveAssistantMessage(persistedAssistantMessage);
                     } catch (error) {
                         rejectAssistantMessage(error);
@@ -282,7 +307,7 @@ export default class AiService {
 
             return {
                 streamResult,
-                userMessage: userMessage ? this.toDTO(userMessage) : undefined,
+                userMessage: userMessage ? this.#toDTO(userMessage) : undefined,
                 assistantMessage
             };
         } catch (error) {
@@ -291,43 +316,67 @@ export default class AiService {
         }
     }
 
-    /**
-     * Thin delegator to the retained {@link UpdateAIConversationUseCase} (still
-     * used by the update-conversation AI tool). Unwraps the Result to the
-     * thrown-error channel used by every other AiService method.
-     */
     async updateConversation(input: UpdateAIConversationInputDTO): Promise<AIConversationDTO> {
-        return this.updateConversationUseCase.execute(input);
+        const conversation = await this.#conversationRepository.findOwnedByUser(
+            input.conversationId,
+            input.teamId,
+            input.userId
+        );
+
+        if (!conversation) {
+            throw ApplicationError.notFound(
+                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
+                'AI conversation not found'
+            );
+        }
+
+        const updateData: Partial<AIConversationProps> = {};
+        if (typeof input.title !== 'undefined') updateData.title = input.title.trim();
+        if (typeof input.isArchived !== 'undefined') updateData.isArchived = input.isArchived;
+
+        const updatedConversation = await this.#conversationRepository.updateById(conversation._id, updateData);
+
+        if (!updatedConversation) {
+            throw ApplicationError.notFound(
+                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
+                'AI conversation not found'
+            );
+        }
+
+        return {
+            _id: updatedConversation._id,
+            ...updatedConversation.props
+        };
     }
 
-    /**
-     * Thin delegator to the retained {@link DeleteAIConversationUseCase} (still
-     * used by the delete-conversation AI tool). Unwraps the Result to the
-     * thrown-error channel used by every other AiService method.
-     */
     async deleteConversation(input: DeleteAIConversationInputDTO): Promise<void> {
-        await this.deleteConversationUseCase.execute(input);
+        const conversation = await this.#conversationRepository.findOwnedByUser(
+            input.conversationId,
+            input.teamId,
+            input.userId
+        );
+
+        if (!conversation) {
+            throw ApplicationError.notFound(
+                ErrorCodes.AI_CONVERSATION_NOT_FOUND,
+                'AI conversation not found'
+            );
+        }
+
+        await this.#messageRepository.deleteMany({
+            conversationId: conversation._id
+        });
+
+        await this.#conversationRepository.deleteById(conversation._id);
     }
 
-    /**
-     * Determines whether a request is a continuation after tool approval
-     * rather than a fresh user turn.
-     *
-     * When `sendAutomaticallyWhen` triggers on the client, it re-sends the
-     * full message history whose last entry is the existing assistant message
-     * (with tool-call / approval-responded parts). A normal user turn always
-     * ends with a user message.
-     */
-    private isContinuationRequest(uiMessages: AIConversationMessage[]): boolean {
+    #isContinuationRequest(uiMessages: AIConversationMessage[]): boolean {
         const lastMessage = uiMessages[uiMessages.length - 1];
         return lastMessage?.role === AIConversationMessageRole.Assistant;
     }
 
-    /**
-     * Retrieves the most recently created assistant message in a conversation.
-     */
-    private async findLastAssistantMessage(conversationId: string): Promise<AIMessage | null> {
-        const result = await this.messageRepository.findAll({
+    async #findLastAssistantMessage(conversationId: string): Promise<AIMessage | null> {
+        const result = await this.#messageRepository.findAll({
             filter: {
                 conversationId,
                 role: AIMessageRole.Assistant
@@ -340,35 +389,31 @@ export default class AiService {
         return result.data[0];
     }
 
-    /**
-     * Persists the assistant response — either by creating a new message
-     * or by merging into an existing one when this is a continuation.
-     */
-    private async persistAssistantResponse(
+    async #persistAssistantResponse(
         conversationId: string,
         event: AIChatFinishEvent,
         existingMessage?: AIMessage | null
     ): Promise<AIMessageDTO | undefined> {
-        const { parts: newParts, textContent: newTextContent } = this.responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
+        const { parts: newParts, textContent: newTextContent } = this.#responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
 
         if (newParts.length === 0) {
-            return existingMessage ? this.toDTO(existingMessage) : undefined;
+            return existingMessage ? this.#toDTO(existingMessage) : undefined;
         }
 
         if (existingMessage) {
-            return this.mergeAssistantResponse(existingMessage, event, newParts, newTextContent);
+            return this.#mergeAssistantResponse(existingMessage, event, newParts, newTextContent);
         }
 
-        return this.createAssistantResponse(conversationId, event, newParts, newTextContent);
+        return this.#createAssistantResponse(conversationId, event, newParts, newTextContent);
     }
 
-    private async mergeAssistantResponse(
+    async #mergeAssistantResponse(
         existingMessage: AIMessage,
         event: AIChatFinishEvent,
         newParts: AIMessageProps['parts'],
         newTextContent: string
     ): Promise<AIMessageDTO | undefined> {
-        const mergedParts = this.responseMessagePartsMapper.mergeAssistantParts(
+        const mergedParts = this.#responseMessagePartsMapper.mergeAssistantParts(
             existingMessage.props.parts,
             newParts
         );
@@ -380,7 +425,7 @@ export default class AiService {
         const existingUsage = existingMessage.props.tokenUsage;
         const newUsage = event.totalUsage;
 
-        const updatedMessage = await this.messageRepository.updateById(existingMessage._id, {
+        const updatedMessage = await this.#messageRepository.updateById(existingMessage._id, {
             parts: mergedParts,
             content: mergedContent,
             modelInfo: {
@@ -401,17 +446,17 @@ export default class AiService {
         });
 
         if (!updatedMessage) return undefined;
-        return this.toDTO(updatedMessage);
+        return this.#toDTO(updatedMessage);
     }
 
-    private async createAssistantResponse(
+    async #createAssistantResponse(
         conversationId: string,
         event: AIChatFinishEvent,
         parts: AIMessageProps['parts'],
         textContent: string
     ): Promise<AIMessageDTO> {
         const now = new Date();
-        const assistantMessage = await this.messageRepository.create({
+        const assistantMessage = await this.#messageRepository.create({
             conversationId,
             role: AIMessageRole.Assistant,
             parts,
@@ -431,10 +476,10 @@ export default class AiService {
             updatedAt: now
         } satisfies Partial<AIMessageProps>);
 
-        return this.toDTO(assistantMessage);
+        return this.#toDTO(assistantMessage);
     }
 
-    private toDTO(message: AIMessage): AIMessageDTO {
-        return this.messageDTOMapper.toDTO(message);
+    #toDTO(message: AIMessage): AIMessageDTO {
+        return this.#messageDTOMapper.toDTO(message);
     }
 }

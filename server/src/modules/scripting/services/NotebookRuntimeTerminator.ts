@@ -1,5 +1,3 @@
-import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
-import type { INotebookRuntimeTerminator } from '@modules/scripting/ports/INotebookRuntimeTerminator';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
@@ -20,8 +18,8 @@ import { inject } from 'tsyringe';
  * published yet) are logged and swallowed, matching the previous behaviour where
  * session teardown never blocked notebook/trajectory deletion.
  */
-@Singleton(SCRIPTING_TOKENS.NotebookRuntimeTerminator)
-export class NotebookRuntimeTerminator implements INotebookRuntimeTerminator {
+@Singleton()
+export class NotebookRuntimeTerminator {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService

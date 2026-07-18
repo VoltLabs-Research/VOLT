@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetWhiteboardStateUseCase } from '@modules/whiteboards/use-cases/GetWhiteboardStateUseCase';
+import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { text } from 'node:stream/consumers';
@@ -19,17 +19,10 @@ export class GetWhiteboardStateAITool extends AITool {
     readonly description = 'Read the full Excalidraw scene of a whiteboard (elements, appState and files).';
     readonly parameters = z.object({ whiteboardId: z.string() });
 
-    constructor(
-        protected readonly useCase: GetWhiteboardStateUseCase
-    ) {
-        super();
-    }
+    #service = new WhiteboardService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
-            teamId: scope.teamId,
-            whiteboardId: params.whiteboardId
-        });
+        const value = await this.#service.getWhiteboardState(scope.teamId, params.whiteboardId);
 
         const raw = await text(value.stream);
         let scene: ParsedWhiteboardScene;

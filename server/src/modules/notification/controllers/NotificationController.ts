@@ -1,41 +1,34 @@
-import type NotificationService from '@modules/notification/services/NotificationService';
-import type {
-    GetMyNotificationsInputDTO,
-    MarkAllMyNotificationsAsReadInputDTO
-} from '@modules/notification/dtos';
-import { NOTIFICATION_TOKENS } from '@modules/notification/di/NotificationTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Query, CurrentUser } from '@shared/http/params';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import NotificationService from '@modules/notification/services/NotificationService';
+import { notificationRoutes } from '@volt/contracts/modules/notification/routes';
 
 /**
- * The single HTTP controller for the notification module. One Express handler
- * per route, assembling the use-case input exactly as `buildControllerParams`
- * did for the generated controllers, delegating to {@link NotificationService},
- * and responding via {@link BaseResponse}. Handlers are arrow-function
- * properties so `this` stays bound when passed by reference to the router.
- * Thrown `ApplicationError`s propagate to `httpErrorMiddleware` via Express 5
- * async forwarding.
+ * The single HTTP controller for the notification module (pollium style): every
+ * route is bound with `@Route(notificationRoutes.x)` and delegates to a
+ * {@link NotificationService} the controller `new`s itself. The class-level
+ * `@Middleware(protect)` replaces the old `createHttpModule({ protected: true })`
+ * auth layer (notification is user-scoped, not team-scoped). `list` returns a
+ * paginated result (`Controller.#respond` detects it and emits the paginated
+ * envelope); `markAllRead` returns nothing → 204, preserving the old NoContent.
  */
-@injectable()
-export default class NotificationController {
-    constructor(
-        @inject(NOTIFICATION_TOKENS.NotificationService) private readonly notificationService: NotificationService
-    ) {}
+@Middleware(protect)
+export default class NotificationController extends Controller {
+    #service = new NotificationService();
 
-    getMyNotifications = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetMyNotificationsInputDTO;
-        const value = await this.notificationService.getMyNotifications(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(notificationRoutes.list)
+    list(@CurrentUser() userId: string, @Query() query: Record<string, string>) {
+        return this.#service.getMyNotifications({
+            userId,
+            page: query.page ? Number(query.page) : undefined,
+            limit: query.limit ? Number(query.limit) : undefined
+        });
+    }
 
-    markAllAsRead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as MarkAllMyNotificationsAsReadInputDTO;
-        await this.notificationService.markAllAsRead(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(notificationRoutes.markAllRead)
+    async markAllRead(@CurrentUser() userId: string) {
+        await this.#service.markAllAsRead(userId);
+    }
 }

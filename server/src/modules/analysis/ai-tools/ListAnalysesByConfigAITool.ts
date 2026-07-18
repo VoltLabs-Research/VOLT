@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetAnalysesByTrajectoryIdUseCase } from '@modules/analysis/use-cases/GetAnalysesByTrajectoryIdUseCase';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -15,14 +15,10 @@ export class ListAnalysesByConfigAITool extends AITool {
         status: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: GetAnalysesByTrajectoryIdUseCase
-    ) {
-        super();
-    }
+    #service = new AnalysisService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.getAnalysesByTrajectoryId({
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,
             page: 1,

@@ -1,69 +1,89 @@
-import type AnalysisService from '@modules/analysis/services/AnalysisService';
-import type { DeleteAnalysisByIdInputDTO } from '@modules/analysis/dtos/DeleteAnalysisByIdDTO';
-import type { GetAnalysesByTeamIdInputDTO } from '@modules/analysis/dtos/GetAnalysesByTeamIdDTO';
-import type { GetAnalysesByTrajectoryIdInputDTO } from '@modules/analysis/dtos/GetAnalysesByTrajectoryIdDTO';
-import type { GetAnalysisByIdInputDTO } from '@modules/analysis/dtos/GetAnalysisByIdDTO';
-import type { GetAnalysisFrameLogInputDTO } from '@modules/analysis/dtos/GetAnalysisFrameLogDTO';
-import type { RetryFailedFramesInputDTO } from '@modules/analysis/dtos/RetryFailedFramesDTO';
-import { ANALYSIS_TOKENS } from '@modules/analysis/di/AnalysisTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Param, Query, CurrentUser } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
+import { analysisRoutes } from '@volt/contracts/modules/analysis/routes';
 
 /**
- * The single HTTP controller for the analysis module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link AnalysisService}, and
- * responding via {@link BaseResponse}. The list handlers reproduce the former
- * `createPaginatedController` behaviour (`BaseResponse.paginated` with the
- * result's `_meta`), and `deleteById` preserves the former NoContent controller
- * (empty body). Handlers are arrow-function properties so `this` stays bound
- * when passed by reference to the router. Thrown `ApplicationError`s propagate
- * to `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the analysis module (pollium style). Class-level
+ * `@Middleware(protect, teamScoped(Resource.ANALYSIS))` replaces the old
+ * mount-time auth + team-scope layer. List endpoints return a `PaginatedResult`
+ * which the base `Controller` renders via `BaseResponse.paginated`; `remove`
+ * returns void → 204 (preserving the former NoContent controller).
  */
-@injectable()
-export default class AnalysisController {
-    constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisService) private readonly analysisService: AnalysisService
-    ) {}
+@Middleware(protect, teamScoped(Resource.ANALYSIS))
+export default class AnalysisController extends Controller {
+    #service = new AnalysisService();
 
-    listByTeamId = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetAnalysesByTeamIdInputDTO;
-        const value = await this.analysisService.getAnalysesByTeamId(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(analysisRoutes.listByTeamId)
+    listByTeamId(
+        @Param('teamId') teamId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string
+    ) {
+        return this.#service.getAnalysesByTeamId({
+            teamId,
+            page: page !== undefined ? Number(page) : undefined,
+            limit: limit !== undefined ? Number(limit) : undefined,
+            search
+        });
+    }
 
-    listByTrajectoryId = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetAnalysesByTrajectoryIdInputDTO;
-        const value = await this.analysisService.getAnalysesByTrajectoryId(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(analysisRoutes.listByTrajectoryId)
+    listByTrajectoryId(
+        @Param('teamId') teamId: string,
+        @Param('trajectoryId') trajectoryId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ) {
+        return this.#service.getAnalysesByTrajectoryId({
+            teamId,
+            trajectoryId,
+            page: page !== undefined ? Number(page) : undefined,
+            limit: limit !== undefined ? Number(limit) : undefined
+        });
+    }
 
-    getFrameLog = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetAnalysisFrameLogInputDTO;
-        const value = await this.analysisService.getAnalysisFrameLog(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(analysisRoutes.getFrameLog)
+    getFrameLog(
+        @Param('teamId') teamId: string,
+        @Param('analysisId') analysisId: string,
+        @Param('timestep') timestep: string,
+        @Query('afterCursor') afterCursor?: string
+    ) {
+        return this.#service.getAnalysisFrameLog({
+            teamId,
+            analysisId,
+            timestep: Number(timestep),
+            afterCursor
+        });
+    }
 
-    retryFailedFrames = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RetryFailedFramesInputDTO;
-        const value = await this.analysisService.retryFailedFrames(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(analysisRoutes.retryFailedFrames)
+    retryFailedFrames(
+        @Param('teamId') teamId: string,
+        @Param('analysisId') analysisId: string,
+        @CurrentUser() userId: string
+    ) {
+        return this.#service.retryFailedFrames({ teamId, analysisId, userId });
+    }
 
-    getById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetAnalysisByIdInputDTO;
-        const value = await this.analysisService.getAnalysisById(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(analysisRoutes.getById)
+    getById(@Param('teamId') teamId: string, @Param('analysisId') analysisId: string) {
+        return this.#service.getAnalysisById({ teamId, analysisId });
+    }
 
-    deleteById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteAnalysisByIdInputDTO;
-        await this.analysisService.deleteAnalysisById(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(analysisRoutes.remove)
+    @Status(204)
+    async deleteById(
+        @Param('teamId') teamId: string,
+        @Param('analysisId') analysisId: string,
+        @CurrentUser() userId: string
+    ) {
+        await this.#service.deleteAnalysisById({ teamId, analysisId, userId });
+    }
 }

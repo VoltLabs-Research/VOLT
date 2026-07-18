@@ -1,24 +1,29 @@
 import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/di/WhiteboardTokens';
-import type { IWhiteboardRepository } from '@modules/whiteboards/ports/IWhiteboardRepository';
-import { inject } from 'tsyringe';
+import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
+import mongoose from 'mongoose';
 
 /**
  * Contributes the per-member `whiteboardsCount` to the team-member listing via
  * the neutral MEMBER_CONTENT_COUNTER collection (detachable-modules migration).
- * Team no longer imports the whiteboard repository directly; disabling
- * whiteboards drops this counter and the metric is absent.
+ * Counts straight off the Mongoose {@link WhiteboardModel} (no repository);
+ * disabling whiteboards drops this counter and the metric is absent.
  */
 @CollectionMember(MEMBER_CONTENT_COUNTER_TOKEN)
 export class WhiteboardMemberContentCounter implements IMemberContentCounter {
-    constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository
-    ) {}
-
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const counts = await this.whiteboardRepository.countGroupedBy('createdBy', userIds, { team: teamId });
+        const userObjectIds = userIds.map((id) => new mongoose.Types.ObjectId(id));
+        const results = await WhiteboardModel.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+            { $match: { team: new mongoose.Types.ObjectId(teamId), createdBy: { $in: userObjectIds } } },
+            { $group: { _id: '$createdBy', count: { $sum: 1 } } }
+        ]);
+
+        const counts = new Map<string, number>();
+        for (const row of results) {
+            counts.set(String(row._id), row.count);
+        }
+
         return { key: 'whiteboardsCount', counts };
     }
 }

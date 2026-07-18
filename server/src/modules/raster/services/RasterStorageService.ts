@@ -1,4 +1,3 @@
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
@@ -10,13 +9,14 @@ import {
     getTrajectoryRasterPreviewsPrefix
 } from '@shared/application/utilities/raster-storage-paths';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import { RASTER_CONTRACT_TOKENS } from '@shared/contracts/tokens/RasterTokens';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { inject } from 'tsyringe';
 
-@Singleton(RASTER_TOKENS.RasterStorageService)
+@Singleton(RASTER_CONTRACT_TOKENS.RasterStorageService)
 export class RasterStorageService implements IRasterStorageService {
     constructor(
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient

@@ -1,9 +1,9 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { UpdateLatexFileUseCase } from '@modules/latex/use-cases/UpdateLatexFileUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import LatexService from '@modules/latex/services/LatexService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
-import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import type { UpdateLatexFileOutputDTO } from '@modules/latex/dtos/UpdateLatexFileDTO';
+import type { LatexFileView } from '@volt/contracts/modules/latex/domain';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -17,23 +17,19 @@ const parameters = z.object({
 type UpdateLatexFileParams = z.infer<typeof parameters>;
 
 @CollectionMember(AI_TOOL_TOKENS.AITool)
-export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, UpdateLatexFileOutputDTO> {
+export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, LatexFileView> {
     readonly name = 'update_latex_file';
     readonly description = 'Update a source file inside a LaTeX document.';
     readonly parameters = parameters;
 
-    constructor(
-        protected readonly useCase: UpdateLatexFileUseCase
-    ) {
-        super();
-    }
+    #service = new LatexService();
 
     /**
      * Tags the write with `source: 'ai'` (server-controlled, kept out of the
-     * model-facing schema) so the use-case broadcasts the new content into any
+     * model-facing schema) so the service broadcasts the new content into any
      * open editing session — letting the edit appear live in open editors.
      */
-    async execute(params: UpdateLatexFileParams, scope: AIToolScope): Promise<UpdateLatexFileOutputDTO> {
-        return this.useCase.execute({ ...params, ...scope, source: 'ai' });
+    async execute(params: UpdateLatexFileParams, scope: AIToolScope): Promise<LatexFileView> {
+        return this.#service.updateFile({ teamId: scope.teamId, ...params, source: 'ai' });
     }
 }

@@ -1,7 +1,7 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetAnalysisByIdUseCase from '@modules/analysis/use-cases/GetAnalysisByIdUseCase';
-import type { GetAnalysisByIdOutputDTO } from '@modules/analysis/dtos/GetAnalysisByIdDTO';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
+import type { GetAnalysisByIdResult } from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -22,16 +22,12 @@ export class CompareAnalysesAITool extends AITool {
         analysisIdB: z.string()
     });
 
-    constructor(
-        protected readonly useCase: GetAnalysisByIdUseCase
-    ) {
-        super();
-    }
+    #service = new AnalysisService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const [a, b] = await Promise.all([
-            this.useCase.execute({ analysisId: params.analysisIdA, teamId: scope.teamId }),
-            this.useCase.execute({ analysisId: params.analysisIdB, teamId: scope.teamId })
+            this.#service.getAnalysisById({ analysisId: params.analysisIdA, teamId: scope.teamId }),
+            this.#service.getAnalysisById({ analysisId: params.analysisIdB, teamId: scope.teamId })
         ]);
 
         const configDelta = this.diffConfig(a.config, b.config);
@@ -88,7 +84,7 @@ export class CompareAnalysesAITool extends AITool {
         return { added, removed, changed, unchangedKeys };
     }
 
-    private summarizeArtifacts(analysis: GetAnalysisByIdOutputDTO) {
+    private summarizeArtifacts(analysis: GetAnalysisByIdResult) {
         const artifacts = analysis.expectedArtifacts ?? [];
         const ready = artifacts.filter((artifact) => artifact.status === 'ready').length;
         const failed = artifacts.filter((artifact) => artifact.status === 'failed').length;
@@ -100,7 +96,7 @@ export class CompareAnalysesAITool extends AITool {
         };
     }
 
-    private snapshot(id: string, analysis: GetAnalysisByIdOutputDTO) {
+    private snapshot(id: string, analysis: GetAnalysisByIdResult) {
         return {
             _id: id,
             plugin: analysis.plugin,
@@ -116,7 +112,7 @@ export class CompareAnalysesAITool extends AITool {
         };
     }
 
-    private completeness(analysis: GetAnalysisByIdOutputDTO): number {
+    private completeness(analysis: GetAnalysisByIdResult): number {
         const artifacts = analysis.expectedArtifacts ?? [];
         if (analysis.status === 'completed') return 1;
         if (artifacts.length > 0) {
@@ -125,7 +121,7 @@ export class CompareAnalysesAITool extends AITool {
         return analysis.status === 'failed' ? 0 : 0.5;
     }
 
-    private buildSummary(idA: string, idB: string, a: GetAnalysisByIdOutputDTO, b: GetAnalysisByIdOutputDTO): string {
+    private buildSummary(idA: string, idB: string, a: GetAnalysisByIdResult, b: GetAnalysisByIdResult): string {
         const completenessA = this.completeness(a);
         const completenessB = this.completeness(b);
         const failedA = (a.expectedArtifacts ?? []).filter((artifact) => artifact.status === 'failed').length;

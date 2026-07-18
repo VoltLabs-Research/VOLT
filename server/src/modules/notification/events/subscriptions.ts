@@ -1,4 +1,4 @@
-import NotificationRepository from '@modules/notification/repositories/NotificationRepository';
+import NotificationRepository from '@modules/notification/services/NotificationRepository';
 import { deleteManyOnUserDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
 
 deleteManyOnUserDeleted(NotificationRepository,

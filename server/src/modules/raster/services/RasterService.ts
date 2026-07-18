@@ -1,51 +1,116 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { GetRasterFramePNGInputDTO } from '@modules/raster/dtos/GetRasterFramePNGDTO';
-import type {
-    TriggerRasterizationInputDTO,
-    TriggerRasterizationOutputDTO
-} from '@modules/raster/dtos/TriggerRasterizationDTO';
-import { GetRasterMetadataUseCase } from '@modules/raster/use-cases/GetRasterMetadataUseCase';
-import { TriggerRasterizationUseCase } from '@modules/raster/use-cases/TriggerRasterizationUseCase';
-import type { IRasterFrameReader } from '@modules/raster/ports/IRasterFrameReader';
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
+import { RasterFrameService } from '@modules/raster/services/RasterFrameService';
+import { RasterJobEnqueuerService } from '@modules/raster/services/RasterJobEnqueuerService';
+import { RasterMetadataService } from '@modules/raster/services/RasterMetadataService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetRasterMetadataInputDTO,
     GetRasterMetadataOutputDTO
 } from '@shared/contracts/dtos/GetRasterMetadataDTO';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
+
+interface TriggerRasterizationInput {
+    trajectoryId: string;
+    teamId: string;
+}
+
+interface TriggerRasterizationResult {
+    trajectoryId: string;
+    triggered: boolean;
+    queuedJobs: number;
+    duplicateJobs: number;
+    skippedJobs: number;
+    alreadyRasterizedJobs: number;
+}
+
+interface GetRasterFramePNGInput {
+    trajectoryId: string;
+    teamId: string;
+    timestep: number;
+    analysisId?: string;
+    model?: string;
+}
 
 /**
- * The single application service for the raster module. `getRasterFramePNG`
- * folds the exact logic of the former `GetRasterFramePNGUseCase`, converting the
- * Result error channel to thrown `ApplicationError`s so Express 5 forwards them
- * to the global error middleware. `triggerRasterization` and `getRasterMetadata`
- * delegate to their retained use cases: `TriggerRasterizationUseCase` is still
- * consumed by the render-screenshot AI tool, and `GetRasterMetadataUseCase`
- * implements the cross-module `IGetRasterMetadataUseCase` port
- * (`RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase`). Both are unwrapped here
- * onto the thrown-error channel used by the folded method.
+ * The single application service for the raster module (pollium style): folds
+ * the former `TriggerRasterizationUseCase`, `GetRasterMetadataUseCase` and
+ * `GetRasterFramePNGUseCase` logic verbatim onto the thrown-`ApplicationError`
+ * channel. Its three collaborators are genuinely-shared stateful singletons
+ * (daemon client / object gateway / cross-module trajectory+analysis repos)
+ * resolved once from the DI container by class token:
+ *  - frameReader: `RasterFrameService`
+ *  - enqueuer: `RasterJobEnqueuerService`
+ *  - metadata: `RasterMetadataService`
+ * The cross-module `RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase` port is
+ * served by a thin adapter (`GetRasterMetadataService`) that delegates to
+ * `getRasterMetadata` here.
  */
-@Singleton(RASTER_TOKENS.RasterService)
 export default class RasterService {
-    constructor(
-        @inject(RASTER_TOKENS.RasterFrameReader) private readonly rasterFrameReader: IRasterFrameReader,
-        @inject(TriggerRasterizationUseCase) private readonly triggerRasterizationUseCase: TriggerRasterizationUseCase,
-        @inject(GetRasterMetadataUseCase) private readonly getRasterMetadataUseCase: GetRasterMetadataUseCase
-    ) {}
+    #frameReader = diContainer.resolve(RasterFrameService);
+    #enqueuer = diContainer.resolve(RasterJobEnqueuerService);
+    #metadata = diContainer.resolve(RasterMetadataService);
 
-    async triggerRasterization(input: TriggerRasterizationInputDTO): Promise<TriggerRasterizationOutputDTO> {
-        return this.triggerRasterizationUseCase.execute(input);
+    async triggerRasterization(input: TriggerRasterizationInput): Promise<TriggerRasterizationResult> {
+        try {
+            const result = await this.#enqueuer.triggerRasterization(input.trajectoryId, input.teamId);
+
+            if (result.queuedJobs === 0 && result.skippedJobs === 0) {
+                throw ApplicationError.notFound(
+                    ErrorCodes.RASTER_NOT_FOUND,
+                    'No rasterizable trajectory models were found in the team cluster storage'
+                );
+            }
+
+            if (result.queuedJobs === 0 && result.duplicateJobs > 0) {
+                throw new ApplicationError(
+                    ErrorCodes.RASTER_ALREADY_QUEUED,
+                    'Equivalent rasterization jobs are already queued or running for this trajectory',
+                    409
+                );
+            }
+
+            return {
+                trajectoryId: input.trajectoryId,
+                triggered: result.queuedJobs > 0,
+                queuedJobs: result.queuedJobs,
+                duplicateJobs: result.duplicateJobs,
+                skippedJobs: result.skippedJobs,
+                alreadyRasterizedJobs: result.alreadyRasterizedJobs
+            };
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            throw new ApplicationError(
+                ErrorCodes.RASTER_FAILED,
+                'Failed to trigger rasterization',
+                500
+            );
+        }
     }
 
     async getRasterMetadata(input: GetRasterMetadataInputDTO): Promise<GetRasterMetadataOutputDTO> {
-        return this.getRasterMetadataUseCase.execute(input);
+        try {
+            const metadata = await this.#metadata.getRasterMetadata(input.trajectoryId, input.teamId);
+
+            return { metadata };
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            throw new ApplicationError(
+                ErrorCodes.RASTER_FAILED,
+                'Failed to retrieve raster metadata',
+                500
+            );
+        }
     }
 
-    async getRasterFramePNG(input: GetRasterFramePNGInputDTO): Promise<DownloadStreamOutputDTO> {
+    async getRasterFramePNG(input: GetRasterFramePNGInput): Promise<DownloadStreamOutputDTO> {
         try {
             if ((input.analysisId && !input.model) || (!input.analysisId && input.model)) {
                 throw ApplicationError.badRequest(
@@ -55,14 +120,14 @@ export default class RasterService {
             }
 
             const rasterFrame = input.analysisId && input.model
-                ? await this.rasterFrameReader.getAnalysisRasterFramePNG(
+                ? await this.#frameReader.getAnalysisRasterFramePNG(
                     input.trajectoryId,
                     input.teamId,
                     input.analysisId,
                     input.timestep,
                     input.model
                 )
-                : await this.rasterFrameReader.getRasterFramePNG(
+                : await this.#frameReader.getRasterFramePNG(
                     input.trajectoryId,
                     input.teamId,
                     input.timestep

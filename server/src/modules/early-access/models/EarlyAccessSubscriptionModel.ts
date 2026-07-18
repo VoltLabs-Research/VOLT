@@ -1,17 +1,21 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import {
-    EarlyAccessSubscriptionProps,
-    EarlyAccessSubscriptionSource
-} from '@modules/early-access/entities/EarlyAccessSubscription';
-import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-type EarlyAccessSubscriptionRelations = 'team';
+export enum EarlyAccessSubscriptionSource {
+    DiscoverTeam = 'discover_team'
+}
 
-export interface EarlyAccessSubscriptionDocument
-    extends Persistable<EarlyAccessSubscriptionProps, EarlyAccessSubscriptionRelations>, Document {}
+export interface IEarlyAccessSubscription extends Document {
+    team: mongoose.Types.ObjectId;
+    email: string;
+    source: EarlyAccessSubscriptionSource;
+    referrer?: string;
+    lastSubmittedAt: Date;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
-const EarlyAccessSubscriptionSchema: Schema<EarlyAccessSubscriptionDocument> = new Schema({
+const EarlyAccessSubscriptionSchema: Schema<IEarlyAccessSubscription> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
@@ -52,7 +56,7 @@ const EarlyAccessSubscriptionSchema: Schema<EarlyAccessSubscriptionDocument> = n
 EarlyAccessSubscriptionSchema.index({ team: 1, email: 1 }, { unique: true });
 EarlyAccessSubscriptionSchema.index({ source: 1, createdAt: -1 });
 
-const EarlyAccessSubscriptionModel: Model<EarlyAccessSubscriptionDocument> = mongoose.model<EarlyAccessSubscriptionDocument>(
+const EarlyAccessSubscriptionModel: Model<IEarlyAccessSubscription> = mongoose.model<IEarlyAccessSubscription>(
     'EarlyAccessSubscription',
     EarlyAccessSubscriptionSchema
 );

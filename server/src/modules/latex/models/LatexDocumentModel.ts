@@ -1,7 +1,30 @@
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
-import type { LatexDocumentProps } from '@modules/latex/entities/LatexDocument';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+
+interface PopulatedLatexUser {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+}
+
+/**
+ * LatexDocument persisted shape. Formerly lived in `entities/LatexDocument` —
+ * inlined here (pollium style) so the model is self-contained after the
+ * domain-entity layer was removed.
+ */
+export interface LatexDocumentProps {
+    team: string;
+    title: string;
+    storageClusterId?: string;
+    createdBy: string | PopulatedLatexUser;
+    lastEditedBy?: string | PopulatedLatexUser | null;
+    folder: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 type LatexDocumentRelations = 'team' | 'createdBy' | 'lastEditedBy';
 

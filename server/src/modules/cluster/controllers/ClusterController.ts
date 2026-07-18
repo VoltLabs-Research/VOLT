@@ -1,181 +1,149 @@
-import type ClusterHttpService from '@modules/cluster/services/ClusterHttpService';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
+import { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Req, Res } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
+
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
 /**
- * Public HTTP-facing method names on {@link ClusterHttpService} (every method
- * except the private `run` helper).
- */
-type ClusterHttpMethod = {
-    [K in keyof ClusterHttpService]: ClusterHttpService[K] extends (input: never) => Promise<unknown> ? K : never;
-}[keyof ClusterHttpService];
-
-/**
- * The request-derived input type a given service method expects. Lets each
- * handler cast `buildControllerParams` output to the exact use-case input shape
- * without the controller importing the use cases or their DTOs directly.
- */
-type ClusterHttpInput<M extends ClusterHttpMethod> = Parameters<ClusterHttpService[M]>[0];
-
-/**
- * The single HTTP controller for the cluster module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link ClusterHttpService}, and
- * responding via {@link BaseResponse}.
+ * The team-scoped cluster HTTP controller (pollium style). It replaces the
+ * former `createHttpModule({ basePath: '/api/teams/:teamId/clusters',
+ * resource: Resource.TEAM, teamScope: BasePath })` — the mount-time
+ * `protect` + team-scope layer is now the class-level
+ * `@Middleware(protect, teamScoped(Resource.TEAM))`, and the three
+ * password-confirmed actions keep their per-route rate limiter as a
+ * method-level `@Middleware`.
  *
- * `create` / `provisionDemo` preserve the former `HttpStatus.Created` responses;
- * `listByTeamId` / `listTransferJobs` preserve the paginated envelope
- * (`BaseResponse.paginated` with the result's `_meta`); and
- * `downloadRemoteExplorerObject` reproduces the former
- * `createPreparedDownloadStreamController` behaviour verbatim — it awaits the
- * prepared output's `prepare()`, applies the response's `headers`, wires the
- * request-close and stream-error handlers, then pipes the binary stream to the
- * response. Handlers are arrow-function properties so `this` stays bound when
- * passed by reference to the router. Thrown `ApplicationError`s propagate to
- * `httpErrorMiddleware` via Express 5 async forwarding.
+ * Handlers are declared in the previous route-file order so Express matches the
+ * literal `/demo*` segments before the `/:teamClusterId` param routes. Every
+ * handler writes the response itself (`@Res()`), reproducing the previous
+ * controller's `BaseResponse` envelopes and status codes verbatim (`create`
+ * and `provisionDemo` stay `201`; list endpoints keep the paginated envelope;
+ * the remote-explorer download streams via {@link ClusterControllerBase.pipeStream}).
  */
-@injectable()
-export default class ClusterController {
-    constructor(
-        @inject(CLUSTER_TOKENS.ClusterHttpService) private readonly clusterHttpService: ClusterHttpService
-    ) {}
-
-    private params<M extends ClusterHttpMethod>(req: AuthenticatedRequest): ClusterHttpInput<M> {
-        return buildControllerParams(req) as unknown as ClusterHttpInput<M>;
+@Middleware(protect, teamScoped(Resource.TEAM))
+export default class ClusterController extends ClusterControllerBase {
+    @Route(teamClusterRoutes.list)
+    async listByTeamId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        this.sendPaginated(res, await this.service.listByTeamId(this.params(req)));
     }
 
-    create = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.create(this.params<'create'>(req));
+    @Route(teamClusterRoutes.create)
+    async create(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.create(this.params(req));
         BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    }
 
-    listByTeamId = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.listByTeamId(this.params<'listByTeamId'>(req));
-        BaseResponse.paginated(res, value, value._meta);
-    };
-
-    provisionDemo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.provisionDemo(this.params<'provisionDemo'>(req));
+    @Route(teamClusterRoutes.provisionDemo)
+    async provisionDemo(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.provisionDemo(this.params(req));
         BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    }
 
-    deleteDemo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.deleteDemo(this.params<'deleteDemo'>(req));
+    @Route(teamClusterRoutes.deleteDemo)
+    async deleteDemo(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.deleteDemo(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    getDemoStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.getDemoStatus(this.params<'getDemoStatus'>(req));
+    @Route(teamClusterRoutes.getDemoStatus)
+    async getDemoStatus(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.getDemoStatus(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    getById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.getById(this.params<'getById'>(req));
+    @Route(teamClusterRoutes.getById)
+    async getById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.getById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    getRuntimeSnapshot = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.getRuntimeSnapshot(this.params<'getRuntimeSnapshot'>(req));
+    @Route(teamClusterRoutes.getRuntimeSnapshot)
+    async getRuntimeSnapshot(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.getRuntimeSnapshot(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    updateQueueConcurrency = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.updateQueueConcurrency(this.params<'updateQueueConcurrency'>(req));
+    @Route(teamClusterRoutes.updateQueueConcurrency)
+    async updateQueueConcurrency(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.updateQueueConcurrency(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    updateRole = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.updateRole(this.params<'updateRole'>(req));
+    @Route(teamClusterRoutes.updateRole)
+    async updateRole(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.updateRole(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    listTransferJobs = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.listTransferJobs(this.params<'listTransferJobs'>(req));
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(teamClusterRoutes.listTransferJobs)
+    async listTransferJobs(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        this.sendPaginated(res, await this.service.listTransferJobs(this.params(req)));
+    }
 
-    createTransferRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.createTransferRequest(this.params<'createTransferRequest'>(req));
+    @Route(teamClusterRoutes.createTransferRequest)
+    async createTransferRequest(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.createTransferRequest(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    getResourceLimits = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.getResourceLimits(this.params<'getResourceLimits'>(req));
+    @Route(teamClusterRoutes.getResourceLimits)
+    async getResourceLimits(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.getResourceLimits(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    revealCredentials = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.revealCredentials(this.params<'revealCredentials'>(req));
+    @Middleware(RATE_LIMIT_POLICIES.passwordConfirmedClusterAction)
+    @Route(teamClusterRoutes.revealCredentials)
+    async revealCredentials(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.revealCredentials(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    createRemoteAccessSession = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.createRemoteAccessSession(this.params<'createRemoteAccessSession'>(req));
+    @Middleware(RATE_LIMIT_POLICIES.passwordConfirmedClusterAction)
+    @Route(teamClusterRoutes.createRemoteAccessSession)
+    async createRemoteAccessSession(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.createRemoteAccessSession(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    listRemoteExplorerEntries = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.listRemoteExplorerEntries(this.params<'listRemoteExplorerEntries'>(req));
+    @Route(teamClusterRoutes.listRemoteExplorerEntries)
+    async listRemoteExplorerEntries(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.listRemoteExplorerEntries(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    getRemoteExplorerNode = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.getRemoteExplorerNode(this.params<'getRemoteExplorerNode'>(req));
+    @Route(teamClusterRoutes.getRemoteExplorerNode)
+    async getRemoteExplorerNode(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.getRemoteExplorerNode(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    downloadRemoteExplorerObject = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const output = await this.clusterHttpService.downloadRemoteExplorerObject(
-            this.params<'downloadRemoteExplorerObject'>(req)
-        );
-
+    @Route(teamClusterRoutes.downloadRemoteExplorerObject)
+    async downloadRemoteExplorerObject(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const output = await this.service.downloadRemoteExplorerObject(this.params(req));
         await output.prepare?.();
+        await this.pipeStream(res, output.stream, output.headers);
+    }
 
-        for (const [name, value] of Object.entries(output.headers)) {
-            res.setHeader(name, value);
-        }
-
-        res.on('close', () => {
-            output.stream.destroy();
-        });
-
-        output.stream.on('error', (error: unknown) => {
-            logger.error(error);
-
-            if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
-                return;
-            }
-
-            res.destroy(error instanceof Error ? error : undefined);
-        });
-
-        output.stream.pipe(res);
-    };
-
-    regenerateEnrollmentToken = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.regenerateEnrollmentToken(this.params<'regenerateEnrollmentToken'>(req));
+    @Route(teamClusterRoutes.regenerateEnrollmentToken)
+    async regenerateEnrollmentToken(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.regenerateEnrollmentToken(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 
-    deleteById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.deleteById(this.params<'deleteById'>(req));
+    @Middleware(RATE_LIMIT_POLICIES.passwordConfirmedClusterAction)
+    @Route(teamClusterRoutes.deleteById)
+    async deleteById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
+        const value = await this.service.deleteById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
-    };
-
-    processHealthcheck = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.processHealthcheck(this.params<'processHealthcheck'>(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
-
-    generateInstallManifest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = await this.clusterHttpService.generateInstallManifest(this.params<'generateInstallManifest'>(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    }
 }

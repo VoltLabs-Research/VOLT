@@ -1,28 +1,24 @@
-import type EarlyAccessService from '@modules/early-access/services/EarlyAccessService';
-import type { CreateEarlyAccessSubscriptionInputDTO } from '@modules/early-access/dtos/CreateEarlyAccessSubscriptionDTO';
-import { EARLY_ACCESS_TOKENS } from '@modules/early-access/di/EarlyAccessTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param } from '@shared/http/params';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
+import EarlyAccessService from '@modules/early-access/services/EarlyAccessService';
+import { earlyAccessRoutes } from '@volt/contracts/modules/early-access/routes';
+import type { CreateEarlyAccessSubscriptionInput } from '@volt/contracts/modules/early-access/http';
 
 /**
- * The single HTTP controller for the early-access module. One Express handler
- * per route, assembling the service input exactly as `buildControllerParams`
- * did for the generated controllers, delegating to {@link EarlyAccessService},
- * and responding via {@link BaseResponse} with the original status codes.
+ * The single HTTP controller for the early-access module (pollium style). The
+ * endpoint is public (no `protect`, no team scope) — the previous
+ * `createHttpModule({ protected: false })` — so the only middleware is the
+ * per-route rate limiter, applied with a method-level `@Middleware`.
  */
-@injectable()
-export default class EarlyAccessController {
-    constructor(
-        @inject(EARLY_ACCESS_TOKENS.EarlyAccessService) private readonly earlyAccessService: EarlyAccessService
-    ) {}
+export default class EarlyAccessController extends Controller {
+    #service = new EarlyAccessService();
 
-    createSubscription = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateEarlyAccessSubscriptionInputDTO;
-        const value = await this.earlyAccessService.createSubscription(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(earlyAccessRoutes.createSubscription)
+    @Status(201)
+    @Middleware(RATE_LIMIT_POLICIES.earlyAccessPublic)
+    createSubscription(@Param('teamId') teamId: string, @Body() body: CreateEarlyAccessSubscriptionInput) {
+        return this.#service.createSubscription(teamId, body);
+    }
 }

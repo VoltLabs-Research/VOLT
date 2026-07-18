@@ -1,7 +1,6 @@
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { ISceneArtifactRepository } from '@shared/contracts/ports';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
-import { ANALYSIS_TOKENS } from '@modules/analysis/di/AnalysisTokens';
 import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
 import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
@@ -20,7 +19,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
         @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService,
+        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService,
         @inject(COMPUTE_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
     ) {}
 

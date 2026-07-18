@@ -1,6 +1,5 @@
 import JobStatusChangedEvent from '@modules/jobs/events/JobStatusChangedEvent';
-import { JOBS_TOKENS } from '@modules/jobs/di/JobsTokens';
-import type { ITeamJobProjectionService } from '@modules/jobs/ports/ITeamJobProjectionService';
+import TeamJobProjectionService from '@modules/jobs/services/TeamJobProjectionService';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import type { ISocketEmitter } from '@modules/socket/ports/ISocketEmitter';
@@ -12,7 +11,7 @@ import { inject } from 'tsyringe';
 @Subscribe('job.status.changed')
 export default class ProjectTeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {
     constructor(
-        @inject(JOBS_TOKENS.TeamJobProjectionService) private readonly teamJobProjectionService: ITeamJobProjectionService,
+        private readonly teamJobProjectionService: TeamJobProjectionService,
         @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter
     ) {}
 

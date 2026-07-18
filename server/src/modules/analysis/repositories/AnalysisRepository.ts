@@ -1,4 +1,4 @@
-import { ANALYSIS_TOKENS } from '@modules/analysis/di/AnalysisTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { AnalysisProps } from '@modules/analysis/entities/Analysis';
@@ -13,7 +13,7 @@ import mongoose from 'mongoose';
 import type { AnalysisRuntimeTarget } from '@modules/analysis/ports/IAnalysisRepository';
 export type { AnalysisRuntimeTarget };
 
-@Singleton(ANALYSIS_TOKENS.AnalysisRepository)
+@Singleton(COMPUTE_TOKENS.AnalysisRepository)
 export default class AnalysisRepository
     extends MongooseBaseRepository<Analysis, AnalysisProps, AnalysisDocument>
     implements IAnalysisRepository {

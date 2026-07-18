@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import GetAnalysisFrameLogUseCase from '@modules/analysis/use-cases/GetAnalysisFrameLogUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -14,9 +15,14 @@ export class GetAnalysisFrameLogAITool extends AITool {
         afterCursor: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: GetAnalysisFrameLogUseCase
-    ) {
-        super();
+    #service = new AnalysisService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.getAnalysisFrameLog({
+            analysisId: params.analysisId,
+            teamId: scope.teamId,
+            timestep: params.timestep,
+            afterCursor: params.afterCursor
+        });
     }
 }

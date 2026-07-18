@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetAnalysisByIdUseCase from '@modules/analysis/use-cases/GetAnalysisByIdUseCase';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -11,14 +11,10 @@ export class SummarizeAnalysisRunAITool extends AITool {
     readonly description = 'Produce a plain-language summary of a single analysis run: plugin, config, frame progress, status, failed frames, runtime, and artifact readiness.';
     readonly parameters = z.object({ analysisId: z.string() });
 
-    constructor(
-        protected readonly useCase: GetAnalysisByIdUseCase
-    ) {
-        super();
-    }
+    #service = new AnalysisService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const analysis = await this.useCase.execute({
+        const analysis = await this.#service.getAnalysisById({
             analysisId: params.analysisId,
             teamId: scope.teamId
         });

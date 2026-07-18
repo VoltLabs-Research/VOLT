@@ -1,6 +1,4 @@
-import type { IRasterFrameReader } from '@modules/raster/ports/IRasterFrameReader';
 import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
 import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
@@ -10,8 +8,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
-@Singleton(RASTER_TOKENS.RasterFrameReader)
-export class RasterFrameService implements IRasterFrameReader {
+@Singleton()
+export class RasterFrameService {
     constructor(
         private readonly rasterStorage: RasterStorageService,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,

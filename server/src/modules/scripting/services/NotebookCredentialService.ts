@@ -3,10 +3,8 @@ import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITea
 import { isPopulatedTeamMemberRole } from '@modules/team/entities/team-member/TeamMember';
 import CreateSecretKeyUseCase from '@modules/team/use-cases/secret-key/CreateSecretKeyUseCase';
 import DeleteSecretKeyByIdUseCase from '@modules/team/use-cases/secret-key/DeleteSecretKeyByIdUseCase';
-import type ScriptingNotebook from '@modules/scripting/entities/ScriptingNotebook';
-import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
-import type { IScriptingNotebookRepository } from '@modules/scripting/ports/IScriptingNotebookRepository';
-import type { INotebookCredentialService } from '@modules/scripting/ports/INotebookCredentialService';
+import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
+import type { ScriptingNotebookDocument } from '@modules/scripting/models/ScriptingNotebookModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
@@ -19,11 +17,13 @@ import { inject } from 'tsyringe';
  * to call VOLT back as the launching user. The key is minted once (with the
  * launcher's team role), stored encrypted on the notebook so it can be
  * re-injected on every session, and deleted when the notebook is destroyed.
+ * Talks to the Mongoose {@link ScriptingNotebookModel} directly (no repository);
+ * operates on the notebook document handed in by {@link ScriptingService} / the
+ * trajectory-deleted handler.
  */
-@Singleton(SCRIPTING_TOKENS.NotebookCredentialService)
-export class NotebookCredentialService implements INotebookCredentialService {
+@Singleton()
+export class NotebookCredentialService {
     constructor(
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
         private readonly createSecretKeyUseCase: CreateSecretKeyUseCase,
         private readonly deleteSecretKeyByIdUseCase: DeleteSecretKeyByIdUseCase
@@ -33,23 +33,24 @@ export class NotebookCredentialService implements INotebookCredentialService {
      * Returns the raw `vsk_` secret key for a notebook, creating and persisting
      * it (encrypted) on first use and decrypting the stored one thereafter.
      */
-    async resolveSecretKey(notebook: ScriptingNotebook, userId: string): Promise<string> {
-        if (notebook.props.secretKeyId && notebook.props.secretKeyEncrypted) {
-            return decrypt(notebook.props.secretKeyEncrypted);
+    async resolveSecretKey(notebook: ScriptingNotebookDocument, userId: string): Promise<string> {
+        if (notebook.secretKeyId && notebook.secretKeyEncrypted) {
+            return decrypt(notebook.secretKeyEncrypted);
         }
 
-        const roleId = await this.resolveLauncherRoleId(notebook.props.team, userId);
+        const teamId = String(notebook.team);
+        const roleId = await this.resolveLauncherRoleId(teamId, userId);
 
         const { secretKeyId, secretKey } = await this.createSecretKeyUseCase.execute({
-            teamId: notebook.props.team,
+            teamId,
             roleId,
-            name: `notebook:${notebook._id}`,
+            name: `notebook:${String(notebook._id)}`,
             userId
         });
-        await this.scriptingNotebookRepository.updateById(notebook._id, {
-            secretKeyId,
-            secretKeyEncrypted: await encrypt(secretKey)
-        });
+        await ScriptingNotebookModel.updateOne(
+            { _id: notebook._id },
+            { $set: { secretKeyId, secretKeyEncrypted: await encrypt(secretKey) } }
+        );
 
         return secretKey;
     }
@@ -57,8 +58,8 @@ export class NotebookCredentialService implements INotebookCredentialService {
     /**
      * Deletes the notebook's `vsk_` credential. Safe to call when no key exists.
      */
-    async revokeSecretKey(notebook: ScriptingNotebook): Promise<void> {
-        const { secretKeyId, team, createdBy } = notebook.props;
+    async revokeSecretKey(notebook: ScriptingNotebookDocument): Promise<void> {
+        const secretKeyId = notebook.secretKeyId;
         if (!secretKeyId) {
             return;
         }
@@ -66,12 +67,12 @@ export class NotebookCredentialService implements INotebookCredentialService {
         try {
             await this.deleteSecretKeyByIdUseCase.execute({
                 secretKeyId,
-                teamId: team,
-                userId: createdBy
+                teamId: String(notebook.team),
+                userId: String(notebook.createdBy)
             });
         } catch (err) {
             logger.warn(
-                { secretKeyId, notebookId: notebook._id, err },
+                { secretKeyId, notebookId: String(notebook._id), err },
                 '[Scripting] Failed to revoke notebook secret key'
             );
         }

@@ -1,133 +1,143 @@
-import type ChatService from '@modules/chat/services/ChatService';
-import type { AddUsersToGroupInputDTO } from '@modules/chat/dtos/chat/AddUsersToGroupDTO';
-import type { CreateGroupChatInputDTO } from '@modules/chat/dtos/chat/CreateGroupChatDTO';
-import type { GetOrCreateChatInputDTO } from '@modules/chat/dtos/chat/GetOrCreateChatDTO';
-import type { GetUserChatsInputDTO } from '@modules/chat/dtos/chat/GetUserChatsDTO';
-import type { LeaveGroupInputDTO } from '@modules/chat/dtos/chat/LeaveGroupDTO';
-import type { RemoveUsersFromGroupInputDTO } from '@modules/chat/dtos/chat/RemoveUsersFromGroupDTO';
-import type { UpdateGroupAdminsInputDTO } from '@modules/chat/dtos/chat/UpdateGroupAdminsDTO';
-import type { UpdateGroupInfoInputDTO } from '@modules/chat/dtos/chat/UpdateGroupInfoDTO';
-import type { DeleteMessageInputDTO } from '@modules/chat/dtos/chat-message/DeleteMessageDTO';
-import type { EditMessageInputDTO } from '@modules/chat/dtos/chat-message/EditMessageDTO';
-import type { GetChatMessagesInputDTO } from '@modules/chat/dtos/chat-message/GetChatMessagesDTO';
-import type { MarkMessageAsReadInputDTO } from '@modules/chat/dtos/chat-message/MarkMessageAsReadDTO';
-import type { SendChatMessageInputDTO } from '@modules/chat/dtos/chat-message/SendChatMessageDTO';
-import type { SendFileMessageInputDTO } from '@modules/chat/dtos/chat-message/SendFileMessageDTO';
-import type { ToggleMessageReactionInputDTO } from '@modules/chat/dtos/chat-message/ToggleMessageReactionDTO';
-import { CHAT_TOKENS } from '@modules/chat/di/ChatTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser } from '@shared/http/params';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { checkTeamMembership } from '@modules/team/middlewares/check-team-membership';
+import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
+import { uploadToStorage } from '@modules/chat/middlewares/upload-to-storage';
+import ChatService from '@modules/chat/services/ChatService';
+import { chatRoutes } from '@volt/contracts/modules/chat/routes';
+import type {
+    CreateGroupChatInput,
+    AddUsersToGroupInput,
+    RemoveUsersFromGroupInput,
+    UpdateGroupInfoInput,
+    UpdateGroupAdminsInput,
+    SendChatMessageInput,
+    EditMessageInput,
+    ToggleMessageReactionInput
+} from '@volt/contracts/modules/chat/http';
+
+interface ChatFileBody {
+    fileData: {
+        filename: string;
+        originalName: string;
+        size: number;
+        mimetype: string;
+        url: string;
+    };
+}
 
 /**
- * The single HTTP controller for the chat module. One Express handler per route,
- * assembling the service input exactly as `buildControllerParams` did for the
- * generated controllers, delegating to {@link ChatService}, and responding via
- * {@link BaseResponse} with the original status codes. NoContent handlers send
- * an empty body, matching the generated controllers' behaviour. Handlers are
- * arrow-function properties so `this` stays bound when passed by reference to
- * the router. Thrown `ApplicationError`s propagate to `httpErrorMiddleware` via
- * Express 5 async forwarding.
+ * The single HTTP controller for the chat module (pollium style): every route is
+ * bound with `@Route(chatRoutes.x)` and delegates to a {@link ChatService} the
+ * controller `new`s itself. The class-level `@Middleware(protect)` matches the
+ * old route groups' `protected: true`; the `/api/chats` group's `teamScope:
+ * Param` (team-membership only on the `:teamId` route) becomes a per-method
+ * `@Middleware(checkTeamMembership)` on `getOrCreate`, and the file-message
+ * upload chain is a per-method middleware — the rest are plain `protect`.
+ * `buildRouter()` turns the decorated methods into the Express router mounted
+ * directly in `mount-http-routes`.
  */
-@injectable()
-export default class ChatController {
-    constructor(
-        @inject(CHAT_TOKENS.ChatService) private readonly chatService: ChatService
-    ) {}
+@Middleware(protect)
+export default class ChatController extends Controller {
+    #service = new ChatService();
 
-    getUserChats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetUserChatsInputDTO;
-        const value = await this.chatService.getUserChats(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    // ---- Chats ----
 
-    getOrCreate = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetOrCreateChatInputDTO;
-        const value = await this.chatService.getOrCreateChat(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.listUserChats)
+    listUserChats(@CurrentUser() userId: string) {
+        return this.#service.getUserChats(userId);
+    }
 
-    createGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateGroupChatInputDTO;
-        const value = await this.chatService.createGroupChat(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(chatRoutes.getOrCreate)
+    @Middleware(checkTeamMembership)
+    getOrCreate(
+        @Param('teamId') teamId: string,
+        @Param('targetUserId') targetUserId: string,
+        @CurrentUser() userId: string
+    ) {
+        return this.#service.getOrCreateChat(userId, targetUserId, teamId);
+    }
 
-    addUsersToGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as AddUsersToGroupInputDTO;
-        const value = await this.chatService.addUsersToGroup(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.createGroup)
+    @Status(201)
+    createGroup(@CurrentUser() userId: string, @Body() body: CreateGroupChatInput) {
+        return this.#service.createGroupChat(userId, body);
+    }
 
-    removeUsersFromGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RemoveUsersFromGroupInputDTO;
-        const value = await this.chatService.removeUsersFromGroup(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.addUsersToGroup)
+    addUsersToGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: AddUsersToGroupInput) {
+        return this.#service.addUsersToGroup(userId, chatId, body.userIds);
+    }
 
-    updateGroupInfo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateGroupInfoInputDTO;
-        const value = await this.chatService.updateGroupInfo(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.removeUsersFromGroup)
+    removeUsersFromGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: RemoveUsersFromGroupInput) {
+        return this.#service.removeUsersFromGroup(userId, chatId, body.userIds);
+    }
 
-    updateGroupAdmins = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateGroupAdminsInputDTO;
-        const value = await this.chatService.updateGroupAdmins(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.updateGroupInfo)
+    updateGroupInfo(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: UpdateGroupInfoInput) {
+        return this.#service.updateGroupInfo(userId, chatId, body);
+    }
 
-    leaveGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as LeaveGroupInputDTO;
-        await this.chatService.leaveGroup(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(chatRoutes.updateGroupAdmins)
+    updateGroupAdmins(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: UpdateGroupAdminsInput) {
+        return this.#service.updateGroupAdmins(userId, chatId, body);
+    }
 
-    getChatMessages = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetChatMessagesInputDTO;
-        const value = await this.chatService.getChatMessages(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.leaveGroup)
+    async leaveGroup(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
+        await this.#service.leaveGroup(userId, chatId);
+    }
 
-    sendChatMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SendChatMessageInputDTO;
-        const value = await this.chatService.sendChatMessage(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    // ---- Messages ----
 
-    editMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as EditMessageInputDTO;
-        const value = await this.chatService.editMessage(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.listMessages)
+    listMessages(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Query() query: Record<string, string>) {
+        return this.#service.getChatMessages(userId, chatId, query);
+    }
 
-    deleteMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteMessageInputDTO;
-        await this.chatService.deleteMessage(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(chatRoutes.sendMessage)
+    @Status(201)
+    sendMessage(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: SendChatMessageInput) {
+        return this.#service.sendChatMessage(userId, chatId, body);
+    }
 
-    markMessagesAsRead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as MarkMessageAsReadInputDTO;
-        await this.chatService.markMessagesAsRead(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(chatRoutes.editMessage)
+    editMessage(
+        @Param('chatId') chatId: string,
+        @Param('messageId') messageId: string,
+        @CurrentUser() userId: string,
+        @Body() body: EditMessageInput
+    ) {
+        return this.#service.editMessage(userId, chatId, messageId, body.content);
+    }
 
-    toggleMessageReaction = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ToggleMessageReactionInputDTO;
-        const value = await this.chatService.toggleMessageReaction(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(chatRoutes.deleteMessage)
+    async deleteMessage(@Param('chatId') chatId: string, @Param('messageId') messageId: string, @CurrentUser() userId: string) {
+        await this.#service.deleteMessage(userId, chatId, messageId);
+    }
 
-    sendFileMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SendFileMessageInputDTO;
-        const value = await this.chatService.sendFileMessage(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(chatRoutes.markMessagesAsRead)
+    async markMessagesAsRead(@Param('chatId') chatId: string, @CurrentUser() userId: string) {
+        await this.#service.markMessagesAsRead(userId, chatId);
+    }
+
+    @Route(chatRoutes.toggleMessageReaction)
+    toggleMessageReaction(
+        @Param('chatId') chatId: string,
+        @Param('messageId') messageId: string,
+        @CurrentUser() userId: string,
+        @Body() body: ToggleMessageReactionInput
+    ) {
+        return this.#service.toggleMessageReaction(userId, chatId, messageId, body.emoji);
+    }
+
+    @Route(chatRoutes.sendFileMessage)
+    @Status(201)
+    @Middleware(uploadChatSingleFile('file'), uploadToStorage)
+    sendFileMessage(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Body() body: ChatFileBody) {
+        return this.#service.sendFileMessage(userId, chatId, body.fileData);
+    }
 }

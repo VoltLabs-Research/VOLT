@@ -1,6 +1,8 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
+import LatexFileModel from '@modules/latex/models/LatexFileModel';
+import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
 import { requireLatexStorageClusterId } from '@modules/latex/utilities/latex-storage';
 import { sanitizeAssetPath } from '@modules/latex/utilities/sanitize-asset-path';
 import { spawn } from 'node:child_process';
@@ -9,12 +11,34 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import pLimit from 'p-limit';
-import type { ILatexDocumentRepository } from '@modules/latex/ports/ILatexDocumentRepository';
-import type { ILatexAssetRepository } from '@modules/latex/ports/ILatexAssetRepository';
-import type { ILatexFileRepository } from '@modules/latex/ports/ILatexFileRepository';
-import type LatexAsset from '@modules/latex/entities/LatexAsset';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
-import type LatexFile from '@modules/latex/entities/LatexFile';
+
+/**
+ * Plain (model-backed) shapes the compile pipeline works with. The domain-entity
+ * layer was removed in the pollium conversion, so the helpers query the Mongoose
+ * models directly and operate on lean documents rather than `LatexFile`/
+ * `LatexAsset` entities.
+ */
+interface CompileLatexFile {
+    _id: string;
+    name: string;
+    path: string;
+    content: string;
+    isEntrypoint: boolean;
+    updatedAt: Date;
+}
+
+interface CompileLatexAsset {
+    _id: string;
+    path: string;
+    originalName: string;
+    storageKey: string;
+    size: number;
+    updatedAt: Date;
+}
+
+const fullPathOf = (file: Pick<CompileLatexFile, 'name' | 'path'>): string =>
+    (file.path ? `${file.path}${file.name}` : file.name);
 
 interface CompilerConfig {
     binary: string;
@@ -35,15 +59,12 @@ interface WorkDirManifest {
 }
 
 interface SyncableAsset {
-    asset: LatexAsset;
+    asset: CompileLatexAsset;
     relPath: string;
     version: string;
 }
 
 interface PrepareWorkDirDeps {
-    latexDocumentRepository: ILatexDocumentRepository;
-    latexAssetRepository: ILatexAssetRepository;
-    latexFileRepository: ILatexFileRepository;
     objectGatewayClient: ITeamClusterObjectGatewayClient;
     tempFileService: ITempFileService;
 }
@@ -58,7 +79,7 @@ interface PrepareWorkDirParams {
 interface PrepareWorkDirReady {
     status: 'ready';
     compiler: CompilerConfig;
-    latexFiles: LatexFile[];
+    latexFiles: CompileLatexFile[];
     entrypointFilename: string;
 }
 
@@ -109,12 +130,12 @@ const getWorkDirManifestPath = (workDir: string): string => {
     return path.join(workDir, WORKDIR_MANIFEST_FILENAME);
 };
 
-const buildLatexFileVersion = (file: LatexFile): string => {
-    return `${file._id}:${file.fullPath}:${file.props.updatedAt.toISOString()}`;
+const buildLatexFileVersion = (file: CompileLatexFile): string => {
+    return `${file._id}:${fullPathOf(file)}:${file.updatedAt.toISOString()}`;
 };
 
-const buildAssetVersion = (asset: LatexAsset, relPath: string): string => {
-    return `${asset._id}:${relPath}:${asset.props.storageKey}:${asset.props.size}:${asset.props.updatedAt.toISOString()}`;
+const buildAssetVersion = (asset: CompileLatexAsset, relPath: string): string => {
+    return `${asset._id}:${relPath}:${asset.storageKey}:${asset.size}:${asset.updatedAt.toISOString()}`;
 };
 
 const pathExistsAsFile = async (targetPath: string): Promise<boolean> => {
@@ -180,9 +201,9 @@ const ensureWritableInputPath = async (targetPath: string): Promise<void> => {
     }
 };
 
-const buildSyncableAssets = (assets: LatexAsset[]): SyncableAsset[] => {
+const buildSyncableAssets = (assets: CompileLatexAsset[]): SyncableAsset[] => {
     return assets.map((asset) => {
-        const relPath = sanitizeAssetPath(asset.props.path, asset.props.originalName);
+        const relPath = sanitizeAssetPath(asset.path, asset.originalName);
         return {
             asset,
             relPath,
@@ -193,8 +214,8 @@ const buildSyncableAssets = (assets: LatexAsset[]): SyncableAsset[] => {
 
 const syncWorkDirInputs = async (
     workDir: string,
-    latexFiles: LatexFile[],
-    assets: LatexAsset[],
+    latexFiles: CompileLatexFile[],
+    assets: CompileLatexAsset[],
     storageClusterId: string,
     objectGatewayClient: ITeamClusterObjectGatewayClient
 ): Promise<void> => {
@@ -205,7 +226,7 @@ const syncWorkDirInputs = async (
     const syncedInputs = new Map<string, string>();
 
     for (const file of latexFiles) {
-        nextExpectedInputs.set(file.fullPath, buildLatexFileVersion(file));
+        nextExpectedInputs.set(fullPathOf(file), buildLatexFileVersion(file));
     }
 
     for (const asset of syncableAssets) {
@@ -221,7 +242,7 @@ const syncWorkDirInputs = async (
 
     await Promise.all(latexFiles.map((file) => {
         return limit(async () => {
-            const relPath = file.fullPath;
+            const relPath = fullPathOf(file);
             const version = nextExpectedInputs.get(relPath)!;
             const destPath = path.join(workDir, relPath);
 
@@ -232,7 +253,7 @@ const syncWorkDirInputs = async (
 
             await fs.mkdir(path.dirname(destPath), { recursive: true });
             await ensureWritableInputPath(destPath);
-            await fs.writeFile(destPath, file.props.content, 'utf-8');
+            await fs.writeFile(destPath, file.content, 'utf-8');
             syncedInputs.set(relPath, version);
         });
     }));
@@ -251,7 +272,7 @@ const syncWorkDirInputs = async (
                 const stream = (await objectGatewayClient.getStream(
                     storageClusterId,
                     TEAM_CLUSTER_BUCKETS.LATEX_ASSETS,
-                    asset.props.storageKey
+                    asset.storageKey
                 )).stream;
 
                 await fs.mkdir(path.dirname(destPath), { recursive: true });
@@ -390,15 +411,49 @@ export const runCompiler = (compiler: CompilerConfig, workDir: string): Promise<
     });
 };
 
+const loadCompileFiles = async (documentId: string): Promise<CompileLatexFile[]> => {
+    const docs = await LatexFileModel
+        .find({ document: documentId })
+        .sort({ isEntrypoint: -1, createdAt: 1 })
+        .lean()
+        .exec();
+
+    return docs.map((doc) => ({
+        _id: String(doc._id),
+        name: doc.name,
+        path: doc.path,
+        content: doc.content,
+        isEntrypoint: doc.isEntrypoint,
+        updatedAt: doc.updatedAt
+    }));
+};
+
+const loadCompileAssets = async (documentId: string): Promise<CompileLatexAsset[]> => {
+    const docs = await LatexAssetModel
+        .find({ document: documentId })
+        .sort({ createdAt: -1 })
+        .lean()
+        .exec();
+
+    return docs.map((doc) => ({
+        _id: String(doc._id),
+        path: doc.path,
+        originalName: doc.originalName,
+        storageKey: doc.storageKey,
+        size: doc.size,
+        updatedAt: doc.updatedAt
+    }));
+};
+
 /**
  * Prepares a temporary working directory for LaTeX compilation.
  *
- * Loads the document and its files, incrementally syncs only changed inputs
- * into `workDir`, downloads changed assets from storage, and resolves an
- * available LaTeX compiler.
+ * Loads the document and its files (via the Mongoose models directly),
+ * incrementally syncs only changed inputs into `workDir`, downloads changed
+ * assets from storage, and resolves an available LaTeX compiler.
  *
  * @param params - Document identifiers, working directory path, and compiler options.
- * @param deps - Repository and service dependencies.
+ * @param deps - Object-gateway + temp-file service dependencies.
  * @returns A discriminated result: `'ready'` with compiler and files, or a failure status.
  */
 export const prepareWorkDir = async (
@@ -407,31 +462,31 @@ export const prepareWorkDir = async (
 ): Promise<PrepareWorkDirResult> => {
     const { teamId, documentId, workDir, haltOnError } = params;
 
-    const document = await deps.latexDocumentRepository.findByTeamAndDocumentId(teamId, documentId);
+    const document = await LatexDocumentModel.findOne({ _id: documentId, team: teamId }).lean().exec();
     if (!document) {
         return { status: 'no-document' };
     }
-    const storageClusterId = requireLatexStorageClusterId(document._id, document.props);
+    const storageClusterId = requireLatexStorageClusterId(String(document._id), document);
 
     await deps.tempFileService.ensureDir(workDir);
 
-    const latexFiles = await deps.latexFileRepository.findAllByDocument(documentId);
+    const latexFiles = await loadCompileFiles(documentId);
     if (latexFiles.length === 0) {
         return { status: 'no-files' };
     }
 
-    const entrypointFile = latexFiles.find((f) => f.props.isEntrypoint)
-        ?? latexFiles.find((f) => f.props.name.toLowerCase().endsWith(TEX_EXTENSION));
+    const entrypointFile = latexFiles.find((f) => f.isEntrypoint)
+        ?? latexFiles.find((f) => f.name.toLowerCase().endsWith(TEX_EXTENSION));
 
     if (!entrypointFile) {
         return { status: 'no-entrypoint' };
     }
 
-    const entrypointFilename = entrypointFile.fullPath;
+    const entrypointFilename = fullPathOf(entrypointFile);
 
     const [compiler, assets] = await Promise.all([
         resolveCompiler(entrypointFilename, { haltOnError }),
-        deps.latexAssetRepository.findAllByDocument(documentId)
+        loadCompileAssets(documentId)
     ]);
 
     if (!compiler) {

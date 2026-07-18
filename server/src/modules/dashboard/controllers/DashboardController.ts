@@ -1,28 +1,34 @@
-import type DashboardService from '@modules/dashboard/services/DashboardService';
-import type { GetGlobalSearchInputDTO } from '@modules/dashboard/dtos/GetGlobalSearchDTO';
-import { DASHBOARD_TOKENS } from '@modules/dashboard/di/DashboardTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Param, Query, CurrentUser } from '@shared/http/params';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { checkTeamMembership } from '@modules/team/middlewares/check-team-membership';
+import DashboardService from '@modules/dashboard/services/DashboardService';
+import { dashboardRoutes } from '@volt/contracts/modules/dashboard/routes';
 
 /**
- * The single HTTP controller for the dashboard module. One Express handler per
- * route, assembling the service input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link DashboardService}, and
- * responding via {@link BaseResponse} with the original status codes.
+ * The single HTTP controller for the dashboard module (pollium style). The old
+ * route declared a team-scoped base path with NO resource, so it enforced team
+ * membership without an RBAC permission check — reproduced here with
+ * `@Middleware(protect, checkTeamMembership)` (not `teamScoped`, which would add
+ * a permission gate). Delegates to {@link DashboardService}.
  */
-@injectable()
-export default class DashboardController {
-    constructor(
-        @inject(DASHBOARD_TOKENS.DashboardService) private readonly dashboardService: DashboardService
-    ) {}
+@Middleware(protect, checkTeamMembership)
+export default class DashboardController extends Controller {
+    #service = new DashboardService();
 
-    getGlobalSearch = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetGlobalSearchInputDTO;
-        const value = await this.dashboardService.getGlobalSearch(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(dashboardRoutes.getGlobalSearch)
+    getGlobalSearch(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Query('query') query?: string,
+        @Query('limit') limit?: string
+    ) {
+        return this.#service.getGlobalSearch({
+            teamId,
+            userId,
+            query,
+            limit: limit !== undefined ? Number(limit) : undefined
+        });
+    }
 }

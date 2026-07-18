@@ -1,21 +1,25 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { UpdateLatexDocumentUseCase } from '@modules/latex/use-cases/UpdateLatexDocumentUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import LatexService from '@modules/latex/services/LatexService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
+const parameters = z.object({
+    documentId: z.string(),
+    title: z.string().optional()
+});
+type Params = z.infer<typeof parameters>;
+
 @CollectionMember(AI_TOOL_TOKENS.AITool)
-export class UpdateLatexDocumentAITool extends AITool {
+export class UpdateLatexDocumentAITool extends AITool<Params> {
     readonly name = 'update_latex_document';
     readonly description = 'Update a LaTeX document.';
-    readonly parameters = z.object({
-        documentId: z.string(),
-        title: z.string().optional()
-    });
+    readonly parameters = parameters;
 
-    constructor(
-        protected readonly useCase: UpdateLatexDocumentUseCase
-    ) {
-        super();
+    #service = new LatexService();
+
+    async execute(params: Params, scope: AIToolScope) {
+        return this.#service.updateDocument({ teamId: scope.teamId, userId: scope.userId, ...params });
     }
 }

@@ -2,7 +2,7 @@ import DeploymentSettings, {
     DeploymentSettingsProps
 } from '@modules/system/entities/DeploymentSettings';
 import type { IDeploymentSettingsRepository } from '@shared/contracts/ports/IDeploymentSettingsRepository';
-import { SYSTEM_TOKENS } from '@modules/system/di/SystemTokens';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import deploymentSettingsMapper from '@modules/system/mappers/DeploymentSettingsMapper';
 import DeploymentSettingsModel, {
     DeploymentSettingsDocument
@@ -10,7 +10,7 @@ import DeploymentSettingsModel, {
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-@Singleton(SYSTEM_TOKENS.DeploymentSettingsRepository)
+@Singleton(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository)
 export default class DeploymentSettingsRepository
     extends MongooseBaseRepository<DeploymentSettings, DeploymentSettingsProps, DeploymentSettingsDocument>
     implements IDeploymentSettingsRepository<DeploymentSettings, DeploymentSettingsProps> {

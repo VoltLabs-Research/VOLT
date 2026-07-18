@@ -1,152 +1,172 @@
-import type WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
-import type { CreateWhiteboardInputDTO } from '@modules/whiteboards/dtos/CreateWhiteboardDTO';
-import type { DeleteWhiteboardInputDTO } from '@modules/whiteboards/dtos/DeleteWhiteboardDTO';
-import type { GetWhiteboardAssetInputDTO } from '@modules/whiteboards/dtos/GetWhiteboardAssetDTO';
-import type { GetWhiteboardInputDTO } from '@modules/whiteboards/dtos/GetWhiteboardDTO';
-import type { GetWhiteboardStateInputDTO } from '@modules/whiteboards/dtos/GetWhiteboardStateDTO';
-import type { ListWhiteboardsInputDTO } from '@modules/whiteboards/dtos/ListWhiteboardsDTO';
-import type { MoveWhiteboardInputDTO } from '@modules/whiteboards/dtos/MoveWhiteboardDTO';
-import type { SaveWhiteboardStateInputDTO } from '@modules/whiteboards/dtos/SaveWhiteboardStateDTO';
-import type { UpdateWhiteboardInputDTO } from '@modules/whiteboards/dtos/UpdateWhiteboardDTO';
-import type { UploadWhiteboardAssetInputDTO } from '@modules/whiteboards/dtos/UploadWhiteboardAssetDTO';
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/di/WhiteboardTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import { whiteboardRoutes } from '@volt/contracts/modules/whiteboards/routes';
+import type {
+    CreateWhiteboardInput,
+    UpdateWhiteboardInput,
+    MoveWhiteboardInput,
+    CreateWhiteboardFolderInput,
+    UpdateWhiteboardFolderInput,
+    UploadWhiteboardAssetInput
+} from '@volt/contracts/modules/whiteboards/http';
+import express from 'express';
 import type { Response } from 'express';
+import type { Readable } from 'node:stream';
+
+const stateBodyParser = express.json({ limit: '10mb' });
 
 /**
- * The single HTTP controller for the whiteboards module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did for
- * the generated controllers, delegating to {@link WhiteboardService}, and
- * responding via {@link BaseResponse}. `listWhiteboards` reproduces the former
- * `createPaginatedController` behaviour; `getWhiteboardState` and
- * `getWhiteboardAsset` reproduce the former `createStreamController` behaviour
- * verbatim (headers, request-close and stream-error handling, then piping the
- * stream to the response). Handlers are arrow-function properties so `this` stays
- * bound when passed by reference to the router. Thrown `ApplicationError`s
- * propagate to `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the whiteboards module (pollium style).
+ * Class-level `@Middleware(protect, teamScoped(Resource.WHITEBOARD))` replaces the
+ * old mount-time auth + team-scope layer. Folder routes are declared before the
+ * `/:whiteboardId` routes (contract order). `getState`/`getAsset` reproduce the
+ * former stream controller (headers, request-close + stream-error handling, then
+ * pipe) via `@Res()`; `saveState` keeps the 10mb JSON body parser as method
+ * middleware.
  */
-@injectable()
-export default class WhiteboardController {
-    constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardService) private readonly whiteboardService: WhiteboardService
-    ) {}
+@Middleware(protect, teamScoped(Resource.WHITEBOARD))
+export default class WhiteboardController extends Controller {
+    #service = new WhiteboardService();
 
-    createWhiteboard = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateWhiteboardInputDTO;
-        const value = await this.whiteboardService.createWhiteboard(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(whiteboardRoutes.create)
+    @Status(201)
+    createWhiteboard(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateWhiteboardInput) {
+        return this.#service.createWhiteboard(teamId, userId, body);
+    }
 
-    listWhiteboards = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListWhiteboardsInputDTO;
-        const value = await this.whiteboardService.listWhiteboards(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
-
-    getWhiteboard = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetWhiteboardInputDTO;
-        const value = await this.whiteboardService.getWhiteboard(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
-
-    updateWhiteboard = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateWhiteboardInputDTO;
-        const value = await this.whiteboardService.updateWhiteboard(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
-
-    deleteWhiteboard = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteWhiteboardInputDTO;
-        await this.whiteboardService.deleteWhiteboard(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
-
-    moveWhiteboard = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as MoveWhiteboardInputDTO;
-        const value = await this.whiteboardService.moveWhiteboard(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
-
-    getWhiteboardState = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetWhiteboardStateInputDTO;
-        const output = await this.whiteboardService.getWhiteboardState(input);
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-        };
-        for (const [name, value] of Object.entries(headers)) {
-            res.setHeader(name, value);
-        }
-
-        res.on('close', () => {
-            output.stream.destroy();
+    @Route(whiteboardRoutes.list)
+    listWhiteboards(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+        return this.#service.listWhiteboards(teamId, {
+            folderId: query.folderId,
+            page: query.page !== undefined ? Number(query.page) : undefined,
+            limit: query.limit !== undefined ? Number(query.limit) : undefined
         });
+    }
 
-        output.stream.on('error', (error: unknown) => {
-            logger.error(error);
-
-            if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
-                return;
-            }
-
-            res.destroy(error instanceof Error ? error : undefined);
+    @Route(whiteboardRoutes.listFolders)
+    listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+        return this.#service.listFolders(teamId, {
+            parentId: query.parentId,
+            page: query.page !== undefined ? Number(query.page) : undefined,
+            limit: query.limit !== undefined ? Number(query.limit) : undefined
         });
+    }
 
-        output.stream.pipe(res);
-    };
+    @Route(whiteboardRoutes.getFolder)
+    getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+        return this.#service.getFolder(teamId, folderId);
+    }
 
-    saveWhiteboardState = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req, (request, params) => ({
-            ...params,
-            userId: request.userId,
-            stateBuffer: Buffer.isBuffer(request.body) ? request.body : Buffer.from(JSON.stringify(request.body))
-        })) as unknown as SaveWhiteboardStateInputDTO;
-        await this.whiteboardService.saveWhiteboardState(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(whiteboardRoutes.createFolder)
+    @Status(201)
+    createFolder(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateWhiteboardFolderInput) {
+        return this.#service.createFolder(teamId, userId, body);
+    }
 
-    uploadWhiteboardAsset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UploadWhiteboardAssetInputDTO;
-        const value = await this.whiteboardService.uploadWhiteboardAsset(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(whiteboardRoutes.updateFolder)
+    updateFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Body() body: UpdateWhiteboardFolderInput) {
+        return this.#service.updateFolder(teamId, folderId, body);
+    }
 
-    getWhiteboardAsset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetWhiteboardAssetInputDTO;
-        const output = await this.whiteboardService.getWhiteboardAsset(input);
+    @Route(whiteboardRoutes.removeFolder)
+    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @CurrentUser() userId: string) {
+        await this.#service.deleteFolder(teamId, folderId, userId);
+    }
 
-        const headers = {
+    @Route(whiteboardRoutes.get)
+    getWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string) {
+        return this.#service.getWhiteboard(teamId, whiteboardId);
+    }
+
+    @Route(whiteboardRoutes.update)
+    updateWhiteboard(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UpdateWhiteboardInput
+    ) {
+        return this.#service.updateWhiteboard(teamId, whiteboardId, userId, body);
+    }
+
+    @Route(whiteboardRoutes.remove)
+    async deleteWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @CurrentUser() userId: string) {
+        await this.#service.deleteWhiteboard(teamId, whiteboardId, userId);
+    }
+
+    @Route(whiteboardRoutes.move)
+    @Status(200)
+    async moveWhiteboard(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @Body() body: MoveWhiteboardInput) {
+        return this.#service.moveWhiteboard(teamId, whiteboardId, body.folderId);
+    }
+
+    @Route(whiteboardRoutes.getState)
+    async getWhiteboardState(@Param('teamId') teamId: string, @Param('whiteboardId') whiteboardId: string, @Res() res: Response): Promise<void> {
+        const output = await this.#service.getWhiteboardState(teamId, whiteboardId);
+        this.#pipeStream(res, output.stream, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    }
+
+    @Route(whiteboardRoutes.saveState)
+    @Middleware(stateBodyParser)
+    async saveWhiteboardState(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @CurrentUser() userId: string,
+        @Body() body: unknown
+    ) {
+        const stateBuffer = Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
+        await this.#service.saveWhiteboardState(teamId, whiteboardId, userId, stateBuffer);
+    }
+
+    @Route(whiteboardRoutes.uploadAsset)
+    @Status(201)
+    uploadWhiteboardAsset(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UploadWhiteboardAssetInput
+    ) {
+        return this.#service.uploadWhiteboardAsset(teamId, whiteboardId, userId, body);
+    }
+
+    @Route(whiteboardRoutes.getAsset)
+    async getWhiteboardAsset(
+        @Param('teamId') teamId: string,
+        @Param('whiteboardId') whiteboardId: string,
+        @Param('assetId') assetId: string,
+        @Res() res: Response
+    ): Promise<void> {
+        const output = await this.#service.getWhiteboardAsset(teamId, whiteboardId, assetId);
+        this.#pipeStream(res, output.stream, {
             'Content-Type': output.mimetype || 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'
-        };
+        });
+    }
+
+    #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): void {
         for (const [name, value] of Object.entries(headers)) {
             res.setHeader(name, value);
         }
 
         res.on('close', () => {
-            output.stream.destroy();
+            stream.destroy();
         });
 
-        output.stream.on('error', (error: unknown) => {
+        stream.on('error', (error: unknown) => {
             logger.error(error);
-
             if (!res.headersSent) {
                 BaseResponse.fromError(res, error);
                 return;
             }
-
             res.destroy(error instanceof Error ? error : undefined);
         });
 
-        output.stream.pipe(res);
-    };
+        stream.pipe(res);
+    }
 }

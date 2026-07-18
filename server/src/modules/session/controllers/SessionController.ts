@@ -1,53 +1,32 @@
-import type SessionService from '@modules/session/services/SessionService';
-import type { GetActiveSessionsInputDTO } from '@modules/session/dtos/GetActiveSessionsDTO';
-import type { GetLoginActivityInputDTO } from '@modules/session/dtos/GetLoginActivityDTO';
-import type { RevokeAllSessionsInputDTO } from '@modules/session/dtos/RevokeAllSessionsDTO';
-import type { RevokeSessionInputDTO } from '@modules/session/dtos/RevokeSessionDTO';
-import { SESSION_TOKENS } from '@modules/session/di/SessionTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Param, Query, CurrentUser, Req } from '@shared/http/params';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import SessionService from '@modules/session/services/SessionService';
+import { sessionRoutes } from '@volt/contracts/modules/session/routes';
 
-/**
- * The single HTTP controller for the session module. One Express handler per
- * route, assembling the input exactly as `buildControllerParams` did for the
- * generated controllers, delegating to {@link SessionService}, and responding
- * via {@link BaseResponse} with the original status codes. Handlers are
- * arrow-function properties so `this` stays bound when passed by reference to
- * the router. Thrown `ApplicationError`s propagate to `httpErrorMiddleware`
- * via Express 5 async forwarding.
- */
-@injectable()
-export default class SessionController {
-    constructor(
-        @inject(SESSION_TOKENS.SessionService) private readonly sessionService: SessionService
-    ) {}
+@Middleware(protect)
+export default class SessionController extends Controller {
+    #service = new SessionService();
 
-    getActiveSessions = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetActiveSessionsInputDTO;
-        const value = await this.sessionService.getActiveSessions(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(sessionRoutes.getActiveSessions)
+    getActiveSessions(@CurrentUser() userId: string, @Req() req: AuthenticatedRequest) {
+        return this.#service.getActiveSessions(userId, req.token);
+    }
 
-    revokeSessionById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RevokeSessionInputDTO;
-        await this.sessionService.revokeSession(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(sessionRoutes.getLoginActivity)
+    getLoginActivity(@CurrentUser() userId: string, @Query('limit') limit?: string) {
+        return this.#service.getLoginActivity(userId, limit ? Number(limit) : undefined);
+    }
 
-    getMyLoginActivity = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetLoginActivityInputDTO;
-        const value = await this.sessionService.getLoginActivity(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(sessionRoutes.revokeSession)
+    async revokeSession(@Param('sessionId') sessionId: string, @CurrentUser() userId: string) {
+        await this.#service.revokeSession(sessionId, userId);
+    }
 
-    revokeAllSessions = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as RevokeAllSessionsInputDTO;
-        const value = await this.sessionService.revokeAllSessions(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(sessionRoutes.revokeAllSessions)
+    revokeAllSessions(@CurrentUser() userId: string, @Req() req: AuthenticatedRequest) {
+        return this.#service.revokeAllSessions(userId, req.token ?? '');
+    }
 }

@@ -1,8 +1,47 @@
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import { Document, Model, Schema, Types } from 'mongoose';
 import mongoose from 'mongoose';
-import type { WhiteboardProps } from '@modules/whiteboards/entities/Whiteboard';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+
+export interface PopulatedWhiteboardUser {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string;
+}
+
+export type WhiteboardLastEditedBy = string | PopulatedWhiteboardUser | null;
+
+export interface WhiteboardProps {
+    team: string;
+    createdBy: string;
+    title: string;
+    folder: string | null;
+    storageClusterId?: string;
+    payloadKey: string;
+    thumbnailKey?: string;
+    lastEditedBy?: string | PopulatedWhiteboardUser | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
+ * Throws if the whiteboard has no storage cluster assigned. Kept alongside the
+ * model (the former `entities/Whiteboard` helper) so the service and the
+ * realtime state service can guard cluster access without a domain entity layer.
+ */
+export const requireWhiteboardStorageClusterId = (whiteboardId: string, storageClusterId?: string | null): string => {
+    if (storageClusterId && storageClusterId.trim().length > 0) {
+        return storageClusterId;
+    }
+
+    throw ApplicationError.conflict(
+        'Whiteboard::StorageClusterRequired',
+        `Whiteboard ${whiteboardId} does not have a storage cluster assigned`
+    );
+};
 
 type WhiteboardRelations = 'team' | 'createdBy' | 'lastEditedBy';
 

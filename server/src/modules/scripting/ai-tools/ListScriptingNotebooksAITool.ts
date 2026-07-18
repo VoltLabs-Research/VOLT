@@ -1,7 +1,7 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { ListScriptingNotebooksUseCase } from '@modules/scripting/use-cases/ListScriptingNotebooksUseCase';
-import { ScriptingNotebookScope } from '@modules/scripting/entities/ScriptingNotebookScope';
+import ScriptingService from '@modules/scripting/services/ScriptingService';
+import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -17,14 +17,10 @@ export class ListScriptingNotebooksAITool extends AITool {
         limit: z.number().optional().default(500)
     });
 
-    constructor(
-        protected readonly useCase: ListScriptingNotebooksUseCase
-    ) {
-        super();
-    }
+    #service = new ScriptingService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.listNotebooks({
             teamId: scope.teamId,
             trajectoryId: params.trajectoryId,
             scope: params.scope,

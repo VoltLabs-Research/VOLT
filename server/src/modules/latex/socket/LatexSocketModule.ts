@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { ListLatexFilesUseCase } from '@modules/latex/use-cases/ListLatexFilesUseCase';
-import { UpdateLatexFileUseCase } from '@modules/latex/use-cases/UpdateLatexFileUseCase';
+import LatexService from '@modules/latex/services/LatexService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
@@ -120,12 +119,12 @@ export default class LatexSocketModule extends BaseSocketModule {
 
     private readonly fileSessions = new Map<string, LatexFileSession>();
 
+    #service = new LatexService();
+
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly listFilesUseCase: ListLatexFilesUseCase,
-        private readonly updateFileUseCase: UpdateLatexFileUseCase
+        eventRegistry: SocketIOEventRegistry
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -416,7 +415,7 @@ export default class LatexSocketModule extends BaseSocketModule {
             return existing.teamId === teamId ? existing : null;
         }
 
-        const files = await this.listFilesUseCase.execute({ documentId, teamId }).catch((error: unknown) => {
+        const files = await this.#service.listFiles({ teamId, documentId }).catch((error: unknown) => {
             logger.warn(`@latex-socket - failed to load files for document ${documentId}: ${(error as Error).message}`);
             return null;
         });
@@ -529,9 +528,9 @@ export default class LatexSocketModule extends BaseSocketModule {
         content: string
     ): Promise<void> {
         try {
-            await this.updateFileUseCase.execute({
-                documentId,
+            await this.#service.updateFile({
                 teamId,
+                documentId,
                 fileId,
                 content
             });

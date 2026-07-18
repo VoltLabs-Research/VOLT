@@ -1,13 +1,12 @@
-import type {
-    IScriptingSessionLock,
-    IScriptingSessionLockLease
-} from '@modules/scripting/ports/IScriptingSessionLock';
-import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type IORedis from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { inject } from 'tsyringe';
+
+export interface ScriptingSessionLockLease {
+    release(): Promise<void>;
+}
 
 const RELEASE_LOCK_SCRIPT = `
 if redis.call("get", KEYS[1]) == ARGV[1] then
@@ -16,14 +15,14 @@ end
 return 0
 `;
 
-@Singleton(SCRIPTING_TOKENS.ScriptingSessionLock)
-export class RedisScriptingSessionLock implements IScriptingSessionLock {
+@Singleton()
+export class RedisScriptingSessionLock {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis
     ) {}
 
-    async acquire(key: string, ttlMs: number): Promise<IScriptingSessionLockLease | null> {
+    async acquire(key: string, ttlMs: number): Promise<ScriptingSessionLockLease | null> {
         const token = randomUUID();
         const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
 

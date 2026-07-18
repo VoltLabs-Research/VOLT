@@ -12,8 +12,6 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
-import type { IRasterMetadataService } from '@modules/raster/ports/IRasterMetadataService';
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
@@ -32,8 +30,8 @@ interface ITrajectoryFrameCounter {
     countFrames(trajectoryId: string): Promise<number>;
 }
 
-@Singleton(RASTER_TOKENS.RasterMetadataService)
-export class RasterMetadataService implements IRasterMetadataService {
+@Singleton()
+export class RasterMetadataService {
     constructor(
         private readonly rasterStorage: RasterStorageService,
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,

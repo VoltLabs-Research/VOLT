@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { UpdateWhiteboardUseCase } from '@modules/whiteboards/use-cases/UpdateWhiteboardUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -13,9 +14,11 @@ export class UpdateWhiteboardAITool extends AITool {
         title: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: UpdateWhiteboardUseCase
-    ) {
-        super();
+    #service = new WhiteboardService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.updateWhiteboard(scope.teamId, params.whiteboardId, scope.userId, {
+            title: params.title
+        });
     }
 }

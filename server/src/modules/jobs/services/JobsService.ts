@@ -1,31 +1,53 @@
-import type { RemoveTeamRunningJobsInputDTO } from '@modules/jobs/dtos/RemoveTeamRunningJobsDTO';
-import type { RetryTeamFailedJobsInputDTO, RetryTeamFailedJobsOutputDTO } from '@modules/jobs/dtos/RetryTeamFailedJobsDTO';
-import RemoveTeamRunningJobsUseCase, { type RemoveTeamRunningJobsOutputDTO } from '@modules/jobs/use-cases/RemoveTeamRunningJobsUseCase';
-import RetryTeamFailedJobsUseCase from '@modules/jobs/use-cases/RetryTeamFailedJobsUseCase';
-import { JOBS_TOKENS } from '@modules/jobs/di/JobsTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import type {
+    ITeamJobMaintenanceService,
+    RemoveTeamJobsResult,
+    RetryTeamJobsResult
+} from '@shared/contracts/ports/ITeamJobMaintenanceService';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
+import type { TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
+import { container as diContainer } from 'tsyringe';
+
+interface RemoveRunningJobsInput {
+    teamId: string;
+    trajectoryId: string;
+}
+
+interface RetryFailedJobsInput {
+    teamId: string;
+    trajectoryId: string;
+}
+
+export interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
 
 /**
- * The single application service for the jobs module. Each method folds a
- * previously separate use case, converting the Result error channel to thrown
- * `ApplicationError`s so Express 5 forwards them to the global error middleware.
- * The underlying use cases are retained because the jobs AI tools
- * (`remove_team_running_jobs`, `retry_team_failed_jobs`) consume them directly;
- * these methods delegate and unwrap the Result for the HTTP path.
+ * The single application service for the jobs module (pollium style): folds the
+ * two former use cases verbatim. It `new`s nothing of its own — its two
+ * collaborators are genuinely-shared stateful singletons resolved once from the
+ * DI container:
+ *  - maintenance: `ITeamJobMaintenanceService` (redis + daemon client + event
+ *    bus) registered under the neutral `COMPUTE_TOKENS.TeamJobMaintenanceService`
+ *    and also injected by the trajectory/analysis cleanup handlers.
+ *  - realtimeSync: the team module's `TeamJobsRealtimeSyncService`
+ *    (socket-backed team-jobs broadcaster), shared with the team socket layer.
+ * Both surface typed `ApplicationError`s on their own; this service just merges
+ * their results for the HTTP path (no Result channel).
  */
-@Singleton(JOBS_TOKENS.JobsService)
 export default class JobsService {
-    constructor(
-        @inject(RemoveTeamRunningJobsUseCase) private readonly removeTeamRunningJobsUseCase: RemoveTeamRunningJobsUseCase,
-        @inject(RetryTeamFailedJobsUseCase) private readonly retryTeamFailedJobsUseCase: RetryTeamFailedJobsUseCase
-    ) {}
+    #maintenance = diContainer.resolve<ITeamJobMaintenanceService>(COMPUTE_TOKENS.TeamJobMaintenanceService);
+    #realtimeSync = diContainer.resolve(TeamJobsRealtimeSyncService);
 
-    async removeRunningJobs(input: RemoveTeamRunningJobsInputDTO): Promise<RemoveTeamRunningJobsOutputDTO> {
-        return this.removeTeamRunningJobsUseCase.execute(input);
+    async removeRunningJobs(input: RemoveRunningJobsInput): Promise<RemoveRunningJobsResult> {
+        const outcome = await this.#maintenance.removeJobsForTrajectory(input.teamId, input.trajectoryId);
+        const snapshot = await this.#realtimeSync.broadcastSnapshot(input.teamId);
+
+        return {
+            ...outcome,
+            ...snapshot
+        };
     }
 
-    async retryFailedJobs(input: RetryTeamFailedJobsInputDTO): Promise<RetryTeamFailedJobsOutputDTO> {
-        return this.retryTeamFailedJobsUseCase.execute(input);
+    async retryFailedJobs(input: RetryFailedJobsInput): Promise<RetryTeamJobsResult> {
+        return this.#maintenance.retryFailedJobsForTrajectory(input.teamId, input.trajectoryId);
     }
 }

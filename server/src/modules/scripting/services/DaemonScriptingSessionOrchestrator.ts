@@ -1,15 +1,9 @@
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import type {
-    IScriptingSessionOrchestrator,
-    ScriptingSessionStartInput,
-    ScriptingSessionStartResult
-} from '@modules/scripting/ports/IScriptingSessionOrchestrator';
-import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
-import type { IScriptingNotebookRepository } from '@modules/scripting/ports/IScriptingNotebookRepository';
-import type { IJupyterNotebookService } from '@modules/scripting/ports/IJupyterNotebookService';
-import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/ports/IScriptingJupyterAccessTokenService';
-import type { INotebookRuntimeTerminator } from '@modules/scripting/ports/INotebookRuntimeTerminator';
+import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
+import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
+import { NotebookRuntimeTerminator } from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -18,7 +12,33 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { inject } from 'tsyringe';
 
-type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+
+export interface ScriptingSessionNotebookInput {
+    notebookPath: string;
+    content?: Record<string, unknown>;
+}
+
+export interface ScriptingSessionJupyterInfo {
+    url: string;
+    ready: boolean;
+    containerStage?: NotebookContainerStage;
+}
+
+export interface ScriptingSessionStartInput {
+    teamId: string;
+    teamClusterId: string;
+    userId: string;
+    notebook?: ScriptingSessionNotebookInput;
+    notebookId?: string;
+    secretKey?: string;
+    trajectoryId?: string | null;
+}
+
+export interface ScriptingSessionStartResult {
+    notebookId: string;
+    jupyter: ScriptingSessionJupyterInfo;
+}
 
 interface DaemonNotebookJupyterResponse {
     internalPath: string;
@@ -48,19 +68,22 @@ interface DaemonNotebookSessionRequest {
     notebook: DaemonNotebookSessionSnapshot;
 }
 
-const getNotebookTeamClusterId = (teamCluster: string | null | undefined): string | null => {
-    return teamCluster ?? null;
-};
-
-@Singleton(SCRIPTING_TOKENS.ScriptingSessionOrchestrator)
-export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrchestrator {
+/**
+ * Shared singleton (stateful daemon collaborator): starts/tears-down remote
+ * Jupyter notebook sessions over the {@link ITeamClusterDaemonClient}. Talks to
+ * the Mongoose {@link ScriptingNotebookModel} directly (no repository) and injects
+ * its stateless sibling collaborators by class. Consumed both by
+ * {@link ScriptingService} (create-session flow) and the trajectory-deleted event
+ * handler, so it stays a `@Singleton()` resolved once.
+ */
+@Singleton()
+export class DaemonScriptingSessionOrchestrator {
     constructor(
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        @inject(SCRIPTING_TOKENS.JupyterNotebookService) private readonly notebookService: IJupyterNotebookService,
-        @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
-        @inject(SCRIPTING_TOKENS.NotebookRuntimeTerminator) private readonly notebookRuntimeTerminator: INotebookRuntimeTerminator
+        private readonly notebookService: JupyterNotebookService,
+        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
+        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
     ) {}
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
@@ -93,10 +116,10 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
             request,
             { timeoutMs: 600_000 }
         );
-        await this.scriptingNotebookRepository.updateById(input.notebookId, {
-            runtimeNotebookId,
-            teamCluster: teamClusterId
-        });
+        await ScriptingNotebookModel.updateOne(
+            { _id: input.notebookId },
+            { $set: { runtimeNotebookId, teamCluster: teamClusterId } }
+        );
 
         const jupyter = this.requireDaemonJupyterResponse(response);
         const daemonPath = jupyter.internalPath;
@@ -122,15 +145,15 @@ export class DaemonScriptingSessionOrchestrator implements IScriptingSessionOrch
     }
 
     async deleteSession(trajectoryId: string): Promise<void> {
-        const notebooks = await this.scriptingNotebookRepository.findAllWithTrajectory(trajectoryId);
+        const notebooks = await ScriptingNotebookModel.find({ trajectory: trajectoryId }).exec();
 
         for (const notebook of notebooks) {
-            const notebookTeamClusterId = getNotebookTeamClusterId(notebook.props.teamCluster);
-            if (!notebook.props.runtimeNotebookId || !notebookTeamClusterId) {
+            const notebookTeamClusterId = notebook.teamCluster ? String(notebook.teamCluster) : null;
+            if (!notebook.runtimeNotebookId || !notebookTeamClusterId) {
                 continue;
             }
 
-            await this.notebookRuntimeTerminator.terminate(notebookTeamClusterId, notebook.props.runtimeNotebookId);
+            await this.notebookRuntimeTerminator.terminate(notebookTeamClusterId, notebook.runtimeNotebookId);
         }
     }
 

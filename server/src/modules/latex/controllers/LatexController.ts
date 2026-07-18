@@ -1,216 +1,276 @@
-import type LatexService from '@modules/latex/services/LatexService';
-import type { CompileLatexDocumentInputDTO } from '@modules/latex/dtos/CompileLatexDocumentDTO';
-import type { CreateLatexDocumentInputDTO } from '@modules/latex/dtos/CreateLatexDocumentDTO';
-import type { CreateLatexFileInputDTO } from '@modules/latex/dtos/CreateLatexFileDTO';
-import type { DeleteLatexAssetInputDTO } from '@modules/latex/dtos/DeleteLatexAssetDTO';
-import type { DeleteLatexDocumentInputDTO } from '@modules/latex/dtos/DeleteLatexDocumentDTO';
-import type { DeleteLatexFileInputDTO } from '@modules/latex/dtos/DeleteLatexFileDTO';
-import type { ExportLatexDocumentInputDTO } from '@modules/latex/dtos/ExportLatexDocumentDTO';
-import type { GetLatexAssetContentInputDTO } from '@modules/latex/dtos/GetLatexAssetContentDTO';
-import type { GetLatexDocumentInputDTO } from '@modules/latex/dtos/GetLatexDocumentDTO';
-import type { ImportLatexDocumentInputDTO } from '@modules/latex/dtos/ImportLatexDocumentDTO';
-import type { ListLatexAssetsInputDTO } from '@modules/latex/dtos/ListLatexAssetsDTO';
-import type { ListLatexDocumentsInputDTO } from '@modules/latex/dtos/ListLatexDocumentsDTO';
-import type { ListLatexFilesInputDTO } from '@modules/latex/dtos/ListLatexFilesDTO';
-import type { MoveLatexDocumentInputDTO } from '@modules/latex/dtos/MoveLatexDocumentDTO';
-import type { SetLatexFileEntrypointInputDTO } from '@modules/latex/dtos/SetLatexFileEntrypointDTO';
-import type { UpdateLatexAssetInputDTO } from '@modules/latex/dtos/UpdateLatexAssetDTO';
-import type { UpdateLatexDocumentInputDTO } from '@modules/latex/dtos/UpdateLatexDocumentDTO';
-import type { UpdateLatexFileInputDTO } from '@modules/latex/dtos/UpdateLatexFileDTO';
-import type { UploadLatexAssetInputDTO } from '@modules/latex/dtos/UploadLatexAssetDTO';
-import { LATEX_TOKENS } from '@modules/latex/di/LatexTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import { upload } from '@shared/infrastructure/http/middleware/upload';
+import LatexService from '@modules/latex/services/LatexService';
+import { latexRoutes } from '@volt/contracts/modules/latex/routes';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { inject, injectable } from 'tsyringe';
+import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
+import type {
+    CreateLatexDocumentInput,
+    UpdateLatexDocumentInput,
+    MoveLatexDocumentInput,
+    CreateLatexFileInput,
+    UpdateLatexFileInput,
+    UpdateLatexAssetInput,
+    UploadLatexAssetInput,
+    CreateLatexFolderInput,
+    UpdateLatexFolderInput
+} from '@volt/contracts/modules/latex/http';
 
 /**
- * The single HTTP controller for the latex module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link LatexService}, and
- * responding via {@link BaseResponse}. `listDocuments` preserves the former
- * `createPaginatedController` shape; `exportDocumentTex`/`exportDocumentZip`/
- * `compileDocument` reproduce the `createPreparedDownloadStreamController`
- * behaviour (await `prepare()`, apply the prepared `headers`, pipe); and
- * `getAssetContent` reproduces the `createStreamController` behaviour with the
- * original custom header set. Handlers are arrow-function properties so `this`
- * stays bound when passed by reference to the router. Thrown `ApplicationError`s
- * propagate to `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the latex module (pollium style): every route
+ * is bound with `@Route(latexRoutes.x)` and delegates to a {@link LatexService}
+ * the controller `new`s itself. The class-level
+ * `@Middleware(protect, teamScoped(Resource.LATEX))` replaces the old mount-time
+ * auth + team-scope layer (`basePath /api/latex/:teamId`, `resource LATEX`,
+ * `teamScope BasePath`). `importDocument` carries a per-method `upload.single`
+ * middleware. The compile / export / asset-content handlers take `@Res()`,
+ * write the binary response themselves and pipe the stream (reproducing the
+ * former prepared-download-stream controller verbatim); the `Controller` base's
+ * responder no-ops on its `headersSent` guard.
  */
-@injectable()
-export default class LatexController {
-    constructor(
-        @inject(LATEX_TOKENS.LatexService) private readonly latexService: LatexService
-    ) {}
+@Middleware(protect, teamScoped(Resource.LATEX))
+export default class LatexController extends Controller {
+    #service = new LatexService();
 
-    /**
-     * Reproduces `BaseStreamController.handleSuccess` verbatim: applies the
-     * response headers, wires the request-close and stream-error handlers, then
-     * pipes the binary stream to the response.
-     */
-    private pipeStream(res: Response, stream: Readable, headers: Record<string, string>): void {
-        for (const [name, value] of Object.entries(headers)) {
-            res.setHeader(name, value);
-        }
+    // ---- Documents ----
 
-        res.on('close', () => {
-            stream.destroy();
-        });
-
-        stream.on('error', (error: unknown) => {
-            logger.error(error);
-
-            if (!res.headersSent) {
-                BaseResponse.fromError(res, error);
-                return;
-            }
-
-            res.destroy(error instanceof Error ? error : undefined);
-        });
-
-        stream.pipe(res);
+    @Route(latexRoutes.listDocuments)
+    listDocuments(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+        return this.#service.listDocuments({ teamId, ...query });
     }
 
-    listDocuments = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListLatexDocumentsInputDTO;
-        const value = await this.latexService.listDocuments(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(latexRoutes.createDocument)
+    @Status(201)
+    createDocument(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateLatexDocumentInput) {
+        return this.#service.createDocument({ teamId, userId, ...body });
+    }
 
-    createDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateLatexDocumentInputDTO;
-        const value = await this.latexService.createDocument(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(latexRoutes.importDocument)
+    @Status(201)
+    @Middleware(upload.single('file'))
+    importDocument(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Req() req: AuthenticatedRequest) {
+        const body = (req.body ?? {}) as { folderId?: string | null };
+        return this.#service.importDocument({
+            teamId,
+            userId,
+            file: req.file as Express.Multer.File,
+            folderId: body.folderId ?? null
+        });
+    }
 
-    importDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ImportLatexDocumentInputDTO;
-        const value = await this.latexService.importDocument(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(latexRoutes.getDocument)
+    getDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
+        return this.#service.getDocument({ teamId, documentId });
+    }
 
-    getDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetLatexDocumentInputDTO;
-        const value = await this.latexService.getDocument(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.deleteDocument)
+    async deleteDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @CurrentUser() userId: string) {
+        await this.#service.deleteDocument({ teamId, documentId, userId });
+    }
 
-    deleteDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteLatexDocumentInputDTO;
-        await this.latexService.deleteDocument(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(latexRoutes.updateDocument)
+    updateDocument(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UpdateLatexDocumentInput
+    ) {
+        return this.#service.updateDocument({ teamId, documentId, userId, ...body });
+    }
 
-    updateDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateLatexDocumentInputDTO;
-        const value = await this.latexService.updateDocument(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.moveDocument)
+    @Status(200)
+    moveDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Body() body: MoveLatexDocumentInput) {
+        return this.#service.moveDocument({ teamId, documentId, folderId: body.folderId });
+    }
 
-    moveDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as MoveLatexDocumentInputDTO;
-        const value = await this.latexService.moveDocument(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    // ---- Assets ----
 
-    listAssets = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListLatexAssetsInputDTO;
-        const value = await this.latexService.listAssets(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.listAssets)
+    listAssets(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
+        return this.#service.listAssets({ teamId, documentId });
+    }
 
-    getAssetContent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetLatexAssetContentInputDTO;
-        const output = await this.latexService.getAssetContent(input);
+    @Route(latexRoutes.getAssetContent)
+    async getAssetContent(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Query('key') key: string,
+        @Res() res: Response
+    ): Promise<void> {
+        const output = await this.#service.getAssetContent({ teamId, documentId, key });
 
         const headers: Record<string, string> = {
             'Content-Type': output.contentType || 'application/octet-stream',
             'Cache-Control': 'private, max-age=300'
         };
-
         if (typeof output.contentLength === 'number') {
             headers['Content-Length'] = String(output.contentLength);
         }
-
         if (output.contentEncoding) {
             headers['Content-Encoding'] = output.contentEncoding;
         }
 
-        this.pipeStream(res, output.stream, headers);
-    };
+        await this.#pipeStream(res, output.stream, headers);
+    }
 
-    uploadAsset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UploadLatexAssetInputDTO;
-        const value = await this.latexService.uploadAsset(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(latexRoutes.uploadAsset)
+    @Status(201)
+    uploadAsset(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @CurrentUser() userId: string,
+        @Body() body: UploadLatexAssetInput
+    ) {
+        return this.#service.uploadAsset({ teamId, documentId, userId, ...body });
+    }
 
-    deleteAsset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteLatexAssetInputDTO;
-        await this.latexService.deleteAsset(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(latexRoutes.deleteAsset)
+    async deleteAsset(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('assetId') assetId: string) {
+        await this.#service.deleteAsset({ teamId, documentId, assetId });
+    }
 
-    updateAsset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateLatexAssetInputDTO;
-        const value = await this.latexService.updateAsset(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.updateAsset)
+    updateAsset(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Param('assetId') assetId: string,
+        @Body() body: UpdateLatexAssetInput
+    ) {
+        return this.#service.updateAsset({ teamId, documentId, assetId, path: body.path });
+    }
 
-    exportDocumentTex = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ExportLatexDocumentInputDTO;
-        const output = await this.latexService.exportDocumentTex(input);
+    // ---- Export / compile (binary downloads) ----
+
+    @Route(latexRoutes.exportDocumentTex)
+    async exportDocumentTex(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+        const output = await this.#service.exportDocumentTex({ teamId, documentId });
         await output.prepare?.();
-        this.pipeStream(res, output.stream, output.headers);
-    };
+        await this.#pipeStream(res, output.stream, output.headers);
+    }
 
-    exportDocumentZip = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ExportLatexDocumentInputDTO;
-        const output = await this.latexService.exportDocumentZip(input);
+    @Route(latexRoutes.exportDocumentZip)
+    async exportDocumentZip(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+        const output = await this.#service.exportDocumentZip({ teamId, documentId });
         await output.prepare?.();
-        this.pipeStream(res, output.stream, output.headers);
-    };
+        await this.#pipeStream(res, output.stream, output.headers);
+    }
 
-    compileDocument = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CompileLatexDocumentInputDTO;
-        const output = await this.latexService.compileDocument(input);
+    @Route(latexRoutes.compileDocument)
+    async compileDocument(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
+        const output = await this.#service.compileDocument({ teamId, documentId });
         await output.prepare?.();
-        this.pipeStream(res, output.stream, output.headers);
-    };
+        await this.#pipeStream(res, output.stream, output.headers);
+    }
 
-    listFiles = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListLatexFilesInputDTO;
-        const value = await this.latexService.listFiles(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    // ---- Files ----
 
-    createFile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateLatexFileInputDTO;
-        const value = await this.latexService.createFile(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(latexRoutes.listFiles)
+    listFiles(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
+        return this.#service.listFiles({ teamId, documentId });
+    }
 
-    updateFile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateLatexFileInputDTO;
-        const value = await this.latexService.updateFile(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.createFile)
+    @Status(201)
+    createFile(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @CurrentUser() userId: string,
+        @Body() body: CreateLatexFileInput
+    ) {
+        return this.#service.createFile({ teamId, documentId, userId, ...body });
+    }
 
-    deleteFile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteLatexFileInputDTO;
-        const value = await this.latexService.deleteFile(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.updateFile)
+    updateFile(
+        @Param('teamId') teamId: string,
+        @Param('documentId') documentId: string,
+        @Param('fileId') fileId: string,
+        @Body() body: UpdateLatexFileInput
+    ) {
+        return this.#service.updateFile({ teamId, documentId, fileId, ...body });
+    }
 
-    setFileEntrypoint = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SetLatexFileEntrypointInputDTO;
-        const value = await this.latexService.setFileEntrypoint(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(latexRoutes.deleteFile)
+    async deleteFile(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('fileId') fileId: string) {
+        await this.#service.deleteFile({ teamId, documentId, fileId });
+    }
+
+    @Route(latexRoutes.setFileEntrypoint)
+    setFileEntrypoint(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Param('fileId') fileId: string) {
+        return this.#service.setFileEntrypoint({ teamId, documentId, fileId });
+    }
+
+    // ---- Folders ----
+
+    @Route(latexRoutes.listFolders)
+    listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+        return this.#service.listFolders({ teamId, ...query });
+    }
+
+    @Route(latexRoutes.getFolder)
+    getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+        return this.#service.getFolder({ teamId, folderId });
+    }
+
+    @Route(latexRoutes.createFolder)
+    @Status(201)
+    createFolder(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateLatexFolderInput) {
+        return this.#service.createFolder({ teamId, userId, ...body });
+    }
+
+    @Route(latexRoutes.updateFolder)
+    updateFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Body() body: UpdateLatexFolderInput) {
+        return this.#service.updateFolder({ teamId, folderId, ...body });
+    }
+
+    @Route(latexRoutes.removeFolder)
+    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+        await this.#service.deleteFolder({ teamId, folderId });
+    }
+
+    /**
+     * Reproduces the former `BaseStreamController.handleSuccess`: applies the
+     * response headers, wires request-close and stream-error handlers, then pipes
+     * the binary stream. Returns a promise that settles when the response is done
+     * so the `Controller` base's responder sees `headersSent` and no-ops.
+     */
+    #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
+        return new Promise<void>((resolve) => {
+            for (const [name, value] of Object.entries(headers)) {
+                res.setHeader(name, value);
+            }
+
+            res.on('close', () => {
+                stream.destroy();
+                resolve();
+            });
+
+            res.on('finish', () => {
+                resolve();
+            });
+
+            stream.on('error', (error: unknown) => {
+                logger.error(error);
+
+                if (!res.headersSent) {
+                    BaseResponse.fromError(res, error);
+                } else {
+                    res.destroy(error instanceof Error ? error : undefined);
+                }
+
+                resolve();
+            });
+
+            stream.pipe(res);
+        });
+    }
 }

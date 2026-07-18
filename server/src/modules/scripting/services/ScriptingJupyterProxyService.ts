@@ -1,10 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
-import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
-import type { IScriptingNotebookRepository } from '@modules/scripting/ports/IScriptingNotebookRepository';
-import type { IScriptingJupyterAccessTokenService } from '@modules/scripting/ports/IScriptingJupyterAccessTokenService';
-import type { IScriptingJupyterProxyService } from '@modules/scripting/ports/IScriptingJupyterProxyService';
+import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
+import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import {
     buildJupyterProxyBasePath,
     findNotebookExposure,
@@ -136,16 +134,15 @@ const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<st
 };
 
 @Singleton()
-export class ScriptingJupyterProxyService implements IScriptingJupyterProxyService {
+export class ScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
+    private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
         @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        @inject(SCRIPTING_TOKENS.ScriptingJupyterAccessTokenService) private readonly accessTokenService: IScriptingJupyterAccessTokenService,
         private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
         @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService
     ) {
@@ -367,19 +364,19 @@ export class ScriptingJupyterProxyService implements IScriptingJupyterProxyServi
             throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, `Missing permission: ${permission}`);
         }
 
-        const notebook = await this.scriptingNotebookRepository.findOne({
+        const notebook = await ScriptingNotebookModel.findOne({
             team: teamId,
             runtimeNotebookId
-        });
+        }).exec();
 
-        if (!notebook || !notebook.props.teamCluster || !notebook.props.runtimeNotebookId) {
+        if (!notebook || !notebook.teamCluster || !notebook.runtimeNotebookId) {
             throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Notebook runtime not found');
         }
 
         return {
             teamId,
             runtimeNotebookId,
-            teamClusterId: notebook.props.teamCluster,
+            teamClusterId: String(notebook.teamCluster),
             userId
         };
     }

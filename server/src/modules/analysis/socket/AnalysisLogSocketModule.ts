@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { IAnalysisRepository } from '@modules/analysis/ports/IAnalysisRepository';
 import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
-import { ANALYSIS_TOKENS } from '@modules/analysis/di/AnalysisTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
@@ -38,8 +38,8 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(ANALYSIS_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService
     ) {
         super(emitter, roomManager, eventRegistry);
     }

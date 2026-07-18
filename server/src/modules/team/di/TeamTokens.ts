@@ -1,12 +1,6 @@
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 
 export const TEAM_TOKENS = Object.freeze({
-    TeamHttpService: Symbol.for('TeamHttpService'),
-    TeamMemberHttpService: Symbol.for('TeamMemberHttpService'),
-    TeamRoleHttpService: Symbol.for('TeamRoleHttpService'),
-    TeamInvitationHttpService: Symbol.for('TeamInvitationHttpService'),
-    SecretKeyHttpService: Symbol.for('SecretKeyHttpService'),
-    TeamAIIntegrationHttpService: Symbol.for('TeamAIIntegrationHttpService'),
     TeamRepository: TEAM_CONTRACT_TOKENS.TeamRepository,
     TeamMemberRepository: TEAM_CONTRACT_TOKENS.TeamMemberRepository,
     TeamRoleRepository: Symbol.for('TeamRoleRepository'),

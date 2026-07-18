@@ -2,7 +2,17 @@ import { ValidationCodes } from '@core/constants/validation-codes';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema } from 'mongoose';
 import type { Document, Model } from 'mongoose';
-import type { NotificationProps } from '@modules/notification/entities/Notification';
+
+/** Persistence-level notification shape (the domain entity/mapper were removed). */
+export interface NotificationProps {
+    recipient: string;
+    title: string;
+    content: string;
+    read: boolean;
+    link?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 type NotificationRelations = 'recipient';
 export interface NotificationDocument extends Persistable<NotificationProps, NotificationRelations>, Document {}

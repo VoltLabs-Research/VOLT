@@ -1,6 +1,6 @@
 import { OAuthProvider } from '@modules/auth/entities/User';
 import { ErrorCodes } from '@core/constants/error-codes';
-import OAuthLoginUseCase from '@modules/auth/use-cases/OAuthLoginUseCase';
+import type AuthService from '@modules/auth/services/AuthService';
 import type { Request } from 'express';
 import type { Profile } from 'passport';
 
@@ -72,7 +72,7 @@ const toOAuthFailure = (code?: unknown, statusCode?: number): OAuthStrategyFailu
 export default abstract class BaseOAuthStrategy<TProfile extends Profile = Profile> {
     constructor(
         protected readonly provider: OAuthProvider,
-        protected readonly oauthLoginUseCase: OAuthLoginUseCase,
+        protected readonly authService: AuthService,
         protected readonly mapper: OAuthProfileMapper<TProfile>
     ) {}
 
@@ -88,7 +88,7 @@ export default abstract class BaseOAuthStrategy<TProfile extends Profile = Profi
 
             const ip = req.ip || req.socket.remoteAddress || 'unknown';
             const userAgent = req.headers['user-agent'] || 'unknown';
-            const { user, token } = await this.oauthLoginUseCase.execute({
+            const { user, token } = await this.authService.oauthLogin({
                 email: email.toLowerCase(),
                 firstName: normalizeOptionalString(mappedProfile.firstName),
                 lastName: normalizeOptionalString(mappedProfile.lastName),

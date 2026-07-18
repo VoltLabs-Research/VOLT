@@ -1,26 +1,19 @@
-import { DeleteLatexDocumentUseCase } from '@modules/latex/use-cases/DeleteLatexDocumentUseCase';
-import type LatexDocument from '@modules/latex/entities/LatexDocument';
-import type { ILatexDocumentRepository } from '@modules/latex/ports/ILatexDocumentRepository';
-import { LATEX_TOKENS } from '@modules/latex/di/LatexTokens';
-import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
-import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
+import LatexService from '@modules/latex/services/LatexService';
+import type TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
+import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
-import { inject } from 'tsyringe';
 
+/**
+ * Deletes every LaTeX document owned by a deleted team (each document delete
+ * cascades to its files/assets via `latex-document.deleted`). Delegates to
+ * {@link LatexService} (the latex repository + use-case layers were removed in
+ * the pollium conversion).
+ */
 @Subscribe('team.deleted')
-export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<LatexDocument> {
-    constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository) protected readonly repository: ILatexDocumentRepository,
-        private readonly deleteLatexDocumentUseCase: DeleteLatexDocumentUseCase
-    ) {
-        super();
-    }
+export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
+    #service = new LatexService();
 
-    protected async deleteOne(documentId: string, event: TeamDeletedEvent): Promise<void> {
-        await this.deleteLatexDocumentUseCase.execute({
-            documentId,
-            teamId: event.payload.teamId,
-            userId: event.payload.userId
-        });
+    async handle(event: TeamDeletedEvent): Promise<void> {
+        await this.#service.deleteAllDocumentsForTeam(event.payload.teamId, event.payload.userId ?? '');
     }
 }

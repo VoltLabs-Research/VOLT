@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetTeamActivitySummaryUseCase from '@modules/daily-activity/use-cases/GetTeamActivitySummaryUseCase';
+import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -13,8 +13,8 @@ const parameters = z.object({
 type GetActivitySummaryParams = z.infer<typeof parameters>;
 
 /**
- * Summarizes team (or self) daily activity over a day range. Wraps the
- * extracted GetTeamActivitySummaryUseCase.
+ * Summarizes team (or self) daily activity over a day range. Delegates to a
+ * `new DailyActivityService()` (no use case, no DI).
  */
 @CollectionMember(AI_TOOL_TOKENS.AITool)
 export class GetActivitySummaryAITool extends AITool<GetActivitySummaryParams> {
@@ -23,12 +23,10 @@ export class GetActivitySummaryAITool extends AITool<GetActivitySummaryParams> {
         + 'who did what and when. Useful for "what happened this week?" questions.';
     readonly parameters = parameters;
 
-    constructor(protected readonly useCase: GetTeamActivitySummaryUseCase) {
-        super();
-    }
+    #service = new DailyActivityService();
 
     async execute(params: GetActivitySummaryParams, scope: AIToolScope) {
-        const { range, records } = await this.useCase.execute({
+        const { range, records } = await this.#service.getTeamActivitySummary({
             teamId: scope.teamId,
             range: params.range,
             userId: params.scope === 'self' ? scope.userId : undefined

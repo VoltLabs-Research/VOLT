@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { DeleteScriptingNotebookUseCase } from '@modules/scripting/use-cases/DeleteScriptingNotebookUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ScriptingService from '@modules/scripting/services/ScriptingService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -10,9 +11,12 @@ export class DeleteScriptingNotebookAITool extends AITool {
     readonly description = 'Delete a scripting Jupyter notebook.';
     readonly parameters = z.object({ notebookId: z.string() });
 
-    constructor(
-        protected readonly useCase: DeleteScriptingNotebookUseCase
-    ) {
-        super();
+    #service = new ScriptingService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.deleteNotebook({
+            notebookId: params.notebookId,
+            teamId: scope.teamId
+        });
     }
 }

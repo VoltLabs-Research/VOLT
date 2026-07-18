@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { TriggerRasterizationUseCase } from '@modules/raster/use-cases/TriggerRasterizationUseCase';
+import RasterService from '@modules/raster/services/RasterService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
@@ -36,11 +36,7 @@ export class RenderSceneScreenshotAITool extends AITool {
         timestep: z.number().optional().describe('Trajectory timestep to render. Defaults to the first frame (0).')
     });
 
-    constructor(
-        protected readonly triggerRasterization: TriggerRasterizationUseCase
-    ) {
-        super();
-    }
+    #service = new RasterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
         const { trajectoryId, analysisId, model } = params;
@@ -54,7 +50,7 @@ export class RenderSceneScreenshotAITool extends AITool {
         }
 
         try {
-            await this.triggerRasterization.execute({ trajectoryId, teamId: scope.teamId });
+            await this.#service.triggerRasterization({ trajectoryId, teamId: scope.teamId });
         } catch (error) {
             const code = error instanceof ApplicationError ? error.code : undefined;
             if (code !== ErrorCodes.RASTER_ALREADY_QUEUED) {

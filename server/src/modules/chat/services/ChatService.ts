@@ -1,413 +1,289 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from '@modules/chat/dtos/chat/AddUsersToGroupDTO';
-import type { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/dtos/chat/CreateGroupChatDTO';
-import type { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/dtos/chat/GetOrCreateChatDTO';
-import type { GetUserChatsInputDTO } from '@modules/chat/dtos/chat/GetUserChatsDTO';
-import type { LeaveGroupInputDTO } from '@modules/chat/dtos/chat/LeaveGroupDTO';
-import type { RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO } from '@modules/chat/dtos/chat/RemoveUsersFromGroupDTO';
-import { GroupAdminAction } from '@modules/chat/dtos/chat/UpdateGroupAdminsDTO';
-import type { UpdateGroupAdminsInputDTO, UpdateGroupAdminsOutputDTO } from '@modules/chat/dtos/chat/UpdateGroupAdminsDTO';
-import type { UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO } from '@modules/chat/dtos/chat/UpdateGroupInfoDTO';
-import type { DeleteMessageInputDTO } from '@modules/chat/dtos/chat-message/DeleteMessageDTO';
-import type { EditMessageInputDTO } from '@modules/chat/dtos/chat-message/EditMessageDTO';
-import type { GetChatMessagesInputDTO } from '@modules/chat/dtos/chat-message/GetChatMessagesDTO';
-import type { MarkMessageAsReadInputDTO } from '@modules/chat/dtos/chat-message/MarkMessageAsReadDTO';
-import type { PersistedChatMessageDTO, SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/dtos/chat-message/SendChatMessageDTO';
-import type { SendFileMessageInputDTO } from '@modules/chat/dtos/chat-message/SendFileMessageDTO';
-import type { ToggleMessageReactionInputDTO } from '@modules/chat/dtos/chat-message/ToggleMessageReactionDTO';
-import { CreateGroupChatUseCase } from '@modules/chat/use-cases/chat/CreateGroupChatUseCase';
-import { GetUserChatsUseCase } from '@modules/chat/use-cases/chat/GetUserChatsUseCase';
-import { GetChatMessagesUseCase } from '@modules/chat/use-cases/chat-message/GetChatMessagesUseCase';
-import { SendChatMessageUseCase } from '@modules/chat/use-cases/chat-message/SendChatMessageUseCase';
-import type { ChatParticipant, ChatProps } from '@modules/chat/entities/chat/Chat';
-import { ChatMessageType } from '@modules/chat/entities/chat-message/ChatMessage';
-import type { ChatMessageMetadata } from '@modules/chat/entities/chat-message/ChatMessage';
-import type { IChatRepository, PersistedChatDTO } from '@modules/chat/ports/chat/IChatRepository';
-import type { IChatMessageRepository } from '@modules/chat/ports/chat-message/IChatMessageRepository';
-import { CHAT_TOKENS } from '@modules/chat/di/ChatTokens';
-import { ensureTeamMembersExist } from '@modules/chat/utilities/chat/ensureTeamMembersExist';
-import { isParticipant } from '@modules/chat/utilities/chat/isParticipant';
-import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
-import { resolveGroupChat } from '@modules/chat/utilities/chat/resolveGroupChat';
+import ChatModel from '@modules/chat/models/chat/ChatModel';
+import type { ChatDocument } from '@modules/chat/models/chat/ChatModel';
+import ChatMessageModel from '@modules/chat/models/chat-message/ChatMessageModel';
+import { ChatMessageType } from '@modules/chat/models/chat-message/ChatMessageModel';
+import type { ChatMessageDocument, ChatMessageMetadata } from '@modules/chat/models/chat-message/ChatMessageModel';
+import ChatDeletedEvent from '@modules/chat/events/ChatDeletedEvent';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ISocketEmitter } from '@modules/socket/ports/ISocketEmitter';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import { toPersistedEntity } from '@shared/domain/persisted/to-persisted-entity';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import logger from '@shared/infrastructure/logger';
+import type { HydratedDocument } from 'mongoose';
+import { container as diContainer } from 'tsyringe';
+import type {
+    CreateGroupChatInput,
+    UpdateGroupInfoInput,
+    UpdateGroupAdminsInput,
+    SendChatMessageInput
+} from '@volt/contracts/modules/chat/http';
 
-const toParticipantId = (participant: ChatParticipant): string => {
+type ChatDoc = HydratedDocument<ChatDocument>;
+type ChatView = Record<string, unknown>;
+
+interface ChatMessagesQuery {
+    page?: number;
+    limit?: number;
+}
+
+interface ChatFileData {
+    filename: string;
+    originalName: string;
+    size: number;
+    mimetype: string;
+    url: string;
+}
+
+const stripPersisted = (obj: Record<string, unknown>): ChatView => {
+    const { __v: _ignored, _id, ...rest } = obj;
+    return { _id: String(_id), ...rest };
+};
+
+const toPersisted = (doc: { toObject(): Record<string, unknown> }): ChatView =>
+    stripPersisted(doc.toObject());
+
+const toParticipantId = (participant: unknown): string => {
     if (typeof participant === 'string') {
         return participant;
     }
-
-    if (participant._id) {
-        return participant._id.toString();
+    if (participant && typeof participant === 'object' && '_id' in participant && (participant as { _id?: unknown })._id) {
+        return String((participant as { _id: unknown })._id);
     }
-
-    return participant.toString();
+    return String(participant);
 };
 
 /**
- * The single application service for the chat module. Each method folds the
- * exact logic of a previously separate use case, converting the Result error
- * channel to thrown `ApplicationError`s so Express 5 forwards them to the
- * global error middleware. `getUserChats`, `getChatMessages`, `sendChatMessage`
- * and `createGroupChat` delegate to their retained use cases (still consumed by
- * the {@link ChatCollaborationAITool}), mirroring the auth module's
- * `updateAccount` delegator. Realtime pieces (socket module, event handlers)
- * are untouched and still use the repositories / retained use cases directly.
+ * The single application service for the chat module (pollium style): holds ALL
+ * the chat HTTP domain logic (folding every former use case + the chat
+ * utilities verbatim), talks to the Mongoose {@link ChatModel} /
+ * {@link ChatMessageModel} directly — no repository, entity, mapper, use case
+ * or DI on the service — and throws typed {@link ApplicationError}s (no Result
+ * channel) so Express forwards them to the global error middleware.
+ *
+ * Genuinely-stateful / cross-module collaborators are shared singletons resolved
+ * from the DI container (documented on each field) rather than `new`ed:
+ *  - socketEmitter: the live socket.io emitter (shared with the socket module)
+ *  - teamMemberRepo / teamRepo: the team kernel's repositories (cross-module)
+ *  - eventBus: the Redis-backed event bus (cross-module fan-out)
  */
-@Singleton(CHAT_TOKENS.ChatService)
 export default class ChatService {
-    constructor(
-        @inject(CHAT_TOKENS.ChatRepository) private readonly chatRepo: IChatRepository,
-        @inject(CHAT_TOKENS.ChatMessageRepository) private readonly messageRepo: IChatMessageRepository,
-        @inject(SOCKET_CONTRACT_TOKENS.SocketEmitter) private readonly socketEmitter: ISocketEmitter,
-        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepo: ITeamMemberRepository,
-        @inject(GetUserChatsUseCase) private readonly getUserChatsUseCase: GetUserChatsUseCase,
-        @inject(GetChatMessagesUseCase) private readonly getChatMessagesUseCase: GetChatMessagesUseCase,
-        @inject(SendChatMessageUseCase) private readonly sendChatMessageUseCase: SendChatMessageUseCase,
-        @inject(CreateGroupChatUseCase) private readonly createGroupChatUseCase: CreateGroupChatUseCase
-    ) {}
+    #socketEmitter = diContainer.resolve<ISocketEmitter>(SOCKET_CONTRACT_TOKENS.SocketEmitter);
+    #teamMemberRepo = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
+    #teamRepo = diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository);
+    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
-    /**
-     * Thin delegator to the retained {@link GetUserChatsUseCase} (still used by
-     * the chat-collaboration AI tool). Unwraps the Result to the thrown-error
-     * channel used by every other ChatService method.
-     */
-    async getUserChats(input: GetUserChatsInputDTO): Promise<PersistedChatDTO[]> {
-        return this.getUserChatsUseCase.execute(input);
+    // ---- Chats ------------------------------------------------------------
+
+    async getUserChats(userId: string): Promise<ChatView[]> {
+        const chats = await ChatModel.find({ participants: userId, isActive: true })
+            .populate('lastMessage')
+            .populate('participants')
+            .sort({ lastMessageAt: -1 })
+            .exec();
+        return chats.map((chat) => toPersisted(chat));
     }
 
-    async getOrCreateChat(input: GetOrCreateChatInputDTO): Promise<GetOrCreateChatOutputDTO> {
-        const { userId, targetUserId, teamId } = input;
-
+    async getOrCreateChat(userId: string, targetUserId: string, teamId: string): Promise<ChatView> {
         if (userId === targetUserId) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.CHAT_INVALID_ACTION,
-                'Cannot create chat with yourself'
-            );
+            throw ApplicationError.badRequest(ErrorCodes.CHAT_INVALID_ACTION, 'Cannot create chat with yourself');
         }
 
-        const result = await this.chatRepo.findOrCreateChat(userId, targetUserId, teamId);
-        return toPersistedEntity(result);
-    }
+        let chat = await ChatModel.findOne({
+            participants: { $all: [userId, targetUserId] },
+            team: teamId,
+            isGroup: false
+        });
 
-    /**
-     * Thin delegator to the retained {@link CreateGroupChatUseCase} (still used
-     * by the chat-collaboration AI tool). Unwraps the Result to the thrown-error
-     * channel used by every other ChatService method.
-     */
-    async createGroupChat(input: CreateGroupChatInputDTO): Promise<CreateGroupChatOutputDTO> {
-        return this.createGroupChatUseCase.execute(input);
-    }
-
-    async addUsersToGroup(input: AddUsersToGroupInputDTO): Promise<AddUsersToGroupOutputDTO> {
-        const { userId, chatId, userIds } = input;
-
-        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-
-        const teamId = chat.props.team;
-        await ensureTeamMembersExist(this.teamMemberRepo, teamId, userIds);
-
-        const newParticipants = new Set([...chat.props.participants, ...userIds]);
-
-        const updatedChat = await this.chatRepo.updateById(chat._id, { participants: Array.from(newParticipants) });
-        if (!updatedChat) {
-            throw ApplicationError.notFound(
-                ErrorCodes.RESOURCE_NOT_FOUND,
-                'Chat not found after update'
-            );
+        if (!chat) {
+            chat = await ChatModel.create({
+                participants: [userId, targetUserId],
+                team: teamId,
+                isActive: true,
+                isGroup: false,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
         }
 
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'users_added_to_group', {
+        await chat.populate('participants');
+        return toPersisted(chat);
+    }
+
+    async createGroupChat(userId: string, input: CreateGroupChatInput): Promise<ChatView> {
+        const { teamId, participantIds, groupName, groupDescription } = input;
+
+        const team = await this.#teamRepo.findById(teamId);
+        if (!team) {
+            throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
+        }
+
+        const allUserIds = [...new Set([userId, ...participantIds])];
+        await this.#ensureTeamMembersExist(teamId, allUserIds);
+
+        const chat = await ChatModel.create({
+            participants: allUserIds,
+            team: teamId,
+            isGroup: true,
+            groupName,
+            groupDescription,
+            admins: [userId],
+            createdBy: userId,
+            isActive: true
+        });
+
+        for (const participantId of allUserIds) {
+            this.#socketEmitter.emitToRoom(`user-${participantId}`, 'group_created', {
+                chatId: String(chat._id),
+                createdBy: userId
+            });
+        }
+
+        return toPersisted(chat);
+    }
+
+    async addUsersToGroup(userId: string, chatId: string, userIds: string[]): Promise<ChatView> {
+        const chat = await this.#resolveGroupChat(chatId, userId, true);
+
+        const teamId = String(chat.team);
+        await this.#ensureTeamMembersExist(teamId, userIds);
+
+        const newParticipants = new Set([...this.#participantIds(chat), ...userIds]);
+        const updatedChat = await this.#updateChat(chatId, { participants: Array.from(newParticipants) });
+
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'users_added_to_group', {
             chatId,
             userIds,
             addedBy: userId
         });
 
-        return toPersistedEntity(updatedChat);
+        return toPersisted(updatedChat);
     }
 
-    async removeUsersFromGroup(input: RemoveUsersFromGroupInputDTO): Promise<RemoveUsersFromGroupOutputDTO> {
-        const { userId, chatId, userIds } = input;
+    async removeUsersFromGroup(userId: string, chatId: string, userIds: string[]): Promise<ChatView> {
+        const chat = await this.#resolveGroupChat(chatId, userId, true);
 
-        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-
-        const newParticipants = chat.props.participants.filter((participant) => !userIds.includes(toParticipantId(participant)));
+        const newParticipants = this.#participantIds(chat).filter((participant) => !userIds.includes(participant));
         if (newParticipants.length < 2) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS,
-                'The group must have at least 2 members'
-            );
+            throw ApplicationError.badRequest(ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS, 'The group must have at least 2 members');
         }
 
-        const newAdmins = chat.props.admins.filter((admin) => !userIds.includes(admin));
-        const updatedChat = await this.chatRepo.updateById(chatId, {
-            participants: newParticipants,
-            admins: newAdmins
-        });
+        const newAdmins = this.#adminIds(chat).filter((admin) => !userIds.includes(admin));
+        const updatedChat = await this.#updateChat(chatId, { participants: newParticipants, admins: newAdmins });
 
-        if (!updatedChat) {
-            throw ApplicationError.notFound(
-                ErrorCodes.CHAT_NOT_FOUND,
-                'Chat not found'
-            );
-        }
-
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'users_removed_from_group', {
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'users_removed_from_group', {
             chatId,
             userIds,
             removedBy: userId
         });
 
-        return toPersistedEntity(updatedChat);
+        return toPersisted(updatedChat);
     }
 
-    async updateGroupInfo(input: UpdateGroupInfoInputDTO): Promise<UpdateGroupInfoOutputDTO> {
-        const { userId, chatId, groupName, groupDescription } = input;
+    async updateGroupInfo(userId: string, chatId: string, input: UpdateGroupInfoInput): Promise<ChatView> {
+        await this.#resolveGroupChat(chatId, userId, true);
 
-        await resolveGroupChat(this.chatRepo, chatId, userId, true);
+        const updateData: Record<string, unknown> = {};
+        if (input.groupName) updateData.groupName = input.groupName;
+        if (input.groupDescription) updateData.groupDescription = input.groupDescription;
 
-        const updateData: Partial<ChatProps> = {};
-        if (groupName) updateData.groupName = groupName;
-        if (groupDescription) updateData.groupDescription = groupDescription;
+        const updatedChat = await this.#updateChat(chatId, updateData);
 
-        const updatedChat = await this.chatRepo.updateById(chatId, updateData);
-        if (!updatedChat) {
-            throw ApplicationError.notFound(
-                ErrorCodes.RESOURCE_NOT_FOUND,
-                'Chat not found after update'
-            );
-        }
-
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'group_info_updated', {
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'group_info_updated', {
             chatId,
-            groupName,
-            groupDescription,
+            groupName: input.groupName,
+            groupDescription: input.groupDescription,
             updatedBy: userId
         });
 
-        return toPersistedEntity(updatedChat);
+        return toPersisted(updatedChat);
     }
 
-    async updateGroupAdmins(input: UpdateGroupAdminsInputDTO): Promise<UpdateGroupAdminsOutputDTO> {
-        const { action, chatId, userId, targetUserIds } = input;
+    async updateGroupAdmins(userId: string, chatId: string, input: UpdateGroupAdminsInput): Promise<ChatView> {
+        const { action, targetUserIds } = input;
+        const chat = await this.#resolveGroupChat(chatId, userId, true);
 
-        const chat = await resolveGroupChat(this.chatRepo, chatId, userId, true);
-
-        const validUsers = targetUserIds.filter((id) => isParticipant(chat, id));
+        const participantIds = this.#participantIds(chat);
+        const validUsers = targetUserIds.filter((id) => participantIds.includes(id));
         if (validUsers.length !== targetUserIds.length) {
-            throw ApplicationError.badRequest(
-                ErrorCodes.CHAT_USERS_NOT_IN_TEAM,
-                'Users not in team'
-            );
+            throw ApplicationError.badRequest(ErrorCodes.CHAT_USERS_NOT_IN_TEAM, 'Users not in team');
         }
 
-        let updatedAdmins = [...chat.props.admins];
-        if (action === GroupAdminAction.Add) {
+        let updatedAdmins = [...this.#adminIds(chat)];
+        if (action === 'add') {
             updatedAdmins = [...new Set([...updatedAdmins, ...validUsers])];
-        } else if (action === GroupAdminAction.Remove) {
+        } else if (action === 'remove') {
             updatedAdmins = updatedAdmins.filter((admin) => !validUsers.includes(admin));
             if (updatedAdmins.length === 0) {
-                throw ApplicationError.badRequest(
-                    ErrorCodes.CHAT_GROUP_MIN_ADMINS,
-                    'At least 1 admin is required'
-                );
+                throw ApplicationError.badRequest(ErrorCodes.CHAT_GROUP_MIN_ADMINS, 'At least 1 admin is required');
             }
         } else {
-            throw ApplicationError.badRequest(
-                ErrorCodes.CHAT_INVALID_ACTION,
-                'Invalid group admin action'
-            );
+            throw ApplicationError.badRequest(ErrorCodes.CHAT_INVALID_ACTION, 'Invalid group admin action');
         }
 
-        const updatedChat = await this.chatRepo.updateById(chatId, {
-            admins: updatedAdmins
-        });
-
-        if (!updatedChat) {
-            throw ApplicationError.notFound(
-                ErrorCodes.CHAT_NOT_FOUND,
-                'Chat not found'
-            );
-        }
-
-        return toPersistedEntity(updatedChat);
+        const updatedChat = await this.#updateChat(chatId, { admins: updatedAdmins });
+        return toPersisted(updatedChat);
     }
 
-    async leaveGroup(input: LeaveGroupInputDTO): Promise<void> {
-        const { chatId, userId } = input;
+    async leaveGroup(userId: string, chatId: string): Promise<void> {
+        const chat = await this.#resolveGroupChat(chatId, userId, false);
 
-        const chat = await resolveGroupChat(this.chatRepo, chatId, userId);
+        const newParticipants = this.#participantIds(chat).filter((participant) => participant !== userId);
+        let newAdmins = this.#adminIds(chat).filter((admin) => admin !== userId);
 
-        const newParticipants = chat.props.participants.filter((participant) => participant !== userId);
-        let newAdmins = chat.props.admins.filter((admin) => admin !== userId);
-
-        if (newAdmins.length === 0 && chat.props.createdBy) {
-            newAdmins = [chat.props.createdBy];
+        const createdBy = chat.createdBy ? String(chat.createdBy) : undefined;
+        if (newAdmins.length === 0 && createdBy) {
+            newAdmins = [createdBy];
         }
 
         const isActive = newParticipants.length >= 2;
+        await this.#updateChat(chatId, { participants: newParticipants, admins: newAdmins, isActive });
 
-        const updatedChat = await this.chatRepo.updateById(chatId, {
-            participants: newParticipants,
-            admins: newAdmins,
-            isActive
-        });
-
-        if (!updatedChat) {
-            throw ApplicationError.notFound(
-                ErrorCodes.CHAT_NOT_FOUND,
-                'Chat not found'
-            );
-        }
-
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'user_left_group', {
-            chatId,
-            userId
-        });
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'user_left_group', { chatId, userId });
     }
 
-    /**
-     * Thin delegator to the retained {@link GetChatMessagesUseCase} (still used
-     * by the chat-collaboration AI tool). Unwraps the Result to the thrown-error
-     * channel used by every other ChatService method.
-     */
-    async getChatMessages(input: GetChatMessagesInputDTO): Promise<PaginatedResult<PersistedChatMessageDTO>> {
-        return this.getChatMessagesUseCase.execute(input);
+    // ---- Messages ---------------------------------------------------------
+
+    async getChatMessages(userId: string, chatId: string, query: ChatMessagesQuery): Promise<PaginatedResult<ChatView>> {
+        await this.#resolveAccessibleChat(chatId, userId);
+
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 100;
+
+        const filter = { chat: chatId };
+        const [docs, total] = await Promise.all([
+            ChatMessageModel.find(filter)
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .sort({ createdAt: 1 })
+                .populate('sender')
+                .exec(),
+            ChatMessageModel.countDocuments(filter)
+        ]);
+
+        return {
+            data: docs.map((doc) => toPersisted(doc)),
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
+        };
     }
 
-    /**
-     * Thin delegator to the retained {@link SendChatMessageUseCase} (still used
-     * by the chat-collaboration AI tool and {@link sendFileMessage}). Unwraps
-     * the Result to the thrown-error channel used by every other ChatService
-     * method.
-     */
-    async sendChatMessage(input: SendChatMessageInputDTO): Promise<SendChatMessageOutputDTO> {
-        return this.sendChatMessageUseCase.execute(input);
-    }
-
-    async editMessage(input: EditMessageInputDTO): Promise<PersistedChatMessageDTO> {
-        const { messageId, userId, content } = input;
-        const message = await this.messageRepo.findById(messageId);
-        if (!message) {
-            throw ApplicationError.notFound(
-                ErrorCodes.MESSAGE_NOT_FOUND,
-                'Chat message not found'
-            );
-        }
-
-        if (!message.isSender(userId)) {
-            throw ApplicationError.forbidden(
-                ErrorCodes.MESSAGE_FORBIDDEN,
-                'Not owner'
-            );
-        }
-
-        const updatedMessage = await this.messageRepo.updateById(messageId, {
-            content
-        }, { populate: 'sender' });
-
-        if (!updatedMessage) {
-            throw ApplicationError.notFound(
-                ErrorCodes.MESSAGE_NOT_FOUND,
-                'Chat message not found'
-            );
-        }
-
-        const persistedMessage = toPersistedEntity(updatedMessage);
-
-        this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'message_edited', {
-            chatId: input.chatId,
-            message: persistedMessage
-        });
-
-        return persistedMessage;
-    }
-
-    async deleteMessage(input: DeleteMessageInputDTO): Promise<void> {
-        const { messageId, userId } = input;
-        const message = await this.messageRepo.findById(messageId);
-        if (!message) {
-            throw ApplicationError.notFound(
-                ErrorCodes.MESSAGE_NOT_FOUND,
-                'Chat message not found'
-            );
-        }
-
-        if (!message.isSender(userId)) {
-            throw ApplicationError.forbidden(
-                ErrorCodes.MESSAGE_FORBIDDEN,
-                'Not owner'
-            );
-        }
-
-        await this.messageRepo.updateById(messageId, {
-            deleted: true
-        });
-
-        this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'message_deleted', {
-            chatId: input.chatId,
-            messageId
+    async sendChatMessage(userId: string, chatId: string, input: SendChatMessageInput): Promise<ChatView> {
+        return this.#createMessage(userId, chatId, {
+            content: input.content,
+            messageType: input.messageType as ChatMessageType,
+            metadata: input.metadata
         });
     }
 
-    async markMessagesAsRead(input: MarkMessageAsReadInputDTO): Promise<void> {
-        const { chatId, userId } = input;
-
-        await resolveAccessibleChat(this.chatRepo, chatId, userId);
-
-        await this.messageRepo.markAllAsRead(chatId, userId);
-
-        this.socketEmitter.emitToRoom(`chat-${chatId}`, 'messages_read', {
-            chatId,
-            readBy: userId,
-            readAt: new Date()
-        });
-    }
-
-    async toggleMessageReaction(input: ToggleMessageReactionInputDTO): Promise<PersistedChatMessageDTO> {
-        const { emoji, messageId, userId } = input;
-        const message = await this.messageRepo.findById(messageId);
-        if (!message) {
-            throw ApplicationError.notFound(
-                ErrorCodes.MESSAGE_NOT_FOUND,
-                'Message not found'
-            );
-        }
-
-        await resolveAccessibleChat(this.chatRepo, String(message.props.chat), userId);
-
-        message.toggleReaction(userId, emoji);
-        const updatedMessage = await this.messageRepo.updateById(messageId, {
-            reactions: message.props.reactions
-        }, { populate: 'sender' });
-
-        if (!updatedMessage) {
-            throw ApplicationError.notFound(
-                ErrorCodes.MESSAGE_NOT_FOUND,
-                'Chat message not found'
-            );
-        }
-
-        const persistedMessage = toPersistedEntity(updatedMessage);
-
-        this.socketEmitter.emitToRoom(`chat-${input.chatId}`, 'reaction_updated', {
-            chatId: input.chatId,
-            message: persistedMessage
-        });
-
-        return persistedMessage;
-    }
-
-    async sendFileMessage(input: SendFileMessageInputDTO): Promise<PersistedChatMessageDTO> {
-        const { fileData, userId, chatId } = input;
-
+    async sendFileMessage(userId: string, chatId: string, fileData: ChatFileData): Promise<ChatView> {
         const metadata: ChatMessageMetadata = {
             fileName: fileData.originalName,
             fileSize: fileData.size,
@@ -416,12 +292,236 @@ export default class ChatService {
             filePath: fileData.filename
         };
 
-        return this.sendChatMessageUseCase.execute({
-            userId,
-            chatId,
+        return this.#createMessage(userId, chatId, {
             content: fileData.originalName,
             messageType: ChatMessageType.File,
             metadata
         });
+    }
+
+    async editMessage(userId: string, chatId: string, messageId: string, content: string): Promise<ChatView> {
+        const message = await ChatMessageModel.findById(messageId);
+        if (!message) {
+            throw ApplicationError.notFound(ErrorCodes.MESSAGE_NOT_FOUND, 'Chat message not found');
+        }
+        if (!this.#isSender(message, userId)) {
+            throw ApplicationError.forbidden(ErrorCodes.MESSAGE_FORBIDDEN, 'Not owner');
+        }
+
+        const updatedMessage = await ChatMessageModel.findByIdAndUpdate(
+            messageId,
+            { $set: { content } },
+            { new: true }
+        ).populate('sender');
+        if (!updatedMessage) {
+            throw ApplicationError.notFound(ErrorCodes.MESSAGE_NOT_FOUND, 'Chat message not found');
+        }
+
+        const persistedMessage = toPersisted(updatedMessage);
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'message_edited', { chatId, message: persistedMessage });
+        return persistedMessage;
+    }
+
+    async deleteMessage(userId: string, chatId: string, messageId: string): Promise<void> {
+        const message = await ChatMessageModel.findById(messageId);
+        if (!message) {
+            throw ApplicationError.notFound(ErrorCodes.MESSAGE_NOT_FOUND, 'Chat message not found');
+        }
+        if (!this.#isSender(message, userId)) {
+            throw ApplicationError.forbidden(ErrorCodes.MESSAGE_FORBIDDEN, 'Not owner');
+        }
+
+        await ChatMessageModel.updateOne({ _id: messageId }, { $set: { deleted: true } });
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'message_deleted', { chatId, messageId });
+    }
+
+    async markMessagesAsRead(userId: string, chatId: string): Promise<void> {
+        await this.#resolveAccessibleChat(chatId, userId);
+
+        await ChatMessageModel.updateMany(
+            { chat: chatId, readBy: { $ne: userId } },
+            { $addToSet: { readBy: userId } }
+        );
+
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'messages_read', { chatId, readBy: userId, readAt: new Date() });
+    }
+
+    async toggleMessageReaction(userId: string, chatId: string, messageId: string, emoji: string): Promise<ChatView> {
+        const message = await ChatMessageModel.findById(messageId);
+        if (!message) {
+            throw ApplicationError.notFound(ErrorCodes.MESSAGE_NOT_FOUND, 'Message not found');
+        }
+
+        await this.#resolveAccessibleChat(String(message.chat), userId);
+
+        this.#toggleReaction(message, userId, emoji);
+        const updatedMessage = await ChatMessageModel.findByIdAndUpdate(
+            messageId,
+            { $set: { reactions: message.reactions } },
+            { new: true }
+        ).populate('sender');
+        if (!updatedMessage) {
+            throw ApplicationError.notFound(ErrorCodes.MESSAGE_NOT_FOUND, 'Chat message not found');
+        }
+
+        const persistedMessage = toPersisted(updatedMessage);
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'reaction_updated', { chatId, message: persistedMessage });
+        return persistedMessage;
+    }
+
+    // ---- Socket / event-handler collaborators -----------------------------
+
+    /**
+     * Resolves the team id of a chat the requester may access. Used by the chat
+     * socket module (which no longer touches the repository directly).
+     */
+    async resolveAccessibleChatTeamId(chatId: string, userId: string): Promise<string> {
+        const chat = await this.#resolveAccessibleChat(chatId, userId);
+        return String(chat.team);
+    }
+
+    /**
+     * Cascade for the `user.deleted` event: pulls the user from every chat's
+     * participants/admins, then deletes any chat left with no participants
+     * (publishing `chat.deleted` per removed chat so messages cascade too).
+     */
+    async removeUserFromAllChats(userId: string): Promise<void> {
+        await ChatModel.updateMany(
+            { $or: [{ participants: userId }, { admins: userId }] },
+            { $pull: { participants: userId, admins: userId } }
+        );
+
+        const orphaned = await ChatModel.find({ participants: { $size: 0 } }).select('_id').lean();
+        for (const doc of orphaned) {
+            try {
+                await this.#deleteChat(String(doc._id));
+            } catch (error) {
+                logger.warn({ err: error, chatId: String(doc._id), userId }, '@chat/user-deleted: failed to delete empty chat');
+            }
+        }
+    }
+
+    // ---- Internal helpers -------------------------------------------------
+
+    async #createMessage(
+        userId: string,
+        chatId: string,
+        payload: { content: string; messageType: ChatMessageType; metadata?: ChatMessageMetadata }
+    ): Promise<ChatView> {
+        await this.#resolveAccessibleChat(chatId, userId);
+
+        const message = await ChatMessageModel.create({
+            chat: chatId,
+            sender: userId,
+            content: payload.content,
+            messageType: payload.messageType,
+            metadata: payload.metadata,
+            readBy: [userId],
+            reactions: [],
+            deleted: false,
+            createdAt: new Date()
+        });
+        await message.populate('sender');
+
+        await ChatModel.findByIdAndUpdate(chatId, { lastMessage: message._id, lastMessageAt: new Date() });
+
+        const persistedMessage = toPersisted(message);
+        this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'new_message', { message: persistedMessage, chatId });
+        return persistedMessage;
+    }
+
+    async #deleteChat(chatId: string): Promise<void> {
+        const result = await ChatModel.findByIdAndDelete(chatId);
+        if (result) {
+            await this.#eventBus.publish(new ChatDeletedEvent({
+                chatId,
+                teamId: result.team ? String(result.team) : ''
+            }));
+        }
+    }
+
+    async #getChatById(chatId: string): Promise<ChatDoc | null> {
+        return ChatModel.findById(chatId);
+    }
+
+    async #resolveAccessibleChat(chatId: string, requesterId: string): Promise<ChatDoc> {
+        const chat = await this.#getChatById(chatId);
+        if (!chat || !chat.isActive) {
+            throw ApplicationError.notFound(ErrorCodes.CHAT_NOT_FOUND, 'Chat not found');
+        }
+        if (!this.#isParticipant(chat, requesterId)) {
+            throw ApplicationError.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, 'You are not a participant in this chat');
+        }
+        return chat;
+    }
+
+    async #resolveGroupChat(chatId: string, requesterId: string, requireAdmin: boolean): Promise<ChatDoc> {
+        const chat = await this.#resolveAccessibleChat(chatId, requesterId);
+        if (!chat.isGroup) {
+            throw ApplicationError.notFound(ErrorCodes.CHAT_NOT_FOUND, 'Chat not found');
+        }
+        if (requireAdmin && !this.#adminIds(chat).includes(requesterId)) {
+            throw ApplicationError.unauthorized(ErrorCodes.AUTH_UNAUTHORIZED, 'Only admins can perform this action');
+        }
+        return chat;
+    }
+
+    async #updateChat(chatId: string, data: Record<string, unknown>): Promise<ChatDoc> {
+        const updated = await ChatModel.findByIdAndUpdate(chatId, { $set: data }, { new: true });
+        if (!updated) {
+            throw ApplicationError.notFound(ErrorCodes.CHAT_NOT_FOUND, 'Chat not found');
+        }
+        return updated;
+    }
+
+    async #ensureTeamMembersExist(teamId: string, userIds: string[]): Promise<void> {
+        const memberChecks = await Promise.all(
+            userIds.map((userId) => this.#teamMemberRepo.findOne({ team: teamId, user: userId }))
+        );
+        const invalidIndex = memberChecks.findIndex((member) => !member);
+        if (invalidIndex !== -1) {
+            throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, `User ${userIds[invalidIndex]} is not a member of this team`);
+        }
+    }
+
+    #participantIds(chat: ChatDoc): string[] {
+        return (chat.participants as unknown[]).map((participant) => toParticipantId(participant));
+    }
+
+    #adminIds(chat: ChatDoc): string[] {
+        return (chat.admins as unknown[]).map((admin) => String(admin));
+    }
+
+    #isParticipant(chat: ChatDoc, userId: string): boolean {
+        return (chat.participants as unknown[]).some((participant) => toParticipantId(participant) === userId);
+    }
+
+    #isSender(message: HydratedDocument<ChatMessageDocument>, userId: string): boolean {
+        const sender = message.sender as unknown;
+        return toParticipantId(sender) === userId;
+    }
+
+    #toggleReaction(message: HydratedDocument<ChatMessageDocument>, userId: string, emoji: string): void {
+        const reactions = message.reactions;
+        for (let i = reactions.length - 1; i >= 0; i--) {
+            const reaction = reactions[i];
+            const userIndex = reaction.users.findIndex((u) => u.toString() === userId);
+            if (userIndex !== -1) {
+                reaction.users.splice(userIndex, 1);
+                if (reaction.users.length === 0) {
+                    reactions.splice(i, 1);
+                }
+                if (reaction.emoji === emoji) {
+                    return;
+                }
+            }
+        }
+
+        const existingReactionIndex = reactions.findIndex((r) => r.emoji === emoji);
+        if (existingReactionIndex !== -1) {
+            reactions[existingReactionIndex].users.push(userId);
+        } else {
+            reactions.push({ emoji, users: [userId] });
+        }
     }
 }

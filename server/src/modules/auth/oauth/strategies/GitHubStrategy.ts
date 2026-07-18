@@ -1,12 +1,12 @@
 import { OAuthProvider } from '@modules/auth/entities/User';
 import BaseOAuthStrategy from '@modules/auth/oauth/BaseOAuthStrategy';
-import OAuthLoginUseCase from '@modules/auth/use-cases/OAuthLoginUseCase';
+import type AuthService from '@modules/auth/services/AuthService';
 import { Strategy as GithubStrategy } from 'passport-github2';
 import type { Profile as GitHubProfile } from 'passport-github2';
 
 export default class GithubStrategyWrapper extends BaseOAuthStrategy<GitHubProfile> {
-    constructor(oauthLoginUseCase: OAuthLoginUseCase) {
-        super(OAuthProvider.GitHub, oauthLoginUseCase, {
+    constructor(authService: AuthService) {
+        super(OAuthProvider.GitHub, authService, {
             map: (profile) => ({
                 email: profile.emails?.[0]?.value,
                 firstName: profile.displayName?.split(' ')[0],

@@ -1,7 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type Chat from '@modules/chat/entities/chat/Chat';
-import ChatRepository from '@modules/chat/repositories/chat/ChatRepository';
-import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
+import ChatService from '@modules/chat/services/ChatService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
@@ -46,11 +44,12 @@ const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 export default class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';
 
+    #service = new ChatService();
+
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        private readonly chatRepository: ChatRepository,
         private readonly teamRoomPresenceService: TeamRoomPresenceService
     ) {
         super(emitter, roomManager, eventRegistry);
@@ -63,9 +62,9 @@ export default class ChatSocketModule extends BaseSocketModule {
                 return this.rejectAuthentication(conn.id);
             }
 
-            let chat: Chat;
+            let teamId: string;
             try {
-                chat = await resolveAccessibleChat(this.chatRepository, payload, currentUserId);
+                teamId = await this.#service.resolveAccessibleChatTeamId(payload, currentUserId);
             } catch (error) {
                 return this.rejectApplicationError(conn.id, error as ApplicationError);
             }
@@ -76,7 +75,7 @@ export default class ChatSocketModule extends BaseSocketModule {
             }
 
             await this.joinRoom(conn.id, this.buildChatRoomName(payload));
-            this.setCurrentChatContext(conn, payload, this.resolveTeamId(chat.props.team));
+            this.setCurrentChatContext(conn, payload, teamId);
 
             return ackOk();
         });
@@ -225,21 +224,6 @@ export default class ChatSocketModule extends BaseSocketModule {
 
     private buildChatRoomName(chatId: string): string {
         return `chat-${chatId}`;
-    }
-
-    private resolveTeamId(team: unknown): string {
-        if (typeof team === 'string' && team.length > 0) {
-            return team;
-        }
-
-        if (team && typeof team === 'object' && '_id' in team) {
-            const teamId = (team as { _id?: { toString(): string } | string })._id;
-            if (teamId) {
-                return teamId.toString();
-            }
-        }
-
-        return String(team);
     }
 
     private rejectAuthentication(socketId: string): SocketAck<never> {

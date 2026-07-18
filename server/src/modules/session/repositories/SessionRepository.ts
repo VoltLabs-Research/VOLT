@@ -2,14 +2,25 @@ import type Session from '@modules/session/entities/Session';
 import type { SessionProps } from '@modules/session/entities/Session';
 import { SessionActivityType } from '@modules/session/entities/Session';
 import type { ISessionRepository } from '@modules/session/ports/ISessionRepository';
-import { SESSION_TOKENS } from '@modules/session/di/SessionTokens';
+import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import sessionMapper from '@modules/session/mappers/SessionMapper';
 import type { SessionDocument } from '@modules/session/models/SessionModel';
 import SessionModel from '@modules/session/models/SessionModel';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 
-@Singleton(SESSION_TOKENS.SessionRepository)
+/**
+ * Cross-module model-backed adapter registered under the neutral
+ * `SESSION_CONTRACT_TOKENS.SessionRepository` token so the auth service, the
+ * socket authentication use case and the `protect` HTTP middleware can look up
+ * sessions (by token) without importing `@modules/session`'s HTTP service. This
+ * is the session equivalent of container's `ContainerSearchRepository`: the
+ * module's own HTTP logic lives in {@link file://../services/SessionService.ts}
+ * and talks to the model directly; this adapter exists purely for the neutral
+ * DI contract those other modules depend on. Autoloaded (its `@Singleton`
+ * self-registers), so no explicit import is needed.
+ */
+@Singleton(SESSION_CONTRACT_TOKENS.SessionRepository)
 export default class SessionRepository
     extends MongooseBaseRepository<Session, SessionProps, SessionDocument>
     implements ISessionRepository {

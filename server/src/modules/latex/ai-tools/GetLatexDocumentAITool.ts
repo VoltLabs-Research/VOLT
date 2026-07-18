@@ -1,27 +1,23 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetLatexDocumentUseCase } from '@modules/latex/use-cases/GetLatexDocumentUseCase';
+import LatexService from '@modules/latex/services/LatexService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
+const parameters = z.object({ documentId: z.string() });
+type Params = z.infer<typeof parameters>;
+
 @CollectionMember(AI_TOOL_TOKENS.AITool)
-export class GetLatexDocumentAITool extends AITool {
+export class GetLatexDocumentAITool extends AITool<Params> {
     readonly name = 'get_latex_document';
     readonly description = 'Get detailed information about a specific LaTeX document.';
-    readonly parameters = z.object({ documentId: z.string() });
+    readonly parameters = parameters;
 
-    constructor(
-        protected readonly useCase: GetLatexDocumentUseCase
-    ) {
-        super();
-    }
+    #service = new LatexService();
 
-    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
-            teamId: scope.teamId,
-            documentId: params.documentId
-        });
+    async execute(params: Params, scope: AIToolScope) {
+        const result = await this.#service.getDocument({ teamId: scope.teamId, documentId: params.documentId });
         return { summary: `Retrieved LaTeX document "${result.title}".`, data: result };
     }
 }

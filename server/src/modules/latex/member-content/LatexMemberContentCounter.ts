@@ -1,24 +1,32 @@
 import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
-import { LATEX_TOKENS } from '@modules/latex/di/LatexTokens';
-import type { ILatexDocumentRepository } from '@modules/latex/ports/ILatexDocumentRepository';
-import { inject } from 'tsyringe';
+import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
+
+interface GroupedCountRow {
+    _id: unknown;
+    count: number;
+}
 
 /**
  * Contributes the per-member `latexCount` to the team-member listing via the
- * neutral MEMBER_CONTENT_COUNTER collection (detachable-modules migration). The
- * team module no longer imports the latex repository directly; when latex is
- * disabled this counter isn't registered and the metric is simply absent.
+ * neutral MEMBER_CONTENT_COUNTER collection (detachable-modules migration).
+ * Model-backed after the repository layer was removed — aggregates document
+ * counts grouped by `createdBy` directly on {@link LatexDocumentModel}.
  */
 @CollectionMember(MEMBER_CONTENT_COUNTER_TOKEN)
 export class LatexMemberContentCounter implements IMemberContentCounter {
-    constructor(
-        @inject(LATEX_TOKENS.LatexDocumentRepository) private readonly latexDocumentRepository: ILatexDocumentRepository
-    ) {}
-
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const counts = await this.latexDocumentRepository.countGroupedBy('createdBy', userIds, { team: teamId });
+        const rows = await LatexDocumentModel.aggregate<GroupedCountRow>([
+            { $match: { team: teamId, createdBy: { $in: userIds } } },
+            { $group: { _id: '$createdBy', count: { $sum: 1 } } }
+        ]);
+
+        const counts = new Map<string, number>();
+        for (const row of rows) {
+            counts.set(String(row._id), row.count);
+        }
+
         return { key: 'latexCount', counts };
     }
 }

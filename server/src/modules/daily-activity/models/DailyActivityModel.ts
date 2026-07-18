@@ -1,15 +1,38 @@
-import { ActivityType } from '@modules/daily-activity/entities/DailyActivity';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
-import type { DailyActivityProps } from '@modules/daily-activity/entities/DailyActivity';
-import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type DailyActivityRelations = 'team' | 'user';
+export enum ActivityType {
+    TrajectoryUpload = 'trajectory-upload',
+    TrajectoryDeletion = 'trajectory-deletion',
+    AnalysisPerformed = 'analysis-performed',
+    AnalysisDeletion = 'analysis-deletion',
+    LatexDocumentCreation = 'latex-document-creation',
+    LatexDocumentDeletion = 'latex-document-deletion',
+    ContainerCreation = 'container-creation',
+    ContainerDeletion = 'container-deletion',
+    WhiteboardCreation = 'whiteboard-creation',
+    WhiteboardDeletion = 'whiteboard-deletion',
+    RoleCreation = 'role-creation',
+    RoleDeletion = 'role-deletion',
+    SecretKeyCreation = 'secret-key-creation',
+    SecretKeyDeletion = 'secret-key-deletion'
+}
 
-export interface DailyActivityDocument extends Persistable<
-    DailyActivityProps,
-    DailyActivityRelations
->, Document {};
+export interface IDailyActivityEntry {
+    type: ActivityType;
+    createdAt: Date;
+    description: string;
+}
+
+export interface IDailyActivity extends Document {
+    team: mongoose.Types.ObjectId;
+    user: mongoose.Types.ObjectId;
+    date: Date;
+    activity: IDailyActivityEntry[];
+    minutesOnline: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 const ActivitySchema = new Schema({
     type: {
@@ -27,7 +50,7 @@ const ActivitySchema = new Schema({
     }
 }, { _id: false });
 
-const DailyActivitySchema: Schema<DailyActivityDocument> = new Schema({
+const DailyActivitySchema: Schema<IDailyActivity> = new Schema({
     team: {
         ...teamRefField(true),
         index: true
@@ -61,6 +84,6 @@ DailyActivitySchema.index(
     { unique: true }
 );
 
-const DailyActivityModel: Model<DailyActivityDocument> = mongoose.model<DailyActivityDocument>('DailyActivity', DailyActivitySchema);
+const DailyActivityModel: Model<IDailyActivity> = mongoose.model<IDailyActivity>('DailyActivity', DailyActivitySchema);
 
 export default DailyActivityModel;

@@ -1,4 +1,4 @@
-import GetGlobalSearchUseCase from '@modules/dashboard/use-cases/GetGlobalSearchUseCase';
+import DashboardService from '@modules/dashboard/services/DashboardService';
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import { AITool } from '@shared/application/ai/AITool';
@@ -16,14 +16,10 @@ export class GlobalSearchAITool extends AITool {
         limit: z.number().optional().describe('Max results per entity type (1-10, default 5).')
     });
 
-    constructor(
-        protected readonly useCase: GetGlobalSearchUseCase
-    ) {
-        super();
-    }
+    #service = new DashboardService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.getGlobalSearch({
             teamId: scope.teamId,
             userId: scope.userId,
             query: params.query,

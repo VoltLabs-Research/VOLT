@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { UpdateScriptingNotebookUseCase } from '@modules/scripting/use-cases/UpdateScriptingNotebookUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ScriptingService from '@modules/scripting/services/ScriptingService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -18,9 +19,15 @@ export class UpdateScriptingNotebookAITool extends AITool {
         }).optional()
     });
 
-    constructor(
-        protected readonly useCase: UpdateScriptingNotebookUseCase
-    ) {
-        super();
+    #service = new ScriptingService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.updateNotebook({
+            teamId: scope.teamId,
+            notebookId: params.notebookId,
+            title: params.title,
+            teamClusterId: params.teamClusterId,
+            containerResources: params.containerResources
+        });
     }
 }

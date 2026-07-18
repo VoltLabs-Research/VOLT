@@ -1,35 +1,36 @@
-import type DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
-import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/di/DailyActivityTokens';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route } from '@shared/http/route';
+import { Param, Query, CurrentUser } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
+import { dailyActivityRoutes } from '@volt/contracts/modules/daily-activity/routes';
 
 /**
- * The single HTTP controller for the daily-activity module. One Express handler
- * per route, preserving the exact request parsing of the previously inline route
- * handler (team-scoped path param, `range` default of 7, `scope=self` narrowing
- * to the authenticated user), delegating to {@link DailyActivityService}, and
- * responding via {@link BaseResponse}. Handlers are arrow-function properties so
- * `this` stays bound when passed by reference to the router. Thrown
- * `ApplicationError`s propagate to `httpErrorMiddleware` via Express 5 async
- * forwarding.
+ * The single HTTP controller for the daily-activity module (pollium style).
+ * Class-level `@Middleware(protect, teamScoped(...))` replaces the old
+ * mount-time auth + team-scope layer. Preserves the exact request parsing of the
+ * previous inline handler: `range` defaults to 7 in the service, and
+ * `scope=self` narrows the summary to the authenticated user. Responds with the
+ * flat records array.
  */
-@injectable()
-export default class DailyActivityController {
-    constructor(
-        @inject(DAILY_ACTIVITY_TOKENS.DailyActivityService) private readonly dailyActivityService: DailyActivityService
-    ) {}
+@Middleware(protect, teamScoped(Resource.DAILY_ACTIVITY))
+export default class DailyActivityController extends Controller {
+    #service = new DailyActivityService();
 
-    getTeamActivitySummary = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const { teamId } = req.params as { teamId: string };
-        const { range: rangeRaw, scope } = req.query as { range?: string; scope?: 'team' | 'self' };
-        const range = rangeRaw !== undefined ? Number(rangeRaw) : 7;
-        const userId = scope === 'self'
-            ? req.userId
-            : undefined;
-
-        const value = await this.dailyActivityService.getTeamActivitySummary({ teamId, range, userId });
-        BaseResponse.success(res, value.records);
-    };
+    @Route(dailyActivityRoutes.getTeamActivitySummary)
+    async getTeamActivitySummary(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Query('range') range?: string,
+        @Query('scope') scope?: string
+    ) {
+        const result = await this.#service.getTeamActivitySummary({
+            teamId,
+            range: range !== undefined ? Number(range) : undefined,
+            userId: scope === 'self' ? userId : undefined
+        });
+        return result.records;
+    }
 }

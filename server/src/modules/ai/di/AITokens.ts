@@ -8,9 +8,5 @@ export const AI_TOKENS = {
     AIMessageDTOMapper: Symbol.for('AIMessageDTOMapper'),
     AIUIMessageUtils: Symbol.for('AIUIMessageUtils'),
     AIResponseMessagePartsMapper: Symbol.for('AIResponseMessagePartsMapper'),
-    AiService: Symbol.for('AiService'),
-    ListAIConversationsUseCase: Symbol.for('ListAIConversationsUseCase'),
-    UpdateAIConversationUseCase: Symbol.for('UpdateAIConversationUseCase'),
-    DeleteAIConversationUseCase: Symbol.for('DeleteAIConversationUseCase'),
     AITool: AI_TOOL_TOKENS.AITool
 };

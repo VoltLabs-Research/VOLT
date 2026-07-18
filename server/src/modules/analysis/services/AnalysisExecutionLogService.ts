@@ -1,5 +1,4 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import { ANALYSIS_TOKENS } from '@modules/analysis/di/AnalysisTokens';
 import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterObjectGatewayClient, ITrajectoryRepository } from '@shared/contracts/ports';
@@ -124,7 +123,7 @@ export const getAnalysisLogRoom = (analysisId: string, timestep: number): string
     return `analysis-log:${analysisId}:${timestep}`;
 };
 
-@Singleton(ANALYSIS_TOKENS.AnalysisExecutionLogService)
+@Singleton(COMPUTE_TOKENS.AnalysisExecutionLogService)
 export default class AnalysisExecutionLogService implements IAnalysisExecutionLogService {
     private readonly mutationChains = new Map<string, Promise<void>>();
     private readonly frameStates = new Map<string, FrameLogRuntimeState>();

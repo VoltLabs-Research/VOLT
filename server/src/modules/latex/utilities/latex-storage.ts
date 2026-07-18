@@ -1,4 +1,4 @@
-import type { LatexDocumentProps } from '@modules/latex/entities/LatexDocument';
+import type { LatexDocumentProps } from '@modules/latex/models/LatexDocumentModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 export const buildLatexAssetStoragePrefix = (teamId: string, documentId: string): string => {

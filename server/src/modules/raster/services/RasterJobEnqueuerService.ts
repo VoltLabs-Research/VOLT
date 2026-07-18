@@ -1,13 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService, ITrajectoryRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type {
-    IRasterJobEnqueuer,
-    RasterJobEnqueueResult
-} from '@modules/raster/ports/IRasterJobEnqueuer';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -22,8 +17,25 @@ interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     storageClusterId?: string;
 }
 
-@Singleton(RASTER_TOKENS.RasterJobEnqueuer)
-export class RasterJobEnqueuerService implements IRasterJobEnqueuer {
+export interface RasterJobEnqueueResult {
+    queuedJobs: number;
+    duplicateJobs: number;
+    skippedJobs: number;
+    alreadyRasterizedJobs: number;
+    jobs?: Array<{
+        jobId: string;
+        teamId: string;
+        queueType: string;
+        name?: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        trajectoryName?: string;
+        timestep?: number;
+    }>;
+}
+
+@Singleton()
+export class RasterJobEnqueuerService {
     constructor(
         @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,

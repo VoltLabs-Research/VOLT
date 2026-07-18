@@ -71,6 +71,12 @@ export default abstract class Controller {
     }
 
     #respond(res: Response, result: unknown, statusCode?: number): void {
+        // Streaming / download handlers take `@Res()`, write the response
+        // themselves and return void — once they've begun the response there is
+        // nothing left to send here.
+        if (res.headersSent || res.writableEnded) {
+            return;
+        }
         if (result === undefined || result === null) {
             res.status(statusCode ?? 204).send();
             return;

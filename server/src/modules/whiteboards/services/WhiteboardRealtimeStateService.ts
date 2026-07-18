@@ -5,9 +5,8 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
 
-import { WHITEBOARD_TOKENS } from '@modules/whiteboards/di/WhiteboardTokens';
+import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
 
-import type { IWhiteboardRepository } from '@modules/whiteboards/ports/IWhiteboardRepository';
 import type {
     IWhiteboardRealtimeStateService,
     MergeSceneResult,
@@ -157,7 +156,6 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
     constructor(
-        @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
@@ -330,26 +328,26 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
     }
 
     private async loadRoom(whiteboardId: string): Promise<WhiteboardRoomState | null> {
-        const whiteboard = await this.whiteboardRepository.findById(whiteboardId);
+        const whiteboard = await WhiteboardModel.findById(whiteboardId).exec();
         if (!whiteboard) {
             return null;
         }
 
-        if (!whiteboard.props.payloadKey) {
+        if (!whiteboard.payloadKey) {
             throw ApplicationError.conflict(
                 'Whiteboard::PayloadKeyRequired',
-                `Whiteboard ${whiteboard._id} does not have a payload key assigned`
+                `Whiteboard ${String(whiteboard._id)} does not have a payload key assigned`
             );
         }
-        const storageClusterId = whiteboard.props.storageClusterId?.trim();
+        const storageClusterId = whiteboard.storageClusterId?.trim();
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'Whiteboard::StorageClusterRequired',
-                `Whiteboard ${whiteboard._id} does not have a storage cluster assigned`
+                `Whiteboard ${String(whiteboard._id)} does not have a storage cluster assigned`
             );
         }
 
-        const payloadKey = whiteboard.props.payloadKey;
+        const payloadKey = whiteboard.payloadKey;
         let storedScene = EMPTY_SCENE();
 
         if (await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
@@ -368,7 +366,7 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
         const elements = normalizeElements(storedScene.elements);
         const room: WhiteboardRoomState = {
             whiteboardId,
-            teamId: whiteboard.props.team,
+            teamId: String(whiteboard.team),
             storageClusterId,
             payloadKey,
             revision: typeof storedScene.revision === 'number' ? storedScene.revision : 0,
@@ -378,7 +376,7 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
             appState: normalizeAppState(storedScene.appState),
             snapshotCache: null,
             persistTimer: null,
-            lastEditedBy: typeof whiteboard.props.lastEditedBy === 'string' ? whiteboard.props.lastEditedBy : null,
+            lastEditedBy: whiteboard.lastEditedBy ? String(whiteboard.lastEditedBy) : null,
             lastPersistedRevision: typeof storedScene.revision === 'number' ? storedScene.revision : 0
         };
 
@@ -420,9 +418,10 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
         room.lastPersistedRevision = room.revision;
 
         if (room.lastEditedBy) {
-            await this.whiteboardRepository.updateById(room.whiteboardId, {
-                lastEditedBy: room.lastEditedBy
-            });
+            await WhiteboardModel.updateOne(
+                { _id: room.whiteboardId },
+                { $set: { lastEditedBy: room.lastEditedBy } }
+            );
         }
     }
 

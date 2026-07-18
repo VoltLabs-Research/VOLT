@@ -1,22 +1,22 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type AuthService from '@modules/auth/services/AuthService';
-import type { CheckEmailInputDTO } from '@modules/auth/dtos/CheckEmailDTO';
-import type { DeleteAccountInputDTO } from '@modules/auth/dtos/DeleteAccountDTO';
-import type { GetGuestIdentityInputDTO } from '@modules/auth/dtos/GetGuestIdentityDTO';
-import type { GetMyAccountInputDTO } from '@modules/auth/dtos/GetMyAccountDTO';
-import type { GetPasswordInfoInputDTO } from '@modules/auth/dtos/GetPasswordInfoDTO';
-import type { SignInInputDTO } from '@modules/auth/dtos/SignInDTO';
-import type { SignUpInputDTO } from '@modules/auth/dtos/SignUpDTO';
-import type { UpdateAccountInputDTO } from '@modules/auth/dtos/UpdateAccountDTO';
-import type { UpdatePasswordInputDTO } from '@modules/auth/dtos/UpdatePasswordDTO';
-import type { LocalSignInInput } from '@modules/auth/services/AuthService';
-import { AUTH_TOKENS } from '@modules/auth/di/AuthTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/http/params';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
+import AuthService from '@modules/auth/services/AuthService';
+import { OAuthProvider } from '@modules/auth/entities/User';
+import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/oauth/route-helpers';
+import avatarUpload from '@modules/auth/middlewares/avatar-upload';
+import { authRoutes } from '@volt/contracts/modules/auth/routes';
+import type {
+    SignInInput,
+    SignUpInput,
+    UpdatePasswordInput,
+    UpdateAccountInput
+} from '@volt/contracts/modules/auth/http';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+import type { RequestHandler, Response, Router } from 'express';
 
 const appendQueryParameter = (url: string, key: string, value: string): string => {
     const hashIndex = url.indexOf('#');
@@ -39,86 +39,103 @@ const appendQueryParameter = (url: string, key: string, value: string): string =
 };
 
 /**
- * The single HTTP controller for the auth module. One Express handler per route,
- * assembling the use-case input exactly as `buildControllerParams` did for the
- * generated controllers, delegating to {@link AuthService}, and responding via
- * {@link BaseResponse}. Handlers are arrow-function properties so `this` stays
- * bound when passed by reference to the router. Thrown `ApplicationError`s
- * propagate to `httpErrorMiddleware` via Express 5 async forwarding.
+ * The single HTTP controller for the auth module (pollium/container style):
+ * every JSON route is bound with `@Route(authRoutes.x)` and delegates to an
+ * {@link AuthService} the controller `new`s itself. Unlike the container
+ * controller there is NO class-level `@Middleware(protect)`: the public
+ * endpoints (sign in / sign up / local sign in / email availability / oauth
+ * providers / guest identity) must stay unauthenticated, so `protect` (and the
+ * rate limiters / avatar upload) is attached per-method via `@Middleware(...)`.
+ *
+ * `buildRouter()` is overridden to append the passport OAuth login/callback
+ * redirect routes, which carry no JSON contract and so cannot be expressed as
+ * `@Route` endpoints. The router is mounted directly (contract paths are
+ * absolute) in `mount-http-routes`.
  */
-@injectable()
-export default class AuthController {
-    constructor(
-        @inject(AUTH_TOKENS.AuthService) private readonly authService: AuthService
-    ) {}
+export default class AuthController extends Controller {
+    #service = new AuthService();
 
-    signIn = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SignInInputDTO;
-        const value = await this.authService.signIn(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.signIn)
+    @Middleware(RATE_LIMIT_POLICIES.authPublic)
+    @Status(200)
+    signIn(@Body() body: SignInInput, @Ip() ip: string, @UserAgent() userAgent: string) {
+        return this.#service.signIn(body, { ip, userAgent });
+    }
 
-    localSignIn = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as LocalSignInInput;
-        const value = await this.authService.localSignIn(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.localSignIn)
+    @Middleware(RATE_LIMIT_POLICIES.authPublic)
+    @Status(200)
+    localSignIn(@Ip() ip: string, @UserAgent() userAgent: string) {
+        return this.#service.localSignIn({ ip, userAgent });
+    }
 
-    signUp = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as SignUpInputDTO;
-        const value = await this.authService.signUp(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(authRoutes.signUp)
+    @Status(201)
+    signUp(@Body() body: SignUpInput, @Ip() ip: string, @UserAgent() userAgent: string) {
+        return this.#service.signUp(body, { ip, userAgent });
+    }
 
-    checkEmail = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CheckEmailInputDTO;
-        const value = await this.authService.checkEmail(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.checkEmail)
+    checkEmail(@Param('email') email: string) {
+        return this.#service.checkEmail(email);
+    }
 
-    getMyAccount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetMyAccountInputDTO;
-        const value = await this.authService.getMyAccount(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.oauthProviders)
+    getOAuthProviders() {
+        return this.#service.getOAuthProviders();
+    }
 
-    getPasswordInfo = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetPasswordInfoInputDTO;
-        const value = await this.authService.getPasswordInfo(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.guestIdentity)
+    getGuestIdentity(@Query('seed') seed: string) {
+        return this.#service.getGuestIdentity(seed);
+    }
 
-    getGuestIdentity = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetGuestIdentityInputDTO;
-        const value = await this.authService.getGuestIdentity(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.passwordInfo)
+    @Middleware(protect)
+    getPasswordInfo(@CurrentUser() userId: string) {
+        return this.#service.getPasswordInfo(userId);
+    }
 
-    updatePassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdatePasswordInputDTO;
-        const value = await this.authService.updatePassword(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.updatePassword)
+    @Middleware(protect, RATE_LIMIT_POLICIES.passwordUpdate)
+    @Status(200)
+    updatePassword(
+        @CurrentUser() userId: string,
+        @Body() body: UpdatePasswordInput,
+        @Ip() ip: string,
+        @UserAgent() userAgent: string
+    ) {
+        return this.#service.updatePassword(userId, body, { ip, userAgent });
+    }
 
-    deleteMyAccount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteAccountInputDTO;
-        await this.authService.deleteAccount(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(authRoutes.getMyAccount)
+    @Middleware(protect)
+    getMyAccount(@CurrentUser() userId: string) {
+        return this.#service.getMyAccount(userId);
+    }
 
-    getOAuthProviders = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const value = this.authService.getOAuthProviders();
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.updateMyAccount)
+    @Middleware(protect, avatarUpload.single('avatar'))
+    @Status(200)
+    updateMyAccount(@CurrentUser() userId: string, @Body() body: UpdateAccountInput, @Req() req: AuthenticatedRequest) {
+        return this.#service.updateAccount(userId, body, req.file);
+    }
 
-    updateMyAccount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateAccountInputDTO;
-        const value = await this.authService.updateAccount(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(authRoutes.deleteMyAccount)
+    @Middleware(protect)
+    @Status(204)
+    async deleteMyAccount(@CurrentUser() userId: string): Promise<void> {
+        // Preserves the previous controller's NoContent behaviour: empty body.
+        await this.#service.deleteAccount(userId);
+    }
 
-    oauthLoginCallback = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    /**
+     * Passport OAuth callback terminator: on success redirect to the frontend
+     * with the issued token, otherwise redirect to the sign-in page with the
+     * canonical error code/message. Written manually (no JSON contract) and
+     * appended to the router in {@link buildRouter}.
+     */
+    #oauthLoginCallback: RequestHandler = (req: AuthenticatedRequest, res: Response): void => {
         if (!req.token) {
             const errorCode = req.oauthErrorCode || ErrorCodes.OAUTH_STRATEGY_ERROR;
             const errorMessage = req.oauthErrorMessage || errorCode;
@@ -141,4 +158,20 @@ export default class AuthController {
         const frontendUrl = process.env.OAUTH_SUCCESS_REDIRECT || 'http://localhost:3000/auth/oauth/success';
         res.redirect(appendQueryParameter(frontendUrl, 'token', req.token));
     };
+
+    override buildRouter(): Router {
+        const router = super.buildRouter();
+
+        // Browser-redirect OAuth routes (passport). No JSON contract, so they
+        // are attached here rather than via `@Route`. Paths are absolute to match
+        // the previous `/api/auth` base path.
+        router.get('/api/auth/github', createOAuthLoginRoute(OAuthProvider.GitHub, ['user:email']));
+        router.get('/api/auth/github/callback', createOAuthCallbackMiddleware(OAuthProvider.GitHub), this.#oauthLoginCallback);
+        router.get('/api/auth/google', createOAuthLoginRoute(OAuthProvider.Google, ['profile', 'email']));
+        router.get('/api/auth/google/callback', createOAuthCallbackMiddleware(OAuthProvider.Google), this.#oauthLoginCallback);
+        router.get('/api/auth/microsoft', createOAuthLoginRoute(OAuthProvider.Microsoft, ['user.read']));
+        router.get('/api/auth/microsoft/callback', createOAuthCallbackMiddleware(OAuthProvider.Microsoft), this.#oauthLoginCallback);
+
+        return router;
+    }
 }
