@@ -6,13 +6,6 @@ import { checkTeamMembership } from '@modules/team/middlewares/check-team-member
 import DashboardService from '@modules/dashboard/services/DashboardService';
 import { dashboardRoutes } from '@volt/contracts/modules/dashboard/routes';
 
-/**
- * The single HTTP controller for the dashboard module (pollium style). The old
- * route declared a team-scoped base path with NO resource, so it enforced team
- * membership without an RBAC permission check — reproduced here with
- * `@Middleware(protect, checkTeamMembership)` (not `teamScoped`, which would add
- * a permission gate). Delegates to {@link DashboardService}.
- */
 @Middleware(protect, checkTeamMembership)
 export default class DashboardController extends Controller {
     #service = new DashboardService();

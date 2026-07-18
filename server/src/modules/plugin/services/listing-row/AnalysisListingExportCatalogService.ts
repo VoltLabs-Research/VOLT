@@ -19,7 +19,6 @@ import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/A
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 
-
 interface ListingAggregation {
     listingId: string;
     listingName: string;

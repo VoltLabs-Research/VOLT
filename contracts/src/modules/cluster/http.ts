@@ -1,6 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId` / `:teamClusterId` / `:token` path params)
-// is NOT here — the controller augments those on its own from the request.
+
 
 import type {
     TeamClusterRole,
@@ -42,7 +40,6 @@ export interface CreateTeamClusterTransferRequestInput{
     destinationClusterId: string;
 }
 
-/** Password-confirmed cluster actions (reveal credentials, delete, remote-access session). */
 export interface PasswordConfirmedInput{
     password: string;
 }
@@ -64,8 +61,6 @@ export interface TeamClusterRemoteExplorerRequestInput{
 export type ListTeamClusterRemoteExplorerEntriesInput = TeamClusterRemoteExplorerRequestInput;
 export type GetTeamClusterRemoteExplorerNodeInput = TeamClusterRemoteExplorerRequestInput;
 export type DownloadTeamClusterRemoteExplorerObjectInput = TeamClusterRemoteExplorerRequestInput;
-
-// --- Daemon-facing (unauthenticated / daemon-authenticated) bodies -----------
 
 export interface ProcessTeamClusterHealthcheckInput{
     enrollmentToken: string;

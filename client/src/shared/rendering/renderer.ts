@@ -141,7 +141,6 @@ export const getDefaultRendererRuntimeSettings = (): RendererRuntimeSettings => 
     ...RENDERER_RUNTIME_DEFAULTS
 });
 
-/** Maps a renderer tone-mapping mode to the Three.js runtime constant. */
 export const resolveToneMapping = (mode: ToneMappingMode): ToneMapping => {
     if (mode === ToneMappingMode.ACESFilmic) {
         return ACESFilmicToneMapping;
@@ -170,7 +169,6 @@ export const resolveToneMapping = (mode: ToneMappingMode): ToneMapping => {
     return NoToneMapping;
 };
 
-/** Maps a renderer shadow mode to the Three.js runtime constant. */
 export const resolveShadowMapType = (type: ShadowType): ShadowMapType => {
     if (type === ShadowType.PCF) {
         return PCFShadowMap;
@@ -187,7 +185,6 @@ export const resolveShadowMapType = (type: ShadowType): ShadowMapType => {
     return BasicShadowMap;
 };
 
-/** Maps a renderer output color-space mode to the renderer runtime string. */
 export const resolveOutputColorSpace = (colorSpace: OutputCS): string => {
     if (colorSpace === OutputCS.LinearSRGB) {
         return 'srgb-linear';
@@ -204,7 +201,6 @@ export const resolveOutputColorSpace = (colorSpace: OutputCS): string => {
     return 'srgb';
 };
 
-/** Store-contract aliases — expose renderer settings as named state/action types. */
 export type RendererCreateState = RendererCreateSettings;
 export type RendererRuntimeState = RendererRuntimeSettings;
 export type RendererSettingsState = RendererSettings;

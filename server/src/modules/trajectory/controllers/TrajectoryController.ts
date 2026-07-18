@@ -18,23 +18,9 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
-/**
- * Team-scoped trajectory HTTP controller (pollium style): one router covering
- * the trajectory, color-coding, particle-filter, line-style and lod groups —
- * all previously mounted under their own `/api/…/:teamId` base paths with
- * `protect` + team-scope on `Resource.TRAJECTORY`, now expressed as a single
- * class-level `@Middleware(protect, teamScoped(Resource.TRAJECTORY))`. Every
- * handler writes the response itself (`@Res()`), reproducing the previous
- * controllers' `BaseResponse` envelopes, status codes and stream headers
- * verbatim. `@Route` methods are declared in the old route-file order so Express
- * matches literal segments before `/:trajectoryId` / `/:analysisId`. The folder
- * routes delegate directly to `TrajectoryService`'s folded folder methods
- * (pollium style, replacing the old generic `createCatalogFolderRouteHandlers`
- * + `TrajectoryFolderRepository` + `DeleteTrajectoryFolderUseCase` wiring).
- */
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))
 export default class TrajectoryController extends TrajectoryControllerBase {
-    // --- Trajectory (/api/trajectories/:teamId) ---------------------------
+    
 
     @Route(trajectoryRoutes.listSamples)
     async listSamples(@Res() res: Response): Promise<void> {
@@ -202,7 +188,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         res.status(HttpStatus.NoContent).send();
     }
 
-    // --- Color coding (/api/color-codings/:teamId) ------------------------
+    
 
     @Route(trajectoryRoutes.colorCodingProperties)
     @Route(trajectoryRoutes.colorCodingPropertiesByAnalysis)
@@ -232,7 +218,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    // --- Particle filter (/api/particle-filters/:teamId) ------------------
+    
 
     @Route(trajectoryRoutes.particleFilterProperties)
     @Route(trajectoryRoutes.particleFilterPropertiesByAnalysis)
@@ -269,7 +255,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    // --- Line style (/api/line-styles/:teamId) ----------------------------
+    
 
     @Route(trajectoryRoutes.lineStyleModel)
     async lineStyleGet(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
@@ -295,7 +281,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    // --- LOD (/api/lod/:teamId) -------------------------------------------
+    
 
     @Route(trajectoryRoutes.lodOctreeMetadata)
     async lodGetOctreeMetadata(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {

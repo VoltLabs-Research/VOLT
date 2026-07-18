@@ -10,13 +10,6 @@ import TeamInvitationService from '@modules/team/services/TeamInvitationService'
 import { teamInvitationRoutes } from '@volt/contracts/modules/team/routes';
 import type { SendTeamInvitationInput, UpdateTeamInvitationInput, TeamInvitationStatusInput } from '@volt/contracts/modules/team/http';
 
-/**
- * HTTP controller for the team-invitation resource. Class-level `@Middleware(protect)`
- * authenticates every route; the team-scoped routes add `teamScoped(TEAM_INVITATION)`
- * per-method, while the two PUBLIC routes (`/api/teams/invitations/...`, formerly
- * `team-invitation/public`) stay protect-only. `updateStatus` reproduces the
- * former inline accepted/rejected dispatch; `send` keeps 201 and `deleteById` 204.
- */
 @Middleware(protect)
 export default class TeamInvitationController extends Controller {
     #service = new TeamInvitationService();

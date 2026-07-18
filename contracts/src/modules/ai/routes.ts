@@ -10,14 +10,6 @@ import type {
     CreateAIConversationResponse
 } from './domain';
 
-/**
- * Every client-facing ai-conversation endpoint, typed by request/response. Full
- * wire paths under `/api/ai/conversations`, matching the previous
- * `createHttpModule({ basePath: '/api/ai/conversations', teamScope: Param })`
- * verbatim (the team is the first path segment, `:teamId`). `streamMessage`
- * responds with a Server-Sent-Events stream (piped by the controller via
- * `@Res()`), so it carries no typed JSON response body.
- */
 export const aiRoutes = {
     listConversations: get<AIConversation>('/api/ai/conversations/:teamId'),
     createConversation: post<CreateAIConversationInput, CreateAIConversationResponse>('/api/ai/conversations/:teamId'),

@@ -35,10 +35,6 @@ import {
 import type { Response } from 'express';
 import { createOllama } from 'ollama-ai-provider-v2';
 
-// `AIToolService` transitively imports every AI tool, some of which import
-// `AiService`, which imports this module — requiring it eagerly at the top
-// level would deadlock that cycle mid-load. Resolve it lazily on first use
-// instead, once module loading has fully settled.
 let aiToolServiceCache: typeof AIToolServiceType | undefined;
 const getAiToolService = (): typeof AIToolServiceType => {
     return aiToolServiceCache ??= (require('@modules/ai/services/AIToolService') as { default: typeof AIToolServiceType }).default;

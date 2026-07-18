@@ -5,12 +5,6 @@ interface SetChatSurfaceInput {
     surface?: 'floating' | 'page' | 'hidden';
 }
 
-/**
- * Moves the assistant between surfaces:
- *  - floating: open the chat widget overlay
- *  - page:     navigate to the full AI page (/dashboard/ai) and close the widget
- *  - hidden:   close the floating widget
- */
 const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
     name: 'set_chat_surface',
 

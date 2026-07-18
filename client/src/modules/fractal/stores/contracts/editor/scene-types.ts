@@ -118,11 +118,7 @@ interface PlaybackActions {
     resetPlayback: (options?: { preserveTimestep?: boolean }) => void;
     setRangeStart: (value: number | undefined) => void;
     setRangeEnd: (value: number | undefined) => void;
-    /**
-     * Advances the playback clock using the high-resolution reading supplied by
-     * R3F `useFrame`. Called from the Canvas subtree — not by a module-local
-     * rAF loop. Reuses the single rAF already scheduled by the renderer.
-     */
+    
     tick: (now: number) => void;
 }
 

@@ -5,10 +5,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import type { ErrorRequestHandler, Response } from 'express';
 
-/**
- * Normalized error shape emitted over the wire as:
- *     { status: 'error', code?, message, statusCode }
- */
 interface NormalizedError {
     code?: string;
     message?: string;
@@ -69,11 +65,6 @@ const looksLikeErrorCode = (value: string): boolean => {
     return value.includes('::');
 };
 
-/**
- * Mongoose throws a `CastError` (name === 'CastError') when a path value can't be coerced — most
- * commonly a malformed ObjectId arriving from a route param (e.g. `/documents/not-an-objectid`).
- * Left unmapped these surfaced as a 500; a malformed id is a client mistake → 400.
- */
 const normalizeCastError = (errorRecord: Record<string, unknown>): NormalizedErrorMetadata | undefined => {
     if (getStringProperty(errorRecord, 'name') !== 'CastError') {
         return undefined;
@@ -121,11 +112,6 @@ const normalizeValidationError = (errorRecord: Record<string, unknown>): Normali
     };
 };
 
-/**
- * Coerce any thrown value (ApplicationError, Zod error, Mongoose
- * ValidationError, plain Error, string, arbitrary object) into the wire-format
- * triple { code?, message?, statusCode }.
- */
 export const normalizeError = (error: unknown): NormalizedError => {
     if (error instanceof ApplicationError) {
         return {
@@ -189,10 +175,6 @@ const getErrorMessage = (error: NormalizedError): string => {
     return 'Internal Server Error';
 };
 
-/**
- * Write the normalized error to the response using the project's wire contract:
- *     { status: 'error', code?, message, statusCode }
- */
 export const sendNormalizedError = (res: Response, error: NormalizedError): void => {
     res.status(error.statusCode).json({
         status: 'error',
@@ -202,12 +184,6 @@ export const sendNormalizedError = (res: Response, error: NormalizedError): void
     });
 };
 
-/**
- * Express 5 error middleware. Receives anything propagated via `next(error)`
- * or thrown/rejected from async route handlers, normalizes it, and writes the
- * canonical error payload. If headers have already been flushed (e.g. a
- * stream that failed mid-pipe), we just destroy the socket.
- */
 export const httpErrorMiddleware: ErrorRequestHandler = (error, _request, response, _next) => {
     logger.error(error);
 

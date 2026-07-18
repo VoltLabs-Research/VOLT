@@ -1,4 +1,4 @@
-/** Domain types, defaults, and taxonomy for scene lighting. */
+
 
 interface LightsThemeDefaults {
     directionalColor: string;
@@ -114,15 +114,6 @@ export interface LightsActions {
 
 export type LightsStore = LightsState & LightsActions;
 
-/**
- * Scene-level lighting preset applied automatically based on scene type.
- * `Custom` is reserved for user-controlled lights configured in the editor UI.
- *
- * Note: `FractalScenePipeline` mounts two `DynamicLights` instances simultaneously —
- * one driven by `LightingPreset` (scene-driven baseline) and one by user `settings`.
- * This is intentional layering; do not collapse the two mount points without
- * confirming the product intent first.
- */
 export enum LightingPreset {
     Trajectory = 'trajectory',
     Defect = 'defect',
@@ -235,7 +226,6 @@ const createLightsState = (darkTheme = isDarkTheme()): LightsState => {
     };
 };
 
-/** Resolves a light color against theme defaults while preserving explicit overrides. */
 export const resolveLightsColor = (
     color: string,
     followsTheme: boolean,
@@ -249,7 +239,6 @@ export const resolveLightsColor = (
     return color;
 };
 
-/** Returns a fresh deep-copy of the default lights state safe for mutation. */
 export const getDefaultLightsState = (darkTheme = isDarkTheme()): LightsState => {
     const defaultState = createLightsState(darkTheme);
 

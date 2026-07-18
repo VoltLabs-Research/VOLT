@@ -30,10 +30,6 @@ const cornerOffset = (
 
 const isVec3 = (v: number[] | undefined): v is number[] => Array.isArray(v) && v.length === 3;
 
-/**
- * Whether the three cell vectors describe a real (non-degenerate) parallelepiped:
- * each non-zero, and the triple non-coplanar (scalar triple product above eps).
- */
 export const hasValidCellVectors = (cellVectors: number[][] | undefined): boolean => {
     if (!cellVectors || cellVectors.length !== 3) return false;
     if (!cellVectors.every(isVec3)) return false;
@@ -44,13 +40,6 @@ export const hasValidCellVectors = (cellVectors: number[][] | undefined): boolea
     return triple > 1e-9;
 };
 
-/**
- * Builds the wireframe (12 edges → 24 line-segment endpoints) of a cell
- * parallelepiped from its origin + three edge vectors. Unlike an axis-aligned box
- * this is correct for sheared/triclinic cells. When `pbc` axes are passed with
- * `showPbcImages`, neighbouring periodic copies (offset by ±a / ±b / ±c along the
- * periodic axes) are appended so the user can see where atoms wrap.
- */
 export const buildCellWireframeGeometry = (
     cellVectors: number[][],
     cellOrigin: number[] | undefined,
@@ -96,11 +85,6 @@ export const buildCellWireframeGeometry = (
     return geometry;
 };
 
-/**
- * Fallback wireframe for when explicit cell vectors are absent: the axis-aligned
- * box implied by `boxBounds`. Mirrors the historical orthorhombic rendering so
- * callers can switch on `hasValidCellVectors`.
- */
 export const buildAabbWireframeGeometry = (boxBounds: BoxBounds): THREE.BufferGeometry => {
     const { xlo, xhi, ylo, yhi, zlo, zhi } = boxBounds;
     const points = [

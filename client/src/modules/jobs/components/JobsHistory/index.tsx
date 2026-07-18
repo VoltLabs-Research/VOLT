@@ -24,7 +24,6 @@ const JobsHistory = ({
     displayMode = 'full',
     groupStatusPresentation = 'badge'
 }: JobsHistoryProps) => {
-
     const filteredGroups = useMemo(() => {
         let result = groups;
         if (trajectoryId) {

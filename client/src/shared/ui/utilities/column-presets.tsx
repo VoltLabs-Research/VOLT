@@ -215,12 +215,6 @@ export function populatedNameColumn<TRow = unknown>(
     };
 }
 
-/**
- * Column preset for generic enum fields.
- * Renders the cell value as a StatusBadge with automatic variant mapping.
- * Use `resolveLabel` to provide a human-friendly display label,
- * or `resolveValue` to transform the raw cell value before rendering.
- */
 export function enumColumn<TRow = unknown>(
     key: string,
     label: string,

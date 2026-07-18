@@ -51,7 +51,6 @@ const CREATE_FOLDER_TOAST = {
     error: { title: 'Failed to create folder' }
 };
 
-/** Manages asset listing, upload, deletion, move, and editor insertion for a LaTeX document. */
 const useLatexAssets = ({ documentId }: UseLatexAssetsInput) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);

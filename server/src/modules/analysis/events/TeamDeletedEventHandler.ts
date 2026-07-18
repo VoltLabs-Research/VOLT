@@ -8,12 +8,6 @@ interface AnalysisIdRecord {
     readonly _id: string;
 }
 
-/**
- * On team deletion, cascade-delete every analysis belonging to the team.
- * Enumerates ids straight from the Mongoose {@link AnalysisModel} and delegates
- * the real teardown (storage/daemon cleanup via the `analysis.deleted` event) to
- * a `new AnalysisService()` — no use case, no DI.
- */
 class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<AnalysisIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<AnalysisIdRecord[]> => {

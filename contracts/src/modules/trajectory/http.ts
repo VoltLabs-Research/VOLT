@@ -1,7 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId` / `:trajectoryId` / `:analysisId` /
-// `:exposureId` path params) is NOT here — the service augments those on its own
-// input from the route params + `@CurrentUser`.
+
 
 export interface TrajectoryUploadFileInput{
     name: string;

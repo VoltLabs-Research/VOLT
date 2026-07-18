@@ -1196,7 +1196,6 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
     private glbKeys(trajectoryId: string) {
         return this.sessionKeys('daemon-glb', trajectoryId);
     }
-
 }
 
 export default new DaemonAnalysisCompletionService();

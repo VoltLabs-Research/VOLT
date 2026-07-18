@@ -8,7 +8,6 @@ interface CopyToClipboardOptions {
 const DEFAULT_SUCCESS_MESSAGE = 'Copied to clipboard';
 const DEFAULT_ERROR_MESSAGE = 'Failed to copy to clipboard';
 
-/** Copies text to the clipboard and shows consistent toast feedback. */
 export const copyTextToClipboard = async (
     text: string,
     {

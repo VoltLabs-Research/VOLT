@@ -1,13 +1,4 @@
-/**
- * Canonical, neutral (pure-type) contract for the Analysis entity shape and
- * its persisted props. Extracted from `@modules/analysis/entities/Analysis`
- * during the detachable-modules migration so cross-module consumers (and the
- * shared `IAnalysisRepository` port) depend on the contracts layer rather than
- * the analysis module directly.
- *
- * The original entity file re-exports every name below, so existing importers
- * compile unchanged.
- */
+
 
 export type AnalysisConfig = Record<string, unknown>;
 

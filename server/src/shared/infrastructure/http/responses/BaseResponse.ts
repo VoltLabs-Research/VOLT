@@ -26,9 +26,7 @@ export default class BaseResponse {
         });
     }
 
-    /**
-     * Error response with explicit message / status / code.
-     */
+    
     static error(
         res: Response,
         message: string,
@@ -42,15 +40,7 @@ export default class BaseResponse {
         });
     }
 
-    /**
-     * Error response derived from an arbitrary thrown value. Used by places
-     * that cannot rely on Express' `next(error)` pipeline (e.g. proxy error
-     * listeners that fire after their request has already been detached, or
-     * stream pipes failing before headers are sent).
-     *
-     * Controller-level try/catch no longer calls this — unhandled rejections
-     * from BaseController.handle propagate to httpErrorMiddleware instead.
-     */
+    
     static fromError(res: Response, error: unknown): void {
         sendNormalizedError(res, normalizeError(error));
     }

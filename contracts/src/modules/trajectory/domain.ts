@@ -1,15 +1,7 @@
-// Wire response types for the trajectory module — the shapes the client reads
-// back from `data`. Persisted documents, populated refs and dates are strings /
-// loosely typed on the wire. The heavy 3D/native payloads (dumps, GLB, colored
-// / filtered / line-styled models, octree metadata, raster frames, atoms) are
-// streamed as binary via `@Res()` and are NOT JSON, so only the JSON-shaped
-// responses are described here (mirroring the container module's pragmatic
-// `Record<string, unknown>` for opaque payloads).
 
-/** A persisted trajectory as the client sees it (populated refs may be nested). */
+
 export type PersistedTrajectory = Record<string, unknown>;
 
-/** A trajectory catalog folder, as returned by `presentCatalogFolder`. */
 export interface TrajectoryFolder{
     _id: string;
     title: string;
@@ -18,13 +10,10 @@ export interface TrajectoryFolder{
     updatedAt: string;
 }
 
-/** A scene-artifact record as the client sees it. */
 export type SceneArtifactView = Record<string, unknown>;
 
-/** A bundled sample simulation descriptor. */
 export type SampleSimulation = Record<string, unknown>;
 
-/** Aggregated per-team trajectory metrics (see `presentTeamMetrics`). */
 export type TeamMetricsResponse = Record<string, unknown>;
 
 export interface TrajectoryUploadPart{
@@ -65,7 +54,6 @@ export interface CloneTrajectoryResponse{
     destinationClusterId: string;
 }
 
-/** Base64 preview payload (also served with an `ETag` / `Cache-Control`). */
 export type TrajectoryPreviewResponse = string;
 
 export type ColorCodingPropertiesResponse = unknown;
@@ -88,8 +76,6 @@ export interface GetLineEntityPropertiesResponse{
     entityId: number;
     properties: Record<string, unknown>;
 }
-
-// ---- Public canvas (JSON responses) -----------------------------------------
 
 export type CanvasBootstrapResponse = unknown;
 export type CanvasTrajectoryResponse = unknown;

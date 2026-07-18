@@ -39,12 +39,6 @@ export interface PluginImportResult {
     binaryImported: boolean;
 }
 
-/**
- * If every archive entry lives under one shared top-level directory (e.g. `kmeans-clustering/...`),
- * return that prefix (with trailing slash) so callers can resolve `plugin.json`/`binary/` regardless
- * of whether the zip was packaged with a wrapper dir or flat at the root. Returns '' when entries
- * diverge at the top level (treat paths as already root-relative).
- */
 const detectArchiveRootPrefix = (paths: string[]): string => {
     const topLevelSegments = new Set<string>();
 
@@ -517,8 +511,8 @@ export default class PluginStorageService {
             listingExposures: projection.listingExposures
         };
 
-        // Inlined former `PluginRepository.findByTeamAndModifierKey` — only one
-        // call site, so it doesn't earn a shared `plugin-queries.ts` export.
+        
+        
         const modifierKey = projection.modifier?.key?.trim();
         const existingDoc = modifierKey
             ? await PluginModel.findOne({ team: teamId, 'modifier.key': modifierKey }).exec()

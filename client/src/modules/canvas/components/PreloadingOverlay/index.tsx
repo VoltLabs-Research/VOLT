@@ -16,7 +16,7 @@ const PreloadingOverlay = ({
 }: PreloadingOverlayProps) => {
     if (!active) return null;
 
-    // progress arrives as 0–1; ProgressBar expects 0–100. Undefined → indeterminate bar.
+    
     const hasProgress = typeof progress === 'number';
 
     return (

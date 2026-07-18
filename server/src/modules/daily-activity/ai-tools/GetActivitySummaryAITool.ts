@@ -10,10 +10,6 @@ const parameters = z.object({
 
 type GetActivitySummaryParams = z.infer<typeof parameters>;
 
-/**
- * Summarizes team (or self) daily activity over a day range. Delegates to a
- * `new DailyActivityService()` (no use case, no DI).
- */
 export class GetActivitySummaryAITool extends AITool<GetActivitySummaryParams> {
     readonly name = 'get_activity_summary';
     readonly description = 'Summarize recent team activity (or just your own) over the last N days — '

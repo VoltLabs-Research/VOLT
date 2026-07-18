@@ -9,22 +9,10 @@ interface SetCameraViewInput {
 
 type Vec3 = [number, number, number];
 
-/**
- * Distance from the origin to place the camera. The bridge does not expose live
- * scene bounds, so we use a constant close to the scene's default camera
- * distance (default position is [8,8,6], |.| ~ 12.8). The orbit controls clamp
- * to min/maxDistance, so this stays inside a valid range for typical scenes.
- */
 const VIEW_DISTANCE = 12;
 
 const ISO = VIEW_DISTANCE / Math.sqrt(3);
 
-/**
- * Viewpoints in the scene's z-up convention (default camera up is [0,0,1], the
- * standard for LAMMPS/atomistic data). For top/bottom (looking along the up
- * axis) the up vector is swapped to +Y so the view is well-defined. Target is
- * always the scene origin.
- */
 const VIEWS: Record<CameraView, { position: Vec3; up: Vec3 }> = {
     front: { position: [0, -VIEW_DISTANCE, 0], up: [0, 0, 1] },
     back: { position: [0, VIEW_DISTANCE, 0], up: [0, 0, 1] },
@@ -38,12 +26,6 @@ const VIEWS: Record<CameraView, { position: Vec3; up: Vec3 }> = {
 const isCameraView = (value: unknown): value is CameraView =>
     typeof value === 'string' && Object.prototype.hasOwnProperty.call(VIEWS, value);
 
-/**
- * Snaps the viewer camera to a named viewpoint by setting the editor store
- * camera position + up vector and re-targeting the orbit controls at the
- * origin. Store mutations are zundo temporal-wrapped, so the change is
- * user-undoable.
- */
 const setCameraView: ClientToolHandler<SetCameraViewInput> = {
     name: 'set_camera_view',
     needsViewer: true,

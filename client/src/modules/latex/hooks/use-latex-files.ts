@@ -32,10 +32,6 @@ const RENAME_FILE_TOAST = {
     error: { title: 'Failed to rename file' }
 };
 
-/**
- * Manages the list of LatexFile records for a document.
- * Provides handlers for creating, deleting, setting the entrypoint, and moving files.
- */
 const useLatexFiles = ({ documentId, onFileSelected }: UseLatexFilesInput) => {
     const filesQueryResult = latexFilesQuery(
         { documentId },

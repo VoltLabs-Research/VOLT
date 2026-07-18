@@ -128,23 +128,11 @@ export const geometryPool = new GeometryPool();
 
 export const SPHERE_RENDER_ATOM_THRESHOLD = 200_000;
 
-/**
- * Whether per-type sphere geometry (InstancedMesh) should render for a model of
- * `atomCount` atoms, or the point/impostor fallback should take over. The full
- * InstancedMesh bridge lands with plan 12 (LOD); this gate is the shared
- * decision both paths read so the threshold lives in one place.
- */
 export const shouldRenderSpheres = (atomCount: number): boolean =>
     atomCount > 0 && atomCount <= SPHERE_RENDER_ATOM_THRESHOLD;
 
 const SPHERE_SEGMENTS = 16;
 
-/**
- * Per-LAMMPS-type sphere-geometry cache. The radius comes from the trajectory's
- * element table (covalent/vdW radius per type, plan 04); identical type+radius
- * pairs across scenes share one `THREE.SphereGeometry`. Disposed geometries are
- * dropped so a re-cache rebuilds them.
- */
 class SphereGeometryPool {
     private byKey = new Map<string, THREE.SphereGeometry>();
 

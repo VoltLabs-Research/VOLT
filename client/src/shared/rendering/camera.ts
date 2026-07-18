@@ -156,7 +156,6 @@ export const getDefaultOrbitControlsSettings = (): OrbitControlsSettings => ({
     ]
 });
 
-/** Checks whether a runtime string matches a supported camera type. */
 export const isCameraType = (value: string): value is CameraType => {
     return CAMERA_TYPE_OPTIONS.some((option) => option.value === value);
 };

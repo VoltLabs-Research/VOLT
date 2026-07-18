@@ -9,7 +9,7 @@ interface UseThrottledSocketEmitOptions {
     mode?: ThrottledEmitMode;
     enabled?: boolean;
     fireAndForget?: boolean;
-    /** Whether to flush a pending payload on unmount. Defaults to false (cancel). */
+    
     flushOnUnmount?: boolean;
 };
 

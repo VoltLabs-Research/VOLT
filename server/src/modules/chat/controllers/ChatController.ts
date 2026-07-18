@@ -28,22 +28,11 @@ interface ChatFileBody {
     };
 }
 
-/**
- * The single HTTP controller for the chat module (pollium style): every route is
- * bound with `@Route(chatRoutes.x)` and delegates to a {@link ChatService} the
- * controller `new`s itself. The class-level `@Middleware(protect)` matches the
- * old route groups' `protected: true`; the `/api/chats` group's `teamScope:
- * Param` (team-membership only on the `:teamId` route) becomes a per-method
- * `@Middleware(checkTeamMembership)` on `getOrCreate`, and the file-message
- * upload chain is a per-method middleware — the rest are plain `protect`.
- * `buildRouter()` turns the decorated methods into the Express router mounted
- * directly in `mount-http-routes`.
- */
 @Middleware(protect)
 export default class ChatController extends Controller {
     #service = new ChatService();
 
-    // ---- Chats ----
+    
 
     @Route(chatRoutes.listUserChats)
     listUserChats(@CurrentUser() userId: string) {
@@ -91,7 +80,7 @@ export default class ChatController extends Controller {
         await this.#service.leaveGroup(userId, chatId);
     }
 
-    // ---- Messages ----
+    
 
     @Route(chatRoutes.listMessages)
     listMessages(@Param('chatId') chatId: string, @CurrentUser() userId: string, @Query() query: Record<string, string>) {

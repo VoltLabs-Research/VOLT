@@ -8,13 +8,6 @@ import TeamMemberService from '@modules/team/services/TeamMemberService';
 import { teamMemberRoutes } from '@volt/contracts/modules/team/routes';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
 
-/**
- * HTTP controller for the team-member resource. Class-level guards reproduce the
- * former `teamScope: BasePath` + `resource: TEAM_MEMBER`. `list` returns the
- * paginated envelope; `remove` reads the `:memberId` param (the former route used
- * `:memberId` for DELETE while GET/PATCH used `:teamMemberId`) and preserves the
- * empty 204 response.
- */
 @Middleware(protect, teamScoped(Resource.TEAM_MEMBER))
 export default class TeamMemberController extends Controller {
     #service = new TeamMemberService();

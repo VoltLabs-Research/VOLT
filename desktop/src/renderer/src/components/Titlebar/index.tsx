@@ -44,7 +44,7 @@ const Titlebar = ({
         if(returnFocus) focusGear();
     };
 
-    // Focus the first item on open and close on Escape (keyboard accessibility).
+    
     useEffect(() => {
         if(!menuOpen) return;
         menuRef.current?.querySelector<HTMLButtonElement>('button[data-menu-item]')?.focus();
@@ -55,7 +55,7 @@ const Titlebar = ({
         return () => window.removeEventListener('keydown', onKey);
     }, [menuOpen]);
 
-    // Roving focus across all menu buttons (actions + theme options).
+    
     const onMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
         if(!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
         const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('button[data-menu-item]:not([disabled])') ?? []);

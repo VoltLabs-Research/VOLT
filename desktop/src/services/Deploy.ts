@@ -89,9 +89,9 @@ export default class Deploy{
 
         await this.#phase('web', () => waitForUrl(webProbe));
 
-        // Record the new release tags only now that the stack is healthy. Recording
-        // at resolve() time would make a failed build look "installed", so a retry
-        // would skip the rebuild and run stale images.
+        
+        
+        
         await commit();
     }
 

@@ -8,10 +8,6 @@ interface WithId {
 
 export type QueryDataSnapshot = Array<[QueryKey, unknown]>;
 
-/**
- * Upsert an entity into a flat PaginatedResponse.
- * If found, merges in-place; otherwise prepends (sliced to limit).
- */
 export const upsertEntityInList = <T extends WithId>(
     page: PaginatedResponse<T>,
     entity: T
@@ -26,9 +22,6 @@ export const upsertEntityInList = <T extends WithId>(
     return { ...page, data, pagination };
 };
 
-/**
- * Remove an entity from a flat PaginatedResponse by id.
- */
 export const removeEntityFromList = <T extends WithId>(
     page: PaginatedResponse<T>,
     id: string
@@ -47,9 +40,6 @@ export const removeEntityFromList = <T extends WithId>(
     };
 };
 
-/**
- * Apply an updater to every flat PaginatedResponse matching a key prefix.
- */
 export const patchPaginatedPage = <T extends WithId>(
     keyPrefix: QueryKey,
     updater: (current: PaginatedResponse<T>) => PaginatedResponse<T>
@@ -63,9 +53,6 @@ export const patchPaginatedPage = <T extends WithId>(
     );
 };
 
-/**
- * Apply an updater to every page inside all infinite queries matching a key prefix.
- */
 export const patchInfinitePages = <T extends WithId>(
     keyPrefix: QueryKey,
     pageUpdater: (page: PaginatedResponse<T>) => PaginatedResponse<T>
@@ -83,9 +70,6 @@ export const patchInfinitePages = <T extends WithId>(
     );
 };
 
-/**
- * Invalidate multiple query key prefixes in parallel.
- */
 export const batchInvalidateQueries = (keys: QueryKey[]): Promise<void[]> => {
     return Promise.all(
         keys.map((key) => queryClient.invalidateQueries({ queryKey: key }))
@@ -101,8 +85,6 @@ export const restoreQueryDataSnapshot = (snapshot: QueryDataSnapshot): void => {
         queryClient.setQueryData(queryKey, data);
     });
 };
-
-/** Internal pagination helpers. */
 
 const adjustPagination = (meta: PaginationMeta, delta: number): PaginationMeta => {
     const total = Math.max(0, meta.total + delta);

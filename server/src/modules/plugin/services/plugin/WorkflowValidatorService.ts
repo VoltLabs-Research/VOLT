@@ -376,7 +376,6 @@ export class WorkflowValidatorService {
         }
     }
 
-
     private validateIfStatementTopology(workflow: WorkflowProps, errors: string[], topology: WorkflowTopologyIndex): void {
         for (const node of workflow.nodes) {
             if (node.type !== WorkflowNodeType.IfStatement) {

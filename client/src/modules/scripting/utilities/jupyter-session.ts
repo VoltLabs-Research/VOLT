@@ -69,10 +69,6 @@ const readSessionWithinDeadline = async (
     return Promise.race([sessionPromise, timeoutPromise]);
 };
 
-/**
- * Re-checks notebook session startup using an initial create result plus repeated status reads
- * until Jupyter reports ready or the polling window expires.
- */
 const waitForReadyScriptingSession = async (
     stateLoader: WaitForReadyScriptingSessionStateLoader,
     options: WaitForReadyScriptingSessionOptions = {}
@@ -134,7 +130,6 @@ const waitForReadyScriptingSession = async (
     };
 };
 
-/** Creates a session and reuses the shared readiness polling flow for startup. */
 export const startAndWaitForReadyScriptingSession = async (
     stateLoader: StartAndWaitForReadyScriptingSessionStateLoader,
     options: WaitForReadyScriptingSessionOptions = {}

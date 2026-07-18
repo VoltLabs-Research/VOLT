@@ -17,13 +17,6 @@ const resolveEffectiveTheme = (preference: Theme): Theme => {
     return preference;
 };
 
-/**
- * Sets the application theme preference. Mirrors the non-React path used by
- * `useTheme`: persists the preference to the `theme` localStorage key and writes
- * the resolved theme to the document's `data-theme` contract attribute (observed
- * by `subscribeToAppTheme` / `getActiveAppTheme`). React `useTheme` consumers
- * pick up the persisted value on next read/mount.
- */
 const setTheme: ClientToolHandler<SetThemeInput> = {
     name: 'set_theme',
 

@@ -4,8 +4,6 @@ export type RemoteProbeResult =
 
 const PROBE_TIMEOUT = 4_000;
 
-// Accept bare hosts too (e.g. "volt.lab.org" or "192.168.1.5:8000"). We prefer
-// https for ambiguous input, then fall back to http for LAN-style endpoints.
 const candidateOrigins = (raw: string): string[] => {
     const trimmed = raw.trim().replace(/\/+$/, '');
     if(!trimmed) return [];
@@ -38,7 +36,7 @@ export default class RemoteProbe{
             try{
                 res = await fetch(`${origin}/healthz`, { signal: AbortSignal.timeout(PROBE_TIMEOUT) });
             }catch{
-                continue; // try the next scheme before giving up
+                continue; 
             }
 
             if(!res.ok) continue;
@@ -47,7 +45,7 @@ export default class RemoteProbe{
             try{ body = await res.json() as HealthzResponse; }catch{ /* non-JSON body */ }
 
             if(body?.status !== 'ok'){
-                reachedServer = true; // responded, but not a VOLT /healthz
+                reachedServer = true; 
                 continue;
             }
 

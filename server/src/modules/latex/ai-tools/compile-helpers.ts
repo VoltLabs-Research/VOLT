@@ -13,12 +13,6 @@ import { pipeline } from 'node:stream/promises';
 import pLimit from 'p-limit';
 import type { ITempFileService } from '@shared/domain/port/ITempFileService';
 
-/**
- * Plain (model-backed) shapes the compile pipeline works with. The domain-entity
- * layer was removed in the pollium conversion, so the helpers query the Mongoose
- * models directly and operate on lean documents rather than `LatexFile`/
- * `LatexAsset` entities.
- */
 interface CompileLatexFile {
     _id: string;
     name: string;
@@ -445,17 +439,6 @@ const loadCompileAssets = async (documentId: string): Promise<CompileLatexAsset[
     }));
 };
 
-/**
- * Prepares a temporary working directory for LaTeX compilation.
- *
- * Loads the document and its files (via the Mongoose models directly),
- * incrementally syncs only changed inputs into `workDir`, downloads changed
- * assets from storage, and resolves an available LaTeX compiler.
- *
- * @param params - Document identifiers, working directory path, and compiler options.
- * @param deps - Object-gateway + temp-file service dependencies.
- * @returns A discriminated result: `'ready'` with compiler and files, or a failure status.
- */
 export const prepareWorkDir = async (
     params: PrepareWorkDirParams,
     deps: PrepareWorkDirDeps

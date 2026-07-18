@@ -13,11 +13,6 @@ import Deploy from '@/services/Deploy';
 import DeployProgress from '@/services/DeployProgress';
 import { isUp, webProbeUrl } from '@/shared/health';
 
-// Exit-code contract (for cron/CI):
-//   0  success / already up to date
-//   1  runtime failure (unhandled error in main().catch)
-//   2  usage error / no existing deployment to update
-//  10  --check only: an update is available
 const EXIT_USAGE = 2;
 const EXIT_UPDATE_AVAILABLE = 10;
 
@@ -89,8 +84,8 @@ interface CliFlags{
 }
 
 const parseFlags = (): CliFlags => {
-    // strict:false so an older cached cli.cjs tolerates future flags instead of
-    // crashing, and so unknown args don't abort a curl|bash run.
+    
+    
     const { values } = parseArgs({
         args: process.argv.slice(2),
         strict: false,
@@ -126,7 +121,7 @@ const main = async () => {
 
     const nonInteractive = flags.update || flags.check;
 
-    // A read-only --check shouldn't announce a deploy; everything else does.
+    
     if(!flags.check) p.intro('Deploy VOLT');
 
     const dataDir = flags.dataDir
@@ -148,8 +143,8 @@ const main = async () => {
         process.exit(EXIT_USAGE);
     }
 
-    // Build + rebuild the stack keeping data, then report. Shared by the
-    // non-interactive --update path and the interactive "update" choice.
+    
+    
     const runUpdate = async (withCluster: boolean, email: string) => {
         const deploy = new Deploy({ composeFile, appConfig, sources, docker, withCluster });
         progress.start();
@@ -158,7 +153,7 @@ const main = async () => {
         printSummary(await appConfig.getStackEnv(), withCluster, email, false);
     };
 
-    // ── Non-interactive --update / --check ──────────────────────────────────────
+    
     if(nonInteractive){
         if(!existing){
             p.log.error(`No existing VOLT deployment found in ${dataDir}.`);
@@ -185,8 +180,8 @@ const main = async () => {
             return;
         }
 
-        // Derive the target mode from config, honoring explicit overrides, and persist
-        // an override so subsequent scheduled runs stay consistent.
+        
+        
         const currentMode = await appConfig.getMode();
         const withCluster = flags.withCluster ? true
             : flags.serverOnly ? false
@@ -197,10 +192,10 @@ const main = async () => {
             await appConfig.setMode(desiredMode);
         }
 
-        // Idempotent no-op: skip the teardown+rebuild when nothing changed and the web
-        // app is already serving. A mode change (e.g. --server-only on a cluster) must
-        // NOT no-op — the topology has to be reconciled. Dev mode always rebuilds (no
-        // release tag to compare); --force bypasses the gate (also covers compose drift).
+        
+        
+        
+        
         if(!flags.force && !modeChanged){
             const status = await sources.checkForUpdates();
             const env = await appConfig.getStackEnv();
@@ -215,7 +210,7 @@ const main = async () => {
         return;
     }
 
-    // ── Interactive: existing deployment → ask update vs reset ──────────────────
+    
     if(existing){
         const choice = await p.select({
             message: `Existing deployment found (${existing.email}). What would you like to do?`,
@@ -232,8 +227,8 @@ const main = async () => {
         }
     }
 
-    // A fresh deploy needs prompts; without a terminal (cron/CI with no flags) the
-    // first prompt would hang forever. Fail fast with guidance instead.
+    
+    
     if(!process.stdin.isTTY){
         p.log.error('Interactive deployment needs a terminal.');
         p.log.message('Run with --update to update an existing deployment non-interactively, or --help for usage.');

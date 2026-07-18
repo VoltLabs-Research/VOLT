@@ -207,7 +207,7 @@ const Timeline = ({
             frame,
             major: true,
             tone: toneByTimestep.get(frame),
-            // Frame the selected analysis didn't cover — dim it but keep it scrubbable.
+            
             dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false
         }));
     }, [rangedTimesteps, toneByTimestep, scopedTimesteps]);

@@ -93,7 +93,6 @@ interface NormalizedConversationMessage extends UIMessage {
     toolInvocations: NormalizedToolInvocation[];
 }
 
-/** Stable reference to avoid re-creating the array on every render. */
 const REMARK_PLUGINS = [remarkGfm];
 
 const isTextPart = (part: UIMessage['parts'][number]): part is TextPart => {

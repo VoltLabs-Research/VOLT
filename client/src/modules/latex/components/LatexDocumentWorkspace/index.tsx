@@ -77,7 +77,6 @@ const loadPanelWidths = (): PanelWidths => {
     }
 };
 
-/** Returns "FL" initials from a PresenceUser, falling back to "?" for anonymous users. */
 const getPresenceInitials = (user: PresenceUser): string => {
     const first = user.firstName?.[0] ?? '';
     const last = user.lastName?.[0] ?? '';
@@ -174,7 +173,7 @@ const LatexDocumentWorkspace = () => {
         initialWorkspaceVisibilityResolvedRef.current = false;
     }, [documentId]);
 
-    /** Pointer Capture drag — files panel handle. */
+    
     const handleFilesPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -186,7 +185,7 @@ const LatexDocumentWorkspace = () => {
         };
     }, [panelWidths.files]);
 
-    /** Pointer Capture drag — preview panel handle. */
+    
     const handlePreviewPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -198,7 +197,7 @@ const LatexDocumentWorkspace = () => {
         };
     }, [panelWidths.preview]);
 
-    /** Pointer Capture drag — AI panel handle (vertical). */
+    
     const handleAiPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -221,11 +220,7 @@ const LatexDocumentWorkspace = () => {
         };
     }, [panelWidths.editorTop]);
 
-    /**
-     * Shared pointermove for both handles.
-     * Pointer capture guarantees events arrive here even when the mouse
-     * is over the PDF iframe — no global listeners needed.
-     */
+    
     const handleDragPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         const state = dragStateRef.current;
         if (!state || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
@@ -251,7 +246,7 @@ const LatexDocumentWorkspace = () => {
         }
     }, []);
 
-    /** Shared pointerup: releases capture and persists widths to localStorage. */
+    
     const handleDragPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>): void => {
         if (!dragStateRef.current) return;
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -262,7 +257,7 @@ const LatexDocumentWorkspace = () => {
         });
     }, []);
 
-    /** pointercancel fires if the browser forcibly cancels capture (e.g. touch interrupted). */
+    
     const handleDragPointerCancel = useCallback((): void => {
         dragStateRef.current = null;
     }, []);

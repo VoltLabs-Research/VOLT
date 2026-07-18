@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-/** Supported application themes. */
 export enum Theme {
     Light = 'light',
     Dark = 'dark',
@@ -8,9 +7,9 @@ export enum Theme {
 };
 
 interface UseThemeReturn {
-    /** Effective theme applied to the document (always Light or Dark). */
+    
     theme: Theme;
-    /** User preference stored in localStorage (Light, Dark, or System). */
+    
     preference: Theme;
     setTheme: (theme: Theme) => void;
 };
@@ -18,12 +17,10 @@ interface UseThemeReturn {
 const THEME_STORAGE_KEY = 'theme';
 const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
-/** Resolves the current OS-level theme preference. */
 const getSystemTheme = (): Theme => {
     return window.matchMedia(THEME_MEDIA_QUERY).matches ? Theme.Dark : Theme.Light;
 };
 
-/** Returns the persisted user-selected theme when present. */
 const getSavedTheme = (): Theme | null => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 
@@ -38,7 +35,6 @@ const getSavedTheme = (): Theme | null => {
     return null;
 };
 
-/** Resolves a theme preference into the concrete theme to apply (Light or Dark). */
 const getEffectiveTheme = (preference: Theme): Theme => {
     if (preference === Theme.System) {
         return getSystemTheme();
@@ -47,17 +43,14 @@ const getEffectiveTheme = (preference: Theme): Theme => {
     return preference;
 };
 
-/** Updates the document theme contract attribute. */
 const applyTheme = (theme: Theme): void => {
     document.documentElement.setAttribute('data-theme', theme);
 };
 
-/** Returns the user preference, defaulting to System on first launch. */
 const resolvePreference = (): Theme => {
     return getSavedTheme() ?? Theme.System;
 };
 
-/** Syncs browser chrome color with the active theme background token. */
 const syncThemeColorMeta = (): void => {
     const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim();
 
@@ -75,15 +68,10 @@ const syncThemeColorMeta = (): void => {
     themeColorMeta.setAttribute('content', backgroundColor);
 };
 
-/** Applies the resolved theme contract during app bootstrap. */
 const initializeTheme = (): void => {
     applyTheme(getEffectiveTheme(resolvePreference()));
 };
 
-/**
- * Initializes the document theme contract on app startup and keeps browser
- * chrome colors aligned with the active theme.
- */
 export const useThemeInitialization = (): void => {
     useEffect(() => {
         initializeTheme();
@@ -110,10 +98,6 @@ export const useThemeInitialization = (): void => {
     }, []);
 };
 
-/**
- * Resolves and persists the active application theme while following OS theme
- * changes when the System preference is active.
- */
 export const useTheme = (): UseThemeReturn => {
     const [preference, setPreferenceState] = useState<Theme>(resolvePreference);
     const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => getEffectiveTheme(preference));

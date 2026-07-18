@@ -1,9 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-/**
- * Hook for chat navigation actions.
- * Handles selecting chats by navigating to their routes.
- */
+
 const useChatNavigation = () => {
     const navigate = useNavigate();
 

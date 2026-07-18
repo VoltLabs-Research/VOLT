@@ -138,7 +138,6 @@ interface PaginatedQueryConfig<
     onRemove?: (id: string) => void;
 };
 
-/** Builds typed query keys with optional void params support. */
 export function buildKeys<T extends object>(base: string | readonly string[]): KeyFnMap<T>;
 export function buildKeys(base: string | readonly string[]) {
     const baseSegments = typeof base === 'string' ? [base] : [...base];
@@ -163,7 +162,6 @@ export function buildKeys(base: string | readonly string[]) {
     });
 };
 
-/** Composes internal mutation success handlers with consumer callbacks. */
 export const withSuccess = <TData, TVariables, TOnMutateResult = unknown>(
     handler: (data: TData, variables: TVariables, onMutateResult: TOnMutateResult, context: MutationFunctionContext) => void,
     options?: WithSuccessOptions<TData, TVariables, TOnMutateResult>
@@ -174,7 +172,6 @@ export const withSuccess = <TData, TVariables, TOnMutateResult = unknown>(
     };
 };
 
-/** Creates a standard query hook with cache helpers. */
 export const createQuery = <TParams, TData>(
     keyFn: (params: TParams) => QueryKey,
     queryFn: (params: TParams) => Promise<TData>
@@ -215,7 +212,6 @@ export const createQuery = <TParams, TData>(
     );
 };
 
-/** Creates a socket-backed query hook that never fetches on its own. */
 export const createSocketQuery = <TParams, TData>(
     keyFn: (params: TParams) => QueryKey,
     config?: SocketQueryConfig<TData>
@@ -246,7 +242,6 @@ export const createSocketQuery = <TParams, TData>(
     );
 };
 
-/** Creates an infinite query hook with pagination helpers. */
 export const createInfiniteQuery = <TParams, TEntity>(
     keyFn: (params: TParams) => QueryKey,
     fetchPage: (params: TParams, pagination: PaginationRequest) => Promise<PaginatedResponse<TEntity>>,
@@ -285,7 +280,6 @@ export const createInfiniteQuery = <TParams, TEntity>(
     );
 };
 
-/** Creates a mutation hook factory with shared typing. */
 export const createMutation = <TData, TVariables>(
     mutationFn: (variables: TVariables) => Promise<TData>,
     onSuccess?: (data: TData, variables: TVariables, onMutateResult: unknown, context: MutationFunctionContext) => unknown
@@ -340,7 +334,6 @@ const buildPaginationFromCurrent = (current: PaginatedResponse<unknown>, shouldR
     };
 };
 
-/** Creates list and CRUD hooks with shared cache maintenance. */
 export const createPaginatedQuery = <
     TEntity extends WithId,
     TListParams extends object = Record<string, never>,

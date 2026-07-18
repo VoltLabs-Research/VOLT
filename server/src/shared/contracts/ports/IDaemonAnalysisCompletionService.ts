@@ -1,20 +1,4 @@
-/**
- * Neutral, cross-module port for the daemon analysis-completion service (tracks
- * job/session drain, publishes status + stage changes as the daemon reports
- * back). Plus the daemon-input DTOs it accepts.
- *
- * Extracted from `@modules/cluster/ports/IDaemonAnalysisCompletionService`
- * during the detachable-modules migration. The concrete service stays in the
- * cluster module, registered under
- * `CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService` (same `Symbol.for`
- * key as the cluster module's `CLUSTER_TOKENS.DaemonAnalysisCompletionService`,
- * so resolution is byte-identical). Consumers `@inject(...)` against this port
- * without importing `@modules/cluster`. The original port file re-exports this
- * so existing importers compile unchanged.
- *
- * This file imports no `@modules/*` code: `JobStatus` and the analysis-stage
- * enums come from the neutral `shared/contracts/types` layer.
- */
+
 import type { JobStatus } from '@shared/contracts/types/JobStatus';
 import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
 

@@ -11,8 +11,8 @@ export interface RepositoryRelease{
 };
 
 export default class Repository{
-    // Unauthenticated GitHub allows 60 req/hr/IP; a token raises it to 5000 and
-    // is useful for fleets behind one NAT or frequent --check polling.
+    
+    
     #octokit = new Octokit(process.env.GITHUB_TOKEN ? { auth: process.env.GITHUB_TOKEN } : {});
 
     constructor(private readonly props: RepositoryProps){}
@@ -35,9 +35,9 @@ export default class Repository{
                 zipballUrl: data.zipball_url
             };
         }catch(err){
-            // releases/latest 404s when a repo has only prereleases/drafts or no
-            // published release at all — surface an actionable message instead of
-            // the raw Octokit error so --update/--check fail clearly.
+            
+            
+            
             const status = (err as { status?: number })?.status;
             if(status === 404){
                 throw new Error(`No published release found for ${this.getId()}. Publish a stable GitHub Release (prereleases and drafts are ignored), or run in dev mode against a local checkout.`);

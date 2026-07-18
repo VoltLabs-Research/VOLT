@@ -18,22 +18,6 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
-/**
- * The single HTTP controller for the scripting module (pollium style): every
- * route is bound with `@Route(scriptingRoutes.x)` and delegates to a
- * {@link ScriptingService} the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(Resource.SCRIPTING))` replaces the old
- * mount-time auth + team-scope layer (`basePath /api/scripting/:teamId`,
- * `resource SCRIPTING`). `listNotebooks` and `createJupyterSession` each back two
- * wire routes (with/without the leading `:trajectoryId`). The session handlers
- * (`getSessionStatus`, `deleteSession`, `createJupyterSession`) reproduce the
- * former custom cookie behaviour verbatim: they take `@Res()`, set/clear the
- * Jupyter-proxy access cookie, and write the (cookie-stripped) payload via
- * `BaseResponse` — so the `Controller` base's responder no-ops on its
- * `headersSent` guard. The raw Jupyter HTTP/WS proxy under `/api/jupyter/...`
- * is NOT part of this controller; it stays a separate pass-through router driven
- * by the stateful proxy singleton.
- */
 @Middleware(protect, teamScoped(Resource.SCRIPTING))
 export default class ScriptingController extends Controller {
     #service = new ScriptingService();

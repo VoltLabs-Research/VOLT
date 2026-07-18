@@ -58,15 +58,6 @@ const importUpload = multer({
     }
 });
 
-/**
- * Caps the in-memory import buffer at {@link IMPORT_MAX_FILE_SIZE}. multer aborts
- * streaming once the cap is exceeded, so an oversized (or zip-bomb) upload never
- * gets fully buffered + unzipped in RAM. A `MulterError` carries no `statusCode`,
- * so it would normalize to a 500 in the global error middleware — surface the
- * size violation as a 400 here instead (matching `uploadChatSingleFile`) and let
- * every other error propagate unchanged. Moved verbatim from the deleted
- * `routes/plugin` module so `importPlugin` keeps its route-level upload guard.
- */
 const importUploadSingleFile = (fieldName: string) => (
     request: Request,
     response: Response,
@@ -90,39 +81,11 @@ const importUploadSingleFile = (fieldName: string) => (
     });
 };
 
-/**
- * The single HTTP controller for the plugin module (pollium style): every route
- * is bound with `@Route(pluginRoutes.x)` and delegates to a {@link PluginService}
- * the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(Resource.PLUGIN))` replaces the old mount-time
- * auth + team-scope layer that the three `createHttpModule` route files carried.
- * `buildRouter()` turns the decorated methods into the Express router mounted
- * directly in `mount-http-routes` (contract paths are absolute).
- *
- * Route declaration order mirrors the previous mount order (listing-row +
- * exposure modules mounted BEFORE the plugin module), so Express matches the
- * literal `/listings/*` and `/exposures/*` families before the plugin
- * `/:pluginId` catch-alls.
- *
- * The download/export routes (`exportPlugin`, `downloadBinary`, the three
- * `getPluginExposure*` routes, and the two listing-row exports) take `@Res()` /
- * `@Req()`, await the optional `prepare()`, apply the prepared headers and pipe
- * the binary stream themselves — reproducing the old
- * `createPreparedDownloadStreamController` behaviour. `removeBinary` / `remove`
- * keep the empty-body `NoContent` behaviour.
- */
 @Middleware(protect, teamScoped(Resource.PLUGIN))
 export default class PluginController extends Controller {
     #service = new PluginService();
 
-    /**
-     * Reproduces `BaseStreamController.handleSuccess`: applies the response
-     * headers, wires request-close and stream-error handlers, then pipes. The
-     * returned promise resolves once the response has finished (or was closed /
-     * errored) so the awaiting handler returns only after the response has been
-     * written — the {@link Controller} base then no-ops on its `headersSent`
-     * guard.
-     */
+    
     #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {
@@ -154,7 +117,7 @@ export default class PluginController extends Controller {
         });
     }
 
-    // -- listing-row (declared first) --------------------------------------
+    
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)
     async getListingRowsByAnalysisId(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
@@ -201,7 +164,7 @@ export default class PluginController extends Controller {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    // -- exposure ----------------------------------------------------------
+    
 
     @Route(pluginRoutes.getPluginExposureGLB)
     async getPluginExposureGLB(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
@@ -227,7 +190,7 @@ export default class PluginController extends Controller {
         await this.#pipeStream(res, output.stream, output.headers);
     }
 
-    // -- plugin ------------------------------------------------------------
+    
 
     @Route(pluginRoutes.getNodeTypesSchema)
     async getNodeTypesSchema(@Res() res: Response): Promise<void> {
@@ -312,7 +275,7 @@ export default class PluginController extends Controller {
     async deleteBinary(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as DeleteBinaryInputDTO;
         await this.#service.deleteBinary(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
+        
         res.status(HttpStatus.NoContent).send();
     }
 
@@ -341,14 +304,14 @@ export default class PluginController extends Controller {
     async deleteById(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
         const input = buildControllerParams(req) as unknown as DeletePluginByIdInputDTO;
         await this.#service.deletePluginById(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
+        
         res.status(HttpStatus.NoContent).send();
     }
 
     @Route(pluginRoutes.executePipeline)
     async executePipeline(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        // `buildControllerParams` injects `userId` from the authenticated request,
-        // matching the former `withAuthenticatedUserId` extendParams.
+        
+        
         const input = buildControllerParams(req) as unknown as ExecutePipelineInputDTO;
         const value = await this.#service.executePipeline(input);
         BaseResponse.success(res, value, HttpStatus.OK);

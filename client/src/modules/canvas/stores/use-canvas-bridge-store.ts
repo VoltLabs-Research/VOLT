@@ -3,21 +3,6 @@ import type { RefObject } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { CanvasBridgeSnapshot } from '@/modules/ai/tools/types';
 
-/**
- * Canvas bridge — the link between AI client tools and the LIVE 3D viewer.
- *
- * The active `trajectoryId`, the available `timesteps`, and the imperative
- * `FractalSceneRef` live in CanvasPage component scope, not in the editor
- * store. AI viewer tools (control_playback, seek_frame, reset_camera, …) need
- * to reach them, so CanvasPage registers them here on mount and clears them on
- * unmount. Handlers read `getSnapshot()` and fail gracefully when the viewer
- * is not mounted.
- *
- * Deliberately a PLAIN zustand store (NOT the zundo `temporal()` editor store):
- * it holds a non-serializable React ref and ephemeral mount state that must
- * never enter undo/redo history or persistence.
- */
-
 interface CanvasBridgeRegistration {
     trajectoryId: string | null;
     timesteps: number[];
@@ -28,7 +13,7 @@ interface CanvasBridgeRegistration {
 
 interface CanvasBridgeState extends CanvasBridgeRegistration {
     mounted: boolean;
-    /** Timestamp (ms) until which the viewer should show the "AI is adjusting the view" badge. */
+    
     aiActingUntil: number;
     register: (registration: CanvasBridgeRegistration) => void;
     unregister: () => void;

@@ -1,6 +1,4 @@
-// Wire response types for the jobs module — the shapes the client reads back
-// from `data`. Mirrors the neutral `RemoveTeamJobsResult` / `RetryTeamJobsResult`
-// maintenance results and the team-jobs realtime snapshot payload.
+
 
 export interface TeamClusterFailureDetail{
     teamClusterId: string;
@@ -23,7 +21,6 @@ export interface RetryTeamJobsResult{
     clusterFailures: TeamClusterFailureDetail[];
 }
 
-/** A single projected team job as broadcast to clients. */
 export interface TeamJobSnapshotView{
     jobId: string;
     name?: string;
@@ -60,7 +57,6 @@ export interface TrajectoryJobGroup{
     totalCount: number;
 }
 
-/** The realtime team-jobs snapshot returned alongside a mutation. */
 export interface TeamJobsSnapshot{
     revision: number;
     groups: TrajectoryJobGroup[];

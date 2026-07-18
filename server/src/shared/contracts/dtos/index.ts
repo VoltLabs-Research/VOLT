@@ -1,8 +1,4 @@
-/**
- * Barrel for neutral cross-module DTO contracts.
- *
- * Populated incrementally by the detachable-modules migration.
- */
+
 export type { PersistedPluginDTO } from './PersistedPluginDTO';
 export type { ListContainersOutputDTO } from './ListContainersDTO';
 export type {

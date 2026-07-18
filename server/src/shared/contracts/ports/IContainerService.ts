@@ -1,12 +1,4 @@
-/**
- * Neutral, cross-module service-port contract for the Container domain.
- * Extracted from `@modules/container/ports/IContainerService` during the
- * detachable-modules migration so consumers (the cluster module consumes the
- * terminal types) depend on a contract rather than `@modules/container`.
- *
- * Pure type — no runtime footprint, no `@modules/*` import. The owner module
- * re-exports every name below so existing importers compile unchanged.
- */
+
 import type Docker from 'dockerode';
 
 export interface ContainerEnvironmentVariable {

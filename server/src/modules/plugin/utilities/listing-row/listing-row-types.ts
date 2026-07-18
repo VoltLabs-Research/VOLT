@@ -1,7 +1,5 @@
 import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-// ---- analysis listing export options ---------------------------------------
-
 export interface GetAnalysisListingExportOptionsInputDTO {
     analysisId: string;
     teamId: string;
@@ -29,8 +27,6 @@ export interface GetAnalysisListingExportOptionsOutputDTO {
     listings: AnalysisListingExportOptionDTO[];
     subListings: AnalysisSubListingExportOptionDTO[];
 }
-
-// ---- listing rows by analysis ----------------------------------------------
 
 export interface GetListingRowsByAnalysisIdInputDTO {
     analysisId: string;
@@ -87,8 +83,6 @@ export interface ExportListingRowsByAnalysisIdOutputDTO {
     listings: AnalysisListingExportData[];
     subListings: AnalysisSubListingExportData[];
 }
-
-// ---- summarize analysis result ---------------------------------------------
 
 export interface SummarizeAnalysisResultInputDTO {
     analysisId: string;

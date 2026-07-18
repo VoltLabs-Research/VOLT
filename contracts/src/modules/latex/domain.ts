@@ -1,6 +1,4 @@
-// Wire response types for the latex module — the shapes the client reads back
-// from `data`. `_id`, refs and dates are strings on the wire; `createdBy`/
-// `lastEditedBy` may be a populated user object, so they are typed as `unknown`.
+
 
 export interface LatexDocumentView{
     _id: string;
@@ -54,9 +52,4 @@ export interface LatexFolderView{
     updatedAt: string;
 }
 
-/**
- * Marker for the streaming/download endpoints (compile PDF, export tex/zip,
- * asset content). The controller writes a raw binary body via `@Res()`; there
- * is no JSON envelope, so the wire "response" carries no structured shape.
- */
 export type LatexDownloadResponse = never;

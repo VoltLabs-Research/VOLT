@@ -36,7 +36,6 @@ interface UseWhiteboardEditorProps {
     whiteboardId: string;
 };
 
-/** Title save debounce interval in ms */
 const TITLE_SAVE_DEBOUNCE_MS = 1_000;
 const EXCALIDRAW_IMAGE_MIME_TYPES = new Set<PreparedWhiteboardImageAsset['mimeType']>([
     'image/svg+xml',

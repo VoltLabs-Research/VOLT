@@ -9,11 +9,6 @@ interface AnalysisIdRecord {
     readonly _id: string;
 }
 
-/**
- * On trajectory deletion, cascade-delete every analysis of that trajectory.
- * Enumerates ids from the Mongoose {@link AnalysisModel} and delegates teardown
- * to a `new AnalysisService()` — no use case, no DI.
- */
 class TrajectoryDeletedEventHandler extends CascadeDeleteEachOnTrajectoryDeletedHandler<AnalysisIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<AnalysisIdRecord[]> => {

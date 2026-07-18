@@ -18,11 +18,6 @@ import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGua
 import logger from '@shared/infrastructure/logger';
 import type { FilterQuery } from 'mongoose';
 
-/**
- * Preconditions the previous TeamClusterRepository.updateLifecycleById used to
- * accept. Kept local now that the repository is gone — only this service's
- * own `persistLifecycleUpdate` builds/consumes it.
- */
 export interface TeamClusterLifecycleUpdatePreconditions {
     allowedCurrentStatuses?: TeamClusterStatus[];
     requireUpdatedBefore?: Date;

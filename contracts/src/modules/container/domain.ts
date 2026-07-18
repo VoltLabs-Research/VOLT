@@ -1,5 +1,4 @@
-// Wire response types for the container module — the shapes the client reads
-// back from `data`. `_id`, refs and dates are strings on the wire.
+
 
 export interface ContainerEnvironmentVariable{
     key: string;
@@ -20,7 +19,6 @@ export interface ContainerAccessiblePort{
     label?: string;
 }
 
-/** A container as the client sees it (populated refs may be nested objects). */
 export interface PersistedContainer{
     _id: string;
     name: string;
@@ -102,7 +100,6 @@ export interface ReadContainerFileResponse{
     content: string;
 }
 
-/** A container catalog folder as the client sees it. */
 export interface ContainerFolder{
     _id: string;
     title: string;

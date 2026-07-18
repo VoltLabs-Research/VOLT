@@ -13,7 +13,7 @@ export interface PhaseProgress{
 }
 
 const POLL_INTERVAL = 2_000;
-// Docker problems that resolve on their own once the user acts, so we keep polling.
+
 const SELF_HEALING_REASONS = new Set(['daemon-starting', 'daemon-down']);
 
 interface LogLine{

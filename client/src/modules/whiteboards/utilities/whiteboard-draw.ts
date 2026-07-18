@@ -8,27 +8,11 @@ import type {
     WhiteboardDrawResult
 } from '@/modules/whiteboards/stores/use-whiteboard-editor-handle-store';
 
-/**
- * Turns the model's high-level element list into real Excalidraw elements and
- * applies them to the LIVE editor scene. This is the ONLY whiteboard-AI module
- * that imports `@excalidraw/excalidraw`; it is registered by the (lazily-loaded)
- * editor page so the heavy package stays out of the eagerly-globbed AI tool
- * registry. The matching client tool handler (`handlers/draw_on_whiteboard.ts`)
- * is pure and reaches this through the editor-handle store.
- *
- * Mirrors `insertWhiteboardImages`: convert skeletons → elements, merge with the
- * existing scene (append) or replace it, then `updateScene`. The page's
- * `onChange` → `sendDelta` then propagates the edit to collaborators exactly
- * like a human's — no special-casing, and we deliberately do NOT arm the
- * remote-echo suppression so AI edits broadcast.
- */
-
 const DEFAULT_SHAPE_SIZE = 120;
 
 const toSelectedElementIds = (elements: readonly { id: string }[]): Record<string, true> =>
     Object.fromEntries(elements.map((element) => [element.id, true]));
 
-/** Maps one high-level element to an Excalidraw skeleton. */
 const toSkeleton = (element: WhiteboardDrawElement): ExcalidrawElementSkeleton => {
     const base = {
         id: element.id,

@@ -1,7 +1,4 @@
-// Wire response types for the plugin module — the shapes the client reads back
-// from `data`. `_id`, refs and dates are strings on the wire. The workflow graph
-// is intentionally loose (nodes/edges are open records) because its node-data
-// union is a large server-owned domain type the client treats structurally.
+
 
 export interface WorkflowViewportWire{
     x: number;
@@ -15,7 +12,6 @@ export interface WorkflowWire{
     viewport?: WorkflowViewportWire;
 }
 
-/** A plugin as the client sees it (the persisted-plugin DTO shape on the wire). */
 export interface PersistedPlugin{
     _id: string;
     team: string;
@@ -50,7 +46,6 @@ export interface ValidateWorkflowResponse{
     modifier?: Record<string, unknown>;
 }
 
-/** Registry search hit + envelope. */
 export interface RegistryPackageSummary{
     fullName: string;
     name: string;
@@ -85,8 +80,6 @@ export interface BinaryUploadTarget extends BinaryUploadResult{
 export interface ExecutePipelineResponse{
     analysisIds: string[];
 }
-
-// ---- listing-row responses -------------------------------------------------
 
 export interface ListingColumnDef{
     key?: string;

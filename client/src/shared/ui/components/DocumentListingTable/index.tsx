@@ -52,15 +52,15 @@ export interface ColumnConfig<TRow = unknown> {
     title?: string;
     path?: string;
     label?: string;
-    /** Fixed pixel width. When set, the column does not flex. */
+    
     width?: number;
-    /** Minimum pixel width when the column flexes. Ignored if `width` is set. */
+    
     minWidth?: number;
-    /** Flex grow weight. Higher values claim more leftover space. Defaults to 1. */
+    
     flex?: number;
-    /** Numeric column — right-aligns header and cell, applies tabular-nums. */
+    
     numeric?: boolean;
-    /** Hidden unless the user opts in via the column picker. */
+    
     defaultHidden?: boolean;
     headerTitleClassName?: string;
     render?: (value: unknown, row: TRow) => React.ReactNode;

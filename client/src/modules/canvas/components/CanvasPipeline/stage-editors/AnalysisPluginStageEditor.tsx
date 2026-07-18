@@ -16,13 +16,6 @@ interface AnalysisPluginStageEditorProps {
     onSave?: () => void;
 }
 
-/**
- * Editor body for an analysis-plugin pipeline stage. Hosts ONLY the plugin
- * argument form — the cluster + selected-timesteps selectors and the execution
- * dispatch moved to the pipeline-wide Run popover (a pipeline now runs as one
- * ordered batch via the pipeline-executions endpoint). The argument values are
- * persisted live onto the stage config; "Save" just closes the popover.
- */
 const AnalysisPluginStageEditor = ({
     stageId,
     trajectory,

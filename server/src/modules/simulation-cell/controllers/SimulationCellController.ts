@@ -7,15 +7,6 @@ import { Resource } from '@core/constants/resources';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
 import { simulationCellRoutes } from '@volt/contracts/modules/simulation-cell/routes';
 
-/**
- * The single HTTP controller for the simulation-cell module (pollium style):
- * every route is bound with `@Route(simulationCellRoutes.x)` and delegates to a
- * {@link SimulationCellService} the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(Resource.SIMULATION_CELL))` replaces the old
- * mount-time auth + team-scope layer (`basePath /api/simulation-cells/:teamId`,
- * `resource SIMULATION_CELL`). `buildRouter()` turns the decorated methods into
- * the Express router mounted directly in `mount-http-routes`.
- */
 @Middleware(protect, teamScoped(Resource.SIMULATION_CELL))
 export default class SimulationCellController extends Controller {
     #service = new SimulationCellService();

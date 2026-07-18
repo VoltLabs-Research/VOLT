@@ -6,11 +6,6 @@ interface OpenInViewerInput {
     ownerId?: string;
 }
 
-/**
- * Opens a trajectory in the 3D viewer (canvas). Builds the canvas route from
- * the supplied ids and navigates via React Router. This realizes the previously
- * stubbed open_trajectory behavior. Ids are URL-encoded as a safety boundary.
- */
 const openInViewer: ClientToolHandler<OpenInViewerInput> = {
     name: 'open_in_viewer',
 

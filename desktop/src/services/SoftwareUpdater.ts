@@ -49,10 +49,10 @@ export default class SoftwareUpdater{
     }
 
     async #extract(zipPath: string, outputDir: string){
-        // Wipe any previously extracted release first: GitHub zipballs unpack
-        // to a per-commit top-level dir, so without this the root accumulates
-        // stale dirs and resolveExtractedPath() can pick the old source —
-        // making Docker rebuild the web-app from outdated code.
+        
+        
+        
+        
         await rm(outputDir, { recursive: true, force: true });
         await mkdir(outputDir, { recursive: true }).catch(() => {});
 

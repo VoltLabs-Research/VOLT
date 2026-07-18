@@ -14,5 +14,4 @@ class TokenStorage {
     }
 };
 
-/** Shared singleton — import this instead of constructing `new TokenStorage()`. */
 export const tokenStorage = new TokenStorage();

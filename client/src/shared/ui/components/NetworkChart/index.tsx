@@ -24,7 +24,7 @@ export interface NetworkData {
 interface NetworkChartProps {
     data: NetworkData | null;
     isLoading?: boolean;
-    /** If true, calculate delta between data points (for cumulative counters) */
+    
     calculateDelta?: boolean;
     title?: string;
     height?: number;

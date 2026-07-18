@@ -14,15 +14,6 @@ interface TeamClusterObjectGatewayReadOptions {
     rangeHeader?: string;
 }
 
-/**
- * Neutral cross-module port for the team-cluster object gateway client.
- *
- * Consumed by trajectory, plugin, analysis, raster, whiteboards (≈27 sites) via
- * a plain top-level import of the default singleton exported from
- * `@modules/cluster/services/TeamClusterObjectGatewayClient`. Canonical home
- * in `shared/contracts` so those modules don't import `@modules/cluster` just
- * for the type. The concrete implementation stays in the cluster module.
- */
 export interface ITeamClusterObjectGatewayClient {
     list(
         teamClusterId: string,

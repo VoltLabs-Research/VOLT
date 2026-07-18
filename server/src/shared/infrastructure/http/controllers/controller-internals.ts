@@ -1,25 +1,12 @@
 import { asRecord } from '@shared/infrastructure/utilities/type-guards';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
-/**
- * Internal helpers shared by generated controllers so request data merging
- * stays in one place.
- */
-
 export const readUserAgent = (req: AuthenticatedRequest): string => {
     const userAgent = req.headers['user-agent'];
 
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
 };
 
-/**
- * Top-level route param / query-string keys that consuming use-cases type as
- * `number`. Express delivers path params and query params as STRINGS, so we
- * coerce this known set centrally here — this preserves the behaviour that the
- * removed `z.coerce.number()` schemas used to provide. Body fields are NOT
- * touched (JSON already carries proper numbers, and `size`/`value` live nested
- * inside bodies where blanket coercion would be wrong).
- */
 const NUMERIC_REQUEST_KEYS = [
     'page',
     'limit',

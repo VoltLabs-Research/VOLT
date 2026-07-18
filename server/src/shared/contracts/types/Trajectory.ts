@@ -1,20 +1,4 @@
-/**
- * Neutral, standalone STRUCTURAL contract for trajectory data.
- *
- * Part of the `shared/contracts` layer (detachable-modules migration). These are
- * STANDALONE copies of the shapes owned by
- * `@modules/trajectory/entities/trajectory/Trajectory`, exported here so
- * cross-module consumers (cluster / plugin / analysis / raster / dashboard /
- * jobs) can depend on the shapes without importing the trajectory module. Field
- * shapes match the owner exactly; the `TrajectoryStatus` enum is duplicated as a
- * runtime value because consumers use it as a value, not just a type.
- *
- * The Trajectory entity in the owner module is a class with methods — it is NOT
- * copied here. Consumers needing the entity type can use the structural
- * `TrajectoryLike` shape below.
- *
- * No `@modules/*` imports — pure data/types only.
- */
+
 
 export enum TrajectoryStatus {
     Queued = 'queued',
@@ -70,11 +54,6 @@ export interface TrajectoryProps {
     createdAt: Date;
 }
 
-/**
- * Structural stand-in for the Trajectory entity (a class with methods in the
- * owner module). Consumers that only need the data shape can use this instead of
- * importing the concrete class.
- */
 export interface TrajectoryLike {
     _id: string;
     props: TrajectoryProps;

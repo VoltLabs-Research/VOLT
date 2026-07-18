@@ -4,10 +4,6 @@ import { usePluginBuilderStore } from '@/modules/plugin/stores/plugin/use-plugin
 import type { INodeData } from '@/modules/plugin/api/types/plugin/workflow';
 import type { ChangeEvent } from 'react';
 
-/**
- * Hook for managing array/collection data within node editors.
- * Provides CRUD operations for items in arrays without fallbacks.
- */
 const useNodeCollectionForm = <T extends object>(
     node: Node<INodeData>,
     dataKey: keyof INodeData,

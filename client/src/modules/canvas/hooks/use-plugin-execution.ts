@@ -16,7 +16,6 @@ export enum ExecState {
     Error = 'error'
 }
 
-/** Minimal plugin option shape used by this hook. */
 export interface ModifierOption {
     modifierId: string;
     title: string;

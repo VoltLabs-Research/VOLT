@@ -62,7 +62,6 @@ const createEnvironmentSettings = (darkTheme = isDarkTheme()): EnvironmentSettin
     };
 };
 
-/** Resolves a scene environment color from the explicit theme-follow flag. */
 export const resolveEnvironmentColor = (
     color: string,
     followsTheme: boolean,

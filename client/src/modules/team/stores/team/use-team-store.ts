@@ -81,23 +81,12 @@ export const resetTeamDependentStores = (): void => {
     useTeamPresenceStore.getState().reset();
 };
 
-/**
- * Returns true for query keys whose prefix was registered via
- * {@link registerPreservedQueryKey}. These queries survive a team switch
- * because their data is fed by WebSocket subscriptions, not REST refetches.
- */
 const isPreservedQuery = (queryKey: readonly unknown[]): boolean => {
     const first = queryKey[0];
     if (typeof first !== 'string') return false;
     return getPreservedQueryPrefixes().includes(first);
 };
 
-/**
- * Resets all team-scoped application state when switching teams.
- * Clears Zustand stores and removes all queries except auth, teams list,
- * and socket-managed caches (cluster metrics, team jobs), so the user
- * stays authenticated and WebSocket-fed components remain functional.
- */
 export const resetTeamScopedApplicationState = (): void => {
     resetTeamScopedStores();
 
@@ -108,9 +97,6 @@ export const resetTeamScopedApplicationState = (): void => {
     resetTeamDependentStores();
 };
 
-/**
- * Switches the active team while preserving the safe reset flow used across the app.
- */
 export const switchSelectedTeam = (teamId: string | null): void => {
     const teamState = useTeamStore.getState();
 

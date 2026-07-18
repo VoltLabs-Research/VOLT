@@ -258,11 +258,11 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
     private readonly directAccessTokenService = new TeamClusterDirectAccessTokenService();
 
-    // `TeamClusterDaemonClient` is still tsyringe-managed (registered in
-    // `registerAllDependencies`). This client is now a plain module-scope
-    // singleton constructed at import time — potentially before that
-    // registration runs — so the daemon client reference must stay lazy,
-    // resolved on first actual use, to avoid the eager-singleton DI boot race.
+    
+    
+    
+    
+    
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async list(

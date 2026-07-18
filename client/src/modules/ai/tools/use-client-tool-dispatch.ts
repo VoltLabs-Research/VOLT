@@ -5,28 +5,14 @@ import { useCanvasBridgeStore } from '@/modules/canvas/stores/use-canvas-bridge-
 import { getClientTool } from '@/modules/ai/tools/registry';
 import type { ClientToolContext, ClientToolResult } from '@/modules/ai/tools/types';
 
-/**
- * Minimal shape of a streamed client tool call (a subset of the SDK's
- * `InferUIMessageToolCall`). The model supplies `input`; we resolve `toolName`
- * against the client registry.
- */
 export interface ClientToolCall {
     toolCallId: string;
     toolName: string;
     input: unknown;
 }
 
-/** Adds the resolved output back into the chat stream so the agent loop continues. */
 export type AddToolResultFn = (args: { tool: string; toolCallId: string; output: unknown }) => void | Promise<void>;
 
-/**
- * Builds the dispatcher that `useChat.onToolCall` calls for every streamed tool
- * call. Server-executed tools never reach here (they resolve on the server);
- * only `clientExecuted` tools are streamed out for the browser to run. We look
- * the name up in the registry, run the handler against the shared context, and
- * ALWAYS `addToolResult` — even on failure — so a tool call is never left
- * unresolved (which would stall `sendAutomaticallyWhen`).
- */
 export const useClientToolDispatch = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();

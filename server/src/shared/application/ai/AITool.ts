@@ -21,19 +21,7 @@ export abstract class AITool<
 
     protected needsApproval?: AIToolNeedsApproval<TInput>;
 
-    /**
-     * When true, this tool is advertised to the model (description + input
-     * schema + optional approval) but has NO server `execute`. The AI SDK then
-     * streams the tool call to the browser, where the matching client handler
-     * runs it (see client `use-ai-chat-stream.ts` `onToolCall` + the
-     * `tools/registry.ts` glob). The handler is keyed by `name`, so the client
-     * handler's name MUST equal this tool's `name`.
-     *
-     * Use this for UI-driving tools (navigation, 3D viewer control, chat
-     * surface) that can only execute against React Router / Zustand / the live
-     * scene. Server-executed data tools must leave this false/undefined and
-     * provide `execute` or `useCase` as usual.
-     */
+    
     protected readonly clientExecuted?: boolean;
 
     execute?(params: TInput, scope: AIToolScope): Promise<TResult>;

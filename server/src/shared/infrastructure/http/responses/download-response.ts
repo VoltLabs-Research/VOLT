@@ -16,11 +16,7 @@ interface StreamResponseParams {
     contentLength?: number;
     cacheControl?: string;
     prepare?: () => Promise<void>;
-    /**
-     * Extra headers applied on top of the base set (e.g. `Content-Encoding`,
-     * `Vary`). Callers use this to surface transport-level negotiation details
-     * that the generic stream response does not synthesize itself.
-     */
+    
     extraHeaders?: Record<string, string>;
 }
 

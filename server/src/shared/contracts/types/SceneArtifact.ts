@@ -1,16 +1,4 @@
-/**
- * Neutral, standalone STRUCTURAL contract for scene-artifact data.
- *
- * Part of the `shared/contracts` layer (detachable-modules migration). These are
- * STANDALONE copies of the shapes owned by
- * `@modules/trajectory/entities/scene-artifacts/SceneArtifact`, exported
- * here so cross-module consumers (cluster / plugin / analysis / raster /
- * dashboard / jobs) can depend on the shapes without importing the trajectory
- * module. Field shapes match the owner exactly; enums are duplicated as runtime
- * values because consumers use them as values, not just types.
- *
- * No `@modules/*` imports — pure data/types only.
- */
+
 
 export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
@@ -53,11 +41,6 @@ export interface SceneArtifactProps {
     updatedAt: Date;
 }
 
-/**
- * Structural stand-in for the SceneArtifact entity (a class with methods in the
- * owner module). Consumers that only need the data shape can use this instead of
- * importing the concrete class.
- */
 export interface SceneArtifactLike {
     _id: string;
     props: SceneArtifactProps;

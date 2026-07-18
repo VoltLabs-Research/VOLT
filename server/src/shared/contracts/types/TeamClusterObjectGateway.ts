@@ -1,15 +1,5 @@
 import type { Readable as NodeReadable } from 'node:stream';
 
-/**
- * Cross-module payload types for the team-cluster object gateway.
- *
- * Canonical home in the neutral `shared/contracts` layer so consumers
- * (trajectory, plugin, analysis, raster, whiteboards, …) can reference the
- * gateway request/response shapes without importing `@modules/cluster`.
- * The original `@modules/cluster/contracts/TeamClusterObjectGateway`
- * re-exports these for backward compatibility.
- */
-
 export interface TeamClusterObjectGatewayListRequest {
     bucket: string;
     prefix?: string;

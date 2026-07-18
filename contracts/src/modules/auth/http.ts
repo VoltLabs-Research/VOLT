@@ -1,6 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (ip, userAgent,
-// authenticated userId, uploaded file) is NOT here — the server augments these
-// on its own use-case/service input.
+
 
 export interface SignInInput{
     email: string;

@@ -3,7 +3,6 @@ import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils
 import mongoose, { Schema } from 'mongoose';
 import type { Document, Model } from 'mongoose';
 
-/** Persistence-level notification shape (the domain entity/mapper were removed). */
 export interface NotificationProps {
     recipient: string;
     title: string;

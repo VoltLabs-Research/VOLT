@@ -1,17 +1,4 @@
-/**
- * Neutral, cross-module DTO contract for the get/export-plugin-listing-documents
- * use cases.
- *
- * Extracted from
- * `@modules/plugin/dtos/listing-row/GetPluginListingDocumentsDTO`
- * during the detachable-modules migration: the trajectory module's
- * `GetPublicCanvasPluginListingUseCase` consumes `GetPluginListingDocumentsOutputDTO`
- * (and the `IGetPluginListingDocumentsUseCase` port returns it). The output
- * transitively depends on `PluginListingDocumentsMeta` → `ColumnDef` and on
- * `ListingRowData`, so the whole shape group moves here together. The owner DTO
- * file re-exports every name so existing importers (the export use case, the
- * daemon-listing types, listing enrichment) compile unchanged. Pure types.
- */
+
 import type { ExportType, PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
 export interface GetPluginListingDocumentsInputDTO {

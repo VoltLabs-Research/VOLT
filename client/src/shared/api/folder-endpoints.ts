@@ -25,9 +25,6 @@ export interface FolderListParams {
     parentId?: string;
 }
 
-/**
- * Builds the standard folder CRUD endpoint set used by foldered resources.
- */
 export const createFolderCrudEndpoints = <
     TListParams,
     TGetParams,

@@ -128,13 +128,13 @@ export class TeamClusterSocketModule extends BaseSocketModule {
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    // `ClusterService` eagerly resolves `TeamClusterDaemonClient` and
-    // `EventBus` from the tsyringe container in its own field initializers.
-    // Those tokens are registered in `registerAllDependencies`, which hasn't
-    // run yet when this module is constructed at import time, so
-    // `ClusterService` itself must be constructed lazily — on first actual
-    // use — to avoid the eager-singleton DI boot race that already crashed
-    // the server once this session.
+    
+    
+    
+    
+    
+    
+    
     #clusterServiceCache?: ClusterService;
     private get clusterService(): ClusterService {
         return (this.#clusterServiceCache ??= new ClusterService());

@@ -18,13 +18,6 @@ interface HideableModuleEntry {
     item: DashboardNavigationItem;
 }
 
-/**
- * Dashboard ▸ Settings ▸ Modules — lets a user hide optional feature modules
- * they don't use from their own navigation. This is a per-user, per-browser
- * preference (localStorage); it never changes the server's deployment-level
- * `enabledModules`. A hidden module's routes are not rendered, so its code is
- * never loaded for this user. See `use-hidden-modules` + `RouteRenderer`.
- */
 const ModulesSettings = () => {
     const enabledModules = useEnabledModules();
     const { hidden, toggle } = useHiddenModules();

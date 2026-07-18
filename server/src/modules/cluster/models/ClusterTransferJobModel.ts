@@ -186,30 +186,14 @@ const ClusterTransferJobModel: Model<ClusterTransferJobDocument> = mongoose.mode
     ClusterTransferJobSchema
 );
 
-/**
- * Relation fields that get ObjectId<->string normalization when converting a
- * raw document into the flat `ClusterTransferJob` ({ _id, props }) shape
- * below — the same list the deleted ClusterTransferJobMapper used to carry.
- */
 const CLUSTER_TRANSFER_JOB_RELATION_KEYS = ['team'] as const;
 
-/**
- * Neutral, flat `{ _id, props }` shape replacing the deleted
- * `ClusterTransferJob` entity class. Keeps the `id` convenience accessor the
- * old entity exposed as a getter (here as a plain field) so existing
- * consumers that read `job.id` keep compiling unchanged.
- */
 export interface ClusterTransferJob {
     readonly _id: string;
     readonly id: string;
     props: ClusterTransferJobProps;
 }
 
-/**
- * Converts a raw ClusterTransferJobModel document into the neutral
- * `ClusterTransferJob` shape, matching the previous ClusterTransferJobMapper
- * behavior exactly.
- */
 export const toClusterTransferJobLike = (doc: ClusterTransferJobDocument): ClusterTransferJob => {
     const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
     const { _id, __v: _ignoredVersion, ...rest } = documentProps;

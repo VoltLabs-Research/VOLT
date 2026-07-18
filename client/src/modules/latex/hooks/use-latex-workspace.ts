@@ -77,10 +77,10 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
     const compileRequestIdRef = useRef(0);
     const hasBootstrappedSelectionRef = useRef(false);
 
-    /** Stable set of known file IDs — used by handleRemoteContentUpdate without causing re-subscriptions. */
+    
     const latexFileIdsRef = useRef<Set<string>>(new Set());
 
-    /** Tracks the previous set of file IDs to detect newly appeared files. */
+    
     const prevFileIdsRef = useRef<Set<string>>(new Set());
 
     const isTexFile = useCallback((name: string): boolean => name.toLowerCase().endsWith(TEX_EXTENSION), []);
@@ -698,7 +698,7 @@ const useLatexWorkspace = ({ documentId }: UseLatexWorkspaceInput) => {
         });
     }, [latexFiles]);
 
-    /** Auto-open files created externally (e.g. by AI tools). */
+    
     useEffect(() => {
         const currentIds = new Set(latexFiles.map((file) => file._id));
         const prevIds = prevFileIdsRef.current;

@@ -27,11 +27,6 @@ export interface WhiteboardProps {
     updatedAt: Date;
 }
 
-/**
- * Throws if the whiteboard has no storage cluster assigned. Kept alongside the
- * model (the former `entities/Whiteboard` helper) so the service and the
- * realtime state service can guard cluster access without a domain entity layer.
- */
 export const requireWhiteboardStorageClusterId = (whiteboardId: string, storageClusterId?: string | null): string => {
     if (storageClusterId && storageClusterId.trim().length > 0) {
         return storageClusterId;

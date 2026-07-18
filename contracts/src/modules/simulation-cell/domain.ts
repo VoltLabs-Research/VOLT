@@ -1,5 +1,4 @@
-// Wire response types for the simulation-cell module — the shapes the client
-// reads back from `data`. `_id`, refs and dates are strings on the wire.
+
 
 export interface SimulationCellDims{
     width: number;
@@ -24,7 +23,6 @@ export interface SimulationCellTrajectoryReference{
     name?: string;
 }
 
-/** A simulation cell as the client sees it (trajectory ref may be populated). */
 export interface PersistedSimulationCell{
     _id: string;
     boundingBox: SimulationCellDims;
@@ -38,5 +36,4 @@ export interface PersistedSimulationCell{
 
 export type GetSimulationCellResponse = PersistedSimulationCell;
 
-/** `getByTrajectory` resolves to the matching cell or `null` when none exists. */
 export type GetSimulationCellByTrajectoryResponse = PersistedSimulationCell | null;

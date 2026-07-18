@@ -3,7 +3,6 @@ import type {
     DetachedTeamPresenceSession
 } from '@modules/team/contracts/team-member/TeamPresenceTypes';
 
-
 interface TeamPresenceSession {
     teamId: string;
     userId: string;

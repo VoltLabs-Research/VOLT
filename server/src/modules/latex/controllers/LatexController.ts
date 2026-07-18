@@ -24,23 +24,11 @@ import type {
     UpdateLatexFolderInput
 } from '@volt/contracts/modules/latex/http';
 
-/**
- * The single HTTP controller for the latex module (pollium style): every route
- * is bound with `@Route(latexRoutes.x)` and delegates to a {@link LatexService}
- * the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(Resource.LATEX))` replaces the old mount-time
- * auth + team-scope layer (`basePath /api/latex/:teamId`, `resource LATEX`,
- * `teamScope BasePath`). `importDocument` carries a per-method `upload.single`
- * middleware. The compile / export / asset-content handlers take `@Res()`,
- * write the binary response themselves and pipe the stream (reproducing the
- * former prepared-download-stream controller verbatim); the `Controller` base's
- * responder no-ops on its `headersSent` guard.
- */
 @Middleware(protect, teamScoped(Resource.LATEX))
 export default class LatexController extends Controller {
     #service = new LatexService();
 
-    // ---- Documents ----
+    
 
     @Route(latexRoutes.listDocuments)
     listDocuments(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
@@ -92,7 +80,7 @@ export default class LatexController extends Controller {
         return this.#service.moveDocument({ teamId, documentId, folderId: body.folderId });
     }
 
-    // ---- Assets ----
+    
 
     @Route(latexRoutes.listAssets)
     listAssets(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
@@ -148,7 +136,7 @@ export default class LatexController extends Controller {
         return this.#service.updateAsset({ teamId, documentId, assetId, path: body.path });
     }
 
-    // ---- Export / compile (binary downloads) ----
+    
 
     @Route(latexRoutes.exportDocumentTex)
     async exportDocumentTex(@Param('teamId') teamId: string, @Param('documentId') documentId: string, @Res() res: Response): Promise<void> {
@@ -171,7 +159,7 @@ export default class LatexController extends Controller {
         await this.#pipeStream(res, output.stream, output.headers);
     }
 
-    // ---- Files ----
+    
 
     @Route(latexRoutes.listFiles)
     listFiles(@Param('teamId') teamId: string, @Param('documentId') documentId: string) {
@@ -209,7 +197,7 @@ export default class LatexController extends Controller {
         return this.#service.setFileEntrypoint({ teamId, documentId, fileId });
     }
 
-    // ---- Folders ----
+    
 
     @Route(latexRoutes.listFolders)
     listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
@@ -237,12 +225,7 @@ export default class LatexController extends Controller {
         await this.#service.deleteFolder({ teamId, folderId });
     }
 
-    /**
-     * Reproduces the former `BaseStreamController.handleSuccess`: applies the
-     * response headers, wires request-close and stream-error handlers, then pipes
-     * the binary stream. Returns a promise that settles when the response is done
-     * so the `Controller` base's responder sees `headersSent` and no-ops.
-     */
+    
     #pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {

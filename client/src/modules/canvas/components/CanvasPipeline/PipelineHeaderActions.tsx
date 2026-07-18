@@ -24,13 +24,6 @@ interface PipelineHeaderActionsProps {
     canMutateCanvas?: boolean;
 }
 
-/**
- * The Pipeline section's header controls (Run + Add), rendered as the
- * RightCollapsible `headerAction` so they sit to the LEFT of the section's
- * collapse chevron. Kept separate from CanvasPipeline (the section body) because
- * the collapsible renders its header and body in different slots; both read the
- * same global canvas-pipeline store, so no prop threading is needed.
- */
 const PipelineHeaderActions = ({
     trajectory,
     trajectoryId,

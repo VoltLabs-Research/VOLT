@@ -270,7 +270,6 @@ export default class LatexService {
         return this.#importFromTex(input, storageClusterId);
     }
 
-
     async listAssets(input: DocumentScoped): Promise<LatexAssetView[]> {
         await this.#requireDocument(input.teamId, input.documentId);
 
@@ -413,7 +412,6 @@ export default class LatexService {
         return this.#toAssetView(input.teamId, input.documentId, updated);
     }
 
-
     async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutputDTO> {
         const document = await this.#requireDocument(input.teamId, input.documentId);
 
@@ -544,7 +542,6 @@ export default class LatexService {
         });
     }
 
-
     async listFiles(input: DocumentScoped): Promise<LatexFileView[]> {
         await this.#requireDocument(input.teamId, input.documentId);
         const files = await this.#findFilesByDocument(input.documentId);
@@ -644,7 +641,6 @@ export default class LatexService {
         return toFileView(updated);
     }
 
-
     async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolderView>> {
         const page = Number(input.page) || 1;
         const limit = Number(input.limit) || 500;
@@ -713,7 +709,6 @@ export default class LatexService {
             await this.deleteDocument({ teamId, documentId: String(document._id), userId });
         }
     }
-
 
     async #requireDocument(teamId: string, documentId: string): Promise<LatexDocumentDoc> {
         const document = await LatexDocumentModel.findOne({ _id: documentId, team: teamId });

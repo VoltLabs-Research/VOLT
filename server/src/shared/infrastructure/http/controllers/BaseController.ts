@@ -12,12 +12,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
 
     protected abstract getParams(req: AuthenticatedRequest): UseCaseInput<TUseCase>;
 
-    /**
-     * Writes a domain-level error (use-case failure) to the response. Kept on
-     * the class because BaseStreamController reuses it from inside a stream
-     * 'error' listener that fires synchronously, outside the async `handle`
-     * promise chain Express 5 would otherwise observe.
-     */
+    
     protected handleResultError(res: Response, error: unknown): void {
         BaseResponse.fromError(res, error);
     }
@@ -40,17 +35,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
         );
     }
 
-    /**
-     * Express 5 automatically forwards rejected promises returned by async
-     * route handlers to the registered error middleware, so no try/catch is
-     * needed here. Any thrown value (ApplicationError, plain Error, string,
-     * Mongoose ValidationError, ...) is normalized by `httpErrorMiddleware`.
-     *
-     * Request validation is NOT performed here — it is wired by the controller
-     * factory (`createController`) as an outer wrapper around this method
-     * before the instance is exposed. See Task 4.3 of the complexity-reduction
-     * plan.
-     */
+    
     public handle = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         const value = await this.executeUseCase(req);
         return await this.handleSuccess(req, res, value);

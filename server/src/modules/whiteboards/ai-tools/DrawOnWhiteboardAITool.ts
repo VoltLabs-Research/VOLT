@@ -39,14 +39,6 @@ const parameters = z.object({
 
 type DrawOnWhiteboardParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Draws AI-authored content onto a whiteboard's live Excalidraw
- * canvas. The browser handler (client `tools/handlers/draw_on_whiteboard.ts`)
- * navigates to the board if needed, converts these high-level elements to real
- * Excalidraw elements, and applies them — which propagates to all collaborators
- * through the existing whiteboard sync path. This server class only advertises
- * the schema to the model; it has no server execute (`clientExecuted = true`).
- */
 export class DrawOnWhiteboardAITool extends AITool<DrawOnWhiteboardParams> {
     readonly name = 'draw_on_whiteboard';
     readonly description = 'Draw actual content (boxes, text, arrows, lines, ellipses, diamonds) onto a '

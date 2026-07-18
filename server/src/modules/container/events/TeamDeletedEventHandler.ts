@@ -8,12 +8,6 @@ interface ContainerIdRecord {
     readonly _id: string;
 }
 
-/**
- * On team deletion, cascade-delete every container belonging to the team.
- * Enumerates ids straight from the Mongoose {@link ContainerModel} and delegates
- * the real teardown (docker + relays) to a `new ContainerService()` — no
- * use case, no repository, no DI.
- */
 class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ContainerIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<ContainerIdRecord[]> => {

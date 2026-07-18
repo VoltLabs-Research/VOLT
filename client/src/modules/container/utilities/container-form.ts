@@ -18,7 +18,6 @@ interface TemplateConfiguration {
     mountDockerSocket: boolean;
 }
 
-/** Validates one template custom field against required and pattern rules. */
 export const getCustomFieldValidationError = (
     customField: ContainerTemplateCustomField,
     value: string

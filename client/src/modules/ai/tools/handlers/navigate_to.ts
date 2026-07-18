@@ -7,12 +7,6 @@ interface NavigateToInput {
     query?: Record<string, string>;
 }
 
-/**
- * Navigates the user to an in-app page. The destination is resolved against the
- * route allowlist (security boundary — only known logical destinations, never
- * arbitrary URLs). Returns the resolved path + page title, or a structured
- * error the model can recover from.
- */
 const navigateTo: ClientToolHandler<NavigateToInput> = {
     name: 'navigate_to',
 

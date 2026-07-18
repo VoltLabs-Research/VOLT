@@ -24,7 +24,7 @@ export interface ConfirmOptions{
 }
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
-    // Docker-served local client, with a one-shot bootstrap token that seeds localStorage.
+    
     const localClientUrl = async (): Promise<string> => {
         const env = await deps.appConfig.getStackEnv();
         const origin = `http://localhost:${env.WEB_PORT ?? '5273'}`;
@@ -91,8 +91,8 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
 
     ipcMain.handle('app:voltUrl', () => localClientUrl());
 
-    // Navigate the window to the deployed client: the Docker-served local client
-    // (with a bootstrap token) or the remote deployment's advertised client URL.
+    
+    
     ipcMain.handle('app:openClient', async () => {
         const deployment = await deps.appConfig.getDeployment();
         const url = (deployment?.mode === 'remote' && deployment.remote)

@@ -8,12 +8,6 @@ import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationSe
 import { teamAIIntegrationRoutes } from '@volt/contracts/modules/team/routes';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 
-/**
- * HTTP controller for the team ai-integration resource. Class-level guards
- * reproduce the former `teamScope: BasePath` + `resource: TEAM` (the AI
- * integration routes were guarded by the generic TEAM resource, not a dedicated
- * one). `createByProvider` keeps 201, `deleteByProvider` 204.
- */
 @Middleware(protect, teamScoped(Resource.TEAM))
 export default class TeamAIIntegrationController extends Controller {
     #service = new TeamAIIntegrationService();

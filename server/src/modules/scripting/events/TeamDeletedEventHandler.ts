@@ -8,12 +8,6 @@ interface NotebookIdRecord {
     readonly _id: string;
 }
 
-/**
- * On team deletion, cascade-delete every scripting notebook belonging to the
- * team. Enumerates ids straight from the Mongoose {@link ScriptingNotebookModel}
- * and delegates the real teardown (runtime container + credential + event) to a
- * `new ScriptingService()` — no use case, no repository, no DI.
- */
 class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<NotebookIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<NotebookIdRecord[]> => {

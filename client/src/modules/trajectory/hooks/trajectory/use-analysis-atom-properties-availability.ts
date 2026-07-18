@@ -12,7 +12,6 @@ interface UseAnalysisAtomPropertiesAvailabilityResult {
     error: Error | null;
 }
 
-/** Uses the backend modifier-properties discovery endpoint as the source of truth for per-atom availability. */
 const useAnalysisAtomPropertiesAvailability = ({
     trajectoryId,
     analysisId,

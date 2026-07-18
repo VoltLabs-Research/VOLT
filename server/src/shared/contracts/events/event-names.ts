@@ -1,18 +1,4 @@
-/**
- * Neutral, cross-module DOMAIN EVENT NAME constants.
- *
- * Part of the `shared/contracts` layer (see ECOSYSTEM "VOLT Apps" migration):
- * domain events are dispatched and subscribed-to by string name. Subscribers
- * (`subscribeHandler('team.deleted', ...)`) and emitters (`super('team.deleted', ...)`)
- * currently hard-code these strings. Centralising the names here lets either
- * side reference a single neutral constant instead of a magic string, without
- * importing the emitter module.
- *
- * These are PURELY the name strings — the event CLASSES (which extend
- * `BaseDomainEvent`) stay in their owning module. The string values are
- * byte-identical to what is emitted/subscribed today, so runtime behaviour is
- * unchanged.
- */
+
 export const DOMAIN_EVENTS = Object.freeze({
     AnalysisCreated: 'analysis.created',
     AnalysisDeleted: 'analysis.deleted',

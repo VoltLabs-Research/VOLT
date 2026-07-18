@@ -13,12 +13,6 @@ interface SetEnvironmentInput {
     };
 }
 
-/**
- * Adjusts the scene environment: background color, reference grid visibility,
- * and distance fog. Maps to the editor store's `environment.setBackgroundColor`,
- * `grid.setGrid`, and `environment.setFogConfig`. Changes are zundo-tracked and
- * user-undoable.
- */
 const setEnvironment: ClientToolHandler<SetEnvironmentInput> = {
     name: 'set_environment',
     needsViewer: true,

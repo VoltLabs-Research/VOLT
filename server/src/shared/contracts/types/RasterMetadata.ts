@@ -1,18 +1,4 @@
-/**
- * Neutral, cross-module raster-metadata types.
- *
- * Extracted from `@modules/raster/domain/entities/RasterMetadata` during the
- * detachable-modules migration: `RasterMetadata` is the payload of the
- * `GetRasterMetadataOutputDTO` that the trajectory module consumes (via the
- * public-canvas raster-metadata use case). These are plain structural types
- * (no entity class), so hosting them here introduces no `@modules/*` coupling.
- *
- * `RasterMetadataStatus` is intentionally a runtime VALUE (an `enum`): the
- * raster module compares against it (`=== RasterMetadataStatus.Completed`). It
- * is pure data, so — like the neutral `JobStatus` enum — hosting the
- * `export enum` here is allowed. The owner entity file re-exports all of these
- * so existing importers compile and behave unchanged.
- */
+
 export interface RasterFrameMetadata {
     timestep: number;
     availableModels: string[];

@@ -1,5 +1,4 @@
-// Wire response types for the whiteboards module — the shapes the client reads
-// back from `data`. `_id`, refs and dates are strings on the wire.
+
 
 export interface WhiteboardUserSummary{
     _id: string;
@@ -11,7 +10,6 @@ export interface WhiteboardUserSummary{
 
 export type WhiteboardLastEditedBy = string | WhiteboardUserSummary | null;
 
-/** A whiteboard as the client sees it in list responses. */
 export interface WhiteboardListItem{
     _id: string;
     title: string;
@@ -54,7 +52,6 @@ export interface UploadWhiteboardAssetResponse{
     expiresAt: string;
 }
 
-/** A whiteboard catalog folder as the client sees it. */
 export interface WhiteboardFolder{
     _id: string;
     title: string;

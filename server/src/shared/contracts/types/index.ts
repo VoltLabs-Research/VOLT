@@ -1,8 +1,4 @@
-/**
- * Barrel for neutral cross-module type contracts.
- *
- * Populated incrementally by the detachable-modules migration.
- */
+
 export type {
     Analysis,
     AnalysisProps,

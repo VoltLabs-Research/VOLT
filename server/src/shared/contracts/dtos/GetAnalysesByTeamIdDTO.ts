@@ -1,15 +1,4 @@
-/**
- * Neutral cross-module contract for the analysis "list/search item" view.
- *
- * MOVED from `@modules/analysis/dtos/GetAnalysesByTeamIdDTO` during
- * the detachable-modules migration so cross-module consumers (dashboard global
- * search) depend on the contracts layer rather than the analysis module. The
- * original owner DTO re-exports every name below, so existing in-module
- * importers compile unchanged.
- *
- * Pure data/types only — `AnalysisConfig` comes from the neutral contracts
- * types; no `@modules/*` imports.
- */
+
 import type { AnalysisConfig } from '@shared/contracts/types/AnalysisProps';
 
 export interface AnalysisListTeamCluster {

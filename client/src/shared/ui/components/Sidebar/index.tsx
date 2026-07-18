@@ -25,7 +25,7 @@ export interface SidebarProps {
     children?: ReactNode;
     position?: 'left' | 'right';
     collapsible?: boolean;
-    /** Keep inactive tabs mounted but hidden (prevents refetch on tab switch) */
+    
     keepMounted?: boolean;
 };
 

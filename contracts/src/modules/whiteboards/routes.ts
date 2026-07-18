@@ -17,13 +17,6 @@ import type {
     WhiteboardFolder
 } from './domain';
 
-/**
- * Every client-facing whiteboard endpoint, typed by request/response. Full wire
- * paths (team-scoped under `/api/whiteboards/:teamId`), matching the previous
- * `createHttpModule({ basePath: '/api/whiteboards/:teamId' })` verbatim. Literal
- * `/folders` routes are declared before the `/:whiteboardId` param routes so
- * Express matches them first. `state` and `assets/:assetId` GET are streamed.
- */
 export const whiteboardRoutes = {
     create: post<CreateWhiteboardInput, CreateWhiteboardResponse>('/api/whiteboards/:teamId'),
     list: get<WhiteboardListItem>('/api/whiteboards/:teamId'),

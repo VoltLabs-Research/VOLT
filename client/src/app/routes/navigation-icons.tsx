@@ -20,11 +20,6 @@ export interface IconPair {
     active: LucideIcon;
 }
 
-/**
- * Canonical mapping of dashboard navigation icon keys to their lucide icons.
- * Lives here (rather than inside SidebarNavigation) so other surfaces — e.g. the
- * Modules settings page — can render the same icon for a given nav item.
- */
 export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, IconPair> = {
     [DashboardNavigationIconKey.AI]: { inactive: Sparkles, active: Sparkles },
     [DashboardNavigationIconKey.Containers]: { inactive: CubeIcon, active: CubeIcon },
@@ -39,13 +34,8 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.Whiteboards]: { inactive: Paintbrush, active: Paintbrush }
 };
 
-/** Generic fallback for nav items whose icon key has no dedicated icon. */
 export const FALLBACK_NAVIGATION_ICON: LucideIcon = Boxes;
 
-/**
- * Resolve a navigation icon (inactive variant) for a given icon key, falling
- * back to a generic module icon when the key is absent/unmapped.
- */
 export const resolveNavigationIcon = (iconKey?: DashboardNavigationIconKey): LucideIcon => {
     if (iconKey && DASHBOARD_NAVIGATION_ICONS[iconKey]) {
         return DASHBOARD_NAVIGATION_ICONS[iconKey].inactive;

@@ -10,11 +10,6 @@ interface PopulatedLatexUser {
     avatar?: string;
 }
 
-/**
- * LatexDocument persisted shape. Formerly lived in `entities/LatexDocument` —
- * inlined here (pollium style) so the model is self-contained after the
- * domain-entity layer was removed.
- */
 export interface LatexDocumentProps {
     team: string;
     title: string;

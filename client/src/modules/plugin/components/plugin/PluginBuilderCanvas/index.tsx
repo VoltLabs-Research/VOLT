@@ -15,11 +15,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactFlowInstance } from '@xyflow/react';
 
-/** Reads a CSS custom property from the document root. */
 const getCSSVar = (name: string): string =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-/** Resolves all theme-dependent colors that ReactFlow needs as raw strings. */
 const resolveThemeColors = () => ({
     minimapColors: {
         [NodeType.MODIFIER]: getCSSVar('--accent-blue'),
@@ -42,7 +40,6 @@ const resolveThemeColors = () => ({
     nodeFallback: getCSSVar('--color-text-muted')
 });
 
-/** Returns resolved theme colors for ReactFlow, re-reading when the theme changes. */
 const useCanvasThemeColors = () => {
     const [colors, setColors] = useState(resolveThemeColors);
 

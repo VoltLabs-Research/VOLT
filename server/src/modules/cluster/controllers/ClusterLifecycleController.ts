@@ -8,15 +8,6 @@ import { clusterLifecycleRoutes } from '@volt/contracts/modules/cluster/routes';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
-/**
- * Daemon-facing cluster lifecycle HTTP controller (pollium style). It replaces
- * the former `createHttpModule({ basePath: '/api/team-clusters/:teamClusterId'
- * })` module, which had no mount-time auth layer — the healthcheck and
- * install-manifest endpoints are authenticated internally by the lifecycle /
- * install-manifest services (enrollment token / daemon password), so this
- * controller carries NO class-level `@Middleware`. Both endpoints keep their
- * previous `200 OK` `BaseResponse` envelope.
- */
 export default class ClusterLifecycleController extends ClusterControllerBase {
     @Route(clusterLifecycleRoutes.processHealthcheck)
     async processHealthcheck(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {

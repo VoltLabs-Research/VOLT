@@ -37,11 +37,6 @@ export interface CreateArchiveDownloadInput {
     cacheControl?: string;
 }
 
-/**
- * Neutral cross-module port for building archive (zip) downloads from cluster
- * objects. Owned by the cluster module; consumed by trajectory + latex.
- * Canonical home in `shared/contracts`; concrete impl stays in cluster.
- */
 export interface IClusterObjectArchiveService {
     createArchiveDownload(input: CreateArchiveDownloadInput): Promise<ClusterArchiveDownload>;
 }

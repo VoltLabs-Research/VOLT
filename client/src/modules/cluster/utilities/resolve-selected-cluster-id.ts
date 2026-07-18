@@ -1,8 +1,5 @@
 import type { TeamCluster } from '@/modules/cluster/api/types/team-cluster';
 
-/**
- * Resolves the active cluster selection against the currently available clusters.
- */
 export const resolveSelectedClusterId = (
     selectedClusterId: string | null,
     clusters: TeamCluster[]

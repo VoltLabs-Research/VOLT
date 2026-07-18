@@ -7,13 +7,6 @@ import { Resource } from '@core/constants/resources';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { analysisRoutes } from '@volt/contracts/modules/analysis/routes';
 
-/**
- * The single HTTP controller for the analysis module (pollium style). Class-level
- * `@Middleware(protect, teamScoped(Resource.ANALYSIS))` replaces the old
- * mount-time auth + team-scope layer. List endpoints return a `PaginatedResult`
- * which the base `Controller` renders via `BaseResponse.paginated`; `remove`
- * returns void → 204 (preserving the former NoContent controller).
- */
 @Middleware(protect, teamScoped(Resource.ANALYSIS))
 export default class AnalysisController extends Controller {
     #service = new AnalysisService();

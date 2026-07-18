@@ -37,19 +37,15 @@ export interface AIMessageTokenUsage {
     totalTokens: number;
 }
 
-/**
- * Persisted shape of a single stored message (the Mongoose model is the
- * record). Messages are persisted in a transport-agnostic conversation format.
- */
 export interface AIMessageProps {
     conversationId: string;
     role: AIMessageRole;
     parts: AIConversationMessageParts;
-    /** Plain-text extraction of the message for search/display fallback. */
+    
     content: string;
-    /** Metadata from the AI response (provider, model, finish reason, tool steps). */
+    
     modelInfo: AIMessageModelInfo | null;
-    /** Token usage stats for assistant messages. */
+    
     tokenUsage: AIMessageTokenUsage | null;
     createdAt: Date;
     updatedAt: Date;

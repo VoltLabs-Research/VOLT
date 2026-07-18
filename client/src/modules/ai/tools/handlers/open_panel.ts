@@ -6,11 +6,6 @@ interface OpenPanelInput {
     modifier?: string;
 }
 
-/**
- * Opens an editor sidebar panel and/or selects a modifier in the viewer editor
- * via the editor store's configuration slice. At least one of sidebarOption /
- * modifier must be provided.
- */
 const openPanel: ClientToolHandler<OpenPanelInput> = {
     name: 'open_panel',
     needsViewer: true,

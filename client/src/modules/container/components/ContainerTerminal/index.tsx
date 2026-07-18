@@ -33,10 +33,6 @@ const isContainerTerminalSocketError = (value: unknown): value is ContainerTermi
     return typeof value === 'object' && value !== null && 'message' in value && 'code' in value;
 };
 
-/**
- * Maps backend terminal error codes (emitted by ContainerTerminalSocketModule) to
- * actionable, human-readable guidance. Unknown codes fall back to the raw message.
- */
 const TERMINAL_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
     CONTAINER_NOT_FOUND: "This container no longer exists. It may have been deleted — go back to the containers list.",
     NO_CLUSTER: "This container isn't assigned to a cluster yet. Start or redeploy it, then reopen the terminal.",

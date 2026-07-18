@@ -10,12 +10,6 @@ interface SetAppearanceInput {
     quality?: string;
 }
 
-/**
- * Adjusts viewer appearance: point size, simulation-cell visibility, render
- * quality preset. Maps to the editor store's `setPointSizeMultiplier`,
- * `setShowSimulationCell`, and `performanceSettings.setPreset`. All changes are
- * zundo-tracked, so they are user-undoable.
- */
 const setAppearance: ClientToolHandler<SetAppearanceInput> = {
     name: 'set_appearance',
     needsViewer: true,

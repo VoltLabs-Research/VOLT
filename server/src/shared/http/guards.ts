@@ -15,11 +15,6 @@ const METHOD_ACTION: Record<string, Action> = {
     DELETE: Action.DELETE
 };
 
-/**
- * Team-membership + RBAC guard as pollium-style middleware (a controller does
- * `@Middleware(protect, teamScoped(Resource.CONTAINER))`). Replaces the old
- * mount-time enforceTeamAccess layer with a guard that lives on the controller.
- */
 export const teamScoped = (resource: string): RequestHandler =>
     (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
         checkTeamMembership(req, res, () => {

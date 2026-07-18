@@ -37,27 +37,10 @@ import type {
     ProcessTeamClusterHealthcheckResponse
 } from './domain';
 
-/** HEAD endpoint helper (the shared routing barrel only exposes get/post/patch/put/del). */
 const head = <Output = void>(path: string): Endpoint<never, Output> => ({ method: 'HEAD', path });
-/** PUT endpoint helper for the object write stream (body is a raw byte stream, not JSON). */
+
 const putStream = (path: string): Endpoint<never, void> => ({ method: 'PUT', path });
 
-/**
- * Every cluster HTTP endpoint, typed by request/response, using the full wire
- * paths. Grouped by the four legacy route files this replaces:
- *
- *  - `teamClusterRoutes`: team-scoped client surface (was
- *    `/api/teams/:teamId/clusters`, protect + teamScoped(TEAM)). Literal
- *    `/demo*` routes precede the `/:teamClusterId` param routes so Express
- *    matches them first.
- *  - `clusterLifecycleRoutes`: daemon-facing lifecycle (was
- *    `/api/team-clusters/:teamClusterId`, unauthenticated).
- *  - `clusterObjectRoutes`: signed-URL object I/O (was
- *    `/api/cluster-objects/:teamId`, unauthenticated — token in the path).
- *  - object-store proxy: a daemon-authenticated catch-all under
- *    `/internal/team-cluster/object-store/v1`; handled by a dedicated
- *    controller with a wildcard route rather than typed endpoints.
- */
 export const teamClusterRoutes = {
     list: get<TeamClusterWire>('/api/teams/:teamId/clusters'),
     create: post<CreateTeamClusterInput, CreateTeamClusterResponse>('/api/teams/:teamId/clusters'),

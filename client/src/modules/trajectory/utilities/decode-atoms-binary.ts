@@ -30,20 +30,6 @@ const createTypedArrayView = (
     }
 };
 
-/**
- * Decodes the F2.S4 atoms wire format into column views that alias the source
- * ArrayBuffer — no per-row materialization, no JSON parsing.
- *
- * Format (little-endian):
- *   [u32 total][u32 page][u32 limit][u32 totalPages]
- *   [u32 count][u32 propsCount]
- *   for each prop: [u8 nameLen][bytes name utf-8][u8 dtypeId][u32 byteLen]
- *   [u32 headerPadLen][padLen zero bytes]
- *   [data blocks contiguous in prop order]
- *
- * The returned columns share the response `ArrayBuffer`; callers must not
- * mutate the buffer while views are alive.
- */
 export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsResponse => {
     const view = new DataView(buffer);
     let offset = 0;
@@ -134,12 +120,6 @@ export const decodeAtomsBinary = (buffer: ArrayBuffer): GetAtomsResponse => {
     };
 };
 
-/**
- * Materializes the columnar payload as an Array-of-Structures.
- *
- * Only use this in tables/debug UIs that cannot consume TypedArrays directly —
- * it allocates one object per atom and defeats the point of binary transfer.
- */
 export const atomsToAoS = (result: GetAtomsResponse): AtomData[] => {
     const rows: AtomData[] = new Array(result.count);
     const columns = result.columns;

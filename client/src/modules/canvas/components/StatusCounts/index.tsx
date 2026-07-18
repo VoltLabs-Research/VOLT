@@ -8,7 +8,7 @@ interface StatusCountsProps {
     running: number;
     completed: number;
     failed?: number;
-    /** When true, badges whose count is 0 are omitted instead of rendered as "0". */
+    
     hideZero?: boolean;
 }
 

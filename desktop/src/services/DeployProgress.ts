@@ -5,13 +5,6 @@ import type { AppEvents, PhaseSpec } from '@/types/events';
 type Spinner = ReturnType<typeof p.spinner>;
 type PhaseStatus = AppEvents['deploy:phase']['status'];
 
-/**
- * Renders deploy progress to the terminal. In a TTY it shows one clack spinner per
- * phase with the latest container/build line as a sub-message. When stdout is NOT a
- * TTY (curl | bash, cron, systemd, CI) clack spinners emit cursor escape sequences
- * that garble piped logs, so it falls back to plain, greppable line logging and
- * suppresses the noisy per-line build output. Keeps event wiring out of the CLI entry.
- */
 export default class DeployProgress {
     #labels: Record<string, string> = {};
     #spinner: Spinner | null = null;
@@ -65,8 +58,8 @@ export default class DeployProgress {
     #renderLog(line: string): void {
         const text = line.trim();
         if(!text) return;
-        // Plain logs would be drowned by per-line build output; only the spinner
-        // sub-message (TTY) surfaces it.
+        
+        
         if(this.#tty && this.#spinner){
             this.#spinner.message(text);
         }

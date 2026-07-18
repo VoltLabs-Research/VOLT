@@ -14,12 +14,6 @@ interface RightPanelProps extends CanvasPanelActionProps {
     compactAnalysisOnly?: boolean;
 }
 
-/**
- * Pure results browser plus the canvas Pipeline. The OVITO-style pipeline
- * (CanvasPipeline) lives at the top of ObjectsPanel; below it sit the
- * SceneCollection and the baked-artifact result trees (Color Coding /
- * Particle Filter / Line Styles).
- */
 const RightPanel = ({
     trajectory,
     trajectoryId,

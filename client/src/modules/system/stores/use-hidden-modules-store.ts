@@ -2,24 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { isHideableModule } from '@/modules/system/constants/hideable-modules';
 
-/**
- * Per-user, per-browser preference for which optional feature modules the user
- * has hidden from their own navigation. This is purely a client-side UI
- * preference (like the theme) — it never touches the server's deployment-level
- * `enabledModules`. The effective visibility of a module is:
- *   server-enabled AND not user-hidden AND user-permitted (RBAC).
- *
- * Persisted to localStorage (key `volt:hidden-modules`) via zustand's `persist`
- * middleware. A zustand store (rather than the plain localStorage pattern used
- * for theme) is used because the toggle in Settings and the consumers
- * (RouteRenderer, the sidebars) live in different parts of the tree and must
- * react live to a change — persist keeps it in localStorage while giving
- * cross-tree reactivity.
- *
- * Defense in depth: the persisted list is always sanitized through
- * `isHideableModule` on hydration and on every write, so a tampered localStorage
- * value can never hide a protected/core route.
- */
 interface HiddenModulesStore {
     hidden: string[];
     toggle: (moduleKey: string) => void;

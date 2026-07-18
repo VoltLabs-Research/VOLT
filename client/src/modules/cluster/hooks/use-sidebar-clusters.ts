@@ -21,13 +21,6 @@ interface SidebarClustersResult {
     setCredentialsCluster: (cluster: TeamCluster | null) => void;
 }
 
-/**
- * Lightweight hook for sidebar cluster actions. Fetches the team's clusters
- * and manages modal state for credential reveal and update flows.
- *
- * Remote access actions (terminal, mongo, redis, minio) navigate to dedicated
- * pages instead of opening modals.
- */
 const useSidebarClusters = (setSidebarOpen: (open: boolean) => void): SidebarClustersResult => {
     const navigate = useNavigate();
     const { pathname } = useLocation();

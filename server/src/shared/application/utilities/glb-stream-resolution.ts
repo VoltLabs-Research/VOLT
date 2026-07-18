@@ -2,15 +2,6 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { Readable } from 'node:stream';
 
-/**
- * Neutral GLB stream resolver. Mirrors trajectory's
- * `glb-stream-resolution` util but takes the neutral
- * {@link ITeamClusterObjectGatewayClient} port (it only calls `.getStream`)
- * instead of the concrete cluster gateway class — so cross-module consumers
- * (e.g. plugin exposure GLB) can resolve a model stream without importing
- * `@modules/cluster` or `@modules/trajectory`. The codec helpers are trivial
- * pure string ops, inlined here to keep the file free of module imports.
- */
 export type GlbContentEncoding = 'zstd' | 'identity';
 
 export interface ResolvedGlbStream {

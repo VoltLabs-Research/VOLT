@@ -8,12 +8,6 @@ import TeamRoleService from '@modules/team/services/TeamRoleService';
 import { teamRoleRoutes } from '@volt/contracts/modules/team/routes';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
-/**
- * HTTP controller for the team-role resource. Class-level guards reproduce the
- * former `teamScope: BasePath` + `resource: TEAM_ROLE`. `list` and `get`
- * previously lived inline in the route file; they are folded into the service.
- * `create` preserves its 201 status.
- */
 @Middleware(protect, teamScoped(Resource.TEAM_ROLE))
 export default class TeamRoleController extends Controller {
     #service = new TeamRoleService();

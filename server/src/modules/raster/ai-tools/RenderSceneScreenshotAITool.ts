@@ -5,11 +5,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 
-/**
- * Resolves the public base URL of this server, mirroring the logic used by the
- * scripting/cluster modules (SERVER_ENDPOINT, then SERVER_SCHEMA/SERVER_HOSTNAME).
- * Kept inline so this tool stays self-contained.
- */
 const resolveServerBaseUrl = (): string => {
     const configuredServerUrl = process.env.SERVER_ENDPOINT?.trim();
     if (configuredServerUrl) {

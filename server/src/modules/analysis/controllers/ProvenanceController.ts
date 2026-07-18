@@ -8,14 +8,6 @@ import { ProvenanceService } from '@modules/analysis/services/ProvenanceService'
 import { provenanceRoutes } from '@volt/contracts/modules/analysis/routes';
 import type { Response } from 'express';
 
-/**
- * The HTTP controller for analysis provenance (pollium style). Class-level
- * `@Middleware(protect, teamScoped(Resource.ANALYSIS))` matches the old
- * team-scoped `/api/provenance/:teamId` mount. The former inline handlers
- * replied with RAW JSON (no BaseResponse envelope) and used bespoke 404 bodies,
- * so each handler takes `@Res()` and writes the response itself, reproducing the
- * exact wire shape.
- */
 @Middleware(protect, teamScoped(Resource.ANALYSIS))
 export default class ProvenanceController extends Controller {
     #service = new ProvenanceService();

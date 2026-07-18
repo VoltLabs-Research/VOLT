@@ -4,12 +4,6 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import type { ChatParticipant } from '@shared/contracts/types/Chat';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-/**
- * Chat persisted shape. Formerly lived in `entities/chat/Chat` — inlined here
- * (pollium style) so the model is self-contained after the domain-entity layer
- * was removed. `participants`/`admins`/`createdBy`/`lastMessage` are stored as
- * refs; the persisted document types them as ObjectId(s) via `Persistable`.
- */
 export interface ChatProps {
     participants: ChatParticipant[];
     team: string;

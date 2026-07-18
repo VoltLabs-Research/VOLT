@@ -6,11 +6,6 @@ interface ResetViewSettingsInput {
     action?: 'undo' | 'redo' | 'reset_all';
 }
 
-/**
- * Undo/redo the last viewer change, or reset every viewer setting to defaults.
- * `undo`/`redo` drive the zundo temporal store; `reset_all` calls the editor
- * store's `resetAll()` (which also clears undo history).
- */
 const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
     name: 'reset_view_settings',
     needsViewer: true,

@@ -93,7 +93,6 @@ const getAvailableTimesteps = (source: RasterWorkspaceSource | null, metadataTra
     return metadataTrajectoryTimesteps;
 };
 
-/** Resolves the raster source for the active canvas analysis and timestep. */
 export const useRasterWorkspace = ({
     trajectoryId,
     trajectory,

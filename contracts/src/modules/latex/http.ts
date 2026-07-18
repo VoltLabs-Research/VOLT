@@ -1,8 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId`/`:documentId`/`:fileId`/`:assetId` path
-// params, uploaded files) is NOT here — the controller reads those from
-// @Param/@CurrentUser and the multipart middleware, and the service augments its
-// own input.
+
 
 export interface CreateLatexDocumentInput{
     title: string;
@@ -31,7 +27,7 @@ export interface UpdateLatexFileInput{
 }
 
 export interface UpdateLatexAssetInput{
-    /** New virtual path for the asset, e.g. `"images/fig1.png"`. */
+    
     path: string;
 }
 
@@ -42,7 +38,7 @@ export interface UploadLatexAssetFileInput{
 }
 
 export interface UploadLatexAssetInput{
-    /** Optional relative path prefix applied to all uploaded files (e.g. `images/`). */
+    
     path?: string;
     files: UploadLatexAssetFileInput[];
 }

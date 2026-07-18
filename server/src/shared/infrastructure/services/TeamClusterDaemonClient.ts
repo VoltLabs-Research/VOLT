@@ -42,7 +42,6 @@ export interface TeamClusterDaemonSemanticCommandResult<T> {
     timeoutClass: NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>;
 }
 
-/** Structured error payload emitted by the daemon's `adaptHandler` catch block. */
 interface DaemonErrorPayload {
     status: 'error';
     code: string;
@@ -68,11 +67,6 @@ const isSemanticPayload = (value: unknown): value is TeamClusterDaemonSemanticPa
     return isRecord(value);
 };
 
-/**
- * The SDK's ReverseChannelBridge wraps every successful command response in
- * `{status: 'success', data: result.data}` before sending it over the wire.
- * Unwrap that inner envelope so callers see the raw result directly.
- */
 const unwrapResponseEnvelopeData = (value: unknown): unknown => {
     if (!isRecord(value) || value.status !== 'success' || !('data' in value)) {
         return value;
@@ -90,11 +84,6 @@ const isDaemonErrorPayload = (value: unknown): value is DaemonErrorPayload => {
     );
 };
 
-/**
- * Maps a daemon HTTP status code to an `ApplicationError` with the correct status class.
- * 4xx daemon errors are treated as operational client errors; 5xx as operational server errors.
- * The daemon's error code and message are always preserved for observability.
- */
 const mapDaemonStatusToApplicationError = (
     status: number,
     code: string,
@@ -188,14 +177,7 @@ class TeamClusterDaemonClient {
         };
     }
 
-    /**
-     * Extracts the error code and message from a daemon response, logs a warning,
-     * and throws the appropriate `ApplicationError`.
-     *
-     * @param command - The command name, used in the fallback message and log.
-     * @param response - The raw daemon response envelope.
-     * @param logLabel - Human-readable label used in the warning log entry.
-     */
+    
     private throwDaemonError(
         command: string,
         response: { ok: boolean; status: number; message?: string; data?: unknown },
@@ -349,11 +331,7 @@ class TeamClusterDaemonClient {
         });
     }
 
-    /**
-     * Invokes a daemon command whose response carries a raw binary body.
-     * The daemon returns the buffer under `response.data.body` as a native
-     * Socket.IO binary attachment (no base64 hop).
-     */
+    
     async commandBuffer(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Buffer> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
         const dispatchContext = this.createDispatchLogContext(

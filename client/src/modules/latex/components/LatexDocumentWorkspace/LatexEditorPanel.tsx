@@ -58,13 +58,6 @@ interface TabDropIndicator {
     position: 'before' | 'after' | 'end';
 }
 
-/**
- * Resolves a LaTeX asset's content to an authenticated `blob:` URL. The raw
- * `asset.url` is a bare API path; react-pdf and `<img>` fetch it directly and
- * bypass the axios auth interceptor (→ 401). Fetching through the service keeps
- * the bearer token and yields a blob URL safe for any consumer (including the
- * navigations behind "Open file", which can't carry headers at all).
- */
 const useAuthedAssetUrl = (asset: LatexAsset | null): string | null => {
     const [url, setUrl] = useState<string | null>(null);
 

@@ -3,12 +3,7 @@ import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-/**
- * Mounted inside the Router so it can use `useNavigate`.
- * Attaches window `error` and `unhandledrejection` listeners.
- * API errors are surfaced as notifications and all other uncaught errors
- * navigate to `/error` with the details encoded as URL params.
- */
+
 const GlobalErrorListener = () => {
     const navigate = useNavigate();
     const location = useLocation();

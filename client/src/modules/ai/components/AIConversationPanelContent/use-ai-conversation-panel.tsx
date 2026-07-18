@@ -19,16 +19,6 @@ interface UseAIConversationPanelOptions {
 
 const preserveDraft = (draft: string) => draft;
 
-/**
- * Self-contained AI conversation panel state (its OWN `useAIPage`/`useChat`
- * instance). Used by surfaces that need an INDEPENDENT, context-scoped chat —
- * notably the LaTeX document assistant, which injects per-document context via
- * `prepareMessage` and must not share the global conversation.
- *
- * The floating widget + full AI page instead share one hoisted instance via
- * `useSharedAIConversationPanel` (AIChatProvider), so a reply keeps streaming
- * across surface switches.
- */
 const useAIConversationPanel = (options: UseAIConversationPanelOptions = {}) => {
     const {
         normalizeDraft = preserveDraft,

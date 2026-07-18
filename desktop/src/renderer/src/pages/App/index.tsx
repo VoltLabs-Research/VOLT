@@ -42,12 +42,12 @@ const App = () => {
     const [bootError, setBootError] = useState<string | null>(null);
     const [logsCopied, setLogsCopied] = useState(false);
     const [themePref, setThemePrefState] = useState<ThemePreference>(getThemePreference());
-    // Opened via the in-client gear (openShell adds #launcher): land here and wait for an
-    // explicit action instead of bouncing straight back into the client.
+    
+    
     const [paused, setPaused] = useState(window.location.hash === '#launcher');
     const openedRef = useRef(false);
 
-    // Hand the window over to the locally-served client (replaces the old iframe).
+    
     const openClient = () => {
         if(openedRef.current) return;
         openedRef.current = true;
@@ -141,7 +141,7 @@ const App = () => {
         let cancelled = false;
         const intent = window.location.hash.replace('#', '');
 
-        // Reconcile the persisted theme preference with what was applied on first paint.
+        
         void window.volt.config.get()
             .then((config) => {
                 if(cancelled) return;
@@ -158,7 +158,7 @@ const App = () => {
                 const next: Mode = (current?.mode === 'remote' && current.remote) ? 'remote'
                     : current?.mode === 'local' ? 'local' : 'choose';
 
-                // Actions chosen from the in-client options menu run straight away here.
+                
                 if(intent === 'switch'){ switchDeployment(); return; }
                 if(intent === 'devmode'){ setMode(next); setPaused(true); setDevModeOpen(true); return; }
                 if(intent === 'reset'){ setMode(next); setPaused(true); void resetAndRedeploy(); return; }
@@ -180,7 +180,7 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Local stack finished provisioning — open the client against it.
+    
     useEffect(() => {
         if(mode === 'local' && state === 'up') openClient();
     // eslint-disable-next-line react-hooks/exhaustive-deps

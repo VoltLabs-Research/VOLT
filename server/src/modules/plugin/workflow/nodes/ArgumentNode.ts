@@ -58,8 +58,8 @@ export interface ArgumentDefinition {
     required?: boolean;
     multipleSelection?: boolean;
     inferFromContext?: boolean;
-    // Prerequisite plugin keys for an inferFromContext argument: at least one of
-    // these plugins must run as an earlier pipeline stage to produce this value.
+    
+    
     plugins?: string[];
     pluginReferenceFilter?: string[];
     pluginReferenceFilterKeys?: string[];

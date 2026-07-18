@@ -1,10 +1,4 @@
-/**
- * Plain query functions for the TeamCluster model, replacing the deleted
- * TeamClusterRepository for the one custom query it used to expose
- * (`findByIdWithSensitiveData`) that is consumed from more than one call
- * site. ActiveRecord style: talks directly to TeamClusterModel, no
- * repository/mapper indirection.
- */
+
 import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 
 const SENSITIVE_FIELDS_SELECTION = [

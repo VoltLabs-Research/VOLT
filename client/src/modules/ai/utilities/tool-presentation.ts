@@ -1,18 +1,9 @@
 import { isRecord } from '@/shared/utils/type-guards';
 
-/**
- * Human-facing presentation for AI tool calls in the conversation thread.
- *
- * The model calls tools by snake_case name; the raw name ("seek_frame") is not
- * something a user should read. This maps each tool to a verb phrase and groups
- * it, and — when the tool result carries a `summary` (our client tools and most
- * server tools return `{ summary }`) — prefers that concrete summary.
- */
-
 export type ToolActionPhase = 'requested' | 'running' | 'done' | 'failed';
 
 interface ToolPresentationConfig {
-    /** Verb shown while running / once done, e.g. "Navigating" / "Navigated". */
+    
     runningLabel: string;
     doneLabel: string;
     group: 'navigation' | 'viewer' | 'render' | 'data' | 'action';
@@ -66,10 +57,6 @@ export interface ToolCardPresentation {
     group: ToolPresentationConfig['group'] | 'unknown';
 }
 
-/**
- * Resolves the label + group for a tool-call card. When done, a concrete result
- * summary (e.g. "Navigated to Containers.") wins over the generic verb.
- */
 export const presentToolCall = (
     toolName: string,
     phase: ToolActionPhase,

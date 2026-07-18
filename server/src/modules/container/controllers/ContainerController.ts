@@ -14,14 +14,6 @@ import type {
     UpdateContainerFolderInput
 } from '@volt/contracts/modules/container/http';
 
-/**
- * The single HTTP controller for the container module (pollium style): every
- * route is bound with `@Route(containerRoutes.x)` and delegates to a
- * {@link ContainerService} the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(...))` replaces the old mount-time auth +
- * team-scope layer. `buildRouter()` turns the decorated methods into the Express
- * router mounted directly in `mount-http-routes`.
- */
 @Middleware(protect, teamScoped(Resource.CONTAINER))
 export default class ContainerController extends Controller {
     #service = new ContainerService();

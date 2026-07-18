@@ -1,6 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId`/`:containerId` path params) is NOT here —
-// the service augments those on its own input.
+
 
 import type { ContainerEnvironmentVariable, ContainerPortMapping } from './domain';
 

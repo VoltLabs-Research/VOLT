@@ -20,11 +20,6 @@ const socketManagedStoreResetters = [
     () => useClusterStore.getState().reset()
 ] satisfies StoreResetter[];
 
-// ponytail: the keyboard-shortcuts store is NOT reset here. Its only team-scoped
-// state is `currentScope`, which must stay 'canvas' while CanvasPage is mounted —
-// team-switch/route-change/error-recovery cleanups all flow through here and would
-// otherwise silently kill canvas shortcuts (space/arrows/g/r...) mid-session.
-// CanvasPage's own unmount cleanup (use-canvas-cleanup) handles the legitimate reset.
 const teamScopedStoreResetters = [
     () => useEditorStore.getState().resetAll(),
     () => useScreenshotStore.getState().reset(),

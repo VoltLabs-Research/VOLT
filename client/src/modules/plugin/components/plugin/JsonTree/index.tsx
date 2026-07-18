@@ -10,7 +10,6 @@ interface TruncatedArray {
     _truncated: boolean;
     totalLength: number;
     preview: unknown[];
-
 }
 
 interface JsonTreeProps {

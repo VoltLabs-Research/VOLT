@@ -39,11 +39,6 @@ export interface UseExpressionEvaluatorResult {
     autoRoute: boolean;
 }
 
-/**
- * Evaluates a scalar expression over the decoded columnar atom buffer in-browser.
- * For atom counts above CLIENT_EVAL_ATOM_LIMIT, sets autoRoute=true and returns
- * no evaluatedColumn (caller should fall back to daemon path).
- */
 const useExpressionEvaluator = (
     formula: string,
     atomBuffer: GetAtomsResponse | null | undefined,

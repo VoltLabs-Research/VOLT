@@ -9,8 +9,6 @@ import './styles.css';
 
 document.documentElement.dataset.platform = window.volt.platform;
 
-// Flatten the shell's rounded corners while maximized (a rounded corner against the
-// screen edge looks broken). Mirrors the web client's data-volt-maximized handling.
 window.volt.on('window:state', ({ maximized }) => {
     if(maximized){
         document.documentElement.dataset.voltMaximized = 'true';
@@ -19,8 +17,6 @@ window.volt.on('window:state', ({ maximized }) => {
     }
 });
 
-// Apply the cached theme preference synchronously, then keep it in sync with the OS.
-// App reconciles it with the persisted config once it loads.
 initTheme();
 
 createRoot(document.getElementById('root')!).render(

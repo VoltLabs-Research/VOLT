@@ -16,7 +16,6 @@ import type {
 } from '@/shared/rendering/effects';
 import type { EnvironmentSettings, FogSettings } from '@/shared/rendering/environment';
 
-
 export interface CameraUpdateState {
     type?: CameraSettingsState['type'];
     position?: CameraSettingsState['position'];

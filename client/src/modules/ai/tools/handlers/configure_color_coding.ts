@@ -2,13 +2,6 @@ import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/tools/typ
 import { useCanvasPipelineStore } from '@/modules/canvas/stores/canvas-pipeline';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 
-/**
- * Adds a color-coding stage to the active trajectory's pipeline. Color coding now
- * bakes on the daemon (a colored GLB scene) rather than recoloring in-browser, so
- * the AI seeds the stage config (property + gradient + optional manual range); the
- * user (or a follow-up) triggers the bake via the stage's Apply button.
- */
-
 interface ConfigureColorCodingInput {
     property: string;
     colorMap?: string;

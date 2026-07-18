@@ -1,13 +1,4 @@
-/**
- * Server twin of ClusterDaemon/src/core/reverse-channel/contracts/binary-envelope.ts
- *
- * Kept as a small copy (no cross-project path alias) because the daemon and
- * server live in independent TypeScript projects. The two files MUST stay in
- * sync — any change to the envelope layout must be mirrored on both sides.
- *
- * Wire format (little-endian, fixed 10-byte header):
- *   [u32 opId][u16 kind][u32 payloadLen][...payload bytes...]
- */
+
 
 export const BINARY_ENVELOPE_HEADER_BYTES = 10;
 
@@ -83,12 +74,6 @@ export const decodeEnvelope = (buf: Uint8Array): DecodedEnvelope => {
     return { opId, kind, payload };
 };
 
-/**
- * Coerces arbitrary Node/browser buffer-shaped inputs into a `Uint8Array`
- * view (no copy when the source already is a typed array). Used at the
- * Socket.IO/IPC boundary where payloads may also arrive as Node's serialized
- * Buffer shape (`{ type: 'Buffer', data: [...] }`).
- */
 export const toUint8Array = (value: unknown): Uint8Array => {
     if (value instanceof Uint8Array) {
         return value;

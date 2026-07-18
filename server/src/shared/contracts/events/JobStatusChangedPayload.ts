@@ -1,12 +1,4 @@
-/**
- * Neutral payload contract for the `job.status.changed` domain event.
- *
- * Moved here (re-exported from the original
- * `@modules/jobs/events/JobStatusChangedEvent`) so that consumer modules
- * which subscribe to this event can reference the payload TYPE without importing
- * `@modules/jobs`. The event CLASS stays in the jobs module. Pure type — the
- * only dependency is the neutral `JobStatus` enum from the contracts layer.
- */
+
 import type { JobStatus } from '@shared/contracts/types/JobStatus';
 
 export interface JobStatusChangedEventPayload {

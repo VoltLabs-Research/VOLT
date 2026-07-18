@@ -15,15 +15,6 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
-/**
- * Public canvas HTTP controller (pollium style). Mirrors the old `/api/canvas`
- * module: no team scope, `authenticateOptional` on every route (so the
- * authenticated user id is threaded through when present via
- * `withOptionalUserId` / `withGlbRequestContext`, otherwise `undefined`). GLB /
- * dump / model / raster-frame / atoms endpoints stream via `@Res()`, reproducing
- * the previous canvas controllers' headers exactly. `@Route` methods keep the
- * old declaration order.
- */
 @Middleware(authenticateOptional)
 export default class CanvasController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.canvasBootstrap)

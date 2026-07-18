@@ -59,10 +59,6 @@ const buildCard = (
     };
 };
 
-/**
- * @param teamId - Used only as a gate for the `enabled` option. The query fires only
- * when a team is selected. The actual team scoping is handled server-side via RBAC.
- */
 const useDashboardMetrics = (teamId?: string) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 

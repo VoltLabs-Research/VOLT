@@ -9,15 +9,6 @@ const isAIPagePath = (pathname: string): boolean => {
     return pathname === AI_PAGE_PREFIX || pathname.startsWith(`${AI_PAGE_PREFIX}/`);
 };
 
-/**
- * Continuity bridge for the AI assistant: when the user navigates AWAY from the
- * full AI page (`/dashboard/ai/:id`) while a conversation is active, pop open
- * the floating widget so the same conversation stays at hand on the next page.
- *
- * The widget and the page share the hoisted `AIChatProvider`, so the widget
- * already renders `activeConversationId` — we only need to surface it. Renders
- * nothing; it just runs the effect. Must be mounted inside `AIChatProvider`.
- */
 const AIPageExitWidgetBridge = () => {
     const { pathname } = useLocation();
     const { activeConversationId } = useAIChatContext();

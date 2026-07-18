@@ -11,17 +11,6 @@ interface SetPlaybackInput {
 const MIN_PLAY_SPEED = 0.1;
 const MAX_PLAY_SPEED = 10;
 
-/**
- * Configures trajectory playback settings in the 3D viewer: speed, target fps,
- * and the loop range (start/end timesteps).
- *
- * Each field maps to a playback-slice action: `setPlaySpeed` (speed clamped to
- * [0.1, 10] here as well as in the store), `setTargetFps` (positive only — the
- * store ignores non-positive/non-finite values), and `setRangeStart`/
- * `setRangeEnd` (which clamp against each other and adjust the current timestep
- * if it falls outside). All changes flow through the zundo-wrapped editor store
- * and are user-undoable.
- */
 const setPlayback: ClientToolHandler<SetPlaybackInput> = {
     name: 'set_playback',
     needsViewer: true,

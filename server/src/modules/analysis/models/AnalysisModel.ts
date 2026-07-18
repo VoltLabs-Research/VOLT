@@ -150,11 +150,6 @@ AnalysisSchema.index({ team: 1, storageClusterId: 1, createdAt: 1 });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
 
-/**
- * Relation fields that get ObjectId<->string normalization when converting a
- * raw document into the flat `Analysis` ({ _id, props }) shape below — the
- * same list the deleted AnalysisMapper used to carry.
- */
 const ANALYSIS_RELATION_KEYS = [
     'createdBy',
     'trajectory',
@@ -164,14 +159,6 @@ const ANALYSIS_RELATION_KEYS = [
     'team'
 ] as const;
 
-/**
- * Converts a raw AnalysisModel document into the neutral `{ _id, props }`
- * shape (`Analysis` from `@shared/contracts/types/AnalysisProps`) that
- * cross-module consumers and event payloads still expect. Unpopulated
- * relation fields (plain `Types.ObjectId`) are stringified; populated
- * sub-documents are left as-is, matching the previous AnalysisMapper
- * behavior exactly.
- */
 export const toAnalysisLike = (doc: AnalysisDocument): Analysis => {
     const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
     const { _id, __v: _ignoredVersion, ...rest } = documentProps;

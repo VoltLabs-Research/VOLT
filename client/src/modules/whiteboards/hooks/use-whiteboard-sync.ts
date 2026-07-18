@@ -71,7 +71,6 @@ interface UseWhiteboardSyncProps {
 
 const DELTA_DEBOUNCE_MS = 80;
 
-/** Minimum gap between conflict-sync toasts so a burst of rebases doesn't spam the user. */
 const CONFLICT_TOAST_THROTTLE_MS = 5000;
 
 const useWhiteboardSync = ({
@@ -126,11 +125,7 @@ const useWhiteboardSync = ({
         }
     }, []);
 
-    /**
-     * Surfaces a non-blocking notice when the server rebases our in-flight patch
-     * onto an authoritative snapshot (a concurrent-edit conflict). Throttled so a
-     * burst of rebases during heavy collaboration doesn't spam the user.
-     */
+    
     const notifyConflictSync = useCallback(() => {
         const now = Date.now();
         if (now - lastConflictToastAtRef.current < CONFLICT_TOAST_THROTTLE_MS) {

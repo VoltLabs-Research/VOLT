@@ -1,9 +1,4 @@
-// Wire response types for the cluster module — the shapes the client reads back
-// from `data`. Refs and dates are serialized (dates become ISO strings on the
-// wire, but the server projections type them as `Date`; the client treats them
-// as strings). Mirrors the domain read-projections the cluster module returns
-// (`TeamClusterDTO`, `ClusterTransferJobDTO`, remote-explorer + install-manifest
-// vocabulary) without importing server code.
+
 
 export type TeamClusterStatusWire =
     | 'waiting-for-connection'
@@ -114,7 +109,6 @@ export interface ClusterTransferJobWire{
     updatedAt: string;
 }
 
-/** A team cluster as the client sees it. */
 export interface TeamClusterWire{
     _id: string;
     name: string;

@@ -1,11 +1,6 @@
 import type { Whiteboard } from '@/modules/whiteboards/api/types/whiteboard';
 import { reconcileElements } from '@excalidraw/excalidraw';
 
-/**
- * Excalidraw `appState` keys that are safe to persist across sessions.
- * Transient fields (collaborators, loading flags, active selections, etc.)
- * are intentionally excluded to avoid restoring stale UI state.
- */
 const PERSISTABLE_APP_STATE_KEYS = new Set([
     'viewBackgroundColor',
     'gridSize',
@@ -188,11 +183,6 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
     return !hasEquivalentElementPayload(current, incoming);
 };
 
-/**
- * Returns a copy of `appState` containing only fields that are safe to
- * persist to the server. Filters out transient, session-only fields such
- * as collaboration data, loading flags, and active-selection state.
- */
 export const filterPersistableAppState = (
     appState: Record<string, unknown>
 ): Record<string, unknown> => {

@@ -1,7 +1,5 @@
-// Wire response types for the ai module — the shapes the client reads back from
-// `data`. `_id`, refs and dates are strings on the wire.
 
-/** An AI conversation as the client sees it. */
+
 export interface AIConversation{
     _id: string;
     userId: string;
@@ -15,7 +13,6 @@ export interface AIConversation{
     updatedAt: string;
 }
 
-/** A persisted AI message (user or assistant turn). Parts/model info are opaque. */
 export interface AIMessage{
     _id: string;
     conversationId: string;

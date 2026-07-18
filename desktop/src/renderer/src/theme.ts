@@ -16,8 +16,8 @@ function resolve(pref: ThemePreference): 'light' | 'dark'{
 }
 
 function apply(): void{
-    // bravais scopes its design tokens under :root[data-theme]; mirror the resolved
-    // scheme onto the root so the package's components resolve their colours.
+    
+    
     document.documentElement.dataset.theme = resolve(preference);
 }
 
@@ -31,7 +31,6 @@ export function setThemePreference(pref: ThemePreference): void{
     apply();
 }
 
-/** Applies the cached preference immediately and keeps it in sync with the OS scheme. */
 export function initTheme(): void{
     apply();
     query.addEventListener('change', () => {

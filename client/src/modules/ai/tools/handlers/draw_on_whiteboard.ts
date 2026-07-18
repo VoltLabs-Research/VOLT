@@ -13,7 +13,6 @@ interface DrawOnWhiteboardInput {
     elements?: WhiteboardDrawElement[];
 }
 
-/** Max time to wait for the editor (and its lazy Excalidraw chunk) after navigating. */
 const READINESS_TIMEOUT_MS = 6000;
 const READINESS_POLL_MS = 120;
 
@@ -22,11 +21,6 @@ const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 const readSnapshot = (): WhiteboardEditorHandleSnapshot =>
     useWhiteboardEditorHandleStore.getState().getSnapshot();
 
-/**
- * Waits until the editor handle is registered, open on `whiteboardId`, and the
- * Excalidraw API is live — or times out. The board route lazy-loads the canvas,
- * so a fresh navigation needs a beat before `draw` is callable.
- */
 const waitForReadyEditor = async (whiteboardId: string): Promise<WhiteboardEditorHandleSnapshot> => {
     const deadline = Date.now() + READINESS_TIMEOUT_MS;
 
@@ -42,13 +36,6 @@ const waitForReadyEditor = async (whiteboardId: string): Promise<WhiteboardEdito
     }
 };
 
-/**
- * Draws AI-authored content onto a whiteboard's live Excalidraw canvas. The
- * model supplies a high-level element list; the editor page (via the
- * whiteboard-editor-handle store) converts it to real elements and applies it,
- * which propagates to all collaborators through the existing sync path. If the
- * board is not already open we navigate to it first and wait for the canvas.
- */
 const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
     name: 'draw_on_whiteboard',
 

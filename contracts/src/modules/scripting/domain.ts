@@ -1,10 +1,5 @@
-// Wire response types for the scripting module — the shapes the client reads
-// back from `data`. `_id`, refs and dates are strings on the wire. Session
-// responses omit the server-only `runtimeNotebookId`/`accessToken` (those are
-// applied to the Jupyter-proxy access cookie server-side, never sent in `data`).
 
-/** Notebook listing/scope filter carried as a query param. Runtime enum: the
- * server compares against it and the AI tool validates with `z.nativeEnum`. */
+
 export enum ScriptingNotebookScope{
     All = 'all',
     General = 'general',
@@ -34,7 +29,6 @@ export interface ScriptingNotebookContainerResources{
     memoryMB: number;
 }
 
-/** A scripting notebook as the client sees it (refs may be populated objects). */
 export interface PersistedScriptingNotebook{
     _id: string;
     teamCluster?: string | ScriptingNotebookPopulatedTeamCluster | null;

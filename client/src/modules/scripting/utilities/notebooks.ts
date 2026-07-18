@@ -24,7 +24,6 @@ export const getTrajectoryIds = (notebook: ScriptingNotebook): string[] => {
     return [getTrajectoryId(primaryTrajectory)].filter((id) => id.trim().length > 0);
 };
 
-/** Returns the notebook team cluster id from either a populated relation or a raw id. */
 export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
     if (!notebook?.teamCluster) {
         return undefined;

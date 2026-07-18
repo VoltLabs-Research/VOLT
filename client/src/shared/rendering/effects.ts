@@ -186,10 +186,6 @@ export const getDefaultEffectsSettings = (): EffectsSettings => ({
     sepia: { ...SEPIA_EFFECT_DEFAULTS }
 });
 
-/**
- * Resolves the single SSAO runtime configuration used for the current scene.
- * The canonical `settings.enabled` flag remains authoritative; defect-scene presets only backfill values.
- */
 export const resolveSSAOSettings = (
     settings: SSAOEffectSettings,
     options: ResolveSSAOSettingsOptions

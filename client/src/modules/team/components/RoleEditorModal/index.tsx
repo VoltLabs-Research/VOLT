@@ -8,7 +8,6 @@ import { IoWarningOutline } from 'react-icons/io5';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import './RoleEditorModal.css';
 
-
 export interface RoleEditorPayload {
     name: string;
     permissions: string[];

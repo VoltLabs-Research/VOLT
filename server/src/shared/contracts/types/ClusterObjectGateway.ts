@@ -1,11 +1,4 @@
-/**
- * Cluster object-gateway signed-access domain vocabulary.
- *
- * Canonical home in the neutral `shared/contracts` layer (detachable-modules
- * migration) so consumers of `IClusterObjectSignedUrlService` needn't import
- * `@modules/cluster`. The original
- * `@modules/cluster/contracts/ClusterObjectGateway` re-exports these.
- */
+
 
 export type ClusterObjectOperation = 'read' | 'write';
 

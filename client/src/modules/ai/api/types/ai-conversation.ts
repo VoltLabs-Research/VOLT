@@ -43,7 +43,7 @@ export interface AIConversation extends BaseEntity {
 export interface AIConversationMessage extends BaseEntity {
     conversationId: string;
     role: AIMessageRole;
-    /** UIMessage-compatible parts stored directly from the SDK. */
+    
     parts: UIMessage['parts'];
     content: string;
     artifacts?: AIConversationMessageArtifacts | null;

@@ -9,12 +9,6 @@ import SecretKeyService from '@modules/team/services/SecretKeyService';
 import { secretKeyRoutes } from '@volt/contracts/modules/team/routes';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
-/**
- * HTTP controller for the secret-key resource. Class-level `@Middleware(protect)`
- * authenticates every route; the `/me` self route (formerly `secret-key/self`)
- * stays protect-only, while the team-scoped routes add
- * `teamScoped(Resource.TEAM_SECRET_KEY)`. `create` keeps 201, `deleteById` 204.
- */
 @Middleware(protect)
 export default class SecretKeyController extends Controller {
     #service = new SecretKeyService();

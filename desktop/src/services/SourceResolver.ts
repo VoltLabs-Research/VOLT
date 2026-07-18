@@ -17,12 +17,7 @@ export interface SourceResolverProps{
 export interface ResolvedSources{
     env: Record<string, string>;
     changed: boolean;
-    /**
-     * Records the freshly-downloaded release tags. Call ONLY after the stack has
-     * started successfully — recording earlier means a failed build leaves the tag
-     * marked "installed", so a retry sees installed==latest, skips the download, and
-     * runs `up` without --build against a stale image.
-     */
+    
     commit: () => Promise<void>;
 }
 
@@ -83,11 +78,7 @@ export default class SourceResolver{
         return { env, changed, commit };
     }
 
-    /**
-     * Non-mutating: reports per-repo installed-vs-latest tags without downloading or
-     * recording anything. Powers --check and the idempotent no-op gate. Returns
-     * devMode=true (and no repo statuses) when dev mode short-circuits to local paths.
-     */
+    
     async checkForUpdates(): Promise<{ devMode: boolean; repos: RepoUpdateStatus[] }>{
         const dev = await this.#devSources();
         if(dev) return { devMode: true, repos: [] };

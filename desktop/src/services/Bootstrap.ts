@@ -2,14 +2,10 @@ import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-// Local desktop is single-tenant — one fixed user, nobody else connects. These
-// deterministic defaults make the account stable across restarts: even if the DB
-// is reset or app-config.json is lost, the next bootstrap re-creates (or signs
-// back into) the SAME user/team/cluster instead of minting a fresh random one.
 const LOCAL_DEFAULTS = {
     fullName: 'Local',
     email: 'local@volt.local',
-    password: 'volt-local-desktop', // ≥8 chars (server password policy)
+    password: 'volt-local-desktop', 
     teamName: 'Local',
     clusterName: 'Local Cluster'
 } as const;
@@ -42,8 +38,6 @@ interface TeamClusterResponse{
     teamCluster: { _id: string };
 }
 
-// HTTP error that preserves the status code so callers can branch on it (e.g.
-// treat a 409 "email already registered" as "fall back to sign-in").
 class HttpError extends Error{
     constructor(public readonly status: number, message: string){
         super(message);
@@ -76,9 +70,9 @@ export default class Bootstrap{
         const password = acc?.password ?? LOCAL_DEFAULTS.password;
         const [firstName, ...rest] = (acc?.fullName ?? LOCAL_DEFAULTS.fullName).trim().split(/\s+/);
 
-        // Idempotent: the user may already exist (DB kept but app-config.json was
-        // lost). Try to create it; on 409 (email already registered) sign in and
-        // reuse the existing team/cluster instead of failing or duplicating.
+        
+        
+        
         let auth: AuthResponse;
         let reused = false;
         try{

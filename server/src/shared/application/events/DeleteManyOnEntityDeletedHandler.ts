@@ -8,7 +8,6 @@ interface DeletableRepository {
 
 export abstract class DeleteManyOnEntityDeletedHandler<TEvent extends IDomainEvent>
     implements IEventHandler<TEvent> {
-
     protected abstract readonly repository: DeletableRepository;
     protected abstract readonly payloadKey: string;
     protected abstract readonly filterField: string;

@@ -2,16 +2,11 @@ import { teamRefField, userRefField } from '@shared/infrastructure/persistence/m
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-/**
- * LatexAsset persisted shape. Formerly lived in `entities/LatexAsset` — inlined
- * here (pollium style) so the model is self-contained after the domain-entity
- * layer was removed.
- */
 export interface LatexAssetProps {
     team: string;
     document: string;
     originalName: string;
-    /** Relative path within the document's virtual file tree (e.g. `images/fig1.png`). */
+    
     path: string;
     storageKey: string;
     url: string;

@@ -20,16 +20,16 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
 
     private unsubscribeFromTeamSubscription?: () => void;
 
-    // `TeamPresenceService` and `TeamRoomPresenceService` have no runtime DI
-    // dependencies of their own, so they're safe to construct eagerly here.
+    
+    
     private readonly teamPresenceService = new TeamPresenceService();
     private readonly teamRoomPresenceService = new TeamRoomPresenceService();
     private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
 
-    // `EventBus` is registered in `registerAllDependencies` (which hasn't run
-    // yet when this module is constructed at import time), so it must be
-    // resolved lazily — on first actual use — to avoid the eager-singleton DI
-    // boot race.
+    
+    
+    
+    
         private readonly eventBus = eventBus;
 
     constructor() {

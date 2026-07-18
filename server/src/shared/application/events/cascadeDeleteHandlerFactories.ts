@@ -36,12 +36,6 @@ const buildCascadeHandler = (
     return instance as unknown as IEventHandler<IDomainEvent>;
 };
 
-/**
- * Generates a `team.deleted` handler that cascades to `deleteMany` on the
- * given repository AND auto-subscribes it to the event bus. Replaces the
- * old pattern where the returned class had to be listed in a subscribers
- * manifest.
- */
 export const deleteManyOnTeamDeleted = (repository: DeletableRepository, options: HandlerFactoryOptions = {}): void => {
     subscribeHandler('team.deleted', buildCascadeHandler(DeleteManyOnTeamDeletedHandler, repository, options));
 };

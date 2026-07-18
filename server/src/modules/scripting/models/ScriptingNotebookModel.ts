@@ -7,11 +7,6 @@ export interface ScriptingNotebookContainerResources {
     memoryMB: number;
 }
 
-/**
- * The scripting notebook's persisted property shape. Previously lived in the
- * (now-deleted) `entities/ScriptingNotebook` file; inlined here since the model
- * is the only remaining consumer (the service talks to the model directly).
- */
 export interface ScriptingNotebookProps {
     team: string;
     teamCluster?: string;

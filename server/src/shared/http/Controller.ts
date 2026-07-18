@@ -9,12 +9,6 @@ import type { AuthenticatedRequest } from '@shared/infrastructure/http/middlewar
 const classMiddleware = new WeakMap<object, RequestHandler[]>();
 const handlerMiddleware = new WeakMap<object, Map<string | symbol, RequestHandler[]>>();
 
-/**
- * Attach Express middleware. On the class it wraps every route (auth + team
- * scope); on a method it wraps that route only (uploads, rate limits). This is
- * the pollium `@Middleware` — guards live on the controller, not in a separate
- * mount layer.
- */
 export const Middleware = (...middleware: RequestHandler[]): ClassDecorator & MethodDecorator =>
     ((target: object, handlerName?: string | symbol): void => {
         if (handlerName === undefined) {
@@ -35,13 +29,6 @@ const isPaginated = (value: unknown): value is PaginatedResult<unknown> =>
         && Array.isArray((value as PaginatedResult<unknown>).data)
         && typeof (value as PaginatedResult<unknown>).totalPages === 'number';
 
-/**
- * Base for pollium-style controllers: methods are bound to wire endpoints with
- * `@Route(...)` and delegate to a service the controller `new`s itself. No route
- * file, no createHttpModule, no DI. `buildRouter()` turns the decorated methods
- * into an Express router; the router is mounted directly (the contract path is
- * absolute).
- */
 export default abstract class Controller {
     buildRouter(): Router {
         const router = Router();
@@ -71,9 +58,9 @@ export default abstract class Controller {
     }
 
     #respond(res: Response, result: unknown, statusCode?: number): void {
-        // Streaming / download handlers take `@Res()`, write the response
-        // themselves and return void — once they've begun the response there is
-        // nothing left to send here.
+        
+        
+        
         if (res.headersSent || res.writableEnded) {
             return;
         }

@@ -3,9 +3,6 @@ interface InMemoryAbsoluteExpiryStoreOptions<TValue> {
     sweepIntervalMs: number;
 }
 
-/**
- * Stores entries in memory until their absolute expiration time passes.
- */
 export class InMemoryAbsoluteExpiryStore<TKey, TValue> {
     private readonly entriesByKey = new Map<TKey, TValue>();
     private readonly sweepTimer: ReturnType<typeof setInterval>;

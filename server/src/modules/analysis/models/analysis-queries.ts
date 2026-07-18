@@ -1,10 +1,4 @@
-/**
- * Plain query functions for the Analysis model, replacing the deleted
- * AnalysisRepository for the two custom queries it used to expose
- * (`findRuntimeTargetsByTrajectoryId`, `findByTeamAndSearch`) that are
- * consumed from more than one module. ActiveRecord style: talks directly to
- * AnalysisModel, no repository/mapper indirection.
- */
+
 import mongoose from 'mongoose';
 import type { FilterQuery } from 'mongoose';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';

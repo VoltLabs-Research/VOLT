@@ -662,12 +662,7 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    /**
-     * Writes the per-atom visibility mask (in original GLB-vertex order) into the
-     * `aVisible` attribute the point-cloud fragment shader discards on. A null
-     * mask resets every atom to visible (1.0). When a morton sort has permuted
-     * the vertices, the mask is reordered to match the permutation.
-     */
+    
     setVisibilityMask(mask: Uint8Array | null) {
         if (this.traversalCache.pointClouds.length === 0) return;
 
@@ -704,15 +699,7 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    /**
-     * Tints the atoms in `mask` (original GLB-vertex order, 1 = selected) with
-     * `color`, leaving the rest at their baked color. A null mask/color restores
-     * the original per-vertex colors. Mirrors `updateSceneColor`'s backup/restore
-     * (own `preHighlightColors` key) and `setVisibilityMask`'s morton reordering.
-     *
-     * ponytail: if a scene-wide color override is also active they share the
-     * `color` buffer; last writer wins. Combine both only if a user reports it.
-     */
+    
     setSelectionHighlight(mask: Uint8Array | null, color: string | null) {
         if (this.traversalCache.pointClouds.length === 0) return;
 
@@ -741,8 +728,8 @@ export class FractalEngine {
                 return;
             }
 
-            // Always restore from the pristine snapshot first so changing the
-            // selection/color doesn't compound onto a previous highlight.
+            
+            
             if (userData.preHighlightColors) {
                 array.set(userData.preHighlightColors);
             } else {
@@ -1074,5 +1061,4 @@ export class FractalEngine {
         });
         return points;
     }
-
 }

@@ -3,10 +3,6 @@ import { sileo } from 'sileo';
 import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/ui/utilities/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';
 
-/**
- * SileoPromiseOptions is declared in sileo's types but not included
- * in its public export list. We re-declare it here.
- */
 interface SileoPromiseOptions<T = unknown> {
     loading: SileoOptions;
     success: SileoOptions | ((data: T) => SileoOptions);
@@ -46,7 +42,6 @@ export const showPromise = <T,>(
     return sileo.promise(promise, sileoOpts);
 };
 
-/** Runs a mutation promise wrapped in standardized CRUD toast feedback. */
 export const runCrudMutation = <T,>(
     promise: Promise<T> | (() => Promise<T>),
     crud: Parameters<typeof createCrudToastOptions>[0]

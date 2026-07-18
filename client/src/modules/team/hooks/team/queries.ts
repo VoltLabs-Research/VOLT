@@ -24,8 +24,6 @@ import type {
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
 
-/** Team query keys. */
-
 const teamKeys = buildKeys<{
     teams: void;
 }>('teams');
@@ -43,8 +41,6 @@ export const TEAM_QUERY_KEYS = {
 };
 
 registerPreservedQueryKey(TEAM_QUERY_KEYS.teams()[0] as string);
-
-/** Team-scoped query roots used for bulk cache cleanup. */
 
 const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
     'team-permissions',
@@ -89,8 +85,6 @@ const matchesTeamScopedQuery = (queryKey: readonly unknown[], teamId: string) =>
     return getQueryTeamId(queryKey) === teamId;
 };
 
-/** Team cache helpers. */
-
 const setTeamsQueryData = (updater: (previous?: Team[]) => Team[] | undefined) => {
     queryClient.setQueryData<Team[]>(TEAM_QUERY_KEYS.teams(), updater);
 };
@@ -102,8 +96,6 @@ const removeTeamScopedQueries = (teamId: string) => {
         predicate: (query) => matchesTeamScopedQuery(query.queryKey, teamId)
     });
 };
-
-/** Team queries. */
 
 const useTeamsQueryBase = createQuery<void, Team[]>(
     TEAM_QUERY_KEYS.teams,
@@ -140,8 +132,6 @@ export const usePreviewJoinByCodeQuery = (
 ) => {
     return usePreviewJoinByCodeQueryBase(params, options);
 };
-
-/** Team mutations. */
 
 export const useCreateTeamMutation = createMutation<Team, CreateTeamInput>(
     teamService.create,

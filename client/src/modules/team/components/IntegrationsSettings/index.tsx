@@ -56,11 +56,6 @@ const isAIProvider = (value: string): value is AIProvider => {
     return AI_PROVIDER_VALUES.some((provider) => provider === value);
 };
 
-/**
- * The saved custom endpoint for a provider, if any. Ollama always shows its
- * default base URL (it has no public API); every other provider leaves the
- * field blank, meaning "use the provider's default endpoint".
- */
 const resolveEndpoint = (provider: AIProvider | string | null, metadata?: Record<string, unknown>): string => {
     if (typeof metadata?.baseUrl === 'string') {
         return metadata.baseUrl;

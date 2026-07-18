@@ -4,14 +4,8 @@ import assert from 'node:assert/strict';
 import { ModuleRegistry } from './ModuleRegistry';
 import { defineModule } from './defineModule';
 
-/** The kernel keys used across these tests (tier: 'kernel'). */
 const KERNEL_KEYS = ['auth', 'session', 'socket', 'team'] as const;
 
-/**
- * Build a registry pre-loaded with the four kernel modules plus whatever extra
- * manifests a test supplies. Kernel modules are declared as `kernel` tier with
- * no deps so they are valid on their own.
- */
 const makeRegistry = (...extra: Parameters<ModuleRegistry['register']>[0][]): ModuleRegistry => {
     const registry = new ModuleRegistry();
     for (const key of KERNEL_KEYS) {

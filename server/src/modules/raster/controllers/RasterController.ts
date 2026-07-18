@@ -11,19 +11,6 @@ import logger from '@shared/infrastructure/logger';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import type { Response } from 'express';
 
-/**
- * The single HTTP controller for the raster module (pollium style): every route
- * is bound with `@Route(rasterRoutes.x)` and delegates to a {@link RasterService}
- * the controller `new`s itself. The class-level
- * `@Middleware(protect, teamScoped(Resource.RASTER))` replaces the old mount-time
- * auth + team-scope layer (`basePath /api/rasters/:teamId`, `resource RASTER`).
- * `triggerRasterization` returns 202 (Accepted) via `@Status`.
- * `getRasterFramePNG` handles BOTH the frame-only and analysis+model wire routes
- * and streams the PNG via `@Res()`, reproducing the former prepared-download
- * stream controller verbatim (prepare → headers → close/error handlers → pipe);
- * because it writes and awaits the response itself, the `Controller` base's
- * responder no-ops on its `headersSent`/`writableEnded` guard.
- */
 @Middleware(protect, teamScoped(Resource.RASTER))
 export default class RasterController extends Controller {
     #service = new RasterService();

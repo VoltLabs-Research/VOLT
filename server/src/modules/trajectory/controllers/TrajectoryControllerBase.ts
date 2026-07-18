@@ -31,19 +31,6 @@ const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
     return header;
 };
 
-/**
- * Shared base for the trajectory module's pollium-style controllers. It carries
- * the {@link TrajectoryService} the controllers `new`, plus the request-assembly
- * (`buildControllerParams` + the same `extendParams` merges the generated
- * controllers used) and response helpers (paginated / stream-pipe / atoms
- * columnar-binary) reproduced byte-for-byte from the previous single controller.
- *
- * Concrete controllers ({@link TrajectoryController}, CanvasController,
- * DiscoverController) add the `@Route`/`@Middleware`-decorated handlers; because
- * every handler here writes the response itself (via `@Res()`), the
- * `Controller` base skips its own responder (its `headersSent`/`writableEnded`
- * guard), preserving the exact `BaseResponse` envelopes and stream headers.
- */
 export default abstract class TrajectoryControllerBase extends Controller {
     protected readonly service = new TrajectoryService();
 
@@ -82,13 +69,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
         BaseResponse.paginated(res, value, value._meta);
     }
 
-    /**
-     * Reproduces `BaseStreamController.handleSuccess`: applies the response
-     * headers, wires request-close and stream-error handlers, then pipes. The
-     * returned promise resolves once the response has finished (or was closed /
-     * errored) so the awaiting handler returns only after the response has been
-     * written — the `Controller` base then no-ops on its guard.
-     */
+    
     protected pipeStream(res: Response, stream: Readable, headers: Record<string, string>): Promise<void> {
         return new Promise<void>((resolve) => {
             for (const [name, value] of Object.entries(headers)) {
@@ -120,7 +101,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
         });
     }
 
-    /** Default stream headers, matching `BaseStreamController.getHeaders`. */
+    
     protected defaultStreamHeaders(): Record<string, string> {
         return {
             'Content-Type': 'application/octet-stream',
@@ -128,7 +109,7 @@ export default abstract class TrajectoryControllerBase extends Controller {
         };
     }
 
-    /** GLB/model passthrough headers, matching the former canvas controllers. */
+    
     protected passthroughModelHeaders(value: {
         stream?: unknown;
         contentEncoding?: string;

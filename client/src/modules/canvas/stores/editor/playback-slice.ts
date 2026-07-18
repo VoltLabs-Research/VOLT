@@ -176,15 +176,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         })();
     },
 
-    /**
-     * Drives the playback clock from the R3F `useFrame` callback.
-     *
-     * Called every rendered frame with the high-resolution clock reading. The
-     * slice no longer schedules its own `requestAnimationFrame` — the Canvas
-     * already pumps a single rAF loop under `frameloop="demand"`, and this
-     * method reuses it so playback is naturally frame-demand aware (playback
-     * stops advancing when the tab is hidden or the canvas is paused).
-     */
+    
     tick(now: number) {
         const state = get();
         if (!state.isPlaying) {
@@ -257,12 +249,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         updateCurrentTimestep(timestep, set, get);
     },
 
-    /**
-     * Sets the start boundary of the playback range.
-     * Clamps to not exceed `rangeEnd` and adjusts `currentTimestep` if it falls outside.
-     *
-     * @param value - The new range start value, or `undefined` to clear.
-     */
+    
     setRangeStart(value: number | undefined) {
         const { rangeEnd, currentTimestep } = get();
         let clamped = value;
@@ -287,12 +274,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         set(updates);
     },
 
-    /**
-     * Sets the end boundary of the playback range.
-     * Clamps to not be below `rangeStart` and adjusts `currentTimestep` if it falls outside.
-     *
-     * @param value - The new range end value, or `undefined` to clear.
-     */
+    
     setRangeEnd(value: number | undefined) {
         const { rangeStart, currentTimestep } = get();
         let clamped = value;

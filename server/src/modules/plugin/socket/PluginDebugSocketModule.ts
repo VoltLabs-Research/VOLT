@@ -118,9 +118,9 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 export class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
-    // `PluginDependencyResolverService` and `WorkflowValidatorService` are plain
-    // classes (no DI, no repository indirection) constructed manually here,
-    // same as their usage in `PluginService.ts`.
+    
+    
+    
     private readonly pluginDependencyResolverService: PluginDependencyResolverService;
     private readonly workflowValidator: WorkflowValidatorService;
 

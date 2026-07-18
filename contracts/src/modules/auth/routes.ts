@@ -10,11 +10,6 @@ import type {
     DeleteAccountResponse
 } from './domain';
 
-/**
- * Every client-facing auth endpoint, typed by request/response. OAuth
- * login/callback are browser-redirect routes (passport) and are intentionally
- * not modelled here — they carry no JSON contract.
- */
 export const authRoutes = {
     signIn: post<SignInInput, AuthSession>('/api/auth/sessions'),
     localSignIn: post<never, AuthSession>('/api/auth/sessions/local'),

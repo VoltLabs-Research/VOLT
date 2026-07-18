@@ -2,7 +2,6 @@ import type { Persistable } from '@shared/infrastructure/persistence/mongo/Mongo
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
-/** Persisted shape of an AI conversation (the Mongoose model is the record). */
 export interface AIConversationProps {
     userId: string;
     teamId: string;

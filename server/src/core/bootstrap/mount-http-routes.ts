@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { getEnabledModules } from '@core/bootstrap/module-state';
 import logger from '@shared/infrastructure/logger';
 
-/** Anything that can produce an Express router — a pollium Controller subclass or a standalone proxy controller. */
 interface RouterProvider {
     buildRouter(): Router;
 }
@@ -45,12 +44,6 @@ interface ControllerBinding {
     Controller: new () => RouterProvider;
 }
 
-/**
- * Pollium-style routing: every controller carries its own wire paths (@Route)
- * and its own guards (@Middleware(protect, teamScoped(...))). Mounting is just
- * "build the router of every enabled module's controller" — no per-module route
- * file, no createHttpModule, no mount-time auth/team-scope layer.
- */
 const CONTROLLERS: ControllerBinding[] = [
     { moduleKey: 'system', Controller: SystemController },
     { moduleKey: 'auth', Controller: AuthController },

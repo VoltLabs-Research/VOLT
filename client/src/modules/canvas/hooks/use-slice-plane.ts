@@ -26,12 +26,6 @@ export interface UseSlicePlaneReturn {
     handleVisualizePlaneChange: (_fieldKey: string, value: string | number | boolean) => void;
 }
 
-/**
- * Drives one slice-plane pipeline stage. The stage's own enabled toggle (in the
- * pipeline row) gates whether the plane clips — there is no inner "Enabled"
- * control here. Distance auto-centering on the model bounds is handled by
- * use-pipeline-slice-planes when the config is still pristine.
- */
 const useSlicePlane = (stageId: string, trajectoryId?: string): UseSlicePlaneReturn => {
     const stage = useCanvasPipelineStore((s) =>
         (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)?.find((entry) => entry.id === stageId)

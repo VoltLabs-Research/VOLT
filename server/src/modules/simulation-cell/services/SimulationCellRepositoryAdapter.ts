@@ -11,7 +11,6 @@ const simulationCellMapper = createMongoMapperFromFactory<SimulationCellLike, Si
 
 export default class SimulationCellRepositoryAdapter
     extends MongooseBaseRepository<SimulationCellLike, SimulationCellProps, SimulationCellDocument> {
-
     constructor() {
         super(SimulationCellModel, simulationCellMapper);
     }

@@ -19,7 +19,6 @@ import SwitchStatementEditor from './editors/SwitchStatementEditor';
 import SwitchCaseEditor from './editors/SwitchCaseEditor';
 import ConnectorLayoutEditor from './ConnectorLayoutEditor';
 
-
 interface NodeEditorProps {
     node: Node;
 }

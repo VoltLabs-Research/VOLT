@@ -9,11 +9,6 @@ export interface UseExpressionSelectResult {
     autoRoute: boolean;
 }
 
-/**
- * Produces a per-atom boolean visibility mask from a boolean expression.
- * Delegates evaluation to useExpressionEvaluator; the mask is 1 for atoms
- * where the expression is truthy (non-zero), 0 otherwise.
- */
 const useExpressionSelect = (
     expression: string,
     atomBuffer: GetAtomsResponse | null | undefined,

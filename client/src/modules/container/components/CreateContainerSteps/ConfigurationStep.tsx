@@ -133,11 +133,6 @@ interface OptionalConfigSectionProps {
     children: ReactNode;
 }
 
-/**
- * Collapsible card for optional configuration. Surfaces an error indicator on the
- * header and auto-expands when it contains validation errors so problems are never
- * hidden behind a collapsed section.
- */
 const OptionalConfigSection = ({
     title,
     description,

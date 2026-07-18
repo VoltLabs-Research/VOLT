@@ -264,35 +264,28 @@ const clonePerformanceSettings = (state: PerformanceSettingsState): PerformanceS
     interactionDegrade: { ...state.interactionDegrade }
 });
 
-/** Returns the canonical display label for a performance preset. */
 export const getPerformancePresetLabel = (preset: PerformancePreset): string => PERFORMANCE_PRESET_REGISTRY[preset].label;
 
-/** Returns a cloned preset configuration so callers can safely mutate local state. */
 export const getPerformancePresetState = (preset: PerformancePreset): PerformanceSettingsState => {
     return clonePerformanceSettings(PERFORMANCE_PRESET_REGISTRY[preset].settings);
 };
 
-/** Returns the renderer power preference owned by a performance preset. */
 export const getPerformancePresetPowerPreference = (preset: PerformancePreset): PowerPreference => {
     return PERFORMANCE_PRESET_REGISTRY[preset].powerPreference;
 };
 
-/** Checks whether a runtime string matches a supported performance preset. */
 export const isPerformancePreset = (value: string): value is PerformancePreset => {
     return PERFORMANCE_PRESET_ORDER.some((preset) => preset === value);
 };
 
-/** Checks whether a runtime string matches a supported WebGL power preference. */
 export const isPowerPreference = (value: string): value is PowerPreference => {
     return POWER_PREFERENCE_OPTIONS.some((option) => option.value === value);
 };
 
-/** Ensures a persisted performance state remains isolated from preset registry references. */
 export const getValidatedPerformanceSettingsState = (state: PerformanceSettingsState): PerformanceSettingsState => {
     return clonePerformanceSettings(state);
 };
 
-/** Resolves the runtime DPR value used by the canvas for the current interaction state. */
 export const resolveCanvasDpr = (
     settings: Pick<CanvasRuntimeSource, 'dpr'> & CanvasRuntimeInteractionSource,
     options: CanvasRuntimeResolutionOptions
@@ -314,7 +307,6 @@ export const resolveCanvasDpr = (
     return [min, dpr.max];
 };
 
-/** Resolves the runtime canvas DPR and performance props from a performance state snapshot. */
 export const resolveCanvasRuntimeProps = (
     settings: CanvasRuntimeSource,
     options: CanvasRuntimeResolutionOptions
@@ -323,7 +315,6 @@ export const resolveCanvasRuntimeProps = (
     performance: settings.performance
 });
 
-/** Resolves the AdaptiveDpr component props from a performance state snapshot. */
 export const resolveAdaptiveDprProps = (settings: Pick<CanvasRuntimeSource, 'dpr'>): AdaptiveDprProps => ({
     enabled: settings.dpr.mode === DprMode.Adaptive,
     pixelated: settings.dpr.pixelated

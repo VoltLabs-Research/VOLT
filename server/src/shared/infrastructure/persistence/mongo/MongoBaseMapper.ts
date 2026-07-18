@@ -43,7 +43,6 @@ export class BaseMapper<
     TProps,
     TDocument extends object
 > implements IMapper<TDomain, TProps, HydratedDocument<TDocument>> {
-
     constructor(
         private readonly entityCreator: EntityConstructor<TDomain, TProps> | EntityFactory<TDomain, TProps>,
         private readonly relationKeys: Array<Extract<keyof TProps, string>> = [],

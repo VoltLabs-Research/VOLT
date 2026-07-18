@@ -1,14 +1,4 @@
-/**
- * Canonical, neutral port contract for the team job-maintenance service.
- *
- * Extracted from `@modules/jobs/domain/port/ITeamJobMaintenanceService` during
- * the detachable-modules migration. Several modules (analysis, trajectory)
- * inject this service and need its interface + result types without importing
- * `@modules/jobs`. The DI token is the neutral
- * `COMPUTE_TOKENS.TeamJobMaintenanceService`. Pure types — no `@modules/*`
- * coupling. The original owner file re-exports every name below, so existing
- * importers compile unchanged.
- */
+
 export interface TeamClusterFailureDetail {
     teamClusterId: string;
     requestedJobs: number;

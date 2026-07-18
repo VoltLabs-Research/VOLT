@@ -25,13 +25,6 @@ const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 const isDuplicateKeyError = (error: unknown): boolean =>
     Boolean(error && typeof error === 'object' && 'code' in error && Reflect.get(error, 'code') === 11000);
 
-/**
- * The single application service for the early-access module (pollium style):
- * holds the whole create-subscription use case, `new`ed by the controller, and
- * talks to the Mongoose {@link EarlyAccessSubscriptionModel} / TeamModel
- * directly — no repository, entity, mapper, use case or DI. Throws typed
- * {@link ApplicationError}s (no Result channel).
- */
 export default class EarlyAccessService {
     async createSubscription(teamId: string, input: CreateEarlyAccessSubscriptionInput): Promise<CreateEarlyAccessSubscriptionResponse> {
         const team = await TeamModel.findById(teamId).select('name').exec();

@@ -22,9 +22,9 @@ export interface DailyActivityRecordView {
 
 export interface GetTeamActivitySummaryInput {
     teamId: string;
-    /** Number of days to look back. Defaults to 7. */
+    
     range?: number;
-    /** When provided, scopes the summary to a single user. */
+    
     userId?: string;
 }
 
@@ -46,14 +46,6 @@ const toActivityUser = (user: unknown): DailyActivityRecordView['user'] => {
     };
 };
 
-/**
- * The single application service for the daily-activity module (pollium style):
- * folds every use-case + repository query verbatim, talks to the Mongoose
- * {@link DailyActivityModel} directly, and throws typed {@link ApplicationError}s
- * (no Result channel). `new`ed by the controller, the activity AI tool, and the
- * event handlers (online-minutes recorder, per-event activity logger, cascade
- * deletes) — no DI, no use case, no repository.
- */
 export default class DailyActivityService {
     async getTeamActivitySummary(input: GetTeamActivitySummaryInput): Promise<GetTeamActivitySummaryResult> {
         const range = input.range !== undefined && Number.isFinite(input.range) && input.range > 0

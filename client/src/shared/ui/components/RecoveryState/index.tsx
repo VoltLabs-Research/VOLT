@@ -20,9 +20,9 @@ interface RecoveryStateProps {
     onRetry?: () => void;
     showBack?: boolean;
     className?: string;
-    /** Forwarded to AccessDenied when tone is AccessDenied: the permission(s) the user lacks. */
+    
     requiredPermissions?: string[];
-    /** Forwarded to AccessDenied when tone is AccessDenied: who to ask for access. */
+    
     contactHint?: string;
 };
 

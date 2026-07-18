@@ -467,7 +467,6 @@ export default class ContainerService {
         }
     }
 
-
     async listFolders(teamId: string, query: ContainerFolderQuery): Promise<PaginatedResult<ContainerFolderView>> {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 500;
@@ -533,7 +532,6 @@ export default class ContainerService {
             throw new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, 'Failed to delete Container folder', 500);
         }
     }
-
 
     async #getOwnedByTeam(containerId: string, teamId: string): Promise<ContainerDoc> {
         const container = await ContainerModel.findById(containerId);

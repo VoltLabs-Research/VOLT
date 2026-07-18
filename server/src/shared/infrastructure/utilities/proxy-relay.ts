@@ -25,7 +25,6 @@ export const normalizeWebSocketCloseCode = (code?: number): number | undefined =
     return isSendableWebSocketCloseCode(code) ? code : 1000;
 };
 
-/** Converts `ws` raw payloads into a sendable buffer or string. */
 export const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
     if (typeof data === 'string') {
         return data;
@@ -42,7 +41,6 @@ export const normalizeWebSocketPayload = (data: RawData): Buffer | string => {
     return Buffer.from(data);
 };
 
-/** Writes an HTTP upgrade failure response directly to the raw socket. */
 export const writeUpgradeError = (socket: Duplex, statusCode: number, message: string): void => {
     if (socket.destroyed || socket.writableEnded) {
         return;

@@ -26,11 +26,6 @@ export interface WhiteboardCanvasProps {
 const BackIcon = <ArrowLeft size={16} />;
 const InsertImageIcon = <ImagePlus size={16} />;
 
-/**
- * Thin wrapper that co-locates Excalidraw and MainMenu in the same
- * dynamic chunk. Must be imported via React.lazy() to keep the large
- * Excalidraw bundle out of the initial JS payload.
- */
 const WhiteboardCanvas = ({
     name,
     initialData,

@@ -63,12 +63,6 @@ export interface TeamClusterDaemonCommandMessage {
     payload?: Record<string, unknown>;
 }
 
-/**
- * Binary command carrier. `envelope` is a `Uint8Array` laid out as
- * `[u32 opId][u16 kind][u32 len][payload...]` (see
- * `@shared/infrastructure/types/reverseChannelBinary`). Socket.IO v4
- * serializes typed-array fields as native binary attachments — no base64.
- */
 interface TeamClusterDaemonCommandBinaryMessage {
     type: 'command-binary';
     requestId: string;
@@ -87,11 +81,6 @@ export interface TeamClusterDaemonSocketResponsePayload<T = unknown> {
     streamId?: string;
 }
 
-/**
- * Binary response carrier. `envelope` holds the structured binary result
- * (mask, Float32 values, etc.). When `ok === false`, the envelope uses kind
- * `Error` with a UTF-8 JSON blob `{code, message}` as payload.
- */
 interface TeamClusterDaemonSocketBinaryResponsePayload {
     type: 'response-binary';
     requestId: string;
@@ -150,25 +139,16 @@ export interface TeamClusterDaemonSessionEndPayload {
     error?: string;
 }
 
-/**
- * Replaces the full exposure registry stored in volt/server for a connected team cluster.
- */
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
     exposures: TeamClusterServiceExposure[];
 }
 
-/**
- * Applies additive exposure changes without replacing the full registry.
- */
 interface TeamClusterDaemonExposureUpsertPayload {
     type: 'exposure-upsert';
     exposures: TeamClusterServiceExposure[];
 }
 
-/**
- * Removes exposures that are no longer published by the daemon.
- */
 interface TeamClusterDaemonExposureRemovePayload {
     type: 'exposure-remove';
     exposureIds: string[];
@@ -193,9 +173,6 @@ type TeamClusterDaemonTunnelOpenPayload =
     | TeamClusterDaemonExposureTunnelOpenPayload
     | TeamClusterDaemonDirectTunnelOpenPayload;
 
-/**
- * Acknowledges the final state of a tunnel session transition.
- */
 export interface TeamClusterDaemonTunnelStatePayload {
     type: 'tunnel-state';
     sessionId: string;
@@ -204,10 +181,6 @@ export interface TeamClusterDaemonTunnelStatePayload {
     error?: string;
 }
 
-/**
- * Carries raw tunnel bytes for HTTP, WebSocket or arbitrary TCP sessions.
- * `chunk` travels as a native Socket.IO binary attachment — no base64.
- */
 export interface TeamClusterDaemonTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
@@ -217,18 +190,12 @@ export interface TeamClusterDaemonTunnelDataPayload {
     requiresAck?: boolean;
 }
 
-/**
- * Flow-control acknowledgement for bytes accepted by the opposite tunnel end.
- */
 export interface TeamClusterDaemonTunnelDrainPayload {
     type: 'tunnel-drain';
     sessionId: string;
     sequence: number;
 }
 
-/**
- * Closes a generic tunnel session on either side of the reverse channel.
- */
 export interface TeamClusterDaemonTunnelClosePayload {
     type: 'tunnel-close';
     sessionId: string;

@@ -51,23 +51,16 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
     if (stage.type === 'expression-select') {
         const config = stage.config as ExpressionSelectStageConfig;
         const expression = config.expression?.trim();
-        // 'color' is a live viewer highlight only — nothing for the daemon to do.
+        
         if (!expression || config.action !== 'delete') return null;
-        // The daemon's --select KEEPS matched atoms, so to DELETE the selection we
-        // dispatch its negation (keep everything that does NOT match).
+        
+        
         return { kind, config: { expression: `!(${expression})` } };
     }
 
     return { kind, config: stage.config as unknown as Record<string, unknown> };
 };
 
-/**
- * The pipeline-wide Run control. Collects the ordered ENABLED stages and POSTs
- * them as one pipeline-execution (the client no longer fires one analysis per
- * stage). Cluster + selected-timesteps live here as per-run local state (they are
- * not persisted on any stage). On success it marks the run's stages executed and
- * registers a pending execution per returned analysisId for completion toasts.
- */
 const PipelineRunControl = ({
     trajectory,
     trajectoryId,
@@ -190,9 +183,9 @@ const PipelineRunControl = ({
                     trajectoryId,
                     pluginName: pluginStageNames[index] ?? 'Analysis',
                     timestep: viewTimestep,
-                    // Every stage auto-selects as it completes, so the selection follows
-                    // the pipeline stage by stage until the user manually picks one (which
-                    // cancels the chain in use-canvas-sidebar-scene).
+                    
+                    
+                    
                     autoSelect: true
                 });
             });

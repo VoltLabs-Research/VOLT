@@ -10,11 +10,11 @@ interface AccessDeniedProps {
     showBack?: boolean;
     className?: string;
     headingLevel?: 'h1' | 'h2' | 'h3';
-    /** Human-readable names of the permission(s) the user is missing. Rendered as a hint so the user knows exactly what to request. */
+    
     requiredPermissions?: string[];
-    /** Who to ask for access (e.g. a team owner's name). Falls back to a generic "team administrator" prompt. */
+    
     contactHint?: string;
-    /** Extra actions rendered next to "Go back" (e.g. a "Request access" button). */
+    
     actions?: ReactNode;
 };
 

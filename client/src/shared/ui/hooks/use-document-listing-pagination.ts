@@ -7,9 +7,6 @@ import { useCallback, useRef, useEffect, useMemo } from 'react';
 import type { PaginationParams } from './use-pagination-params';
 import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 
-/**
- * Props for useDocumentListingPagination hook.
- */
 interface UseDocumentListingPaginationProps<T extends { _id: string }, TContext = Record<string, never>> {
     queryKey: QueryKey;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
@@ -19,9 +16,6 @@ interface UseDocumentListingPaginationProps<T extends { _id: string }, TContext 
     enabled?: boolean;
 };
 
-/**
- * Return type for useDocumentListingPagination hook.
- */
 interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
     data: T[];
     isLoading: boolean;
@@ -34,11 +28,6 @@ interface UseDocumentListingPaginationReturn<T extends { _id: string }> {
     refresh: () => void;
 };
 
-/**
- * Hook to manage pagination logic for DocumentListing component.
- * Uses TanStack Query's useInfiniteQuery to manage server state.
- * URL search params are still used for search and limit via usePaginationParams.
- */
 function useDocumentListingPagination<T extends { _id: string }, TContext = Record<string, never>>(
     props: UseDocumentListingPaginationProps<T, TContext>
 ): UseDocumentListingPaginationReturn<T> {

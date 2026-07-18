@@ -1,11 +1,5 @@
-// Wire response types for the team module — the shapes the client reads back
-// from `data`. `_id`, refs and dates are strings on the wire. These mirror the
-// former DTO output types (CreateTeamOutputDTO, ListSecretKeysByTeamIdOutputDTO,
-// etc.) now that the use-cases/DTOs are folded into the resource services.
 
-// ---- Team ------------------------------------------------------------------
 
-/** A team as the client sees it (populated `owner` may be a nested object). */
 export interface PersistedTeam{
     _id: string;
     name: string;
@@ -46,9 +40,6 @@ export interface DeleteInviteCodeResponse{
     message: string;
 }
 
-// ---- Team members ----------------------------------------------------------
-
-/** A team member (with content counts + presence) as the client sees it. */
 export interface PersistedTeamMember{
     _id: string;
     team: unknown;
@@ -63,8 +54,6 @@ export interface PersistedTeamMember{
     whiteboardsCount?: number;
 }
 
-// ---- Team roles ------------------------------------------------------------
-
 export interface PersistedTeamRole{
     _id: string;
     team: string;
@@ -78,8 +67,6 @@ export interface PersistedTeamRole{
 export interface DeleteTeamRoleResponse{
     success: boolean;
 }
-
-// ---- Team invitations ------------------------------------------------------
 
 export interface PersistedTeamInvitation{
     _id: string;
@@ -100,15 +87,13 @@ export interface TeamInvitationActionResponse{
     message: string;
 }
 
-// ---- Secret keys -----------------------------------------------------------
-
 export interface CreateSecretKeyResponse{
     secretKeyId: string;
     teamId: string;
     roleId: string;
     name: string;
     keyPrefix: string;
-    /** The plaintext key — returned once at creation and never again. */
+    
     secretKey: string;
     isActive: boolean;
     createdAt: string;
@@ -148,13 +133,9 @@ export interface CurrentSecretKeyResponse{
     updatedAt: string;
 }
 
-/** Secret-key usage analytics (team-wide metrics + per-key). Loose on purpose. */
 export type SecretKeyTeamMetricsResponse = Record<string, unknown>;
 
-/** Secret-key usage analytics for a single key. Loose on purpose. */
 export type SecretKeyUsageResponse = Record<string, unknown>;
-
-// ---- AI integrations -------------------------------------------------------
 
 export interface EnabledModel{
     id: string;

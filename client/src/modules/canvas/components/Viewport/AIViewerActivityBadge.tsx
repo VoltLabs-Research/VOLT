@@ -4,12 +4,6 @@ import { useEffect, useState } from 'react';
 import { IoSparklesOutline } from 'react-icons/io5';
 import './AIViewerActivityBadge.css';
 
-/**
- * Transient "Volt AI is adjusting the view" badge. AI viewer tools call
- * `markViewerActing()` on the canvas bridge before mutating camera/playback/etc;
- * this badge appears for that window so the user understands a sudden camera or
- * frame jump came from the assistant, not a glitch.
- */
 const AIViewerActivityBadge = () => {
     const aiActingUntil = useCanvasBridgeStore((state) => state.aiActingUntil);
     const [visible, setVisible] = useState(false);

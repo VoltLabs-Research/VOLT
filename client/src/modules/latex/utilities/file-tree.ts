@@ -13,18 +13,13 @@ const fileTreeNameCollator = new Intl.Collator(undefined, {
     sensitivity: 'base'
 });
 
-/** A node in the virtual file tree derived from path prefixes. */
 export interface FileTreeNode {
-    /** Unique identifier for DnD and React keys. */
+    
     id: string;
-    /** Display name (folder name or filename). */
+    
     name: string;
     type: 'folder' | 'file' | 'asset';
-    /**
-     * For folders: the full directory path prefix, e.g. `"chapters/"`.
-     * For files: the directory prefix (file.path), e.g. `""` or `"chapters/"`.
-     * For assets: the directory prefix derived from asset.path.
-     */
+    
     folderPath: string;
     data?: LatexFileEntry | LatexAsset;
     children: FileTreeNode[];
@@ -50,18 +45,12 @@ const sortTreeNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
     return nodes;
 };
 
-/**
- * Resolves the directory prefix for an asset.
- * Assets store their full relative path (e.g. `"images/fig.png"`), so
- * the folder prefix is everything before the last slash.
- */
 const assetFolderPath = (asset: LatexAsset): string => {
     const p = asset.path;
     const lastSlash = p.lastIndexOf('/');
     return lastSlash >= 0 ? p.substring(0, lastSlash + 1) : '';
 };
 
-/** Returns all unique ancestor folder paths for a given path, ordered root-first. */
 const ancestorFolders = (folderPath: string): string[] => {
     const segments = folderPath.replace(/\/$/, '').split('/').filter(Boolean);
     const result: string[] = [];
@@ -73,7 +62,6 @@ const ancestorFolders = (folderPath: string): string[] => {
     return result;
 };
 
-/** Inserts a folder path into the map if absent, creating ancestor folders as needed. */
 const ensureFolder = (
     folderMap: Map<string, FileTreeNode>,
     folderPath: string
@@ -92,17 +80,6 @@ const ensureFolder = (
     }
 };
 
-/**
- * Builds a nested file tree from a flat list of files and assets.
- *
- * The tree is derived purely from `path` prefixes — no backend entity
- * represents a folder. Folders are inferred from the directory components
- * of each file or asset path.
- *
- * @param files  - Flat list of LatexFileEntry records.
- * @param assets - Flat list of LatexAsset records.
- * @returns The root children of the virtual tree (not wrapped in a root node).
- */
 export const buildFileTree = (
     files: LatexFileEntry[],
     assets: LatexAsset[],

@@ -26,16 +26,6 @@ interface CreateNotificationInput{
     link?: string;
 }
 
-/**
- * The single application service for the notification module (pollium style:
- * holds ALL the notification domain logic, talks to the Mongoose
- * {@link NotificationModel} directly — no repository, entity, mapper, use case
- * or DI). `getMyNotifications` + `markAllAsRead` back the HTTP controller and the
- * `get_notifications` AI tool; `create` backs the module's event handlers
- * (welcome / onboarding / invitation notifications). Notification has no
- * cross-module DI consumers, so there is no neutral-token adapter — only the
- * cascade-delete adapter in `repositories/NotificationRepository.ts`.
- */
 export default class NotificationService{
     async getMyNotifications(input: GetMyNotificationsInput): Promise<PaginatedResult<NotificationView>>{
         const page = input.page ?? 1;

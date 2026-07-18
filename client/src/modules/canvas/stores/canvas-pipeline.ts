@@ -31,12 +31,12 @@ export type ExpressionSelectAction = 'color' | 'delete';
 
 export interface ExpressionSelectStageConfig {
     expression: string;
-    // What to do with the atoms matching `expression`. 'color' highlights them
-    // live in the viewer (non-destructive); 'delete' removes them (live-hidden,
-    // and the dump is filtered on the daemon for any downstream plugin stage).
-    // Undefined is treated as 'color' for backward compatibility.
+    
+    
+    
+    
     action?: ExpressionSelectAction;
-    // Highlight color (hex) for action 'color'.
+    
     color?: string;
 }
 

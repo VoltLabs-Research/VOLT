@@ -1,8 +1,5 @@
 import { useState } from 'react';
 
-/**
- * Hook for managing chat UI state (panels, modals, etc.).
- */
 const useChatUIState = () => {
     const [showDetails, setShowDetails] = useState(false);
 

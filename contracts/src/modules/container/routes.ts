@@ -19,14 +19,6 @@ import type {
     ContainerFolder
 } from './domain';
 
-/**
- * Every client-facing container endpoint, typed by request/response. All paths
- * are the full wire paths (team-scoped under `/api/containers/:teamId`), matching
- * the previous `createHttpModule({ basePath: '/api/containers/:teamId' })`
- * routing verbatim. Order matters for the controller: literal `/folders` routes
- * are declared before the `/:containerId` param routes so Express matches them
- * first.
- */
 export const containerRoutes = {
     create: post<CreateContainerInput, CreateContainerResponse>('/api/containers/:teamId'),
     list: get<PersistedContainer>('/api/containers/:teamId'),

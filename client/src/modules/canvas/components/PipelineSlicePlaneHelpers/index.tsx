@@ -9,11 +9,6 @@ interface PipelineSlicePlaneHelpersProps {
     modelWorldBounds?: ModelWorldBounds | null;
 }
 
-/**
- * Renders one SlicePlaneHelper gizmo per enabled slice-plane stage (whose
- * `visualizePlane` is on) in the active trajectory's pipeline. Reads the pipeline
- * store directly so the scene pipeline doesn't need new props threaded through it.
- */
 const PipelineSlicePlaneHelpers: FC<PipelineSlicePlaneHelpersProps> = ({ modelWorldBounds }) => {
     const stages = useActiveTrajectoryStages();
 

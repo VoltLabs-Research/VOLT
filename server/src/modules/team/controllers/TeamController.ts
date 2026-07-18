@@ -16,23 +16,10 @@ import type {
     SetDefaultTeamInput
 } from '@volt/contracts/modules/team/http';
 
-/**
- * Membership-only guard (no RBAC resource) for the `/self` routes, reproducing
- * the former `HttpModuleTeamScope.BasePath` mount with no `resource`. Wraps
- * `checkTeamMembership` (which manages its own error responses) into a clean
- * Express `RequestHandler`.
- */
 const teamMembership: RequestHandler = (req, res: Response, next: NextFunction): void => {
     void checkTeamMembership(req as AuthenticatedRequest, res, next);
 };
 
-/**
- * HTTP controller for the team resource (pollium style). Class-level
- * `@Middleware(protect)` authenticates every route; the team-scoped routes add
- * `teamScoped(Resource.TEAM)` per-method (the former `teamScope: Param` only
- * enforced RBAC on `:teamId` routes, leaving `/join*`, list and create at
- * protect-only), and the `/self` routes use a membership-only guard.
- */
 @Middleware(protect)
 export default class TeamController extends Controller {
     #service = new TeamService();

@@ -12,34 +12,26 @@ import http from 'node:http';
 import { Duplex, Readable } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 
-/** Reason an in-flight HTTP proxy exchange settled, used to derive cleanup intent. */
 export type ReverseWsHttpRelaySettleReason = 'end' | 'close' | 'error' | 'aborted';
 
 export interface ReverseWsHttpProxyOptions {
-    /** The inbound client request. Its `url` is swapped to `rewrittenUrl` for the upstream and restored on settle. */
+    
     req: IncomingMessage;
-    /** The outbound client response. */
+    
     res: ServerResponse;
-    /**
-     * HTTP agent whose `createConnection` returns the reverse-channel tunnel duplex.
-     * Lifecycle (single-use vs pooled) is owned by the caller — this relay never destroys it.
-     */
+    
     agent: http.Agent;
-    /** Upstream origin, e.g. `http://<tunnelHost>:<tunnelPort>`. */
+    
     upstreamOrigin: string;
-    /** Path + query to send upstream (already stripped of the access token, native auth injected, etc.). */
+    
     rewrittenUrl: string;
-    /** Optional buffered request body (used when the body was already consumed upstream). */
+    
     requestBody?: Buffer;
-    /** Mutate upstream response headers before they reach the client (CSP/location/cookie rewriting). */
+    
     onProxyRes?: (proxyRes: IncomingMessage) => void;
-    /**
-     * Called exactly once when the exchange settles. `destroy` is the derived
-     * cleanup intent (true when the tunnel/session should be torn down). The
-     * caller frees its agent/session here.
-     */
+    
     onSettled?: (destroy: boolean, reason: ReverseWsHttpRelaySettleReason) => void;
-    /** Called on proxy error after settling. The caller writes the error response. */
+    
     onError: (error: Error) => void;
 }
 
@@ -48,31 +40,15 @@ export interface ReverseWsWebSocketUpgradeOptions {
     request: IncomingMessage;
     socket: Duplex;
     head: Buffer;
-    /** Upstream websocket URL, e.g. `ws://<tunnelHost>:<tunnelPort><path><query>`. */
+    
     upstreamWebSocketUrl: string;
     requestedProtocols?: string[];
 }
 
-/**
- * Shared reverse-WS HTTP/WebSocket relay mechanics.
- *
- * Owns the transport plumbing duplicated between the container "Open :PORT"
- * proxy and the Jupyter scripting proxy:
- *  - HTTP: `httpProxy.web` with request-url swap, proxyReq/proxyRes/error/abort
- *    wiring, and a single-settle guard.
- *  - WebSocket: the daemon `attachWebSocket` mechanism — the daemon terminates
- *    the upstream socket and relays frames over the reverse channel, bridged to
- *    the client via `ws.WebSocketServer` (noServer).
- *
- * Policy (agent pooling, header rewriting, upstream auth injection, target
- * resolution) stays in the callers via the options/hooks above. This keeps the
- * single behavioral path for the delicate Jupyter kernel websocket while letting
- * the container proxy share it.
- */
 class ReverseWsHttpRelay {
     private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    /** Builds an HTTP agent whose single connection IS the provided reverse-channel tunnel duplex. */
+    
     createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
         const agent = new http.Agent({
             keepAlive: false,
@@ -83,7 +59,7 @@ class ReverseWsHttpRelay {
         return agent;
     }
 
-    /** Proxies an HTTP request to the upstream over the caller-provided tunnel agent. */
+    
     proxyHttp(options: ReverseWsHttpProxyOptions): void {
         const proxy = httpProxy.createProxyServer();
         const originalUrl = options.req.url;
@@ -130,12 +106,7 @@ class ReverseWsHttpRelay {
         });
     }
 
-    /**
-     * Completes a client websocket upgrade by attaching an upstream websocket on
-     * the daemon (which terminates it and relays frames over the reverse channel)
-     * and bridging the two. Errors before the client handshake are written to the
-     * raw socket; the caller only needs to handle authorization/target resolution.
-     */
+    
     async proxyWebSocketUpgrade(options: ReverseWsWebSocketUpgradeOptions): Promise<void> {
         const upstreamWebSocket = await this.teamClusterDaemonClient.attachWebSocket(
             options.teamClusterId,

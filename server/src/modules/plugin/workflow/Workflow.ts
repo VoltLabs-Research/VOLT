@@ -32,9 +32,7 @@ export default class Workflow {
         };
     }
 
-    /**
-     * Find any ancestor node of specified type (BFS).
-     */
+    
     findAncestorByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
         const parentAdjacency = new Map<string, string[]>();
@@ -62,9 +60,7 @@ export default class Workflow {
         return null;
     }
 
-    /**
-     * Find descendant node of specified type (BFS)
-     */
+    
     findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
         const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
         const childAdjacency = new Map<string, string[]>();

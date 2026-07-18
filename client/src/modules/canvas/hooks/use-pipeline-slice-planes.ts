@@ -39,11 +39,6 @@ export const toSlicePlaneConfig = (
     return base;
 };
 
-/**
- * Builds the combined clipping-plane array from every ENABLED slice-plane stage in
- * the active trajectory's pipeline. Three.js ANDs the planes (an atom must be on
- * the kept side of all of them), so N slice stages compose naturally.
- */
 const usePipelineSlicePlanes = (
     trajectoryId: string | undefined,
     modelWorldBounds?: ModelWorldBounds | null

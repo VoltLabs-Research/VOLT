@@ -15,13 +15,6 @@ interface UseClusterMetricsOptions {
     clusterId?: string | null;
 }
 
-/**
- * Read-only view over the live cluster metrics cache. The stream subscription
- * and socket listeners that fill that cache live in useTeamClusterMetricsSync
- * (mounted once per session) so metrics keep flowing regardless of which
- * components are mounted. This hook just reads the cache and exposes the
- * on-demand history request.
- */
 const useClusterMetrics = (options: UseClusterMetricsOptions = {}) => {
     const selectedTeamId = useSelectedTeamId();
 

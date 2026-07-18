@@ -1,12 +1,5 @@
 import type { Endpoint, HttpMethod } from '@volt/contracts/shared/routing';
 
-/**
- * Pollium-style routing metadata. A controller method is bound to a wire
- * endpoint with `@Route(containerRoutes.create)`; the method + its param
- * decorators are all that's needed — no per-module route file, no
- * createHttpModule. `Controller.buildRouter()` reads this metadata to build the
- * Express router.
- */
 export interface RouteDefinition {
     method: HttpMethod;
     path: string;
@@ -24,7 +17,6 @@ export const Route = <I, O>(endpoint: Endpoint<I, O>): MethodDecorator =>
         routes.set(target.constructor, list);
     };
 
-/** Override the success status code for a handler (default 200, or 204 for empty). */
 export const Status = (code: number): MethodDecorator =>
     (target, handlerName) => {
         const map = statusByHandler.get(target.constructor) ?? new Map();

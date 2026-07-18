@@ -45,15 +45,6 @@ const formatPropertyValue = (value: unknown): string => {
     return String(value ?? '');
 };
 
-/**
- * Line-style pipeline stage. Restyles line-entity results (OpenDXA / ILDA
- * dislocations etc.) — per-value visibility, category/uniform/gradient color,
- * tube width, property filters — by baking a re-colored line GLB on the daemon
- * (lineStyleService.apply). The styleable property catalog comes from the
- * exposure's DECLARED `properties` (line exposures are excluded from per-atom
- * discovery). Like Color Coding, it bakes on its own Apply button and is not
- * part of the ordered pipeline run.
- */
 const LineStyleStageEditor = ({
     trajectoryId,
     analysisId,

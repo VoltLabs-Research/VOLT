@@ -14,7 +14,6 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
-// Dev runs through electron-vite, which serves the renderer over HTTP and sets this.
 const isDev = !!process.env['ELECTRON_RENDERER_URL'];
 
 const MIN_WIDTH = 940;
@@ -46,8 +45,6 @@ const loadShell = (win: BrowserWindow, hash?: string): void => {
     }
 };
 
-// Drop a saved off-screen position (e.g. an external monitor that's now gone) so the
-// window doesn't restore into the void; keep the size and let Electron re-center.
 const visibleBounds = (bounds: WindowBounds | null): WindowBounds | null => {
     if(!bounds || typeof bounds.x !== 'number' || typeof bounds.y !== 'number') return bounds;
     const onScreen = screen.getAllDisplays().some((display) => {
@@ -83,20 +80,20 @@ const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
     if(initialBounds?.maximized) win.maximize();
     if(isDev) win.webContents.openDevTools({ mode: 'detach' });
 
-    // Mirror the window's maximized state to the loaded page (shell or client) so it
-    // can drop the rounded corners when maximized. Re-emitted on every load because
-    // `loadURL` swaps the renderer (shell ↔ local/remote client).
+    
+    
+    
     const emitWindowState = (): void => {
         if(!win.isDestroyed()) bus.emit('window:state', { maximized: win.isMaximized() });
     };
     win.on('maximize', emitWindowState);
     win.on('unmaximize', emitWindowState);
 
-    // Recover gracefully when a handed-off client URL fails to load: a frameless
-    // window would otherwise be stuck on a blank page with no titlebar controls.
+    
+    
     let recovering = false;
     win.webContents.on('did-fail-load', (_event, errorCode, _description, _url, isMainFrame) => {
-        if(!isMainFrame || errorCode === -3 || recovering) return; // -3 = ERR_ABORTED (superseded navigation)
+        if(!isMainFrame || errorCode === -3 || recovering) return; 
         recovering = true;
         loadShell(win, 'client-error');
     });
@@ -132,7 +129,7 @@ app.whenReady().then(async () => {
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
     const win = createWindow(initialBounds);
 
-    // Persist window geometry (debounced) so size/position survive restarts.
+    
     let persistTimer: NodeJS.Timeout | null = null;
     const persistBounds = (): void => {
         if(win.isDestroyed()) return;

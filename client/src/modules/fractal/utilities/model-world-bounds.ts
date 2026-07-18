@@ -9,10 +9,6 @@ const areVectorsEqual = (
         && left.z === right.z;
 };
 
-/**
- * Compares world bounds by coordinate value so repeated derived emissions do not
- * trigger redundant viewer/store updates.
- */
 export const areModelWorldBoundsEqual = (
     left: ModelWorldBounds | null,
     right: ModelWorldBounds | null

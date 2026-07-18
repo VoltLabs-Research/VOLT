@@ -38,21 +38,8 @@ import type {
     CanvasRasterMetadataResponse
 } from './domain';
 
-/**
- * Every client-facing trajectory endpoint, typed by request/response. All paths
- * are the FULL wire paths, matching the previous per-group
- * `createHttpModule({ basePath })` routing verbatim (trajectory, color-coding,
- * particle-filter, line-style, lod are team-scoped; canvas uses optional auth;
- * discover is public). The controller declares its `@Route` methods in the same
- * order as the old route files so Express matches literal segments before the
- * `/:trajectoryId` / `/:analysisId` param segments.
- *
- * Binary/stream endpoints (download, dump, GLB, colored/filtered/line models,
- * octree metadata, raster frames, atoms) carry a nominal `unknown` response —
- * the controller writes them straight to the wire via `@Res()`.
- */
 export const trajectoryRoutes = {
-    // ---- Trajectory (/api/trajectories/:teamId) --------------------------
+    
     listSamples: get<SampleSimulation[]>('/api/trajectories/:teamId/samples'),
     downloadSamples: get<unknown>('/api/trajectories/:teamId/samples/:filename'),
     listTeamSceneArtifacts: get<SceneArtifactView>('/api/trajectories/:teamId/scene-artifacts'),
@@ -79,7 +66,7 @@ export const trajectoryRoutes = {
     update: patch<UpdateTrajectoryInput, PersistedTrajectory>('/api/trajectories/:teamId/:trajectoryId'),
     remove: del('/api/trajectories/:teamId/:trajectoryId'),
 
-    // ---- Color coding (/api/color-codings/:teamId) -----------------------
+    
     colorCodingProperties: get<ColorCodingPropertiesResponse>('/api/color-codings/:teamId/:trajectoryId/properties'),
     colorCodingStats: get<ColorCodingStatsResponse>('/api/color-codings/:teamId/:trajectoryId/stats'),
     colorCodingModel: get<unknown>('/api/color-codings/:teamId/:trajectoryId'),
@@ -89,7 +76,7 @@ export const trajectoryRoutes = {
     colorCodingModelByAnalysis: get<unknown>('/api/color-codings/:teamId/:trajectoryId/:analysisId'),
     colorCodingCreateByAnalysis: post<CreateColoredModelInput, CreateColoredModelResponse>('/api/color-codings/:teamId/:trajectoryId/:analysisId'),
 
-    // ---- Particle filter (/api/particle-filters/:teamId) -----------------
+    
     particleFilterProperties: get<ParticleFilterPropertiesResponse>('/api/particle-filters/:teamId/:trajectoryId/properties'),
     particleFilterPreview: get<ParticleFilterPreviewResponse>('/api/particle-filters/:teamId/:trajectoryId/previews'),
     particleFilterUniqueValues: get<ParticleFilterUniqueValuesResponse>('/api/particle-filters/:teamId/:trajectoryId/unique-values'),
@@ -101,19 +88,19 @@ export const trajectoryRoutes = {
     particleFilterModelByAnalysis: get<unknown>('/api/particle-filters/:teamId/:trajectoryId/:analysisId'),
     particleFilterApplyByAnalysis: post<ApplyParticleFilterActionInput, ApplyParticleFilterActionResponse>('/api/particle-filters/:teamId/:trajectoryId/:analysisId'),
 
-    // ---- Line style (/api/line-styles/:teamId) ---------------------------
+    
     lineStyleModel: get<unknown>('/api/line-styles/:teamId/:trajectoryId/:analysisId/:exposureId'),
     lineStyleCreate: post<CreateLineStyledModelInput, CreateLineStyledModelResponse>('/api/line-styles/:teamId/:trajectoryId/:analysisId/:exposureId'),
     lineStyleRanges: get<unknown>('/api/line-styles/:teamId/:trajectoryId/:analysisId/:exposureId/ranges'),
     lineStyleEntityProperties: get<GetLineEntityPropertiesResponse>('/api/line-styles/:teamId/:trajectoryId/:analysisId/:exposureId/entities/:entityId'),
 
-    // ---- LOD (/api/lod/:teamId) ------------------------------------------
+    
     lodOctreeMetadata: get<unknown>('/api/lod/:teamId/:trajectoryId/:analysisId/:exposureId/octree-metadata'),
 
-    // ---- Discover (/api/discover/teams, public) --------------------------
+    
     discoverListPublicTrajectories: get<PersistedTrajectory>('/api/discover/teams/:teamId/trajectories'),
 
-    // ---- Public canvas (/api/canvas, optional auth) ----------------------
+    
     canvasBootstrap: get<CanvasBootstrapResponse>('/api/canvas/:trajectoryId/bootstrap'),
     canvasTrajectory: get<CanvasTrajectoryResponse>('/api/canvas/:trajectoryId'),
     canvasPreview: get<TrajectoryPreviewResponse>('/api/canvas/:trajectoryId/preview'),

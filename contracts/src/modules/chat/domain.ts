@@ -1,7 +1,4 @@
-// Wire response types for the chat module — the shapes the client reads back
-// from `data`. `_id`, refs and dates are strings on the wire; populated refs
-// (participants, lastMessage, sender) may be nested objects, so they are typed
-// as `unknown` where the server may return either an id or a populated document.
+
 
 export type ChatMessageKind = 'text' | 'file';
 
@@ -18,7 +15,6 @@ export interface ChatReaction{
     users: string[];
 }
 
-/** A chat message as the client sees it (`sender` may be a populated user). */
 export interface PersistedChatMessage{
     _id: string;
     chat: string;
@@ -33,7 +29,6 @@ export interface PersistedChatMessage{
     updatedAt: string;
 }
 
-/** A chat as the client sees it (participants / lastMessage may be populated). */
 export interface PersistedChat{
     _id: string;
     participants: unknown;

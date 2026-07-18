@@ -5,12 +5,6 @@ interface SwitchTeamInput {
     teamId?: string;
 }
 
-/**
- * Switches the active team using the team store's safe switch flow
- * (`switchSelectedTeam`), which resets team-scoped Zustand stores and query
- * caches before persisting the new selection, then navigates to the dashboard.
- * Gated by needsApproval on the server tool.
- */
 const switchTeam: ClientToolHandler<SwitchTeamInput> = {
     name: 'switch_team',
 

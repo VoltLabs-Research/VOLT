@@ -18,8 +18,6 @@ const REASON_COPY: Record<FailureReason, string> = {
     'no-client-host': "This VOLT server doesn't advertise a client URL (CLIENT_HOST is unset)."
 };
 
-// Add a scheme for bare domains so the input reads as a full URL. Localhost/IP/port
-// hosts are left untouched — the probe tries http for those LAN-style endpoints.
 const normalizeEndpoint = (raw: string): string => {
     const value = raw.trim();
     if(!value || /^https?:\/\//i.test(value)) return value;

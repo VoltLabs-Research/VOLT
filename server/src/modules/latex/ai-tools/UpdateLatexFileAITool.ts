@@ -21,11 +21,7 @@ export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, LatexFi
 
     #service = new LatexService();
 
-    /**
-     * Tags the write with `source: 'ai'` (server-controlled, kept out of the
-     * model-facing schema) so the service broadcasts the new content into any
-     * open editing session — letting the edit appear live in open editors.
-     */
+    
     async execute(params: UpdateLatexFileParams, scope: AIToolScope): Promise<LatexFileView> {
         return this.#service.updateFile({ teamId: scope.teamId, ...params, source: 'ai' });
     }

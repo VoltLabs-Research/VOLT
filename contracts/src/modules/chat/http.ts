@@ -1,12 +1,9 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId`/`:chatId`/`:targetUserId`/`:messageId`
-// path params) is NOT here — the controller reads those from @Param/@CurrentUser
-// and the service augments its own input.
+
 
 import type { ChatMessageKind, ChatMessageMetadata } from './domain';
 
 export interface CreateGroupChatInput{
-    /** The group is created within this team (the client sends it in the body). */
+    
     teamId: string;
     groupName: string;
     groupDescription?: string;

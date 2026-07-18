@@ -18,16 +18,16 @@ interface UseExpressionVisibilityMaskParams {
 }
 
 export interface UseExpressionVisibilityMaskResult {
-    // 1 = visible, 0 = hidden. Non-null only when a 'delete' expression-select
-    // stage is active. The engine resets to all-visible on null.
+    
+    
     mask: Uint8Array | null;
-    // 1 = atom belongs to a 'color' selection, 0 = not selected. Non-null only
-    // when a 'color' stage is active.
+    
+    
     highlightMask: Uint8Array | null;
-    // Tint applied to highlighted atoms (last enabled 'color' stage wins).
+    
     highlightColor: string | null;
-    // True when the frame is too large for client-side evaluation; the caller
-    // falls back to the daemon path (deletes are applied there via --select).
+    
+    
     autoRoute: boolean;
 }
 
@@ -75,22 +75,6 @@ const EMPTY: UseExpressionVisibilityMaskResult = {
     autoRoute: false
 };
 
-/**
- * Derives the live viewer effects of the enabled `expression-select` stages.
- *
- * Each stage's expression IS its selection. What happens to the selection is the
- * stage's `action`:
- *   - 'delete' → the matched atoms are HIDDEN (and the dump is filtered on the
- *     daemon for any downstream plugin stage). An atom is hidden iff it matches
- *     ANY enabled delete expression.
- *   - 'color'  → the matched atoms are TINTED; nothing is hidden. The highlight
- *     mask is the union of all enabled color expressions; the last one's color
- *     wins as the tint.
- *
- * Invalid expressions are skipped (treated as no-op), never thrown. Returns
- * autoRoute=true when the frame exceeds CLIENT_EVAL_ATOM_LIMIT (caller falls
- * back to the daemon path).
- */
 const useExpressionVisibilityMask = ({
     trajectoryId,
     analysisId,

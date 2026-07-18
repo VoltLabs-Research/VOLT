@@ -24,13 +24,6 @@ interface ColorCodingStageEditorProps {
 const isColormapName = (value: string): value is ColormapName =>
     (COLORMAP_NAMES as ReadonlyArray<string>).includes(value);
 
-/**
- * Color-coding pipeline stage. Unlike the old client-eval recolor (which fetched
- * the entire property column into the browser and looped over it — unscalable at
- * 100M atoms), this bakes on the daemon: the range is computed server-side from the
- * parquet (getColorCodingStats) when no manual range is given, then apply() enqueues
- * a colored-GLB bake that lands as a selectable scene in the Scene Collection.
- */
 const ColorCodingStageEditor = ({
     stageId,
     trajectoryId,

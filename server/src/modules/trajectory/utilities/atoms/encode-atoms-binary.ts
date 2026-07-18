@@ -19,24 +19,6 @@ const DTYPE_BYTES: Record<AtomColumnDType, number> = {
     i32: 4
 };
 
-/**
- * Wire format (little-endian throughout):
- *   [u32 total][u32 page][u32 limit][u32 totalPages]
- *   [u32 count]
- *   [u32 propsCount]
- *   for each prop:
- *     [u8 nameLen][bytes name][u8 dtypeId][u32 byteLen]
- *   [u32 headerPadLen][padLen zero bytes]   // pads block to a 4-byte boundary
- *   [data blocks contiguous in prop order]
- *
- * `dtypeId` map: 0 = f32, 1 = u32, 2 = u16.
- *
- * Why the pad: Float32Array / Uint32Array TypedArray views require the
- * source `byteOffset` to be a multiple of the element size. The per-prop
- * header has variable length (nameLen), so a naive concat would land the
- * first data block at an arbitrary offset. The explicit pad field keeps the
- * wire format self-describing.
- */
 export const encodeAtomsBinary = (result: GetAtomsColumnarOutputDTO): Buffer => {
     const columns = result.columns;
     const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));

@@ -1,30 +1,15 @@
 import { resolveConfiguredRouteTitle } from '@/app/routes/metadata';
 
-/**
- * Navigation allowlist for AI-driven navigation.
- *
- * This is a SECURITY BOUNDARY: `navigate_to` can only resolve a known logical
- * destination key here — never an arbitrary string. Trajectory names, file
- * contents, logs, etc. flow through the model, so an injected instruction must
- * not be able to navigate the user to an external or `javascript:` URL. Every
- * destination is an in-app path template; params are substituted positionally
- * and URL-encoded, and unknown keys / missing params are rejected.
- *
- * Keys are stable logical names (decoupled from raw URLs) so the model targets
- * intent, not paths. Required entity ids should be resolved beforehand via
- * `global_search` / `list_trajectories`.
- */
-
 export interface NavigationDestination {
-    /** Path template with `:param` placeholders. */
+    
     pathTemplate: string;
-    /** Required param names (must all be supplied). */
+    
     requiredParams: string[];
-    /** Optional param names (substituted if present). */
+    
     optionalParams?: string[];
-    /** Permissions the route declares (informational; route guards still enforce). */
+    
     requiredPermissions?: string[];
-    /** Short human description for tool schema + cards. */
+    
     description: string;
 }
 
@@ -78,12 +63,6 @@ const isKnownDestination = (key: string): key is NavigationDestinationKey => {
     return Object.prototype.hasOwnProperty.call(NAVIGATION_DESTINATIONS, key);
 };
 
-/**
- * Resolves a logical destination + params to a concrete in-app path, or returns
- * a structured error. Rejects unknown keys and missing required params. Query
- * params are appended (encoded). The router's own permission guards remain the
- * enforcing layer; this only prevents off-allowlist navigation.
- */
 export const resolveDestination = (
     key: string,
     params: Record<string, string | undefined> = {},

@@ -1,23 +1,4 @@
-/**
- * Neutral, cross-module port for the storage-placement service (resolves which
- * cluster owns/replicates a trajectory's / analysis's / plugin-binary's bytes).
- *
- * Extracted from `@modules/cluster/ports/IStoragePlacementService` during
- * the detachable-modules migration. The concrete `StoragePlacementService`
- * stays in the cluster module, registered under
- * `COMPUTE_TOKENS.StoragePlacementService` so consumers (trajectory, plugin,
- * cluster) can `@inject(COMPUTE_TOKENS.StoragePlacementService)` against this
- * port without importing `@modules/cluster`. The original port file re-exports
- * this so existing importers compile unchanged.
- *
- * PHASE-2 FOLLOW-UP (type-only recoupling): the return type `StoragePlacement`
- * is an entity CLASS (with `props` + an `id` getter) that has not been extracted
- * into a neutral structural contract yet, so it is imported here with
- * `import type` only (erased by tsc — no runtime/decorator coupling). The scope
- * and state unions already live in the neutral `@shared/domain/contracts`
- * layer. Replacing the class with a structural `StoragePlacement` contract is
- * deferred.
- */
+
 import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 import type {
     StoragePlacementScopeType,

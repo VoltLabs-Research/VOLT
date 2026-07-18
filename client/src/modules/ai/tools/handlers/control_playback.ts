@@ -5,14 +5,6 @@ interface ControlPlaybackInput {
     action?: 'play' | 'pause' | 'stop';
 }
 
-/**
- * Starts, pauses, or stops trajectory playback in the 3D viewer.
- *
- * `play` calls `togglePlay` (which only starts when not already playing) using
- * the live trajectory id + timesteps from the canvas bridge. `pause`/`stop`
- * both call `stopPlayback`, which ends the playback loop in place. All changes
- * flow through the zundo-wrapped editor store, so they are user-undoable.
- */
 const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
     name: 'control_playback',
     needsViewer: true,

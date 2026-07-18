@@ -1,13 +1,4 @@
-/**
- * Pure cross-module helpers for building/parsing raster object-storage keys
- * (trajectory previews, analysis raster frames). Canonical home in the neutral
- * `shared` layer (detachable-modules migration) so the trajectory module can
- * build a raster preview prefix without importing `@modules/raster`. No module
- * code is imported — these are string builders/parsers only.
- *
- * The original `@modules/raster/utilities/raster-storage-paths` re-exports
- * these for backward compatibility.
- */
+
 export const getTrajectoryModelsPrefix = (trajectoryId: string): string => {
     return `trajectory-${trajectoryId}/`;
 };

@@ -8,17 +8,6 @@ interface SetVisibleLayersInput {
     visible?: boolean;
 }
 
-/**
- * Shows or hides a scene layer in the 3D viewer.
- *
- * Mapping note: only the base atomistic point-cloud layer is safely
- * constructible from a friendly name — it is the `DefaultScene`
- * `{ sceneType: 'trajectory', source: 'default' }` (see DEFAULT_SCENE). The
- * names "atoms", "particles", "trajectory", and "default" all resolve to it.
- * Analysis-derived scenes (plugin / color-coding / particle-filter / line-style)
- * carry `analysisId`/`exposureId` values that the model cannot fabricate, so we
- * refuse them here rather than guess scene internals.
- */
 const BASE_LAYER_ALIASES = new Set(['atoms', 'particles', 'trajectory', 'default', 'base', 'points']);
 
 const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {

@@ -36,14 +36,6 @@ export interface AIImageArtifactPayload {
     summary?: string;
 }
 
-/**
- * Validates that an image URL is safe to render as <img src>. Allows:
- *  - relative API paths (e.g. "/api/rasters/.../frames/...") served same-origin,
- *  - absolute URLs on the configured backend origin,
- *  - inline data:image/* URLs.
- * Rejects everything else (external hosts, javascript:, etc.) — image URLs can
- * originate from tool output influenced by untrusted content.
- */
 const isAllowedImageUrl = (url: string): boolean => {
     if (url.startsWith('data:image/')) {
         return true;
@@ -65,11 +57,6 @@ const isAllowedImageUrl = (url: string): boolean => {
     }
 };
 
-/**
- * Resolves an image payload from an artifact OR from a raw tool-result object
- * (the live stream exposes tool output directly, not yet promoted to an
- * artifact). Returns null when the payload is not a valid, allowed image.
- */
 export const resolveImagePayload = (source: AIMessageArtifact | unknown): AIImageArtifactPayload | null => {
     let payload: unknown = source;
     if (isRecord(source) && 'kind' in source && 'payload' in source) {

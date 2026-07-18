@@ -29,7 +29,6 @@ export abstract class CascadeDeleteEachOnEntityDeletedHandler<
     TEvent extends IDomainEvent,
     TEntity extends IdentifiableEntity
 > implements IEventHandler<TEvent> {
-
     protected abstract readonly repository: IterableRepository<TEntity>;
     protected abstract readonly payloadKey: string;
     protected abstract readonly filterField: string;

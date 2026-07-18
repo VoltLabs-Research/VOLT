@@ -5,12 +5,6 @@ interface FocusResultInput {
     modifierId?: string | null;
 }
 
-/**
- * Focuses (highlights) a specific analysis result / modifier in the canvas UI,
- * or clears the current focus when `modifierId` is null. Drives the canvas focus
- * store directly. This is a pure UI-state change (no 3D viewer mutation), so it
- * does not require a mounted canvas.
- */
 const focusResult: ClientToolHandler<FocusResultInput> = {
     name: 'focus_result',
     needsViewer: false,

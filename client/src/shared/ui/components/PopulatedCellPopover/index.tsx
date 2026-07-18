@@ -23,7 +23,6 @@ interface FieldEntry {
 
 const numberFormatter = new Intl.NumberFormat();
 
-/** Fields excluded from auto-detection by default. */
 const EXCLUDED_FIELDS = new Set([
     '_id',
     '__v',
@@ -34,10 +33,6 @@ const EXCLUDED_FIELDS = new Set([
     '__t'
 ]);
 
-/**
- * Resolves a display value from an arbitrary document field.
- * For nested objects, returns the object's `name` or `_id` as a string.
- */
 const resolveFieldValue = (value: unknown): string | null => {
     if (value === null || value === undefined) return null;
 
@@ -60,24 +55,11 @@ const resolveFieldValue = (value: unknown): string | null => {
     return null;
 };
 
-/**
- * Formats a raw field key into a human-readable label.
- * Converts camelCase to space-separated words with the first letter capitalized.
- */
 const formatFieldLabel = (key: string): string => {
     const spaced = key.replace(/([A-Z])/g, ' $1');
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
-/**
- * Generic popover wrapper for populated document cells.
- * Wraps its children in a clickable trigger that opens a popover
- * displaying the referenced document's key-value fields.
- *
- * @remarks
- * Uses `e.stopPropagation()` on click to prevent row-level event handlers
- * (selection, drag-and-drop, context menus) from firing.
- */
 const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     document: doc,
     modelName,

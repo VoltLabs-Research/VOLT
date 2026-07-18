@@ -1,6 +1,4 @@
-// Wire response types for the raster module — the shapes the client reads back
-// from `data` (JSON endpoints) plus the binary PNG stream marker. Dates are
-// strings on the wire.
+
 
 export interface TriggerRasterizationResponse{
     trajectoryId: string;
@@ -45,9 +43,4 @@ export interface GetRasterMetadataResponse{
     metadata: RasterMetadata | null;
 }
 
-/**
- * The raster-frame endpoints stream a raw `image/png` body (inline disposition)
- * rather than a JSON envelope — this marker types the binary response the client
- * receives.
- */
 export type RasterFramePNGResponse = ArrayBuffer;

@@ -164,9 +164,9 @@ const CanvasPage = () => {
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
-    // Enter canvas keyboard scope on mount. The store defaults to 'global' (only
-    // ctrl+k / esc work there); canvas shortcuts (space/arrows/g/r...) are gated on
-    // scope === 'canvas'. use-canvas-cleanup resets it back to 'global' on unmount.
+    
+    
+    
     useEffect(() => {
         if (currentScope !== 'canvas') {
             setCurrentScope('canvas');

@@ -3,14 +3,6 @@ import { join, resolve } from 'path';
 import logger from '@shared/infrastructure/logger';
 import { getEnabledModules } from '@core/bootstrap/module-state';
 
-/**
- * Roots (relative to `src/`) whose class files must be imported for their
- * class-level decorators (`@Singleton`, `@Subscribe`, ...) to fire and attach
- * themselves to the tsyringe container / the pending-subscriptions list.
- *
- * Kept broad on purpose — controller factories, use cases, repositories,
- * services, socket modules and event handlers all live under these roots.
- */
 const SCAN_ROOTS: readonly string[] = [
     'shared',
     'modules'
@@ -90,13 +82,6 @@ const isDirectory = (path: string): boolean => {
     }
 };
 
-/**
- * Imports every class-carrying source file under `src/{shared,modules}` so
- * that every `@Singleton`, `@Transient`, `@AliasOf`, `@CollectionMember` and
- * `@Subscribe` decorator runs and self-registers. This replaces the old
- * hand-written DI-registration and subscriber manifests; module DEFINITIONS
- * (keys, tiers, dependencies) still come from `module-state.ts`.
- */
 export const autoloadModules = async (): Promise<void> => {
     const srcDir = resolve(__dirname, '..', '..', '..');
     const started = Date.now();

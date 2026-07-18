@@ -20,13 +20,6 @@ import type {
 } from '@modules/plugin/utilities/listing-row/listing-row-types';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
-/**
- * Converts a snake_case or hyphen-separated name to Title-Case with hyphens.
- *
- * @example titleCaseName('dislocation_segments') // 'Dislocation-Segments'
- * @example titleCaseName('facets') // 'Facets'
- * @example titleCaseName('grain-points') // 'Grain-Points'
- */
 const titleCaseName = (name: string): string => {
     return name
         .split(/[_-]+/)

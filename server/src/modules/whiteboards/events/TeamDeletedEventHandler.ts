@@ -8,12 +8,6 @@ interface WhiteboardIdRecord {
     readonly _id: string;
 }
 
-/**
- * On team deletion, cascade-delete every whiteboard belonging to the team.
- * Enumerates ids straight from the Mongoose {@link WhiteboardModel} and delegates
- * the real teardown (object-storage cleanup + `whiteboard.deleted` event) to a
- * `new WhiteboardService()` — no use case, no repository, no DI.
- */
 class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<WhiteboardIdRecord> {
     protected readonly repository = {
         export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<WhiteboardIdRecord[]> => {

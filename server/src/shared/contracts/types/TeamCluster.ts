@@ -1,15 +1,4 @@
-/**
- * Neutral, cross-module TYPE/ENUM contracts for the TeamCluster aggregate.
- *
- * Extracted from `@modules/cluster/entities/TeamCluster` during the
- * detachable-modules migration. Only the pure data shapes live here (enums +
- * `*Props` interfaces + the `TeamClusterRole` alias) — the `TeamCluster` CLASS
- * and its runtime helper functions/constants stay in the cluster module. The
- * original entity file re-exports everything below so existing importers (and
- * the runtime helpers that depend on these types) compile unchanged.
- *
- * This file imports no `@modules/*` code.
- */
+
 
 export enum TeamClusterStatus {
     WaitingForConnection = 'waiting-for-connection',
@@ -110,11 +99,6 @@ export interface TeamClusterProps {
     updatedAt: Date;
 }
 
-/**
- * Structural stand-in for the TeamCluster entity (a class with `props` + an `id`
- * getter in the owner module). Consumers that only need the data shape can use
- * this instead of importing the concrete class from `@modules/cluster`.
- */
 export interface TeamClusterLike {
     _id: string;
     props: TeamClusterProps;

@@ -69,9 +69,9 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             fallbackAnalyses: analyses.length > 0 ? analyses : (trajectory?.analysis ?? [])
         });
     }, [analyses, analysisId, trajectory?.analysis, trajectoryId]);
-    // Frames the selected analysis actually covers (undefined = covers all frames).
-    // The ruler always spans the full trajectory; out-of-scope frames are dimmed,
-    // not hidden, and scrubbing onto one deselects the analysis (useCanvasSidebarScene).
+    
+    
+    
     const selectedAnalysisTimesteps = useMemo(() => {
         return getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
     }, [selectedAnalysis, trajectoryTimesteps]);

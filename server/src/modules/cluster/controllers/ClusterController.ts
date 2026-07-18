@@ -13,22 +13,6 @@ import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
 
-/**
- * The team-scoped cluster HTTP controller (pollium style). It replaces the
- * former `createHttpModule({ basePath: '/api/teams/:teamId/clusters',
- * resource: Resource.TEAM, teamScope: BasePath })` — the mount-time
- * `protect` + team-scope layer is now the class-level
- * `@Middleware(protect, teamScoped(Resource.TEAM))`, and the three
- * password-confirmed actions keep their per-route rate limiter as a
- * method-level `@Middleware`.
- *
- * Handlers are declared in the previous route-file order so Express matches the
- * literal `/demo*` segments before the `/:teamClusterId` param routes. Every
- * handler writes the response itself (`@Res()`), reproducing the previous
- * controller's `BaseResponse` envelopes and status codes verbatim (`create`
- * and `provisionDemo` stay `201`; list endpoints keep the paginated envelope;
- * the remote-explorer download streams via {@link ClusterControllerBase.pipeStream}).
- */
 @Middleware(protect, teamScoped(Resource.TEAM))
 export default class ClusterController extends ClusterControllerBase {
     @Route(teamClusterRoutes.list)

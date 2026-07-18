@@ -392,7 +392,6 @@ export default class TrajectoryService {
     #cloneCoordinator = trajectoryCloneCoordinator;
     #cloneRunner = trajectoryCloneRunner;
 
-
     async createUploadSession(input: CreateTrajectoryUploadSessionInputDTO): Promise<CreateTrajectoryUploadSessionOutputDTO> {
         const { teamId, userId } = input;
         const files = Array.isArray(input.files) ? input.files : [];
@@ -1077,7 +1076,6 @@ export default class TrajectoryService {
         }
     }
 
-
     async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 500;
@@ -1144,7 +1142,6 @@ export default class TrajectoryService {
         }
     }
 
-
     async getSceneArtifacts(input: ListTrajectorySceneArtifactsInputDTO): Promise<PaginatedResult<unknown>> {
         return this.#listTrajectorySceneArtifacts(input);
     }
@@ -1205,7 +1202,6 @@ export default class TrajectoryService {
         };
     }
 
-
     async getColorCodingProperties(input: GetColorCodingPropertiesInputDTO): Promise<GetColorCodingPropertiesOutputDTO> {
         return this.#runService(() => this.#colorCoding.getProperties(input.trajectoryId, input.timestep, input.analysisId));
     }
@@ -1248,7 +1244,6 @@ export default class TrajectoryService {
         );
         return response as GetColoredModelStreamOutputDTO & StreamableOutput;
     }
-
 
     async getParticleFilterProperties(input: GetParticleFilterPropertiesInputDTO): Promise<GetParticleFilterPropertiesOutputDTO> {
         return this.#runService(() => this.#particleFilter.getProperties(input.trajectoryId, input.timestep, input.analysisId));
@@ -1297,7 +1292,6 @@ export default class TrajectoryService {
             return { values };
         });
     }
-
 
     async createLineStyledModel(input: CreateLineStyledModelInputDTO): Promise<CreateLineStyledModelOutputDTO> {
         return this.#lineStyle.createStyledModel(
@@ -1356,7 +1350,6 @@ export default class TrajectoryService {
         return { entityId, properties };
     }
 
-
     async getOctreeMetadataStream(input: GetOctreeMetadataStreamInputDTO): Promise<StreamableOutput> {
         const response = await this.#lineStyle.getOctreeMetadataStreamResponse(
             input.trajectoryId,
@@ -1366,7 +1359,6 @@ export default class TrajectoryService {
         );
         return response as StreamableOutput;
     }
-
 
     async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInputDTO): Promise<ListPublicTeamTrajectoriesOutputDTO> {
         const { teamId, page = 1, limit = 20 } = input;
@@ -1413,7 +1405,6 @@ export default class TrajectoryService {
             _meta: { team: teamDiscovery }
         };
     }
-
 
     async getPublicCanvasBootstrap(input: GetPublicCanvasBootstrapInputDTO): Promise<GetPublicCanvasBootstrapOutputDTO> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
@@ -1754,7 +1745,6 @@ export default class TrajectoryService {
             limit: input.limit
         });
     }
-
 
     async #assertReadable(trajectoryId: string, userId?: string): Promise<TrajectoryDoc> {
         const trajectory = await TrajectoryModel.findById(trajectoryId) as unknown as TrajectoryDoc | null;
@@ -2220,7 +2210,6 @@ export default class TrajectoryService {
 
         await CatalogFolderModel.deleteOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
     }
-
 
     async #getFrames(trajectoryId: string): Promise<TrajectoryFrame[]> {
         const docs = await TrajectoryFrameModel

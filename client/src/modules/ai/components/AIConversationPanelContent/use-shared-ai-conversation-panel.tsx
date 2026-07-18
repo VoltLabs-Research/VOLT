@@ -10,17 +10,6 @@ interface UseSharedAIConversationPanelOptions {
     onNavigateAway?: () => void;
 }
 
-/**
- * AI conversation panel state for the floating widget. It CONSUMES the hoisted
- * AIChatProvider (shared with the full AI page) instead of owning its own
- * `useChat`, so:
- *  - a reply started in the widget keeps streaming after the user expands to
- *    the full page (and vice-versa), and
- *  - the active conversation stays in sync across both surfaces.
- *
- * For an INDEPENDENT, context-scoped chat (e.g. the LaTeX assistant), use
- * `useAIConversationPanel` instead.
- */
 const useSharedAIConversationPanel = (options: UseSharedAIConversationPanelOptions = {}) => {
     const { onNavigateAway } = options;
     const navigate = useNavigate();

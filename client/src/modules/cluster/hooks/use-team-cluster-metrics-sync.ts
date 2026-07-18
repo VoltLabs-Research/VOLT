@@ -19,15 +19,6 @@ interface ClusterMetricsHistoryEvent {
     history: ClusterHistoryMetric[];
 }
 
-/**
- * Keeps the team cluster metrics stream alive for the whole authenticated
- * session. Mounted once in ProtectedRouteRealtimeEffects so the room
- * subscription and live-metric listeners survive navigation across the
- * dashboard/canvas route branches — without this, the only subscriber was the
- * dashboard bottom bar, so leaving /dashboard stopped the stream and stats went
- * blank for a few seconds on return. Consumers (useClusterMetrics) only read
- * the cache this hook fills.
- */
 export default function useTeamClusterMetricsSync(): void {
     const queryClient = useQueryClient();
     const selectedTeamId = useSelectedTeamId();

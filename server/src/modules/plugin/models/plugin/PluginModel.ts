@@ -20,37 +20,16 @@ export interface PluginDocument extends Persistable<PluginProps, PluginRelations
 
 const PluginModel: Model<PluginDocument> = mongoose.model<PluginDocument>('Plugin', PluginSchema);
 
-/**
- * Relation fields that get ObjectId<->string normalization when converting a
- * raw document into the flat `Plugin` ({ _id, id, props }) shape below — the
- * same list the deleted `PluginDocumentMapper` used to carry.
- */
 const PLUGIN_RELATION_KEYS = [
     'team'
 ] as const;
 
-/**
- * Neutral, flat `{ _id, id, props }` shape replacing the deleted `Plugin`
- * entity class. Keeps the `id` convenience accessor the old entity exposed as
- * a getter (here as a plain field) so existing consumers that read
- * `plugin.id` keep compiling unchanged.
- */
 export interface Plugin {
     readonly _id: string;
     readonly id: string;
     props: PluginProps;
 }
 
-/**
- * Converts a raw PluginModel document into the neutral `Plugin` shape.
- * Rebuilds a real `Workflow` instance from the persisted raw node/edge graph
- * and re-runs {@link WorkflowProjectionService} so a persisted plugin always
- * carries a resolved modifier/exposures/arguments/listing projection, backfilling
- * any of those fields that were not already stored on the document — matching
- * the previous `PluginDocumentMapper.toDomain` behavior exactly. Unpopulated
- * relation fields (plain `Types.ObjectId`) are stringified; populated
- * sub-documents are left as-is.
- */
 export const toPluginLike = (doc: PluginDocument): Plugin => {
     const rawProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
     const {

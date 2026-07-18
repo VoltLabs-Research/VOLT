@@ -1,14 +1,5 @@
 import type { ClientToolHandler, ClientToolModule } from './types';
 
-/**
- * Client-tool registry. Mirrors the server's autoload-by-convention: every file
- * under `./handlers/*.ts` that default-exports a `ClientToolHandler` is picked
- * up here automatically. Adding a client tool is therefore ONE new file — no
- * edit to this registry, eliminating merge contention across parallel work.
- *
- * The handler's `name` is the key and MUST match the server tool's `name`
- * (the server advertises the schema; the client runs the effect).
- */
 const handlerModules = import.meta.glob<ClientToolModule>('./handlers/*.ts', { eager: true });
 
 const buildRegistry = (): Map<string, ClientToolHandler> => {

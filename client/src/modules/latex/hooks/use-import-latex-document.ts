@@ -10,10 +10,6 @@ const IMPORT_TOAST = {
 
 const ACCEPTED_TYPES = '.tex,.zip,.pdf';
 
-/**
- * Provides an import action that opens a hidden file input for `.tex`, `.zip`,
- * or `.pdf` selection, uploads the file, and invalidates the documents cache on success.
- */
 const useImportLatexDocument = (folderId?: string | null) => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const { mutateAsync: importDocument } = useImportLatexDocumentMutation();

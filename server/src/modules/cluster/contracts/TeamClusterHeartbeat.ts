@@ -1,11 +1,4 @@
-/**
- * Heartbeat telemetry domain vocabulary.
- *
- * The metrics payload a daemon reports on each heartbeat. It is accepted
- * through the `ITeamClusterLifecycleService` domain port, so it is domain
- * vocabulary. The use-case input/output envelopes stay in the application
- * layer.
- */
+
 export interface TeamClusterHeartbeatMetricsDTO {
     timestamp: string;
     hostname: string;

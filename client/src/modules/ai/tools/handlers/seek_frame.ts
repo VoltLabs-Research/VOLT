@@ -6,19 +6,6 @@ interface SeekFrameInput {
     position?: 'first' | 'last' | 'next' | 'previous';
 }
 
-/**
- * Jumps the 3D viewer to a specific trajectory frame.
- *
- * Targets are resolved against the live canvas-bridge timesteps:
- * - `frame` is an exact timestep value; if it is not an exact member it is
- *   clamped to the nearest valid timestep.
- * - `position` is a relative jump: first/last go to the timeline ends, and
- *   next/previous step one frame from the current timestep (read from the
- *   bridge). `frame` takes precedence over `position` when both are given.
- *
- * The resolved timestep is committed with `setCurrentTimestep`, which routes
- * through the zundo-wrapped editor store and is therefore user-undoable.
- */
 const seekFrame: ClientToolHandler<SeekFrameInput> = {
     name: 'seek_frame',
     needsViewer: true,

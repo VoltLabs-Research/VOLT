@@ -2,7 +2,6 @@ export type OAuthProviderId = 'github' | 'microsoft' | 'google';
 
 export type UserRoleId = 'admin' | 'user';
 
-/** A user as the client sees it: `_id`/dates as strings, never the password. */
 export interface PersistedUser{
     _id: string;
     email: string;
@@ -21,10 +20,8 @@ export interface PersistedUser{
     updatedAt: string;
 }
 
-/** `GET /me` adds a derived `fullName` on top of the persisted user. */
 export type Account = PersistedUser & { fullName: string };
 
-/** Response of every credentialed auth entry point (sign in / sign up / local / password change). */
 export interface AuthSession{
     token: string;
     user: PersistedUser;

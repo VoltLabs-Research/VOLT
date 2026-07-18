@@ -1,6 +1,4 @@
-// Wire request bodies the CLIENT sends. Server-derived context (the
-// authenticated userId, the `:teamId`/`:whiteboardId`/`:folderId` path params)
-// is NOT here — the service augments those on its own input.
+
 
 export interface CreateWhiteboardInput{
     title: string;
@@ -30,9 +28,4 @@ export interface UploadWhiteboardAssetInput{
     type?: string;
 }
 
-/**
- * The saved Excalidraw scene payload (`{ revision, elements, appState, ... }`).
- * Opaque on the wire — persisted verbatim to object storage — so it is typed as
- * a free-form record.
- */
 export type SaveWhiteboardStateInput = Record<string, unknown>;

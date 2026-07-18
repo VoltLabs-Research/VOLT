@@ -22,15 +22,6 @@ import type { Readable } from 'node:stream';
 
 const stateBodyParser = express.json({ limit: '10mb' });
 
-/**
- * The single HTTP controller for the whiteboards module (pollium style).
- * Class-level `@Middleware(protect, teamScoped(Resource.WHITEBOARD))` replaces the
- * old mount-time auth + team-scope layer. Folder routes are declared before the
- * `/:whiteboardId` routes (contract order). `getState`/`getAsset` reproduce the
- * former stream controller (headers, request-close + stream-error handling, then
- * pipe) via `@Res()`; `saveState` keeps the 10mb JSON body parser as method
- * middleware.
- */
 @Middleware(protect, teamScoped(Resource.WHITEBOARD))
 export default class WhiteboardController extends Controller {
     #service = new WhiteboardService();

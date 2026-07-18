@@ -511,7 +511,6 @@ export default class PluginService {
 
         #eventBus = eventBus;
 
-
     async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutputDTO> {
         return {
             nodeTypes: NODE_OUTPUT_PROPERTIES
@@ -841,9 +840,9 @@ export default class PluginService {
             );
         }
 
-        // Raw Mongo `$set` payload (not `Partial<PluginProps>`): `workflow` here
-        // is the plain persisted shape (`WorkflowProps`), not the `Workflow`
-        // domain instance `PluginProps.workflow` carries.
+        
+        
+        
         const update: Record<string, unknown> = {};
         if (input.status) update.status = input.status;
 
@@ -1314,7 +1313,6 @@ export default class PluginService {
         };
     }
 
-
     async getPluginExposureGLB(input: GetPluginExposureGLBInputDTO): Promise<GetPluginExposureGLBOutputDTO> {
         const analysis = await AnalysisModel.findById(String(input.analysisId));
 
@@ -1501,7 +1499,6 @@ export default class PluginService {
             pluginName
         });
     }
-
 
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInputDTO): Promise<GetListingRowsByAnalysisIdOutputDTO> {
         const { page, limit } = resolveListingPagination(input);

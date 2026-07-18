@@ -4,15 +4,6 @@ import type {
 } from '@shared/contracts/types/TeamCluster';
 import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
 
-/**
- * Read projection of a {@link TeamCluster} aggregate.
- *
- * Returned through domain ports (e.g. {@link ITeamClusterLifecycleService}), so
- * the shapes are domain vocabulary and live here. The `toTeamClusterDTO`
- * mapper that assembles this projection from the aggregate stays in the
- * application layer.
- */
-
 export interface TeamClusterServiceDTO {
     port: number | null;
 }

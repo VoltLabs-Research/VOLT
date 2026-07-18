@@ -70,12 +70,10 @@ const useTrackedTitle = (title: string, titles: TitleEntry[]): void => {
     }, [title, titles]);
 };
 
-/** Sets a page title that overrides the route-level fallback while mounted. */
 export function usePageTitle(title: string): void {
     useTrackedTitle(title, pageTitles);
 };
 
-/** Sets a route-level fallback title unless a page override is active. */
 export function useFallbackPageTitle(title: string): void {
     useTrackedTitle(title, fallbackTitles);
 };

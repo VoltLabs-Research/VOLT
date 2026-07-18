@@ -4,22 +4,6 @@ import type { ReactNode } from 'react';
 
 const PENDING_MESSAGE_STORAGE_KEY = 'volt:ai:pending-message';
 
-/**
- * Hoisted AI chat state.
- *
- * Before this, the floating widget and the full AI page each called
- * `useAIPage` independently — two separate `useChat` instances. Switching
- * surfaces unmounted one, and its unmount `stop()` aborted any in-flight
- * stream. By calling `useAIPage` ONCE here, inside a provider mounted by the
- * persistent DashboardLayout, the single `useChat`/`Chat` instance (and its
- * live stream) survives moving between the widget, the page, and the canvas —
- * it only tears down when the user leaves the dashboard entirely.
- *
- * `activeConversationId` is the single source of truth for which conversation
- * is shown. The AI page keeps the URL in sync with it (see AIPage); the widget
- * just reads/sets it without navigating.
- */
-
 type AIPageState = ReturnType<typeof useAIPage>;
 
 interface AIChatContextValue extends AIPageState {
@@ -27,9 +11,9 @@ interface AIChatContextValue extends AIPageState {
     setActiveConversationId: (conversationId?: string) => void;
     messageDraft: string;
     setMessageDraft: (draft: string) => void;
-    /** Sends the current draft, creating a conversation first when needed. */
+    
     handleSend: () => Promise<void>;
-    /** Sends an explicit prompt (e.g. an empty-state suggestion) directly. */
+    
     sendPrompt: (prompt: string) => Promise<void>;
 }
 
@@ -119,10 +103,6 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-/**
- * Consumes the hoisted AI chat state. Throws if used outside the provider so a
- * missing mount is caught immediately rather than silently splitting state.
- */
 export const useAIChatContext = (): AIChatContextValue => {
     const context = useContext(AIChatContext);
     if (!context) {
@@ -131,7 +111,6 @@ export const useAIChatContext = (): AIChatContextValue => {
     return context;
 };
 
-/** Optional variant for surfaces that may render before the provider mounts. */
 export const useOptionalAIChatContext = (): AIChatContextValue | null => {
     return useContext(AIChatContext);
 };

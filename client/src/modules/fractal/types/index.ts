@@ -23,7 +23,6 @@ export interface OrbitControlsHandle {
     removeEventListener: (type: 'change' | 'start' | 'end', listener: () => void) => void;
 }
 
-
 export type UseGlbSceneParams = {
     url?: string | null;
     resourceKey?: string | null;

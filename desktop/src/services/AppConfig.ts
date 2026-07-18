@@ -48,9 +48,9 @@ export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
     async #write(config: object){
-        // app-config.json holds plaintext secrets (admin password, authToken,
-        // daemonPassword, SECRET_KEY/SSH_KEY). On a headless server the data dir
-        // is a predictable $HOME/.volt-deploy, so keep the file owner-only.
+        
+        
+        
         await writeFile(this.props.configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
         await chmod(this.props.configFile, 0o600).catch(() => {});
     }

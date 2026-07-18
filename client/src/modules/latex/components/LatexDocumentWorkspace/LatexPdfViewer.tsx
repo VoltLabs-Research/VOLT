@@ -27,13 +27,9 @@ const LatexPdfViewer = ({
 }: LatexPdfViewerProps) => {
     const [pageNumber, setPageNumber] = useState(1);
     const [scale, setScale] = useState(1);
-    /**
-     * URL of the PDF currently painted on screen. It only advances to a newer
-     * compile result once that result has finished rendering off-screen, so live
-     * recompiles swap in seamlessly — no loading flash, no zoom/scroll reset.
-     */
+    
     const [committedUrl, setCommittedUrl] = useState<string | null>(null);
-    /** Incoming buffer URL that has finished rendering and is ready to be shown. */
+    
     const [readyUrl, setReadyUrl] = useState<string | null>(null);
     const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
     const [pdfError, setPdfError] = useState<string | null>(null);
