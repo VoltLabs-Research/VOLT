@@ -6,10 +6,11 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import type { IAnalysisRepository, IPluginRepository } from '@shared/contracts/ports';
+import type { IPluginRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
 import { container as diContainer } from 'tsyringe';
 
 export interface FilterExpression {
@@ -36,11 +37,6 @@ export interface AnalysisAllAtomsResult {
 
 export class AtomPropertiesService {
         private readonly daemonClient = teamClusterDaemonClient;
-
-    #analysisRepositoryCache?: IAnalysisRepository;
-    private get analysisRepository(): IAnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
 
     #pluginRepositoryCache?: IPluginRepository<PluginLike>;
     private get pluginRepository(): IPluginRepository<PluginLike> {
@@ -139,10 +135,11 @@ export class AtomPropertiesService {
         analysisId: string,
         timestep: string
     ): Promise<AnalysisAllAtomsResult | null> {
-        const analysis = await this.analysisRepository.findById(analysisId);
-        if (!analysis) {
+        const analysisDoc = await AnalysisModel.findById(analysisId);
+        if (!analysisDoc) {
             return null;
         }
+        const analysis = toAnalysisLike(analysisDoc);
         const ownerClusterId = this.requireAnalysisStorageClusterId(analysis);
 
         return this.daemonClient.command<AnalysisAllAtomsResult | null>(
@@ -301,8 +298,9 @@ export class AtomPropertiesService {
     }
 
     private async getAnalysisAndPlugin(analysisId: string): Promise<{ analysis: Analysis; plugin: PluginLike }> {
-        const analysis = await this.analysisRepository.findById(analysisId);
-        if (!analysis) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+        const analysisDoc = await AnalysisModel.findById(analysisId);
+        if (!analysisDoc) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+        const analysis = toAnalysisLike(analysisDoc);
 
         const plugin = await this.pluginRepository.findById(analysis.props.plugin);
         if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);

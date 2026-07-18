@@ -3,15 +3,11 @@ import teamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemStatus } from '@modules/system/value-objects/SystemMetrics';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type {
-    IAnalysisRepository
-} from '@shared/contracts/ports';
 import type { TrajectoryLike } from '@shared/contracts/types';
 import {
     resolveAnalysisComputeClusterId,
@@ -335,7 +331,6 @@ export default class ClusterService {
     };
     #passwordHasher = new BcryptPasswordHasher();
     #systemMetricsRepository = new SystemMetricsRedisRepository();
-    #analysisRepository: IAnalysisRepository = new AnalysisRepository();
 
         #teamClusterDaemonClient = teamClusterDaemonClient;
 
@@ -1729,18 +1724,22 @@ export default class ClusterService {
         }
 
         await Promise.all(Array.from(grouped.entries()).map(async ([analysisId, group]) => {
-            const analysis = await this.#analysisRepository.findById(analysisId);
+            const analysis = await AnalysisModel.findById(analysisId);
             if (!analysis) {
                 return;
             }
 
-            const expectedArtifacts = this.#updateExpectedArtifacts(analysis.props.expectedArtifacts ?? [], group);
+            const expectedArtifacts = this.#updateExpectedArtifacts(analysis.expectedArtifacts ?? [], group);
             const artifactStatus = expectedArtifacts.length > 0
                 && expectedArtifacts.every((artifact) => artifact.status === 'ready')
                 ? 'ready'
-                : (analysis.props.artifactStatus ?? 'uploading');
+                : (analysis.artifactStatus ?? 'uploading');
 
-            const updatedAnalysis = await this.#analysisRepository.updateById(analysisId, { expectedArtifacts, artifactStatus });
+            const updatedAnalysis = await AnalysisModel.findByIdAndUpdate(
+                analysisId,
+                { $set: { expectedArtifacts, artifactStatus } },
+                { new: true }
+            );
             if (!updatedAnalysis) {
                 return;
             }
@@ -1748,11 +1747,11 @@ export default class ClusterService {
             await this.#eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.AnalysisStageChanged, {
                 analysisId,
                 teamId: group[0]!.teamId,
-                trajectoryId: updatedAnalysis.props.trajectory,
-                artifactStatus: updatedAnalysis.props.artifactStatus,
-                expectedArtifacts: updatedAnalysis.props.expectedArtifacts,
-                stages: updatedAnalysis.props.stages,
-                childAnalyses: updatedAnalysis.props.childAnalyses
+                trajectoryId: updatedAnalysis.trajectory.toString(),
+                artifactStatus: updatedAnalysis.artifactStatus,
+                expectedArtifacts: updatedAnalysis.expectedArtifacts,
+                stages: updatedAnalysis.stages,
+                childAnalyses: updatedAnalysis.childAnalyses
             })).catch((err) => {
                 logger.warn({ err, analysisId }, '[ClusterService.processDaemonSceneArtifactUpsert] Failed to publish analysis.stage.changed after artifact upsert');
             });
@@ -1823,7 +1822,7 @@ export default class ClusterService {
         );
         const analyses = await Promise.all(
             analysisIds.map(async (analysisId) => {
-                const analysis = await this.#analysisRepository.findById(analysisId);
+                const analysis = await AnalysisModel.findById(analysisId);
                 return [analysisId, analysis] as const;
             })
         );
@@ -1855,15 +1854,15 @@ export default class ClusterService {
                     throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
                 }
 
-                if (analysis.props.trajectory !== trajectory._id) {
+                if (analysis.trajectory.toString() !== trajectory._id) {
                     throw ApplicationError.badRequest('TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_MISMATCH', 'Analysis does not belong to the provided trajectory');
                 }
 
-                if (analysis.props.team !== trajectory.props.team) {
+                if (analysis.team.toString() !== trajectory.props.team) {
                     throw ApplicationError.conflict('TEAM_CLUSTER_DAEMON_ANALYSIS_TEAM_MISMATCH', 'Analysis ownership does not match its trajectory');
                 }
 
-                const analysisStorageClusterId = resolveAnalysisStorageClusterId(analysis.props);
+                const analysisStorageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() });
                 if (!analysisStorageClusterId) {
                     throw ApplicationError.conflict('TEAM_CLUSTER_DAEMON_ANALYSIS_STORAGE_CLUSTER_REQUIRED', 'Analysis storage cluster is required before accepting scene artifacts');
                 }
@@ -1873,7 +1872,7 @@ export default class ClusterService {
                 }
 
                 if (input.sourceType === 'plugin-exposure') {
-                    const analysisComputeClusterId = resolveAnalysisComputeClusterId(analysis.props);
+                    const analysisComputeClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() });
                     isReporterAuthorized = input.teamClusterId === analysisStorageClusterId
                         || (typeof analysisComputeClusterId === 'string' && analysisComputeClusterId === input.teamClusterId);
                 } else {
@@ -1889,12 +1888,12 @@ export default class ClusterService {
                     );
                 }
 
-                if (input.plugin && input.plugin !== analysis.props.plugin) {
+                if (input.plugin && input.plugin !== analysis.plugin.toString()) {
                     throw ApplicationError.badRequest('TEAM_CLUSTER_DAEMON_ANALYSIS_PLUGIN_MISMATCH', 'Payload plugin does not match persisted analysis ownership');
                 }
 
-                sanitizedAnalysisId = analysis._id;
-                sanitizedPluginId = analysis.props.plugin;
+                sanitizedAnalysisId = analysis._id.toString();
+                sanitizedPluginId = analysis.plugin.toString();
                 sanitizedStorageClusterId = analysisStorageClusterId;
             }
 

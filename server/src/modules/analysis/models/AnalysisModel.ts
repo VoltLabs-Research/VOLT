@@ -1,7 +1,7 @@
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, trajectoryRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Schema } from 'mongoose';
-import type { AnalysisProps } from '@modules/analysis/entities/Analysis';
+import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
 import type { Document, Model } from 'mongoose';
 
 enum AnalysisRelation {
@@ -149,5 +149,46 @@ AnalysisSchema.index({ trajectory: 1, storageClusterId: 1, createdAt: -1 });
 AnalysisSchema.index({ team: 1, storageClusterId: 1, createdAt: 1 });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
+
+/**
+ * Relation fields that get ObjectId<->string normalization when converting a
+ * raw document into the flat `Analysis` ({ _id, props }) shape below — the
+ * same list the deleted AnalysisMapper used to carry.
+ */
+const ANALYSIS_RELATION_KEYS = [
+    'createdBy',
+    'trajectory',
+    'plugin',
+    'computeClusterId',
+    'storageClusterId',
+    'team'
+] as const;
+
+/**
+ * Converts a raw AnalysisModel document into the neutral `{ _id, props }`
+ * shape (`Analysis` from `@shared/contracts/types/AnalysisProps`) that
+ * cross-module consumers and event payloads still expect. Unpopulated
+ * relation fields (plain `Types.ObjectId`) are stringified; populated
+ * sub-documents are left as-is, matching the previous AnalysisMapper
+ * behavior exactly.
+ */
+export const toAnalysisLike = (doc: AnalysisDocument): Analysis => {
+    const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
+    const { _id, __v: _ignoredVersion, ...rest } = documentProps;
+
+    for (const key of ANALYSIS_RELATION_KEYS) {
+        const value = Reflect.get(doc, key);
+
+        if (!value) continue;
+        if (doc.populated(key)) continue;
+
+        rest[key] = String(value);
+    }
+
+    return {
+        _id: String(_id),
+        props: rest as unknown as AnalysisProps
+    };
+};
 
 export default AnalysisModel;

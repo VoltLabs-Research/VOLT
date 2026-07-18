@@ -10,14 +10,13 @@ import type {
     AnalysisStageType,
     TrajectoryLike
 } from '@shared/contracts/types';
-import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { JobStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -220,8 +219,17 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
 export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
         private readonly redis = redisClient;
         private readonly eventBus = eventBus;
-    private readonly analysisRepo: IAnalysisRepository = new AnalysisRepository();
     private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;
+
+    private async findAnalysisById(analysisId: string): Promise<Analysis | null> {
+        const doc = await AnalysisModel.findById(analysisId);
+        return doc ? toAnalysisLike(doc) : null;
+    }
+
+    private async updateAnalysisById(analysisId: string, data: Record<string, unknown>): Promise<Analysis | null> {
+        const doc = await AnalysisModel.findByIdAndUpdate(analysisId, { $set: data }, { new: true });
+        return doc ? toAnalysisLike(doc) : null;
+    }
 
     private toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
         return {
@@ -265,7 +273,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
                 totalJobs.toString(),
                 SESSION_TTL_SECONDS.toString()
             ) as Promise<[number, number]>,
-            this.analysisRepo.updateById(analysisId, {
+            this.updateAnalysisById(analysisId, {
                 status: 'running',
                 totalFrames: totalJobs,
                 startedAt: new Date()
@@ -466,7 +474,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             stage
         );
 
-        const updatedAnalysis = await this.analysisRepo.updateById(analysis._id, {
+        const updatedAnalysis = await this.updateAnalysisById(analysis._id, {
             artifactStatus,
             expectedArtifacts,
             stages,
@@ -572,7 +580,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             input.status
         );
 
-        const updatedAnalysis = await this.analysisRepo.updateById(input.analysisId, {
+        const updatedAnalysis = await this.updateAnalysisById(input.analysisId, {
             artifactStatus: nextArtifactStatus
         }).catch(swallow('Failed to update artifactStatus from upload job', {
             analysisId: input.analysisId,
@@ -989,7 +997,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             'teamClusterId' | 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'
         >
     ): Promise<ResolvedAnalysisOwnership> {
-        const analysis = await this.analysisRepo.findById(input.analysisId);
+        const analysis = await this.findAnalysisById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
         }
@@ -1134,7 +1142,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
         }
 
         const finishedAt = new Date();
-        const currentAnalysis = await this.analysisRepo.findById(analysisId);
+        const currentAnalysis = await this.findAnalysisById(analysisId);
         const closedStages = this.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
         const closedChildAnalyses = this.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
         const closedExpectedArtifacts = this.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
@@ -1149,7 +1157,7 @@ export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletio
             analysisUpdates.expectedArtifacts = closedExpectedArtifacts;
         }
 
-        const analysis = (await this.analysisRepo.updateById(analysisId, analysisUpdates)
+        const analysis = (await this.updateAnalysisById(analysisId, analysisUpdates)
             .catch(swallow('Failed to finalize analysis status', { analysisId, status }))) ?? currentAnalysis;
 
         await this.publishAnalysisStatus(analysisId, teamId, status, {

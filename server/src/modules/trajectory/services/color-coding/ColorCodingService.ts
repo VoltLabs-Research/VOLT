@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
-import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
@@ -40,11 +40,6 @@ const buildPluginPropertyUnavailableError = (
 };
 
 export class ColorCodingService {
-    #analysisRepositoryCache?: IAnalysisRepository;
-    private get analysisRepository(): IAnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
-
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     private get teamClusterSelectionService(): ITeamClusterSelectionService {
         return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
@@ -205,7 +200,6 @@ export class ColorCodingService {
             trajectoryId: String(trajectoryId),
             timestep: String(timestep),
             analysisId: resolvedAnalysisId,
-            analysisRepository: this.analysisRepository,
             teamClusterSelectionService: this.teamClusterSelectionService,
             dumpStorage: trajectoryDumpStorageService,
             buildClusterRequiredError

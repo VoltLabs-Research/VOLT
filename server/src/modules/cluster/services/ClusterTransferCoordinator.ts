@@ -4,8 +4,7 @@ import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterD
 import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import type { IAnalysisRepository } from '@shared/contracts/ports';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
@@ -188,7 +187,6 @@ export class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
     private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
     private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
-    private readonly analysisRepository: IAnalysisRepository = new AnalysisRepository();
     private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
@@ -801,28 +799,21 @@ export class ClusterTransferCoordinator {
         }
 
         if (scopeType === 'analysis') {
-            const analysis = await this.analysisRepository.findById(scopeId);
+            const analysis = await AnalysisModel.findById(scopeId);
             if (!analysis) {
                 return [];
             }
 
-            return resolveAnalysisComputeClusterId(analysis.props) === sourceClusterId
-                ? [analysis._id]
+            return resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() }) === sourceClusterId
+                ? [analysis._id.toString()]
                 : [];
         }
 
-        const analyses = await this.analysisRepository.export({
-            filter: {
-                trajectory: scopeId
-            },
-            sort: {
-                createdAt: 1
-            }
-        });
+        const analyses = await AnalysisModel.find({ trajectory: scopeId }).sort({ createdAt: 1 }).exec();
 
         return analyses
-            .filter((analysis) => resolveAnalysisComputeClusterId(analysis.props) === sourceClusterId)
-            .map((analysis) => analysis._id);
+            .filter((analysis) => resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() }) === sourceClusterId)
+            .map((analysis) => analysis._id.toString());
     }
 
     private async selectVictimPlacement(sourceCluster: TeamCluster): Promise<StoragePlacement | null> {
@@ -1074,10 +1065,8 @@ export class ClusterTransferCoordinator {
         }
 
         if (job.props.scopeType === 'analysis') {
-            const analysis = await this.analysisRepository.findById(job.props.scopeId, {
-                select: ['trajectory']
-            });
-            const trajectoryId = analysis?.props.trajectory;
+            const analysis = await AnalysisModel.findById(job.props.scopeId).select('trajectory').exec();
+            const trajectoryId = analysis?.trajectory.toString();
 
             if (trajectoryId) {
                 const trajectory = await TrajectoryModel.findById(trajectoryId).select('name').exec();

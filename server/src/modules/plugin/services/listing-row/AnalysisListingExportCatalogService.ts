@@ -1,5 +1,4 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { IPluginRepository } from '@modules/plugin/services/PluginRepository';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import {
@@ -16,6 +15,7 @@ import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/l
 import { Exporter } from '@modules/plugin/entities/plugin/workflow/nodes/ExportNode';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 
@@ -83,7 +83,7 @@ interface ExcludedExposureSet {
 }
 
 interface AnalysisExportContext {
-    analysis: Awaited<ReturnType<IAnalysisRepository['findById']>>;
+    analysis: AnalysisDocument | null;
     teamClusterId?: string;
     excludedExposures: ExcludedExposureSet;
 }
@@ -104,7 +104,6 @@ const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
 export class AnalysisListingExportCatalogService {
     constructor(
-        private readonly analysisRepository: IAnalysisRepository,
         private readonly pluginRepository: IPluginRepository,
         private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
@@ -115,7 +114,7 @@ export class AnalysisListingExportCatalogService {
         if (!teamClusterId) {
             return {
                 analysisId,
-                hasConfig: this.hasConfig(analysis?.props.config),
+                hasConfig: this.hasConfig(analysis?.config),
                 listings: [],
                 subListings: []
             };
@@ -127,7 +126,7 @@ export class AnalysisListingExportCatalogService {
 
         return {
             analysisId,
-            hasConfig: this.hasConfig(analysis?.props.config),
+            hasConfig: this.hasConfig(analysis?.config),
             listings,
             subListings
         };
@@ -140,7 +139,7 @@ export class AnalysisListingExportCatalogService {
         const selectedSubListingIds = this.normalizeSelectionSet(input.selectedSubListingIds);
 
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(input.analysisId);
-        const config = includeConfig ? analysis?.props.config : undefined;
+        const config = includeConfig ? analysis?.config : undefined;
 
         if (!teamClusterId) {
             return {
@@ -247,11 +246,11 @@ export class AnalysisListingExportCatalogService {
     }
 
     private async resolveContext(analysisId: string): Promise<AnalysisExportContext> {
-        const analysis = await this.analysisRepository.findById(analysisId);
+        const analysis = await AnalysisModel.findById(analysisId);
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId(analysis.props)
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
             : undefined;
-        const excludedExposures = await this.resolveExcludedExposures(analysis?.props.plugin);
+        const excludedExposures = await this.resolveExcludedExposures(analysis?.plugin.toString());
 
         return {
             analysis,
@@ -287,7 +286,6 @@ export class AnalysisListingExportCatalogService {
 
         return enrichDaemonListingRows({
             rows: listingRows,
-            analysisRepository: this.analysisRepository,
             fallbackAnalysisId: analysisId
         });
     }

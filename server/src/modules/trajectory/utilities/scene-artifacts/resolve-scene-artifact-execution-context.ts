@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import type { TrajectoryDumpStorageService } from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSceneArtifactStorageCluster } from './resolve-scene-artifact-storage-cluster';
@@ -10,7 +10,6 @@ interface ResolveSceneArtifactExecutionContextInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
-    analysisRepository: IAnalysisRepository;
     teamClusterSelectionService: ITeamClusterSelectionService;
     dumpStorage: TrajectoryDumpStorageService;
     buildClusterRequiredError: () => ApplicationError;
@@ -25,15 +24,13 @@ export const resolveSceneArtifactExecutionContext = async ({
     trajectoryId,
     timestep,
     analysisId,
-    analysisRepository,
     teamClusterSelectionService,
     dumpStorage,
     buildClusterRequiredError
 }: ResolveSceneArtifactExecutionContextInput): Promise<SceneArtifactExecutionContext> => {
     const storageClusterId = await resolveSceneArtifactStorageCluster({
         trajectoryId,
-        analysisId,
-        analysisRepository
+        analysisId
     });
 
     const trajectory = await TrajectoryModel.findById(trajectoryId);

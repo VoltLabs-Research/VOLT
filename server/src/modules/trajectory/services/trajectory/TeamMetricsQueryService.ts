@@ -1,8 +1,6 @@
 import { TeamMetricsSnapshot } from '@modules/trajectory/contracts/trajectory';
-import type { IAnalysisRepository } from '@shared/contracts/ports';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
-import { container as diContainer } from 'tsyringe';
 
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 const MAX_QUERY_LIMIT = 10000;
@@ -78,11 +76,6 @@ const toMonthChange = (current: number, previous: number): number => {
 };
 
 export class TeamMetricsQueryService {
-    #analysisRepoCache?: IAnalysisRepository;
-    private get analysisRepo(): IAnalysisRepository {
-        return (this.#analysisRepoCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
-
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {
         const window = createTimeWindow();
 
@@ -97,18 +90,14 @@ export class TeamMetricsQueryService {
 
         const trajectoryIds = trajectories.map((trajectory) => trajectory._id.toString());
         const analyses = trajectoryIds.length > 0
-            ? (await this.analysisRepo.findAll({
-                filter: { trajectory: { $in: trajectoryIds } } as Record<string, unknown>,
-                page: 1,
-                limit: MAX_QUERY_LIMIT
-            })).data
+            ? await AnalysisModel.find({ trajectory: { $in: trajectoryIds } }).limit(MAX_QUERY_LIMIT).exec()
             : [];
 
         const analysisBuckets = createBuckets();
 
         for (const analysis of analyses) {
-            if (analysis.props.createdAt) {
-                updateBuckets(analysisBuckets, analysis.props.createdAt, window);
+            if (analysis.createdAt) {
+                updateBuckets(analysisBuckets, analysis.createdAt, window);
             }
         }
 

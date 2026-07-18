@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
-import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { FilterExpression } from '@modules/trajectory/services/trajectory/AtomPropertiesService';
@@ -56,11 +56,6 @@ const buildPluginPropertyUnavailableError = (
 };
 
 export class ParticleFilterService {
-    #analysisRepositoryCache?: IAnalysisRepository;
-    private get analysisRepository(): IAnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
-
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     private get teamClusterSelectionService(): ITeamClusterSelectionService {
         return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
@@ -217,7 +212,6 @@ export class ParticleFilterService {
             trajectoryId: String(trajectoryId),
             timestep: String(timestep),
             analysisId: resolvedAnalysisId,
-            analysisRepository: this.analysisRepository,
             teamClusterSelectionService: this.teamClusterSelectionService,
             dumpStorage: trajectoryDumpStorageService,
             buildClusterRequiredError

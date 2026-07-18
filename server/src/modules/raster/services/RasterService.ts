@@ -11,7 +11,6 @@ import type {
 } from '@shared/contracts/dtos/GetRasterMetadataDTO';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -47,10 +46,8 @@ interface GetRasterFramePNGInput {
 
 export default class RasterService {
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
-    #analysisRepository = new AnalysisRepository();
     #frameReader = new RasterFrameService(
-        new RasterStorageService(this.#objectGatewayClient),
-        this.#analysisRepository
+        new RasterStorageService(this.#objectGatewayClient)
     );
     #enqueuerCache?: RasterJobEnqueuerService;
     get #enqueuer(): RasterJobEnqueuerService {
@@ -62,8 +59,7 @@ export default class RasterService {
     }
 
     #metadata = new RasterMetadataService(
-        new RasterStorageService(this.#objectGatewayClient),
-        this.#analysisRepository
+        new RasterStorageService(this.#objectGatewayClient)
     );
 
     async triggerRasterization(input: TriggerRasterizationInput): Promise<TriggerRasterizationResult> {

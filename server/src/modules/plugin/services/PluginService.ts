@@ -63,11 +63,11 @@ import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-re
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
-    IAnalysisRepository,
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
 } from '@shared/contracts/ports';
+import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
@@ -500,7 +500,6 @@ export default class PluginService {
         new ClusterObjectArchiveService()
     );
     #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
-        diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository),
         this.#pluginRepository,
         teamClusterDaemonClient
     );
@@ -511,11 +510,6 @@ export default class PluginService {
     #storagePlacementService: IStoragePlacementService = storagePlacementService;
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
     #sharedObjectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
-
-    #analysisRepositoryCache?: IAnalysisRepository;
-    get #analysisRepository(): IAnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
 
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     get #teamClusterSelectionService(): ITeamClusterSelectionService {
@@ -1128,9 +1122,11 @@ export default class PluginService {
             });
         } catch (error: unknown) {
             await Promise.all(createdAnalyses.map((analysis) =>
-                this.#analysisRepository.updateById(analysis._id, {
-                    status: 'failed',
-                    finishedAt: new Date()
+                AnalysisModel.findByIdAndUpdate(analysis._id, {
+                    $set: {
+                        status: 'failed',
+                        finishedAt: new Date()
+                    }
                 }).catch((updateError: unknown) => {
                     logger.warn(
                         { analysisId: analysis._id, err: updateError },
@@ -1204,7 +1200,7 @@ export default class PluginService {
             config: sanitizedConfig
         });
 
-        const cached = await this.#analysisRepository.findOne({
+        const cached = await AnalysisModel.findOne({
             pipelineStageHash: stageHash,
             status: 'completed',
             trajectory: input.trajectoryId
@@ -1215,7 +1211,7 @@ export default class PluginService {
                 execution: {
                     kind: 'plugin',
                     cacheHit: true,
-                    cacheSourceAnalysisId: cached._id,
+                    cacheSourceAnalysisId: cached._id.toString(),
                     sharedExposureIds
                 }
             };
@@ -1263,7 +1259,7 @@ export default class PluginService {
             await this.#storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
         }
 
-        const analysis = await this.#analysisRepository.create({
+        const analysisDoc = await AnalysisModel.create({
             plugin: plugin._id,
             pluginDisplayName,
             computeClusterId,
@@ -1279,7 +1275,8 @@ export default class PluginService {
             stages: [],
             childAnalyses: []
         });
-        await this.#storagePlacementService.ensurePlacement('analysis', analysis._id);
+        await this.#storagePlacementService.ensurePlacement('analysis', analysisDoc._id.toString());
+        const analysis = toAnalysisLike(analysisDoc);
 
         const execution: RoutePluginExecutionInput = {
             teamClusterId: computeClusterId,
@@ -1307,7 +1304,7 @@ export default class PluginService {
 
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInputDTO): Promise<GetPluginExposureGLBOutputDTO> {
-        const analysis = await this.#analysisRepository.findById(String(input.analysisId));
+        const analysis = await AnalysisModel.findById(String(input.analysisId));
 
         if (!analysis) {
             throw ApplicationError.notFound(
@@ -1316,7 +1313,7 @@ export default class PluginService {
             );
         }
 
-        if (String(analysis.props.team) !== String(input.teamId)) {
+        if (String(analysis.team) !== String(input.teamId)) {
             throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
@@ -1461,7 +1458,7 @@ export default class PluginService {
     }
 
     async getPluginExposureExport(input: GetPluginExposureExportInputDTO): Promise<GetPluginExposureExportOutputDTO> {
-        const analysis = await this.#analysisRepository.findById(String(input.analysisId));
+        const analysis = await AnalysisModel.findById(String(input.analysisId));
 
         if (!analysis) {
             throw ApplicationError.notFound(
@@ -1470,14 +1467,14 @@ export default class PluginService {
             );
         }
 
-        if (String(analysis.props.team) !== String(input.teamId)) {
+        if (String(analysis.team) !== String(input.teamId)) {
             throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 ErrorCodes.ANALYSIS_NOT_FOUND
             );
         }
 
-        const pluginId = String(analysis.props.plugin);
+        const pluginId = String(analysis.plugin);
         const plugin = await this.#pluginRepository.findById(pluginId);
         let pluginName = pluginId;
 
@@ -1487,7 +1484,7 @@ export default class PluginService {
 
         return this.#pluginExposureExportService.exportAnalysisExposureBundle({
             analysisId: String(input.analysisId),
-            trajectoryId: String(analysis.props.trajectory),
+            trajectoryId: String(analysis.trajectory),
             pluginName
         });
     }
@@ -1496,9 +1493,9 @@ export default class PluginService {
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInputDTO): Promise<GetListingRowsByAnalysisIdOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
 
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId(analysis.props)
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
             : undefined;
         if (!teamClusterId) {
             return EMPTY_LISTING_ROWS_RESULT;
@@ -1517,7 +1514,6 @@ export default class PluginService {
 
         const rows = await enrichDaemonListingRows({
             rows: daemonResult.data || [],
-            analysisRepository: this.#analysisRepository,
             fallbackAnalysisId: input.analysisId
         });
         const data = rows.map(mapDaemonListingRow);
@@ -1544,9 +1540,9 @@ export default class PluginService {
     async getSubListing(input: GetSubListingInputDTO): Promise<GetSubListingOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
 
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId(analysis.props)
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
             : undefined;
         if (!teamClusterId) {
             return emptySubListingResult(input.subListingName);
@@ -1635,7 +1631,6 @@ export default class PluginService {
 
         const rows = await enrichDaemonListingRows({
             rows: allRows,
-            analysisRepository: this.#analysisRepository,
             fallbackAnalysisId: resolved.analysisId
         });
         const columns = buildListingExportColumns(rows);
@@ -1674,7 +1669,6 @@ export default class PluginService {
 
         const rows = await enrichDaemonListingRows({
             rows: daemonResult.data || [],
-            analysisRepository: this.#analysisRepository,
             fallbackAnalysisId: resolved.analysisId
         });
         const data = rows.map(mapDaemonRow);
@@ -1693,9 +1687,9 @@ export default class PluginService {
         input: { pluginId: string; teamId: string; analysisId?: string; trajectoryId?: string }
     ): Promise<{ teamClusterId: string; analysisId: string } | null> {
         if (input.analysisId) {
-            const analysis = await this.#analysisRepository.findById(input.analysisId);
+            const analysis = await AnalysisModel.findById(input.analysisId);
             const teamClusterId = analysis
-                ? resolveAnalysisComputeClusterId(analysis.props)
+                ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
                 : undefined;
             if (!teamClusterId) {
                 return null;
@@ -1711,19 +1705,19 @@ export default class PluginService {
         if (input.trajectoryId) filter.trajectory = input.trajectoryId;
         if (input.teamId) filter.team = input.teamId;
 
-        const analysis = await this.#analysisRepository.findOne(filter);
+        const analysis = await AnalysisModel.findOne(filter);
         const teamClusterId = analysis
-            ? resolveAnalysisComputeClusterId(analysis.props)
+            ? resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() })
             : undefined;
         if (analysis && teamClusterId) {
-            return { teamClusterId, analysisId: analysis._id };
+            return { teamClusterId, analysisId: analysis._id.toString() };
         }
 
         return null;
     }
 
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInputDTO): Promise<SummarizeAnalysisResultOutputDTO> {
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
@@ -1731,9 +1725,9 @@ export default class PluginService {
             );
         }
 
-        const status = analysis.props.status || 'pending';
-        const pluginDisplayName = analysis.props.pluginDisplayName || analysis.props.plugin;
-        const teamClusterId = resolveAnalysisComputeClusterId(analysis.props);
+        const status = analysis.status || 'pending';
+        const pluginDisplayName = analysis.pluginDisplayName || analysis.plugin.toString();
+        const teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() });
 
         if (!teamClusterId) {
             return this.#summarizeEmptyResult(input.analysisId, pluginDisplayName, status,
@@ -1744,12 +1738,11 @@ export default class PluginService {
 
         const enriched = await enrichDaemonListingRows({
             rows,
-            analysisRepository: this.#analysisRepository,
             fallbackAnalysisId: input.analysisId
         });
 
         const trajectoryName = enriched.find((row) => row.trajectoryName)?.trajectoryName
-            || (await this.#summarizeResolveTrajectoryName(analysis.props.trajectory));
+            || (await this.#summarizeResolveTrajectoryName(analysis.trajectory.toString()));
 
         const filtered = input.exposureId
             ? enriched.filter((row) => row.exposureId === input.exposureId)

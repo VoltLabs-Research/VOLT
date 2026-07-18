@@ -1,4 +1,3 @@
-export type { IAnalysisRepository, AnalysisRuntimeTarget, AnalysisTeamSearchOptions } from './IAnalysisRepository';
 export type { ITeamClusterObjectGatewayClient } from './ITeamClusterObjectGatewayClient';
 export type { ITeamClusterSelectionService } from './ITeamClusterSelectionService';
 export type { ITeamClusterExposureRegistryService } from './ITeamClusterExposureRegistryService';

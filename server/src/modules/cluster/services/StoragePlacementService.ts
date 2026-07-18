@@ -1,9 +1,7 @@
 import type {
-    IAnalysisRepository,
     ITeamClusterSelectionService,
     IStoragePlacementRepository
 } from '@shared/contracts/ports';
-import type { Analysis } from '@shared/contracts/types';
 import type { IPluginRepository } from '@shared/contracts/ports';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import {
@@ -16,7 +14,7 @@ import StoragePlacement, {
     createStoragePlacementProps
 } from '@modules/cluster/entities/StoragePlacement';
 import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
@@ -38,7 +36,6 @@ interface ResolvedPlacementDefinition {
 
 export class StoragePlacementService implements IStoragePlacementService {
     private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
-    private readonly analysisRepository: IAnalysisRepository = new AnalysisRepository();
     private readonly pluginRepository = new PluginRepository() as unknown as IPluginRepository<PluginPlacementView>;
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     private get teamClusterSelectionService(): ITeamClusterSelectionService {
@@ -146,24 +143,17 @@ export class StoragePlacementService implements IStoragePlacementService {
         storageClusterId: string
     ): Promise<void> {
         if (scopeType === 'trajectory') {
-            const analyses = await this.analysisRepository.export({
-                filter: {
-                    trajectory: scopeId
-                },
-                sort: {
-                    createdAt: 1
-                }
-            });
+            const analyses = await AnalysisModel.find({ trajectory: scopeId }).sort({ createdAt: 1 }).exec();
 
             await Promise.all([
                 TrajectoryModel.findByIdAndUpdate(scopeId, {
                     $set: { storageClusterId }
                 }).exec(),
-                this.analysisRepository.updateMany({
+                AnalysisModel.updateMany({
                     trajectory: scopeId
                 }, {
-                    storageClusterId
-                }),
+                    $set: { storageClusterId }
+                }).exec(),
                 SceneArtifactModel.updateMany({
                     trajectory: scopeId
                 }, {
@@ -176,9 +166,9 @@ export class StoragePlacementService implements IStoragePlacementService {
 
         if (scopeType === 'analysis') {
             await Promise.all([
-                this.analysisRepository.updateById(scopeId, {
-                    storageClusterId
-                }),
+                AnalysisModel.findByIdAndUpdate(scopeId, {
+                    $set: { storageClusterId }
+                }).exec(),
                 SceneArtifactModel.updateMany({
                     analysis: scopeId
                 }, {
@@ -223,30 +213,26 @@ export class StoragePlacementService implements IStoragePlacementService {
             trajectoryTransferIds.add(trajectoryId);
         }
 
-        const analyses = await this.analysisRepository.export({
-            filter: {
-                team: teamId,
-                storageClusterId: primaryClusterId
-            },
-            sort: {
-                createdAt: 1
-            }
-        });
+        const analyses = await AnalysisModel.find({
+            team: teamId,
+            storageClusterId: primaryClusterId
+        }).sort({ createdAt: 1 }).exec();
 
         const candidateAnalyses = analyses.filter(
-            (analysis) => !trajectoryTransferIds.has(analysis.props.trajectory)
+            (analysis) => !trajectoryTransferIds.has(analysis.trajectory.toString())
         );
 
         const analysisPlacements = await this.loadPlacementsByScope(
             'analysis',
-            candidateAnalyses.map((analysis) => analysis._id)
+            candidateAnalyses.map((analysis) => analysis._id.toString())
         );
 
         for (const analysis of candidateAnalyses) {
+            const analysisId = analysis._id.toString();
             const placement = await this.persistResolvedPlacement(
                 'analysis',
-                analysis._id,
-                analysisPlacements.get(analysis._id) ?? null,
+                analysisId,
+                analysisPlacements.get(analysisId) ?? null,
                 this.resolveAnalysisPlacementDefinition(analysis)
             );
             if (placement.props.primaryClusterId !== primaryClusterId) {
@@ -293,7 +279,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         }
 
         if (scopeType === 'analysis') {
-            const analysis = await this.analysisRepository.findById(scopeId);
+            const analysis = await AnalysisModel.findById(scopeId);
             if (!analysis) {
                 throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found for storage placement');
             }
@@ -331,8 +317,8 @@ export class StoragePlacementService implements IStoragePlacementService {
         };
     }
 
-    private resolveAnalysisPlacementDefinition(analysis: Analysis): ResolvedPlacementDefinition {
-        const storageClusterId = resolveAnalysisStorageClusterId(analysis.props);
+    private resolveAnalysisPlacementDefinition(analysis: AnalysisDocument): ResolvedPlacementDefinition {
+        const storageClusterId = resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() });
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'StoragePlacement::AnalysisStorageClusterRequired',
@@ -341,30 +327,31 @@ export class StoragePlacementService implements IStoragePlacementService {
         }
 
         return {
-            team: analysis.props.team,
+            team: analysis.team.toString(),
             primaryClusterId: storageClusterId,
-            buckets: buildAnalysisPlacementBuckets(analysis.props.trajectory, analysis._id)
+            buckets: buildAnalysisPlacementBuckets(analysis.trajectory.toString(), analysis._id.toString())
         };
     }
 
     private async synchronizeAnalysisPlacementsForTrajectory(
         trajectoryId: string,
-        analyses: Analysis[],
+        analyses: AnalysisDocument[],
         storageClusterId: string
     ): Promise<void> {
         for (const analysis of analyses) {
-            const existingPlacement = await this.storagePlacementRepository.findByScope('analysis', analysis._id);
+            const analysisId = analysis._id.toString();
+            const existingPlacement = await this.storagePlacementRepository.findByScope('analysis', analysisId);
             const existingPrimaryClusterId = existingPlacement?.props.primaryClusterId;
 
-            await this.storagePlacementRepository.upsertByScope('analysis', analysis._id, createStoragePlacementProps({
-                team: analysis.props.team,
+            await this.storagePlacementRepository.upsertByScope('analysis', analysisId, createStoragePlacementProps({
+                team: analysis.team.toString(),
                 scopeType: 'analysis',
-                scopeId: analysis._id,
+                scopeId: analysisId,
                 primaryClusterId: storageClusterId,
                 replicaClusterIds: existingPlacement?.props.replicaClusterIds.filter((clusterId) => {
                     return clusterId !== storageClusterId && clusterId !== existingPrimaryClusterId;
                 }) ?? [],
-                buckets: buildAnalysisPlacementBuckets(trajectoryId, analysis._id),
+                buckets: buildAnalysisPlacementBuckets(trajectoryId, analysisId),
                 state: 'active',
                 lastVerifiedAt: existingPlacement?.props.lastVerifiedAt ?? null,
                 bytesUsed: existingPlacement?.props.bytesUsed ?? null,

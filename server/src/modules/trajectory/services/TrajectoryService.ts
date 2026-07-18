@@ -56,7 +56,7 @@ import {
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types';
-import type { Analysis, DownloadStreamOutputDTO } from '@shared/contracts/types';
+import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
@@ -66,7 +66,6 @@ import storagePlacementService from '@modules/cluster/services/StoragePlacementS
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type {
-    IAnalysisRepository,
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService,
     IStoragePlacementService,
@@ -75,7 +74,8 @@ import type {
     IDaemonAnalysisCompletionService
 } from '@shared/contracts/ports';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import AnalysisModel, { toAnalysisLike, type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
+import { findRuntimeTargetsByTrajectoryId } from '@modules/analysis/models/analysis-queries';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import PluginService from '@modules/plugin/services/PluginService';
 import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
@@ -380,7 +380,6 @@ export default class TrajectoryService {
     #teamClusterRepository = new TeamClusterRepository();
     #daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
     #simulationCellRepository = new SimulationCellRepositoryAdapter();
-    #analysisRepository: IAnalysisRepository = new AnalysisRepository();
     #pluginService = new PluginService();
     #analysisService = new AnalysisService();
 
@@ -663,7 +662,7 @@ export default class TrajectoryService {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
-        const analysisRuntimeTargets = await this.#analysisRepository.findRuntimeTargetsByTrajectoryId(input.trajectoryId);
+        const analysisRuntimeTargets = await findRuntimeTargetsByTrajectoryId(input.trajectoryId);
         const deleted = await this.#deleteTrajectoryById(input.trajectoryId);
         if (!deleted) {
             throw ApplicationError.notFound(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
@@ -934,20 +933,42 @@ export default class TrajectoryService {
         });
     }
 
+    async #findAnalyses(options: {
+        filter: Record<string, unknown>;
+        populate?: unknown;
+        sort?: Record<string, 1 | -1>;
+        page?: number;
+        limit?: number;
+    }): Promise<{ data: AnalysisDocument[]; total: number; page: number; totalPages: number; limit: number }> {
+        const { filter, populate, sort, page = 1, limit = 100 } = options;
+        const skip = (page - 1) * limit;
+
+        let query = AnalysisModel.find(filter).skip(skip).limit(limit) as any;
+        if (populate) query = query.populate(populate as any);
+        if (sort) query = query.sort(sort);
+
+        const [data, total] = await Promise.all([
+            query.exec() as Promise<AnalysisDocument[]>,
+            AnalysisModel.countDocuments(filter)
+        ]);
+
+        return { data, total, page, totalPages: Math.ceil(total / limit), limit };
+    }
+
     async downloadTrajectoryAnalyses(input: DownloadTrajectoryAnalysesInputDTO): Promise<DownloadTrajectoryAnalysesOutputDTO> {
         const trajectory = await TrajectoryModel.findById(input.trajectoryId);
         if (!trajectory || String(trajectory.team) !== input.teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const analyses = await this.#analysisRepository.findAll({
+        const analyses = await this.#findAnalyses({
             filter: { trajectory: input.trajectoryId, team: input.teamId },
             sort: { createdAt: -1 },
             limit: 1000
         });
 
         const completedAnalyses = analyses.data.filter((analysis) => (
-            String(analysis.props.status || '').toLowerCase() === ANALYSIS_STATUS_COMPLETED
+            String(analysis.status || '').toLowerCase() === ANALYSIS_STATUS_COMPLETED
         ));
 
         if (completedAnalyses.length === 0) {
@@ -965,7 +986,7 @@ export default class TrajectoryService {
 
         const limit = pLimit(ANALYSIS_EXPORT_CONCURRENCY);
         const archiveEntries = (await Promise.all(completedAnalyses.map((analysis) => (
-            limit(() => this.#buildAnalysisArchiveEntry(analysis, input.teamId))
+            limit(() => this.#buildAnalysisArchiveEntry(analysis._id.toString(), input.teamId))
         )))).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
         if (archiveEntries.length === 0) {
@@ -1017,17 +1038,17 @@ export default class TrajectoryService {
             const ownerClusterId = storageClusterIdOf(trajectory);
             let teamClusterId: string | undefined;
             if (analysisId) {
-                const analysis = await this.#analysisRepository.findById(analysisId);
+                const analysis = await AnalysisModel.findById(analysisId);
                 if (!analysis) {
                     throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
                 }
-                if (analysis.props.trajectory !== trajectoryId) {
+                if (analysis.trajectory.toString() !== trajectoryId) {
                     throw ApplicationError.badRequest(
                         ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH,
                         'Analysis does not belong to the requested trajectory'
                     );
                 }
-                teamClusterId = resolveAnalysisComputeClusterId(analysis.props) ?? teamClusterId;
+                teamClusterId = resolveAnalysisComputeClusterId({ computeClusterId: analysis.computeClusterId?.toString() }) ?? teamClusterId;
             } else if (ownerClusterId) {
                 teamClusterId = await this.#clusterSelection.resolveComputeClusterId(String(trajectory.team), undefined, ownerClusterId);
             }
@@ -1507,7 +1528,7 @@ export default class TrajectoryService {
     async listPublicCanvasAnalyses(input: { trajectoryId: string; userId?: string; page?: number; limit?: number }): Promise<GetAnalysesByTrajectoryIdOutputDTO> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analyses = await this.#analysisRepository.findAll({
+        const analyses = await this.#findAnalyses({
             filter: { trajectory: input.trajectoryId },
             populate: [TRAJECTORY_POPULATE, { path: 'plugin' }],
             page: input.page,
@@ -1515,7 +1536,8 @@ export default class TrajectoryService {
             sort: { createdAt: -1 }
         });
 
-        const data = analyses.data.map((analysis) => {
+        const data = analyses.data.map((doc) => {
+            const analysis = toAnalysisLike(doc);
             const props = { ...analysis.props };
             const pluginId = extractPluginId(props.plugin);
             return { ...props, _id: analysis._id, plugin: pluginId };
@@ -1584,8 +1606,8 @@ export default class TrajectoryService {
     async getPublicCanvasPlugin(input: { trajectoryId: string; pluginId: string; userId?: string }): Promise<GetPluginByIdOutputDTO> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analyses = await this.#analysisRepository.findAll({ filter: { trajectory: input.trajectoryId }, limit: 1000 });
-        const pluginAttached = analyses.data.some((analysis) => extractPluginId(analysis.props.plugin) === input.pluginId);
+        const analyses = await this.#findAnalyses({ filter: { trajectory: input.trajectoryId }, limit: 1000 });
+        const pluginAttached = analyses.data.some((analysis) => extractPluginId(analysis.plugin) === input.pluginId);
 
         if (!pluginAttached) {
             throw ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, 'Plugin not found');
@@ -1609,14 +1631,14 @@ export default class TrajectoryService {
         const teamId = String(trajectory.team);
 
         if (input.analysisId) {
-            const analysis = await this.#analysisRepository.findById(input.analysisId);
+            const analysis = await AnalysisModel.findById(input.analysisId);
             if (!analysis) {
                 throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
             }
-            if (String(analysis.props.trajectory) !== input.trajectoryId) {
+            if (String(analysis.trajectory) !== input.trajectoryId) {
                 throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
             }
-            if (extractPluginId(analysis.props.plugin) !== input.pluginId) {
+            if (extractPluginId(analysis.plugin) !== input.pluginId) {
                 throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested plugin');
             }
         }
@@ -1646,11 +1668,11 @@ export default class TrajectoryService {
     }): Promise<GetSubListingOutputDTO> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.props.trajectory) !== input.trajectoryId) {
+        if (String(analysis.trajectory) !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
@@ -1659,7 +1681,7 @@ export default class TrajectoryService {
             exposureId: input.exposureId,
             timestep: input.timestep,
             subListingName: input.subListingName,
-            teamId: String(analysis.props.team),
+            teamId: String(analysis.team),
             page: input.page,
             limit: input.limit
         });
@@ -1675,16 +1697,16 @@ export default class TrajectoryService {
     }): Promise<GetPluginExposureGLBOutputDTO> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.props.trajectory) !== input.trajectoryId) {
+        if (String(analysis.trajectory) !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
         return this.#pluginService.getPluginExposureGLB({
-            teamId: String(analysis.props.team),
+            teamId: String(analysis.team),
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
@@ -1702,16 +1724,16 @@ export default class TrajectoryService {
     }): Promise<GetAnalysisFrameLogOutputDTO> {
         await this.#assertReadable(input.trajectoryId, input.userId);
 
-        const analysis = await this.#analysisRepository.findById(input.analysisId);
+        const analysis = await AnalysisModel.findById(input.analysisId);
         if (!analysis) {
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
-        if (String(analysis.props.trajectory) !== input.trajectoryId) {
+        if (String(analysis.trajectory) !== input.trajectoryId) {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
         return analysisExecutionLogService.getFrameLog({
-            teamId: String(analysis.props.team),
+            teamId: String(analysis.team),
             analysisId: input.analysisId,
             trajectoryId: input.trajectoryId,
             timestep: input.timestep,
@@ -1944,11 +1966,11 @@ export default class TrajectoryService {
         });
     }
 
-    async #buildAnalysisArchiveEntry(analysis: Analysis, teamId: string): Promise<ClusterArchiveObjectEntry | null> {
+    async #buildAnalysisArchiveEntry(analysisId: string, teamId: string): Promise<ClusterArchiveObjectEntry | null> {
         let exportArtifact: DownloadStreamOutputDTO;
 
         try {
-            exportArtifact = await this.#pluginService.getPluginExposureExport({ analysisId: analysis._id, teamId });
+            exportArtifact = await this.#pluginService.getPluginExposureExport({ analysisId, teamId });
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 return null;
@@ -1967,7 +1989,7 @@ export default class TrajectoryService {
 
         const filename = readFilenameFromContentDisposition(exportArtifact.headers['Content-Disposition'])
             || readFilenameFromContentDisposition(exportArtifact.headers['content-disposition'])
-            || `AnalysisID-${analysis._id}.zip`;
+            || `AnalysisID-${analysisId}.zip`;
 
         return {
             type: 'object' as const,

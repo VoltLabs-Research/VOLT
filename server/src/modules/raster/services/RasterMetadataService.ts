@@ -7,10 +7,10 @@ import { RasterMetadataStatus } from '@shared/contracts/types/RasterMetadata';
 import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
 import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@shared/application/utilities/raster-storage-paths';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
-import type { IAnalysisRepository } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
 
@@ -25,8 +25,7 @@ interface ResolvedTrajectoryRasterMetadata {
 
 export class RasterMetadataService {
     constructor(
-        private readonly rasterStorage: RasterStorageService,
-        private readonly analysisRepository: IAnalysisRepository
+        private readonly rasterStorage: RasterStorageService
     ) {}
 
     async getRasterMetadata(trajectoryId: string, teamId: string): Promise<RasterMetadata | null> {
@@ -119,16 +118,14 @@ export class RasterMetadataService {
         totalFrames: number
     ): Promise<RasterAnalysisMetadata[]> {
         try {
-            const analyses = await this.analysisRepository.export({
-                filter: { trajectory: trajectoryId }
-            });
+            const analyses = await AnalysisModel.find({ trajectory: trajectoryId }).exec();
 
             const analysesMetadata = await Promise.all(analyses.map(async (analysis) => {
                 return this.getAnalysisMetadata(
                     trajectoryId,
-                    analysis._id,
+                    analysis._id.toString(),
                     totalFrames,
-                    resolveAnalysisStorageClusterId(analysis.props)
+                    resolveAnalysisStorageClusterId({ storageClusterId: analysis.storageClusterId?.toString() })
                 );
             }));
 

@@ -1,15 +1,13 @@
 import { deriveColumns } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 
-import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { ColumnDef } from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
 import type { DaemonListingRow } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
-import type { Analysis } from '@shared/contracts/types';
 
+import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 interface EnrichDaemonListingRowsInput {
     rows: DaemonListingRow[];
-    analysisRepository: IAnalysisRepository;
     fallbackAnalysisId?: string;
 }
 
@@ -53,28 +51,25 @@ const resolveAnalysisIds = (rows: DaemonListingRow[], fallbackAnalysisId?: strin
 };
 
 const loadAnalyses = async (
-    analysisIds: string[],
-    analysisRepository: IAnalysisRepository
-): Promise<Map<string, Analysis>> => {
-    const analysisList = await analysisRepository.export({
-        filter: { _id: { $in: analysisIds } }
-    });
+    analysisIds: string[]
+): Promise<Map<string, AnalysisDocument>> => {
+    const analysisList = await AnalysisModel.find({ _id: { $in: analysisIds } }).exec();
 
-    const analyses = new Map<string, Analysis>();
+    const analyses = new Map<string, AnalysisDocument>();
     for (const analysis of analysisList) {
-        analyses.set(analysis._id, analysis);
+        analyses.set(analysis._id.toString(), analysis);
     }
 
     return analyses;
 };
 
-const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, Analysis>): string[] => {
+const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, AnalysisDocument>): string[] => {
     const ids = new Set<string>();
 
     for (const row of rows) {
         const analysisId = row.analysis?.trim();
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.props.trajectory;
+        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory?.toString();
 
         if (trajectoryId) {
             ids.add(trajectoryId);
@@ -126,7 +121,6 @@ export const buildListingExportColumns = (rows: DaemonListingRow[], daemonColumn
 
 export const enrichDaemonListingRows = async ({
     rows,
-    analysisRepository,
     fallbackAnalysisId
 }: EnrichDaemonListingRowsInput): Promise<DaemonListingRow[]> => {
     if (rows.length === 0) {
@@ -134,7 +128,7 @@ export const enrichDaemonListingRows = async ({
     }
 
     const analysisIds = resolveAnalysisIds(rows, fallbackAnalysisId);
-    const analyses = await loadAnalyses(analysisIds, analysisRepository);
+    const analyses = await loadAnalyses(analysisIds);
     const trajectoryIds = resolveTrajectoryIds(
         rows.map((row) => ({
             ...row,
@@ -147,7 +141,7 @@ export const enrichDaemonListingRows = async ({
     return rows.map((row) => {
         const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';
         const analysis = analysisId ? analyses.get(analysisId) : undefined;
-        const trajectoryId = row.trajectory?.trim() || analysis?.props.trajectory || '';
+        const trajectoryId = row.trajectory?.trim() || analysis?.trajectory?.toString() || '';
         const trajectoryName = trajectoryNames.get(trajectoryId) || '';
 
         return {

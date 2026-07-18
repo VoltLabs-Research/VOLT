@@ -1,6 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService, IAnalysisRepository, IPluginRepository } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService, IPluginRepository } from '@shared/contracts/ports';
 import type { PluginLike } from '@shared/contracts/types';
 import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
@@ -12,6 +12,7 @@ import { stripTrailingZstdExtension } from '@modules/trajectory/utilities/storag
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { container as diContainer } from 'tsyringe';
 
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
@@ -62,11 +63,6 @@ export const hashLineStyle = (style: LineStyleSpec): string => {
 };
 
 export class LineStyleService {
-    #analysisRepositoryCache?: IAnalysisRepository;
-    private get analysisRepository(): IAnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
-
     #pluginRepositoryCache?: IPluginRepository<PluginLike>;
     private get pluginRepository(): IPluginRepository<PluginLike> {
         return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
@@ -98,7 +94,6 @@ export class LineStyleService {
             trajectoryId: String(trajectoryId),
             timestep: String(timestep),
             analysisId,
-            analysisRepository: this.analysisRepository,
             teamClusterSelectionService: this.teamClusterSelectionService,
             dumpStorage: trajectoryDumpStorageService,
             buildClusterRequiredError
@@ -195,12 +190,12 @@ export class LineStyleService {
         analysisId: string,
         exposureId: string
     ): Promise<LineExportBaseOptions | undefined> {
-        const analysis = await this.analysisRepository.findById(String(analysisId));
+        const analysis = await AnalysisModel.findById(String(analysisId));
         if (!analysis) {
             return undefined;
         }
 
-        const plugin = await this.pluginRepository.findById(analysis.props.plugin);
+        const plugin = await this.pluginRepository.findById(analysis.plugin.toString());
         const exposures = Array.isArray(plugin?.props.exposures) ? plugin.props.exposures : [];
         const exposure = exposures.find((candidate: { _id?: unknown }) => (
             typeof candidate === 'object'

@@ -11,7 +11,7 @@ import type {
     PersistedPluginDTO,
     TrajectoryPersistedDTO
 } from '@shared/contracts/dtos';
-import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import { findByTeamAndSearch } from '@modules/analysis/models/analysis-queries';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
@@ -134,7 +134,6 @@ const getLastMessageContent = (chat: PersistedChatDTO<ChatSearchView>): string |
 const toId = (value: unknown): string | undefined => (value === undefined || value === null ? undefined : String(value));
 
 export default class DashboardService {
-    #analysisRepository = new AnalysisRepository();
     #pluginRepository = new PluginRepository();
     #teamService = new TeamService();
 
@@ -164,7 +163,7 @@ export default class DashboardService {
             trajectoriesResult,
             pluginsResult
         ] = await Promise.all([
-            this.#analysisRepository.findByTeamAndSearch({
+            findByTeamAndSearch({
                 teamId: input.teamId,
                 search: normalizedQuery,
                 trajectoryIds,

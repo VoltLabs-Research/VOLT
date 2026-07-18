@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import analysisExecutionLogService, {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
@@ -12,7 +11,6 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { container as diContainer } from 'tsyringe';
 
 interface SubscribePayload {
     analysisId: string;
@@ -30,15 +28,6 @@ export class AnalysisLogSocketModule extends BaseSocketModule {
 
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
 
-    // `AnalysisRepository` is still resolved from the tsyringe container
-    // (registered in `registerAllDependencies`, which hasn't run yet when
-    // this module is constructed at import time), so it must stay lazy —
-    // resolved on first actual use — to avoid the eager-singleton DI boot race.
-    #analysisRepositoryCache?: AnalysisRepository;
-    private get analysisRepository(): AnalysisRepository {
-        return (this.#analysisRepositoryCache ??= diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
-    }
-
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
@@ -55,8 +44,8 @@ export class AnalysisLogSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const analysis = await this.analysisRepository.findById(payload.analysisId);
-            if (!analysis || analysis.props.team !== currentTeamId) {
+            const analysis = await AnalysisModel.findById(payload.analysisId);
+            if (!analysis || analysis.team.toString() !== currentTeamId) {
                 this.emitErrorToSocket(
                     conn.id,
                     ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
@@ -75,7 +64,7 @@ export class AnalysisLogSocketModule extends BaseSocketModule {
             const replay = await analysisExecutionLogService.getFrameLog({
                 analysisId: payload.analysisId,
                 teamId: currentTeamId,
-                trajectoryId: analysis.props.trajectory,
+                trajectoryId: analysis.trajectory.toString(),
                 timestep: payload.timestep,
                 afterCursor: payload.afterCursor
             });
