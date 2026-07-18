@@ -1,5 +1,7 @@
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+
 export const ANALYSIS_TOKENS = Object.freeze({
-    AnalysisRepository: Symbol.for('AnalysisRepository'),
-    AnalysisExecutionLogService: Symbol.for('AnalysisExecutionLogService'),
+    AnalysisRepository: COMPUTE_TOKENS.AnalysisRepository,
+    AnalysisExecutionLogService: COMPUTE_TOKENS.AnalysisExecutionLogService,
     AnalysisService: Symbol.for('AnalysisService')
 });

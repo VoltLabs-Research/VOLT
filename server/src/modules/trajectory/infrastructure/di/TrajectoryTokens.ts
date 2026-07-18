@@ -1,14 +1,17 @@
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import { TRAJECTORY_CONTRACT_TOKENS } from '@shared/contracts/tokens/TrajectoryTokens';
+
 export const TRAJECTORY_TOKENS = Object.freeze({
     TrajectoryService: Symbol.for('TrajectoryService'),
-    TrajectoryRepository: Symbol.for('TrajectoryRepository'),
+    TrajectoryRepository: COMPUTE_TOKENS.TrajectoryRepository,
     TrajectoryFolderRepository: Symbol.for('TrajectoryFolderRepository'),
-    TrajectoryFrameRepository: Symbol.for('TrajectoryFrameRepository'),
+    TrajectoryFrameRepository: COMPUTE_TOKENS.TrajectoryFrameRepository,
     TrajectoryCloneJobRepository: Symbol.for('TrajectoryCloneJobRepository'),
     TrajectoryUploadSessionRepository: Symbol.for('TrajectoryUploadSessionRepository'),
-    SceneArtifactRepository: Symbol.for('SceneArtifactRepository'),
+    SceneArtifactRepository: COMPUTE_TOKENS.SceneArtifactRepository,
     TrajectoryReader: Symbol.for('TrajectoryReader'),
-    TrajectoryDumpStorageService: Symbol.for('TrajectoryDumpStorageService'),
-    TeamMetricsQueryService: Symbol.for('TeamMetricsQueryService'),
+    TrajectoryDumpStorageService: TRAJECTORY_CONTRACT_TOKENS.TrajectoryDumpStorageService,
+    TeamMetricsQueryService: TRAJECTORY_CONTRACT_TOKENS.TeamMetricsQueryService,
     ColorCodingService: Symbol.for('ColorCodingService'),
     ParticleFilterService: Symbol.for('ParticleFilterService'),
     LineStyleService: Symbol.for('LineStyleService'),

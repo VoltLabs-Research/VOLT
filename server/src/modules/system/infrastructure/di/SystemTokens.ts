@@ -1,4 +1,6 @@
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
+
 export const SYSTEM_TOKENS = Object.freeze({
-    SystemMetricsRepository: Symbol.for('SystemMetricsRepository'),
-    DeploymentSettingsRepository: Symbol.for('DeploymentSettingsRepository')
+    SystemMetricsRepository: SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository,
+    DeploymentSettingsRepository: SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository
 });

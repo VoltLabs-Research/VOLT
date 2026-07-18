@@ -1,4 +1,6 @@
+import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
+
 export const SOCKET_TOKENS = {
-    SocketModule: Symbol.for('SocketModule'),
-    SocketEmitter: Symbol.for('SocketEmitter')
+    SocketModule: SOCKET_CONTRACT_TOKENS.SocketModule,
+    SocketEmitter: SOCKET_CONTRACT_TOKENS.SocketEmitter
 };
