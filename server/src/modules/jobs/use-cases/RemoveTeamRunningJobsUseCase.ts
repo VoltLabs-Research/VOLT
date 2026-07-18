@@ -1,0 +1,28 @@
+import type { RemoveTeamRunningJobsInputDTO } from '@modules/jobs/dtos/RemoveTeamRunningJobsDTO';
+import type { ITeamJobMaintenanceService, RemoveTeamJobsResult } from '@shared/contracts/ports/ITeamJobMaintenanceService';
+import { JOBS_TOKENS } from '@modules/jobs/di/JobsTokens';
+import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
+import type { TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+export interface RemoveTeamRunningJobsOutputDTO extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
+
+@Singleton()
+export default class RemoveTeamRunningJobsUseCase implements IUseCase<RemoveTeamRunningJobsInputDTO, RemoveTeamRunningJobsOutputDTO> {
+    constructor(
+        @inject(JOBS_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService,
+        private readonly teamJobsRealtimeSyncService: TeamJobsRealtimeSyncService
+    ) {}
+
+    async execute(input: RemoveTeamRunningJobsInputDTO): Promise<RemoveTeamRunningJobsOutputDTO> {
+        const outcome = await this.teamJobMaintenanceService.removeJobsForTrajectory(input.teamId, input.trajectoryId);
+        const snapshot = await this.teamJobsRealtimeSyncService.broadcastSnapshot(input.teamId);
+
+        return {
+            ...outcome,
+            ...snapshot
+        };
+    }
+}

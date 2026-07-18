@@ -1,15 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserRepository from '@modules/auth/infrastructure/persistence/mongo/repositories/UserRepository';
-import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
-import type { ISocketConnectionUser } from '@modules/socket/domain/port/ISocketModule';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import UserRepository from '@modules/auth/repositories/UserRepository';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
+import type { ISocketConnectionUser } from '@modules/socket/ports/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/di/SocketTokens';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
+import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 interface SocketAck<T = unknown> {

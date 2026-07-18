@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module repository-port + persisted-DTO contract for the Chat
- * domain. Extracted from `@modules/chat/domain/port/chat/IChatRepository` during
+ * domain. Extracted from `@modules/chat/ports/chat/IChatRepository` during
  * the detachable-modules migration so consumers (dashboard, …) inject/type
  * against a contract rather than `@modules/chat`.
  *

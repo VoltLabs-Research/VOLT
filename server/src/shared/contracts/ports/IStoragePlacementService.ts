@@ -2,7 +2,7 @@
  * Neutral, cross-module port for the storage-placement service (resolves which
  * cluster owns/replicates a trajectory's / analysis's / plugin-binary's bytes).
  *
- * Extracted from `@modules/cluster/domain/port/IStoragePlacementService` during
+ * Extracted from `@modules/cluster/ports/IStoragePlacementService` during
  * the detachable-modules migration. The concrete `StoragePlacementService`
  * stays in the cluster module, registered under
  * `COMPUTE_TOKENS.StoragePlacementService` so consumers (trajectory, plugin,
@@ -18,7 +18,7 @@
  * layer. Replacing the class with a structural `StoragePlacement` contract is
  * deferred.
  */
-import type StoragePlacement from '@modules/cluster/domain/entities/StoragePlacement';
+import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
 import type {
     StoragePlacementScopeType,
     StoragePlacementState

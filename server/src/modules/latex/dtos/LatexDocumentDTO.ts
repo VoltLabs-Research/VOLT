@@ -1,0 +1,11 @@
+import type { LatexDocumentProps } from '@modules/latex/entities/LatexDocument';
+
+export interface LatexDocumentDTO {
+    _id: string;
+    title: string;
+    folder: string | null;
+    createdBy?: LatexDocumentProps['createdBy'];
+    lastEditedBy?: LatexDocumentProps['lastEditedBy'];
+    createdAt: Date;
+    updatedAt: Date;
+}

@@ -3,7 +3,7 @@
  * job/session drain, publishes status + stage changes as the daemon reports
  * back). Plus the daemon-input DTOs it accepts.
  *
- * Extracted from `@modules/cluster/domain/port/IDaemonAnalysisCompletionService`
+ * Extracted from `@modules/cluster/ports/IDaemonAnalysisCompletionService`
  * during the detachable-modules migration. The concrete service stays in the
  * cluster module, registered under
  * `CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService` (same `Symbol.for`

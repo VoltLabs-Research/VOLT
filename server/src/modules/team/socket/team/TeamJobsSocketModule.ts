@@ -1,9 +1,9 @@
-import type { SubscribeToTeamSocketPayload } from '@modules/socket/domain/contracts/team-subscription';
-import { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
+import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';

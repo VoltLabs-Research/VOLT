@@ -1,10 +1,10 @@
 import type { ErrorCode } from '@core/constants/error-codes';
-import { SocketEventHandler } from '@modules/socket/domain/port/ISocketEventRegistry';
-import { ISocketConnection, ISocketModule } from '@modules/socket/domain/port/ISocketModule';
-import { PresenceUser } from '@modules/socket/domain/port/ISocketRoomManager';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import { SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
+import { ISocketConnection, ISocketModule } from '@modules/socket/ports/ISocketModule';
+import { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import {
     createSocketErrorEnvelope,
     type SocketErrorEnvelope

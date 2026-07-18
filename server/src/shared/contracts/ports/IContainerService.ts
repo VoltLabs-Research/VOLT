@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module service-port contract for the Container domain.
- * Extracted from `@modules/container/domain/port/IContainerService` during the
+ * Extracted from `@modules/container/ports/IContainerService` during the
  * detachable-modules migration so consumers (the cluster module consumes the
  * terminal types) depend on a contract rather than `@modules/container`.
  *

@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module DTO contract for the get-plugin-exposure-export use case.
  *
- * Extracted from `@modules/plugin/application/dtos/exposure/GetPluginExposureExportDTO`
+ * Extracted from `@modules/plugin/dtos/exposure/GetPluginExposureExportDTO`
  * during the detachable-modules migration. The trajectory module's
  * `DownloadTrajectoryAnalysesUseCase` drives the export use case via the
  * `IGetPluginExposureExportUseCase` port, whose `execute` signature references

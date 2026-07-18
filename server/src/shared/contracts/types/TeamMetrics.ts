@@ -2,7 +2,7 @@
  * Neutral, cross-module team-metrics snapshot type.
  *
  * Structural mirror of the trajectory module's
- * `@modules/trajectory/domain/contracts/trajectory/TeamMetrics`
+ * `@modules/trajectory/contracts/trajectory/TeamMetrics`
  * (`TeamMetricsSnapshot`), hoisted into the neutral contracts layer for the
  * detachable-modules migration so consumers (dashboard) can type team-metrics
  * results without importing `@modules/trajectory`. The owner module's shape is

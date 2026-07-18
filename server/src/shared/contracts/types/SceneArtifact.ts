@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). These are
  * STANDALONE copies of the shapes owned by
- * `@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact`, exported
+ * `@modules/trajectory/entities/scene-artifacts/SceneArtifact`, exported
  * here so cross-module consumers (cluster / plugin / analysis / raster /
  * dashboard / jobs) can depend on the shapes without importing the trajectory
  * module. Field shapes match the owner exactly; enums are duplicated as runtime

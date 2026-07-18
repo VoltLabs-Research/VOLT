@@ -1,4 +1,4 @@
-import type { TeamScopedEntityIdInputDTO } from '@modules/team/application/dtos/common';
+import type { TeamScopedEntityIdInputDTO } from '@modules/team/dtos/common';
 
 export interface CatalogFolderDTO {
     _id: string;

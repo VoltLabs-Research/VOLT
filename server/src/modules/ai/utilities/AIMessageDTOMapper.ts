@@ -1,7 +1,7 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIMessageDTO } from '@modules/ai/application/dtos/ListAIConversationMessagesDTO';
-import type AIMessage from '@modules/ai/domain/entities/AIMessage';
-import type { AIMessageToolStep } from '@modules/ai/domain/entities/AIMessage';
+import { AI_TOKENS } from '@modules/ai/di/AITokens';
+import type { AIMessageDTO } from '@modules/ai/dtos/ListAIConversationMessagesDTO';
+import type AIMessage from '@modules/ai/entities/AIMessage';
+import type { AIMessageToolStep } from '@modules/ai/entities/AIMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 

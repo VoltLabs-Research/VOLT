@@ -13,11 +13,11 @@ import { container } from 'tsyringe';
 import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import type { IUserRepository } from '@modules/auth/domain/port/IUserRepository';
-import type { ITokenService } from '@modules/auth/domain/port/ITokenService';
-import type { ISessionRepository } from '@modules/session/domain/port/ISessionRepository';
-import type { ISecretKeyRepository } from '@modules/team/domain/port/secret-key/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/port/secret-key/ISecretKeyUsageLogRepository';
+import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
+import type { ITokenService } from '@modules/auth/ports/ITokenService';
+import type { ISessionRepository } from '@modules/session/ports/ISessionRepository';
+import type { ISecretKeyRepository } from '@modules/team/ports/secret-key/ISecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/ports/secret-key/ISecretKeyUsageLogRepository';
 import type { NextFunction, Request, Response } from 'express';
 
 export enum AuthenticationType {

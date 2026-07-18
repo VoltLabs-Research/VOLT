@@ -1,0 +1,36 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import { ListScriptingNotebooksUseCase } from '@modules/scripting/use-cases/ListScriptingNotebooksUseCase';
+import { ScriptingNotebookScope } from '@modules/scripting/entities/ScriptingNotebookScope';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOOL_TOKENS.AITool)
+export class ListScriptingNotebooksAITool extends AITool {
+    readonly name = 'list_scripting_notebooks';
+    readonly description = 'List scripting Jupyter notebooks in the team.';
+    readonly parameters = z.object({
+        trajectoryId: z.string().optional(),
+        scope: z.nativeEnum(ScriptingNotebookScope).optional(),
+        page: z.number().optional().default(1),
+        limit: z.number().optional().default(500)
+    });
+
+    constructor(
+        protected readonly useCase: ListScriptingNotebooksUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const value = await this.useCase.execute({
+            teamId: scope.teamId,
+            trajectoryId: params.trajectoryId,
+            scope: params.scope,
+            page: params.page,
+            limit: params.limit
+        });
+        return { summary: `Found ${value.total} scripting notebooks.`, data: value.data };
+    }
+}

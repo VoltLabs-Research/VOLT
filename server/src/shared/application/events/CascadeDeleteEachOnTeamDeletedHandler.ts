@@ -1,5 +1,5 @@
 import { CascadeDeleteEachOnEntityDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnEntityDeletedHandler';
-import type TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import type TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 
 interface IdentifiableEntity {
     readonly _id: string;

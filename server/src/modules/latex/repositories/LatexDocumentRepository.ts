@@ -1,0 +1,25 @@
+import { LATEX_TOKENS } from '@modules/latex/di/LatexTokens';
+import LatexDocument from '@modules/latex/entities/LatexDocument';
+import latexDocumentMapper from '@modules/latex/mappers/LatexDocumentMapper';
+import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
+import type { LatexDocumentProps } from '@modules/latex/entities/LatexDocument';
+import type { ILatexDocumentRepository } from '@modules/latex/ports/ILatexDocumentRepository';
+import type { LatexDocumentDocument } from '@modules/latex/models/LatexDocumentModel';
+
+@Singleton(LATEX_TOKENS.LatexDocumentRepository)
+export default class LatexDocumentRepository
+    extends MongooseBaseRepository<LatexDocument, LatexDocumentProps, LatexDocumentDocument>
+    implements ILatexDocumentRepository {
+
+    constructor() {
+        super(LatexDocumentModel, latexDocumentMapper);
+    }
+
+    async findByTeamAndDocumentId(teamId: string, documentId: string): Promise<LatexDocument | null> {
+        const doc = await this.model.findOne({ _id: documentId, team: teamId }).exec();
+        return doc ? this.mapper.toDomain(doc) : null;
+    }
+}

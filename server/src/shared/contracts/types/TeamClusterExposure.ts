@@ -7,7 +7,7 @@
  * scripting, container, plugin and analysis modules (and shared services) can
  * reference these shapes without importing `@modules/cluster`. The four
  * `TeamClusterServiceExposure*` symbols were previously defined in
- * `@modules/cluster/domain/contracts/TeamClusterServiceExposure`;
+ * `@modules/cluster/contracts/TeamClusterServiceExposure`;
  * `TeamClusterDaemonExecutionLogSegment` was previously defined in
  * `@modules/cluster/utilities/teamClusterSocket`. Both original files now
  * re-export from here so existing importers compile and (for the nominal enums)

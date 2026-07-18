@@ -1,0 +1,69 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { WHITEBOARD_TOKENS } from '@modules/whiteboards/di/WhiteboardTokens';
+import type { IWhiteboardRepository } from '@modules/whiteboards/ports/IWhiteboardRepository';
+import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
+import { ErrorCodes } from '@core/constants/error-codes';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO } from '@modules/whiteboards/dtos/GetWhiteboardStateDTO';
+import { requireWhiteboardStorageClusterId } from '@modules/whiteboards/entities/Whiteboard';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+import { Readable } from 'node:stream';
+
+/** Empty scene returned for whiteboards that have never been saved. */
+const EMPTY_SCENE_JSON = JSON.stringify({ revision: 0, elements: [], appState: {} });
+
+@Singleton()
+export class GetWhiteboardStateUseCase implements IUseCase<GetWhiteboardStateInputDTO, GetWhiteboardStateOutputDTO> {
+    constructor(
+        @inject(WHITEBOARD_TOKENS.WhiteboardRepository) private readonly whiteboardRepository: IWhiteboardRepository,
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
+    ) {}
+
+    async execute(input: GetWhiteboardStateInputDTO): Promise<GetWhiteboardStateOutputDTO> {
+        try {
+            const whiteboard = await this.whiteboardRepository.findByTeamAndWhiteboardId(
+                input.teamId,
+                input.whiteboardId
+            );
+
+            if (!whiteboard) {
+                throw ApplicationError.notFound(
+                    ErrorCodes.RESOURCE_NOT_FOUND,
+                    'Whiteboard not found'
+                );
+            }
+
+            if (!whiteboard.props.payloadKey) {
+                throw ApplicationError.conflict(
+                    'Whiteboard::PayloadKeyRequired',
+                    `Whiteboard ${whiteboard._id} does not have a payload key assigned`
+                );
+            }
+
+            const storageClusterId = requireWhiteboardStorageClusterId(whiteboard._id, whiteboard.props);
+            const key = whiteboard.props.payloadKey;
+            const stateExists = await this.objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, key);
+
+            if (!stateExists) {
+                const stream = Readable.from(Buffer.from(EMPTY_SCENE_JSON));
+                return { stream };
+            }
+
+            const response = await this.objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, key);
+            return { stream: response.stream };
+        } catch (error) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            throw new ApplicationError(
+                ErrorCodes.INTERNAL_SERVER_ERROR,
+                'Failed to load whiteboard state',
+                500
+            );
+        }
+    }
+}

@@ -1,0 +1,30 @@
+import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import GetTeamClusterRuntimeSnapshotUseCase from '@modules/cluster/use-cases/GetTeamClusterRuntimeSnapshotUseCase';
+import { AITool } from '@shared/application/ai/AITool';
+import { CollectionMember } from '@shared/infrastructure/di/decorators';
+import { z } from 'zod';
+
+@CollectionMember(AI_TOOL_TOKENS.AITool)
+export class GetClusterRuntimeSnapshotAITool extends AITool {
+    readonly name = 'get_cluster_runtime_snapshot';
+    readonly description = 'Get the live queue runtime snapshot for a cluster.';
+    readonly parameters = z.object({ teamClusterId: z.string() });
+
+    constructor(
+        protected readonly useCase: GetTeamClusterRuntimeSnapshotUseCase
+    ) {
+        super();
+    }
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        const result = await this.useCase.execute({
+            teamId: scope.teamId,
+            teamClusterId: params.teamClusterId
+        });
+        return {
+            summary: `Captured ${result.daemonQueues.length} daemon queues at ${result.capturedAt}.`,
+            data: result
+        };
+    }
+}

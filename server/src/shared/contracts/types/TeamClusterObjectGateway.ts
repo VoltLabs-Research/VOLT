@@ -6,7 +6,7 @@ import type { Readable as NodeReadable } from 'node:stream';
  * Canonical home in the neutral `shared/contracts` layer so consumers
  * (trajectory, plugin, analysis, raster, whiteboards, …) can reference the
  * gateway request/response shapes without importing `@modules/cluster`.
- * The original `@modules/cluster/domain/contracts/TeamClusterObjectGateway`
+ * The original `@modules/cluster/contracts/TeamClusterObjectGateway`
  * re-exports these for backward compatibility.
  */
 

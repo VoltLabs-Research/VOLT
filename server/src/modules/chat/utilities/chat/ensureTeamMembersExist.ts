@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamMemberRepository } from '@modules/team/domain/port/team-member/ITeamMemberRepository';
+import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
 
 export async function ensureTeamMembersExist(
     teamMemberRepo: ITeamMemberRepository,

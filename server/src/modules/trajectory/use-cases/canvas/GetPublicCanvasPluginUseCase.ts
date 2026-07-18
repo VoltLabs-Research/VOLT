@@ -1,0 +1,57 @@
+import { COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
+import type { GetPluginByIdOutputDTO } from '@shared/contracts/dtos';
+import type { IGetPluginByIdUseCase } from '@shared/contracts/ports';
+import { TrajectoryReadAccessService } from '@modules/trajectory/services/TrajectoryReadAccessService';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+interface GetPublicCanvasPluginInput {
+    trajectoryId: string;
+    pluginId: string;
+    userId?: string;
+};
+
+@Singleton()
+export class GetPublicCanvasPluginUseCase implements IUseCase<
+    GetPublicCanvasPluginInput,
+    GetPluginByIdOutputDTO
+> {
+    constructor(
+        
+        private readonly trajectoryReadAccessService: TrajectoryReadAccessService,
+
+        
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+
+
+        @inject(PLUGIN_USECASE_TOKENS.GetPluginByIdUseCase) private readonly getPluginByIdUseCase: IGetPluginByIdUseCase
+    ) {}
+
+    async execute(input: GetPublicCanvasPluginInput): Promise<GetPluginByIdOutputDTO> {
+        await this.trajectoryReadAccessService.assertReadable(input.trajectoryId, input.userId);
+
+        const analyses = await this.analysisRepository.findAll({
+            filter: { trajectory: input.trajectoryId },
+            limit: 1000
+        });
+
+        const pluginAttached = analyses.data.some((analysis) => {
+            const pluginId = extractPluginId(analysis.props.plugin);
+            return pluginId === input.pluginId;
+        });
+
+        if (!pluginAttached) {
+            throw ApplicationError.notFound(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin not found'
+            );
+        }
+
+        return this.getPluginByIdUseCase.execute({ pluginId: input.pluginId });
+    }
+};

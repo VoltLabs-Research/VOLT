@@ -1,0 +1,81 @@
+import type { IRasterFrameReader } from '@modules/raster/ports/IRasterFrameReader';
+import type { RasterFrameResult } from '@shared/contracts/types/RasterFrame';
+import { RASTER_TOKENS } from '@modules/raster/di/RasterTokens';
+import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
+import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
+import { resolveSceneArtifactStorageCluster } from '@shared/application/utilities/resolve-scene-artifact-storage-cluster';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+@Singleton(RASTER_TOKENS.RasterFrameReader)
+export class RasterFrameService implements IRasterFrameReader {
+    constructor(
+        private readonly rasterStorage: RasterStorageService,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
+    ) {}
+
+    async getRasterFramePNG(trajectoryId: string, teamId: string, timestep: number): Promise<RasterFrameResult> {
+        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+
+        if (!trajectory || trajectory.props.team !== teamId) {
+            throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
+        }
+        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        if (!storageClusterId) {
+            throw ApplicationError.conflict(
+                'Trajectory::StorageClusterRequired',
+                'Trajectory storage cluster is required'
+            );
+        }
+
+        return this.rasterStorage.getRasterFramePNG(
+            trajectoryId,
+            timestep,
+            storageClusterId
+        );
+    }
+
+    async getAnalysisRasterFramePNG(
+        trajectoryId: string,
+        teamId: string,
+        analysisId: string,
+        timestep: number,
+        model: string
+    ): Promise<RasterFrameResult> {
+        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+
+        if (!trajectory || trajectory.props.team !== teamId) {
+            throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
+        }
+
+        const analysis = await this.analysisRepository.findById(analysisId);
+        if (!analysis || analysis.props.team !== teamId || analysis.props.trajectory !== trajectoryId) {
+            throw ApplicationError.notFound('Analysis::NotFound', 'Analysis not found');
+        }
+
+        const teamClusterId = await resolveSceneArtifactStorageCluster({
+            trajectoryId,
+            analysisId,
+            analysisRepository: this.analysisRepository,
+            trajectoryRepository: this.trajectoryRepository
+        });
+        if (!teamClusterId) {
+            throw ApplicationError.conflict(
+                'Analysis::StorageClusterRequired',
+                'Analysis storage cluster is required'
+            );
+        }
+
+        return this.rasterStorage.getAnalysisRasterFramePNG(
+            trajectoryId,
+            analysisId,
+            timestep,
+            model,
+            teamClusterId
+        );
+    }
+}

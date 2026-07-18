@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). Mirrors
  * `TrajectoryUpdatedEventPayload` owned by
- * `@modules/trajectory/domain/events/trajectory/TrajectoryUpdatedEvent`, exported
+ * `@modules/trajectory/events/trajectory/TrajectoryUpdatedEvent`, exported
  * here so cross-module consumers can type the event payload without importing the
  * trajectory module. The `TrajectoryStatus` / `TrajectoryStats` / `TrajectoryFrame`
  * shapes come from the neutral `@shared/contracts/types/Trajectory` copy.

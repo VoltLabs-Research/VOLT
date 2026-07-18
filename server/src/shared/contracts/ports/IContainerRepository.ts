@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module repository-port contract for the Container domain.
- * Extracted from `@modules/container/domain/port/IContainerRepository` during
+ * Extracted from `@modules/container/ports/IContainerRepository` during
  * the detachable-modules migration so consumers (dashboard, …) inject against a
  * contract rather than `@modules/container`.
  *

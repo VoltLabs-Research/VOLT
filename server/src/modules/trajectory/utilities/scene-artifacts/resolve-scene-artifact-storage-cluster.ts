@@ -3,7 +3,7 @@ import {
     resolveTrajectoryStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import type { IAnalysisRepository } from '@shared/contracts/ports';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type { ITrajectoryRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryRepository';
 
 interface ResolveSceneArtifactStorageClusterInput {
     trajectoryId: string;

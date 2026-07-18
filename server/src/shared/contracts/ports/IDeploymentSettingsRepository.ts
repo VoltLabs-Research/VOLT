@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module repository-port contract for deployment settings.
  *
- * Extracted from `@modules/system/domain/port/IDeploymentSettingsRepository`
+ * Extracted from `@modules/system/ports/IDeploymentSettingsRepository`
  * during the detachable-modules migration so consumers (team enrollment,
  * notification onboarding, …) inject against a contract rather than
  * `@modules/system`.

@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
-import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import type { ISceneArtifactRepository } from '@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository';
+import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+import type { ISceneArtifactRepository } from '@modules/trajectory/ports/scene-artifacts/ISceneArtifactRepository';
 
 interface RecordSceneArtifactInput {
     objectName: string;

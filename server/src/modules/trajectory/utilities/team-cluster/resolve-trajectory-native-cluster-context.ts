@@ -1,8 +1,8 @@
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { ITrajectoryRepository } from '@modules/trajectory/domain/port/trajectory/ITrajectoryRepository';
+import type Trajectory from '@modules/trajectory/entities/trajectory/Trajectory';
+import type { ITrajectoryRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryRepository';
 
 interface ResolveTrajectoryNativeClusterContextInput {
     trajectoryId: string;

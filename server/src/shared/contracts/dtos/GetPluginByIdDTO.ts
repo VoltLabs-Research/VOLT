@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module DTO contract for the get-plugin-by-id use case.
  *
- * Extracted from `@modules/plugin/application/dtos/plugin/GetPluginByIdDTO`
+ * Extracted from `@modules/plugin/dtos/plugin/GetPluginByIdDTO`
  * during the detachable-modules migration: the trajectory module's
  * `GetPublicCanvasPluginUseCase` consumes `GetPluginByIdOutputDTO` (and the
  * `IGetPluginByIdUseCase` port returns it). The output binds the generic

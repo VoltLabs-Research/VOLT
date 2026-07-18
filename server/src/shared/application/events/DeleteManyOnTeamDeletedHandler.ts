@@ -1,5 +1,5 @@
 import { DeleteManyOnEntityDeletedHandler } from '@shared/application/events/DeleteManyOnEntityDeletedHandler';
-import type TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import type TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 
 export abstract class DeleteManyOnTeamDeletedHandler extends DeleteManyOnEntityDeletedHandler<TeamDeletedEvent> {
     protected readonly payloadKey = 'teamId';

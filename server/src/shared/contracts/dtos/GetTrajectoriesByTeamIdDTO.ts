@@ -2,7 +2,7 @@
  * Neutral cross-module contract for the persisted trajectory "row" view.
  *
  * STANDALONE neutral copy of the shape owned by
- * `@modules/trajectory/application/dtos/trajectory/GetTrajectoriesByTeamIdDTO`
+ * `@modules/trajectory/dtos/trajectory/GetTrajectoriesByTeamIdDTO`
  * (`TrajectoryPersistedDTO`). The trajectory module source is off-limits to this
  * migration, so cross-module consumers (dashboard global search) depend on this
  * neutral version instead of importing the trajectory module.

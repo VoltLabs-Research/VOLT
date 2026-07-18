@@ -1,4 +1,4 @@
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { Socket } from 'socket.io';
 

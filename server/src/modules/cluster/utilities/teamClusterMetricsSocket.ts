@@ -1,5 +1,5 @@
-import type { SystemMetrics } from '@modules/system/domain/value-objects/SystemMetrics';
-import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
+import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 
 export const TEAM_CLUSTER_METRICS_ALL_EVENT = 'metrics:all';
 export const TEAM_CLUSTER_METRICS_HISTORY_EVENT = 'metrics:history';

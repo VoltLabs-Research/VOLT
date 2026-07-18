@@ -1,5 +1,5 @@
-import type { PersistedPluginDTO } from '@modules/plugin/application/dtos/plugin/PersistedPluginDTO';
-import type Plugin from '@modules/plugin/domain/entities/plugin/Plugin';
+import type { PersistedPluginDTO } from '@modules/plugin/dtos/plugin/PersistedPluginDTO';
+import type Plugin from '@modules/plugin/entities/plugin/Plugin';
 import { mapPluginToPersistedDTO as mapPluginToPersistedDTONeutral } from '@shared/application/utilities/mapPluginToPersistedDTO';
 
 /**

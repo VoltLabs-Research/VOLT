@@ -1,0 +1,336 @@
+import { JobStatus } from '@shared/contracts/types';
+import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
+import type { IDaemonAnalysisCompletionService } from '@modules/cluster/ports/IDaemonAnalysisCompletionService';
+import type { ITeamClusterLifecycleService } from '@modules/cluster/ports/ITeamClusterLifecycleService';
+import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+type ArtifactUploadJobStatus = JobStatus.Queued | JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
+
+interface ProcessDaemonAnalysisJobCompletionInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    success: boolean;
+    error?: string;
+}
+
+interface ProcessDaemonAnalysisJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+interface ProcessDaemonAnalysisStageStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    name: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId?: string;
+    timestep?: number;
+    stageKey: string;
+    label: string;
+    stageType: AnalysisStageType;
+    stageStatus: AnalysisStageStatus;
+    pluginId?: string;
+    pluginDisplayName?: string;
+    nodeId?: string;
+    exposureId?: string;
+    configHash?: string;
+    cacheHit?: boolean;
+    detail?: string;
+    startedAt?: string;
+    finishedAt?: string;
+    durationMs?: number;
+}
+
+interface ProcessDaemonRasterJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+interface ValidProcessDaemonRasterJobStatusInputDTO extends ProcessDaemonRasterJobStatusInputDTO {
+    status: RasterJobStatus;
+}
+
+interface ProcessDaemonGlbJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+interface ValidProcessDaemonGlbJobStatusInputDTO extends ProcessDaemonGlbJobStatusInputDTO {
+    status: GlbJobStatus;
+}
+
+interface ProcessDaemonArtifactUploadJobStatusInputDTO {
+    teamClusterId: string;
+    daemonPassword: string;
+    jobId: string;
+    analysisId: string;
+    teamId: string;
+    trajectoryId: string;
+    timestep?: number;
+    status: JobStatus;
+    error?: string;
+}
+
+interface ValidProcessDaemonArtifactUploadJobStatusInputDTO extends ProcessDaemonArtifactUploadJobStatusInputDTO {
+    status: ArtifactUploadJobStatus;
+}
+
+export type ProcessDaemonJobCompletionInputDTO =
+    | ProcessDaemonAnalysisJobCompletionInputDTO
+    | ProcessDaemonAnalysisJobStatusInputDTO
+    | ProcessDaemonAnalysisStageStatusInputDTO
+    | ProcessDaemonRasterJobStatusInputDTO
+    | ProcessDaemonGlbJobStatusInputDTO
+    | ProcessDaemonArtifactUploadJobStatusInputDTO;
+
+interface ProcessDaemonJobCompletionOutputDTO {
+    acknowledged: boolean;
+}
+
+@Singleton()
+export default class ProcessDaemonJobCompletionUseCase implements IUseCase<ProcessDaemonJobCompletionInputDTO, ProcessDaemonJobCompletionOutputDTO> {
+    constructor(
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
+        @inject(CLUSTER_TOKENS.DaemonAnalysisCompletionService) private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
+    ) {}
+
+    async execute(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): Promise<ProcessDaemonJobCompletionOutputDTO> {
+        try {
+            await this.teamClusterLifecycleService.authenticateDaemonConnection(
+                input.teamClusterId,
+                input.daemonPassword
+            );
+
+            if (this.isAnalysisStageStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleAnalysisStageStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    name: input.name,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    stageKey: input.stageKey,
+                    label: input.label,
+                    stageType: input.stageType,
+                    stageStatus: input.stageStatus,
+                    pluginId: input.pluginId,
+                    pluginDisplayName: input.pluginDisplayName,
+                    nodeId: input.nodeId,
+                    exposureId: input.exposureId,
+                    configHash: input.configHash,
+                    cacheHit: input.cacheHit,
+                    detail: input.detail,
+                    startedAt: input.startedAt,
+                    finishedAt: input.finishedAt,
+                    durationMs: input.durationMs
+                });
+
+                return { acknowledged: true };
+            }
+
+            if (this.isAnalysisJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleAnalysisJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    name: input.name,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return { acknowledged: true };
+            }
+
+            if (this.isAnalysisJobCompletionInput(input)) {
+                await this.daemonAnalysisCompletionService.handleJobCompletion({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    name: input.name,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    success: input.success,
+                    error: input.error
+                });
+
+                return { acknowledged: true };
+            }
+
+            if (this.isGlbJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleGlbJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return { acknowledged: true };
+            }
+
+            if (this.isArtifactUploadJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleArtifactUploadJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    analysisId: input.analysisId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return { acknowledged: true };
+            }
+
+            if (this.isRasterJobStatusInput(input)) {
+                await this.daemonAnalysisCompletionService.handleRasterJobStatus({
+                    teamClusterId: input.teamClusterId,
+                    jobId: input.jobId,
+                    teamId: input.teamId,
+                    trajectoryId: input.trajectoryId,
+                    timestep: input.timestep,
+                    status: input.status,
+                    error: input.error
+                });
+
+                return { acknowledged: true };
+            }
+
+            throw ApplicationError.badRequest(
+                'TEAM_CLUSTER_DAEMON_INVALID_JOB_COMPLETION_PAYLOAD',
+                'Invalid daemon job completion payload'
+            );
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            throw ApplicationError.internalServerError('Failed to process daemon job completion');
+        }
+    }
+
+    private isAnalysisJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonAnalysisJobStatusInputDTO {
+        return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
+    }
+
+    private isAnalysisStageStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonAnalysisStageStatusInputDTO {
+        return 'analysisId' in input
+            && 'name' in input
+            && 'stageKey' in input
+            && 'stageStatus' in input
+            && 'stageType' in input;
+    }
+
+    private isAnalysisJobCompletionInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonAnalysisJobCompletionInputDTO {
+        return 'analysisId' in input && 'name' in input && 'success' in input && !this.hasJobStatusFields(input);
+    }
+
+    private isGlbJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonGlbJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && this.isGlbJobId(input.jobId)
+            && this.isValidJobStatus(input.status);
+    }
+
+    private isArtifactUploadJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonArtifactUploadJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && this.isArtifactUploadJobId(input.jobId)
+            && this.isValidArtifactUploadJobStatus(input.status);
+    }
+
+    private isRasterJobStatusInput(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ValidProcessDaemonRasterJobStatusInputDTO {
+        return this.hasJobStatusFields(input)
+            && !this.hasAnalysisJobCompletionFields(input)
+            && !this.isGlbJobId(input.jobId)
+            && !this.isArtifactUploadJobId(input.jobId)
+            && this.isValidJobStatus(input.status);
+    }
+
+    private hasAnalysisJobCompletionFields(input: ProcessDaemonJobCompletionInputDTO): boolean {
+        return 'name' in input || 'success' in input;
+    }
+
+    private hasJobStatusFields(
+        input: ProcessDaemonJobCompletionInputDTO
+    ): input is ProcessDaemonRasterJobStatusInputDTO {
+        return 'jobId' in input && 'trajectoryId' in input && 'status' in input;
+    }
+
+    private isGlbJobId(jobId: string): boolean {
+        return jobId.startsWith('trajectory-glb:') || jobId.startsWith('trajectory-frame:');
+    }
+
+    private isArtifactUploadJobId(jobId: string): boolean {
+        return jobId.startsWith('artifact-upload-');
+    }
+
+    private isValidJobStatus(status: JobStatus): status is RasterJobStatus {
+        return status === JobStatus.Running
+            || status === JobStatus.Completed
+            || status === JobStatus.Failed;
+    }
+
+    private isValidArtifactUploadJobStatus(status: JobStatus): status is ArtifactUploadJobStatus {
+        return status === JobStatus.Queued
+            || status === JobStatus.Running
+            || status === JobStatus.Completed
+            || status === JobStatus.Failed;
+    }
+};

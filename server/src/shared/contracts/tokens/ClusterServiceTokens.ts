@@ -4,7 +4,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration): these
  * symbols let a consumer inject the cluster module's services/repos without
- * importing `@modules/cluster/infrastructure/di/ClusterTokens`. Keys are the
+ * importing `@modules/cluster/di/ClusterTokens`. Keys are the
  * SAME `Symbol.for(...)` strings used by the cluster module's `CLUSTER_TOKENS`,
  * so registration and resolution are byte-identical at runtime.
  */

@@ -1,6 +1,6 @@
 
-import type { NormalizedTeamSubscription } from '@modules/socket/domain/contracts/team-subscription';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { NormalizedTeamSubscription } from '@modules/socket/contracts/team-subscription';
+import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface TeamSubscriptionContext {

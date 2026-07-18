@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTrajectoryPreviewDTO';
+import type { GetTrajectoryPreviewOutputDTO } from '@modules/trajectory/dtos/trajectory/GetTrajectoryPreviewDTO';
 
 type PreviewOutputFactory = (
     buffer: Buffer

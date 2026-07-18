@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module repository port for the StoragePlacement aggregate.
  *
- * Extracted from `@modules/cluster/domain/port/IStoragePlacementRepository`
+ * Extracted from `@modules/cluster/ports/IStoragePlacementRepository`
  * during the detachable-modules migration. The concrete repository stays in the
  * cluster module, registered under `CLUSTER_SERVICE_TOKENS.StoragePlacementRepository`
  * (same `Symbol.for` key as the cluster module's
@@ -17,8 +17,8 @@
  * Replacing the class with a structural entity contract is deferred.
  */
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import type StoragePlacement from '@modules/cluster/domain/entities/StoragePlacement';
-import type { StoragePlacementProps } from '@modules/cluster/domain/entities/StoragePlacement';
+import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
+import type { StoragePlacementProps } from '@modules/cluster/entities/StoragePlacement';
 
 export interface IStoragePlacementRepository extends IBaseRepository<StoragePlacement, StoragePlacementProps> {
     findByScope(scopeType: StoragePlacementProps['scopeType'], scopeId: string): Promise<StoragePlacement | null>;

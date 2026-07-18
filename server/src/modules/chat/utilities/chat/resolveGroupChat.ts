@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import Chat from '@modules/chat/domain/entities/chat/Chat';
+import Chat from '@modules/chat/entities/chat/Chat';
 import { resolveAccessibleChat } from '@modules/chat/utilities/chat/resolveAccessibleChat';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IChatRepository } from '@modules/chat/domain/port/chat/IChatRepository';
+import type { IChatRepository } from '@modules/chat/ports/chat/IChatRepository';
 
 export async function resolveGroupChat(
     chatRepo: IChatRepository,

@@ -1,7 +1,7 @@
 /**
  * Canonical, neutral repository-port contract for the SceneArtifact domain.
  * Extracted from
- * `@modules/trajectory/domain/port/scene-artifacts/ISceneArtifactRepository`
+ * `@modules/trajectory/ports/scene-artifacts/ISceneArtifactRepository`
  * during the detachable-modules migration. The original owner file re-exports
  * every name below so existing importers compile unchanged.
  *
@@ -14,8 +14,8 @@
  * time. Decoupling these is deferred.
  */
 import type { IBaseRepository, PaginatedResult, PaginationOptions } from '@shared/domain/port/IBaseRepository';
-import type SceneArtifact from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
-import type { SceneArtifactProps } from '@modules/trajectory/domain/entities/scene-artifacts/SceneArtifact';
+import type SceneArtifact from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+import type { SceneArtifactProps } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
 
 export interface TeamSceneArtifactFilters {
     sourceType?: SceneArtifactProps['sourceType'];

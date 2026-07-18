@@ -3,7 +3,7 @@
  * use cases.
  *
  * Extracted from
- * `@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO`
+ * `@modules/plugin/dtos/listing-row/GetPluginListingDocumentsDTO`
  * during the detachable-modules migration: the trajectory module's
  * `GetPublicCanvasPluginListingUseCase` consumes `GetPluginListingDocumentsOutputDTO`
  * (and the `IGetPluginListingDocumentsUseCase` port returns it). The output

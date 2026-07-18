@@ -1,0 +1,140 @@
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
+import {
+    GetPluginListingDocumentsInputDTO,
+    GetPluginListingDocumentsOutputDTO
+} from '@modules/plugin/dtos/listing-row/GetPluginListingDocumentsDTO';
+import { buildListingColumns, enrichDaemonListingRows } from '@modules/plugin/use-cases/listing-row/listing-row-enrichment';
+import { resolveListingPagination } from '@modules/plugin/use-cases/listing-row/listing-row-pagination';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
+import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+
+import { IUseCase } from '@shared/application/IUseCase';
+import { inject, injectable } from 'tsyringe';
+import { AliasOf } from '@shared/infrastructure/di/decorators';
+import { PLUGIN_USECASE_TOKENS } from '@shared/contracts/tokens/PluginUseCaseTokens';
+import type { IGetPluginListingDocumentsUseCase } from '@shared/contracts/ports/IGetPluginListingDocumentsUseCase';
+
+import { mapDaemonRow } from '@modules/plugin/dtos/listing-row/DaemonListingTypes';
+
+import type { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/dtos/listing-row/DaemonListingTypes';
+import type { PluginListingDocumentsMeta } from '@modules/plugin/dtos/listing-row/GetPluginListingDocumentsDTO';
+
+const buildMeta = (
+    pluginId: string,
+    rows: DaemonListingRow[],
+    daemonResult: DaemonPaginatedResult,
+    input: GetPluginListingDocumentsInputDTO
+): PluginListingDocumentsMeta => {
+    const firstRow = rows[0];
+
+    const columns = buildListingColumns(rows, daemonResult.columns);
+
+    const subListingNames = daemonResult.subListingNames ?? firstRow?.subListingNames ?? [];
+
+    return {
+        pluginId,
+        exposureName: input.exposureName || firstRow?.exposureName || '',
+        exposureId: input.exposureId || firstRow?.exposureId || '',
+        columns,
+        subListingNames
+    };
+};
+
+const EMPTY_RESULT: GetPluginListingDocumentsOutputDTO = {
+    data: [],
+    total: 0,
+    page: 1,
+    totalPages: 0,
+    limit: 0,
+    _meta: { pluginId: '', exposureName: '', exposureId: '', columns: [], subListingNames: [] }
+};
+
+@injectable()
+@AliasOf(PLUGIN_USECASE_TOKENS.GetPluginListingDocumentsUseCase)
+export class GetPluginListingDocumentsUseCase implements IUseCase<
+    GetPluginListingDocumentsInputDTO,
+    GetPluginListingDocumentsOutputDTO
+>, IGetPluginListingDocumentsUseCase {
+    constructor(
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
+        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
+        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
+    ) {}
+
+    async execute(input: GetPluginListingDocumentsInputDTO): Promise<GetPluginListingDocumentsOutputDTO> {
+        const { page, limit } = resolveListingPagination(input);
+
+        const resolved = await this.resolveTeamCluster(input);
+        if (!resolved) {
+            return EMPTY_RESULT;
+        }
+
+        const daemonResult = await this.daemonClient.command<DaemonPaginatedResult>(
+            resolved.teamClusterId,
+            ChannelCommands.PluginListingsList,
+            {
+                pluginId: input.pluginId,
+                teamId: input.teamId,
+                analysisId: resolved.analysisId,
+                trajectoryId: input.trajectoryId,
+                exposureId: input.exposureId,
+                exposureName: input.exposureName,
+                page,
+                limit
+            }
+        );
+
+        const rows = await enrichDaemonListingRows({
+            rows: daemonResult.data || [],
+            analysisRepository: this.analysisRepository,
+            trajectoryRepository: this.trajectoryRepository,
+            fallbackAnalysisId: resolved.analysisId
+        });
+        const data = rows.map(mapDaemonRow);
+
+        return {
+            data,
+            total: daemonResult.total || 0,
+            page: daemonResult.page || page,
+            totalPages: daemonResult.totalPages || 1,
+            limit: daemonResult.limit || limit,
+            _meta: buildMeta(input.pluginId, rows, daemonResult, input)
+        };
+    }
+
+    private async resolveTeamCluster(
+        input: GetPluginListingDocumentsInputDTO
+    ): Promise<{ teamClusterId: string; analysisId: string } | null> {
+        if (input.analysisId) {
+            const analysis = await this.analysisRepository.findById(input.analysisId);
+            const teamClusterId = analysis
+                ? resolveAnalysisComputeClusterId(analysis.props)
+                : undefined;
+            if (!teamClusterId) {
+                return null;
+            }
+
+            return { teamClusterId, analysisId: input.analysisId };
+        }
+
+        const filter: Record<string, unknown> = {
+            plugin: input.pluginId,
+            computeClusterId: { $exists: true, $ne: null }
+        };
+        if (input.trajectoryId) filter.trajectory = input.trajectoryId;
+        if (input.teamId) filter.team = input.teamId;
+
+        const analysis = await this.analysisRepository.findOne(filter);
+        const teamClusterId = analysis
+            ? resolveAnalysisComputeClusterId(analysis.props)
+            : undefined;
+        if (analysis && teamClusterId) {
+            return { teamClusterId, analysisId: analysis._id };
+        }
+
+        return null;
+    }
+}

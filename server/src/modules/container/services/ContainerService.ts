@@ -1,0 +1,101 @@
+import type { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/dtos/CreateContainerDTO';
+import type { DeleteContainerInputDTO, DeleteContainerOutputDTO } from '@modules/container/dtos/DeleteContainerDTO';
+import type {
+    CreateContainerPortAccessUrlInputDTO,
+    CreateContainerPortAccessUrlOutputDTO,
+    GetContainerByIdInputDTO,
+    GetContainerByIdOutputDTO
+} from '@modules/container/dtos/GetContainerByIdDTO';
+import type { GetContainerFilesInputDTO, GetContainerFilesOutputDTO } from '@modules/container/dtos/GetContainerFilesDTO';
+import type { GetContainerProcessesInputDTO, GetContainerProcessesOutputDTO } from '@modules/container/dtos/GetContainerProcessesDTO';
+import type { GetContainerStatsInputDTO, GetContainerStatsOutputDTO } from '@modules/container/dtos/GetContainerStatsDTO';
+import type { ListContainersInputDTO, ListContainersOutputDTO } from '@modules/container/dtos/ListContainersDTO';
+import type { MoveContainerInputDTO, MoveContainerOutputDTO } from '@modules/container/dtos/MoveContainerDTO';
+import type { ReadContainerFileInputDTO, ReadContainerFileOutputDTO } from '@modules/container/dtos/ReadContainerFileDTO';
+import type { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/dtos/UpdateContainerDTO';
+import { CreateContainerUseCase } from '@modules/container/use-cases/CreateContainerUseCase';
+import { CreateContainerPortAccessUrlUseCase } from '@modules/container/use-cases/CreateContainerPortAccessUrlUseCase';
+import { DeleteContainerUseCase } from '@modules/container/use-cases/DeleteContainerUseCase';
+import { GetContainerByIdUseCase } from '@modules/container/use-cases/GetContainerByIdUseCase';
+import { GetContainerFilesUseCase } from '@modules/container/use-cases/GetContainerFilesUseCase';
+import { GetContainerProcessesUseCase } from '@modules/container/use-cases/GetContainerProcessesUseCase';
+import { GetContainerStatsUseCase } from '@modules/container/use-cases/GetContainerStatsUseCase';
+import { ListContainersUseCase } from '@modules/container/use-cases/ListContainersUseCase';
+import { MoveContainerUseCase } from '@modules/container/use-cases/MoveContainerUseCase';
+import { ReadContainerFileUseCase } from '@modules/container/use-cases/ReadContainerFileUseCase';
+import { UpdateContainerUseCase } from '@modules/container/use-cases/UpdateContainerUseCase';
+import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+/**
+ * The single application service for the container module. Each method is a thin
+ * delegator to the retained use case (every container use case is still consumed
+ * by an AI tool, an event handler, or the shared catalog-folder route factory),
+ * unwrapping the Result error channel to thrown `ApplicationError`s so Express 5
+ * forwards them to the global error middleware. Mirrors the auth module's
+ * `updateAccount` / notification module's `getMyNotifications` delegators.
+ *
+ * Only the HTTP-facing operations live here; the exec / port-proxy / session /
+ * relay infrastructure is untouched.
+ */
+@Singleton(CONTAINER_TOKENS.ContainerService)
+export default class ContainerService {
+    constructor(
+        @inject(CreateContainerUseCase) private readonly createContainerUseCase: CreateContainerUseCase,
+        @inject(ListContainersUseCase) private readonly listContainersUseCase: ListContainersUseCase,
+        @inject(GetContainerByIdUseCase) private readonly getContainerByIdUseCase: GetContainerByIdUseCase,
+        @inject(UpdateContainerUseCase) private readonly updateContainerUseCase: UpdateContainerUseCase,
+        @inject(DeleteContainerUseCase) private readonly deleteContainerUseCase: DeleteContainerUseCase,
+        @inject(CreateContainerPortAccessUrlUseCase) private readonly createContainerPortAccessUrlUseCase: CreateContainerPortAccessUrlUseCase,
+        @inject(MoveContainerUseCase) private readonly moveContainerUseCase: MoveContainerUseCase,
+        @inject(GetContainerFilesUseCase) private readonly getContainerFilesUseCase: GetContainerFilesUseCase,
+        @inject(GetContainerProcessesUseCase) private readonly getContainerProcessesUseCase: GetContainerProcessesUseCase,
+        @inject(GetContainerStatsUseCase) private readonly getContainerStatsUseCase: GetContainerStatsUseCase,
+        @inject(ReadContainerFileUseCase) private readonly readContainerFileUseCase: ReadContainerFileUseCase
+    ) {}
+
+    async create(input: CreateContainerInputDTO): Promise<CreateContainerOutputDTO> {
+        return this.createContainerUseCase.execute(input);
+    }
+
+    async list(input: ListContainersInputDTO): Promise<ListContainersOutputDTO> {
+        return this.listContainersUseCase.execute(input);
+    }
+
+    async getById(input: GetContainerByIdInputDTO): Promise<GetContainerByIdOutputDTO> {
+        return this.getContainerByIdUseCase.execute(input);
+    }
+
+    async update(input: UpdateContainerInputDTO): Promise<UpdateContainerOutputDTO> {
+        return this.updateContainerUseCase.execute(input);
+    }
+
+    async delete(input: DeleteContainerInputDTO): Promise<DeleteContainerOutputDTO> {
+        return this.deleteContainerUseCase.execute(input);
+    }
+
+    async createPortAccessUrl(input: CreateContainerPortAccessUrlInputDTO): Promise<CreateContainerPortAccessUrlOutputDTO> {
+        return this.createContainerPortAccessUrlUseCase.execute(input);
+    }
+
+    async move(input: MoveContainerInputDTO): Promise<MoveContainerOutputDTO> {
+        return this.moveContainerUseCase.execute(input);
+    }
+
+    async getFiles(input: GetContainerFilesInputDTO): Promise<GetContainerFilesOutputDTO> {
+        return this.getContainerFilesUseCase.execute(input);
+    }
+
+    async getProcesses(input: GetContainerProcessesInputDTO): Promise<GetContainerProcessesOutputDTO> {
+        return this.getContainerProcessesUseCase.execute(input);
+    }
+
+    async getStats(input: GetContainerStatsInputDTO): Promise<GetContainerStatsOutputDTO> {
+        return this.getContainerStatsUseCase.execute(input);
+    }
+
+    async readFile(input: ReadContainerFileInputDTO): Promise<ReadContainerFileOutputDTO> {
+        return this.readContainerFileUseCase.execute(input);
+    }
+}

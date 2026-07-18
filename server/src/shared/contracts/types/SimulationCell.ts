@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). These are
  * the data shapes owned by
- * `@modules/simulation-cell/domain/entities/SimulationCell`, hosted here so
+ * `@modules/simulation-cell/entities/SimulationCell`, hosted here so
  * cross-module consumers (currently `@modules/trajectory`) can depend on the
  * shapes without importing the simulation-cell module. The owner re-exports
  * every name below so its existing importers compile unchanged.

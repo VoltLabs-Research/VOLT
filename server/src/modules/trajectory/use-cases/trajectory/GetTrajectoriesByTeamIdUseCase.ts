@@ -1,0 +1,63 @@
+import type { ITrajectoryFrameRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryFrameRepository';
+import { inject } from 'tsyringe';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
+import type { ITrajectoryRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryRepository';
+import { GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO } from '@modules/trajectory/dtos/trajectory/GetTrajectoriesByTeamIdDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { STORAGE_CLUSTER_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
+import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
+
+import { injectable } from 'tsyringe';
+
+@injectable()
+export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTrajectoriesByTeamIdInputDTO, GetTrajectoriesByTeamIdOutputDTO> {
+    constructor(
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository,
+
+        @inject(TRAJECTORY_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepo: ITrajectoryFrameRepository
+    ) {}
+
+    async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<GetTrajectoriesByTeamIdOutputDTO> {
+        const { teamId, page = 1, limit = 20, search } = input;
+
+        const filter: Record<string, unknown> = { team: teamId };
+        if (input.folderId === 'root') {
+            filter.folder = null;
+        } else if (input.folderId) {
+            filter.folder = input.folderId;
+        }
+        if (search) {
+            filter.name = { $regex: search, $options: 'i' };
+        }
+
+        const results = await this.trajectoryRepo.findAll({
+            filter,
+            populate: [
+                USER_POPULATE,
+                STORAGE_CLUSTER_POPULATE
+            ],
+            sort: { updatedAt: -1 },
+            page,
+            limit
+        });
+
+        const summaries = await this.trajectoryFrameRepo.getListingSummariesByTrajectoryIds(
+            results.data.map((trajectory) => trajectory.id)
+        );
+
+        const data = results.data.map((trajectory) => {
+            const summary = summaries.get(trajectory.id);
+            trajectory.props.framesCount = summary?.framesCount ?? 0;
+            trajectory.props.atoms = summary?.atoms ?? 0;
+            trajectory.props.firstTimestep = summary?.firstTimestep;
+
+            return toPersistedOutput(trajectory);
+        });
+
+        return {
+            ...results,
+            data
+        };
+    }
+};

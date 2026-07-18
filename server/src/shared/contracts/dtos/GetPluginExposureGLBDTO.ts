@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module DTO contract for the get-plugin-exposure-GLB use case.
  *
- * Extracted from `@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO`
+ * Extracted from `@modules/plugin/dtos/exposure/GetPluginExposureGLBDTO`
  * during the detachable-modules migration: the trajectory module's
  * `GetPublicCanvasPluginExposureGLBUseCase` consumes `GetPluginExposureGLBOutputDTO`
  * (and the `IGetPluginExposureGLBUseCase` port returns it). The output aliases

@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). These are
  * STANDALONE copies of the shapes owned by
- * `@modules/trajectory/domain/entities/trajectory/Trajectory`, exported here so
+ * `@modules/trajectory/entities/trajectory/Trajectory`, exported here so
  * cross-module consumers (cluster / plugin / analysis / raster / dashboard /
  * jobs) can depend on the shapes without importing the trajectory module. Field
  * shapes match the owner exactly; the `TrajectoryStatus` enum is duplicated as a

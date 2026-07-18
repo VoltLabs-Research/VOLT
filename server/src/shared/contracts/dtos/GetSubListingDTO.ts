@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module DTO contract for the get-sub-listing use case.
  *
- * Extracted from `@modules/plugin/application/dtos/listing-row/GetSubListingDTO`
+ * Extracted from `@modules/plugin/dtos/listing-row/GetSubListingDTO`
  * during the detachable-modules migration: the trajectory module's
  * `GetPublicCanvasSubListingUseCase` consumes `GetSubListingOutputDTO` (and the
  * `IGetSubListingUseCase` port returns it). The owner DTO file re-exports these

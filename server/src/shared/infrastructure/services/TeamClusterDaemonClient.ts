@@ -1,12 +1,12 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import type { ContainerTerminalAttachment } from '@modules/container/domain/port/IContainerService';
+import type { ContainerTerminalAttachment } from '@modules/container/ports/IContainerService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,
     TeamClusterTunnelOpenRequest
-} from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
-import type { ITeamClusterReverseChannelService } from '@modules/cluster/domain/port/ITeamClusterReverseChannelService';
+} from '@modules/cluster/services/TeamClusterReverseChannelService';
+import type { ITeamClusterReverseChannelService } from '@modules/cluster/ports/ITeamClusterReverseChannelService';
 import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';

@@ -5,7 +5,7 @@
  * selection service needn't import `@modules/cluster` for them. Plain numeric
  * constants — no module coupling.
  *
- * The original `@modules/cluster/application/services/cluster-storage-policy`
+ * The original `@modules/cluster/services/cluster-storage-policy`
  * re-exports these for backward compatibility.
  */
 export const SOFT_STORAGE_LIMIT_PCT = 85;

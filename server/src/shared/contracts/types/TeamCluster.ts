@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module TYPE/ENUM contracts for the TeamCluster aggregate.
  *
- * Extracted from `@modules/cluster/domain/entities/TeamCluster` during the
+ * Extracted from `@modules/cluster/entities/TeamCluster` during the
  * detachable-modules migration. Only the pure data shapes live here (enums +
  * `*Props` interfaces + the `TeamClusterRole` alias) — the `TeamCluster` CLASS
  * and its runtime helper functions/constants stay in the cluster module. The

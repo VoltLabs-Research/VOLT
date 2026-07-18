@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module query-service port for team dashboard metrics.
- * Mirrors `@modules/trajectory/domain/port/trajectory/ITeamMetricsQueryService`
+ * Mirrors `@modules/trajectory/ports/trajectory/ITeamMetricsQueryService`
  * during the detachable-modules migration so consumers (dashboard AI tool)
  * inject against a contract rather than `@modules/trajectory`.
  *

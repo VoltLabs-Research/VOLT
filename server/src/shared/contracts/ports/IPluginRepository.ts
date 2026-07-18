@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module repository-port contract for the Plugin domain.
- * Extracted from `@modules/plugin/domain/port/plugin/IPluginRepository` during
+ * Extracted from `@modules/plugin/ports/plugin/IPluginRepository` during
  * the detachable-modules migration so consumers (dashboard, cluster, …) inject
  * against a contract rather than `@modules/plugin`.
  *

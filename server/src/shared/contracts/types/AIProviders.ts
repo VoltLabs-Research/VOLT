@@ -4,7 +4,7 @@
  * Canonical home in `shared/contracts` (detachable-modules migration): the team
  * (kernel) module's AI-integration config references `AIProvider`, so this must
  * be importable without depending on `@modules/ai`. The original
- * `@modules/ai/domain/contracts/AIProviders` re-exports these for back-compat.
+ * `@modules/ai/contracts/AIProviders` re-exports these for back-compat.
  * Pure data — no runtime deps.
  */
 export enum AIProvider {

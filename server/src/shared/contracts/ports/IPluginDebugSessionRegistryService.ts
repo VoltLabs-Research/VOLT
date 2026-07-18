@@ -13,7 +13,7 @@
  *
  * The richer plugin-internal surface (registerSession / getSession /
  * unregisterSession / unregisterSessionsForSocket / listSessions) lives on
- * `@modules/plugin/domain/port/plugin/IPluginDebugSessionRegistryService` and is
+ * `@modules/plugin/ports/plugin/IPluginDebugSessionRegistryService` and is
  * intentionally NOT mirrored here — this port exposes only what cross-module
  * consumers call.
  *

@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
-import type TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryRepository';
-import type TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/trajectory/TrajectoryDumpStorageService';
+import type TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
+import type TrajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSceneArtifactStorageCluster } from './resolve-scene-artifact-storage-cluster';
 

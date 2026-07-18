@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). Mirrors
  * `SceneArtifactBatchUpsertedEventPayload` owned by
- * `@modules/trajectory/domain/events/scene-artifacts/SceneArtifactBatchUpsertedEvent`,
+ * `@modules/trajectory/events/scene-artifacts/SceneArtifactBatchUpsertedEvent`,
  * exported here so cross-module consumers can type the event payload without
  * importing the trajectory module. The `SceneArtifactSourceType` /
  * `SceneArtifactStatus` enums come from the neutral

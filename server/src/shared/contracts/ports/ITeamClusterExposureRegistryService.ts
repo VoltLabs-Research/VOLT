@@ -13,7 +13,7 @@
  *
  * The richer cluster-internal surface (replace/clear/get/find/listActiveTcp/
  * onChanged/offChanged) lives on
- * `@modules/cluster/domain/port/ITeamClusterExposureRegistryService` and is
+ * `@modules/cluster/ports/ITeamClusterExposureRegistryService` and is
  * intentionally NOT mirrored here — this port exposes only what cross-module
  * consumers call.
  *

@@ -1,0 +1,58 @@
+import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
+import type { ITeamClusterRepository } from '@modules/cluster/ports/ITeamClusterRepository';
+import type { ITeamClusterRemoteAccessSessionService } from '@modules/cluster/ports/ITeamClusterRemoteAccessSessionService';
+import type { IRemoteExplorerDaemonGateway } from '@modules/cluster/ports/IRemoteExplorerDaemonGateway';
+import {
+    GetTeamClusterRemoteExplorerNodeInputDTO,
+    GetTeamClusterRemoteExplorerNodeOutputDTO
+} from '@modules/cluster/dtos/GetTeamClusterRemoteExplorerNodeDTO';
+import { preflightRemoteExplorerAccess } from '@modules/cluster/utilities/remote-explorer-access';
+import ApplicationError from '@shared/application/errors/ApplicationError';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+@Singleton()
+export default class GetTeamClusterRemoteExplorerNodeUseCase implements IUseCase<GetTeamClusterRemoteExplorerNodeInputDTO, GetTeamClusterRemoteExplorerNodeOutputDTO> {
+    constructor(
+        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
+        @inject(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService) private readonly sessionService: ITeamClusterRemoteAccessSessionService,
+        @inject(CLUSTER_TOKENS.RemoteExplorerDaemonGateway) private readonly remoteExplorerDaemonGateway: IRemoteExplorerDaemonGateway
+    ) {}
+
+    async execute(
+        input: GetTeamClusterRemoteExplorerNodeInputDTO
+    ): Promise<GetTeamClusterRemoteExplorerNodeOutputDTO> {
+        const preflight = await preflightRemoteExplorerAccess(
+            this.teamClusterRepository,
+            this.sessionService,
+            input
+        );
+        if (preflight instanceof ApplicationError) {
+            throw preflight;
+        }
+
+        try {
+            const node = await this.remoteExplorerDaemonGateway.getNode({
+                teamClusterId: preflight.teamClusterId,
+                target: preflight.target,
+                path: input.path
+            });
+
+            return {
+                teamClusterId: preflight.teamClusterId,
+                target: preflight.target,
+                node
+            };
+        } catch (error: unknown) {
+            if (error instanceof ApplicationError) {
+                throw error;
+            }
+
+            throw ApplicationError.badRequest(
+                'TeamCluster::RemoteExplorerNodeFailed',
+                error instanceof Error ? error.message : 'Failed to load remote explorer node'
+            );
+        }
+    }
+}

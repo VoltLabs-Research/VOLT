@@ -1,13 +1,13 @@
-import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { SOCKET_TOKENS } from '@modules/socket/di/SocketTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { inject } from 'tsyringe';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';

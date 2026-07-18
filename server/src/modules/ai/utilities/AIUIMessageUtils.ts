@@ -1,6 +1,6 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIConversationMessage, AIConversationMessagePart } from '@modules/ai/domain/contracts/AIConversationMessage';
-import { AIConversationMessageRole } from '@modules/ai/domain/contracts/AIConversationMessage';
+import { AI_TOKENS } from '@modules/ai/di/AITokens';
+import type { AIConversationMessage, AIConversationMessagePart } from '@modules/ai/contracts/AIConversationMessage';
+import { AIConversationMessageRole } from '@modules/ai/contracts/AIConversationMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 
 type AITextPart = AIConversationMessagePart & { text: string };

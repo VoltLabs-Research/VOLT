@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module repository port for the TeamCluster aggregate.
  *
- * Extracted from `@modules/cluster/domain/port/ITeamClusterRepository` during
+ * Extracted from `@modules/cluster/ports/ITeamClusterRepository` during
  * the detachable-modules migration. The concrete repository stays in the
  * cluster module, registered under `CLUSTER_SERVICE_TOKENS.TeamClusterRepository`
  * (same `Symbol.for` key as the cluster module's
@@ -17,7 +17,7 @@
  * `@shared/contracts/types/TeamCluster`. Replacing the class with a structural
  * entity contract is deferred.
  */
-import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 import type { TeamClusterProps, TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
 

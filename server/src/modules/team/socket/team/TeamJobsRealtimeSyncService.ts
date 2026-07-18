@@ -1,4 +1,4 @@
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamJobsService, { type TeamJobsInitialPayload } from './TeamJobsService';
 

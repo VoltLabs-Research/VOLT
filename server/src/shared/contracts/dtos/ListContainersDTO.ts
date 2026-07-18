@@ -1,6 +1,6 @@
 /**
  * Neutral, cross-module output DTO contract for listing containers.
- * Extracted from `@modules/container/application/dtos/ListContainersDTO` during
+ * Extracted from `@modules/container/dtos/ListContainersDTO` during
  * the detachable-modules migration: the dashboard global-search consumes
  * `ListContainersOutputDTO['data']` and must not import `@modules/container`.
  *

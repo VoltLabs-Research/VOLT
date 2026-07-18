@@ -3,7 +3,7 @@
  *
  * Part of the `shared/contracts` layer (detachable-modules migration). This is a
  * STANDALONE copy of `ITrajectoryFrameRepository` owned by
- * `@modules/trajectory/domain/port/trajectory/ITrajectoryFrameRepository`,
+ * `@modules/trajectory/ports/trajectory/ITrajectoryFrameRepository`,
  * exported here so cross-module consumers can inject the frame repository
  * without importing the trajectory module. The `TrajectoryFrame` shape is taken
  * from the neutral `@shared/contracts/types/Trajectory` copy.

@@ -1,6 +1,6 @@
 /**
  * Canonical, neutral repository-port contract for the Analysis domain.
- * Extracted from `@modules/analysis/domain/port/IAnalysisRepository` during the
+ * Extracted from `@modules/analysis/ports/IAnalysisRepository` during the
  * detachable-modules migration. The entity/props types it references come from
  * the neutral contracts layer (`@shared/contracts/types/AnalysisProps`), so this
  * port has no `@modules/*` coupling. The original owner file re-exports every

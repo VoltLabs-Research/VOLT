@@ -1,0 +1,50 @@
+import type { GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO } from '@modules/session/dtos/GetActiveSessionsDTO';
+import type { GetLoginActivityInputDTO, GetLoginActivityOutputDTO } from '@modules/session/dtos/GetLoginActivityDTO';
+import { toPersistedSessionDTO } from '@modules/session/dtos/PersistedSessionDTO';
+import type { RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO } from '@modules/session/dtos/RevokeAllSessionsDTO';
+import type { RevokeSessionInputDTO } from '@modules/session/dtos/RevokeSessionDTO';
+import GetActiveSessionsUseCase from '@modules/session/use-cases/GetActiveSessionsUseCase';
+import RevokeAllSessionsUseCase from '@modules/session/use-cases/RevokeAllSessionsUseCase';
+import RevokeSessionUseCase from '@modules/session/use-cases/RevokeSessionUseCase';
+import type { ISessionRepository } from '@modules/session/ports/ISessionRepository';
+import { SESSION_TOKENS } from '@modules/session/di/SessionTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { inject } from 'tsyringe';
+
+/**
+ * The single HTTP-facing application service for the session module. One method
+ * per HTTP operation. The cross-consumed use cases ({@link GetActiveSessionsUseCase},
+ * {@link RevokeSessionUseCase}, {@link RevokeAllSessionsUseCase} — all still
+ * driven by the `manage_sessions` AI tool) are retained and delegated to here,
+ * unwrapping the Result error channel to thrown `ApplicationError`s so Express 5
+ * forwards them to the global error middleware. `getLoginActivity` was
+ * controller-only, so its logic is folded in directly.
+ */
+@Singleton(SESSION_TOKENS.SessionService)
+export default class SessionService {
+    constructor(
+        @inject(SESSION_TOKENS.SessionRepository) private readonly sessionRepository: ISessionRepository,
+        @inject(GetActiveSessionsUseCase) private readonly getActiveSessionsUseCase: GetActiveSessionsUseCase,
+        @inject(RevokeSessionUseCase) private readonly revokeSessionUseCase: RevokeSessionUseCase,
+        @inject(RevokeAllSessionsUseCase) private readonly revokeAllSessionsUseCase: RevokeAllSessionsUseCase
+    ) {}
+
+    async getActiveSessions(input: GetActiveSessionsInputDTO): Promise<GetActiveSessionsOutputDTO[]> {
+        return this.getActiveSessionsUseCase.execute(input);
+    }
+
+    async getLoginActivity(input: GetLoginActivityInputDTO): Promise<GetLoginActivityOutputDTO> {
+        const sessions = await this.sessionRepository.findLoginActivity(input.userId, input.limit ?? 20);
+        const activities = sessions.map((session) => toPersistedSessionDTO(session));
+
+        return { activities };
+    }
+
+    async revokeSession(input: RevokeSessionInputDTO): Promise<void> {
+        await this.revokeSessionUseCase.execute(input);
+    }
+
+    async revokeAllSessions(input: RevokeAllSessionsInputDTO): Promise<RevokeAllSessionsOutputDTO> {
+        return this.revokeAllSessionsUseCase.execute(input);
+    }
+}

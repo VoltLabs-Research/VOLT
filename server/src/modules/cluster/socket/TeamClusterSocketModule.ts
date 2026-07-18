@@ -2,32 +2,32 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
 import type { IPluginDebugSessionRegistryService } from '@shared/contracts/ports';
-import type { ISocketConnection } from '@modules/socket/domain/port/ISocketModule';
+import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/infrastructure/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/infrastructure/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/infrastructure/services/SocketIORoomManager';
+import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import type TeamCluster from '@modules/cluster/domain/entities/TeamCluster';
+import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 import {
     toTeamClusterQueueConcurrencyDTO,
     toTeamClusterQueueScopeLimitsDTO
-} from '@modules/cluster/application/dtos/TeamClusterDTO';
-import CompleteTeamClusterDeletionUseCase from '@modules/cluster/application/use-cases/CompleteTeamClusterDeletionUseCase';
-import ProcessDaemonJobCompletionUseCase from '@modules/cluster/application/use-cases/ProcessDaemonJobCompletionUseCase';
-import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/cluster/application/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/application/use-cases/RecordTeamClusterHeartbeatUseCase';
-import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/application/use-cases/UpdateTeamClusterLifecycleUseCase';
-import SystemMetricsRedisRepository from '@modules/system/infrastructure/persistence/redis/SystemMetricsRedisRepository';
-import TeamClusterRepository from '@modules/cluster/infrastructure/persistence/mongo/repositories/TeamClusterRepository';
-import TeamClusterHeartbeatMonitor from '@modules/cluster/infrastructure/services/TeamClusterHeartbeatMonitor';
-import TeamClusterLifecycleService from '@modules/cluster/infrastructure/services/TeamClusterLifecycleService';
+} from '@modules/cluster/dtos/TeamClusterDTO';
+import CompleteTeamClusterDeletionUseCase from '@modules/cluster/use-cases/CompleteTeamClusterDeletionUseCase';
+import ProcessDaemonJobCompletionUseCase from '@modules/cluster/use-cases/ProcessDaemonJobCompletionUseCase';
+import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/cluster/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
+import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/cluster/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
+import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/use-cases/RecordTeamClusterHeartbeatUseCase';
+import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/use-cases/UpdateTeamClusterLifecycleUseCase';
+import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
+import TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import TeamClusterReverseChannelService, {
     type TeamClusterDaemonInboundStreamPayload
-} from '@modules/cluster/infrastructure/services/TeamClusterReverseChannelService';
-import { CLUSTER_TOKENS } from '@modules/cluster/infrastructure/di/ClusterTokens';
-import { ProvenanceService } from '@modules/analysis/application/services/ProvenanceService';
+} from '@modules/cluster/services/TeamClusterReverseChannelService';
+import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
+import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,

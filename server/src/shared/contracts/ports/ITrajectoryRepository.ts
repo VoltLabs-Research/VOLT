@@ -1,7 +1,7 @@
 /**
  * Canonical, neutral repository-port contract for the Trajectory domain.
  * Extracted from
- * `@modules/trajectory/domain/port/trajectory/ITrajectoryRepository` during the
+ * `@modules/trajectory/ports/trajectory/ITrajectoryRepository` during the
  * detachable-modules migration. The original owner file re-exports it so
  * existing importers compile unchanged.
  *
@@ -14,8 +14,8 @@
  * (e.g. a neutral `TrajectoryProps` + structural entity contract) is deferred.
  */
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import type Trajectory from '@modules/trajectory/domain/entities/trajectory/Trajectory';
-import type { TrajectoryProps } from '@modules/trajectory/domain/entities/trajectory/Trajectory';
+import type Trajectory from '@modules/trajectory/entities/trajectory/Trajectory';
+import type { TrajectoryProps } from '@modules/trajectory/entities/trajectory/Trajectory';
 
 export interface ITrajectoryRepository extends IBaseRepository<Trajectory, TrajectoryProps> {
     createWithId(id: string, data: Partial<TrajectoryProps>): Promise<Trajectory>;

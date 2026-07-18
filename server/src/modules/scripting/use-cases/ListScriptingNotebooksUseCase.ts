@@ -1,0 +1,56 @@
+import { SCRIPTING_TOKENS } from '@modules/scripting/di/ScriptingTokens';
+import type { IScriptingNotebookRepository } from '@modules/scripting/ports/IScriptingNotebookRepository';
+import { inject } from 'tsyringe';
+import {
+    ListScriptingNotebooksInputDTO,
+    ListScriptingNotebooksOutputDTO
+} from '@modules/scripting/dtos/ListScriptingNotebooksDTO';
+import { toScriptingNotebookDTO } from '@modules/scripting/utilities/to-scripting-notebook-dto';
+import { ScriptingNotebookScope } from '@modules/scripting/entities/ScriptingNotebookScope';
+import type { IUseCase } from '@shared/application/IUseCase';
+import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+
+@Singleton()
+export class ListScriptingNotebooksUseCase implements IUseCase<ListScriptingNotebooksInputDTO, ListScriptingNotebooksOutputDTO> {
+    constructor(
+        @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository) private readonly scriptingNotebookRepository: IScriptingNotebookRepository
+    ) {}
+
+    async execute(input: ListScriptingNotebooksInputDTO): Promise<ListScriptingNotebooksOutputDTO> {
+        const page = Math.max(1, input.page ?? 1);
+        const limit = Math.max(1, Math.min(500, input.limit ?? 500));
+        const filter: Record<string, unknown> = { team: input.teamId };
+
+        if (input.trajectoryId) {
+            filter.trajectory = input.trajectoryId;
+        } else if (input.scope === ScriptingNotebookScope.General) {
+            filter.$or = [
+                { trajectory: null },
+                { trajectory: { $exists: false } }
+            ];
+        } else if (input.scope === ScriptingNotebookScope.Trajectory) {
+            filter.trajectory = {
+                $exists: true,
+                $ne: null
+            };
+        }
+
+        const result = await this.scriptingNotebookRepository.findAll({
+            filter,
+            page,
+            limit,
+            sort: { updatedAt: -1 },
+            populate: [
+                CLUSTER_POPULATE,
+                TRAJECTORY_POPULATE,
+                USER_POPULATE
+            ]
+        });
+
+        return {
+            ...result,
+            data: result.data.map(toScriptingNotebookDTO)
+        };
+    }
+}

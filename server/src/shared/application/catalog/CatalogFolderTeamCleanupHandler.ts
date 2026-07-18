@@ -1,5 +1,5 @@
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
-import type TeamDeletedEvent from '@modules/team/domain/events/team/TeamDeletedEvent';
+import type TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';

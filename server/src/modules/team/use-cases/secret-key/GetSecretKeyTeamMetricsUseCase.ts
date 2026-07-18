@@ -1,0 +1,96 @@
+import type { ISecretKeyUsageLogRepository } from '@modules/team/ports/secret-key/ISecretKeyUsageLogRepository';
+import type { ISecretKeyRepository } from '@modules/team/ports/secret-key/ISecretKeyRepository';
+import { GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO } from '@modules/team/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+import type { ISecretKeyUsageMetricsMapper } from '@modules/team/ports/secret-key/ISecretKeyUsageMetricsMapper';
+import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { inject, injectable } from 'tsyringe';
+
+const MAX_KEYS_PER_TEAM = 500;
+
+interface SecretKeyTeamFilter {
+    team: string;
+}
+
+interface SecretKeyRolePopulate {
+    path: 'role';
+    select: ['name'];
+}
+
+interface EnrichedSecretKeyMetric {
+    secretKeyId: string;
+    name: string;
+    keyPrefix: string;
+    roleName: string;
+    isActive: boolean;
+    totalRequests: number;
+    successRequests: number;
+    avgResponseTime: number;
+    lastRequestAt: Date | null;
+}
+
+@injectable()
+export default class GetSecretKeyTeamMetricsUseCase
+    implements IUseCase<GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO> {
+
+    constructor(
+        @inject(TEAM_TOKENS.SecretKeyRepository) private readonly secretKeyRepo: ISecretKeyRepository,
+        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository) private readonly usageLogRepo: ISecretKeyUsageLogRepository,
+        @inject(TEAM_TOKENS.SecretKeyUsageMetricsMapper)
+        private readonly metricsMapper: ISecretKeyUsageMetricsMapper
+    ) {}
+
+    async execute(input: GetSecretKeyTeamMetricsInputDTO): Promise<GetSecretKeyTeamMetricsOutputDTO> {
+        const { teamId } = input;
+        const days = input.days !== undefined ? Number(input.days) : 30;
+
+        const metrics = this.metricsMapper.toTeamMetrics(
+            await this.usageLogRepo.getTeamUsageAnalytics(teamId, days)
+        );
+        const filter: SecretKeyTeamFilter = { team: teamId };
+        const populate: SecretKeyRolePopulate = {
+            path: 'role',
+            select: ['name']
+        };
+
+        const keysResult = await this.secretKeyRepo.findAll({
+            filter,
+            limit: MAX_KEYS_PER_TEAM,
+            populate
+        });
+
+        const allKeys = keysResult.data;
+        const totalKeys = allKeys.length;
+        const activeKeys = allKeys.filter(k => k.props.isActive).length;
+        const revokedKeys = totalKeys - activeKeys;
+
+        const usageMap = new Map(metrics.perKey.map(pk => [pk.secretKeyId, pk]));
+
+        const toEnrichedSecretKeyMetric = (key: typeof allKeys[number]): EnrichedSecretKeyMetric => {
+            const usage = usageMap.get(key._id);
+            return {
+                secretKeyId: key._id,
+                name: key.props.name,
+                keyPrefix: key.props.keyPrefix,
+                roleName: key.getRoleName(),
+                isActive: key.props.isActive,
+                totalRequests: usage?.totalRequests || 0,
+                successRequests: usage?.successRequests || 0,
+                avgResponseTime: usage?.avgResponseTime || 0,
+                lastRequestAt: usage?.lastRequestAt || key.props.lastUsedAt || null
+            };
+        };
+
+        const enrichedPerKey = allKeys.map(toEnrichedSecretKeyMetric);
+
+        enrichedPerKey.sort((a, b) => b.totalRequests - a.totalRequests);
+
+        return {
+            ...metrics,
+            totalKeys,
+            activeKeys,
+            revokedKeys,
+            perKey: enrichedPerKey
+        };
+    }
+}

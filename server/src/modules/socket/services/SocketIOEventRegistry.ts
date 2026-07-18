@@ -1,0 +1,90 @@
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
+import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
+import type { ISocketEventRegistryRuntime } from '@modules/socket/contracts/ISocketEventRegistryRuntime';
+import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
+import { Singleton } from '@shared/infrastructure/di/decorators';
+import { Socket } from 'socket.io';
+
+/**
+ * Handles event registration and provides connection abstraction.
+ *
+ * Disconnect handlers are aggregated per socket: only a single
+ * `socket.on('disconnect', ...)` listener is registered regardless
+ * of how many modules call `onDisconnect()`.  This avoids the
+ * MaxListenersExceededWarning that would otherwise fire when > 10
+ * modules each attach their own listener.
+ */
+@Singleton()
+export default class SocketIOEventRegistry implements ISocketEventRegistry, ISocketEventRegistryRuntime{
+    private sockets: Map<string, Socket> = new Map();
+    private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
+
+    constructor(
+        private readonly socketMapper: SocketConnectionMapper
+    ){}
+
+    registerConnection(socket: unknown): void{
+        this.registerSocket(socket as Socket);
+    }
+
+    unregisterConnection(socketId: string): void{
+        this.unregisterSocket(socketId);
+    }
+
+    private registerSocket(socket: Socket): void{
+        this.sockets.set(socket.id, socket);
+    }
+
+    private unregisterSocket(socketId: string): void{
+        this.sockets.delete(socketId);
+        this.disconnectHandlers.delete(socketId);
+    }
+
+    on<T = unknown, TResult = unknown>(
+        socketId: string,
+        event: string,
+        handler: SocketEventHandler<T, TResult>
+    ): void{
+        const socket = this.sockets.get(socketId);
+        if(!socket) return;
+
+        socket.on(event, async (payload: T, ack?: (...args: unknown[]) => void) => {
+            try {
+                const connection = this.socketMapper.toDomain(socket);
+                const result = await handler(connection, payload);
+                if(typeof ack === 'function'){
+                    ack(result === undefined ? { ok: true } : result);
+                }
+            } catch(error) {
+                if(typeof ack === 'function'){
+                    ack({ ok: false, error: error instanceof Error ? error.message : 'Internal error' });
+                }
+            }
+        });
+    }
+
+    onDisconnect(
+        socketId: string,
+        handler: (connection: ISocketConnection) => void | Promise<void>
+    ): void{
+        const socket = this.sockets.get(socketId);
+        if(!socket) return;
+
+        let handlers = this.disconnectHandlers.get(socketId);
+        if(!handlers){
+            handlers = [];
+            this.disconnectHandlers.set(socketId, handlers);
+
+            socket.on('disconnect', async () => {
+                const connection = this.socketMapper.toDomain(socket);
+                const fns = this.disconnectHandlers.get(socketId);
+                if (!fns) {
+                    return;
+                }
+                await Promise.all(fns.map((fn) => fn(connection)));
+            });
+        }
+
+        handlers.push(handler);
+    }
+}

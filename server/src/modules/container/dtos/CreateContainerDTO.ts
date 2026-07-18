@@ -1,0 +1,23 @@
+import type { Container } from '@modules/container/entities/Container';
+import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/ports/IContainerService';
+
+export interface CreateContainerInputDTO {
+    name: string;
+    image: string;
+    operationId?: string;
+    teamId: string;
+    teamClusterId?: string;
+    folderId?: string | null;
+    userId: string;
+    env?: ContainerEnvironmentVariable[];
+    ports?: ContainerPortMapping[];
+    cmd?: string[];
+    memory?: number;
+    cpus?: number;
+    mountDockerSocket?: boolean;
+    useImageCmd?: boolean;
+}
+
+export interface CreateContainerOutputDTO {
+    container: Container;
+}

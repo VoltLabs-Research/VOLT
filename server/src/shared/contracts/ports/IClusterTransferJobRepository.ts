@@ -1,7 +1,7 @@
 /**
  * Neutral, cross-module repository port for the ClusterTransferJob aggregate.
  *
- * Extracted from `@modules/cluster/domain/port/IClusterTransferJobRepository`
+ * Extracted from `@modules/cluster/ports/IClusterTransferJobRepository`
  * during the detachable-modules migration. The concrete repository stays in the
  * cluster module, registered under `CLUSTER_SERVICE_TOKENS.ClusterTransferJobRepository`
  * (same `Symbol.for` key as the cluster module's
@@ -16,8 +16,8 @@
  * the class with a structural entity contract is deferred.
  */
 import type { IBaseRepository } from '@shared/domain/port/IBaseRepository';
-import type ClusterTransferJob from '@modules/cluster/domain/entities/ClusterTransferJob';
-import type { ClusterTransferJobProps } from '@modules/cluster/domain/entities/ClusterTransferJob';
+import type ClusterTransferJob from '@modules/cluster/entities/ClusterTransferJob';
+import type { ClusterTransferJobProps } from '@modules/cluster/entities/ClusterTransferJob';
 
 export interface IClusterTransferJobRepository extends IBaseRepository<ClusterTransferJob, ClusterTransferJobProps> {
     findOpenByScope(

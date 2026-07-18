@@ -1,5 +1,5 @@
-import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
-import type { AIConversationMessageParts } from '@modules/ai/domain/contracts/AIConversationMessage';
+import { AI_TOKENS } from '@modules/ai/di/AITokens';
+import type { AIConversationMessageParts } from '@modules/ai/contracts/AIConversationMessage';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { asRecord, isRecord } from '@shared/infrastructure/utilities/type-guards';
 

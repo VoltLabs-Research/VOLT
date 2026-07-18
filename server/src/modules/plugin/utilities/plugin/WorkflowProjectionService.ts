@@ -1,9 +1,9 @@
-import { ArgumentDefinition } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ArgumentNode';
-import { ExportNodeData } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExportNode';
-import { ExposureProperty } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ExposureNode';
-import { ModifierNodeData } from '@modules/plugin/domain/entities/plugin/workflow/nodes/ModifierNode';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/plugin/workflow/WorkflowNode';
-import Workflow from '@modules/plugin/domain/entities/plugin/workflow/Workflow';
+import { ArgumentDefinition } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
+import { ExportNodeData } from '@modules/plugin/entities/plugin/workflow/nodes/ExportNode';
+import { ExposureProperty } from '@modules/plugin/entities/plugin/workflow/nodes/ExposureNode';
+import { ModifierNodeData } from '@modules/plugin/entities/plugin/workflow/nodes/ModifierNode';
+import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
+import Workflow from '@modules/plugin/entities/plugin/workflow/Workflow';
 
 interface ComputedExposure {
     _id: string;
