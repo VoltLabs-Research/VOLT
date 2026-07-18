@@ -1,6 +1,4 @@
 import TeamCluster from '@modules/cluster/entities/TeamCluster';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import Docker from 'dockerode';
@@ -62,8 +60,7 @@ const buildResourceLabels = (teamCluster: TeamCluster): Record<string, string> =
     };
 };
 
-@Singleton(CLUSTER_TOKENS.DemoClusterDeploymentService)
-export default class DemoClusterDeploymentService {
+export class DemoClusterDeploymentService {
     private readonly docker: Docker;
 
     constructor() {
@@ -346,3 +343,5 @@ export default class DemoClusterDeploymentService {
         }
     }
 }
+
+export default new DemoClusterDeploymentService();

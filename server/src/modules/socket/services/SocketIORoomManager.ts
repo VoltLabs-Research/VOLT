@@ -1,22 +1,12 @@
 import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { ISocketRoomManager, PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import type { ISocketRoomManagerRuntime } from '@modules/socket/contracts/ISocketRoomManagerRuntime';
-import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
+import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
 import logger from '@shared/infrastructure/logger';
 import { Server, Socket } from 'socket.io';
 
-/**
- * Handles room management and presence collection.
- */
-@Singleton()
-export default class SocketIORoomManager implements ISocketRoomManager, ISocketRoomManagerRuntime{
+export default class SocketIORoomManager {
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();
-
-    constructor(
-        private readonly socketMapper: SocketConnectionMapper
-    ){}
 
     setServer(io: Server): void{
         this.io = io;
@@ -100,7 +90,7 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
             const byId = new Map<string, PresenceUser>();
 
             for(const socket of sockets){
-                const connection = this.socketMapper.toDomain(socket);
+                const connection = socketConnectionMapper.toDomain(socket);
                 const presenceUser = userExtractor(connection);
                 const uid = presenceUser.id;
                 if(uid && !byId.has(uid)){
@@ -115,3 +105,5 @@ export default class SocketIORoomManager implements ISocketRoomManager, ISocketR
         }
     }
 }
+
+export const socketIORoomManager = new SocketIORoomManager();

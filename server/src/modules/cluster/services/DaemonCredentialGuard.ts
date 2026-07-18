@@ -4,7 +4,6 @@ import TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterC
 import { hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import { secureCompare } from '@modules/cluster/utilities/secureCompare';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface DecryptedTeamClusterServiceCredentials {
     minioUsername: string;
@@ -16,15 +15,9 @@ export interface DecryptedTeamClusterServiceCredentials {
     daemonPassword: string;
 }
 
-@Singleton()
 export default class DaemonCredentialGuard {
-    constructor(
-
-        private readonly teamClusterRepository: TeamClusterRepository,
-
-
-        private readonly teamClusterCredentialsCipher: TeamClusterCredentialsCipher
-    ) {}
+    private readonly teamClusterRepository = new TeamClusterRepository();
+    private readonly teamClusterCredentialsCipher = new TeamClusterCredentialsCipher();
 
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
         const teamCluster = await this.requireSensitiveCluster(teamClusterId);

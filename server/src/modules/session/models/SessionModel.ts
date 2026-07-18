@@ -1,19 +1,28 @@
-import { SessionActivityType } from '@modules/session/entities/Session';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema, Types } from 'mongoose';
 import mongoose from 'mongoose';
-import type { SessionProps } from '@modules/session/entities/Session';
-import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import type { Document, Model } from 'mongoose';
 
-interface SessionPersistenceUserProps {
-    user: Types.ObjectId | null;
-    failureReason?: string;
+export enum SessionActivityType {
+    Login = 'login',
+    FailedLogin = 'failed_login',
+    OAuthLogin = 'oauth_login',
+    PasswordUpdate = 'password_update'
 }
 
-type SessionPersistenceProps = Omit<Persistable<SessionProps>, 'user'> & SessionPersistenceUserProps;
-
-export interface SessionDocument extends SessionPersistenceProps, Document {
+export interface SessionDocument extends Document {
+    _id: Types.ObjectId;
+    user: Types.ObjectId | null;
+    token: string | null;
+    userAgent: string;
+    ip: string;
+    isActive: boolean;
+    lastActivity: Date;
+    action: SessionActivityType;
+    success: boolean;
+    failureReason?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const SessionSchema: Schema<SessionDocument> = new Schema({
@@ -77,9 +86,6 @@ const SessionSchema: Schema<SessionDocument> = new Schema({
 
 SessionSchema.index({ user: 1, isActive: 1 });
 
-/**
- * NOTE: Unique token only when token is a string (skip null/undefned for failed logins)
- */
 SessionSchema.index(
     { token: 1 },
     { unique: true, partialFilterExpression: { token: { $type: 'string' } } }

@@ -16,8 +16,7 @@ import {
 import {
     TeamClusterServiceExposureAccessMode
 } from '@shared/contracts/types';
-import type { ITeamClusterExposureRegistryService } from '@shared/contracts/ports';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { getTeamMemberRolePermissions } from '@modules/team/entities/team-member/TeamMember';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
@@ -139,12 +138,12 @@ export class ScriptingJupyterProxyService {
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
     private readonly httpProxySessions = new Map<string, HttpProxySessionEntry[]>();
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
+    private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
     constructor(
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
         @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        private readonly reverseWsHttpRelay: ReverseWsHttpRelay,
-        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService) private readonly exposureRegistryService: ITeamClusterExposureRegistryService
+        private readonly reverseWsHttpRelay: ReverseWsHttpRelay
     ) {
         this.startHttpProxySessionSweep();
     }

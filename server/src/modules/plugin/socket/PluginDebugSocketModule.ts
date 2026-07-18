@@ -16,15 +16,16 @@ import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistr
 import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import type { ITrajectoryRepository, ITeamClusterSelectionService, ITrajectoryFrameRepository } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { inject } from 'tsyringe';
+
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
 
 interface DebugStartPayload {
     pluginId: string;
@@ -119,6 +120,13 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 export default class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
+    // `PluginDependencyResolverService` and `WorkflowValidatorService` are plain
+    // classes (not DI-managed) that take explicit constructor arguments — see
+    // their usage in `PluginService.ts` — so tsyringe can't auto-wire them by
+    // type the way it does the singletons above. Construct them manually.
+    private readonly pluginDependencyResolverService: PluginDependencyResolverService;
+    private readonly workflowValidator: WorkflowValidatorService;
+
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
@@ -126,17 +134,13 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         private readonly daemonClient: TeamClusterDaemonClient,
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
         private readonly pluginRepository: PluginRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepository: ITrajectoryFrameRepository,
         @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
         private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService,
-        private readonly pluginDependencyResolverService: PluginDependencyResolverService,
-        private readonly workflowValidator: WorkflowValidatorService
+        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService
     ) {
         super(emitter, roomManager, eventRegistry);
+        this.pluginDependencyResolverService = new PluginDependencyResolverService(pluginRepository);
+        this.workflowValidator = new WorkflowValidatorService(this.pluginDependencyResolverService);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -202,14 +206,14 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                     : [];
                 const sanitizedConfig = sanitizeVisibleArgumentConfig(runtimeArguments, payload.config ?? {});
 
-                const trajectory = await this.trajectoryRepository.findById(payload.trajectoryId);
+                const trajectory = await TrajectoryModel.findById(payload.trajectoryId);
                 if (!trajectory) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Trajectory not found'
                     });
                     return;
                 }
-                const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+                const storageClusterId = trajectory.storageClusterId?.toString();
                 if (!storageClusterId) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Trajectory does not have a storage cluster assigned'
@@ -251,7 +255,7 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
                         .map((candidate) => [candidate.id, candidate])
                 ).values()).map(buildNestedPluginDefinition);
 
-                const trajectoryFrames = await this.trajectoryFrameRepository.getFrames(payload.trajectoryId);
+                const trajectoryFrames = await getTrajectoryFrames(payload.trajectoryId);
 
                 const response = await this.daemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,

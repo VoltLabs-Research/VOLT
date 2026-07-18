@@ -3,8 +3,8 @@ import { SystemRoles } from '@core/constants/system-roles';
 import {
     getTeamMemberRolePermissions,
     isPopulatedTeamMemberRole
-} from '@modules/team/entities/team-member/TeamMember';
-import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
+} from '@modules/team/models/team-member/TeamMemberModel';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { AuthenticationType } from '@shared/infrastructure/http/middleware/authentication';
@@ -16,17 +16,6 @@ import {
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import type { NextFunction, Response } from 'express';
-import { container } from 'tsyringe';
-
-interface TeamMembershipFilter {
-    user: string;
-    team: string;
-};
-
-interface TeamRolePermissionsPopulate {
-    path: 'role';
-    select: ['name', 'permissions', 'isSystem'];
-};
 
 const getRequestTeamPermissions = (role: Parameters<typeof getTeamMemberRolePermissions>[0]): string[] => {
     if (!isPopulatedTeamMemberRole(role)) {
@@ -136,19 +125,13 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    const repository = container.resolve(TeamMemberRepository);
-    const filter: TeamMembershipFilter = {
+    const member = await TeamMemberModel.findOne({
         user: userId,
         team: teamId
-    };
-    const populate: TeamRolePermissionsPopulate = {
+    }).populate({
         path: 'role',
         select: ['name', 'permissions', 'isSystem']
-    };
-    const member = await repository.findOne(
-        filter,
-        { populate }
-    );
+    });
 
     if (!member) {
         return BaseResponse.error(
@@ -159,7 +142,7 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    req.teamPermissions = getRequestTeamPermissions(member.props.role);
+    req.teamPermissions = getRequestTeamPermissions(member.role);
 
     const teamContext: HttpRequestTeamContext = {
         teamId,

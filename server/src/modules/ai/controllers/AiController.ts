@@ -12,20 +12,12 @@ import type {
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
 import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
-import type { TeamAIProvider } from '@modules/team/entities/ai-integration/TeamAIIntegration';
+import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import express from 'express';
 import type { Response } from 'express';
 
 const streamBodyParser = express.json({ limit: '5mb' });
 
-/**
- * The single HTTP controller for the ai module (pollium style). Class-level
- * `@Middleware(protect, teamScoped(Resource.AI_CONVERSATION))` reproduces the old
- * `teamScope: Param` enforcement on the `:teamId` path segment. `streamMessage`
- * pipes the AI-SDK reply stream straight to the response via `@Res()` (SSE) and
- * keeps the 5mb JSON body parser as method middleware; the base `Controller`
- * skips its own send once the stream owns the response.
- */
 @Middleware(protect, teamScoped(Resource.AI_CONVERSATION))
 export default class AiController extends Controller {
     #service = new AiService();

@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -18,14 +16,6 @@ const parameters = z.object({
 
 type SetEnvironmentParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Adjusts scene environment: background color, reference grid
- * visibility, and distance fog. The browser handler (`set_environment.ts`) calls
- * the editor store (`environment.setBackgroundColor`, `grid.setGrid`,
- * `environment.setFogConfig`). This server class only advertises the schema
- * (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SetEnvironmentAITool extends AITool<SetEnvironmentParams> {
     readonly name = 'set_environment';
     readonly description = 'Adjust the 3D scene environment: background color, the reference floor grid on/off, '

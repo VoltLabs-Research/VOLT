@@ -1,11 +1,5 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { redis } from '@core/config/redis';
 import logger from '@shared/infrastructure/logger';
-import IORedis from 'ioredis';
-import { inject } from 'tsyringe';
-
-import type { ICanvasWorkspaceRealtimeStateService } from '@modules/trajectory/ports/canvas/ICanvasWorkspaceRealtimeStateService';
 
 type WorkspaceStatePatch = Record<string, unknown>;
 
@@ -27,16 +21,10 @@ const KEY_PREFIX = 'canvas:workspace';
 const INDEX_PREFIX = 'canvas:workspace:index';
 const TTL_SECONDS = 60 * 60;
 
-@Singleton(TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService)
-export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorkspaceRealtimeStateService {
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis
-    ) {}
-
+export class CanvasWorkspaceRealtimeStateService {
     async getSnapshot(trajectoryId: string, ownerId: string): Promise<CanvasWorkspaceSnapshot | null> {
         const key = this.buildKey(trajectoryId, ownerId);
-        const raw = await this.redis.get(key);
+        const raw = await redis!.get(key);
 
         if (!raw) {
             return null;
@@ -46,7 +34,7 @@ export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorks
             return JSON.parse(raw) as CanvasWorkspaceSnapshot;
         } catch (error) {
             logger.warn(`@canvas-workspace - failed to parse snapshot for ${key}: ${error}`);
-            await this.redis.del(key);
+            await redis!.del(key);
             return null;
         }
     }
@@ -106,14 +94,14 @@ export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorks
 
     async release(trajectoryId: string, ownerId: string): Promise<void> {
         const key = this.buildKey(trajectoryId, ownerId);
-        await this.redis.multi()
+        await redis!.multi()
             .del(key)
             .srem(this.buildIndexKey(trajectoryId), ownerId)
             .exec();
     }
 
     async listOwners(trajectoryId: string): Promise<string[]> {
-        const members = await this.redis.smembers(this.buildIndexKey(trajectoryId));
+        const members = await redis!.smembers(this.buildIndexKey(trajectoryId));
         return members.filter((id): id is string => typeof id === 'string' && id.length > 0);
     }
 
@@ -121,7 +109,7 @@ export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorks
         const key = this.buildKey(snapshot.trajectoryId, snapshot.ownerId);
         const indexKey = this.buildIndexKey(snapshot.trajectoryId);
 
-        await this.redis.multi()
+        await redis!.multi()
             .set(key, JSON.stringify(snapshot), 'EX', TTL_SECONDS)
             .sadd(indexKey, snapshot.ownerId)
             .expire(indexKey, TTL_SECONDS * 2)
@@ -168,3 +156,5 @@ export default class CanvasWorkspaceRealtimeStateService implements ICanvasWorks
         return `${INDEX_PREFIX}:${trajectoryId}`;
     }
 }
+
+export default new CanvasWorkspaceRealtimeStateService();

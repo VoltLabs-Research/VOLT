@@ -1,12 +1,9 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { TeamMetricsSnapshot } from '@modules/trajectory/contracts/trajectory';
-import { ITeamMetricsQueryService } from '@modules/trajectory/ports/trajectory/ITeamMetricsQueryService';
 import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-import TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 const MAX_QUERY_LIMIT = 10000;
 const ROLLING_WEEKS = 12;
@@ -80,31 +77,25 @@ const toMonthChange = (current: number, previous: number): number => {
     return Math.round(((current - previous) / previous) * 100);
 };
 
-@Singleton(TRAJECTORY_TOKENS.TeamMetricsQueryService)
-export default class TeamMetricsQueryService implements ITeamMetricsQueryService {
-    constructor(
-        private readonly trajectoryRepo: TrajectoryRepository,
-        @inject(COMPUTE_TOKENS.AnalysisRepository)
-        private readonly analysisRepo: IAnalysisRepository
-    ) {}
+export class TeamMetricsQueryService {
+    #analysisRepoCache?: IAnalysisRepository;
+    private get analysisRepo(): IAnalysisRepository {
+        return (this.#analysisRepoCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
 
     async getTeamMetrics(teamId: string): Promise<TeamMetricsSnapshot> {
         const window = createTimeWindow();
 
-        const trajectoryResult = await this.trajectoryRepo.findAll({
-            filter: { team: teamId },
-            page: 1,
-            limit: MAX_QUERY_LIMIT
-        });
+        const trajectories = await TrajectoryModel.find({ team: teamId }).limit(MAX_QUERY_LIMIT).exec();
 
         const trajectoryBuckets = createBuckets();
-        for (const trajectory of trajectoryResult.data) {
-            if (trajectory.props.createdAt) {
-                updateBuckets(trajectoryBuckets, trajectory.props.createdAt, window);
+        for (const trajectory of trajectories) {
+            if (trajectory.createdAt) {
+                updateBuckets(trajectoryBuckets, trajectory.createdAt, window);
             }
         }
 
-        const trajectoryIds = trajectoryResult.data.map((trajectory) => trajectory._id);
+        const trajectoryIds = trajectories.map((trajectory) => trajectory._id.toString());
         const analyses = trajectoryIds.length > 0
             ? (await this.analysisRepo.findAll({
                 filter: { trajectory: { $in: trajectoryIds } } as Record<string, unknown>,
@@ -157,3 +148,5 @@ export default class TeamMetricsQueryService implements ITeamMetricsQueryService
         };
     }
 }
+
+export default new TeamMetricsQueryService();

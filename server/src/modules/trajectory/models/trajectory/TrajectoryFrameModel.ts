@@ -1,4 +1,4 @@
-import { TrajectoryFrame } from '@modules/trajectory/entities/trajectory/Trajectory';
+import { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';

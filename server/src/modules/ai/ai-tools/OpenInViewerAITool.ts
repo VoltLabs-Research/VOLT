@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -18,13 +16,6 @@ const parameters = z.object({
 
 type OpenInViewerParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Opens a trajectory in the 3D viewer (canvas). The browser
- * handler (client `tools/handlers/open_in_viewer.ts`) builds the canvas route
- * from the ids and calls React Router. This server class only advertises the
- * schema to the model; it has no server execute (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class OpenInViewerAITool extends AITool<OpenInViewerParams> {
     readonly name = 'open_in_viewer';
     readonly description = 'Open a trajectory in the 3D viewer so the user can see the simulation. '

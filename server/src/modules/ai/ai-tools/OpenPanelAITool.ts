@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -14,13 +12,6 @@ const parameters = z.object({
 
 type OpenPanelParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Opens an editor sidebar panel and/or selects a modifier in
- * the viewer. The browser handler (client `tools/handlers/open_panel.ts`)
- * drives the editor store's configuration slice. This server class only
- * advertises the schema to the model (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class OpenPanelAITool extends AITool<OpenPanelParams> {
     readonly name = 'open_panel';
     readonly description = 'Open a sidebar panel and/or select a modifier inside the 3D viewer editor. '

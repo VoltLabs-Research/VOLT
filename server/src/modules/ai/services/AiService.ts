@@ -12,20 +12,15 @@ import type {
     AIMessageToolStep
 } from '@modules/ai/models/AIMessageModel';
 import type { AIChatFinishEvent, AIChatReplyStream } from '@modules/ai/services/AISDKChatTransport';
-import type AISDKChatTransport from '@modules/ai/services/AISDKChatTransport';
-import { AI_TOKENS } from '@modules/ai/di/AITokens';
-import type AIResponseMessagePartsMapper from '@modules/ai/utilities/AIResponseMessagePartsMapper';
-import type AIUIMessageUtils from '@modules/ai/utilities/AIUIMessageUtils';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import type { TeamAIProvider } from '@modules/team/entities/ai-integration/TeamAIIntegration';
+import aiSdkChatTransport from '@modules/ai/services/AISDKChatTransport';
+import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/utilities/AIResponseMessagePartsMapper';
+import { extractLastUserMessageText, normalizeUIMessages } from '@modules/ai/utilities/AIUIMessageUtils';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
-
-// ---- Server-side I/O shapes (formerly ai/dtos, inlined) --------------------
 
 export interface AIConversationDTO {
     _id: string;
@@ -125,30 +120,7 @@ interface ConversationUpdatePayload {
 
 const VALID_ARTIFACT_KINDS = new Set<string>(['table', 'chart', 'image', 'text']);
 
-/**
- * The single application service for the ai module (pollium style): folds every
- * ai HTTP use case verbatim (including the former List/Update/Delete
- * conversation use cases, reused by the conversation AI tools) and talks to the
- * {@link AIConversationModel} / {@link AIMessageModel} Mongoose models directly
- * — no repository, entity or mapper layer. Its only resolved collaborators are
- * genuinely-stateful / complex shared singletons: the AI-SDK chat transport
- * (streaming + tool registry, resolved lazily to avoid a construction cycle
- * with the AI tools that `new AiService()`), the cross-module team-member
- * repository, and the stateless UI-message / response-parts helpers — resolved
- * once from the DI container via their neutral tokens. Throws typed
- * `ApplicationError`s (no Result channel).
- */
 export default class AiService {
-    #teamMemberRepository = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
-    // Lazy: the transport resolves the AI-tool collection, and AI tools `new AiService()`,
-    // so eager resolution here would be a construction-time cycle. Deferred to first chat use.
-    #aiChatTransportCache?: AISDKChatTransport;
-    get #aiChatTransport(): AISDKChatTransport {
-        return (this.#aiChatTransportCache ??= diContainer.resolve<AISDKChatTransport>(AI_TOKENS.AIChatTransport));
-    }
-    #uiMessageUtils = diContainer.resolve<AIUIMessageUtils>(AI_TOKENS.AIUIMessageUtils);
-    #responseMessagePartsMapper = diContainer.resolve<AIResponseMessagePartsMapper>(AI_TOKENS.AIResponseMessagePartsMapper);
-
     async listConversations(input: ListAIConversationsInputDTO): Promise<PaginatedResult<AIConversationDTO>> {
         const page = Math.max(1, input.page ?? 1);
         const limit = Math.max(1, Math.min(200, input.limit ?? 50));
@@ -269,7 +241,7 @@ export default class AiService {
     }
 
     async streamMessage(input: SendAIConversationMessageInputDTO): Promise<SendAIConversationMessageOutputDTO> {
-        const uiMessages = this.#uiMessageUtils.normalizeUIMessages(input.messages);
+        const uiMessages = normalizeUIMessages(input.messages);
 
         if (!uiMessages) {
             throw ApplicationError.badRequest(
@@ -278,10 +250,10 @@ export default class AiService {
             );
         }
 
-        const member = await this.#teamMemberRepository.findOne({
+        const member = await TeamMemberModel.findOne({
             team: input.teamId,
             user: input.userId
-        });
+        }).exec();
 
         if (!member) {
             throw ApplicationError.forbidden(
@@ -317,7 +289,7 @@ export default class AiService {
                 existingAssistantMessage?._id ?? 'not found'
             );
         } else {
-            const userText = input.message?.trim() || this.#uiMessageUtils.extractLastUserMessageText(uiMessages);
+            const userText = input.message?.trim() || extractLastUserMessageText(uiMessages);
 
             if (userText) {
                 const now = new Date();
@@ -353,7 +325,7 @@ export default class AiService {
         });
 
         try {
-            const streamResult = await this.#aiChatTransport.generateReplyStream({
+            const streamResult = await aiSdkChatTransport.generateReplyStream({
                 teamId: input.teamId,
                 userId: input.userId,
                 provider: input.provider,
@@ -478,7 +450,7 @@ export default class AiService {
         event: AIChatFinishEvent,
         existingMessage?: AIMessageDocument | null
     ): Promise<AIMessageDTO | undefined> {
-        const { parts: newParts, textContent: newTextContent } = this.#responseMessagePartsMapper.mapAssistantResponseParts(event.responseMessages);
+        const { parts: newParts, textContent: newTextContent } = mapAssistantResponseParts(event.responseMessages);
 
         if (newParts.length === 0) {
             return existingMessage ? this.#toMessageDTO(existingMessage) : undefined;
@@ -499,7 +471,7 @@ export default class AiService {
     ): Promise<AIMessageDTO | undefined> {
         const existing = existingMessage.toObject({ flattenMaps: true }) as unknown as AIMessageProps;
 
-        const mergedParts = this.#responseMessagePartsMapper.mergeAssistantParts(
+        const mergedParts = mergeAssistantParts(
             existing.parts,
             newParts
         );

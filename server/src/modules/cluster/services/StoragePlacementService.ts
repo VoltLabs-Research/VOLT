@@ -1,14 +1,11 @@
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
-    ISceneArtifactRepository,
-    ITrajectoryRepository,
     IAnalysisRepository,
-    ITeamClusterSelectionService
+    ITeamClusterSelectionService,
+    IStoragePlacementRepository
 } from '@shared/contracts/ports';
-import type { Analysis, TrajectoryLike } from '@shared/contracts/types';
+import type { Analysis } from '@shared/contracts/types';
 import type { IPluginRepository } from '@shared/contracts/ports';
-import { resolveAnalysisStorageClusterId, resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import {
     buildAnalysisPlacementBuckets,
     buildPluginBinaryPlacementBuckets,
@@ -18,13 +15,16 @@ import StoragePlacement, {
     DEFAULT_STORAGE_PLACEMENT_STATE,
     createStoragePlacementProps
 } from '@modules/cluster/entities/StoragePlacement';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import type { IStoragePlacementRepository } from '@shared/contracts/ports';
+import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import PluginRepository from '@modules/plugin/services/PluginRepository';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import { TeamClusterSelectionService } from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
-import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
-import { inject } from 'tsyringe';
+import { container } from 'tsyringe';
 
 interface PluginPlacementView {
     props: { team: string };
@@ -36,17 +36,14 @@ interface ResolvedPlacementDefinition {
     buckets: StoragePlacementBucketRef[];
 }
 
-@Singleton()
-@AliasOf(COMPUTE_TOKENS.StoragePlacementService)
-export default class StoragePlacementService implements IStoragePlacementService {
-    constructor(
-        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(COMPUTE_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository<PluginPlacementView>,
-        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService
-    ) {}
+export class StoragePlacementService implements IStoragePlacementService {
+    private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
+    private readonly analysisRepository: IAnalysisRepository = new AnalysisRepository();
+    private readonly pluginRepository = new PluginRepository() as unknown as IPluginRepository<PluginPlacementView>;
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    private get teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= container.resolve<ITeamClusterSelectionService>(TeamClusterSelectionService));
+    }
 
     async findByScope(
         scopeType: StoragePlacementScopeType,
@@ -88,11 +85,6 @@ export default class StoragePlacementService implements IStoragePlacementService
         return this.storagePlacementRepository.upsertByScope(scopeType, scopeId, nextPlacementProps);
     }
 
-    /**
-     * Pins a plugin-binary placement to a specific cluster without resolving a
-     * default storage owner. Used by registry installs where the chosen compute
-     * cluster downloads and stores the binary in its own object store.
-     */
     async assignPluginBinaryPlacement(
         pluginId: string,
         team: string,
@@ -164,19 +156,19 @@ export default class StoragePlacementService implements IStoragePlacementService
             });
 
             await Promise.all([
-                this.trajectoryRepository.updateById(scopeId, {
-                    storageClusterId
-                }),
+                TrajectoryModel.findByIdAndUpdate(scopeId, {
+                    $set: { storageClusterId }
+                }).exec(),
                 this.analysisRepository.updateMany({
                     trajectory: scopeId
                 }, {
                     storageClusterId
                 }),
-                this.sceneArtifactRepository.updateMany({
+                SceneArtifactModel.updateMany({
                     trajectory: scopeId
                 }, {
-                    storageClusterId
-                })
+                    $set: { storageClusterId }
+                }).exec()
             ]);
             await this.synchronizeAnalysisPlacementsForTrajectory(scopeId, analyses, storageClusterId);
             return;
@@ -187,11 +179,11 @@ export default class StoragePlacementService implements IStoragePlacementService
                 this.analysisRepository.updateById(scopeId, {
                     storageClusterId
                 }),
-                this.sceneArtifactRepository.updateMany({
+                SceneArtifactModel.updateMany({
                     analysis: scopeId
                 }, {
-                    storageClusterId
-                })
+                    $set: { storageClusterId }
+                }).exec()
             ]);
             return;
         }
@@ -205,26 +197,22 @@ export default class StoragePlacementService implements IStoragePlacementService
         const plannedPlacements = new Map<string, StoragePlacement>();
         const trajectoryTransferIds = new Set<string>();
 
-        const trajectories = await this.trajectoryRepository.export({
-            filter: {
-                team: teamId,
-                storageClusterId: primaryClusterId
-            },
-            sort: {
-                createdAt: 1
-            }
-        });
+        const trajectories = await TrajectoryModel.find({
+            team: teamId,
+            storageClusterId: primaryClusterId
+        }).sort({ createdAt: 1 }).exec();
 
         const trajectoryPlacements = await this.loadPlacementsByScope(
             'trajectory',
-            trajectories.map((trajectory) => trajectory._id)
+            trajectories.map((trajectory) => trajectory._id.toString())
         );
 
         for (const trajectory of trajectories) {
+            const trajectoryId = trajectory._id.toString();
             const placement = await this.persistResolvedPlacement(
                 'trajectory',
-                trajectory._id,
-                trajectoryPlacements.get(trajectory._id) ?? null,
+                trajectoryId,
+                trajectoryPlacements.get(trajectoryId) ?? null,
                 this.resolveTrajectoryPlacementDefinition(trajectory)
             );
             if (placement.props.primaryClusterId !== primaryClusterId) {
@@ -232,7 +220,7 @@ export default class StoragePlacementService implements IStoragePlacementService
             }
 
             plannedPlacements.set(this.buildPlacementKey(placement.props.scopeType, placement.props.scopeId), placement);
-            trajectoryTransferIds.add(trajectory._id);
+            trajectoryTransferIds.add(trajectoryId);
         }
 
         const analyses = await this.analysisRepository.export({
@@ -296,7 +284,7 @@ export default class StoragePlacementService implements IStoragePlacementService
         scopeId: string
     ): Promise<ResolvedPlacementDefinition> {
         if (scopeType === 'trajectory') {
-            const trajectory = await this.trajectoryRepository.findById(scopeId);
+            const trajectory = await TrajectoryModel.findById(scopeId);
             if (!trajectory) {
                 throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found for storage placement');
             }
@@ -327,8 +315,8 @@ export default class StoragePlacementService implements IStoragePlacementService
         };
     }
 
-    private resolveTrajectoryPlacementDefinition(trajectory: TrajectoryLike): ResolvedPlacementDefinition {
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+    private resolveTrajectoryPlacementDefinition(trajectory: TrajectoryDocument): ResolvedPlacementDefinition {
+        const storageClusterId = trajectory.storageClusterId?.toString();
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'StoragePlacement::TrajectoryStorageClusterRequired',
@@ -337,9 +325,9 @@ export default class StoragePlacementService implements IStoragePlacementService
         }
 
         return {
-            team: trajectory.props.team,
+            team: trajectory.team.toString(),
             primaryClusterId: storageClusterId,
-            buckets: buildTrajectoryPlacementBuckets(trajectory._id)
+            buckets: buildTrajectoryPlacementBuckets(trajectory._id.toString())
         };
     }
 
@@ -391,3 +379,5 @@ export default class StoragePlacementService implements IStoragePlacementService
         return `${scopeType}:${scopeId}`;
     }
 }
+
+export default new StoragePlacementService();

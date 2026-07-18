@@ -1,23 +1,11 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
-
 
 import type { AtomPageResult } from '@modules/trajectory/contracts/trajectory';
-import type { ITrajectoryReader } from '@modules/trajectory/ports/trajectory/ITrajectoryReader';
-import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/ports/native/ITrajectoryNativeDaemonService';
+import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 
-@Singleton(TRAJECTORY_TOKENS.TrajectoryReader)
-export default class TrajectoryReader implements ITrajectoryReader {
-    constructor(
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
-        private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
-    ) {}
-
+export class TrajectoryReader {
     async readPage(
         teamClusterId: string | undefined,
         trajectoryId: string,
@@ -34,7 +22,7 @@ export default class TrajectoryReader implements ITrajectoryReader {
             );
         }
 
-        return this.trajectoryNativeDaemonService.getAtomsPage({
+        return trajectoryNativeDaemonService.getAtomsPage({
             teamClusterId,
             trajectoryId,
             timestep,
@@ -50,3 +38,5 @@ export default class TrajectoryReader implements ITrajectoryReader {
         return buildTrajectoryDumpObjectName(trajectoryId, timestep);
     }
 }
+
+export default new TrajectoryReader();

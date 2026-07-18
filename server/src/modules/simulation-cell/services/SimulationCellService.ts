@@ -23,12 +23,6 @@ interface GetSimulationCellByIdInput {
     simulationCellId: string;
 }
 
-/**
- * Flattens a Mongoose simulation-cell document to the persisted-output wire
- * shape (`{ _id, ...props }`), reproducing the former mapper + `toPersistedOutput`
- * behaviour verbatim: `_id`/`__v` are dropped, and unpopulated relation refs are
- * coerced to string ids (populated refs are left as nested objects).
- */
 const toSimulationCellView = (doc: SimulationCellDocument): PersistedOutput<SimulationCellProps> => {
     const { _id, __v, ...props } = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
     if (props.team && !doc.populated('team')) {
@@ -40,16 +34,6 @@ const toSimulationCellView = (doc: SimulationCellDocument): PersistedOutput<Simu
     return { _id: String(doc._id), ...(props as unknown as SimulationCellProps) };
 };
 
-/**
- * The single application service for the simulation-cell module (pollium style):
- * holds ALL the simulation-cell HTTP domain logic and talks to the Mongoose
- * {@link SimulationCellModel} directly — no repository, entity, mapper, use case
- * or DI. `list` and `getById` fold the logic that previously lived inline in the
- * route handlers; `getByTrajectory` folds the former
- * `GetSimulationCellByTrajectoryUseCase` verbatim (its cross-module port is still
- * served by a thin adapter under `SIMULATION_CELL_CONTRACT_TOKENS.GetSimulationCellByTrajectoryUseCase`
- * that delegates here). Throws typed {@link ApplicationError}s (no Result channel).
- */
 export default class SimulationCellService {
     async list(input: ListSimulationCellsInput): Promise<PaginatedResult<PersistedOutput<SimulationCellProps>>> {
         const page = input.page !== undefined ? Number(input.page) : 1;

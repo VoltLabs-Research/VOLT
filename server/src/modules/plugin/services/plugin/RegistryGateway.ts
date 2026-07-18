@@ -1,7 +1,5 @@
 import { getRegistryUrl } from '@core/config/registry';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 import type {
     RegistrySearchResult,
     ResolvedRegistryTarball
@@ -24,7 +22,6 @@ const parsePackageName = (fullName: string): ParsedPackageName => {
     return { username: match[1], name: match[2] };
 };
 
-@Singleton(PLUGIN_TOKENS.RegistryGateway)
 export default class RegistryGateway {
     private readonly baseUrl = getRegistryUrl();
 

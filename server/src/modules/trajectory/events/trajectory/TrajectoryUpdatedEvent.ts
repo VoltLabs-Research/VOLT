@@ -1,4 +1,4 @@
-import { TrajectoryStatus, TrajectoryStats, TrajectoryFrame } from '@modules/trajectory/entities/trajectory/Trajectory';
+import { TrajectoryStatus, TrajectoryStats, TrajectoryFrame } from '@shared/contracts/types/Trajectory';
 import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 
 import type { ErrorCode } from '@core/constants/error-codes';

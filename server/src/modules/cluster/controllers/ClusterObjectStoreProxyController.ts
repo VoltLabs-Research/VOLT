@@ -1,4 +1,3 @@
-import type { ITeamClusterRepository } from '@shared/contracts/ports';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import TeamClusterObjectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
@@ -222,22 +221,10 @@ const sendError = (response: Response, error: unknown): void => {
     });
 };
 
-/**
- * Daemon-authenticated object-store proxy controller (pollium style). It
- * replaces the former `createHttpModule({ basePath:
- * TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH })`, whose single wildcard `use`
- * handler dispatched on HTTP method and a hand-parsed
- * `/owners/:id/buckets/:bucket/objects[/:objectKey]` path. Because it is a
- * catch-all (not a typed endpoint table), it does not use `@Route`; instead
- * `buildRouter()` mounts the same wildcard handler under the base path so
- * `req.path` is stripped to the `/owners/...` remainder exactly as before.
- * Requests authenticate via the daemon id + password headers (verified against
- * the requester cluster's owning team), not a mount-time auth layer.
- */
 export default class ClusterObjectStoreProxyController {
     #objectGatewayClient = container.resolve(TeamClusterObjectGatewayClient);
-    #daemonCredentialGuard = container.resolve(DaemonCredentialGuard);
-    #teamClusterRepository: ITeamClusterRepository = container.resolve(TeamClusterRepository);
+    #daemonCredentialGuard = new DaemonCredentialGuard();
+    #teamClusterRepository = new TeamClusterRepository();
 
     async #assertOwnerAccess(
         requesterClusterId: string,

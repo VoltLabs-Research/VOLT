@@ -1,10 +1,9 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 import type IORedis from 'ioredis';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/events/JobStatusChangedEvent';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import {
     jobStatusKey as buildJobStatusKey,
     jobTombstoneKey as buildJobTombstoneKey,
@@ -124,12 +123,11 @@ const resolveProjectedError = (
     return incomingError ?? previousError;
 };
 
-@Singleton()
-export default class TeamJobProjectionService {
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis
-    ) {}
+export class TeamJobProjectionService {
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
 
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
@@ -232,3 +230,5 @@ export default class TeamJobProjectionService {
         return JSON.parse(record) as TeamJobSnapshot;
     }
 }
+
+export default new TeamJobProjectionService();

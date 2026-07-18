@@ -1,5 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { isPopulatedSecretKeyRole } from '@shared/contracts/types/SecretKey';
+import SecretKeyModel, { getSecretKeyCreatedById, getSecretKeyRoleId } from '@modules/team/models/secret-key/SecretKeyModel';
+import { logSecretKeyUsageRequest } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
 import {
     HttpRequestAuthType,
     setHttpRequestContextAuth,
@@ -8,16 +10,11 @@ import {
 } from '@shared/infrastructure/http/request-context';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import { container } from 'tsyringe';
+import crypto from 'node:crypto';
 
-import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
-import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
-import type { ITokenService } from '@modules/auth/ports/ITokenService';
-import type { ISessionRepository } from '@modules/session/ports/ISessionRepository';
-import type { ISecretKeyRepository } from '@modules/team/ports/secret-key/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/ports/secret-key/ISecretKeyUsageLogRepository';
+import UserModel from '@modules/auth/models/UserModel';
+import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import SessionModel from '@modules/session/models/SessionModel';
 import type { NextFunction, Request, Response } from 'express';
 
 export enum AuthenticationType {
@@ -33,7 +30,6 @@ export interface AuthenticatedRequest extends Request {
     secretKeyId?: string;
     secretKeyTeamId?: string;
     secretKeyRoleId?: string;
-    /** Cached permissions from checkTeamMembership (populated role) */
     teamPermissions?: string[];
     requestContext?: HttpRequestContext;
 }
@@ -70,47 +66,53 @@ const authenticateWithSecretKey = async (
     token: string
 ): Promise<boolean> => {
     const startTime = Date.now();
-    const secretKeyRepository = container.resolve<ISecretKeyRepository>(TEAM_CONTRACT_TOKENS.SecretKeyRepository);
-    const secretKey = await secretKeyRepository.findActiveByRawKey(token);
+    const keyHash = crypto.createHash('sha256').update(token).digest('hex');
+    const secretKey = await SecretKeyModel.findOne({
+        keyHash,
+        isActive: true
+    }).populate({
+        path: 'role',
+        select: ['name', 'permissions']
+    });
 
     if (!secretKey) {
         BaseResponse.error(res, ErrorCodes.SECRET_KEY_INVALID, 401, ErrorCodes.SECRET_KEY_INVALID);
         return false;
     }
 
-    const role = isPopulatedSecretKeyRole(secretKey.props.role)
-        ? secretKey.props.role
+    const role = isPopulatedSecretKeyRole(secretKey.role)
+        ? secretKey.role
         : undefined;
-    const createdById = secretKey.getCreatedById();
+    const createdById = getSecretKeyCreatedById(secretKey);
+    const secretKeyId = String(secretKey._id);
 
     req.authType = AuthenticationType.SecretKey;
     req.token = token;
-    req.secretKeyId = secretKey.id;
-    req.secretKeyTeamId = String(secretKey.props.team);
-    req.secretKeyRoleId = role?._id?.toString?.() || secretKey.getRoleId();
+    req.secretKeyId = secretKeyId;
+    req.secretKeyTeamId = String(secretKey.team);
+    req.secretKeyRoleId = role?._id?.toString?.() || getSecretKeyRoleId(secretKey);
     req.teamPermissions = Array.isArray(role?.permissions)
         ? role.permissions
         : [];
     req.userId = createdById;
 
-    await secretKeyRepository.touchLastUsed(secretKey.id);
+    await SecretKeyModel.updateOne({ _id: secretKeyId }, { lastUsedAt: new Date() });
 
     const authContext: HttpRequestAuthContext = {
         authType: HttpRequestAuthType.SecretKey,
-        subjectId: secretKey.id,
+        subjectId: secretKeyId,
         durationMs: Date.now() - startTime,
         cached: false
     };
 
     setRequestAuthContext(req, authContext);
-    logger.info(`@authentication traceId=${req.requestContext?.traceId} authType=${AuthenticationType.SecretKey} secretKeyId=${secretKey.id} teamId=${req.secretKeyTeamId}`);
+    logger.info(`@authentication traceId=${req.requestContext?.traceId} authType=${AuthenticationType.SecretKey} secretKeyId=${secretKeyId} teamId=${req.secretKeyTeamId}`);
 
     res.on('finish', () => {
-        const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_CONTRACT_TOKENS.SecretKeyUsageLogRepository);
         const userAgentHeader = req.headers['user-agent'];
-        usageLogRepository.logRequest({
-            secretKey: secretKey.id,
-            team: String(secretKey.props.team),
+        logSecretKeyUsageRequest({
+            secretKey: secretKeyId,
+            team: String(secretKey.team),
             method: req.method,
             path: req.route?.path || req.originalUrl || req.path,
             statusCode: res.statusCode,
@@ -131,16 +133,14 @@ const authenticateWithUserToken = async (
     token: string
 ): Promise<boolean> => {
     const startTime = Date.now();
-    const tokenService = container.resolve<ITokenService>(AUTH_CONTRACT_TOKENS.TokenService);
+    const tokenService = new JwtTokenService();
     const decoded = tokenService.verify(token);
     if (!decoded) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         return false;
     }
 
-    const userRepository = container.resolve<IUserRepository>(AUTH_CONTRACT_TOKENS.UserRepository);
-    const sessionRepository = container.resolve<ISessionRepository>(SESSION_CONTRACT_TOKENS.SessionRepository);
-    const user = await userRepository.findById(decoded.id);
+    const user = await UserModel.findById(decoded.id);
     if (!user) {
         BaseResponse.error(res, ErrorCodes.USER_NOT_FOUND, 401, ErrorCodes.USER_NOT_FOUND);
         return false;
@@ -151,8 +151,8 @@ const authenticateWithUserToken = async (
         return false;
     }
 
-    const session = await sessionRepository.findByToken(token);
-    if (!session || !session.props.isActive) {
+    const session = await SessionModel.findOne({ token, isActive: true });
+    if (!session) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         return false;
     }
@@ -228,9 +228,6 @@ export const protect = async (
     next();
 };
 
-/**
- * Authenticates the request when a bearer token is present, but allows guests when omitted.
- */
 export const authenticateOptional = async (
     req: AuthenticatedRequest,
     res: Response,

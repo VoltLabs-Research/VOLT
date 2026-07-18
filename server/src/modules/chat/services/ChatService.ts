@@ -7,10 +7,9 @@ import type { ChatMessageDocument, ChatMessageMetadata } from '@modules/chat/mod
 import ChatDeletedEvent from '@modules/chat/events/ChatDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ISocketEmitter } from '@modules/socket/ports/ISocketEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
 import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
@@ -58,27 +57,23 @@ const toParticipantId = (participant: unknown): string => {
     return String(participant);
 };
 
-/**
- * The single application service for the chat module (pollium style): holds ALL
- * the chat HTTP domain logic (folding every former use case + the chat
- * utilities verbatim), talks to the Mongoose {@link ChatModel} /
- * {@link ChatMessageModel} directly — no repository, entity, mapper, use case
- * or DI on the service — and throws typed {@link ApplicationError}s (no Result
- * channel) so Express forwards them to the global error middleware.
- *
- * Genuinely-stateful / cross-module collaborators are shared singletons resolved
- * from the DI container (documented on each field) rather than `new`ed:
- *  - socketEmitter: the live socket.io emitter (shared with the socket module)
- *  - teamMemberRepo / teamRepo: the team kernel's repositories (cross-module)
- *  - eventBus: the Redis-backed event bus (cross-module fan-out)
- */
 export default class ChatService {
-    #socketEmitter = diContainer.resolve<ISocketEmitter>(SOCKET_CONTRACT_TOKENS.SocketEmitter);
-    #teamMemberRepo = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
-    #teamRepo = diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #socketEmitter = socketIOEmitter;
 
-    // ---- Chats ------------------------------------------------------------
+    #teamMemberRepoCache?: ITeamMemberRepository;
+    get #teamMemberRepo(): ITeamMemberRepository {
+        return (this.#teamMemberRepoCache ??= diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository));
+    }
+
+    #teamRepoCache?: ITeamRepository;
+    get #teamRepo(): ITeamRepository {
+        return (this.#teamRepoCache ??= diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async getUserChats(userId: string): Promise<ChatView[]> {
         const chats = await ChatModel.find({ participants: userId, isActive: true })
@@ -247,8 +242,6 @@ export default class ChatService {
         this.#socketEmitter.emitToRoom(`chat-${chatId}`, 'user_left_group', { chatId, userId });
     }
 
-    // ---- Messages ---------------------------------------------------------
-
     async getChatMessages(userId: string, chatId: string, query: ChatMessagesQuery): Promise<PaginatedResult<ChatView>> {
         await this.#resolveAccessibleChat(chatId, userId);
 
@@ -369,22 +362,11 @@ export default class ChatService {
         return persistedMessage;
     }
 
-    // ---- Socket / event-handler collaborators -----------------------------
-
-    /**
-     * Resolves the team id of a chat the requester may access. Used by the chat
-     * socket module (which no longer touches the repository directly).
-     */
     async resolveAccessibleChatTeamId(chatId: string, userId: string): Promise<string> {
         const chat = await this.#resolveAccessibleChat(chatId, userId);
         return String(chat.team);
     }
 
-    /**
-     * Cascade for the `user.deleted` event: pulls the user from every chat's
-     * participants/admins, then deletes any chat left with no participants
-     * (publishing `chat.deleted` per removed chat so messages cascade too).
-     */
     async removeUserFromAllChats(userId: string): Promise<void> {
         await ChatModel.updateMany(
             { $or: [{ participants: userId }, { admins: userId }] },
@@ -400,8 +382,6 @@ export default class ChatService {
             }
         }
     }
-
-    // ---- Internal helpers -------------------------------------------------
 
     async #createMessage(
         userId: string,

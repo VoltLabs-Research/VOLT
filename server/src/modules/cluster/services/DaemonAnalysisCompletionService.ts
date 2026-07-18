@@ -8,31 +8,23 @@ import type {
     AnalysisStageType,
     TrajectoryLike
 } from '@shared/contracts/types';
-import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import { JobStatus } from '@shared/contracts/types';
 import { TrajectoryStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import IORedis from 'ioredis';
-import { inject } from 'tsyringe';
+import type IORedis from 'ioredis';
+import { container } from 'tsyringe';
 
-/**
- * Minimal local view of the analysis execution-log service this service depends
- * on. The concrete `AnalysisExecutionLogService` lives in the analysis module
- * and is registered under `COMPUTE_TOKENS.AnalysisExecutionLogService` (the
- * token contract exists, but no port type contract does yet — FOLLOW-UP), so we
- * inject by token against this local structural interface to avoid importing
- * the concrete class.
- */
 interface DaemonExecutionLogService {
     markFrameRunning(input: {
         analysisId: string;
@@ -226,22 +218,47 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
     analysis: Analysis;
 }
 
-@Singleton(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService)
-export default class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepo: IAnalysisRepository,
-        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonExecutionLogService,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepo: ITrajectoryRepository
-    ) {}
+export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= container.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
+    #eventBusCache?: IEventBus;
+    private get eventBus(): IEventBus {
+        return (this.#eventBusCache ??= container.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
+    private readonly analysisRepo: IAnalysisRepository = new AnalysisRepository();
+    private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;
 
-    /**
-     * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
-     * Initializes a Redis counter so we can track when all jobs have settled.
-     */
+    private toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
+        return {
+            _id: doc._id.toString(),
+            props: {
+                name: doc.name,
+                team: doc.team.toString(),
+                folder: doc.folder ? doc.folder.toString() : null,
+                storageClusterId: doc.storageClusterId?.toString(),
+                createdBy: doc.createdBy.toString(),
+                status: doc.status,
+                isPublic: doc.isPublic,
+                rasterSceneViews: doc.rasterSceneViews,
+                hasPreview: doc.hasPreview,
+                stats: doc.stats,
+                updatedAt: doc.updatedAt,
+                createdAt: doc.createdAt
+            }
+        };
+    }
+
+    private async findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
+        const doc = await TrajectoryModel.findById(trajectoryId);
+        return doc ? this.toTrajectoryLike(doc) : null;
+    }
+
+    private async updateTrajectoryById(trajectoryId: string, data: Partial<{ hasPreview: boolean; status: TrajectoryStatus }>): Promise<void> {
+        await TrajectoryModel.findByIdAndUpdate(trajectoryId, { $set: data }).exec();
+    }
+
     async initializeSession(analysisId: string, totalJobs: number, teamId: string, trajectoryId?: string): Promise<void> {
         const keys = this.analysisKeys(analysisId);
 
@@ -275,11 +292,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         }
     }
 
-    /**
-     * Called by trajectory ingestion after the daemon has accepted frame
-     * processing jobs. Terminal receipts may arrive before this initializer
-     * runs, so use the same late-receipt-aware script as analysis sessions.
-     */
     async initializeGlbSession(trajectoryId: string, totalJobs: number, teamId: string): Promise<void> {
         const keys = this.glbKeys(trajectoryId);
         const [remainingJobs, failedJobs] = await this.redis.eval(
@@ -297,11 +309,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         }
     }
 
-    /**
-     * Called by the PluginExecutionRouter after dispatching jobs to the daemon.
-     * Publishes queued job events so the jobs module can project them and the
-     * team module can notify connected clients.
-     */
     async handleJobsQueued(jobs: QueuedJobNotification[], teamId: string, teamClusterId: string): Promise<void> {
         const events = jobs.map((job): ProjectedJobStatusInput => {
             const trajectoryContext: JobTrajectoryContext = {
@@ -352,10 +359,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         await this.publishJobStatusChangedBatch(events);
     }
 
-    /**
-     * Called when the daemon reports a single job completed or failed.
-     * Publishes status changes and handles session drain.
-     */
     async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
         const { jobId, analysisId, success, error } = input;
         const resolved = await this.resolveAnalysisOwnership(input);
@@ -410,11 +413,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         await this.finalizeAnalysis(analysisId, teamId, drainResult.failedJobs);
     }
 
-    /**
-     * Called when the daemon reports a real-time analysis job status change (e.g. running).
-     * Publishes the status change so projections and socket notifications stay
-     * centralized in event subscribers. Does NOT affect session drain counters.
-     */
     async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
         const { jobId, analysisId, status, error } = input;
         const resolved = await this.resolveAnalysisOwnership(input);
@@ -509,7 +507,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
 
         if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
             try {
-                await this.trajectoryRepo.updateById(resolved.trajectory._id, { hasPreview: true });
+                await this.updateTrajectoryById(resolved.trajectory._id, { hasPreview: true });
                 await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
                     trajectoryId: resolved.trajectory._id,
                     teamId: resolved.teamId,
@@ -522,10 +520,6 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
         }
     }
 
-    /**
-     * Called when the daemon reports a GLB conversion job status change.
-     * Publishes the status change and handles GLB session drain.
-     */
     async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
         const { jobId, status, error } = input;
         const resolved = await this.resolveTrajectoryOwnership(input);
@@ -1022,7 +1016,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             );
         }
 
-        const trajectory = await this.trajectoryRepo.findById(analysis.props.trajectory);
+        const trajectory = await this.findTrajectoryById(analysis.props.trajectory);
         if (!trajectory) {
             throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
         }
@@ -1059,7 +1053,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
             'teamClusterId' | 'trajectoryId' | 'teamId' | 'timestep'
         >
     ): Promise<ResolvedTrajectoryOwnership> {
-        const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
+        const trajectory = await this.findTrajectoryById(input.trajectoryId);
         if (!trajectory) {
             throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
         }
@@ -1127,7 +1121,7 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
     }
 
     private async setTrajectoryStatus(trajectoryId: string, teamId: string, status: TrajectoryStatus): Promise<void> {
-        await this.trajectoryRepo.updateById(trajectoryId, { status });
+        await this.updateTrajectoryById(trajectoryId, { status });
         await this.eventBus.publish(new GenericDomainEvent(DOMAIN_EVENTS.TrajectoryUpdated, {
             trajectoryId,
             teamId,
@@ -1203,3 +1197,5 @@ export default class DaemonAnalysisCompletionService implements IDaemonAnalysisC
     }
 
 }
+
+export default new DaemonAnalysisCompletionService();

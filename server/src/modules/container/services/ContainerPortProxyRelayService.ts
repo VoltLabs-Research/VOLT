@@ -9,10 +9,10 @@ import {
 } from '@modules/container/utilities/container-port-proxy';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { ReverseWsHttpRelay } from '@shared/infrastructure/services/ReverseWsHttpRelay';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import { container as diContainer } from 'tsyringe';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
@@ -60,24 +60,22 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-/**
- * Shared singleton (stateful): owns the live `http.Server` port-proxy relay pool
- * (`relaysByPublicPort`). The same instance is driven by the container service,
- * the terminal socket module and the bootstrap relay-lifecycle service, so it is
- * resolved from DI rather than `new`ed per request.
- */
-@Singleton()
 export class ContainerPortProxyRelayService {
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
     private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_APP_PROXY_ADVERTISED_HOST');
     private readonly publicProtocol = resolveContainerPortProxyRelayProtocol();
     private readonly relaysByPublicPort = new Map<number, ContainerPortProxyRelay>();
+    private readonly accessTokenService: ContainerPortProxyAccessTokenService = new ContainerPortProxyAccessTokenService();
 
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly accessTokenService: ContainerPortProxyAccessTokenService,
-        private readonly reverseWsHttpRelay: ReverseWsHttpRelay
-    ) {}
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
+
+    #reverseWsHttpRelayCache?: ReverseWsHttpRelay;
+    private get reverseWsHttpRelay(): ReverseWsHttpRelay {
+        return (this.#reverseWsHttpRelayCache ??= diContainer.resolve(ReverseWsHttpRelay));
+    }
 
     async createAccessUrl(input: CreateContainerPortAccessUrlInput): Promise<{ url: string; expiresAt: string; }> {
         await this.ensureRelay(input);
@@ -386,3 +384,5 @@ export class ContainerPortProxyRelayService {
         return value;
     }
 }
+
+export default new ContainerPortProxyRelayService();

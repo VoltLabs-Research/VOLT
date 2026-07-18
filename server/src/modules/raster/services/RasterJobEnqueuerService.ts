@@ -1,15 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService, ITrajectoryRepository } from '@shared/contracts/ports';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 interface RasterizeTrajectoryCommandPayload extends Record<string, unknown> {
     trajectoryId: string;
@@ -34,26 +30,24 @@ export interface RasterJobEnqueueResult {
     }>;
 }
 
-@Singleton()
 export class RasterJobEnqueuerService {
     constructor(
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
+        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
         private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        @inject(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService) private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
+        private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
     ) {}
 
     async triggerRasterization(
         trajectoryId: string,
         teamId: string
     ): Promise<RasterJobEnqueueResult> {
-        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
 
-        if (!trajectory || trajectory.props.team !== teamId) {
+        if (!trajectory || trajectory.team.toString() !== teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const storageClusterId = trajectory.storageClusterId?.toString();
         if (!storageClusterId) {
             throw new ApplicationError(
                 ErrorCodes.RASTER_FAILED,
@@ -85,7 +79,7 @@ export class RasterJobEnqueuerService {
                 await this.daemonAnalysisCompletionService.handleQueuedJobs(
                     response.jobs.map((job) => ({
                         ...job,
-                        trajectoryName: trajectory.props.name
+                        trajectoryName: trajectory.name
                     })),
                     'raster',
                     computeClusterId

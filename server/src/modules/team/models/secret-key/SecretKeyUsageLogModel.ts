@@ -1,7 +1,18 @@
-import { SecretKeyUsageLogProps } from '@modules/team/entities/secret-key/SecretKeyUsageLog';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Schema, Document, Model } from 'mongoose';
+
+export interface SecretKeyUsageLogProps {
+    secretKey: string;
+    team: string;
+    method: string;
+    path: string;
+    statusCode: number;
+    responseTime: number;
+    ip: string;
+    userAgent: string;
+    createdAt: Date;
+}
 
 type SecretKeyUsageLogRelations = 'secretKey' | 'team';
 

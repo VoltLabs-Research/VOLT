@@ -1,10 +1,6 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { inject } from 'tsyringe';
-import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { IPluginRepository } from '@modules/plugin/services/PluginRepository';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import {
     AnalysisListingExportOptionDTO,
@@ -20,7 +16,6 @@ import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/l
 import { Exporter } from '@modules/plugin/entities/plugin/workflow/nodes/ExportNode';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 
@@ -107,13 +102,11 @@ export const buildAnalysisSubListingSelectionId = (
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
-@Singleton()
 export class AnalysisListingExportCatalogService {
     constructor(
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(PLUGIN_TOKENS.PluginRepository) private readonly pluginRepository: IPluginRepository,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly daemonClient: ITeamClusterDaemonClient
+        private readonly analysisRepository: IAnalysisRepository,
+        private readonly pluginRepository: IPluginRepository,
+        private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
     async getExportOptions(analysisId: string): Promise<GetAnalysisListingExportOptionsOutputDTO> {
@@ -295,7 +288,6 @@ export class AnalysisListingExportCatalogService {
         return enrichDaemonListingRows({
             rows: listingRows,
             analysisRepository: this.analysisRepository,
-            trajectoryRepository: this.trajectoryRepository,
             fallbackAnalysisId: analysisId
         });
     }

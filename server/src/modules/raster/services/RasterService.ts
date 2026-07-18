@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { RasterFrameService } from '@modules/raster/services/RasterFrameService';
 import { RasterJobEnqueuerService } from '@modules/raster/services/RasterJobEnqueuerService';
 import { RasterMetadataService } from '@modules/raster/services/RasterMetadataService';
+import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     GetRasterMetadataInputDTO,
@@ -9,6 +10,16 @@ import type {
 } from '@shared/contracts/dtos/GetRasterMetadataDTO';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import type {
+    IDaemonAnalysisCompletionService,
+    ITeamClusterObjectGatewayClient,
+    ITeamClusterSelectionService
+} from '@shared/contracts/ports';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { container as diContainer } from 'tsyringe';
 
 interface TriggerRasterizationInput {
@@ -33,24 +44,22 @@ interface GetRasterFramePNGInput {
     model?: string;
 }
 
-/**
- * The single application service for the raster module (pollium style): folds
- * the former `TriggerRasterizationUseCase`, `GetRasterMetadataUseCase` and
- * `GetRasterFramePNGUseCase` logic verbatim onto the thrown-`ApplicationError`
- * channel. Its three collaborators are genuinely-shared stateful singletons
- * (daemon client / object gateway / cross-module trajectory+analysis repos)
- * resolved once from the DI container by class token:
- *  - frameReader: `RasterFrameService`
- *  - enqueuer: `RasterJobEnqueuerService`
- *  - metadata: `RasterMetadataService`
- * The cross-module `RASTER_CONTRACT_TOKENS.GetRasterMetadataUseCase` port is
- * served by a thin adapter (`GetRasterMetadataService`) that delegates to
- * `getRasterMetadata` here.
- */
 export default class RasterService {
-    #frameReader = diContainer.resolve(RasterFrameService);
-    #enqueuer = diContainer.resolve(RasterJobEnqueuerService);
-    #metadata = diContainer.resolve(RasterMetadataService);
+    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient);
+    #analysisRepository = new AnalysisRepository();
+    #frameReader = new RasterFrameService(
+        new RasterStorageService(this.#objectGatewayClient),
+        this.#analysisRepository
+    );
+    #enqueuer = new RasterJobEnqueuerService(
+        diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService),
+        diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient),
+        daemonAnalysisCompletionService
+    );
+    #metadata = new RasterMetadataService(
+        new RasterStorageService(this.#objectGatewayClient),
+        this.#analysisRepository
+    );
 
     async triggerRasterization(input: TriggerRasterizationInput): Promise<TriggerRasterizationResult> {
         try {

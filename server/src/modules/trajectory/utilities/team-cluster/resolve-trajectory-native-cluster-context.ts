@@ -1,17 +1,15 @@
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 
-import type Trajectory from '@modules/trajectory/entities/trajectory/Trajectory';
-import type { ITrajectoryRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryRepository';
+import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 interface ResolveTrajectoryNativeClusterContextInput {
     trajectoryId: string;
-    trajectoryRepository: ITrajectoryRepository;
     teamClusterSelectionService: ITeamClusterSelectionService;
 }
 
 interface TrajectoryNativeClusterContext {
-    trajectory: Trajectory;
+    trajectory: TrajectoryDocument;
     storageClusterId: string;
     computeClusterId: string;
 }
@@ -19,9 +17,9 @@ interface TrajectoryNativeClusterContext {
 export const resolveTrajectoryNativeClusterContext = async (
     input: ResolveTrajectoryNativeClusterContextInput
 ): Promise<TrajectoryNativeClusterContext | null> => {
-    const trajectory = await input.trajectoryRepository.findById(input.trajectoryId);
+    const trajectory = await TrajectoryModel.findById(input.trajectoryId);
     const storageClusterId = trajectory
-        ? resolveTrajectoryStorageClusterId(trajectory.props)
+        ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
         : undefined;
 
     if (!trajectory || !storageClusterId) {
@@ -29,7 +27,7 @@ export const resolveTrajectoryNativeClusterContext = async (
     }
 
     const computeClusterId = await input.teamClusterSelectionService.resolveComputeClusterId(
-        trajectory.props.team,
+        trajectory.team.toString(),
         undefined,
         storageClusterId
     );

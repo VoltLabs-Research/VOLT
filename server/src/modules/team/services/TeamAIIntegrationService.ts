@@ -1,11 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
-import type { ITeamAIIntegrationRepository } from '@modules/team/ports/ai-integration/ITeamAIIntegrationRepository';
-import type { ITeamAIProviderCatalog } from '@modules/team/ports/ai-integration/ITeamAIProviderCatalog';
-import TeamAIIntegration from '@modules/team/entities/ai-integration/TeamAIIntegration';
+import TeamAIIntegrationModel, {
+    buildTeamAIIntegrationCreatePayload,
+    buildTeamAIIntegrationUpdatePayload,
+    getTeamAIIntegrationCreatedById,
+    getTeamAIIntegrationTeamId
+} from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import type { TeamAIIntegrationDocument } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import TeamAIProviderCatalog from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
 import TeamAIIntegrationSecretCipher from '@modules/team/security/ai-integration/TeamAIIntegrationSecretCipher';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container as diContainer } from 'tsyringe';
+import type { HydratedDocument } from 'mongoose';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 import type {
     GetTeamAIIntegrationsResponse,
@@ -16,21 +20,14 @@ import type {
     TeamAIModelListItem
 } from '@volt/contracts/modules/team/domain';
 
-/**
- * The single application service for the team ai-integration resource. Folds
- * the former list/models/create/update/delete use-cases plus the shared
- * item-DTO mapper. The integration repository is a shared singleton (the AI
- * module's SDK transport resolves it to read a team's active provider secrets),
- * so this service resolves it once from the DI container, along with the
- * provider catalog and the (stateless) secret cipher.
- */
+type TeamAIIntegrationDoc = HydratedDocument<TeamAIIntegrationDocument>;
+
 export default class TeamAIIntegrationService {
-    #integrations = diContainer.resolve<ITeamAIIntegrationRepository>(TEAM_TOKENS.TeamAIIntegrationRepository);
-    #providerCatalog = diContainer.resolve<ITeamAIProviderCatalog>(TEAM_TOKENS.TeamAIProviderCatalog);
-    #secretCipher = diContainer.resolve(TeamAIIntegrationSecretCipher);
+    #providerCatalog = new TeamAIProviderCatalog();
+    #secretCipher = new TeamAIIntegrationSecretCipher();
 
     async listByTeamId(teamId: string): Promise<GetTeamAIIntegrationsResponse> {
-        const integrations = await this.#integrations.listByTeamId(teamId);
+        const integrations = await TeamAIIntegrationModel.find({ team: teamId }).sort({ createdAt: -1 });
         return {
             teamId,
             integrations: integrations.map((integration) => this.#toItem(integration)),
@@ -39,30 +36,32 @@ export default class TeamAIIntegrationService {
     }
 
     async listModels(teamId: string): Promise<GetTeamAIIntegrationModelsResponse> {
-        const integrations = await this.#integrations.listEnabledByTeamIdWithSecrets(teamId);
+        const integrations = await TeamAIIntegrationModel.find({ team: teamId, isEnabled: true })
+            .select('+encryptedApiKey')
+            .sort({ createdAt: -1 });
 
         const providers: TeamAIProviderModels[] = [];
         const models: TeamAIModelListItem[] = [];
 
         for (const integration of integrations) {
-            const providerMeta = this.#providerCatalog.getProviderMetadata(integration.props.provider);
-            const enabledModels = integration.props.enabledModels ?? [];
+            const providerMeta = this.#providerCatalog.getProviderMetadata(integration.provider);
+            const enabledModels = integration.enabledModels ?? [];
             const providerModels = enabledModels.map((m) => ({ id: m.id, name: m.name }));
 
             providers.push({
-                provider: integration.props.provider,
+                provider: integration.provider,
                 providerName: providerMeta.name,
-                defaultModel: integration.props.defaultModel,
-                metadata: integration.props.metadata,
+                defaultModel: integration.defaultModel,
+                metadata: integration.metadata,
                 models: providerModels
             });
 
             providerModels.forEach((model) => {
                 models.push({
                     ...model,
-                    provider: integration.props.provider,
+                    provider: integration.provider,
                     providerName: providerMeta.name,
-                    isDefault: integration.props.defaultModel === model.id
+                    isDefault: integration.defaultModel === model.id
                 });
             });
         }
@@ -76,7 +75,7 @@ export default class TeamAIIntegrationService {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
 
-        const existing = await this.#integrations.findOne({ team: teamId, provider });
+        const existing = await TeamAIIntegrationModel.findOne({ team: teamId, provider });
         if (existing) {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_ALREADY_EXISTS, 'An integration for this provider already exists in this team');
         }
@@ -97,7 +96,7 @@ export default class TeamAIIntegrationService {
             .map(({ id, name }) => ({ id: id.trim(), name: name.trim() }))
             .filter(({ id, name }) => id.length > 0 && name.length > 0);
 
-        const persisted = await this.#integrations.create(TeamAIIntegration.create({
+        const persisted = await TeamAIIntegrationModel.create(buildTeamAIIntegrationCreatePayload({
             teamId,
             provider,
             encryptedApiKey,
@@ -117,7 +116,7 @@ export default class TeamAIIntegrationService {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
 
-        const existing = await this.#integrations.findByTeamAndProviderWithSecret(teamId, provider);
+        const existing = await TeamAIIntegrationModel.findOne({ team: teamId, provider }).select('+encryptedApiKey');
         if (!existing) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND, 'AI integration not found for this provider');
         }
@@ -125,27 +124,31 @@ export default class TeamAIIntegrationService {
         const apiKey = input.apiKey?.trim();
         const encryptedApiKey = apiKey
             ? await this.#secretCipher.encrypt(apiKey)
-            : existing.props.encryptedApiKey || await this.#secretCipher.encrypt('ollama-local');
+            : existing.encryptedApiKey || await this.#secretCipher.encrypt('ollama-local');
 
-        const defaultModel = input.defaultModel?.trim() || existing.props.defaultModel || null;
+        const defaultModel = input.defaultModel?.trim() || existing.defaultModel || null;
         if (!defaultModel) {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED, 'Default model is required');
         }
 
-        const metadata = input.metadata ?? existing.props.metadata;
+        const metadata = input.metadata ?? existing.metadata;
         const enabledModels = input.enabledModels
             ? input.enabledModels
                 .map(({ id, name }) => ({ id: id.trim(), name: name.trim() }))
                 .filter(({ id, name }) => id.length > 0 && name.length > 0)
-            : existing.props.enabledModels || [];
+            : existing.enabledModels || [];
 
-        const persisted = await this.#integrations.updateById(existing._id, existing.buildUpdatePayload({
-            encryptedApiKey,
-            isEnabled: input.isEnabled ?? existing.props.isEnabled,
-            defaultModel,
-            enabledModels,
-            metadata
-        }));
+        const persisted = await TeamAIIntegrationModel.findByIdAndUpdate(
+            existing._id,
+            { $set: buildTeamAIIntegrationUpdatePayload({
+                encryptedApiKey,
+                isEnabled: input.isEnabled ?? existing.isEnabled,
+                defaultModel,
+                enabledModels,
+                metadata
+            }) },
+            { new: true }
+        );
 
         if (!persisted) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND, 'AI integration could not be updated');
@@ -160,29 +163,29 @@ export default class TeamAIIntegrationService {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED, 'Provider is not supported');
         }
 
-        const integration = await this.#integrations.findOne({ team: teamId, provider });
+        const integration = await TeamAIIntegrationModel.findOne({ team: teamId, provider });
         if (!integration) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_AI_INTEGRATION_NOT_FOUND, 'Team AI integration not found');
         }
 
-        await this.#integrations.deleteByTeamAndProvider(teamId, provider);
+        await TeamAIIntegrationModel.deleteOne({ team: teamId, provider });
     }
 
-    #toItem(integration: TeamAIIntegration): TeamAIIntegrationItem {
-        const providerMetadata = this.#providerCatalog.getProviderMetadata(integration.props.provider);
+    #toItem(integration: TeamAIIntegrationDoc): TeamAIIntegrationItem {
+        const providerMetadata = this.#providerCatalog.getProviderMetadata(integration.provider);
         return {
-            _id: integration._id,
-            teamId: integration.getTeamId(),
-            provider: integration.props.provider,
+            _id: String(integration._id),
+            teamId: getTeamAIIntegrationTeamId(integration),
+            provider: integration.provider,
             providerName: providerMetadata.name,
-            isEnabled: integration.props.isEnabled,
-            defaultModel: integration.props.defaultModel,
-            enabledModels: integration.props.enabledModels || [],
-            metadata: integration.props.metadata,
+            isEnabled: integration.isEnabled,
+            defaultModel: integration.defaultModel,
+            enabledModels: integration.enabledModels || [],
+            metadata: integration.metadata,
             hasApiKey: true,
-            createdBy: integration.getCreatedById(),
-            createdAt: integration.props.createdAt as unknown as string,
-            updatedAt: integration.props.updatedAt as unknown as string
+            createdBy: getTeamAIIntegrationCreatedById(integration),
+            createdAt: integration.createdAt as unknown as string,
+            updatedAt: integration.updatedAt as unknown as string
         };
     }
 }

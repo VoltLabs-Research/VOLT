@@ -15,9 +15,9 @@ import { buildJupyterProxyUrl, findNotebookExposure } from '@modules/scripting/u
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ITeamClusterExposureRegistryService, ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
@@ -148,7 +148,7 @@ export default class ScriptingService {
     #notebookTemplate = diContainer.resolve(JupyterNotebookService);
     #terminator = diContainer.resolve(NotebookRuntimeTerminator);
     #teamClusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #exposureRegistry = diContainer.resolve<ITeamClusterExposureRegistryService>(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService);
+    #exposureRegistry = teamClusterExposureRegistryService;
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     #accessToken = new ScriptingJupyterAccessTokenService();
 

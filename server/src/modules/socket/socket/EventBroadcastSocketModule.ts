@@ -1,12 +1,10 @@
-import { SOCKET_TOKENS } from '@modules/socket/di/SocketTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import logger from '@shared/infrastructure/logger';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { container as diContainer } from 'tsyringe';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
@@ -14,9 +12,7 @@ import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
 type BroadcastableEvent = IDomainEvent<Record<string, unknown>>;
 
-@Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
-export default class EventBroadcastSocketModule extends BaseSocketModule {
+class EventBroadcastSocketModule extends BaseSocketModule {
     public readonly name = 'EventBroadcastSocketModule';
 
     private readonly eventsToBroadcast = [
@@ -45,22 +41,17 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         'whiteboard.deleted'
     ];
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     async onInit(): Promise<void> {
         logger.info('[EventBroadcastSocketModule] Starting initialization...');
 
+        const eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
         const handler = this.createGenericBroadcastHandler();
         for (const eventName of this.eventsToBroadcast) {
-            await this.eventBus.subscribe(eventName, handler);
+            await eventBus.subscribe(eventName, handler);
         }
 
         logger.info(`[EventBroadcastSocketModule] Subscribed to ${this.eventsToBroadcast.length} events for broadcasting`);
@@ -90,3 +81,7 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
         };
     }
 }
+
+const eventBroadcastSocketModule = new EventBroadcastSocketModule();
+
+export default eventBroadcastSocketModule;

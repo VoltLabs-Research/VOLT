@@ -28,11 +28,11 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type {
-    IClusterObjectArchiveService,
-    IClusterObjectSignedUrlService,
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
 } from '@shared/contracts/ports';
+import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
@@ -106,32 +106,29 @@ const toFolderView = (folder: CatalogFolderDoc): LatexFolderView => ({
     updatedAt: folder.updatedAt
 }) as unknown as LatexFolderView;
 
-/**
- * The single application service for the latex module (pollium style): holds ALL
- * the latex HTTP domain logic (folding every former use case, the catalog-folder
- * route handlers, and the folder cascade verbatim), talks to the Mongoose
- * {@link LatexDocumentModel}/{@link LatexFileModel}/{@link LatexAssetModel} and
- * the shared {@link CatalogFolderModel} directly — no repository, entity,
- * mapper, use case or DI on the service — and throws typed
- * {@link ApplicationError}s (no Result channel).
- *
- * Genuinely-stateful / cross-module collaborators are shared singletons resolved
- * from the DI container (documented on each field) rather than `new`ed:
- *  - objectGatewayClient / teamClusterSelectionService / signedUrlService /
- *    archiveService: the cluster module's object-store gateway + selection +
- *    signed-url + archive services (cross-module, also used by trajectory)
- *  - tempFileService: the shared temp-storage service (lifecycle-managed)
- *  - eventBus: the Redis-backed event bus (cross-module fan-out)
- */
 export default class LatexService {
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
-    #teamClusterSelectionService = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #signedUrlService = diContainer.resolve<IClusterObjectSignedUrlService>(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService);
-    #archiveService = diContainer.resolve<IClusterObjectArchiveService>(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService);
-    #tempFileService = diContainer.resolve<ITempFileService>(SHARED_TOKENS.TempFileService);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #signedUrlService = new ClusterObjectSignedUrlService();
+    #archiveService = new ClusterObjectArchiveService();
 
-    // ---- Documents --------------------------------------------------------
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    get #objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
+    }
+
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    get #teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    #tempFileServiceCache?: ITempFileService;
+    get #tempFileService(): ITempFileService {
+        return (this.#tempFileServiceCache ??= diContainer.resolve<ITempFileService>(SHARED_TOKENS.TempFileService));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocumentView>> {
         const page = Math.max(1, Number(input.page) || 1);
@@ -284,7 +281,6 @@ export default class LatexService {
         return this.#importFromTex(input, storageClusterId);
     }
 
-    // ---- Assets -----------------------------------------------------------
 
     async listAssets(input: DocumentScoped): Promise<LatexAssetView[]> {
         await this.#requireDocument(input.teamId, input.documentId);
@@ -428,7 +424,6 @@ export default class LatexService {
         return this.#toAssetView(input.teamId, input.documentId, updated);
     }
 
-    // ---- Export / compile (streamed downloads) ----------------------------
 
     async exportDocumentTex(input: DocumentScoped): Promise<DownloadStreamOutputDTO> {
         const document = await this.#requireDocument(input.teamId, input.documentId);
@@ -560,7 +555,6 @@ export default class LatexService {
         });
     }
 
-    // ---- Files ------------------------------------------------------------
 
     async listFiles(input: DocumentScoped): Promise<LatexFileView[]> {
         await this.#requireDocument(input.teamId, input.documentId);
@@ -661,7 +655,6 @@ export default class LatexService {
         return toFileView(updated);
     }
 
-    // ---- Folders ----------------------------------------------------------
 
     async listFolders(input: TeamScoped & { parentId?: string; page?: number; limit?: number }): Promise<PaginatedResult<LatexFolderView>> {
         const page = Number(input.page) || 1;
@@ -725,11 +718,6 @@ export default class LatexService {
         }
     }
 
-    /**
-     * Cascade for the `team.deleted` event: deletes every LaTeX document owned
-     * by the team (each publishing `latex-document.deleted` so its files/assets
-     * cascade too).
-     */
     async deleteAllDocumentsForTeam(teamId: string, userId: string): Promise<void> {
         const documents = await LatexDocumentModel.find({ team: teamId }).select('_id').exec();
         for (const document of documents) {
@@ -737,7 +725,6 @@ export default class LatexService {
         }
     }
 
-    // ---- Internal helpers -------------------------------------------------
 
     async #requireDocument(teamId: string, documentId: string): Promise<LatexDocumentDoc> {
         const document = await LatexDocumentModel.findOne({ _id: documentId, team: teamId });

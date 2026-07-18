@@ -1,11 +1,12 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
-import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
+import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import type { ITeamClusterRepository } from '@shared/contracts/ports';
 import { JobStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
@@ -38,12 +39,11 @@ import {
     type TeamClusterDaemonPluginMongoImportResult,
     type TeamClusterDaemonPluginMongoPurgeResult
 } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
-import { inject } from 'tsyringe';
-import StoragePlacementService from './StoragePlacementService';
+import { container } from 'tsyringe';
+import storagePlacementService from './StoragePlacementService';
 
 interface ObjectHeadSnapshot {
     contentLength?: number;
@@ -183,20 +183,24 @@ interface TransferRequestInput {
     reason?: ClusterTransferJobReason;
 }
 
-@Singleton()
-export default class ClusterTransferCoordinator {
-    constructor(
-        private readonly storagePlacementService: StoragePlacementService,
-        @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
-        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository) private readonly systemMetricsRepository: ISystemMetricsRepository,
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
-    ) {}
+export class ClusterTransferCoordinator {
+    private readonly storagePlacementService = storagePlacementService;
+    private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
+    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
+    private readonly analysisRepository: IAnalysisRepository = new AnalysisRepository();
+    private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
+    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= container.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= container.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
+    }
+    #eventBusCache?: IEventBus;
+    private get eventBus(): IEventBus {
+        return (this.#eventBusCache ??= container.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async requestTransfer(input: TransferRequestInput): Promise<ClusterTransferJob> {
         const placement = await this.storagePlacementService.ensurePlacement(input.scopeType, input.scopeId);
@@ -1066,13 +1070,11 @@ export default class ClusterTransferCoordinator {
         job: ClusterTransferJob
     ): Promise<TransferJobProjectionContext> {
         if (job.props.scopeType === 'trajectory') {
-            const trajectory = await this.trajectoryRepository.findById(job.props.scopeId, {
-                select: ['name']
-            });
+            const trajectory = await TrajectoryModel.findById(job.props.scopeId).select('name').exec();
 
             return {
                 trajectoryId: job.props.scopeId,
-                trajectoryName: trajectory?.props.name || `Trajectory ${job.props.scopeId}`
+                trajectoryName: trajectory?.name || `Trajectory ${job.props.scopeId}`
             };
         }
 
@@ -1083,13 +1085,11 @@ export default class ClusterTransferCoordinator {
             const trajectoryId = analysis?.props.trajectory;
 
             if (trajectoryId) {
-                const trajectory = await this.trajectoryRepository.findById(trajectoryId, {
-                    select: ['name']
-                });
+                const trajectory = await TrajectoryModel.findById(trajectoryId).select('name').exec();
 
                 return {
                     trajectoryId,
-                    trajectoryName: trajectory?.props.name || `Trajectory ${trajectoryId}`,
+                    trajectoryName: trajectory?.name || `Trajectory ${trajectoryId}`,
                     analysisId: job.props.scopeId
                 };
             }
@@ -1127,3 +1127,5 @@ export default class ClusterTransferCoordinator {
         return updatedJob;
     }
 }
+
+export default new ClusterTransferCoordinator();

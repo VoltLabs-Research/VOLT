@@ -1,27 +1,19 @@
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 interface TrajectoryPresencePayload extends Record<string, unknown> {
     trajectoryId: string;
 }
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
+export class TrajectoryPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TrajectoryPresenceSocketModule';
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -90,3 +82,5 @@ export default class TrajectoryPresenceSocketModule extends BaseSocketModule {
         isAnonymous: !connection.user
     });
 }
+
+export default new TrajectoryPresenceSocketModule();

@@ -6,8 +6,10 @@ import type {
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
+import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
+import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
@@ -17,11 +19,12 @@ import logger from '@shared/infrastructure/logger';
 
 @Subscribe('team.deleted')
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
+    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
+    private readonly teamClusterLifecycleService = teamClusterLifecycleService;
+    private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
+    private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
+
     constructor(
-        @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-        @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
-        @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
     ) {}
 

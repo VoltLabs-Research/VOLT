@@ -2,7 +2,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { readRelayHostValue, readRelayPortRangeValue } from '@shared/infrastructure/utilities/relay-network';
 import mongoose from 'mongoose';
 import net from 'node:net';
@@ -20,13 +19,6 @@ interface ReservedPortMappings {
     reservedPublicPorts: number[];
 }
 
-/**
- * Shared singleton (stateful): the in-memory `reservedPorts` set guards
- * concurrent allocations against double-assigning a public port before it is
- * committed. Talks to the Mongoose {@link ContainerModel} directly to check
- * DB-level assignment — no repository.
- */
-@Singleton()
 export class ContainerPublicPortAllocator {
     private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_PUBLIC_PORT_END);
@@ -190,3 +182,5 @@ export class ContainerPublicPortAllocator {
         }
     }
 }
+
+export default new ContainerPublicPortAllocator();

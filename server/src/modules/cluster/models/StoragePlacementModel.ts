@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { StoragePlacementProps } from '@modules/cluster/entities/StoragePlacement';
+import type { StoragePlacementProps } from '@modules/cluster/utilities/storage-placement';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';

@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ClusterTransferJobProps } from '@modules/cluster/entities/ClusterTransferJob';
+import type { ClusterTransferJobProps } from '@modules/cluster/utilities/cluster-transfer-job';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';

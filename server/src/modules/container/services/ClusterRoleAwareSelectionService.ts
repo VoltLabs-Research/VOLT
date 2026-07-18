@@ -6,12 +6,11 @@ import {
 import { TeamClusterStatus } from '@shared/contracts/types';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
-import type { ITeamClusterRepository } from '@shared/contracts/ports';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 
 type SelectionCapability = 'compute' | 'storage';
 
@@ -113,8 +112,9 @@ const supportsCapability = (
 
 @injectable()
 export class ClusterRoleAwareSelectionService {
+    private readonly teamClusterRepository = new TeamClusterRepository();
+
     constructor(
-        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository
     ) {}
 

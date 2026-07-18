@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -11,14 +9,6 @@ const parameters = z.object({
 
 type SwitchTeamParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Switches the active team and navigates to the dashboard.
- * Switching teams resets team-scoped caches/state, so it requires user
- * approval. The browser handler (client `tools/handlers/switch_team.ts`) drives
- * the team store's safe switch flow. This server class only advertises the
- * schema (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SwitchTeamAITool extends AITool<SwitchTeamParams> {
     readonly name = 'switch_team';
     readonly description = 'Switch the active team context and take the user to the dashboard. '

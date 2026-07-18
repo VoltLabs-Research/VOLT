@@ -1,11 +1,6 @@
-
-import { AUTH_TOKENS } from '@modules/auth/di/AuthTokens';
-import type { IPasswordHasher } from '@modules/auth/ports/IPasswordHasher';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import bcrypt from 'bcryptjs';
 
-@Singleton(AUTH_TOKENS.PasswordHasher)
-export default class BcryptPasswordHasher implements IPasswordHasher {
+export default class BcryptPasswordHasher {
     private readonly saltRounds = 12;
 
     public async hash(password: string): Promise<string> {

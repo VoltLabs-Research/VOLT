@@ -1,6 +1,15 @@
-import { CHAT_CONTRACT_TOKENS } from '@shared/contracts/tokens/ChatTokens';
-import { deleteManyOnTeamDeleted } from '@shared/application/events/cascadeDeleteHandlerFactories';
+import ChatModel from '@modules/chat/models/chat/ChatModel';
+import { DeleteManyOnTeamDeletedHandler } from '@shared/application/events/DeleteManyOnTeamDeletedHandler';
+import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-// The cascade resolves the model-backed ChatSearchRepository adapter registered
-// under the neutral Symbol.for('ChatRepository') token — it exposes deleteMany.
-deleteManyOnTeamDeleted(CHAT_CONTRACT_TOKENS.ChatRepository);
+const modelDeleteMany = {
+    deleteMany: async (filter: Record<string, string>): Promise<number> => {
+        const result = await ChatModel.deleteMany(filter);
+        return result.deletedCount ?? 0;
+    }
+};
+
+@Subscribe('team.deleted')
+export class ChatTeamDeletedEventHandler extends DeleteManyOnTeamDeletedHandler {
+    protected readonly repository = modelDeleteMany;
+}

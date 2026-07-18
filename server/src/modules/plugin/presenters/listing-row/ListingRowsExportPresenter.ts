@@ -1,11 +1,8 @@
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type {
     IClusterObjectArchiveService,
     ClusterArchiveInlineEntry
 } from '@shared/contracts/ports';
 import { toCsvContent } from '@modules/plugin/utilities/listing-row/csv';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
 import {
     createDownloadStreamResponse,
     createSerializedDownloadResponse,
@@ -38,10 +35,8 @@ const titleCaseName = (name: string): string => {
         .join('-');
 };
 
-@Singleton()
 export class ListingRowsExportPresenter {
     constructor(
-        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 

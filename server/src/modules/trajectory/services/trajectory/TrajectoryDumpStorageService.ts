@@ -1,15 +1,12 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { TeamClusterObjectGatewayStreamResponse } from '@shared/contracts/types';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
-import { ITrajectoryDumpStorageService } from '@modules/trajectory/ports/trajectory/ITrajectoryDumpStorageService';
-import TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 import { Readable } from 'node:stream';
 
 export interface TrajectoryDumpStreamResponse {
@@ -19,18 +16,16 @@ export interface TrajectoryDumpStreamResponse {
     contentEncoding?: string;
 }
 
-@Singleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService)
-export default class TrajectoryDumpStorageService implements ITrajectoryDumpStorageService {
-    constructor(
-        private readonly trajectoryRepo: TrajectoryRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+export class TrajectoryDumpStorageService {
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+    }
 
     private async requireStorageClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
             : undefined;
 
         if (!storageClusterId) {
@@ -105,3 +100,5 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         };
     }
 }
+
+export default new TrajectoryDumpStorageService();

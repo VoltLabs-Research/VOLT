@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -15,14 +13,6 @@ const parameters = z.object({
 
 type SetCameraViewParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Snaps the 3D viewer camera to a named orthographic-style
- * viewpoint (front/back/left/right/top/bottom/isometric). The browser handler
- * (client `tools/handlers/set_camera_view.ts`) sets the editor store camera
- * position/up and orbit-controls target. This server class only advertises the
- * schema (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SetCameraViewAITool extends AITool<SetCameraViewParams> {
     readonly name = 'set_camera_view';
     readonly description = 'Snap the 3D viewer camera to a named viewpoint: front, back, left, right, top, bottom, or isometric. '

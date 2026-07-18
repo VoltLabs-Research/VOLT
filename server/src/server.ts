@@ -15,11 +15,17 @@ import { initializeMinio } from './core/config/minio';
 import { initializeRedis } from './core/config/redis';
 import { ScriptingJupyterProxyService } from './modules/scripting/services/ScriptingJupyterProxyService';
 import type { ISocketModule } from './modules/socket/ports/ISocketModule';
-import { SOCKET_TOKENS } from './modules/socket/di/SocketTokens';
-import SocketGateway from './modules/socket/socket/SocketGateway';
-import ClusterTransferRunner from './modules/cluster/services/ClusterTransferRunner';
-import { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
-import TrajectoryCloneRunner from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
+import { SOCKET_CONTRACT_TOKENS } from './shared/contracts/tokens/SocketTokens';
+import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
+import { socketModules } from './modules/socket/socket/socket-modules';
+import { ClusterTransferRunner } from './modules/cluster/services/ClusterTransferRunner';
+import containerPortRelayLifecycleService, { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
+import containerTerminalSocketModule from './modules/container/socket/ContainerTerminalSocketModule';
+import chatSocketModule from './modules/chat/socket/ChatSocketModule';
+import latexSocketModule from './modules/latex/socket/LatexSocketModule';
+import trajectoryCloneRunner, { TrajectoryCloneRunner } from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
+import canvasWorkspaceSocketModule from './modules/trajectory/socket/CanvasWorkspaceSocketModule';
+import trajectoryPresenceSocketModule from './modules/trajectory/socket/TrajectoryPresenceSocketModule';
 import { flushPendingSubscriptions } from './shared/infrastructure/events/Subscribe';
 import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
 import logger from './shared/infrastructure/logger';
@@ -192,19 +198,32 @@ const startServer = async () => {
 
             await flushPendingSubscriptions();
 
-            activeSocketGateway = container.resolve(SocketGateway);
+            activeSocketGateway = socketGateway;
 
             if (isModuleEnabled('cluster')) {
-                activeClusterTransferRunner = container.resolve(ClusterTransferRunner);
+                activeClusterTransferRunner = new ClusterTransferRunner();
             }
             if (isModuleEnabled('trajectory')) {
-                activeTrajectoryCloneRunner = container.resolve(TrajectoryCloneRunner);
+                activeTrajectoryCloneRunner = trajectoryCloneRunner;
+                activeSocketGateway.register(canvasWorkspaceSocketModule);
+                activeSocketGateway.register(trajectoryPresenceSocketModule);
             }
             if (isModuleEnabled('container')) {
-                activeContainerPortRelayLifecycle = container.resolve(ContainerPortRelayLifecycleService);
+                activeContainerPortRelayLifecycle = containerPortRelayLifecycleService;
+                activeSocketGateway.register(containerTerminalSocketModule);
             }
-            const socketModules = container.resolveAll<ISocketModule>(SOCKET_TOKENS.SocketModule);
+            if (isModuleEnabled('chat')) {
+                activeSocketGateway.register(chatSocketModule);
+            }
+            if (isModuleEnabled('latex')) {
+                activeSocketGateway.register(latexSocketModule);
+            }
             for (const module of socketModules) {
+                activeSocketGateway.register(module);
+            }
+
+            const externalSocketModules = container.resolveAll<ISocketModule>(SOCKET_CONTRACT_TOKENS.SocketModule);
+            for (const module of externalSocketModules) {
                 activeSocketGateway.register(module);
             }
 

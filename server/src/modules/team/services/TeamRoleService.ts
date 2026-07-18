@@ -1,40 +1,46 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
-import type { ITeamRoleRepository } from '@modules/team/ports/team-role/ITeamRoleRepository';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import TeamRole from '@modules/team/entities/team-role/TeamRole';
-import type { TeamRoleProps } from '@modules/team/entities/team-role/TeamRole';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import TeamRoleModel, {
+    buildTeamRoleCreatePayload,
+    buildTeamRoleUpdatePayload,
+    canRenameTeamRoleTo
+} from '@modules/team/models/team-role/TeamRoleModel';
+import type { TeamRoleProps } from '@modules/team/models/team-role/TeamRoleModel';
+import { toPersistedOutput } from '@modules/team/utilities/toPersistedOutput';
 import TeamRoleCreatedEvent from '@modules/team/events/team-role/TeamRoleCreatedEvent';
 import TeamRoleUpdatedEvent from '@modules/team/events/team-role/TeamRoleUpdatedEvent';
 import TeamRoleDeletedEvent from '@modules/team/events/team-role/TeamRoleDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { container as diContainer } from 'tsyringe';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
-/**
- * The single application service for the team-role resource. Folds the former
- * list/get/create/update/delete use-cases (the list/get logic previously lived
- * inline in the route file). The role/member repositories are shared singletons
- * (the membership orchestrator and event handlers use the role repository too),
- * resolved once from the DI container.
- */
 export default class TeamRoleService {
-    #roles = diContainer.resolve<ITeamRoleRepository>(TEAM_TOKENS.TeamRoleRepository);
-    #members = diContainer.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
     async listByTeamId(teamId: string, page = 1, limit = 10): Promise<PaginatedResult<PersistedOutput<TeamRoleProps>>> {
-        const result = await this.#roles.findAll({ filter: { team: teamId }, page, limit });
-        return { ...result, data: result.data.map((role) => toPersistedOutput(role)) };
+        const filter = { team: teamId };
+        const skip = (page - 1) * limit;
+
+        const [docs, total] = await Promise.all([
+            TeamRoleModel.find(filter).skip(skip).limit(limit),
+            TeamRoleModel.countDocuments(filter)
+        ]);
+
+        return {
+            data: docs.map((role) => toPersistedOutput<TeamRoleProps>(role)),
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
+        };
     }
 
     async getById(roleId: string): Promise<PersistedOutput<TeamRoleProps>> {
-        const role = await this.#roles.findById(roleId);
+        const role = await TeamRoleModel.findById(roleId);
         if (!role) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'TeamRole not found');
         }
@@ -42,7 +48,7 @@ export default class TeamRoleService {
     }
 
     async create(teamId: string, userId: string, input: CreateTeamRoleInput): Promise<PersistedOutput<TeamRoleProps>> {
-        const newRole = await this.#roles.create(TeamRole.create({
+        const newRole = await TeamRoleModel.create(buildTeamRoleCreatePayload({
             teamId,
             name: input.name,
             permissions: input.permissions ?? [],
@@ -50,9 +56,9 @@ export default class TeamRoleService {
         }));
 
         await this.#eventBus.publish(new TeamRoleCreatedEvent({
-            teamRoleId: newRole._id,
-            teamId: String(newRole.props.team),
-            name: newRole.props.name,
+            teamRoleId: String(newRole._id),
+            teamId: String(newRole.team),
+            name: newRole.name,
             userId
         }));
 
@@ -60,26 +66,26 @@ export default class TeamRoleService {
     }
 
     async updateById(roleId: string, input: UpdateTeamRoleInput): Promise<PersistedOutput<TeamRoleProps>> {
-        const currentRole = await this.#roles.findById(roleId);
+        const currentRole = await TeamRoleModel.findById(roleId);
         if (!currentRole) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
 
-        if (!currentRole.canRenameTo(input.name)) {
+        if (!canRenameTeamRoleTo(currentRole, input.name)) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ROLE_IS_SYSTEM, 'Cannot rename system roles');
         }
 
-        const updateData = currentRole.getUpdatePayload({ name: input.name, permissions: input.permissions });
-        const teamRole = await this.#roles.updateById(roleId, updateData);
+        const updateData = buildTeamRoleUpdatePayload(currentRole, { name: input.name, permissions: input.permissions });
+        const teamRole = await TeamRoleModel.findByIdAndUpdate(roleId, { $set: updateData }, { new: true });
         if (!teamRole) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Failed to update team role');
         }
 
         await this.#eventBus.publish(new TeamRoleUpdatedEvent({
-            teamRoleId: teamRole._id,
-            teamId: String(teamRole.props.team),
-            name: teamRole.props.name,
-            permissions: teamRole.props.permissions
+            teamRoleId: String(teamRole._id),
+            teamId: String(teamRole.team),
+            name: teamRole.name,
+            permissions: teamRole.permissions
         }));
 
         return toPersistedOutput(teamRole);
@@ -90,22 +96,22 @@ export default class TeamRoleService {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'Authentication required');
         }
 
-        const roleToDelete = await this.#roles.findById(roleId);
+        const roleToDelete = await TeamRoleModel.findById(roleId);
         if (!roleToDelete) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
-        if (roleToDelete.props.isSystem) {
+        if (roleToDelete.isSystem) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ROLE_IS_SYSTEM, 'Cannot delete system roles');
         }
 
-        const memberRole = await this.#roles.findOne({ team: teamId, name: 'Member', isSystem: true });
+        const memberRole = await TeamRoleModel.findOne({ team: teamId, name: 'Member', isSystem: true });
         if (!memberRole) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Member role not found');
         }
 
-        await this.#members.updateMany({ team: teamId, role: roleId }, { role: memberRole._id });
+        await TeamMemberModel.updateMany({ team: teamId, role: roleId }, { $set: { role: memberRole._id } });
 
-        const result = await this.#roles.deleteById(roleId);
+        const result = await TeamRoleModel.findByIdAndDelete(roleId);
         if (!result) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Failed to delete team role');
         }
@@ -114,7 +120,7 @@ export default class TeamRoleService {
             teamRoleId: roleId,
             teamId,
             userId,
-            roleName: roleToDelete.props.name ?? ''
+            roleName: roleToDelete.name ?? ''
         }));
 
         return { success: true };

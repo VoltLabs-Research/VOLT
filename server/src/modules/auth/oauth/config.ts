@@ -8,15 +8,6 @@ export { getConfiguredOAuthProviders } from '@modules/auth/oauth/providers';
 
 let configured = false;
 
-/**
- * Registers the OAuth passport strategies.
- *
- * This MUST run after `autoloadModules()` has finished, because constructing an
- * `AuthService` resolves DI singletons (password hasher, session service, event
- * bus, cross-module default-team enroller) that are only registered when the
- * owning modules' `@Singleton(...)` decorators fire during autoload. The
- * composition root (`server.ts`) calls this after autoload completes.
- */
 export const configureOAuthStrategies = (): void => {
     if (configured) {
         return;

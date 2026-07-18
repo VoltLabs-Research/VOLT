@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
-import { SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
-import type { SceneArtifactProps } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+import { SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactProps } from '@shared/contracts/types/SceneArtifact';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type SceneArtifactRelations = 'trajectory' | 'storageClusterId' | 'analysis' | 'plugin';

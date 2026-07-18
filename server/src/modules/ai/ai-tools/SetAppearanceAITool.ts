@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -15,14 +13,6 @@ const parameters = z.object({
 
 type SetAppearanceParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Adjusts viewer appearance: point size, simulation-cell
- * visibility, and the render-quality preset. The browser handler
- * (`set_appearance.ts`) calls the editor store (`setPointSizeMultiplier`,
- * `setShowSimulationCell`, `performanceSettings.setPreset`). This server class
- * only advertises the schema (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SetAppearanceAITool extends AITool<SetAppearanceParams> {
     readonly name = 'set_appearance';
     readonly description = 'Adjust how the 3D viewer looks: point/atom size, whether the simulation cell box is '

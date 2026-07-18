@@ -1,16 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserRepository from '@modules/auth/repositories/UserRepository';
+import UserModel from '@modules/auth/models/UserModel';
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
 import type { ISocketConnectionUser } from '@modules/socket/ports/ISocketModule';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_TOKENS } from '@modules/socket/di/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -21,20 +19,13 @@ interface SocketAck<T = unknown> {
 const ackOk = <T>(data?: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
-@Singleton()
-@AliasOf(SOCKET_TOKENS.SocketModule)
-export default class TeamSubscriptionSocketModule extends BaseSocketModule {
+class TeamSubscriptionSocketModule extends BaseSocketModule {
     public readonly name = 'TeamSubscriptionSocketModule';
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator,
-        private readonly teamMemberRepository: TeamMemberRepository,
-        private readonly userRepository: UserRepository
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    #teamMemberRepository = new TeamMemberRepository();
+
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -49,7 +40,7 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return ackError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
             }
 
-            const isMember = await this.teamMemberRepository.exists({
+            const isMember = await this.#teamMemberRepository.exists({
                 user: currentUserId,
                 team: payload.teamId
             });
@@ -65,7 +56,7 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
 
             await this.repairMembershipSnapshot(conn, currentUserId, payload.teamId);
 
-            const previousTeamId = payload.previousTeamId ?? this.teamSubscriptionService.getCurrentTeamId(conn);
+            const previousTeamId = payload.previousTeamId ?? socketTeamSubscriptionCoordinator.getCurrentTeamId(conn);
             const previousRoomName = previousTeamId ? `team:${previousTeamId}` : undefined;
             const roomName = `team:${payload.teamId}`;
 
@@ -74,9 +65,9 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
             }
 
             await this.joinRoom(conn.id, roomName);
-            this.teamSubscriptionService.setCurrentTeamId(conn, payload.teamId);
+            socketTeamSubscriptionCoordinator.setCurrentTeamId(conn, payload.teamId);
 
-            await this.teamSubscriptionService.notify({
+            await socketTeamSubscriptionCoordinator.notify({
                 connection: conn,
                 subscription: {
                     teamId: payload.teamId,
@@ -90,7 +81,7 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
         });
 
         this.onDisconnect(connection.id, async (conn) => {
-            this.teamSubscriptionService.clearCurrentTeamId(conn);
+            socketTeamSubscriptionCoordinator.clearCurrentTeamId(conn);
         });
     }
 
@@ -103,7 +94,9 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
             return;
         }
 
-        await this.userRepository.addTeamToUser(userId, teamId);
+        await UserModel.findByIdAndUpdate(userId, {
+            $addToSet: { teams: teamId }
+        });
 
         const nextTeams = this.mergeTeamId(connection.user?.teams, teamId);
         const auth = connection.data.auth;
@@ -135,3 +128,7 @@ export default class TeamSubscriptionSocketModule extends BaseSocketModule {
         return Array.from(new Set([...(teams ?? []), teamId]));
     }
 }
+
+const teamSubscriptionSocketModule = new TeamSubscriptionSocketModule();
+
+export default teamSubscriptionSocketModule;

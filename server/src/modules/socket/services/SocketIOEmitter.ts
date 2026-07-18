@@ -1,24 +1,10 @@
-import { SOCKET_TOKENS } from '@modules/socket/di/SocketTokens';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { Server, Socket } from 'socket.io';
-
-import { ISocketEmitter } from '@modules/socket/ports/ISocketEmitter';
-import type { ISocketEmitterRuntime } from '@modules/socket/contracts/ISocketEmitterRuntime';
 import logger from '@shared/infrastructure/logger';
 
-/**
- * Handles all event emission through the Socket.IO server.
- */
-@Singleton()
-@AliasOf(SOCKET_TOKENS.SocketEmitter)
-export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRuntime{
+export default class SocketIOEmitter {
     private io?: Server;
     private sockets: Map<string, Socket> = new Map();
 
-    /**
-     * Initialize with the Socket.IO server instance.
-     * Called by SocketGateway after server creation.
-     */
     setServer(io: Server): void{
         this.io = io;
     }
@@ -90,3 +76,5 @@ export default class SocketIOEmitter implements ISocketEmitter, ISocketEmitterRu
         this.io.emit(event, data);
     }
 }
+
+export const socketIOEmitter = new SocketIOEmitter();

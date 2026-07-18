@@ -1,22 +1,22 @@
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
+import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
+import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import type { AnalysisStorageCleanupTarget } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import type { IStoragePlacementRepository } from '@shared/contracts/ports';
-import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
 
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
+    private readonly storagePlacementRepository = new StoragePlacementRepository();
+    private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
+
     constructor(
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        @inject(CLUSTER_SERVICE_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
-        @inject(CLUSTER_SERVICE_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
+        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {

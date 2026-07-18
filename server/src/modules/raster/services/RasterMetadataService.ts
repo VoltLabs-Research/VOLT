@@ -6,16 +6,13 @@ import type {
 import { RasterMetadataStatus } from '@shared/contracts/types/RasterMetadata';
 import { RasterStorageService } from '@modules/raster/services/RasterStorageService';
 import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@shared/application/utilities/raster-storage-paths';
-import {
-    resolveAnalysisStorageClusterId,
-    resolveTrajectoryStorageClusterId
-} from '@shared/application/utilities/cluster-location';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
+import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
+
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
 
 interface RasterFramesByTimestep {
     [timestep: number]: Set<string>;
@@ -26,28 +23,21 @@ interface ResolvedTrajectoryRasterMetadata {
     trajectory: RasterTrajectoryMetadata | null;
 }
 
-interface ITrajectoryFrameCounter {
-    countFrames(trajectoryId: string): Promise<number>;
-}
-
-@Singleton()
 export class RasterMetadataService {
     constructor(
         private readonly rasterStorage: RasterStorageService,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository) private readonly trajectoryFrameRepository: ITrajectoryFrameCounter,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository
+        private readonly analysisRepository: IAnalysisRepository
     ) {}
 
     async getRasterMetadata(trajectoryId: string, teamId: string): Promise<RasterMetadata | null> {
-        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
 
-        if (!trajectory || trajectory.props.team !== teamId) {
+        if (!trajectory || trajectory.team.toString() !== teamId) {
             throw ApplicationError.notFound('Trajectory::NotFound', 'Trajectory not found');
         }
 
-        const totalFrames = await this.trajectoryFrameRepository.countFrames(trajectoryId);
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const totalFrames = await TrajectoryFrameModel.countDocuments({ trajectoryId }).exec();
+        const storageClusterId = trajectory.storageClusterId?.toString();
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',

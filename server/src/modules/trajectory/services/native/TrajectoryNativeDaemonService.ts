@@ -1,8 +1,6 @@
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import type { FrameMetadata } from '@modules/trajectory/contracts/trajectory';
-import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/ports/native/ITrajectoryNativeDaemonService';
 import type {
     LineExportBaseOptions,
     LineStyleFilterParam,
@@ -11,9 +9,8 @@ import type {
     TrajectoryNativeObjectStreamResponse
 } from '@modules/trajectory/contracts/native';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
@@ -32,33 +29,33 @@ interface TrajectoryNativeRequest {
     timestep: string | number;
     objectKey?: string;
     ownerClusterId?: string;
-};
+}
 
 interface TrajectoryNativeModifierSource {
     analysisId?: string;
     exposureId?: string;
-};
+}
 
 interface TrajectoryNativePropertyRequest extends TrajectoryNativeRequest {
     property: string;
-};
+}
 
 interface TrajectoryNativeUniqueValuesRequest extends TrajectoryNativePropertyRequest {
     maxValues?: number;
-};
+}
 
 interface TrajectoryNativeAtomsPageRequest extends TrajectoryNativeRequest {
     page: number;
     limit: number;
     analysisId?: string;
-};
+}
 
 interface TrajectoryNativeConditionFilterPreviewRequest extends TrajectoryNativeRequest, TrajectoryNativeModifierSource {
     property: string;
     operator: string;
     value: number | string;
     externalValues?: Float32Array;
-};
+}
 type TrajectoryNativeFilterPreviewRequest = TrajectoryNativeConditionFilterPreviewRequest;
 
 interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequest, TrajectoryNativeModifierSource {
@@ -67,13 +64,13 @@ interface TrajectoryNativeColorModelRequest extends TrajectoryNativePropertyRequ
     endValue: number;
     gradient: string;
     externalValues?: Float32Array;
-};
+}
 
 interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest {
     objectKey: string;
     action: 'delete' | 'highlight';
     mask: Uint8Array;
-};
+}
 
 interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
     objectKey: string;
@@ -81,7 +78,7 @@ interface TrajectoryNativeLineModelRequest extends TrajectoryNativeRequest {
     exposureId: string;
     baseOptions?: LineExportBaseOptions;
     style?: LineStyleParams;
-};
+}
 
 interface TrajectoryNativeAtomsPageResponse {
     atoms: Array<{
@@ -96,23 +93,24 @@ interface TrajectoryNativeAtomsPageResponse {
     nativeProperties: string[];
     analysisPropertyNames?: string[];
     analysisAtoms?: Record<string, unknown>[];
-};
+}
 
 interface TrajectoryNativeFilterPreviewResponse {
     mask: Uint8Array;
     matchCount: number;
     totalAtoms: number;
-};
+}
 
-@Singleton(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
-export default class TrajectoryNativeDaemonService implements ITrajectoryNativeDaemonService {
-    constructor(
+export class TrajectoryNativeDaemonService {
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
 
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+    }
 
     async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {
         await this.teamClusterDaemonClient.command(
@@ -245,4 +243,6 @@ export default class TrajectoryNativeDaemonService implements ITrajectoryNativeD
             ownerClusterId: input.ownerClusterId
         };
     }
-};
+}
+
+export default new TrajectoryNativeDaemonService();

@@ -1,15 +1,11 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import type { IStoragePlacementRepository } from '@shared/contracts/ports';
 import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
 import type { StoragePlacementProps } from '@modules/cluster/entities/StoragePlacement';
 import storagePlacementMapper from '@modules/cluster/mappers/StoragePlacementMapper';
 import StoragePlacementModel, { StoragePlacementDocument } from '@modules/cluster/models/StoragePlacementModel';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { UpdateQuery } from 'mongoose';
 
-
-@Singleton(CLUSTER_TOKENS.StoragePlacementRepository)
 export default class StoragePlacementRepository
     extends MongooseBaseRepository<StoragePlacement, StoragePlacementProps, StoragePlacementDocument>
     implements IStoragePlacementRepository {

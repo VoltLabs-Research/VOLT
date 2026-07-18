@@ -1,5 +1,5 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { TrajectoryProps, TrajectoryStatus } from '@modules/trajectory/entities/trajectory/Trajectory';
+import { TrajectoryProps, TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 

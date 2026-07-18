@@ -1,77 +1,62 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
-import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
-import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
+import UserModel from '@modules/auth/models/UserModel';
+import TeamModel from '@modules/team/models/team/TeamModel';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
+import TeamRoleModel from '@modules/team/models/team-role/TeamRoleModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
-import type { ITeamMembershipService } from '@modules/team/ports/team/ITeamMembershipService';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import type { ITeamRoleRepository } from '@modules/team/ports/team-role/ITeamRoleRepository';
-import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
 import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 const logMembershipWarning = (context: Record<string, string>, message: string) => {
     logger.warn(context, `[TeamMembershipService] ${message}`);
 };
 
 @Singleton(TEAM_TOKENS.TeamMembershipService)
-export default class TeamMembershipService implements ITeamMembershipService {
-    constructor(
-        @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository,
-
-        @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository,
-
-        @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository,
-
-        @inject(AUTH_CONTRACT_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
-
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
-    ) {}
+export default class TeamMembershipService {
+    #users = {
+        addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }),
+        removeTeamFromUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $pull: { teams: teamId } })
+    };
+    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
     async addMemberToTeam(userId: string, teamId: string, roleName: string = SystemRoleNames.MEMBER): Promise<void> {
-        const existing = await this.teamMemberRepository.findOne({ team: teamId, user: userId });
+        const existing = await TeamMemberModel.findOne({ team: teamId, user: userId });
         if (existing) return;
-        const role = await this.teamRoleRepository.findOne({ name: roleName, team: teamId });
+        const role = await TeamRoleModel.findOne({ name: roleName, team: teamId });
         if (!role) throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Role not found');
-        await this.teamMemberRepository.create({ team: teamId, user: userId, role: role._id, joinedAt: new Date() });
-        await this.userRepository.addTeamToUser(userId, teamId);
+        await TeamMemberModel.create({ team: teamId, user: userId, role: role._id, joinedAt: new Date() });
+        await this.#users.addTeamToUser(userId, teamId);
     }
 
     async removeMemberFromTeam(memberId: string, teamId: string): Promise<void> {
-        const membership = await this.teamMemberRepository.findById(memberId);
-        const membershipUserId = typeof membership?.props.user === 'string'
-            ? membership.props.user
-            : membership?.props.user?._id;
+        const membership = await TeamMemberModel.findById(memberId);
+        const membershipUserId = membership ? String(membership.user) : undefined;
 
-        await this.teamMemberRepository.deleteById(memberId);
+        await TeamMemberModel.findByIdAndDelete(memberId);
         if (membershipUserId) {
-            await this.userRepository.removeTeamFromUser(membershipUserId, teamId);
+            await this.#users.removeTeamFromUser(membershipUserId, teamId);
         }
 
-        const membersCount = await this.teamMemberRepository.count({ team: teamId });
-        const team = await this.teamRepository.findById(teamId);
+        const membersCount = await TeamMemberModel.countDocuments({ team: teamId });
+        const team = await TeamModel.findById(teamId);
         if (!team) {
             logMembershipWarning({ teamId, memberId, code: ErrorCodes.TEAM_NOT_FOUND }, 'Team leave operation ignored');
             return;
         }
 
         if (membersCount === 0) {
-            await this.teamRepository.deleteById(team._id);
-            await this.eventBus.publish(new TeamDeletedEvent({ teamId }));
+            await TeamModel.findByIdAndDelete(team._id);
+            await this.#eventBus.publish(new TeamDeletedEvent({ teamId }));
             return;
         }
 
-        const ownerRole = await this.teamRoleRepository.findOne({
+        const ownerRole = await TeamRoleModel.findOne({
             team: team._id,
             name: 'Owner',
             isSystem: true
@@ -82,17 +67,17 @@ export default class TeamMembershipService implements ITeamMembershipService {
             return;
         }
 
-        const ownersCount = await this.teamMemberRepository.count({ role: ownerRole._id });
+        const ownersCount = await TeamMemberModel.countDocuments({ role: ownerRole._id });
         if (ownersCount !== 0) {
             return;
         }
 
-        const randomMember = await this.teamMemberRepository.findOne({ team: teamId });
+        const randomMember = await TeamMemberModel.findOne({ team: teamId });
         if (!randomMember) {
             logMembershipWarning({ teamId, memberId, code: ErrorCodes.TEAM_MEMBER_NOT_FOUND }, 'Team leave operation ignored');
             return;
         }
 
-        await this.teamMemberRepository.updateById(randomMember._id, { role: ownerRole._id });
+        await TeamMemberModel.findByIdAndUpdate(randomMember._id, { role: ownerRole._id });
     }
-};
+}

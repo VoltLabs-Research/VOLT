@@ -1,7 +1,6 @@
 import { ActivityType } from '@modules/daily-activity/models/DailyActivityModel';
 import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import { subscribeHandlerClass } from '@shared/infrastructure/events/Subscribe';
-import { injectable } from 'tsyringe';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
@@ -23,7 +22,6 @@ const registerDailyActivityLog = <TPayload extends DailyActivityPayload>({
     className,
     description
 }: DailyActivityLogOptions<TPayload>): void => {
-    @injectable()
     class DailyActivityLogHandler implements IEventHandler<IDomainEvent<TPayload>> {
         readonly #service = new DailyActivityService();
 

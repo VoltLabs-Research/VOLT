@@ -1,13 +1,5 @@
-/**
- * Neutral, cross-module SecretKey data shapes + role discriminator.
- *
- * Part of the `shared/contracts` layer (detachable-modules migration): the
- * SecretKey entity class stays in `@modules/team`, but its plain prop shapes and
- * the pure `isPopulatedSecretKeyRole` discriminator live here so neutral
- * consumers (e.g. the shared auth middleware) can read a secret key's role
- * without importing the team module's entity. The entity re-exports these, so
- * existing `@modules/team/.../SecretKey` importers compile unchanged.
- */
+import { Types } from 'mongoose';
+
 export interface PopulatedRole {
     _id: string;
     name: string;
@@ -22,12 +14,12 @@ export interface PopulatedUser {
 }
 
 export interface SecretKeyProps {
-    team: string;
-    role: string | PopulatedRole;
+    team: string | Types.ObjectId;
+    role: string | Types.ObjectId | PopulatedRole;
     name: string;
     keyPrefix: string;
     keyHash: string;
-    createdBy: string | PopulatedUser;
+    createdBy: string | Types.ObjectId | PopulatedUser;
     isActive: boolean;
     lastUsedAt?: Date;
     createdAt: Date;
@@ -35,5 +27,5 @@ export interface SecretKeyProps {
 }
 
 export const isPopulatedSecretKeyRole = (value: SecretKeyProps['role']): value is PopulatedRole => (
-    typeof value !== 'string'
+    typeof value === 'object' && !(value instanceof Types.ObjectId)
 );

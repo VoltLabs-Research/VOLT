@@ -1,4 +1,4 @@
-import { OAuthProvider } from '@modules/auth/entities/User';
+import { OAuthProvider } from '@modules/auth/models/UserModel';
 import { ErrorCodes } from '@core/constants/error-codes';
 import passport from 'passport';
 import type { NextFunction, Request, Response } from 'express';

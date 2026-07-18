@@ -1,11 +1,8 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListTrajectoryAnalysesAITool extends AITool {
     readonly name = 'list_trajectory_analyses';
     readonly description = 'List all analyses for a specific trajectory.';

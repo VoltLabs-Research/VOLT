@@ -9,23 +9,21 @@ import SceneArtifactModel, { SceneArtifactDocument } from '@modules/trajectory/m
 import CatalogFolderModel, { type CatalogFolderDocument } from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 
-import { TrajectoryStatus } from '@modules/trajectory/entities/trajectory/Trajectory';
-import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@modules/trajectory/entities/trajectory/Trajectory';
-import { createTrajectoryCloneJobProps } from '@modules/trajectory/entities/trajectory/TrajectoryCloneJob';
+import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
+import type { TrajectoryFrame, TrajectoryFrameSimulationCellEmbed } from '@shared/contracts/types/Trajectory';
+import TrajectoryCloneJobModel, { createTrajectoryCloneJobProps } from '@modules/trajectory/models/trajectory/TrajectoryCloneJobModel';
 
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
-import type { ITrajectoryCloneJobRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryCloneJobRepository';
-import type { ITrajectoryCloneRunner } from '@modules/trajectory/ports/trajectory/ITrajectoryCloneRunner';
-import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/ports/native/ITrajectoryNativeDaemonService';
-import type { ITrajectoryReader } from '@modules/trajectory/ports/trajectory/ITrajectoryReader';
-import type { ITrajectoryDumpStorageService } from '@modules/trajectory/ports/trajectory/ITrajectoryDumpStorageService';
-import type { ITeamMetricsQueryService } from '@modules/trajectory/ports/trajectory/ITeamMetricsQueryService';
-import type { IAtomPropertiesService } from '@modules/trajectory/ports/trajectory/IAtomPropertiesService';
-import type { IColorCodingService } from '@modules/trajectory/ports/color-coding/IColorCodingService';
-import type { IParticleFilterService } from '@modules/trajectory/ports/particle-filter/IParticleFilterService';
-import type { ILineStyleService, LineStyleSpec } from '@modules/trajectory/ports/line-style/ILineStyleService';
+import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
+import trajectoryReader from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
+import particleFilterService from '@modules/trajectory/services/particle-filter/ParticleFilterService';
+import lineStyleService, { type LineStyleSpec } from '@modules/trajectory/services/line-style/LineStyleService';
+import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
+import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
+import trajectoryCloneRunner from '@modules/trajectory/services/trajectory/TrajectoryCloneRunner';
 
-import TrajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
+import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
 
 import TrajectoryCreatedEvent from '@modules/trajectory/events/trajectory/TrajectoryCreatedEvent';
 import TrajectoryUpdatedEvent from '@modules/trajectory/events/trajectory/TrajectoryUpdatedEvent';
@@ -59,27 +57,27 @@ import { TeamClusterStatus } from '@shared/contracts/types';
 import type { Analysis, DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS, PLUGIN_USECASE_TOKENS, SIMULATION_CELL_CONTRACT_TOKENS } from '@shared/contracts/tokens';
+import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
+import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import type {
     IAnalysisRepository,
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService,
     IStoragePlacementService,
-    IClusterObjectSignedUrlService,
-    IClusterObjectArchiveService,
     ClusterArchiveReference,
     ClusterArchiveObjectEntry,
-    ITeamClusterRepository,
-    ISimulationCellRepository,
-    IDaemonAnalysisCompletionService,
-    IGetPluginExposureExportUseCase,
-    IGetPluginExposureGLBUseCase,
-    IGetPluginByIdUseCase,
-    IGetPluginListingDocumentsUseCase,
-    IGetSubListingUseCase,
-    IGetAnalysisFrameLogUseCase
+    IDaemonAnalysisCompletionService
 } from '@shared/contracts/ports';
+import AnalysisService from '@modules/analysis/services/AnalysisService';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
+import PluginService from '@modules/plugin/services/PluginService';
+import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
 import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
@@ -269,12 +267,6 @@ const readFilenameFromContentDisposition = (value: string | undefined): string |
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/**
- * Structural equivalent of the shared `resolveTrajectoryStorageClusterId`
- * utility, but accepting the raw Mongoose `storageClusterId` (an `ObjectId`,
- * since it's a `Relations` key on `TrajectoryDocument`/{@link TrajectoryDoc})
- * instead of the neutral string-typed contract shape.
- */
 const storageClusterIdOf = (doc: { storageClusterId?: mongoose.Types.ObjectId | string }): string | undefined => (
     doc.storageClusterId ? String(doc.storageClusterId) : undefined
 );
@@ -376,67 +368,34 @@ const mapFrameLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFram
         : undefined
 });
 
-/**
- * The single application service for the trajectory module (pollium style):
- * folds every former use-case's logic verbatim, `new`s the stateless
- * collaborators it needs, and talks to the Mongoose {@link TrajectoryModel} /
- * {@link TrajectoryFrameModel} / {@link CatalogFolderModel} /
- * {@link TrajectoryUploadSessionModel} / {@link SceneArtifactModel} directly —
- * no use-case, dto, entity or mapper layer for its OWN reads/writes. Throws
- * typed {@link ApplicationError}s (no Result channel).
- *
- * `TrajectoryRepository` / `TrajectoryFrameRepository` / `SceneArtifactRepository`
- * / `TrajectoryCloneJobRepository` remain as separate classes (unmodified) purely
- * because other modules (dashboard, jobs, raster, plugin, cluster, analysis)
- * resolve them cross-module via the neutral `COMPUTE_TOKENS`; this service does
- * NOT use them — it queries the Mongoose models directly for its own logic.
- *
- * The native daemon / atom-page reader / render (color-coding, particle-filter,
- * line-style) / dump-storage / clone-coordination services stay in their own
- * `@Singleton` classes and are resolved once from the DI container in private
- * fields, because they hold caches / daemon connections / a bootstrap-managed
- * interval timer (`TrajectoryCloneRunner`, started from `server.ts`) that must
- * be shared across HTTP, socket and event-handler entry points.
- */
 export default class TrajectoryService {
-    // Cross-cutting cross-module collaborators (contracts owned by other modules).
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
     #teamClusterDaemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
     #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #storagePlacement = diContainer.resolve<IStoragePlacementService>(COMPUTE_TOKENS.StoragePlacementService);
-    #signedUrlService = diContainer.resolve<IClusterObjectSignedUrlService>(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService);
-    #archiveService = diContainer.resolve<IClusterObjectArchiveService>(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService);
-    #teamClusterRepository = diContainer.resolve<ITeamClusterRepository>(CLUSTER_SERVICE_TOKENS.TeamClusterRepository);
-    #daemonAnalysisCompletionService = diContainer.resolve<IDaemonAnalysisCompletionService>(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService);
-    #simulationCellRepository = diContainer.resolve<ISimulationCellRepository>(SIMULATION_CELL_CONTRACT_TOKENS.SimulationCellRepository);
-    #analysisRepository = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
+    #storagePlacement = storagePlacementService;
+    #signedUrlService = new ClusterObjectSignedUrlService();
+    #archiveService = new ClusterObjectArchiveService();
+    #teamClusterRepository = new TeamClusterRepository();
+    #daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
+    #simulationCellRepository = new SimulationCellRepositoryAdapter();
+    #analysisRepository: IAnalysisRepository = new AnalysisRepository();
     #teamRepository = diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository);
     #teamMemberRepository = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
-    #getPluginExposureExportUseCase = diContainer.resolve<IGetPluginExposureExportUseCase>(PLUGIN_USECASE_TOKENS.GetPluginExposureExportUseCase);
-    #getPluginExposureGLBUseCase = diContainer.resolve<IGetPluginExposureGLBUseCase>(PLUGIN_USECASE_TOKENS.GetPluginExposureGLBUseCase);
-    #getPluginByIdUseCase = diContainer.resolve<IGetPluginByIdUseCase>(PLUGIN_USECASE_TOKENS.GetPluginByIdUseCase);
-    #getPluginListingDocumentsUseCase = diContainer.resolve<IGetPluginListingDocumentsUseCase>(PLUGIN_USECASE_TOKENS.GetPluginListingDocumentsUseCase);
-    #getSubListingUseCase = diContainer.resolve<IGetSubListingUseCase>(PLUGIN_USECASE_TOKENS.GetSubListingUseCase);
-    #getAnalysisFrameLogUseCase = diContainer.resolve<IGetAnalysisFrameLogUseCase>(COMPUTE_TOKENS.GetAnalysisFrameLogUseCase);
+    #pluginService = new PluginService();
+    #analysisService = new AnalysisService();
 
-    // Genuinely-stateful trajectory-owned singletons (native daemon connection,
-    // atom-page reader, render pipelines, dump-storage cache, clone job runner /
-    // coordinator) — kept exactly as they were, resolved once by their existing
-    // neutral tokens.
-    #nativeDaemon = diContainer.resolve<ITrajectoryNativeDaemonService>(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService);
-    #reader = diContainer.resolve<ITrajectoryReader>(TRAJECTORY_TOKENS.TrajectoryReader);
-    #colorCoding = diContainer.resolve<IColorCodingService>(TRAJECTORY_TOKENS.ColorCodingService);
-    #particleFilter = diContainer.resolve<IParticleFilterService>(TRAJECTORY_TOKENS.ParticleFilterService);
-    #lineStyle = diContainer.resolve<ILineStyleService>(TRAJECTORY_TOKENS.LineStyleService);
-    #atomProperties = diContainer.resolve<IAtomPropertiesService>(TRAJECTORY_TOKENS.AtomPropertiesService);
-    #dumpStorage = diContainer.resolve<ITrajectoryDumpStorageService>(TRAJECTORY_TOKENS.TrajectoryDumpStorageService);
-    #teamMetrics = diContainer.resolve<ITeamMetricsQueryService>(TRAJECTORY_TOKENS.TeamMetricsQueryService);
-    #cloneJobRepository = diContainer.resolve<ITrajectoryCloneJobRepository>(TRAJECTORY_TOKENS.TrajectoryCloneJobRepository);
-    #cloneCoordinator = diContainer.resolve(TrajectoryCloneCoordinator);
-    #cloneRunner = diContainer.resolve<ITrajectoryCloneRunner>(TRAJECTORY_TOKENS.TrajectoryCloneRunner);
+    #nativeDaemon = trajectoryNativeDaemonService;
+    #reader = trajectoryReader;
+    #colorCoding = colorCodingService;
+    #particleFilter = particleFilterService;
+    #lineStyle = lineStyleService;
+    #atomProperties = atomPropertiesService;
+    #dumpStorage = trajectoryDumpStorageService;
+    #teamMetrics = teamMetricsQueryService;
+    #cloneCoordinator = trajectoryCloneCoordinator;
+    #cloneRunner = trajectoryCloneRunner;
 
-    // --- Trajectory CRUD -----------------------------------------------------
 
     async createUploadSession(input: CreateTrajectoryUploadSessionInputDTO): Promise<CreateTrajectoryUploadSessionOutputDTO> {
         const { teamId, userId } = input;
@@ -874,7 +833,7 @@ export default class TrajectoryService {
 
             await this.#storagePlacement.ensurePlacement('trajectory', destinationTrajectory.id);
 
-            const job = await this.#cloneJobRepository.create(createTrajectoryCloneJobProps({
+            const job = await TrajectoryCloneJobModel.create(createTrajectoryCloneJobProps({
                 team: input.teamId,
                 sourceTrajectoryId: String(source._id),
                 destinationTrajectoryId: destinationTrajectory.id,
@@ -1100,7 +1059,6 @@ export default class TrajectoryService {
         }
     }
 
-    // --- Trajectory folders ---------------------------------------------------
 
     async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
         const page = Number(query.page) || 1;
@@ -1168,7 +1126,6 @@ export default class TrajectoryService {
         }
     }
 
-    // --- Scene artifacts -------------------------------------------------------
 
     async getSceneArtifacts(input: ListTrajectorySceneArtifactsInputDTO): Promise<PaginatedResult<unknown>> {
         return this.#listTrajectorySceneArtifacts(input);
@@ -1230,7 +1187,6 @@ export default class TrajectoryService {
         };
     }
 
-    // --- Color coding ------------------------------------------------------
 
     async getColorCodingProperties(input: GetColorCodingPropertiesInputDTO): Promise<GetColorCodingPropertiesOutputDTO> {
         return this.#runService(() => this.#colorCoding.getProperties(input.trajectoryId, input.timestep, input.analysisId));
@@ -1275,7 +1231,6 @@ export default class TrajectoryService {
         return response as GetColoredModelStreamOutputDTO & StreamableOutput;
     }
 
-    // --- Particle filter -----------------------------------------------------
 
     async getParticleFilterProperties(input: GetParticleFilterPropertiesInputDTO): Promise<GetParticleFilterPropertiesOutputDTO> {
         return this.#runService(() => this.#particleFilter.getProperties(input.trajectoryId, input.timestep, input.analysisId));
@@ -1325,7 +1280,6 @@ export default class TrajectoryService {
         });
     }
 
-    // --- Line style ----------------------------------------------------------
 
     async createLineStyledModel(input: CreateLineStyledModelInputDTO): Promise<CreateLineStyledModelOutputDTO> {
         return this.#lineStyle.createStyledModel(
@@ -1384,7 +1338,6 @@ export default class TrajectoryService {
         return { entityId, properties };
     }
 
-    // --- LOD -------------------------------------------------------------------
 
     async getOctreeMetadataStream(input: GetOctreeMetadataStreamInputDTO): Promise<StreamableOutput> {
         const response = await this.#lineStyle.getOctreeMetadataStreamResponse(
@@ -1396,7 +1349,6 @@ export default class TrajectoryService {
         return response as StreamableOutput;
     }
 
-    // --- Discover ----------------------------------------------------------
 
     async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInputDTO): Promise<ListPublicTeamTrajectoriesOutputDTO> {
         const { teamId, page = 1, limit = 20 } = input;
@@ -1444,7 +1396,6 @@ export default class TrajectoryService {
         };
     }
 
-    // --- Public canvas -------------------------------------------------------
 
     async getPublicCanvasBootstrap(input: GetPublicCanvasBootstrapInputDTO): Promise<GetPublicCanvasBootstrapOutputDTO> {
         const trajectory = await this.#assertReadable(input.trajectoryId, input.userId);
@@ -1641,7 +1592,7 @@ export default class TrajectoryService {
             throw ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, 'Plugin not found');
         }
 
-        return this.#getPluginByIdUseCase.execute({ pluginId: input.pluginId });
+        return this.#pluginService.getPluginById({ pluginId: input.pluginId });
     }
 
     async getPublicCanvasPluginListing(input: {
@@ -1671,7 +1622,7 @@ export default class TrajectoryService {
             }
         }
 
-        return this.#getPluginListingDocumentsUseCase.execute({
+        return this.#pluginService.getPluginListingDocuments({
             pluginId: input.pluginId,
             exposureName: input.exposureName,
             exposureId: input.exposureId,
@@ -1704,7 +1655,7 @@ export default class TrajectoryService {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
-        return this.#getSubListingUseCase.execute({
+        return this.#pluginService.getSubListing({
             analysisId: input.analysisId,
             exposureId: input.exposureId,
             timestep: input.timestep,
@@ -1733,7 +1684,7 @@ export default class TrajectoryService {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
-        return this.#getPluginExposureGLBUseCase.execute({
+        return this.#pluginService.getPluginExposureGLB({
             teamId: String(analysis.props.team),
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
@@ -1760,9 +1711,10 @@ export default class TrajectoryService {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_ANALYSIS_MISMATCH, 'Analysis does not belong to the requested trajectory');
         }
 
-        return this.#getAnalysisFrameLogUseCase.execute({
+        return analysisExecutionLogService.getFrameLog({
             teamId: String(analysis.props.team),
             analysisId: input.analysisId,
+            trajectoryId: input.trajectoryId,
             timestep: input.timestep,
             afterCursor: input.afterCursor
         });
@@ -1784,12 +1736,7 @@ export default class TrajectoryService {
         });
     }
 
-    // --- Internal helpers ----------------------------------------------------
 
-    /**
-     * Reproduces the old `TrajectoryReadAccessService`: loads the trajectory and
-     * asserts it is either public or the caller is a member of its team.
-     */
     async #assertReadable(trajectoryId: string, userId?: string): Promise<TrajectoryDoc> {
         const trajectory = await TrajectoryModel.findById(trajectoryId) as unknown as TrajectoryDoc | null;
 
@@ -1813,11 +1760,6 @@ export default class TrajectoryService {
         return trajectory;
     }
 
-    /**
-     * Reproduces the old `run-trajectory-service.ts` helper: normalises
-     * failures onto thrown `ApplicationError`s so callers never leak raw
-     * exceptions (the public-canvas wrappers rely on this).
-     */
     async #runService<TOutput>(executor: () => Promise<TOutput>): Promise<TOutput> {
         try {
             return await executor();
@@ -2007,7 +1949,7 @@ export default class TrajectoryService {
         let exportArtifact: DownloadStreamOutputDTO;
 
         try {
-            exportArtifact = await this.#getPluginExposureExportUseCase.execute({ analysisId: analysis._id, teamId });
+            exportArtifact = await this.#pluginService.getPluginExposureExport({ analysisId: analysis._id, teamId });
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 return null;
@@ -2038,7 +1980,7 @@ export default class TrajectoryService {
     }
 
     #toAtomsColumnarOutput(
-        atomsPage: Awaited<ReturnType<ITrajectoryReader['readPage']>>,
+        atomsPage: Awaited<ReturnType<typeof trajectoryReader.readPage>>,
         page: number,
         limitNum: number
     ): GetAtomsColumnarOutputDTO {
@@ -2259,7 +2201,6 @@ export default class TrajectoryService {
         await CatalogFolderModel.deleteOne({ _id: folderId, team: teamId, kind: CatalogFolderKind.Trajectory });
     }
 
-    // --- Frame persistence (Mongoose model directly; see class doc) ----------
 
     async #getFrames(trajectoryId: string): Promise<TrajectoryFrame[]> {
         const docs = await TrajectoryFrameModel

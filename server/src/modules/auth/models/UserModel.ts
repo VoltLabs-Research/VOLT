@@ -1,11 +1,67 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { OAuthProvider, UserRole } from '@modules/auth/entities/User';
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 import validator from 'validator';
-import type { UserProps } from '@modules/auth/entities/User';
 
-export interface UserDocument extends UserProps, Document {
+export enum OAuthProvider {
+    GitHub = 'github',
+    Microsoft = 'microsoft',
+    Google = 'google'
+}
+
+export enum UserRole {
+    Admin = 'admin',
+    User = 'user'
+}
+
+export interface SplitFullNameResult {
+    firstName: string;
+    lastName?: string;
+}
+
+export const normalizeEmail = (email: string): string => {
+    return email.trim().toLowerCase();
+};
+
+export const normalizeName = (name: string): string => {
+    return name.trim().toLowerCase();
+};
+
+export const splitFullName = (fullName: string): SplitFullNameResult => {
+    const normalizedFullName = fullName.trim().replace(/\s+/g, ' ');
+    const [firstName, ...lastNameParts] = normalizedFullName.split(' ');
+
+    const splitName: SplitFullNameResult = {
+        firstName: normalizeName(firstName)
+    };
+
+    if (lastNameParts.length > 0) {
+        splitName.lastName = normalizeName(lastNameParts.join(' '));
+    }
+
+    return splitName;
+};
+
+export interface UserMethods {
+    isPasswordChangedAfterTokenIssued(jwtTimestamp: number): boolean;
+}
+
+export interface UserDocument extends Document, UserMethods {
     _id: Types.ObjectId;
+    email: string;
+    lastLoginAt: Date;
+    lastSeenAt?: Date | null;
+    role?: UserRole;
+    passwordChangedAt?: Date;
+    teams: Types.ObjectId[];
+    analyses: Types.ObjectId[];
+    firstName: string;
+    lastName: string;
+    createdAt: Date;
+    updatedAt: Date;
+    avatar?: string;
+    password?: string;
+    oauthProvider?: OAuthProvider;
+    oauthId?: string;
 }
 
 interface OAuthProviderPartialFilterExpression {
@@ -100,6 +156,15 @@ UserSchema.index({ oauthProvider: 1, oauthId: 1 }, {
     unique: true,
     partialFilterExpression: userOAuthPartialFilterExpression
 });
+
+UserSchema.methods.isPasswordChangedAfterTokenIssued = function (jwtTimestamp: number): boolean {
+    if (this.passwordChangedAt) {
+        const changedTimestamp = Math.floor(this.passwordChangedAt.getTime() / 1000);
+        return jwtTimestamp < changedTimestamp;
+    }
+
+    return false;
+};
 
 const User: Model<UserDocument> = mongoose.model<UserDocument>('User', UserSchema);
 

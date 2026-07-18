@@ -10,9 +10,6 @@ import {
     type SocketErrorEnvelope
 } from '@modules/socket/utilities/socket-error-envelope';
 
-/**
- * Each module can hook into the lifecycle and register its own handlers.
- */
 export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;
 
@@ -22,22 +19,10 @@ export default abstract class BaseSocketModule implements ISocketModule{
         protected readonly eventRegistry: SocketIOEventRegistry
     ){}
 
-    /**
-     * Called once when the module is registered in the gateway.
-     * Override to perform initialization logic.
-     */
     onInit(): void | Promise<void>{}
 
-    /**
-     * Called per connection if the module wants to handle the socket.
-     * Override to register event handlers for the connection.
-     */
     abstract onConnection(connection: ISocketConnection): void;
 
-    /**
-     * Called during graceful shutdown.
-     * Override to cleanup resources like intervals or subscriptions.
-     */
     async onShutdown(): Promise<void>{}
 
     protected async joinRoom(socketId: string, room: string): Promise<void>{
@@ -123,9 +108,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         this.emitToRoom(room, updateEvent, users);
     }
 
-    /**
-     * Wire a subscription pattern with presence for a specific event.
-     */
     protected wirePresenceSubscription<TPayload extends Record<string, unknown>>(
         connection: ISocketConnection,
         cfg: {
@@ -154,9 +136,6 @@ export default abstract class BaseSocketModule implements ISocketModule{
         });
     }
 
-    /**
-     * Register a disconnect handler that re-broadcasts presence.
-     */
     protected wirePresenceOnDisconnect(
         connection: ISocketConnection,
         getRoomFromConnection: (conn: ISocketConnection) => string | undefined,

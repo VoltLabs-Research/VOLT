@@ -1,14 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
-import { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
+import daemonContainerRuntimeService, { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
 interface ContainerTerminalAttachPayload {
@@ -48,9 +49,7 @@ const CONTAINER_TERMINAL_EVENTS = {
     ERROR: 'container:error'
 } as const;
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class ContainerTerminalSocketModule extends BaseSocketModule {
+export class ContainerTerminalSocketModule extends BaseSocketModule {
     public readonly name = 'ContainerTerminalSocketModule';
 
     private readonly nextAttachTokenSeed = { value: 0 };
@@ -59,14 +58,16 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
     private readonly pendingSessionsByContainerKey = new Map<string, Promise<SharedTerminalSession>>();
     private readonly sharedSessionsByContainerKey = new Map<string, SharedTerminalSession>();
     private readonly socketMemberships = new Map<string, string>();
+    private readonly containerRuntimeService: DaemonContainerRuntimeService;
 
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        private readonly containerRuntimeService: DaemonContainerRuntimeService
+        containerRuntimeService: DaemonContainerRuntimeService
     ) {
         super(emitter, roomManager, eventRegistry);
+        this.containerRuntimeService = containerRuntimeService;
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -457,3 +458,10 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
         return { rows, cols };
     }
 }
+
+export default new ContainerTerminalSocketModule(
+    socketIOEmitter,
+    socketIORoomManager,
+    socketIOEventRegistry,
+    daemonContainerRuntimeService
+);

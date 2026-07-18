@@ -1,11 +1,8 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SummarizeAnalysisRunAITool extends AITool {
     readonly name = 'summarize_analysis_run';
     readonly description = 'Produce a plain-language summary of a single analysis run: plugin, config, frame progress, status, failed frames, runtime, and artifact readiness.';

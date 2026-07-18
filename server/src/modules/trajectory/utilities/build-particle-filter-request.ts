@@ -1,9 +1,9 @@
-import { ParticleFilterCombinator } from '@modules/trajectory/ports/particle-filter/IParticleFilterService';
+import { ParticleFilterCombinator } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 
 import type {
     ParticleFilterCondition,
     ParticleFilterRequest
-} from '@modules/trajectory/ports/particle-filter/IParticleFilterService';
+} from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import type { ParticleFilterConditionInput } from '@modules/trajectory/contracts/trajectory';
 
 interface ParticleFilterRequestInputLike {

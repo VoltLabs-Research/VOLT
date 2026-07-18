@@ -1,5 +1,5 @@
 import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
-import type { SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+import type { SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types/SceneArtifact';
 
 export interface SceneArtifactBatchUpsertedArtifact {
     objectName: string;

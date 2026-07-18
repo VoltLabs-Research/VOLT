@@ -1,5 +1,5 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
@@ -9,19 +9,9 @@ import { buildLatexAssetStoragePrefix, requireLatexStorageClusterId } from '@mod
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-/**
- * Cascades cleanup when a LaTeX document is deleted:
- * - Removes all asset files from object storage and purges asset metadata.
- * - Deletes all LatexFile records associated with the document.
- *
- * Uses the Mongoose models directly (the latex repository layer was removed in
- * the pollium conversion); still injects the cross-module object-gateway client.
- */
 @Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
-    constructor(
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {
         const { documentId, teamId } = event.payload;
@@ -31,7 +21,7 @@ export default class LatexDocumentDeletedEventHandler implements IEventHandler<L
         });
 
         await Promise.all([
-            this.objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, storagePrefix),
+            this.#objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.LATEX_ASSETS, storagePrefix),
             LatexAssetModel.deleteMany({ document: documentId }),
             LatexFileModel.deleteMany({ document: documentId })
         ]);

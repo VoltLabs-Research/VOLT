@@ -1,45 +1,56 @@
-import DeploymentSettings, {
-    DeploymentSettingsProps
-} from '@modules/system/entities/DeploymentSettings';
-import type { IDeploymentSettingsRepository } from '@shared/contracts/ports/IDeploymentSettingsRepository';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
-import deploymentSettingsMapper from '@modules/system/mappers/DeploymentSettingsMapper';
 import DeploymentSettingsModel, {
-    DeploymentSettingsDocument
+    DeploymentSettingsDocument,
+    DeploymentSettingsProps
 } from '@modules/system/models/DeploymentSettingsModel';
+import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+
+export interface DeploymentSettings {
+    _id: string;
+    props: DeploymentSettingsProps;
+}
+
+const toDomain = (doc: DeploymentSettingsDocument): DeploymentSettings => ({
+    _id: String(doc._id),
+    props: {
+        defaultTeam: doc.defaultTeam ? String(doc.defaultTeam) : null,
+        autoJoinNewMembers: doc.autoJoinNewMembers,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt
+    }
+});
 
 @Singleton(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository)
-export default class DeploymentSettingsRepository
-    extends MongooseBaseRepository<DeploymentSettings, DeploymentSettingsProps, DeploymentSettingsDocument>
-    implements IDeploymentSettingsRepository<DeploymentSettings, DeploymentSettingsProps> {
-
-    constructor() {
-        super(DeploymentSettingsModel, deploymentSettingsMapper);
-    }
-
+export default class DeploymentSettingsRepository {
     async getSettings(): Promise<DeploymentSettings> {
-        const doc = await this.findOne({});
-        return doc ?? new DeploymentSettings('', {
-            defaultTeam: null,
-            autoJoinNewMembers: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+        const doc = await DeploymentSettingsModel.findOne({});
+        if (!doc) {
+            return {
+                _id: '',
+                props: {
+                    defaultTeam: null,
+                    autoJoinNewMembers: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            };
+        }
+        return toDomain(doc);
     }
 
     async setDefaultTeam(teamId: string | null, autoJoinNewMembers: boolean): Promise<DeploymentSettings> {
-        const existing = await this.findOne({});
+        const existing = await DeploymentSettingsModel.findOne({});
         if (existing) {
-            return (await this.updateById(existing._id, {
-                defaultTeam: teamId,
-                autoJoinNewMembers
-            }))!;
+            existing.defaultTeam = teamId as unknown as DeploymentSettingsDocument['defaultTeam'];
+            existing.autoJoinNewMembers = autoJoinNewMembers;
+            await existing.save();
+            return toDomain(existing);
         }
-        return this.create({
+
+        const created = await DeploymentSettingsModel.create({
             defaultTeam: teamId,
             autoJoinNewMembers
         });
+        return toDomain(created);
     }
 }

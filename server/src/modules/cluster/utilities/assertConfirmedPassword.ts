@@ -1,11 +1,17 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IPasswordHasher } from '@modules/auth/ports/IPasswordHasher';
-import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
+
+interface PasswordConfirmationUserLookup {
+    findByIdWithPassword(userId: string): Promise<{ password?: string } | null>;
+}
+
+interface PasswordConfirmationHasher {
+    compare(password: string, hash: string): Promise<boolean>;
+}
 
 interface AssertConfirmedPasswordParams {
-    userRepository: IUserRepository;
-    passwordHasher: IPasswordHasher;
+    userRepository: PasswordConfirmationUserLookup;
+    passwordHasher: PasswordConfirmationHasher;
     userId: string;
     password: string;
 }

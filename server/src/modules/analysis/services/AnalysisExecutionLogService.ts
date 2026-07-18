@@ -1,16 +1,14 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import type { ITeamClusterObjectGatewayClient, ITrajectoryRepository } from '@shared/contracts/ports';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type IORedis from 'ioredis';
 import { Buffer } from 'node:buffer';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 export const ANALYSIS_LOG_SOCKET_EVENTS = {
     SUBSCRIBE: 'subscribe_to_analysis_log',
@@ -123,24 +121,24 @@ export const getAnalysisLogRoom = (analysisId: string, timestep: number): string
     return `analysis-log:${analysisId}:${timestep}`;
 };
 
-@Singleton(COMPUTE_TOKENS.AnalysisExecutionLogService)
-export default class AnalysisExecutionLogService implements IAnalysisExecutionLogService {
+class AnalysisExecutionLogService {
     private readonly mutationChains = new Map<string, Promise<void>>();
     private readonly frameStates = new Map<string, FrameLogRuntimeState>();
+    private readonly emitter: SocketIOEmitter = socketIOEmitter;
 
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-        private readonly emitter: SocketIOEmitter,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
+
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
+    }
 
     private async requireStorageClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
-        const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
-            : undefined;
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        const storageClusterId = trajectory?.storageClusterId?.toString();
 
         if (!storageClusterId) {
             throw ApplicationError.conflict(
@@ -659,3 +657,5 @@ export default class AnalysisExecutionLogService implements IAnalysisExecutionLo
         return keys;
     }
 }
+
+export default new AnalysisExecutionLogService();

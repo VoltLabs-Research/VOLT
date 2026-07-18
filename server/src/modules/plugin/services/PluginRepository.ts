@@ -1,4 +1,4 @@
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import Plugin, { PluginProps } from '@modules/plugin/entities/plugin/Plugin';
 import Workflow from '@modules/plugin/entities/plugin/workflow/Workflow';
 import PluginModel, { PluginDocument } from '@modules/plugin/models/plugin/PluginModel';
@@ -81,7 +81,7 @@ class PluginDocumentMapper extends BaseMapper<Plugin, PluginProps, PluginDocumen
  * and the debug socket module. It returns `Plugin` domain entities. Analogous to
  * container's retained `ContainerSearchRepository`.
  */
-@Singleton(PLUGIN_TOKENS.PluginRepository)
+@Singleton(COMPUTE_TOKENS.PluginRepository)
 export default class PluginRepository
     extends MongooseBaseRepository<Plugin, PluginProps, PluginDocument>
     implements IPluginRepository {

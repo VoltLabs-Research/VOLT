@@ -1,18 +1,18 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import type { AvatarResult, IAvatarService } from '@modules/auth/ports/IAvatarService';
-import type { IStorageService } from '@shared/domain/port/IStorageService';
-import { AUTH_TOKENS } from '@modules/auth/di/AuthTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import MinioStorageService from '@shared/infrastructure/services/MinioStorageService';
 import logger from '@shared/infrastructure/logger';
 import type { IdenticonOptions } from 'identicon.js';
 import Identicon from 'identicon.js';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
-import { inject } from 'tsyringe';
 
-@Singleton(AUTH_TOKENS.AvatarService)
-export default class AvatarService implements IAvatarService {
+export interface AvatarResult {
+    buffer: Buffer;
+    mimeType: string;
+    extension: string;
+}
+
+export default class AvatarService {
     private readonly AVATAR_SIZE_PX = 420;
     private readonly COMPRESSION_QUALITY_PCT = 80;
     private readonly IDENTICON_OPTS: IdenticonOptions = {
@@ -21,10 +21,7 @@ export default class AvatarService implements IAvatarService {
         margin: 0.08
     };
 
-    constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private storageService: IStorageService
-    ) {}
+    #storageService = new MinioStorageService();
 
     generateIdenticon(seed: string): AvatarResult {
         const hash = crypto.createHash('md5').update(seed).digest('hex');
@@ -41,10 +38,10 @@ export default class AvatarService implements IAvatarService {
         try {
             const { buffer, mimeType, extension } = this.generateIdenticon(seed);
             const fileName = `${id}_default.${extension}`;
-            await this.storageService.upload(SYS_BUCKETS.AVATARS, fileName, buffer, {
+            await this.#storageService.upload(SYS_BUCKETS.AVATARS, fileName, buffer, {
                 'Content-Type': mimeType
             });
-            return this.storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
+            return this.#storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
         } catch (error) {
             logger.error(`AvatarService::Default::Error generating avatar`);
             throw error;
@@ -62,10 +59,10 @@ export default class AvatarService implements IAvatarService {
                 .toBuffer();
 
             const fileName = `${id}_${Date.now()}.webp`;
-            await this.storageService.upload(SYS_BUCKETS.AVATARS, fileName, processedBuffer, {
+            await this.#storageService.upload(SYS_BUCKETS.AVATARS, fileName, processedBuffer, {
                 'Content-Type': 'image/webp'
             });
-            return this.storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
+            return this.#storageService.getPublicURL(SYS_BUCKETS.AVATARS, fileName);
         } catch (error) {
             logger.error(`AvatarService::Custom::Error uploading avatar`);
             throw error;

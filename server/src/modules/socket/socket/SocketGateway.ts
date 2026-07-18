@@ -1,16 +1,14 @@
 import { createRedisClient } from '@core/config/redis';
 import { ErrorCodes } from '@core/constants/error-codes';
-import AuthenticateSocketConnectionUseCase from '@modules/socket/use-cases/AuthenticateSocketConnectionUseCase';
+import UserModel from '@modules/auth/models/UserModel';
+import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import SessionModel from '@modules/session/models/SessionModel';
 import type { ISocketAuthenticationResult, ISocketConnectionData, ISocketConnectionUser } from '@modules/socket/ports/ISocketModule';
 import { ISocketModule } from '@modules/socket/ports/ISocketModule';
-import type { ISocketEmitterRuntime } from '@modules/socket/contracts/ISocketEmitterRuntime';
-import type { ISocketEventRegistryRuntime } from '@modules/socket/contracts/ISocketEventRegistryRuntime';
-import type { ISocketRoomManagerRuntime } from '@modules/socket/contracts/ISocketRoomManagerRuntime';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import SocketIOEmitter, { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import SocketIOEventRegistry, { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import SocketIORoomManager, { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
+import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
 import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
 import logger from '@shared/infrastructure/logger';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -34,12 +32,7 @@ interface AuthenticatedSocket extends Socket{
     user?: ISocketConnectionUser | null;
 }
 
-/**
- * Central gateway that creates and holds the Socket.IO server instance.
- * Attaches Redis adapter for multi-node setups and registers feature modules.
- */
-@Singleton()
-export default class SocketGateway{
+export class SocketGateway{
     private io?: Server;
     private adapterPub?: Redis;
     private adapterSub?: Redis;
@@ -49,25 +42,14 @@ export default class SocketGateway{
     private pingTimeout = 20_000;
     private pingInterval = 10_000;
 
+    #tokenService = new JwtTokenService();
+
     constructor(
         private socketEmitter: SocketIOEmitter,
         private socketRoomManager: SocketIORoomManager,
-        private socketEventRegistry: SocketIOEventRegistry,
-        private authenticateSocketConnectionUseCase: AuthenticateSocketConnectionUseCase,
-        private socketMapper: SocketConnectionMapper
+        private socketEventRegistry: SocketIOEventRegistry
     ){}
 
-    static inject = [
-        SocketIOEmitter,
-        SocketIORoomManager,
-        SocketIOEventRegistry,
-        AuthenticateSocketConnectionUseCase,
-        SocketConnectionMapper
-    ];
-
-    /**
-     * Register a feature module (before initialize()).
-     */
     register(module: ISocketModule): this{
         this.modules.push(module);
         return this;
@@ -103,8 +85,8 @@ export default class SocketGateway{
             requestsTimeout: 10000
         }));
 
-        this.getSocketEmitterRuntime().setServer(this.io);
-        this.getSocketRoomManagerRuntime().setServer(this.io);
+        this.socketEmitter.setServer(this.io);
+        this.socketRoomManager.setServer(this.io);
 
         this.io.use(async (socket, next) => {
             await this.authenticateSocket(socket, next);
@@ -125,27 +107,24 @@ export default class SocketGateway{
 
         socket.data = socketData;
 
-        this.getSocketEmitterRuntime().registerConnection(socket);
-        this.getSocketRoomManagerRuntime().registerConnection(socket);
-        this.getSocketEventRegistryRuntime().registerConnection(socket);
+        this.socketEmitter.registerConnection(socket);
+        this.socketRoomManager.registerConnection(socket);
+        this.socketEventRegistry.registerConnection(socket);
 
-        const connection = this.socketMapper.toDomain(socket);
+        const connection = socketConnectionMapper.toDomain(socket);
 
         for(const module of this.modules){
             module.onConnection(connection);
         }
 
         this.socketEventRegistry.onDisconnect(socket.id, () => {
-            this.getSocketEmitterRuntime().unregisterConnection(socket.id);
-            this.getSocketRoomManagerRuntime().unregisterConnection(socket.id);
-            this.getSocketEventRegistryRuntime().unregisterConnection(socket.id);
+            this.socketEmitter.unregisterConnection(socket.id);
+            this.socketRoomManager.unregisterConnection(socket.id);
+            this.socketEventRegistry.unregisterConnection(socket.id);
             logger.info(`@socket-gateway - disconnected socketId=${socket.id} traceId=${socketData.traceId}`);
         });
     }
 
-    /**
-     * Graceful shutdown.
-     */
     async close(): Promise<void>{
         try{
             await Promise.all(this.modules.map((module) => module.onShutdown()));
@@ -206,6 +185,62 @@ export default class SocketGateway{
         return this.io;
     }
 
+    private async authenticateSocketConnection(token?: string): Promise<ISocketAuthenticationResult> {
+        if (!token) {
+            return {
+                state: 'guest',
+                reason: 'missing_token'
+            };
+        }
+
+        const decoded = this.#tokenService.verify(token);
+        if (!decoded?.id) {
+            return {
+                state: 'rejected',
+                reason: 'invalid_token'
+            };
+        }
+
+        const user = await UserModel.findById(decoded.id);
+
+        if (!user) {
+            return {
+                state: 'rejected',
+                reason: 'user_not_found'
+            };
+        }
+
+        if (user.isPasswordChangedAfterTokenIssued(decoded.iat ?? 0)) {
+            return {
+                state: 'rejected',
+                reason: 'password_changed'
+            };
+        }
+
+        const session = await SessionModel.findOne({ token, isActive: true });
+        if (!session) {
+            return {
+                state: 'rejected',
+                reason: 'invalid_token'
+            };
+        }
+
+        const socketUser: ISocketConnectionUser = {
+            _id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            avatar: user.avatar,
+            teams: user.teams.map((teamId) => teamId.toString()),
+            role: user.role
+        };
+
+        return {
+            state: 'authenticated',
+            user: socketUser
+        };
+    }
+
     private async authenticateSocket(
         socket: AuthenticatedSocket,
         next: (error?: Error) => void
@@ -217,7 +252,7 @@ export default class SocketGateway{
             socketData.traceId = this.resolveSocketTraceId(socket);
             socketData.connectedAt = socketData.connectedAt ?? startedAt;
 
-            const auth = await this.authenticateSocketConnectionUseCase.execute(token);
+            const auth = await this.authenticateSocketConnection(token);
 
             socketData.auth = auth;
             socketData.authenticatedAt = Date.now();
@@ -275,10 +310,6 @@ export default class SocketGateway{
         return error;
     }
 
-    private getSocketEmitterRuntime(): ISocketEmitterRuntime {
-        return this.socketEmitter as ISocketEmitterRuntime;
-    }
-
     private getSocketConnectionData(socket: Socket): SocketConnectionRuntimeData {
         return socket.data as SocketConnectionRuntimeData;
     }
@@ -306,12 +337,8 @@ export default class SocketGateway{
 
         return randomUUID();
     }
-
-    private getSocketRoomManagerRuntime(): ISocketRoomManagerRuntime {
-        return this.socketRoomManager as ISocketRoomManagerRuntime;
-    }
-
-    private getSocketEventRegistryRuntime(): ISocketEventRegistryRuntime {
-        return this.socketEventRegistry as ISocketEventRegistryRuntime;
-    }
 }
+
+const socketGateway = new SocketGateway(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
+
+export default socketGateway;

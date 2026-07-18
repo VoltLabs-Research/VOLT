@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -12,13 +10,6 @@ const parameters = z.object({
 
 type ResetViewSettingsParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Undo/redo the last viewer change or reset all viewer settings
- * to defaults. The browser handler (`reset_view_settings.ts`) calls the editor
- * store's temporal undo/redo or `resetAll()`. This server class only advertises
- * the schema (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ResetViewSettingsAITool extends AITool<ResetViewSettingsParams> {
     readonly name = 'reset_view_settings';
     readonly description = 'Undo or redo the last viewer change, or reset every viewer setting (camera, lights, '

@@ -1,7 +1,39 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/entities/team-invitation/TeamInvitation';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
+
+export enum TeamInvitationStatus{
+    Pending = 'pending',
+    Accepted = 'accepted',
+    Rejected = 'rejected'
+}
+
+export interface TeamInvitationRef {
+    _id?: string;
+    toString?: () => string;
+}
+
+export interface TeamInvitationProps{
+    team: string;
+    invitedBy: string;
+    invitedUser: string;
+    email: string;
+    token: string;
+    role: string;
+    expiresAt: Date;
+    acceptedAt?: Date;
+    status: TeamInvitationStatus;
+}
+
+export const isTeamInvitationExpired = (invitation: Pick<TeamInvitationProps, 'expiresAt'>): boolean => {
+    return new Date() > invitation.expiresAt;
+};
+
+export const isTeamInvitationPending = (invitation: Pick<TeamInvitationProps, 'status'>): boolean => {
+    return invitation.status === TeamInvitationStatus.Pending;
+};
+
+export const normalizeInvitationEmail = (email: string): string => email.trim().toLowerCase();
 
 type TeamInvitationRelations = 'team' | 'invitedBy' | 'invitedUser' | 'role';
 

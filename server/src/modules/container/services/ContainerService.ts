@@ -1,15 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import type { IContainer } from '@modules/container/models/ContainerModel';
-import { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
-import { ContainerPublicPortAllocator } from '@modules/container/services/ContainerPublicPortAllocator';
-import { ContainerPortProxyRelayService } from '@modules/container/services/ContainerPortProxyRelayService';
+import daemonContainerRuntimeService from '@modules/container/services/DaemonContainerRuntimeService';
+import containerPublicPortAllocator from '@modules/container/services/ContainerPublicPortAllocator';
+import containerPortProxyRelayService from '@modules/container/services/ContainerPortProxyRelayService';
 import ContainerCreatedEvent from '@modules/container/events/ContainerCreatedEvent';
 import ContainerDeletedEvent from '@modules/container/events/ContainerDeletedEvent';
 import ContainerUpdatedEvent from '@modules/container/events/ContainerUpdatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
+import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import type {
     ContainerAccessiblePort
@@ -30,7 +30,6 @@ import type {
 } from '@volt/contracts/modules/container/http';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { USER_POPULATE, CLUSTER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
@@ -69,34 +68,13 @@ interface ContainerFolderView {
     updatedAt: Date;
 }
 
-/**
- * The single application service for the container module (pollium style: holds
- * ALL the container HTTP domain logic, `new`s the stateless collaborators it
- * needs, and talks to the Mongoose {@link ContainerModel} / CatalogFolderModel
- * directly — no repository, entity, mapper, use case or DI on the service
- * itself). Throws typed {@link ApplicationError}s (no Result channel) so Express
- * forwards them to the global error middleware.
- *
- * Genuinely-stateful collaborators are shared singletons resolved from the DI
- * container (documented on each field) rather than `new`ed, because their state
- * (the live relay-server pool, the port reservation set, the daemon stat caches,
- * cross-module cluster selection) must be shared with the socket module and the
- * bootstrap relay-lifecycle service.
- */
 export default class ContainerService {
-    // Shared stateful singletons — must NOT be per-instance:
-    //  - runtime: stats/processes caches + the shared daemon client (also used by the terminal socket module)
-    //  - portAllocator: in-flight public-port reservation set
-    //  - relay: the live http.Server port-proxy pool (also driven by ContainerPortRelayLifecycleService at boot)
-    //  - clusterSelection: cross-module cluster selection (trajectory/plugin/raster consume the same singleton)
-    #runtime = diContainer.resolve(DaemonContainerRuntimeService);
-    #portAllocator = diContainer.resolve(ContainerPublicPortAllocator);
-    #relay = diContainer.resolve(ContainerPortProxyRelayService);
+    #runtime = daemonContainerRuntimeService;
+    #portAllocator = containerPublicPortAllocator;
+    #relay = containerPortProxyRelayService;
     #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #systemMetrics = diContainer.resolve<ISystemMetricsRepository>(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository);
+    #systemMetrics = new SystemMetricsRedisRepository();
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-
-    // ---- Containers -------------------------------------------------------
 
     async create(teamId: string, userId: string, input: CreateContainerInput): Promise<{ container: ContainerDoc }> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;
@@ -488,7 +466,6 @@ export default class ContainerService {
         }
     }
 
-    // ---- Container folders -----------------------------------------------
 
     async listFolders(teamId: string, query: ContainerFolderQuery): Promise<PaginatedResult<ContainerFolderView>> {
         const page = Number(query.page) || 1;
@@ -556,7 +533,6 @@ export default class ContainerService {
         }
     }
 
-    // ---- Internal helpers -------------------------------------------------
 
     async #getOwnedByTeam(containerId: string, teamId: string): Promise<ContainerDoc> {
         const container = await ContainerModel.findById(containerId);
@@ -797,7 +773,6 @@ export default class ContainerService {
                     runtimeIndex.set(`${teamClusterId}:${runtimeContainer.Id}`, runtimeContainer);
                 });
             } catch {
-                // best-effort
             }
         }));
 
@@ -824,7 +799,6 @@ export default class ContainerService {
                         update.internalIp = runtimeInternalIp;
                     }
                 } catch {
-                    // best-effort
                 }
             }
 

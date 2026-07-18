@@ -8,7 +8,7 @@ import type {
 } from '@shared/contracts/ports/IContainerService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { container as diContainer } from 'tsyringe';
 
 export interface RuntimeContainerSummary {
     Id: string;
@@ -25,13 +25,6 @@ interface ReadContainerFileResponse {
 const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
 const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
 
-/**
- * Shared singleton (stateful): holds the stats/processes caches and wraps the
- * shared {@link TeamClusterDaemonClient}. The container service and the terminal
- * socket module resolve the same instance so caches and the daemon connection
- * are shared.
- */
-@Singleton()
 export class DaemonContainerRuntimeService {
     private readonly statsCache = new Map<string, {
         expiresAt: number;
@@ -44,9 +37,10 @@ export class DaemonContainerRuntimeService {
     private readonly pendingStats = new Map<string, Promise<ContainerStats>>();
     private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
 
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
-    ) {}
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
 
     async listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]> {
         return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, ChannelCommands.ContainerList);
@@ -177,3 +171,5 @@ export class DaemonContainerRuntimeService {
         this.pendingProcesses.delete(cacheKey);
     }
 }
+
+export default new DaemonContainerRuntimeService();

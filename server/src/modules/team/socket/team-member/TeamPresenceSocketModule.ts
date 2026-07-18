@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserRepository from '@modules/auth/repositories/UserRepository';
+import UserModel from '@modules/auth/models/UserModel';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/contracts/team-subscription';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
@@ -32,8 +32,6 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
 
         private readonly teamPresenceService: TeamPresenceService,
         private readonly teamRoomPresenceService: TeamRoomPresenceService,
-
-        private readonly userRepository: UserRepository,
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus,
@@ -165,7 +163,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
                 });
 
                 if (session.userWentOfflineCompletely) {
-                    await this.userRepository.updateById(session.userId, { lastSeenAt: session.endedAt });
+                    await UserModel.findByIdAndUpdate(session.userId, { lastSeenAt: session.endedAt });
                 }
             }
         }

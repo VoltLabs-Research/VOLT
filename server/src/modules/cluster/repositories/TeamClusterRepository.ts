@@ -5,11 +5,8 @@ import type {
 } from '@shared/contracts/ports';
 import teamClusterMapper from '@modules/cluster/mappers/TeamClusterMapper';
 import TeamClusterModel, { TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { FilterQuery, UpdateQuery } from 'mongoose';
-
 
 const SENSITIVE_FIELDS_SELECTION = [
     '+enrollmentTokenHash',
@@ -22,7 +19,6 @@ const SENSITIVE_FIELDS_SELECTION = [
     '+services.daemon.password'
 ].join(' ');
 
-@Singleton(CLUSTER_TOKENS.TeamClusterRepository)
 export default class TeamClusterRepository
     extends MongooseBaseRepository<TeamCluster, TeamClusterProps, TeamClusterDocument>
     implements ITeamClusterRepository {

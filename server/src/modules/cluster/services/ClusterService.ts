@@ -1,20 +1,19 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
-import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
-import type { IPasswordHasher } from '@modules/auth/ports/IPasswordHasher';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
-import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
+import UserModel from '@modules/auth/models/UserModel';
+import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemStatus } from '@modules/system/value-objects/SystemMetrics';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
-    ISceneArtifactRepository,
-    ITrajectoryRepository,
     IAnalysisRepository
 } from '@shared/contracts/ports';
+import type { TrajectoryLike } from '@shared/contracts/types';
 import {
     resolveAnalysisComputeClusterId,
-    resolveAnalysisStorageClusterId,
-    resolveTrajectoryStorageClusterId
+    resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
@@ -46,7 +45,6 @@ import { container as diContainer } from 'tsyringe';
 import type { Readable } from 'node:stream';
 import type { HydratedDocument } from 'mongoose';
 
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import TeamClusterModel, { TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
 import ClusterTransferJobModel, { ClusterTransferJobDocument } from '@modules/cluster/models/ClusterTransferJobModel';
 import teamClusterMapper from '@modules/cluster/mappers/TeamClusterMapper';
@@ -85,17 +83,17 @@ import type {
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
 
-import ClusterTransferCoordinator from '@modules/cluster/services/ClusterTransferCoordinator';
-import StoragePlacementService from '@modules/cluster/services/StoragePlacementService';
-import type ClusterTransferRunner from '@modules/cluster/services/ClusterTransferRunner';
-import type TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import type DemoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
+import clusterTransferCoordinator from '@modules/cluster/services/ClusterTransferCoordinator';
+import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import clusterTransferRunner from '@modules/cluster/services/ClusterTransferRunner';
+import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
+import demoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
 import type { DemoClusterPlaintextCredentials } from '@modules/cluster/services/DemoClusterDeploymentService';
-import type TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterCredentialsCipher';
-import type TeamClusterInstallManifestService from '@modules/cluster/services/TeamClusterInstallManifestService';
-import type TeamClusterRemoteAccessSessionService from '@modules/cluster/services/TeamClusterRemoteAccessSessionService';
-import type RemoteExplorerDaemonGateway from '@modules/cluster/services/RemoteExplorerDaemonGateway';
-import type DaemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterCredentialsCipher';
+import teamClusterInstallManifestService from '@modules/cluster/services/TeamClusterInstallManifestService';
+import teamClusterRemoteAccessSessionService from '@modules/cluster/services/TeamClusterRemoteAccessSessionService';
+import remoteExplorerDaemonGateway from '@modules/cluster/services/RemoteExplorerDaemonGateway';
+import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 
 import {
     createEnrollmentToken,
@@ -177,8 +175,6 @@ interface ClusterResourceLimitsDTO {
     status: SystemStatus | null;
     lastUpdatedAt: string | null;
 }
-
-// ---- Daemon job-completion payload shapes (folded from ProcessDaemonJobCompletionUseCase) --
 
 type RasterJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
 type GlbJobStatus = JobStatus.Running | JobStatus.Completed | JobStatus.Failed;
@@ -293,8 +289,6 @@ interface ProcessDaemonJobCompletionOutputDTO {
     acknowledged: boolean;
 }
 
-// ---- Daemon scene-artifact-upsert payload shapes (folded from ProcessDaemonSceneArtifactUpsertUseCase) --
-
 export interface ProcessDaemonSceneArtifactUpsertInputDTO {
     teamClusterId: string;
     daemonPassword: string;
@@ -334,50 +328,73 @@ interface PreparedSceneArtifactUpsertEntry {
     };
 }
 
-/**
- * The single application service for the cluster module (pollium style: holds
- * ALL the team-cluster HTTP + daemon domain logic, `new`s the stateless
- * collaborators it needs, and talks to the Mongoose {@link TeamClusterModel} /
- * {@link ClusterTransferJobModel} directly — no use case or repository on the
- * service itself). Throws typed {@link ApplicationError}s (no Result channel)
- * so Express forwards them to the global error middleware.
- *
- * Genuinely-stateful orchestration collaborators (lifecycle service, demo
- * deployment, transfer coordinator/runner, credentials cipher, install
- * manifest, remote-access session, remote-explorer daemon gateway, daemon
- * analysis completion) stay in their own `@Singleton` classes (unchanged) and
- * are resolved once per `ClusterService` instance — via their registered
- * token (typed as the concrete class, not an interface) when they are
- * registered under a distinct `Symbol` token, or by class reference when they
- * self-register (bare `@Singleton()`) — so the exact same shared instance used
- * by the socket module / lifecycle sweep is reused here, never a fresh one.
- */
 export default class ClusterService {
-    // Cross-module collaborators resolved via their neutral token.
-    #userRepository = diContainer.resolve<IUserRepository>(AUTH_CONTRACT_TOKENS.UserRepository);
-    #passwordHasher = diContainer.resolve<IPasswordHasher>(AUTH_CONTRACT_TOKENS.PasswordHasher);
-    #systemMetricsRepository = diContainer.resolve<ISystemMetricsRepository>(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository);
+    #userRepository = {
+        findById: (userId: string) => UserModel.findById(userId),
+        findByIdWithPassword: (userId: string) => UserModel.findById(userId).select('+password')
+    };
+    #passwordHasher = new BcryptPasswordHasher();
+    #systemMetricsRepository = new SystemMetricsRedisRepository();
     #teamClusterDaemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-    #analysisRepository = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
-    #trajectoryRepository = diContainer.resolve<ITrajectoryRepository>(COMPUTE_TOKENS.TrajectoryRepository);
-    #sceneArtifactRepository = diContainer.resolve<ISceneArtifactRepository>(COMPUTE_TOKENS.SceneArtifactRepository);
+    #analysisRepository: IAnalysisRepository = new AnalysisRepository();
 
-    // Cluster-owned stateful singletons — resolved by their registered token
-    // (typed as the concrete class) so the shared instance is reused, or by
-    // class reference where the class self-registers under a bare `@Singleton()`.
-    #lifecycleService = diContainer.resolve<TeamClusterLifecycleService>(CLUSTER_TOKENS.TeamClusterLifecycleService);
-    #demoDeploymentService = diContainer.resolve<DemoClusterDeploymentService>(CLUSTER_TOKENS.DemoClusterDeploymentService);
-    #credentialsCipher = diContainer.resolve<TeamClusterCredentialsCipher>(CLUSTER_TOKENS.TeamClusterCredentialsCipher);
-    #installManifestService = diContainer.resolve<TeamClusterInstallManifestService>(CLUSTER_TOKENS.TeamClusterInstallManifestService);
-    #remoteAccessSessionService = diContainer.resolve<TeamClusterRemoteAccessSessionService>(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService);
-    #remoteExplorerDaemonGateway = diContainer.resolve<RemoteExplorerDaemonGateway>(CLUSTER_TOKENS.RemoteExplorerDaemonGateway);
-    #daemonAnalysisCompletionService = diContainer.resolve<DaemonAnalysisCompletionService>(CLUSTER_TOKENS.DaemonAnalysisCompletionService);
-    #transferRunner = diContainer.resolve<ClusterTransferRunner>(CLUSTER_TOKENS.ClusterTransferRunner);
-    #transferCoordinator = diContainer.resolve(ClusterTransferCoordinator);
-    #storagePlacementService = diContainer.resolve(StoragePlacementService);
+    #toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
+        return {
+            _id: doc._id.toString(),
+            props: {
+                name: doc.name,
+                team: doc.team.toString(),
+                folder: doc.folder ? doc.folder.toString() : null,
+                storageClusterId: doc.storageClusterId?.toString(),
+                createdBy: doc.createdBy.toString(),
+                status: doc.status,
+                isPublic: doc.isPublic,
+                rasterSceneViews: doc.rasterSceneViews,
+                hasPreview: doc.hasPreview,
+                stats: doc.stats,
+                updatedAt: doc.updatedAt,
+                createdAt: doc.createdAt
+            }
+        };
+    }
 
-    // ---- Team clusters --------------------------------------------------
+    async #findTrajectoryById(trajectoryId: string): Promise<TrajectoryLike | null> {
+        const doc = await TrajectoryModel.findById(trajectoryId);
+        return doc ? this.#toTrajectoryLike(doc) : null;
+    }
+
+    async #upsertSceneArtifactsByObjectName(entries: Array<{ objectName: string; data: Record<string, unknown> }>): Promise<void> {
+        if (!entries.length) {
+            return;
+        }
+
+        const operations = entries.map((entry) => ({
+            updateOne: {
+                filter: { objectName: entry.objectName },
+                update: {
+                    $set: {
+                        ...entry.data,
+                        objectName: entry.objectName
+                    }
+                },
+                upsert: true
+            }
+        }));
+
+        await SceneArtifactModel.bulkWrite(operations, { ordered: false });
+    }
+
+    #lifecycleService = teamClusterLifecycleService;
+    #demoDeploymentService = demoClusterDeploymentService;
+    #credentialsCipher = new TeamClusterCredentialsCipher();
+    #installManifestService = teamClusterInstallManifestService;
+    #remoteAccessSessionService = teamClusterRemoteAccessSessionService;
+    #remoteExplorerDaemonGateway = remoteExplorerDaemonGateway;
+    #daemonAnalysisCompletionService = daemonAnalysisCompletionService;
+    #transferRunner = clusterTransferRunner;
+    #transferCoordinator = clusterTransferCoordinator;
+    #storagePlacementService = storagePlacementService;
 
     async create(input: { teamId: string; userId: string; name: string }): Promise<{ teamCluster: TeamClusterDTO; enrollmentToken: string }> {
         const user = await this.#userRepository.findById(input.userId);
@@ -1108,8 +1125,6 @@ export default class ClusterService {
         };
     }
 
-    // ---- Daemon-facing lifecycle -----------------------------------------
-
     async processHealthcheck(input: { teamClusterId: string; enrollmentToken: string; installedVersion?: string }): Promise<{ teamCluster: TeamClusterDTO; daemonPassword: string }> {
         try {
             return await this.#lifecycleService.processHealthcheck(input.teamClusterId, input.enrollmentToken, input.installedVersion);
@@ -1332,7 +1347,7 @@ export default class ClusterService {
     async processDaemonSceneArtifactUpsert(input: ProcessDaemonSceneArtifactUpsertInputDTO): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
         try {
             const entries = await this.#prepareSceneArtifactUpsertEntries([input]);
-            await this.#sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.#upsertSceneArtifactsByObjectName(entries);
             await this.#markAnalysisArtifactsReady(entries);
             await this.#publishSceneArtifactBatchUpserted(entries);
 
@@ -1349,7 +1364,7 @@ export default class ClusterService {
     async processDaemonSceneArtifactUpsertBatch(inputs: ProcessDaemonSceneArtifactUpsertInputDTO[]): Promise<ProcessDaemonSceneArtifactUpsertOutputDTO> {
         try {
             const entries = await this.#prepareSceneArtifactUpsertEntries(inputs);
-            await this.#sceneArtifactRepository.upsertManyByObjectName(entries);
+            await this.#upsertSceneArtifactsByObjectName(entries);
             await this.#markAnalysisArtifactsReady(entries);
             await this.#publishSceneArtifactBatchUpserted(entries);
 
@@ -1362,8 +1377,6 @@ export default class ClusterService {
             throw ApplicationError.internalServerError('Failed to process daemon scene artifact upsert batch');
         }
     }
-
-    // ---- Internal helpers -------------------------------------------------
 
     async #getOwnedTeamCluster(teamClusterId: string, teamId: string): Promise<HydratedDocument<TeamClusterDocument>> {
         const doc = await TeamClusterModel.findById(teamClusterId);
@@ -1597,8 +1610,6 @@ export default class ClusterService {
         };
     }
 
-    // ---- Daemon job-completion type guards (folded from ProcessDaemonJobCompletionUseCase) --
-
     #isAnalysisJobStatusInput(input: ProcessDaemonJobCompletionInputDTO): input is ProcessDaemonAnalysisJobStatusInputDTO {
         return 'analysisId' in input && 'name' in input && 'status' in input && !('success' in input);
     }
@@ -1663,8 +1674,6 @@ export default class ClusterService {
             || status === JobStatus.Completed
             || status === JobStatus.Failed;
     }
-
-    // ---- Daemon scene-artifact-upsert helpers (folded from ProcessDaemonSceneArtifactUpsertUseCase) --
 
     async #publishSceneArtifactBatchUpserted(entries: PreparedSceneArtifactUpsertEntry[]): Promise<void> {
         if (!entries.length) {
@@ -1797,7 +1806,7 @@ export default class ClusterService {
         const trajectoryIds = Array.from(new Set(inputs.map((input) => input.trajectory)));
         const trajectories = await Promise.all(
             trajectoryIds.map(async (trajectoryId) => {
-                const trajectory = await this.#trajectoryRepository.findById(trajectoryId);
+                const trajectory = await this.#findTrajectoryById(trajectoryId);
                 return [trajectoryId, trajectory] as const;
             })
         );
@@ -1824,7 +1833,7 @@ export default class ClusterService {
                 throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_TRAJECTORY_NOT_FOUND', 'Trajectory not found');
             }
 
-            const trajectoryStorageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+            const trajectoryStorageClusterId = trajectory.props.storageClusterId;
             if (!trajectoryStorageClusterId) {
                 throw ApplicationError.conflict('TEAM_CLUSTER_DAEMON_TRAJECTORY_STORAGE_CLUSTER_REQUIRED', 'Trajectory storage cluster is required before accepting scene artifacts');
             }
@@ -1844,7 +1853,7 @@ export default class ClusterService {
                     throw ApplicationError.notFound('TEAM_CLUSTER_DAEMON_ANALYSIS_NOT_FOUND', 'Analysis not found');
                 }
 
-                if (analysis.props.trajectory !== trajectory.id) {
+                if (analysis.props.trajectory !== trajectory._id) {
                     throw ApplicationError.badRequest('TEAM_CLUSTER_DAEMON_ANALYSIS_TRAJECTORY_MISMATCH', 'Analysis does not belong to the provided trajectory');
                 }
 
@@ -1895,7 +1904,7 @@ export default class ClusterService {
                 objectName: input.objectName,
                 teamId: trajectory.props.team,
                 data: {
-                    trajectory: trajectory.id,
+                    trajectory: trajectory._id,
                     storageClusterId: sanitizedStorageClusterId,
                     analysis: sanitizedAnalysisId,
                     plugin: sanitizedPluginId,

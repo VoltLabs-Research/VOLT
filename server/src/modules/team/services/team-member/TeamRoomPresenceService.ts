@@ -1,17 +1,12 @@
 import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-import type { ITeamRoomPresenceService } from '@modules/team/ports/team-member/ITeamRoomPresenceService';
-import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import { container as diContainer } from 'tsyringe';
 
-@Singleton(TEAM_TOKENS.TeamRoomPresenceService)
-export default class TeamRoomPresenceService implements ITeamRoomPresenceService {
-    constructor(
-        private readonly roomManager: SocketIORoomManager
-    ) {}
+export default class TeamRoomPresenceService {
+    #roomManager = diContainer.resolve(SocketIORoomManager);
 
     async getOnlineUserIds(teamId: string): Promise<string[]> {
-        const users = await this.roomManager.collectPresence(
-            this.getTeamRoomName(teamId),
+        const users = await this.#roomManager.collectPresence(
+            this.#getTeamRoomName(teamId),
             (connection) => {
                 const id = connection.user?._id ?? connection.userId ?? '';
 
@@ -32,7 +27,7 @@ export default class TeamRoomPresenceService implements ITeamRoomPresenceService
         return onlineUserIds.includes(userId);
     }
 
-    private getTeamRoomName(teamId: string): string {
+    #getTeamRoomName(teamId: string): string {
         return `team:${teamId}`;
     }
 }

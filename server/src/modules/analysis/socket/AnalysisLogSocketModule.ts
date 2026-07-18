@@ -1,8 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { IAnalysisRepository } from '@modules/analysis/ports/IAnalysisRepository';
-import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
+import type AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import {
+import analysisExecutionLogService, {
     ANALYSIS_LOG_SOCKET_EVENTS,
     getAnalysisLogRoom,
     type AnalysisLogChunkEventPayload
@@ -38,8 +37,7 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
         private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: IAnalysisRepository,
-        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService
+        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: AnalysisRepository
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -73,7 +71,7 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const replay = await this.analysisExecutionLogService.getFrameLog({
+            const replay = await analysisExecutionLogService.getFrameLog({
                 analysisId: payload.analysisId,
                 teamId: currentTeamId,
                 trajectoryId: analysis.props.trajectory,

@@ -3,17 +3,12 @@ import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflo
 import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
 import { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IClusterObjectArchiveService,
     IClusterObjectSignedUrlService,
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -95,18 +90,13 @@ const normalizeBinaryFileName = (fileName: string): string => {
     return normalized.length > 0 ? normalized : 'binary';
 };
 
-@Singleton(PLUGIN_TOKENS.PluginStorageService)
 export default class PluginStorageService {
     constructor(
         private pluginRepo: PluginRepository,
-        @inject(COMPUTE_TOKENS.StoragePlacementService)
         private readonly storagePlacementService: IStoragePlacementService,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
         private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         private readonly workflowValidator: WorkflowValidatorService,
-        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService)
         private readonly signedUrlService: IClusterObjectSignedUrlService,
-        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 

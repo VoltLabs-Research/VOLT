@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const configureColorCodingParams = z.object({
@@ -11,16 +9,6 @@ const configureColorCodingParams = z.object({
     max: z.number().optional().describe('Maximum value for the color scale. Omit to auto-scale.')
 });
 
-/**
- * CLIENT-EXECUTED. Pushes a color-coding modifier to the instant-modifier-stack.
- * The browser handler (`configure_color_coding.ts`) modifies the viewer store.
- * This server class only advertises the schema.
- *
- * NOTE: Depends on the instant-modifier-stack (Surface A) from workstream 00.
- * Until that primitive exists, the client handler returns a no-op-until-available
- * guard.
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ConfigureColorCodingAITool extends AITool<z.infer<typeof configureColorCodingParams>> {
     readonly name = 'configure_color_coding';
     readonly description = 'Apply a color-coding modifier to the 3D viewer: color atoms by a per-atom property '
@@ -37,12 +25,6 @@ const pushExpressionSelectParams = z.object({
     description: z.string().optional().describe('Human-readable label for this selection.')
 });
 
-/**
- * CLIENT-EXECUTED. Pushes an expression-select modifier that highlights atoms
- * matching the formula. Depends on workstream 01 expression engine.
- * Client handler returns a no-op-until-available guard if expression engine is absent.
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class PushExpressionSelectAITool extends AITool<z.infer<typeof pushExpressionSelectParams>> {
     readonly name = 'push_expression_select';
     readonly description = 'Highlight atoms matching a boolean formula over per-atom properties. '
@@ -58,12 +40,6 @@ const launchGrainSegmentationParams = z.object({
     frame: z.number().int().min(0).optional().describe('Frame index to analyze. Defaults to current frame.')
 });
 
-/**
- * NOT client-executed. Pre-fills the analysis submission modal with the
- * grain-segmentation plugin + threshold and queues the job.
- * CLIENT-EXECUTED for the UI pre-fill step; server returns jobId for async tracking.
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class LaunchGrainSegmentationAITool extends AITool<z.infer<typeof launchGrainSegmentationParams>> {
     readonly name = 'launch_grain_segmentation_analysis';
     readonly description = 'Queue a grain-segmentation analysis with the given dislocation-density threshold. '

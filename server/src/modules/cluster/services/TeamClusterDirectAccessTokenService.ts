@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { Secret, SignOptions } from 'jsonwebtoken';
 import type {
     DirectAccessRequesterKind,
@@ -11,7 +10,6 @@ const SIGN_OPTIONS: SignOptions = {
     algorithm: 'HS256'
 };
 
-@Singleton()
 export default class TeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
         return jwt.sign(claims, secret as Secret, SIGN_OPTIONS);

@@ -5,7 +5,7 @@ import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/htt
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
 import AuthService from '@modules/auth/services/AuthService';
-import { OAuthProvider } from '@modules/auth/entities/User';
+import { OAuthProvider } from '@modules/auth/models/UserModel';
 import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/oauth/route-helpers';
 import avatarUpload from '@modules/auth/middlewares/avatar-upload';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
@@ -38,20 +38,6 @@ const appendQueryParameter = (url: string, key: string, value: string): string =
     return `${baseUrl}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${hash}`;
 };
 
-/**
- * The single HTTP controller for the auth module (pollium/container style):
- * every JSON route is bound with `@Route(authRoutes.x)` and delegates to an
- * {@link AuthService} the controller `new`s itself. Unlike the container
- * controller there is NO class-level `@Middleware(protect)`: the public
- * endpoints (sign in / sign up / local sign in / email availability / oauth
- * providers / guest identity) must stay unauthenticated, so `protect` (and the
- * rate limiters / avatar upload) is attached per-method via `@Middleware(...)`.
- *
- * `buildRouter()` is overridden to append the passport OAuth login/callback
- * redirect routes, which carry no JSON contract and so cannot be expressed as
- * `@Route` endpoints. The router is mounted directly (contract paths are
- * absolute) in `mount-http-routes`.
- */
 export default class AuthController extends Controller {
     #service = new AuthService();
 
@@ -125,16 +111,9 @@ export default class AuthController extends Controller {
     @Middleware(protect)
     @Status(204)
     async deleteMyAccount(@CurrentUser() userId: string): Promise<void> {
-        // Preserves the previous controller's NoContent behaviour: empty body.
         await this.#service.deleteAccount(userId);
     }
 
-    /**
-     * Passport OAuth callback terminator: on success redirect to the frontend
-     * with the issued token, otherwise redirect to the sign-in page with the
-     * canonical error code/message. Written manually (no JSON contract) and
-     * appended to the router in {@link buildRouter}.
-     */
     #oauthLoginCallback: RequestHandler = (req: AuthenticatedRequest, res: Response): void => {
         if (!req.token) {
             const errorCode = req.oauthErrorCode || ErrorCodes.OAUTH_STRATEGY_ERROR;
@@ -162,9 +141,6 @@ export default class AuthController extends Controller {
     override buildRouter(): Router {
         const router = super.buildRouter();
 
-        // Browser-redirect OAuth routes (passport). No JSON contract, so they
-        // are attached here rather than via `@Route`. Paths are absolute to match
-        // the previous `/api/auth` base path.
         router.get('/api/auth/github', createOAuthLoginRoute(OAuthProvider.GitHub, ['user:email']));
         router.get('/api/auth/github/callback', createOAuthCallbackMiddleware(OAuthProvider.GitHub), this.#oauthLoginCallback);
         router.get('/api/auth/google', createOAuthLoginRoute(OAuthProvider.Google, ['profile', 'email']));

@@ -1,23 +1,37 @@
 import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type { IMemberContentCounter, MemberContentCountResult, ITrajectoryRepository } from '@shared/contracts/ports';
+import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
 
-/**
- * Contributes the per-member `trajectoriesCount` to the team-member listing via
- * the neutral MEMBER_CONTENT_COUNTER collection (detachable-modules migration).
- * Team no longer injects the trajectory repository directly; disabling trajectory
- * drops this counter and the metric is treated as 0.
- */
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+
+interface GroupedCountResult {
+    _id: { toString(): string };
+    count: number;
+}
+
 @CollectionMember(MEMBER_CONTENT_COUNTER_TOKEN)
 export class TrajectoryMemberContentCounter implements IMemberContentCounter {
-    constructor(
-        @inject(COMPUTE_TOKENS.TrajectoryRepository) private readonly trajectoryRepository: ITrajectoryRepository
-    ) {}
-
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
-        const counts = await this.trajectoryRepository.countGroupedBy('createdBy', userIds, { team: teamId });
+        const results = await TrajectoryModel.aggregate<GroupedCountResult>([
+            {
+                $match: {
+                    team: teamId,
+                    createdBy: { $in: userIds }
+                }
+            },
+            {
+                $group: {
+                    _id: '$createdBy',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const counts = new Map<string, number>();
+        for (const row of results) {
+            counts.set(row._id.toString(), row.count);
+        }
+
         return { key: 'trajectoriesCount', counts };
     }
 }

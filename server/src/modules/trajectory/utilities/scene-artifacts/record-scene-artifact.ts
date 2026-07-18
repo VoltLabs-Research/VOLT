@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
-import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
-import type { ISceneArtifactRepository } from '@modules/trajectory/ports/scene-artifacts/ISceneArtifactRepository';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import type { SceneArtifactParams, SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types/SceneArtifact';
 
 interface RecordSceneArtifactInput {
     objectName: string;
@@ -18,10 +18,7 @@ interface RecordSceneArtifactInput {
     storageBucket?: string;
 }
 
-export const recordSceneArtifact = async (
-    sceneArtifactRepository: ISceneArtifactRepository,
-    input: RecordSceneArtifactInput
-): Promise<void> => {
+export const recordSceneArtifact = async (input: RecordSceneArtifactInput): Promise<void> => {
     const {
         objectName,
         trajectory,
@@ -37,18 +34,28 @@ export const recordSceneArtifact = async (
         storageBucket = TEAM_CLUSTER_BUCKETS.MODELS
     } = input;
 
-    await sceneArtifactRepository.upsertByObjectName(objectName, {
-        trajectory,
-        storageClusterId,
-        analysis,
-        plugin,
-        sourceType,
-        timestep,
-        objectName,
-        storageBucket,
-        params,
-        displayName,
-        status,
-        metadata
-    });
+    await SceneArtifactModel.findOneAndUpdate(
+        { objectName },
+        {
+            $set: {
+                trajectory,
+                storageClusterId,
+                analysis,
+                plugin,
+                sourceType,
+                timestep,
+                objectName,
+                storageBucket,
+                params,
+                displayName,
+                status,
+                metadata
+            }
+        },
+        {
+            upsert: true,
+            new: true,
+            setDefaultsOnInsert: true
+        }
+    ).exec();
 };

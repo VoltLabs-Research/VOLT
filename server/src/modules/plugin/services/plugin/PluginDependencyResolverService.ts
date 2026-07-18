@@ -5,10 +5,8 @@ import type {
 } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
 import { ArgumentType } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
 import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
 interface PluginDependencyTraversalResult {
@@ -312,7 +310,6 @@ const collectArgumentPluginReferenceValidationTargets = (
     }
 };
 
-@Singleton(PLUGIN_TOKENS.PluginDependencyResolverService)
 export class PluginDependencyResolverService {
     constructor(
         private readonly pluginRepository: PluginRepository

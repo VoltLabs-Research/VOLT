@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
 import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
-import type { IUserRepository } from '@modules/auth/ports/IUserRepository';
+import UserModel from '@modules/auth/models/UserModel';
 import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
 import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
 import type { ITeamRoleRepository } from '@modules/team/ports/team-role/ITeamRoleRepository';
@@ -23,7 +23,6 @@ import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { IDeploymentSettingsRepository } from '@shared/contracts/ports';
 import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens';
-import { AUTH_CONTRACT_TOKENS } from '@shared/contracts/tokens/AuthTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { container as diContainer } from 'tsyringe';
 import type {
@@ -69,7 +68,7 @@ export default class TeamService {
     #members = diContainer.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository);
     #roles = diContainer.resolve<ITeamRoleRepository>(TEAM_TOKENS.TeamRoleRepository);
     #membership = diContainer.resolve<ITeamMembershipService>(TEAM_TOKENS.TeamMembershipService);
-    #users = diContainer.resolve<IUserRepository>(AUTH_CONTRACT_TOKENS.UserRepository);
+    #users = { addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }) };
     #deploymentSettings = diContainer.resolve<IDeploymentSettingsRepository>(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 

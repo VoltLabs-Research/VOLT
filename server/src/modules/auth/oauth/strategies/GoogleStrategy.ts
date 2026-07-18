@@ -1,4 +1,4 @@
-import { OAuthProvider } from '@modules/auth/entities/User';
+import { OAuthProvider } from '@modules/auth/models/UserModel';
 import type AuthService from '@modules/auth/services/AuthService';
 import BaseOAuthStrategy from '@modules/auth/oauth/BaseOAuthStrategy';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';

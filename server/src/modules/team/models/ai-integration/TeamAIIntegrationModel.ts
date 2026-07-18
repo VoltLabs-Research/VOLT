@@ -1,6 +1,100 @@
-import type { TeamAIIntegrationProps } from '@modules/team/entities/ai-integration/TeamAIIntegration';
+import type { AIProvider } from '@shared/contracts/types/AIProviders';
 import type { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
+
+export type TeamAIProvider = AIProvider;
+
+export interface EnabledModel {
+    id: string;
+    name: string;
+}
+
+type TeamAIIntegrationRef = string | mongoose.Types.ObjectId | { _id?: unknown; toString?: () => string };
+
+export interface TeamAIIntegrationProps {
+    team: string | mongoose.Types.ObjectId;
+    provider: TeamAIProvider;
+    encryptedApiKey: string;
+    isEnabled: boolean;
+    defaultModel?: string;
+    enabledModels?: EnabledModel[];
+    metadata?: Record<string, unknown>;
+    createdBy: TeamAIIntegrationRef;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const getTeamAIIntegrationRefId = (value: TeamAIIntegrationRef): string => {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value instanceof mongoose.Types.ObjectId) {
+        return value.toString();
+    }
+
+    if (typeof value._id === 'string') {
+        return value._id;
+    }
+
+    return value.toString?.() ?? '';
+};
+
+export const getTeamAIIntegrationTeamId = (integration: Pick<TeamAIIntegrationProps, 'team'>): string => (
+    getTeamAIIntegrationRefId(integration.team)
+);
+
+export const getTeamAIIntegrationCreatedById = (integration: Pick<TeamAIIntegrationProps, 'createdBy'>): string => (
+    getTeamAIIntegrationRefId(integration.createdBy)
+);
+
+const deduplicateEnabledModels = (models: EnabledModel[]): EnabledModel[] => (
+    [...new Map(models.map((model) => [model.id, model])).values()]
+);
+
+export const buildTeamAIIntegrationCreatePayload = (input: {
+    teamId: string;
+    provider: TeamAIProvider;
+    encryptedApiKey: string;
+    isEnabled: boolean;
+    defaultModel: string;
+    enabledModels: EnabledModel[];
+    metadata?: Record<string, unknown>;
+    userId: string;
+    now?: Date;
+}): Partial<TeamAIIntegrationProps> => {
+    const now = input.now ?? new Date();
+
+    return {
+        team: input.teamId,
+        provider: input.provider,
+        encryptedApiKey: input.encryptedApiKey,
+        isEnabled: input.isEnabled,
+        defaultModel: input.defaultModel,
+        enabledModels: deduplicateEnabledModels(input.enabledModels),
+        metadata: input.metadata,
+        createdBy: input.userId,
+        createdAt: now,
+        updatedAt: now
+    };
+};
+
+export const buildTeamAIIntegrationUpdatePayload = (input: {
+    encryptedApiKey: string;
+    isEnabled: boolean;
+    defaultModel: string;
+    enabledModels: EnabledModel[];
+    metadata?: Record<string, unknown>;
+    now?: Date;
+}): Partial<TeamAIIntegrationProps> => {
+    return {
+        encryptedApiKey: input.encryptedApiKey,
+        isEnabled: input.isEnabled,
+        defaultModel: input.defaultModel,
+        enabledModels: deduplicateEnabledModels(input.enabledModels),
+        metadata: input.metadata,
+        updatedAt: input.now ?? new Date()
+    };
+};
 
 type TeamAIIntegrationRelations = 'team' | 'createdBy';
 

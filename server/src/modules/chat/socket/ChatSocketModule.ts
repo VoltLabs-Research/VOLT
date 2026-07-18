@@ -1,14 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ChatService from '@modules/chat/services/ChatService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
 const SOCKET_CHAT_EVENTS = {
     JOIN_CHAT: 'join_chat',
@@ -39,20 +40,20 @@ interface UsersPresencePayload {
 const ackOk = <T>(data?: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class ChatSocketModule extends BaseSocketModule {
+export class ChatSocketModule extends BaseSocketModule {
     public readonly name = 'ChatSocketModule';
 
     #service = new ChatService();
+    private readonly teamRoomPresenceService: TeamRoomPresenceService;
 
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        private readonly teamRoomPresenceService: TeamRoomPresenceService
+        teamRoomPresenceService: TeamRoomPresenceService
     ) {
         super(emitter, roomManager, eventRegistry);
+        this.teamRoomPresenceService = teamRoomPresenceService;
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -243,3 +244,10 @@ export default class ChatSocketModule extends BaseSocketModule {
         return ackError(error.message);
     }
 }
+
+export default new ChatSocketModule(
+    socketIOEmitter,
+    socketIORoomManager,
+    socketIOEventRegistry,
+    new TeamRoomPresenceService()
+);

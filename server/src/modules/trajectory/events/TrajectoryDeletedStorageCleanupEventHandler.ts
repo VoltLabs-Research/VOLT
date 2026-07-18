@@ -1,7 +1,8 @@
-import type { IStoragePlacementRepository, IClusterTransferJobRepository, ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import { inject } from 'tsyringe';
+import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
+import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
 import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
@@ -11,10 +12,11 @@ import logger from '@shared/infrastructure/logger';
 
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
+    private readonly storagePlacementRepository = new StoragePlacementRepository();
+    private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
+
     constructor(
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        @inject(CLUSTER_SERVICE_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
-        @inject(CLUSTER_SERVICE_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository
+        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
     ) {}
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {

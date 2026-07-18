@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import analysisExecutionLogServiceInstance from '@modules/analysis/services/AnalysisExecutionLogService';
 import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
 import type { IPluginDebugSessionRegistryService } from '@shared/contracts/ports';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
@@ -18,12 +18,11 @@ import ClusterService, {
 } from '@modules/cluster/services/ClusterService';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
-import TeamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
-import TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import TeamClusterReverseChannelService, {
+import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
+import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
+import teamClusterReverseChannelService, {
     type TeamClusterDaemonInboundStreamPayload
 } from '@modules/cluster/services/TeamClusterReverseChannelService';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
@@ -47,16 +46,9 @@ import type ApplicationError from '@shared/application/errors/ApplicationError';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { inject } from 'tsyringe';
+import { inject, container } from 'tsyringe';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
 
-/**
- * Minimal local view of the analysis execution-log service. The concrete
- * `AnalysisExecutionLogService` lives in the analysis module and is registered
- * under `COMPUTE_TOKENS.AnalysisExecutionLogService`; we inject by token against
- * this structural interface to avoid importing the concrete class. (No port type
- * contract exists for it yet — FOLLOW-UP.)
- */
 interface DaemonAppendFrameSegmentsService {
     appendFrameSegments(input: {
         analysisId: string;
@@ -143,20 +135,19 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
     private readonly clusterService = new ClusterService();
+    private readonly teamClusterHeartbeatMonitor = teamClusterHeartbeatMonitor;
+    private readonly teamClusterLifecycleService = teamClusterLifecycleService;
+    private readonly teamClusterReverseChannelService = teamClusterReverseChannelService;
+    private readonly teamClusterRepository = new TeamClusterRepository();
+    private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService = analysisExecutionLogServiceInstance;
+    private readonly pluginDebugSessionRegistry = container.resolve<IPluginDebugSessionRegistryService>(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService);
+    private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
+    private readonly provenanceService = new ProvenanceService();
 
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly teamClusterHeartbeatMonitor: TeamClusterHeartbeatMonitor,
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-        @inject(CLUSTER_TOKENS.TeamClusterReverseChannelService)
-        private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
-        private readonly teamClusterRepository: TeamClusterRepository,
-        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService,
-        @inject(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService) private readonly pluginDebugSessionRegistry: IPluginDebugSessionRegistryService,
-        private readonly systemMetricsRepository: SystemMetricsRedisRepository,
-        private readonly provenanceService: ProvenanceService
+        eventRegistry: SocketIOEventRegistry
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -314,7 +305,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         this.daemonStreamUnsubscribeFns.push(
             this.teamClusterReverseChannelService.registerInboundStreamConsumer(
                 TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk,
-                (message) => {
+                (message: TeamClusterDaemonInboundStreamPayload) => {
                     void this.handleAnalysisLogChunkStream(message);
                 }
             )
@@ -323,7 +314,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         this.daemonStreamUnsubscribeFns.push(
             this.teamClusterReverseChannelService.registerInboundStreamConsumer(
                 TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk,
-                (message) => {
+                (message: TeamClusterDaemonInboundStreamPayload) => {
                     void this.handleDebugLogChunkStream(message);
                 }
             )
@@ -332,7 +323,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         this.daemonStreamUnsubscribeFns.push(
             this.teamClusterReverseChannelService.registerInboundStreamConsumer(
                 TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch,
-                (message) => {
+                (message: TeamClusterDaemonInboundStreamPayload) => {
                     void this.handleSceneArtifactUpsertBatchStream(message);
                 }
             )

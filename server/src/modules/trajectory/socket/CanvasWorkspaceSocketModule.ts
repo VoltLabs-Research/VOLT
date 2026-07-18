@@ -1,16 +1,12 @@
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import type { ICanvasWorkspaceRealtimeStateService } from '@modules/trajectory/ports/canvas/ICanvasWorkspaceRealtimeStateService';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import canvasWorkspaceRealtimeStateService from '@modules/trajectory/services/canvas/CanvasWorkspaceRealtimeStateService';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 
 interface TrajectoryRoomPayload {
     trajectoryId: string;
@@ -50,19 +46,13 @@ interface ConnectionContext {
 const LOBBY_PREFIX = 'trajectory-canvas-lobby';
 const WORKSPACE_PREFIX = 'trajectory-canvas-workspace';
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
+export class CanvasWorkspaceSocketModule extends BaseSocketModule {
     public readonly name = 'CanvasWorkspaceSocketModule';
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        @inject(TRAJECTORY_TOKENS.CanvasWorkspaceRealtimeStateService)
-        private readonly realtimeState: ICanvasWorkspaceRealtimeStateService
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    private readonly realtimeState = canvasWorkspaceRealtimeStateService;
+
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -364,3 +354,5 @@ export default class CanvasWorkspaceSocketModule extends BaseSocketModule {
         isAnonymous: !connection.user
     });
 }
+
+export default new CanvasWorkspaceSocketModule();

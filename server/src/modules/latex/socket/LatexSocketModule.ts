@@ -2,12 +2,13 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import LatexService from '@modules/latex/services/LatexService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import type {
     LatexCloseDocumentPayload,
@@ -19,30 +20,14 @@ import type {
 } from './LatexSocketPayloads';
 import * as Y from 'yjs';
 
-/** Debounce in ms before persisting a received content update to the database. */
 const PERSIST_DEBOUNCE_MS = 500;
 
-/** Key used to uniquely identify a pending save timer for a document file. */
 const buildSaveKey = (documentId: string, fileId: string): string => `${documentId}:${fileId}`;
 const LATEX_Y_TEXT_NAME = 'content';
 const SERVER_INIT_ORIGIN = 'server:init';
 
-/**
- * `conn.data` key holding the Set of file-session keys (`{documentId}:{fileId}`)
- * a socket has joined. socket.io empties `socket.rooms` (via `leaveAll()`) BEFORE
- * the `disconnect` event fires, so the joined file rooms cannot be recovered from
- * the room manager at disconnect time and must be tracked explicitly here — this
- * lets an unclean disconnect release the live Y.Doc sessions it left behind.
- */
 const JOINED_FILE_KEYS = 'latexJoinedFileKeys';
 
-/**
- * Origin marker for AI-authored edits applied server-side. Deliberately a
- * Symbol (a NON-string origin): the doc `update` handler routes string origins
- * through `emitToRoomExcept` (assumed to be a sender socket id, a no-op for a
- * non-socket string), whereas a non-string origin broadcasts to ALL editors in
- * the file room via `emitToRoom` — which is what an AI edit needs.
- */
 const AI_ORIGIN: unique symbol = Symbol('latex:ai');
 
 interface TextSplice {
@@ -51,11 +36,6 @@ interface TextSplice {
     insertText: string;
 }
 
-/**
- * Minimal common-prefix/suffix splice between two strings (mirrors the client's
- * `computeTextSplice`). Applying the AI edit as a small Yjs delta — rather than
- * replacing the whole text — keeps collaborators' cursors and selections stable.
- */
 const computeTextSplice = (currentText: string, nextText: string): TextSplice => {
     let prefixLength = 0;
     const minLength = Math.min(currentText.length, nextText.length);
@@ -109,12 +89,9 @@ interface LatexFileJoinAck {
 const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class LatexSocketModule extends BaseSocketModule {
+export class LatexSocketModule extends BaseSocketModule {
     public readonly name = 'LatexSocketModule';
 
-    /** Pending auto-save timers keyed by `{documentId}` or `{documentId}:{fileId}`. */
     private readonly saveTimers = new Map<string, NodeJS.Timeout>();
 
     private readonly fileSessions = new Map<string, LatexFileSession>();
@@ -161,18 +138,6 @@ export default class LatexSocketModule extends BaseSocketModule {
         this.fileSessions.clear();
     }
 
-    /**
-     * Applies an AI-authored full-content edit into the LIVE Yjs session for a
-     * file so that open editors merge it in real time. Content is persisted to
-     * Mongo separately by the AI use-case (and this method skips the redundant
-     * auto-save via the AI_ORIGIN guard in the doc `update` handler).
-     *
-     * Best-effort live delivery: if no editor currently has the file open there
-     * is no in-memory session, and we do nothing — the next time someone opens
-     * the file it loads the already-persisted content fresh. We do NOT spin up a
-     * standalone session just to broadcast to an empty room (that would leak a
-     * Y.Doc with no `latex_file_leave` to release it).
-     */
     public async applyAiContentToFile(
         documentId: string,
         teamId: string,
@@ -364,13 +329,6 @@ export default class LatexSocketModule extends BaseSocketModule {
         });
     }
 
-    /**
-     * On an unclean disconnect (tab close / navigation / crash) the client never
-     * emits `latex_file_leave`, so without this the socket's live Y.Doc sessions
-     * would leak forever. socket.io has already emptied `socket.rooms` by the time
-     * this fires, so we replay the file keys tracked on `conn.data` and release
-     * each idle session (no-op if other sockets still hold the file room open).
-     */
     private registerDisconnect(connection: ISocketConnection): void {
         this.onDisconnect(connection.id, async (conn) => {
             const joinedKeys = conn.data[JOINED_FILE_KEYS] as Set<string> | undefined;
@@ -500,11 +458,6 @@ export default class LatexSocketModule extends BaseSocketModule {
         this.fileSessions.delete(key);
     }
 
-    /**
-     * Debounced persist: only writes to DB once activity stops for PERSIST_DEBOUNCE_MS.
-     * Keyed by `{documentId}:{fileId}` when a file is specified, so concurrent edits
-     * to different files in the same document do not cancel each other's timers.
-     */
     private schedulePersist(documentId: string, teamId: string, fileId: string, content: string): void {
         const saveKey = buildSaveKey(documentId, fileId);
         const existing = this.saveTimers.get(saveKey);
@@ -559,3 +512,9 @@ export default class LatexSocketModule extends BaseSocketModule {
         isAnonymous: !connection.user
     });
 }
+
+export default new LatexSocketModule(
+    socketIOEmitter,
+    socketIORoomManager,
+    socketIOEventRegistry
+);

@@ -1,10 +1,6 @@
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import type { ITeamClusterRepository } from '@shared/contracts/ports';
-import type { IContainerDeploymentProgressService } from '@shared/contracts/ports';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import { CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens/ContainerTokens';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 
 export interface ContainerDeploymentProgressPayload {
     operationId: string;
@@ -18,12 +14,11 @@ export interface ContainerDeploymentProgressPayload {
     timestamp: string;
 }
 
-@Singleton()
-@AliasOf(CONTAINER_CONTRACT_TOKENS.ContainerDeploymentProgressService)
-export class ContainerDeploymentProgressService implements IContainerDeploymentProgressService {
+export class ContainerDeploymentProgressService {
+    private readonly teamClusterRepository = new TeamClusterRepository();
+
     constructor(
-        private readonly socketEmitter: SocketIOEmitter,
-        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository
+        private readonly socketEmitter: SocketIOEmitter
     ) {}
 
     async emitToTeam(input: Omit<ContainerDeploymentProgressPayload, 'teamId'>): Promise<void> {
@@ -38,3 +33,5 @@ export class ContainerDeploymentProgressService implements IContainerDeploymentP
         } satisfies ContainerDeploymentProgressPayload);
     }
 }
+
+export default new ContainerDeploymentProgressService(socketIOEmitter);

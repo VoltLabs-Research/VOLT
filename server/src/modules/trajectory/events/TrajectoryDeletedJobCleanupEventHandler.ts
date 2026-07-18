@@ -1,18 +1,11 @@
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
+import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import type TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
-    constructor(
-        @inject(COMPUTE_TOKENS.TeamJobMaintenanceService)
-        private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
-    ) {}
-
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { teamId, trajectoryId } = event.payload;
         if (!teamId) {
@@ -20,7 +13,7 @@ export default class TrajectoryDeletedJobCleanupEventHandler implements IEventHa
         }
 
         try {
-            await this.teamJobMaintenanceService.cleanupDeletedTrajectory(event.payload);
+            await teamJobMaintenanceService.cleanupDeletedTrajectory(event.payload);
         } catch (error) {
             logger.warn(
                 error,

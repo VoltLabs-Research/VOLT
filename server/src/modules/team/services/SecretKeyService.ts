@@ -1,9 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
-import type { ISecretKeyRepository } from '@modules/team/ports/secret-key/ISecretKeyRepository';
-import type { ISecretKeyUsageLogRepository } from '@modules/team/ports/secret-key/ISecretKeyUsageLogRepository';
-import type { ISecretKeyUsageMetricsMapper } from '@modules/team/ports/secret-key/ISecretKeyUsageMetricsMapper';
-import type { ITeamRoleRepository } from '@modules/team/ports/team-role/ITeamRoleRepository';
+import TeamRoleModel from '@modules/team/models/team-role/TeamRoleModel';
+import SecretKeyModel, {
+    getSecretKeyCreatedById,
+    getSecretKeyRoleId,
+    getSecretKeyRoleName
+} from '@modules/team/models/secret-key/SecretKeyModel';
+import {
+    getTeamUsageAnalytics,
+    getKeyUsageAnalytics
+} from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
+import SecretKeyUsageMetricsMapper from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
 import SecretKeyCreatedEvent from '@modules/team/events/secret-key/SecretKeyCreatedEvent';
 import SecretKeyDeletedEvent from '@modules/team/events/secret-key/SecretKeyDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -29,19 +35,8 @@ interface EnrichedSecretKeyMetric {
     lastRequestAt: Date | null;
 }
 
-/**
- * The single application service for the secret-key resource. Folds the former
- * create/current/list/revoke/delete/team-metrics/key-usage use-cases. The
- * secret-key repository and its usage-log repository are shared singletons — the
- * `protect` authentication middleware resolves both to validate keys and record
- * per-request usage — so this service resolves them once from the DI container,
- * alongside the metrics mapper (aggregation → chart series) and role repository.
- */
 export default class SecretKeyService {
-    #keys = diContainer.resolve<ISecretKeyRepository>(TEAM_TOKENS.SecretKeyRepository);
-    #usageLog = diContainer.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
-    #metricsMapper = diContainer.resolve<ISecretKeyUsageMetricsMapper>(TEAM_TOKENS.SecretKeyUsageMetricsMapper);
-    #roles = diContainer.resolve<ITeamRoleRepository>(TEAM_TOKENS.TeamRoleRepository);
+    #metricsMapper = new SecretKeyUsageMetricsMapper();
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
     async create(teamId: string, userId: string, input: CreateSecretKeyInput): Promise<{
@@ -56,8 +51,8 @@ export default class SecretKeyService {
     }> {
         const { roleId, name } = input;
 
-        const role = await this.#roles.findById(roleId);
-        if (!role || role.props.team !== teamId) {
+        const role = await TeamRoleModel.findById(roleId);
+        if (!role || String(role.team) !== teamId) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
         }
 
@@ -66,7 +61,7 @@ export default class SecretKeyService {
         const keyPrefix = secretKey.slice(0, 14);
         const keyHash = crypto.createHash('sha256').update(secretKey).digest('hex');
 
-        const created = await this.#keys.create({
+        const created = await SecretKeyModel.create({
             team: teamId,
             role: roleId,
             name,
@@ -79,21 +74,21 @@ export default class SecretKeyService {
         });
 
         await this.#eventBus.publish(new SecretKeyCreatedEvent({
-            secretKeyId: created._id,
+            secretKeyId: String(created._id),
             teamId,
-            name: created.props.name,
+            name: created.name,
             userId
         }));
 
         return {
-            secretKeyId: created._id,
+            secretKeyId: String(created._id),
             teamId,
             roleId,
-            name: created.props.name,
-            keyPrefix: created.props.keyPrefix,
+            name: created.name,
+            keyPrefix: created.keyPrefix,
             secretKey,
-            isActive: created.props.isActive,
-            createdAt: created.props.createdAt
+            isActive: created.isActive,
+            createdAt: created.createdAt
         };
     }
 
@@ -102,70 +97,83 @@ export default class SecretKeyService {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'Secret key authentication required');
         }
 
-        const secretKey = await this.#keys.findById(secretKeyId);
+        const secretKey = await SecretKeyModel.findById(secretKeyId);
         if (!secretKey) {
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_INVALID, 'Secret key not found');
         }
 
         return {
-            _id: secretKey._id,
-            team: typeof secretKey.props.team === 'string' ? secretKey.props.team : String(secretKey.props.team),
-            role: secretKey.getRoleId(),
-            createdBy: secretKey.getCreatedById(),
-            name: secretKey.props.name,
-            keyPrefix: secretKey.props.keyPrefix,
-            isActive: secretKey.props.isActive,
-            lastUsedAt: secretKey.props.lastUsedAt,
-            createdAt: secretKey.props.createdAt,
-            updatedAt: secretKey.props.updatedAt
+            _id: String(secretKey._id),
+            team: String(secretKey.team),
+            role: getSecretKeyRoleId(secretKey),
+            createdBy: getSecretKeyCreatedById(secretKey),
+            name: secretKey.name,
+            keyPrefix: secretKey.keyPrefix,
+            isActive: secretKey.isActive,
+            lastUsedAt: secretKey.lastUsedAt,
+            createdAt: secretKey.createdAt,
+            updatedAt: secretKey.updatedAt
         };
     }
 
     async listByTeamId(teamId: string, page?: number, limit?: number): Promise<PaginatedResult<Record<string, unknown>>> {
         const resolvedPage = Math.max(1, page ?? 1);
         const resolvedLimit = Math.max(1, Math.min(200, limit ?? 50));
+        const filter = { team: teamId };
+        const skip = (resolvedPage - 1) * resolvedLimit;
 
-        const result = await this.#keys.findAll({
-            filter: { team: teamId },
-            page: resolvedPage,
-            limit: resolvedLimit,
-            sort: { createdAt: -1 },
-            populate: [ROLE_POPULATE, USER_POPULATE]
-        });
+        const [docs, total] = await Promise.all([
+            SecretKeyModel.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(resolvedLimit)
+                .populate([ROLE_POPULATE, USER_POPULATE]),
+            SecretKeyModel.countDocuments(filter)
+        ]);
 
-        const data = result.data.map((secretKey) => ({
-            _id: secretKey._id,
-            teamId: String(secretKey.props.team),
-            roleId: secretKey.getRoleId(),
-            roleName: secretKey.getRoleName(),
-            name: secretKey.props.name,
-            keyPrefix: secretKey.props.keyPrefix,
-            createdBy: secretKey.props.createdBy,
-            isActive: secretKey.props.isActive,
-            lastUsedAt: secretKey.props.lastUsedAt,
-            createdAt: secretKey.props.createdAt,
-            updatedAt: secretKey.props.updatedAt
+        const data = docs.map((secretKey) => ({
+            _id: String(secretKey._id),
+            teamId: String(secretKey.team),
+            roleId: getSecretKeyRoleId(secretKey),
+            roleName: getSecretKeyRoleName(secretKey),
+            name: secretKey.name,
+            keyPrefix: secretKey.keyPrefix,
+            createdBy: secretKey.createdBy,
+            isActive: secretKey.isActive,
+            lastUsedAt: secretKey.lastUsedAt,
+            createdAt: secretKey.createdAt,
+            updatedAt: secretKey.updatedAt
         } as unknown as Record<string, unknown>));
 
-        return { ...result, data };
+        return {
+            data,
+            total,
+            page: resolvedPage,
+            totalPages: Math.ceil(total / resolvedLimit),
+            limit: resolvedLimit
+        };
     }
 
     async revokeById(teamId: string, secretKeyId: string): Promise<{ _id: string; teamId: string; isActive: boolean; updatedAt: Date }> {
-        const key = await this.#keys.findById(secretKeyId);
-        if (!key || key.props.team !== teamId) {
+        const key = await SecretKeyModel.findById(secretKeyId);
+        if (!key || String(key.team) !== teamId) {
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
 
-        const updated = await this.#keys.updateById(key._id, { isActive: false, updatedAt: new Date() });
+        const updated = await SecretKeyModel.findByIdAndUpdate(
+            key._id,
+            { isActive: false, updatedAt: new Date() },
+            { new: true }
+        );
         if (!updated) {
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
 
         return {
-            _id: updated._id,
+            _id: String(updated._id),
             teamId,
-            isActive: updated.props.isActive,
-            updatedAt: updated.props.updatedAt
+            isActive: updated.isActive,
+            updatedAt: updated.updatedAt
         };
     }
 
@@ -174,18 +182,18 @@ export default class SecretKeyService {
             throw ApplicationError.badRequest(ErrorCodes.SECRET_KEY_PARAMS_REQUIRED, 'User ID is required');
         }
 
-        const key = await this.#keys.findById(secretKeyId);
-        if (!key || key.props.team !== teamId) {
+        const key = await SecretKeyModel.findById(secretKeyId);
+        if (!key || String(key.team) !== teamId) {
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
 
-        await this.#keys.deleteById(key._id);
+        await SecretKeyModel.findByIdAndDelete(key._id);
 
         await this.#eventBus.publish(new SecretKeyDeletedEvent({
-            secretKeyId: key._id,
+            secretKeyId: String(key._id),
             teamId,
             userId,
-            secretKeyName: key.props.name ?? ''
+            secretKeyName: key.name ?? ''
         }));
     }
 
@@ -193,34 +201,32 @@ export default class SecretKeyService {
         const resolvedDays = days !== undefined ? Number(days) : 30;
 
         const metrics = this.#metricsMapper.toTeamMetrics(
-            await this.#usageLog.getTeamUsageAnalytics(teamId, resolvedDays)
+            await getTeamUsageAnalytics(teamId, resolvedDays)
         );
 
-        const keysResult = await this.#keys.findAll({
-            filter: { team: teamId },
-            limit: MAX_KEYS_PER_TEAM,
-            populate: { path: 'role', select: ['name'] }
-        });
+        const allKeys = await SecretKeyModel.find({ team: teamId })
+            .limit(MAX_KEYS_PER_TEAM)
+            .populate({ path: 'role', select: ['name'] });
 
-        const allKeys = keysResult.data;
         const totalKeys = allKeys.length;
-        const activeKeys = allKeys.filter((k) => k.props.isActive).length;
+        const activeKeys = allKeys.filter((k) => k.isActive).length;
         const revokedKeys = totalKeys - activeKeys;
 
         const usageMap = new Map(metrics.perKey.map((pk) => [pk.secretKeyId, pk]));
 
         const enrichedPerKey: EnrichedSecretKeyMetric[] = allKeys.map((key) => {
-            const usage = usageMap.get(key._id);
+            const keyId = String(key._id);
+            const usage = usageMap.get(keyId);
             return {
-                secretKeyId: key._id,
-                name: key.props.name,
-                keyPrefix: key.props.keyPrefix,
-                roleName: key.getRoleName(),
-                isActive: key.props.isActive,
+                secretKeyId: keyId,
+                name: key.name,
+                keyPrefix: key.keyPrefix,
+                roleName: getSecretKeyRoleName(key),
+                isActive: key.isActive,
                 totalRequests: usage?.totalRequests || 0,
                 successRequests: usage?.successRequests || 0,
                 avgResponseTime: usage?.avgResponseTime || 0,
-                lastRequestAt: usage?.lastRequestAt || key.props.lastUsedAt || null
+                lastRequestAt: usage?.lastRequestAt || key.lastUsedAt || null
             };
         });
 
@@ -238,24 +244,24 @@ export default class SecretKeyService {
     async keyUsage(teamId: string, secretKeyId: string, days?: number): Promise<Record<string, unknown>> {
         const resolvedDays = days !== undefined ? Number(days) : 30;
 
-        const secretKey = await this.#keys.findById(secretKeyId, { populate: { path: 'role', select: ['name'] } });
-        if (!secretKey || String(secretKey.props.team) !== teamId) {
+        const secretKey = await SecretKeyModel.findById(secretKeyId).populate({ path: 'role', select: ['name'] });
+        if (!secretKey || String(secretKey.team) !== teamId) {
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
 
         const metrics = this.#metricsMapper.toKeyMetrics(
-            await this.#usageLog.getKeyUsageAnalytics(secretKeyId, resolvedDays)
+            await getKeyUsageAnalytics(secretKeyId, resolvedDays)
         );
 
         return {
             key: {
-                _id: secretKey._id,
-                name: secretKey.props.name,
-                keyPrefix: secretKey.props.keyPrefix,
-                roleName: secretKey.getRoleName(),
-                isActive: secretKey.props.isActive,
-                createdAt: secretKey.props.createdAt,
-                lastUsedAt: secretKey.props.lastUsedAt || null
+                _id: String(secretKey._id),
+                name: secretKey.name,
+                keyPrefix: secretKey.keyPrefix,
+                roleName: getSecretKeyRoleName(secretKey),
+                isActive: secretKey.isActive,
+                createdAt: secretKey.createdAt,
+                lastUsedAt: secretKey.lastUsedAt || null
             },
             ...metrics
         };

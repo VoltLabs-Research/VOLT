@@ -9,7 +9,6 @@ interface ParsedUserAgent{
     isMobile: boolean;
 }
 
-/** A session as the HTTP layer / AI tool present it (token redacted, UA parsed). */
 export interface SessionView{
     _id: string;
     user: string | null;
@@ -50,20 +49,6 @@ const parseUserAgent = (userAgent: string): ParsedUserAgent => {
     return { browser, os, isMobile: MOBILE_PATTERN.test(userAgent) };
 };
 
-/**
- * The single application service for the session module (pollium style: holds
- * ALL the session HTTP domain logic, talks to the Mongoose {@link SessionModel}
- * directly — no repository, entity, mapper, use case or DI). Throws typed
- * {@link ApplicationError}s (no Result channel) so Express forwards them to the
- * global error middleware. The same methods back both the HTTP controller and
- * the `manage_sessions` AI tool.
- *
- * NOTE: the cross-module session repository (used by auth / socket / the
- * `protect` middleware to look up sessions by token) is a SEPARATE model-backed
- * adapter registered under `SESSION_CONTRACT_TOKENS.SessionRepository` — see
- * `repositories/SessionRepository.ts`. This service does not use it; both talk
- * to {@link SessionModel} directly.
- */
 export default class SessionService{
     async getActiveSessions(userId: string, currentToken?: string): Promise<SessionView[]>{
         const docs = await SessionModel

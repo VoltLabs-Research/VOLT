@@ -1,8 +1,6 @@
 import type { TeamClusterServiceExposure } from '@modules/cluster/utilities/teamClusterSocket';
 import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureStatus } from '@modules/cluster/utilities/teamClusterSocket';
 import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { EventEmitter } from 'node:events';
 import type { ExposureRegistryChangeEvent } from '@modules/cluster/contracts/ExposureRegistryChangeEvent';
 export type { ExposureRegistryChangeEvent };
@@ -11,9 +9,7 @@ const buildRegistryKey = (teamClusterId: string, exposureId: string): string => 
     return `${teamClusterId}:${exposureId}`;
 };
 
-@Singleton()
-@AliasOf(CLUSTER_SERVICE_TOKENS.TeamClusterExposureRegistryService)
-export default class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryServicePort {
+export class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryServicePort {
     private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
     private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();
     private readonly events = new EventEmitter();
@@ -104,3 +100,5 @@ export default class TeamClusterExposureRegistryService implements ITeamClusterE
         } satisfies ExposureRegistryChangeEvent);
     }
 }
+
+export default new TeamClusterExposureRegistryService();

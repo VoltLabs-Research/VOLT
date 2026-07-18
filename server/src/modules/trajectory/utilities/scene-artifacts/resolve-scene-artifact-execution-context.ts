@@ -1,16 +1,16 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
-import type TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
-import type TrajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import type { TrajectoryDumpStorageService } from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { resolveSceneArtifactStorageCluster } from './resolve-scene-artifact-storage-cluster';
+
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 interface ResolveSceneArtifactExecutionContextInput {
     trajectoryId: string;
     timestep: string;
     analysisId?: string;
     analysisRepository: IAnalysisRepository;
-    trajectoryRepository: TrajectoryRepository;
     teamClusterSelectionService: ITeamClusterSelectionService;
     dumpStorage: TrajectoryDumpStorageService;
     buildClusterRequiredError: () => ApplicationError;
@@ -26,7 +26,6 @@ export const resolveSceneArtifactExecutionContext = async ({
     timestep,
     analysisId,
     analysisRepository,
-    trajectoryRepository,
     teamClusterSelectionService,
     dumpStorage,
     buildClusterRequiredError
@@ -34,17 +33,16 @@ export const resolveSceneArtifactExecutionContext = async ({
     const storageClusterId = await resolveSceneArtifactStorageCluster({
         trajectoryId,
         analysisId,
-        analysisRepository,
-        trajectoryRepository
+        analysisRepository
     });
 
-    const trajectory = await trajectoryRepository.findById(trajectoryId);
+    const trajectory = await TrajectoryModel.findById(trajectoryId);
     if (!trajectory || !storageClusterId) {
         throw buildClusterRequiredError();
     }
 
     const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(
-        trajectory.props.team,
+        trajectory.team.toString(),
         undefined,
         storageClusterId
     );

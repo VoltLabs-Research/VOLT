@@ -1,6 +1,12 @@
-import { DeploymentSettingsProps } from '@modules/system/entities/DeploymentSettings';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
+
+export interface DeploymentSettingsProps {
+    defaultTeam: string | null;
+    autoJoinNewMembers: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 type DeploymentSettingsRelations = 'defaultTeam';
 

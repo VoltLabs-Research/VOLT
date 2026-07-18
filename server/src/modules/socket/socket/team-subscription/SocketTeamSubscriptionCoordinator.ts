@@ -1,7 +1,5 @@
-
 import type { NormalizedTeamSubscription } from '@modules/socket/contracts/team-subscription';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface TeamSubscriptionContext {
     connection: ISocketConnection;
@@ -12,7 +10,6 @@ type TeamSubscriptionHandler = (
     context: TeamSubscriptionContext
 ) => void | Promise<void>;
 
-@Singleton()
 export default class SocketTeamSubscriptionCoordinator {
     private readonly handlers = new Set<TeamSubscriptionHandler>();
 
@@ -41,3 +38,5 @@ export default class SocketTeamSubscriptionCoordinator {
         delete connection.data.currentTeamId;
     }
 }
+
+export const socketTeamSubscriptionCoordinator = new SocketTeamSubscriptionCoordinator();

@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 interface ContainerPortProxyAccessTokenSignOptions extends SignOptions {
@@ -101,7 +100,6 @@ export const readContainerPortProxyAccessTokenFromUrl = (requestUrl: string): st
     return url.searchParams.get(CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM);
 };
 
-@Singleton()
 export class ContainerPortProxyAccessTokenService {
     private readonly secret = getSecretKey();
     private readonly signOptions: ContainerPortProxyAccessTokenSignOptions = {

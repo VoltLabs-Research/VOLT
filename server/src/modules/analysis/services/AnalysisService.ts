@@ -1,8 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, AnalysisProps } from '@modules/analysis/entities/Analysis';
-import type { IAnalysisRepository } from '@modules/analysis/ports/IAnalysisRepository';
-import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
+import type AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
+import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import {
@@ -11,7 +12,8 @@ import {
 } from '@shared/application/utilities/cluster-location';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import type { ITrajectoryRepository, ITeamJobMaintenanceService } from '@shared/contracts/ports';
+import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import type {
     GetAnalysesByTeamIdItemDTO,
     GetAnalysesByTrajectoryIdOutputDTO
@@ -81,26 +83,24 @@ interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
     team?: string;
 }
 
-/**
- * The single application service for the analysis module (pollium style): folds
- * every analysis HTTP use case verbatim. Analysis data is a cross-module
- * provider — ~20 other modules consume the full `IAnalysisRepository` under
- * `COMPUTE_TOKENS.AnalysisRepository` — so the model-backed `AnalysisRepository`
- * is retained as that shared adapter and resolved here once (rather than
- * reinlining every Mongoose query and duplicating the adapter). The other
- * collaborators (trajectory repo, execution-log service, team job maintenance,
- * the team jobs read model, the event bus) are likewise resolved once from the
- * DI container via their neutral tokens. Throws typed `ApplicationError`s (no
- * Result channel).
- */
 export default class AnalysisService {
-    // Shared cross-module collaborators, resolved once from the DI container:
-    #analysisRepo = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
-    #trajectoryRepo = diContainer.resolve<ITrajectoryRepository>(COMPUTE_TOKENS.TrajectoryRepository);
-    #executionLogService = diContainer.resolve<IAnalysisExecutionLogService>(COMPUTE_TOKENS.AnalysisExecutionLogService);
-    #teamJobMaintenanceService = diContainer.resolve<ITeamJobMaintenanceService>(COMPUTE_TOKENS.TeamJobMaintenanceService);
+    #analysisRepo = diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
+    #executionLogService = analysisExecutionLogService;
+    #teamJobMaintenanceService: ITeamJobMaintenanceService = teamJobMaintenanceService;
     #teamJobsService = diContainer.resolve(TeamJobsService);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+
+    async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]> {
+        const normalizedSearch = search.trim();
+        if (!normalizedSearch) {
+            return [];
+        }
+
+        const regex = new RegExp(normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        const docs = await TrajectoryModel.find({ team: teamId, name: regex }).select('_id').lean().exec();
+
+        return docs.map((doc) => doc._id.toString());
+    }
 
     async getAnalysesByTeamId(input: GetAnalysesByTeamIdInput): Promise<PaginatedResult<GetAnalysesByTeamIdItemDTO>> {
         const { teamId } = input;
@@ -121,7 +121,7 @@ export default class AnalysisService {
             ? await this.#analysisRepo.findByTeamAndSearch({
                 teamId,
                 search: normalizedSearch!,
-                trajectoryIds: await this.#trajectoryRepo.searchIdsByTeamAndName(teamId, normalizedSearch!),
+                trajectoryIds: await this.#searchTrajectoryIdsByTeamAndName(teamId, normalizedSearch!),
                 populate,
                 limit: input.limit,
                 page: input.page

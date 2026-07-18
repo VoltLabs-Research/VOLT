@@ -1,9 +1,5 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { decrypt, encrypt } from '@shared/infrastructure/utilities/crypto';
 
-
-@Singleton(CLUSTER_TOKENS.TeamClusterCredentialsCipher)
 export default class TeamClusterCredentialsCipher {
     async encrypt(value: string): Promise<string> {
         return encrypt(value);

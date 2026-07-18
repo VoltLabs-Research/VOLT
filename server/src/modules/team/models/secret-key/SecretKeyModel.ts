@@ -1,6 +1,42 @@
-import { SecretKeyProps } from '@modules/team/entities/secret-key/SecretKey';
+import {
+    isPopulatedSecretKeyRole,
+    type PopulatedRole,
+    type PopulatedUser,
+    type SecretKeyProps
+} from '@shared/contracts/types/SecretKey';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Document, Model } from 'mongoose';
+
+export { isPopulatedSecretKeyRole };
+export type { PopulatedRole, PopulatedUser, SecretKeyProps };
+
+export const getSecretKeyRoleId = (secretKey: Pick<SecretKeyProps, 'role'>): string => {
+    if (isPopulatedSecretKeyRole(secretKey.role)) {
+        return secretKey.role._id;
+    }
+
+    return String(secretKey.role);
+};
+
+export const getSecretKeyRoleName = (secretKey: Pick<SecretKeyProps, 'role'>): string => {
+    if (isPopulatedSecretKeyRole(secretKey.role)) {
+        return secretKey.role.name;
+    }
+
+    return 'Unknown';
+};
+
+export const getSecretKeyCreatedById = (secretKey: Pick<SecretKeyProps, 'createdBy'>): string => {
+    const { createdBy } = secretKey;
+    if (typeof createdBy === 'string') {
+        return createdBy;
+    }
+    if (createdBy instanceof mongoose.Types.ObjectId) {
+        return createdBy.toString();
+    }
+
+    return createdBy._id;
+};
 
 type SecretKeyRelations = 'team' | 'role' | 'createdBy';
 

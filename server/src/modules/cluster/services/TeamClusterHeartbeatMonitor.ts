@@ -1,22 +1,17 @@
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
-import DemoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
-import TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import demoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
+import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import logger from '@shared/infrastructure/logger';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);
 
-@Singleton()
-export default class TeamClusterHeartbeatMonitor {
+export class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
-
-    constructor(
-        private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly demoClusterDeploymentService: DemoClusterDeploymentService
-    ){}
+    private readonly teamClusterLifecycleService = teamClusterLifecycleService;
+    private readonly teamClusterRepository = new TeamClusterRepository();
+    private readonly demoClusterDeploymentService = demoClusterDeploymentService;
 
     start(): void {
         if (this.interval) {
@@ -75,3 +70,5 @@ export default class TeamClusterHeartbeatMonitor {
         }));
     }
 }
+
+export default new TeamClusterHeartbeatMonitor();

@@ -9,8 +9,6 @@ import {
 import { EntrypointNodeType } from '@modules/plugin/entities/plugin/workflow/nodes/EntrypointNode';
 import { PluginNodeExecutionMode } from '@modules/plugin/entities/plugin/workflow/nodes/PluginNode';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface WorkflowValidationPluginReference {
     nodeId: string;
@@ -128,7 +126,6 @@ interface WorkflowTopologyIndex {
     childrenBySource: Map<string, WorkflowEdge[]>;
 }
 
-@Singleton(PLUGIN_TOKENS.WorkflowValidatorService)
 export class WorkflowValidatorService {
     constructor(
         private readonly pluginDependencyResolverService: PluginDependencyResolverService

@@ -1,27 +1,11 @@
-import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
+import { SocketEventHandler } from '@modules/socket/ports/ISocketEventRegistry';
 import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import type { ISocketEventRegistryRuntime } from '@modules/socket/contracts/ISocketEventRegistryRuntime';
-import SocketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import socketConnectionMapper from '@modules/socket/utilities/SocketConnectionMapper';
 import { Socket } from 'socket.io';
 
-/**
- * Handles event registration and provides connection abstraction.
- *
- * Disconnect handlers are aggregated per socket: only a single
- * `socket.on('disconnect', ...)` listener is registered regardless
- * of how many modules call `onDisconnect()`.  This avoids the
- * MaxListenersExceededWarning that would otherwise fire when > 10
- * modules each attach their own listener.
- */
-@Singleton()
-export default class SocketIOEventRegistry implements ISocketEventRegistry, ISocketEventRegistryRuntime{
+export default class SocketIOEventRegistry {
     private sockets: Map<string, Socket> = new Map();
     private disconnectHandlers: Map<string, Array<(connection: ISocketConnection) => void | Promise<void>>> = new Map();
-
-    constructor(
-        private readonly socketMapper: SocketConnectionMapper
-    ){}
 
     registerConnection(socket: unknown): void{
         this.registerSocket(socket as Socket);
@@ -50,7 +34,7 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
 
         socket.on(event, async (payload: T, ack?: (...args: unknown[]) => void) => {
             try {
-                const connection = this.socketMapper.toDomain(socket);
+                const connection = socketConnectionMapper.toDomain(socket);
                 const result = await handler(connection, payload);
                 if(typeof ack === 'function'){
                     ack(result === undefined ? { ok: true } : result);
@@ -76,7 +60,7 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
             this.disconnectHandlers.set(socketId, handlers);
 
             socket.on('disconnect', async () => {
-                const connection = this.socketMapper.toDomain(socket);
+                const connection = socketConnectionMapper.toDomain(socket);
                 const fns = this.disconnectHandlers.get(socketId);
                 if (!fns) {
                     return;
@@ -88,3 +72,5 @@ export default class SocketIOEventRegistry implements ISocketEventRegistry, ISoc
         handlers.push(handler);
     }
 }
+
+export const socketIOEventRegistry = new SocketIOEventRegistry();

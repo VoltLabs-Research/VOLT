@@ -1,11 +1,8 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import type ClusterTransferJob from '@modules/cluster/entities/ClusterTransferJob';
 import type { ClusterTransferJobProps, ClusterTransferJobState } from '@modules/cluster/entities/ClusterTransferJob';
 import clusterTransferJobMapper from '@modules/cluster/mappers/ClusterTransferJobMapper';
 import ClusterTransferJobModel, { ClusterTransferJobDocument } from '@modules/cluster/models/ClusterTransferJobModel';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseClaimableJobRepository } from '@shared/infrastructure/persistence/mongo/MongooseClaimableJobRepository';
-
 
 const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'queued',
@@ -16,7 +13,6 @@ const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobState[] = [
     'cleaning'
 ];
 
-@Singleton(CLUSTER_TOKENS.ClusterTransferJobRepository)
 export default class ClusterTransferJobRepository
     extends MongooseClaimableJobRepository<ClusterTransferJob, ClusterTransferJobProps, ClusterTransferJobDocument> {
 

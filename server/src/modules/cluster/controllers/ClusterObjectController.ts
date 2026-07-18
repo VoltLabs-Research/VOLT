@@ -81,17 +81,8 @@ const applyReadHeaders = (
     response.setHeader('x-content-type-options', 'nosniff');
 };
 
-/**
- * Signed-URL cluster object I/O controller (pollium style). It replaces the
- * former `createHttpModule({ basePath: '/api/cluster-objects/:teamId',
- * protected: false })` — the URLs authenticate themselves via the signed token
- * embedded in the path (verified by {@link ClusterObjectSignedUrlService}), so
- * this controller carries NO class-level `@Middleware`. Every handler takes the
- * raw request/response (`@Req()`/`@Res()`), reproducing the previous streaming,
- * headers and status codes verbatim (201 on write, 206 on ranged read).
- */
 export default class ClusterObjectController extends Controller {
-    #signedUrlService = container.resolve(ClusterObjectSignedUrlService);
+    #signedUrlService = new ClusterObjectSignedUrlService();
     #objectGatewayClient = container.resolve(TeamClusterObjectGatewayClient);
 
     #resolveClaims(request: Request, operation: ClusterObjectOperation): ClusterObjectAccessClaims {

@@ -1,12 +1,11 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import type { ContainerTerminalAttachment } from '@shared/contracts/ports/IContainerService';
+import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,
     TeamClusterTunnelOpenRequest
 } from '@modules/cluster/services/TeamClusterReverseChannelService';
-import type { ITeamClusterReverseChannelService } from '@modules/cluster/ports/ITeamClusterReverseChannelService';
 import type { TeamClusterTunnelStream } from '@modules/cluster/utilities/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
 import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
@@ -14,7 +13,6 @@ import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClust
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -132,10 +130,7 @@ export default class TeamClusterDaemonClient {
         'long-running-control-plane': 60_000
     };
 
-    constructor(
-        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterReverseChannelService)
-        private readonly teamClusterReverseChannelService: ITeamClusterReverseChannelService
-    ) {}
+    private readonly teamClusterReverseChannelService = teamClusterReverseChannelService;
 
     private createCommandMetadata(): DaemonCommandMetadata {
         const requestContext = getHttpRequestContext();

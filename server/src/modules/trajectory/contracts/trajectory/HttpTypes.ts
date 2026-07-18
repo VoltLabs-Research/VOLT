@@ -1,26 +1,13 @@
-/**
- * HTTP-facing request/response shapes for the trajectory module. These were
- * previously spread across the deleted `dtos/` layer; they now live beside the
- * module's other neutral contracts so the plain {@link TrajectoryService}
- * (which folds the old use cases) and the controllers share one canonical set of
- * definitions without a dedicated dtos layer.
- *
- * They are built on the retained Mongoose-record entity prop shapes
- * (`TrajectoryProps` / `SceneArtifactProps`) and the retained render-service
- * port types (`ParticleFilterCombinator` / `LineStyleSpec` / ...), which remain
- * because the kept `@Singleton` render/daemon/clone services and the neutral
- * cross-module repository tokens depend on them.
- */
-import type { TrajectoryProps } from '@modules/trajectory/entities/trajectory/Trajectory';
+import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
 import type {
     SceneArtifactProps,
     SceneArtifactSourceType
-} from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+} from '@shared/contracts/types/SceneArtifact';
 import type {
     CreateLineStyledModelResult,
     LineStyleSpec
-} from '@modules/trajectory/ports/line-style/ILineStyleService';
-import { ParticleFilterCombinator } from '@modules/trajectory/ports/particle-filter/IParticleFilterService';
+} from '@modules/trajectory/services/line-style/LineStyleService';
+import { ParticleFilterCombinator } from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import type { TeamMetricsSnapshot } from '@modules/trajectory/contracts/trajectory/TeamMetrics';
 import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
@@ -29,8 +16,6 @@ import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
 
 export { ParticleFilterCombinator };
-
-// --- Trajectory CRUD --------------------------------------------------------
 
 export interface CreateTrajectoryOutputDTO extends TrajectoryProps {
     _id: string;
@@ -120,8 +105,6 @@ export interface CloneTrajectoryOutputDTO {
     destinationClusterId: string;
 }
 
-// --- Downloads --------------------------------------------------------------
-
 export interface DownloadTrajectoryInputDTO {
     trajectoryId: string;
     teamId: string;
@@ -156,8 +139,6 @@ export interface DownloadSampleSimulationsOutputDTO {
     stream: ReadStream;
     filename: string;
 }
-
-// --- Upload sessions --------------------------------------------------------
 
 export interface TrajectoryUploadSessionFileInput {
     name: string;
@@ -217,8 +198,6 @@ export interface CancelTrajectoryUploadSessionInputDTO {
     uploadSessionId: string;
 }
 
-// --- Color coding -----------------------------------------------------------
-
 export interface CreateColoredModelInputDTO {
     trajectoryId: string;
     timestep: string;
@@ -273,8 +252,6 @@ export interface GetColoredModelStreamInputDTO {
 export interface GetColoredModelStreamOutputDTO {
     stream: Readable;
 }
-
-// --- Particle filter --------------------------------------------------------
 
 export interface ParticleFilterConditionDTO {
     kind?: 'property';
@@ -352,8 +329,6 @@ export interface GetParticleFilterUniqueValuesOutputDTO {
     values: Array<number | string>;
 }
 
-// --- Line style / LOD -------------------------------------------------------
-
 export interface CreateLineStyledModelInputDTO {
     trajectoryId: string;
     timestep: string;
@@ -404,8 +379,6 @@ export interface GetLineEntityPropertiesOutputDTO {
     properties: Record<string, unknown>;
 }
 
-// --- Scene artifacts --------------------------------------------------------
-
 export interface TeamSceneArtifactOutput {
     _id: string;
     trajectory: SceneArtifactProps['trajectory'];
@@ -444,8 +417,6 @@ export interface ListTrajectorySceneArtifactsInputDTO {
     page?: number;
     limit?: number;
 }
-
-// --- Public canvas ----------------------------------------------------------
 
 export enum PublicCanvasAccessMode {
     ReadOnly = 'read-only'

@@ -1,7 +1,20 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { TeamProps } from '@modules/team/entities/team/Team';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import mongoose, { Schema, Model, Document } from 'mongoose';
+
+export interface TeamOwnerRef {
+    _id?: string;
+    toString?: () => string;
+}
+
+export interface TeamProps {
+    name: string;
+    description: string;
+    owner: string | TeamOwnerRef;
+    inviteCode?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 type TeamRelations = 'owner';
 

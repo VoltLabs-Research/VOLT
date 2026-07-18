@@ -1,17 +1,23 @@
 import { redis } from '@core/config/redis';
-import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
-import {
-    deserializeSystemMetrics,
-    serializeSystemMetrics
-} from '@modules/system/mappers/SystemMetricsRedisMapper';
 import { resolveSystemMetricsIdentity } from '@modules/system/utilities/resolveSystemMetricsIdentity';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
-@Singleton(SYSTEM_CONTRACT_TOKENS.SystemMetricsRepository)
-export default class SystemMetricsRedisRepository implements ISystemMetricsRepository {
+type SerializedSystemMetrics = Omit<SystemMetrics, 'timestamp'> & {
+    timestamp: string;
+};
+
+const serializeSystemMetrics = (metrics: SystemMetrics): string => JSON.stringify(metrics);
+
+const deserializeSystemMetrics = (payload: string): SystemMetrics => {
+    const parsed = JSON.parse(payload) as SerializedSystemMetrics;
+    return {
+        ...parsed,
+        timestamp: new Date(parsed.timestamp)
+    };
+};
+
+export default class SystemMetricsRedisRepository {
     private readonly metricsHistoryKey = 'metrics-history';
     private readonly clusterId: string;
 

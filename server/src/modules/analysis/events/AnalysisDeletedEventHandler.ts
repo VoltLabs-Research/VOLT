@@ -1,8 +1,7 @@
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import type { ISceneArtifactRepository } from '@shared/contracts/ports';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
-import type { IAnalysisExecutionLogService } from '@modules/analysis/ports/IAnalysisExecutionLogService';
-import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
+import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
+import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
@@ -17,10 +16,7 @@ const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     constructor(
         @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-        @inject(COMPUTE_TOKENS.SceneArtifactRepository) private readonly sceneArtifactRepository: ISceneArtifactRepository,
-        @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: IAnalysisExecutionLogService,
-        @inject(COMPUTE_TOKENS.TeamJobMaintenanceService) private readonly teamJobMaintenanceService: ITeamJobMaintenanceService
+        private readonly redis: IORedis
     ) {}
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -28,7 +24,7 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         const query = { analysis: analysisId };
 
         try {
-            await this.teamJobMaintenanceService.cleanupDeletedAnalysis(event.payload);
+            await teamJobMaintenanceService.cleanupDeletedAnalysis(event.payload);
         } catch (error) {
             logger.warn(error, `[AnalysisDeletedEventHandler] Failed to purge running jobs for analysis ${analysisId}`);
         }
@@ -40,12 +36,12 @@ export default class AnalysisDeletedEventHandler implements IEventHandler<Analys
         }
 
         try {
-            await this.analysisExecutionLogService.clearRuntimeState(analysisId);
+            await analysisExecutionLogService.clearRuntimeState(analysisId);
         } catch (error) {
             logger.warn(error, `[AnalysisDeletedEventHandler] Failed to remove runtime frame logs for analysis ${analysisId}`);
         }
 
-        await this.sceneArtifactRepository.deleteMany(query);
+        await SceneArtifactModel.deleteMany(query).exec();
     }
 
     private async removeProjectedJobHistory(analysisId: string, teamId: string): Promise<void> {

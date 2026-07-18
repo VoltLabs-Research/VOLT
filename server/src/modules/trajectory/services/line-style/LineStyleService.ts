@@ -1,32 +1,40 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService, IAnalysisRepository, IPluginRepository } from '@shared/contracts/ports';
 import type { PluginLike } from '@shared/contracts/types';
 import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import { SceneArtifactSourceType } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
+import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
 import { buildLineStyleObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { stripTrailingZstdExtension } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-import SceneArtifactRepository from '@modules/trajectory/repositories/scene-artifacts/SceneArtifactRepository';
-import TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
-import TrajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { createHash } from 'node:crypto';
 
-import type {
-    CreateLineStyledModelResult,
-    ILineStyleService,
-    LineStyleSpec,
-    LineStyleStreamResponse
-} from '@modules/trajectory/ports/line-style/ILineStyleService';
-import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/ports/native/ITrajectoryNativeDaemonService';
-import type { LineExportBaseOptions } from '@modules/trajectory/contracts/native';
+import type { LineExportBaseOptions, LineStyleParams } from '@modules/trajectory/contracts/native';
+import { Readable } from 'node:stream';
+
+export type LineStyleSpec = LineStyleParams;
+
+export interface CreateLineStyledModelResult {
+    objectName: string;
+    entitiesRendered: number;
+    entitiesTotal: number;
+    categoryCounts: Record<string, number>;
+}
+
+export interface LineStyleStreamResponse {
+    stream: Readable;
+    contentEncoding?: string;
+    contentLength?: number;
+}
 
 const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(
@@ -53,28 +61,21 @@ export const hashLineStyle = (style: LineStyleSpec): string => {
     return createHash('sha1').update(stableStringify(style)).digest('hex').slice(0, 16);
 };
 
-@Singleton(TRAJECTORY_TOKENS.LineStyleService)
-export default class LineStyleService implements ILineStyleService {
-    constructor(
+export class LineStyleService {
+    #analysisRepositoryCache?: IAnalysisRepository;
+    private get analysisRepository(): IAnalysisRepository {
+        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
 
-        private readonly dumpStorage: TrajectoryDumpStorageService,
+    #pluginRepositoryCache?: IPluginRepository<PluginLike>;
+    private get pluginRepository(): IPluginRepository<PluginLike> {
+        return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
+    }
 
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
-
-        private readonly trajectoryRepository: TrajectoryRepository,
-
-        @inject(COMPUTE_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-
-        @inject(COMPUTE_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository<PluginLike>,
-
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
-        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
-        private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
-    ) { }
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    private get teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
 
     async createStyledModel(
         trajectoryId: string,
@@ -98,14 +99,13 @@ export default class LineStyleService implements ILineStyleService {
             timestep: String(timestep),
             analysisId,
             analysisRepository: this.analysisRepository,
-            trajectoryRepository: this.trajectoryRepository,
             teamClusterSelectionService: this.teamClusterSelectionService,
-            dumpStorage: this.dumpStorage,
+            dumpStorage: trajectoryDumpStorageService,
             buildClusterRequiredError
         });
 
         const baseOptions = await this.resolveExportBaseOptions(analysisId, exposureId);
-        const response = await this.trajectoryNativeDaemonService.exportLineModel({
+        const response = await trajectoryNativeDaemonService.exportLineModel({
             teamClusterId: computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
@@ -119,7 +119,7 @@ export default class LineStyleService implements ILineStyleService {
 
         const colorMode = style.colorMode ?? 'category';
         const lineWidthLabel = style.lineWidth !== undefined ? ` · w=${style.lineWidth}` : '';
-        await recordSceneArtifact(this.sceneArtifactRepository, {
+        await recordSceneArtifact({
             trajectory: String(trajectoryId),
             storageClusterId,
             analysis: String(analysisId),
@@ -217,7 +217,7 @@ export default class LineStyleService implements ILineStyleService {
         timestep: string | number,
         exposureId: string
     ): Promise<string> {
-        const artifact = await this.sceneArtifactRepository.findOne({
+        const artifact = await SceneArtifactModel.findOne({
             trajectory: String(trajectoryId),
             analysis: String(analysisId),
             sourceType: SceneArtifactSourceType.PluginExposure,
@@ -232,23 +232,25 @@ export default class LineStyleService implements ILineStyleService {
             );
         }
 
-        return artifact.props.objectName;
+        return artifact.objectName;
     }
 
     private async streamModelObject(trajectoryId: string, objectName: string): Promise<LineStyleStreamResponse> {
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
             : undefined;
 
         if (!storageClusterId) {
             throw buildClusterRequiredError();
         }
 
-        return this.trajectoryNativeDaemonService.getObjectStreamResponse(
+        return trajectoryNativeDaemonService.getObjectStreamResponse(
             storageClusterId,
             TEAM_CLUSTER_BUCKETS.MODELS,
             objectName
         );
     }
-};
+}
+
+export default new LineStyleService();

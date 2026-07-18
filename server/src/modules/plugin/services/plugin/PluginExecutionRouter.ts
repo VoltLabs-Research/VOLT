@@ -2,7 +2,6 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
 import type Plugin from '@modules/plugin/entities/plugin/Plugin';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;
@@ -49,17 +48,17 @@ export interface RoutePipelineExecutionInput {
     stages: PipelineStageExecutionInput[];
 }
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import type {
     IDaemonAnalysisCompletionService,
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient,
     ITeamClusterRepository
 } from '@shared/contracts/ports';
+import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -67,7 +66,7 @@ import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import type IORedis from 'ioredis';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 const gzipAsync = promisify(zlib.gzip);
 
@@ -302,24 +301,28 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
     };
 };
 
-@Singleton(PLUGIN_TOKENS.PluginExecutionRouter)
-export default class PluginExecutionRouter {
-    constructor(
-        @inject(COMPUTE_TOKENS.StoragePlacementService)
-        private readonly storagePlacementService: IStoragePlacementService,
-        @inject(CLUSTER_SERVICE_TOKENS.TeamClusterRepository)
-        private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        @inject(CLUSTER_SERVICE_TOKENS.DaemonAnalysisCompletionService)
-        private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService,
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis
-    ) {}
+export class PluginExecutionRouter {
+    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
+    private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
+    private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
     private readonly inflightEncodes = new Map<string, Promise<EncodedDispatchSection>>();
     private readonly inflightPluginSyncs = new Map<string, Promise<void>>();
+
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+    }
+
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
+
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
 
     private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection> {
         try {
@@ -688,3 +691,5 @@ export default class PluginExecutionRouter {
             : undefined;
     }
 }
+
+export default new PluginExecutionRouter();

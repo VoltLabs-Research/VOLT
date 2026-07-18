@@ -1,12 +1,14 @@
 import type {
-    ITeamJobMaintenanceService,
     RemoveTeamJobsResult,
     RetryTeamJobsResult
 } from '@shared/contracts/ports/ITeamJobMaintenanceService';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
+import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
-import type { TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
+import TeamJobsService, { type TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { container as diContainer } from 'tsyringe';
+import type IORedis from 'ioredis';
 
 interface RemoveRunningJobsInput {
     teamId: string;
@@ -20,22 +22,12 @@ interface RetryFailedJobsInput {
 
 export interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
 
-/**
- * The single application service for the jobs module (pollium style): folds the
- * two former use cases verbatim. It `new`s nothing of its own — its two
- * collaborators are genuinely-shared stateful singletons resolved once from the
- * DI container:
- *  - maintenance: `ITeamJobMaintenanceService` (redis + daemon client + event
- *    bus) registered under the neutral `COMPUTE_TOKENS.TeamJobMaintenanceService`
- *    and also injected by the trajectory/analysis cleanup handlers.
- *  - realtimeSync: the team module's `TeamJobsRealtimeSyncService`
- *    (socket-backed team-jobs broadcaster), shared with the team socket layer.
- * Both surface typed `ApplicationError`s on their own; this service just merges
- * their results for the HTTP path (no Result channel).
- */
 export default class JobsService {
-    #maintenance = diContainer.resolve<ITeamJobMaintenanceService>(COMPUTE_TOKENS.TeamJobMaintenanceService);
-    #realtimeSync = diContainer.resolve(TeamJobsRealtimeSyncService);
+    #maintenance = teamJobMaintenanceService;
+    #realtimeSync = new TeamJobsRealtimeSyncService(
+        new TeamJobsService(diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient)),
+        socketIOEmitter
+    );
 
     async removeRunningJobs(input: RemoveRunningJobsInput): Promise<RemoveRunningJobsResult> {
         const outcome = await this.#maintenance.removeJobsForTrajectory(input.teamId, input.trajectoryId);

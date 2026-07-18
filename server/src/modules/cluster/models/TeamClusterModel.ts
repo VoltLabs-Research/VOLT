@@ -2,15 +2,19 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import {
     TeamClusterProps,
     TeamClusterRole,
-    TeamClusterStatus
-} from '@modules/cluster/entities/TeamCluster';
+    TeamClusterStatus,
+    TeamClusterEffectiveCapabilitiesProps
+} from '@shared/contracts/types/TeamCluster';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
 type TeamClusterRelations = 'team' | 'createdBy';
 
-export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {}
+export interface TeamClusterDocument extends Persistable<TeamClusterProps, TeamClusterRelations>, Document {
+    readonly effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+}
 
 const TEAM_CLUSTER_VALIDATION_ERROR = ErrorCodes.VALIDATION_INVALID_INPUT;
 
@@ -253,6 +257,10 @@ TeamClusterSchema.index(
     }
 );
 TeamClusterSchema.index({ isDemo: 1, demoExpiresAt: 1 });
+
+TeamClusterSchema.virtual('effectiveCapabilities').get(function (this: TeamClusterDocument) {
+    return resolveEffectiveCapabilitiesFromRoleConfig(this.roleConfig);
+});
 
 const TeamClusterModel: Model<TeamClusterDocument> = mongoose.model<TeamClusterDocument>('TeamCluster', TeamClusterSchema);
 

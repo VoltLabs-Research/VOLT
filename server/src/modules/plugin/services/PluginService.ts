@@ -3,7 +3,6 @@ import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflo
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
 import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
 
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
 import PluginStorageService, {
     type BinaryUploadResult,
@@ -11,7 +10,7 @@ import PluginStorageService, {
 } from '@modules/plugin/services/plugin/PluginStorageService';
 import { WorkflowValidatorService, WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import PluginExecutionRouter, {
+import pluginExecutionRouter, {
     type PipelineStageExecutionInput,
     type RoutePluginExecutionInput
 } from '@modules/plugin/services/plugin/PluginExecutionRouter';
@@ -57,20 +56,23 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { resolveTrajectoryStorageClusterId, resolveAnalysisComputeClusterId, resolveSceneArtifactStorageClusterId } from '@shared/application/utilities/cluster-location';
+import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IAnalysisRepository,
-    ISceneArtifactRepository,
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient,
-    ITeamClusterSelectionService,
-    ITrajectoryFrameRepository,
-    ITrajectoryRepository
+    ITeamClusterSelectionService
 } from '@shared/contracts/ports';
+import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
+import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
+import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
@@ -92,9 +94,6 @@ import type { GetSubListingInputDTO, GetSubListingOutputDTO, SubListingColumn } 
 import logger from '@shared/infrastructure/logger';
 import { container as diContainer } from 'tsyringe';
 import { Readable } from 'node:stream';
-
-// ---- locally-owned plugin DTOs (no cross-module consumers; see the neutral
-// `@shared/contracts/dtos/*` re-exports for the ones trajectory drives) --------
 
 export interface ClonePluginInputDTO {
     pluginId: string;
@@ -228,9 +227,6 @@ export interface UpdatePluginByIdInputDTO {
     pluginId: string;
     workflow?: WorkflowProps;
     status?: PluginStatus;
-    /** @internal When true, binary fields (binaryObjectPath, binaryFileName, binary)
-     * in the workflow are saved as-is. When false (default), binary fields are
-     * preserved from the current DB state to prevent accidental overwrites. */
     _allowBinaryFieldUpdate?: boolean;
 }
 
@@ -272,11 +268,7 @@ export interface GetPluginExposureChartInputDTO {
 
 export type GetPluginExposureChartOutputDTO = DownloadStreamOutputDTO;
 
-// ---- plugin: registry install ----------------------------------------------
-
 const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
-
-// ---- plugin: node-types schema ---------------------------------------------
 
 const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.Modifier]: ['pluginId', 'trajectory', 'analysis'],
@@ -291,8 +283,6 @@ const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.SwitchStatement]: ['expression', 'resolvedValue', 'matchedCaseId', 'matchedValue'],
     [WorkflowNodeType.SwitchCase]: ['value', 'defaultCase']
 };
-
-// ---- plugin: execute-pipeline helpers --------------------------------------
 
 const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'AtomisticExporter',
@@ -346,8 +336,6 @@ const resolveExpectedArtifacts = (pluginId: string, plugin: { props: { exposures
     }));
 };
 
-// ---- exposure: chart helper -------------------------------------------------
-
 const isChartArtifact = (metadata: Record<string, unknown> | undefined, objectName: string): boolean => {
     return objectName.endsWith('.png')
         && (
@@ -355,8 +343,6 @@ const isChartArtifact = (metadata: Record<string, unknown> | undefined, objectNa
             || metadata?.exportType === 'chart-png'
         );
 };
-
-// ---- listing-row helpers -----------------------------------------------------
 
 const DAEMON_PAGE_SIZE = 200;
 
@@ -421,14 +407,6 @@ const EMPTY_PLUGIN_LISTING_DOCUMENTS_RESULT: GetPluginListingDocumentsOutputDTO 
     _meta: { pluginId: '', exposureName: '', exposureId: '', columns: [], subListingNames: [] }
 };
 
-/**
- * Serializes enriched listing rows incrementally so the full dataset is never
- * materialized as a single string and the event loop can breathe between
- * batches. CSV reuses `toCsvContent` per batch (slicing off the repeated
- * BOM/header prefix) so the streamed bytes are identical to a single
- * `toCsvContent(allRows, columns)` call; JSON emits a compact array, matching
- * `JSON.stringify(rows)` element-for-element.
- */
 function* serializeListingRows(
     format: ExportType,
     rows: DaemonListingRow[],
@@ -476,8 +454,6 @@ const createListingDownloadResponse = ({
     });
 };
 
-// ---- summarize-analysis-result helpers --------------------------------------
-
 const DEFAULT_MAX_ROWS = 50_000;
 const HARD_MAX_ROWS = 200_000;
 const TOP_VALUES_LIMIT = 5;
@@ -488,8 +464,6 @@ interface ExposureAccumulator {
     rowCount: number;
     columnValues: Map<string, unknown[]>;
 }
-
-// ---- sub-listing helpers ------------------------------------------------------
 
 interface DaemonSubListingRow {
     _id: string;
@@ -505,59 +479,41 @@ interface DaemonSubListingPaginatedResult {
     limit: number;
 }
 
-/**
- * The single HTTP-facing application service for the plugin module, `new`ed
- * directly by {@link PluginController} (pollium style — no DI decorator, no
- * `@inject` constructor, so it is trivially `new`-able). Folds every former
- * plugin/exposure/listing-row use case's logic directly onto this class.
- *
- * The workflow-node domain entities (`entities/plugin/workflow/**`, the visual
- * pipeline DSL) and the execution/dependency/validator/registry/storage
- * collaborator services are KEPT UNTOUCHED — they carry the real domain
- * complexity. This service resolves the ones registered as DI singletons
- * (behind the neutral `PLUGIN_TOKENS.*` symbols, still consumed as-is) from the
- * container once per instance, and talks to {@link PluginRepository} — the
- * kept, Mongoose-model-backed adapter also resolved cross-module by dashboard,
- * cluster and trajectory (analogous to container's retained
- * `ContainerSearchRepository`) — directly, with no repository *port*
- * indirection.
- *
- * Throws typed {@link ApplicationError}s directly (they propagate to
- * `httpErrorMiddleware` via Express 5 async forwarding — no Result channel).
- * The download/export methods return the `DownloadStreamOutput` (stream +
- * headers + optional `prepare()`) that {@link PluginController} pipes to the
- * response.
- *
- * A handful of methods (`getPluginById`, `getPluginExposureGLB`,
- * `getPluginExposureExport`, `getPluginListingDocuments`, `getSubListing`) are
- * also driven cross-module by trajectory's public-canvas use cases via the
- * neutral `PLUGIN_USECASE_TOKENS.*` ports; those ports are kept alive as thin
- * one-line delegator classes co-located in `use-cases/` that just call the
- * matching method here.
- */
 export default class PluginService {
     #pluginRepository = new PluginRepository();
-    #pluginStorageService = diContainer.resolve<PluginStorageService>(PLUGIN_TOKENS.PluginStorageService);
-    #workflowValidator = diContainer.resolve<WorkflowValidatorService>(PLUGIN_TOKENS.WorkflowValidatorService);
-    #pluginDependencyResolverService = diContainer.resolve<PluginDependencyResolverService>(PLUGIN_TOKENS.PluginDependencyResolverService);
-    #pluginExecutionRouter = diContainer.resolve<PluginExecutionRouter>(PLUGIN_TOKENS.PluginExecutionRouter);
-    #registryGateway = diContainer.resolve<RegistryGateway>(PLUGIN_TOKENS.RegistryGateway);
-    #pluginExposureExportService = diContainer.resolve<PluginExposureExportService>(PLUGIN_TOKENS.PluginExposureExportService);
-    #analysisListingExportCatalogService = diContainer.resolve(AnalysisListingExportCatalogService);
-    #listingRowsExportPresenter = diContainer.resolve(ListingRowsExportPresenter);
+    #pluginDependencyResolverService = new PluginDependencyResolverService(this.#pluginRepository);
+    #workflowValidator = new WorkflowValidatorService(this.#pluginDependencyResolverService);
+    #pluginStorageService = new PluginStorageService(
+        this.#pluginRepository,
+        storagePlacementService,
+        diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient),
+        this.#workflowValidator,
+        new ClusterObjectSignedUrlService(),
+        new ClusterObjectArchiveService()
+    );
+    #pluginExecutionRouter = pluginExecutionRouter;
+    #registryGateway = new RegistryGateway();
+    #pluginExposureExportService = new PluginExposureExportService(
+        diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient),
+        new ClusterObjectArchiveService()
+    );
+    #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
+        diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository),
+        this.#pluginRepository,
+        diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient)
+    );
+    #listingRowsExportPresenter = new ListingRowsExportPresenter(
+        new ClusterObjectArchiveService()
+    );
 
     #analysisRepository = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
-    #trajectoryRepository = diContainer.resolve<ITrajectoryRepository>(COMPUTE_TOKENS.TrajectoryRepository);
-    #trajectoryFrameRepository = diContainer.resolve<ITrajectoryFrameRepository>(COMPUTE_TOKENS.TrajectoryFrameRepository);
-    #sceneArtifactRepository = diContainer.resolve<ISceneArtifactRepository>(COMPUTE_TOKENS.SceneArtifactRepository);
-    #storagePlacementService = diContainer.resolve<IStoragePlacementService>(COMPUTE_TOKENS.StoragePlacementService);
+    #storagePlacementService: IStoragePlacementService = storagePlacementService;
     #teamClusterSelectionService = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
     #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient);
     #sharedObjectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
     #daemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
-    // ==== plugin ============================================================
 
     async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutputDTO> {
         return {
@@ -1077,7 +1033,7 @@ export default class PluginService {
             );
         }
 
-        const trajectory = await this.#trajectoryRepository.findById(input.trajectoryId);
+        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
         if (!trajectory) {
             throw ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
@@ -1085,14 +1041,14 @@ export default class PluginService {
             );
         }
 
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const storageClusterId = trajectory.storageClusterId?.toString();
         const computeClusterId = await this.#teamClusterSelectionService.resolveComputeClusterId(
             input.teamId,
             input.teamClusterId,
             storageClusterId
         );
 
-        const trajectoryFrames = await this.#trajectoryFrameRepository.getFrames(input.trajectoryId);
+        const trajectoryFrames = await getTrajectoryFrames(input.trajectoryId);
         const trajectoryFramePayloads = trajectoryFrames.map((frame) => ({
             timestep: frame.timestep,
             natoms: frame.natoms,
@@ -1128,7 +1084,7 @@ export default class PluginService {
                 const stageResult = await this.#buildPluginStage(
                     stage,
                     input,
-                    trajectory.props.name,
+                    trajectory.name,
                     storageClusterId,
                     computeClusterId,
                     trajectoryFramePayloads,
@@ -1151,7 +1107,7 @@ export default class PluginService {
                 teamClusterId: computeClusterId,
                 teamId: input.teamId,
                 trajectoryId: input.trajectoryId,
-                trajectoryName: trajectory.props.name,
+                trajectoryName: trajectory.name,
                 trajectoryFrames: trajectoryFramePayloads,
                 storageClusterId,
                 selectedTimesteps: resolvedSelectedTimesteps,
@@ -1337,7 +1293,6 @@ export default class PluginService {
         };
     }
 
-    // ==== exposure ===========================================================
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInputDTO): Promise<GetPluginExposureGLBOutputDTO> {
         const analysis = await this.#analysisRepository.findById(String(input.analysisId));
@@ -1366,7 +1321,7 @@ export default class PluginService {
             }
         };
 
-        const artifact = await this.#sceneArtifactRepository.findOne(artifactFilter);
+        const artifact = await SceneArtifactModel.findOne(artifactFilter);
 
         if (!artifact) {
             throw ApplicationError.notFound(
@@ -1375,8 +1330,8 @@ export default class PluginService {
             );
         }
 
-        const objectName = artifact.props.objectName;
-        const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
+        const objectName = artifact.objectName;
+        const teamClusterId = artifact.storageClusterId?.toString();
         if (!teamClusterId) {
             throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
@@ -1432,31 +1387,31 @@ export default class PluginService {
     }
 
     async getPluginExposureChart(input: GetPluginExposureChartInputDTO): Promise<GetPluginExposureChartOutputDTO> {
-        const artifact = await this.#sceneArtifactRepository.findById(String(input.artifactId));
-        if (!artifact || artifact.props.sourceType !== SceneArtifactSourceType.PluginExposure) {
+        const artifact = await SceneArtifactModel.findById(String(input.artifactId));
+        if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
             throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
                 ErrorCodes.FILE_NOT_FOUND
             );
         }
 
-        const trajectory = await this.#trajectoryRepository.findById(String(artifact.props.trajectory));
-        if (!trajectory || String(trajectory.props.team) !== String(input.teamId)) {
+        const trajectory = await TrajectoryModel.findById(String(artifact.trajectory));
+        if (!trajectory || String(trajectory.team) !== String(input.teamId)) {
             throw ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
                 ErrorCodes.FILE_NOT_FOUND
             );
         }
 
-        const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
-        if (!isChartArtifact(metadata, artifact.props.objectName)) {
+        const metadata = artifact.metadata as Record<string, unknown> | undefined;
+        if (!isChartArtifact(metadata, artifact.objectName)) {
             throw ApplicationError.badRequest(
                 'PluginExposureChart::UnsupportedArtifact',
                 'Scene artifact is not a plugin chart'
             );
         }
 
-        const teamClusterId = resolveSceneArtifactStorageClusterId(artifact.props);
+        const teamClusterId = artifact.storageClusterId?.toString();
         if (!teamClusterId) {
             throw ApplicationError.conflict(
                 'SceneArtifact::StorageClusterRequired',
@@ -1467,8 +1422,8 @@ export default class PluginService {
         try {
             const response = await this.#objectGatewayClient.getStream(
                 teamClusterId,
-                artifact.props.storageBucket,
-                artifact.props.objectName
+                artifact.storageBucket,
+                artifact.objectName
             );
 
             return createDownloadStreamResponse({
@@ -1476,7 +1431,7 @@ export default class PluginService {
                 contentType: 'image/png',
                 contentLength: response.contentLength,
                 disposition: 'inline',
-                filename: artifact.props.displayName || 'plugin-chart.png',
+                filename: artifact.displayName || 'plugin-chart.png',
                 cacheControl: 'public, max-age=31536000, immutable'
             });
         } catch (error) {
@@ -1525,7 +1480,6 @@ export default class PluginService {
         });
     }
 
-    // ==== listing-row ========================================================
 
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInputDTO): Promise<GetListingRowsByAnalysisIdOutputDTO> {
         const { page, limit } = resolveListingPagination(input);
@@ -1552,7 +1506,6 @@ export default class PluginService {
         const rows = await enrichDaemonListingRows({
             rows: daemonResult.data || [],
             analysisRepository: this.#analysisRepository,
-            trajectoryRepository: this.#trajectoryRepository,
             fallbackAnalysisId: input.analysisId
         });
         const data = rows.map(mapDaemonListingRow);
@@ -1671,7 +1624,6 @@ export default class PluginService {
         const rows = await enrichDaemonListingRows({
             rows: allRows,
             analysisRepository: this.#analysisRepository,
-            trajectoryRepository: this.#trajectoryRepository,
             fallbackAnalysisId: resolved.analysisId
         });
         const columns = buildListingExportColumns(rows);
@@ -1711,7 +1663,6 @@ export default class PluginService {
         const rows = await enrichDaemonListingRows({
             rows: daemonResult.data || [],
             analysisRepository: this.#analysisRepository,
-            trajectoryRepository: this.#trajectoryRepository,
             fallbackAnalysisId: resolved.analysisId
         });
         const data = rows.map(mapDaemonRow);
@@ -1782,7 +1733,6 @@ export default class PluginService {
         const enriched = await enrichDaemonListingRows({
             rows,
             analysisRepository: this.#analysisRepository,
-            trajectoryRepository: this.#trajectoryRepository,
             fallbackAnalysisId: input.analysisId
         });
 
@@ -1847,8 +1797,8 @@ export default class PluginService {
             return '';
         }
 
-        const trajectory = await this.#trajectoryRepository.findById(trajectoryId);
-        return trajectory?.props.name?.trim() || '';
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
+        return trajectory?.name?.trim() || '';
     }
 
     async #summarizeCollectRows(

@@ -1,14 +1,15 @@
 import { deriveColumns } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 
-import type { IAnalysisRepository, ITrajectoryRepository } from '@shared/contracts/ports';
+import type { IAnalysisRepository } from '@shared/contracts/ports';
 import type { ColumnDef } from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
 import type { DaemonListingRow } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import type { Analysis } from '@shared/contracts/types';
 
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+
 interface EnrichDaemonListingRowsInput {
     rows: DaemonListingRow[];
     analysisRepository: IAnalysisRepository;
-    trajectoryRepository: ITrajectoryRepository;
     fallbackAnalysisId?: string;
 }
 
@@ -84,21 +85,18 @@ const resolveTrajectoryIds = (rows: DaemonListingRow[], analyses: Map<string, An
 };
 
 const loadTrajectoryNames = async (
-    trajectoryIds: string[],
-    trajectoryRepository: ITrajectoryRepository
+    trajectoryIds: string[]
 ): Promise<Map<string, string>> => {
-    const trajectoryList = await trajectoryRepository.export({
-        filter: { _id: { $in: trajectoryIds } }
-    });
+    const trajectoryList = await TrajectoryModel.find({ _id: { $in: trajectoryIds } }).select('name').lean().exec();
 
     const trajectoryNames = new Map<string, string>();
     for (const trajectory of trajectoryList) {
-        const trajectoryName = trajectory.props.name?.trim();
+        const trajectoryName = trajectory.name?.trim();
         if (!trajectoryName) {
             continue;
         }
 
-        trajectoryNames.set(trajectory._id, trajectoryName);
+        trajectoryNames.set(trajectory._id.toString(), trajectoryName);
     }
 
     return trajectoryNames;
@@ -129,7 +127,6 @@ export const buildListingExportColumns = (rows: DaemonListingRow[], daemonColumn
 export const enrichDaemonListingRows = async ({
     rows,
     analysisRepository,
-    trajectoryRepository,
     fallbackAnalysisId
 }: EnrichDaemonListingRowsInput): Promise<DaemonListingRow[]> => {
     if (rows.length === 0) {
@@ -145,7 +142,7 @@ export const enrichDaemonListingRows = async ({
         })),
         analyses
     );
-    const trajectoryNames = await loadTrajectoryNames(trajectoryIds, trajectoryRepository);
+    const trajectoryNames = await loadTrajectoryNames(trajectoryIds);
 
     return rows.map((row) => {
         const analysisId = row.analysis?.trim() || fallbackAnalysisId || '';

@@ -1,9 +1,7 @@
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { Socket } from 'socket.io';
 
-@Singleton()
-export default class SocketConnectionMapper {
+class SocketConnectionMapper {
     toDomain(connection: unknown): ISocketConnection {
         const socket = connection as Socket & {
             user?: ISocketConnection['user'] | null;
@@ -36,3 +34,7 @@ export default class SocketConnectionMapper {
         };
     }
 }
+
+const socketConnectionMapper = new SocketConnectionMapper();
+
+export default socketConnectionMapper;

@@ -1,4 +1,3 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, PluginLike, WorkflowNodeLike } from '@shared/contracts/types';
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
@@ -6,32 +5,50 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import {
-    AnalysisAllAtomsResult,
-    ExposureAtomConfig,
-    IAtomPropertiesService,
-    PerAtomPropertyType
-} from '@modules/trajectory/ports/trajectory/IAtomPropertiesService';
 import type { IAnalysisRepository, IPluginRepository } from '@shared/contracts/ports';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-@Singleton(TRAJECTORY_TOKENS.AtomPropertiesService)
-export default class AtomPropertiesService implements IAtomPropertiesService {
-    constructor(
+export interface FilterExpression {
+    property: string;
+    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value: number | string;
+}
 
-        private readonly daemonClient: TeamClusterDaemonClient,
+export type PerAtomPropertyType = 'number' | 'string';
 
-        @inject(COMPUTE_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
+export interface ExposureAtomConfig {
+    exposureId: string;
+    exposureName: string;
+    iterableKey?: string;
+    perAtomProperties: string[];
+    perAtomPropertyTypes: Record<string, PerAtomPropertyType>;
+    schemaKeysMap: Map<string, string[]>;
+}
 
-        @inject(COMPUTE_TOKENS.PluginRepository)
-        private readonly pluginRepository: IPluginRepository<PluginLike>
-    ) { }
+export interface AnalysisAllAtomsResult {
+    propertyNames: string[];
+    atoms: Record<string, unknown>[];
+}
+
+export class AtomPropertiesService {
+    #daemonClientCache?: TeamClusterDaemonClient;
+    private get daemonClient(): TeamClusterDaemonClient {
+        return (this.#daemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
+
+    #analysisRepositoryCache?: IAnalysisRepository;
+    private get analysisRepository(): IAnalysisRepository {
+        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
+
+    #pluginRepositoryCache?: IPluginRepository<PluginLike>;
+    private get pluginRepository(): IPluginRepository<PluginLike> {
+        return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
+    }
 
     async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {
         const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId, timestep);
@@ -302,11 +319,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
             .filter((node) => !this.isSharedOnlyExposureNode(node));
     }
 
-    // Shared-only sidecar exposures (e.g. `neighbor_lattice.parquet`) exist solely
-    // to feed downstream stages via inferFromContext. Their columns are not
-    // per-atom display data, so keep them out of the color-coding / filtering
-    // property catalog (the `.table` cluster sidecars are already excluded because
-    // the DESCRIBE-based schema probe skips non-parquet files).
     private isSharedOnlyExposureNode(node: WorkflowNodeLike): boolean {
         const results = node?.data?.exposure?.results;
         return typeof results === 'string' && results.endsWith('neighbor_lattice.parquet');
@@ -408,4 +420,6 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
 
         return propertyNames.map((name) => ({ name, type: 'number' }));
     }
-};
+}
+
+export default new AtomPropertiesService();

@@ -42,17 +42,9 @@ export interface ISocketConnection {
 export interface ISocketModule {
     readonly name: string;
 
-    /**
-     * Called once when the module is registered with the gateway.
-     * Use for initialization that doesn't depend on individual connections.
-     */
     onInit(): void | Promise<void>;
 
     onConnection(connection: ISocketConnection): void;
 
-    /**
-     * Called during graceful shutdown.
-     * Use for cleanup of resources, intervals, subscriptions, etc.
-     */
     onShutdown(): Promise<void>;
 }

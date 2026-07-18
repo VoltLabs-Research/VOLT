@@ -1,20 +1,11 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
-import type { ITrajectoryCloneRunner } from '@modules/trajectory/ports/trajectory/ITrajectoryCloneRunner';
-import TrajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
-import { Singleton } from '@shared/infrastructure/di/decorators';
+import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
 import logger from '@shared/infrastructure/logger';
 
 const CLONE_RUNNER_INTERVAL_MS = 15_000;
 
-@Singleton(TRAJECTORY_TOKENS.TrajectoryCloneRunner)
-export default class TrajectoryCloneRunner implements ITrajectoryCloneRunner {
+export class TrajectoryCloneRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
-
-    constructor(
-        
-        private readonly cloneCoordinator: TrajectoryCloneCoordinator
-    ) {}
 
     start(): void {
         if (this.interval) {
@@ -55,9 +46,11 @@ export default class TrajectoryCloneRunner implements ITrajectoryCloneRunner {
         this.running = true;
 
         try {
-            await this.cloneCoordinator.runPendingJobs(jobLimit);
+            await trajectoryCloneCoordinator.runPendingJobs(jobLimit);
         } finally {
             this.running = false;
         }
     }
 }
+
+export default new TrajectoryCloneRunner();

@@ -8,20 +8,19 @@ import type {
 } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { TRAJECTORY_CONTRACT_TOKENS } from '@shared/contracts/tokens/TrajectoryTokens';
-import type { ITrajectoryRepository } from '@shared/contracts/ports';
 import type {
     AnalysisDeletedEventPayload,
     TrajectoryDeletedEventPayload
 } from '@shared/contracts/events';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type IORedis from 'ioredis';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
+import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import {
     jobStatusKey,
     jobTombstoneKey,
@@ -31,17 +30,6 @@ import {
 } from '@modules/jobs/services/job-redis-keys';
 
 const TOMBSTONE_TTL_SECONDS = 600;
-
-/**
- * Narrow, jobs-owned ports describing exactly the trajectory-side capabilities
- * this maintenance service consumes. They exist locally because no neutral
- * `@shared/contracts` port has been extracted for the frame repository or the
- * dump-storage service yet; injecting the concretes by their tokens keeps the
- * jobs module detachable (structural typing, no `@modules/trajectory` import).
- */
-interface MaintenanceTrajectoryFrameReader {
-    getFrames(trajectoryId: string): Promise<Array<{ timestep: number }>>;
-}
 
 interface MaintenanceTrajectoryDumpStorage {
     getObjectName(trajectoryId: string, timestep: string): string;
@@ -79,22 +67,28 @@ interface GlbFrameDescriptor {
     ownerClusterId: string;
 }
 
-@Singleton(COMPUTE_TOKENS.TeamJobMaintenanceService)
-export default class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis,
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
-        private readonly teamJobsService: TeamJobsService,
-        @inject(COMPUTE_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepo: ITrajectoryRepository,
-        @inject(COMPUTE_TOKENS.TrajectoryFrameRepository)
-        private readonly trajectoryFrameRepo: MaintenanceTrajectoryFrameReader,
-        @inject(TRAJECTORY_CONTRACT_TOKENS.TrajectoryDumpStorageService)
-        private readonly dumpStorage: MaintenanceTrajectoryDumpStorage
-    ) {}
+export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
+    private readonly dumpStorage: MaintenanceTrajectoryDumpStorage = trajectoryDumpStorageService;
+
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
+
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
+
+    #eventBusCache?: IEventBus;
+    private get eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
+
+    #teamJobsServiceCache?: TeamJobsService;
+    private get teamJobsService(): TeamJobsService {
+        return (this.#teamJobsServiceCache ??= new TeamJobsService(this.redis));
+    }
 
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {
         if (targetJobs.length === 0) {
@@ -383,28 +377,27 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return recoveredJobIds;
     }
 
-    /**
-     * Requeues GLB preprocessing for specific timesteps by directly calling
-     * the daemon's trajectory.enqueue-preprocessing command.
-     */
     private async requeueGlbPreprocessing(input: {
         trajectoryId: string;
         teamId: string;
         timesteps?: number[];
     }): Promise<string[]> {
-        const trajectory = await this.trajectoryRepo.findById(input.trajectoryId);
+        const trajectory = await TrajectoryModel.findById(input.trajectoryId);
         if (!trajectory) {
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — trajectory not found trajectoryId=${input.trajectoryId}`);
             return [];
         }
 
-        const storageClusterId = trajectory.props.storageClusterId;
+        const storageClusterId = trajectory.storageClusterId?.toString();
         if (!storageClusterId) {
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — no storageClusterId trajectoryId=${input.trajectoryId}`);
             return [];
         }
 
-        const persistedFrames = await this.trajectoryFrameRepo.getFrames(input.trajectoryId);
+        const persistedFrames = await TrajectoryFrameModel.find({ trajectoryId: input.trajectoryId })
+            .select('timestep')
+            .lean()
+            .exec();
         if (persistedFrames.length === 0) {
             logger.warn(`[TeamJobMaintenanceService] requeue skipped — no persisted frames trajectoryId=${input.trajectoryId}`);
             return [];
@@ -795,3 +788,5 @@ export default class TeamJobMaintenanceService implements ITeamJobMaintenanceSer
         return `lock:jupyter:${teamId}:trajectory:${trajectoryId}`;
     }
 }
+
+export default new TeamJobMaintenanceService();

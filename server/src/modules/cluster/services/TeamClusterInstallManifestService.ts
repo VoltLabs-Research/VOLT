@@ -1,5 +1,4 @@
 import TeamCluster from '@modules/cluster/entities/TeamCluster';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
     DaemonDistributionMode,
@@ -15,7 +14,6 @@ import {
 import { normalizeTeamClusterInstallRoot } from '@modules/cluster/utilities/installRoot';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import path from 'node:path';
 import type {
     TeamClusterInstallManifestDTO,
@@ -24,12 +22,9 @@ import type {
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 
-@Singleton(CLUSTER_TOKENS.TeamClusterInstallManifestService)
-export default class TeamClusterInstallManifestService {
-    constructor(
-        private readonly daemonCredentialGuard: DaemonCredentialGuard,
-        private readonly teamClusterRepository: TeamClusterRepository
-    ){}
+export class TeamClusterInstallManifestService {
+    private readonly daemonCredentialGuard = new DaemonCredentialGuard();
+    private readonly teamClusterRepository = new TeamClusterRepository();
 
     async generateInstallManifest(
         teamClusterId: string,
@@ -130,3 +125,5 @@ export default class TeamClusterInstallManifestService {
         }
     }
 }
+
+export default new TeamClusterInstallManifestService();

@@ -3,14 +3,13 @@ import { Singleton } from '@shared/infrastructure/di/decorators';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import type { AnalysisProps } from '@modules/analysis/entities/Analysis';
 import Analysis from '@modules/analysis/entities/Analysis';
-import type { IAnalysisRepository } from '@modules/analysis/ports/IAnalysisRepository';
+import type { IAnalysisRepository, AnalysisRuntimeTarget } from '@shared/contracts/ports/IAnalysisRepository';
 import analysisMapper from '@modules/analysis/mappers/AnalysisMapper';
 import type { AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import type { FilterQuery } from 'mongoose';
 import mongoose from 'mongoose';
 
-import type { AnalysisRuntimeTarget } from '@modules/analysis/ports/IAnalysisRepository';
 export type { AnalysisRuntimeTarget };
 
 @Singleton(COMPUTE_TOKENS.AnalysisRepository)

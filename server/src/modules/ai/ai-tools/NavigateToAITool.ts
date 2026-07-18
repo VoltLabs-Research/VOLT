@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -23,13 +21,6 @@ const parameters = z.object({
 
 type NavigateToParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Navigates the user to an in-app page. The browser handler
- * (client `tools/handlers/navigate_to.ts`) validates the destination against
- * the route allowlist and calls React Router. This server class only advertises
- * the schema to the model; it has no server execute (`clientExecuted = true`).
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class NavigateToAITool extends AITool<NavigateToParams> {
     readonly name = 'navigate_to';
     readonly description = 'Navigate the user to an in-app page by logical destination key with resolved entity ids. '

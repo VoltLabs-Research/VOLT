@@ -3,24 +3,18 @@ import {
     type AnalysisFileRef,
     type AnalysisFileType
 } from '@modules/plugin/utilities/exposure/analysis-file-collection';
-import { PLUGIN_TOKENS } from '@modules/plugin/di/PluginTokens';
-import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type {
     IClusterObjectArchiveService,
-    ITeamClusterObjectGatewayClient,
-    ITrajectoryRepository
+    ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import path from 'node:path';
 import { v4 } from 'uuid';
-import { inject } from 'tsyringe';
 
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types/DownloadStream';
 
@@ -42,14 +36,9 @@ const sortAnalysisFilesByObjectName = (left: AnalysisFileRef, right: AnalysisFil
     return left.objectName.localeCompare(right.objectName);
 };
 
-@Singleton(PLUGIN_TOKENS.PluginExposureExportService)
 export class PluginExposureExportService {
     constructor(
-        @inject(COMPUTE_TOKENS.TrajectoryRepository)
-        private readonly trajectoryRepository: ITrajectoryRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient)
         private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        @inject(CLUSTER_ACCESS_TOKENS.ClusterObjectArchiveService)
         private readonly archiveService: IClusterObjectArchiveService
     ) {}
 
@@ -69,7 +58,7 @@ export class PluginExposureExportService {
     }
 
     private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
-        const trajectory = await this.trajectoryRepository.findById(trajectoryId);
+        const trajectory = await TrajectoryModel.findById(trajectoryId);
         if (!trajectory) {
             throw ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
@@ -77,7 +66,7 @@ export class PluginExposureExportService {
             );
         }
 
-        const storageClusterId = resolveTrajectoryStorageClusterId(trajectory.props);
+        const storageClusterId = trajectory.storageClusterId?.toString();
         if (!storageClusterId) {
             throw ApplicationError.conflict(
                 'Trajectory::StorageClusterRequired',

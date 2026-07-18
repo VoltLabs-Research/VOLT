@@ -1,19 +1,6 @@
-import { ISocketConnection } from './ISocketModule';
+import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 
 export type SocketEventHandler<T = unknown, TResult = unknown> = (
     connection: ISocketConnection,
     payload: T
 ) => TResult | Promise<TResult>;
-
-export interface ISocketEventRegistry {
-    on<T = unknown, TResult = unknown>(
-        socketId: string,
-        event: string,
-        handler: SocketEventHandler<T, TResult>
-    ): void;
-
-    onDisconnect(
-        socketId: string,
-        handler: (connection: ISocketConnection) => void | Promise<void>
-    ): void;
-}

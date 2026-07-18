@@ -2,18 +2,33 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
 
-import type {
-    IWhiteboardRealtimeStateService,
-    MergeSceneResult,
-    WhiteboardAppState,
-    WhiteboardElement,
-    WhiteboardSceneSnapshot
-} from '@modules/whiteboards/ports/IWhiteboardRealtimeStateService';
+export type WhiteboardElement = Record<string, unknown>;
+export type WhiteboardAppState = Record<string, unknown>;
+
+export interface WhiteboardSceneSnapshot {
+    whiteboardId: string;
+    revision: number;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
+}
+
+export interface WhiteboardSceneDelta {
+    whiteboardId: string;
+    revision: number;
+    elements: WhiteboardElement[];
+    appState: WhiteboardAppState;
+    elementOrder?: string[];
+}
+
+export interface MergeSceneResult {
+    changed: boolean;
+    revision: number;
+    delta?: WhiteboardSceneDelta;
+}
 
 interface StoredWhiteboardScene {
     revision?: number;
@@ -150,14 +165,14 @@ const areStringArraysEqual = (left: string[], right: string[]): boolean => {
     return true;
 };
 
-@Singleton()
-export default class WhiteboardRealtimeStateService implements IWhiteboardRealtimeStateService {
+export class WhiteboardRealtimeStateService {
     private readonly rooms = new Map<string, WhiteboardRoomState>();
     private readonly pendingLoads = new Map<string, Promise<WhiteboardRoomState | null>>();
 
-    constructor(
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+    }
 
     async getSnapshot(whiteboardId: string): Promise<WhiteboardSceneSnapshot | null> {
         const room = await this.getOrLoadRoom(whiteboardId);
@@ -474,3 +489,5 @@ export default class WhiteboardRealtimeStateService implements IWhiteboardRealti
         return result;
     }
 }
+
+export default new WhiteboardRealtimeStateService();

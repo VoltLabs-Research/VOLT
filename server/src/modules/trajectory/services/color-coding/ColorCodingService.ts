@@ -1,13 +1,10 @@
-import { TRAJECTORY_TOKENS } from '@modules/trajectory/di/TrajectoryTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService, IAnalysisRepository } from '@shared/contracts/ports';
 import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
-import { SceneArtifactSourceType } from '@modules/trajectory/entities/scene-artifacts/SceneArtifact';
-import { IColorCodingService } from '@modules/trajectory/ports/color-coding/IColorCodingService';
-import type { IAtomPropertiesService } from '@modules/trajectory/ports/trajectory/IAtomPropertiesService';
-import type { ITrajectoryNativeDaemonService } from '@modules/trajectory/ports/native/ITrajectoryNativeDaemonService';
+import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/contracts/native';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
 import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilities/scene-artifacts/resolve-scene-artifact-execution-context';
@@ -15,12 +12,12 @@ import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utili
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-import SceneArtifactRepository from '@modules/trajectory/repositories/scene-artifacts/SceneArtifactRepository';
-import TrajectoryRepository from '@modules/trajectory/repositories/trajectory/TrajectoryRepository';
-import TrajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
+import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
+import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import { Readable } from 'node:stream';
 
 const buildClusterRequiredError = (): ApplicationError => {
@@ -42,34 +39,16 @@ const buildPluginPropertyUnavailableError = (
     );
 };
 
-@Singleton(TRAJECTORY_TOKENS.ColorCodingService)
-export default class ColorCodingService implements IColorCodingService {
-    constructor(
+export class ColorCodingService {
+    #analysisRepositoryCache?: IAnalysisRepository;
+    private get analysisRepository(): IAnalysisRepository {
+        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
 
-        @inject(TRAJECTORY_TOKENS.AtomPropertiesService)
-        private readonly atomProps: IAtomPropertiesService,
-
-
-        private readonly dumpStorage: TrajectoryDumpStorageService,
-
-
-        private readonly sceneArtifactRepository: SceneArtifactRepository,
-
-
-        private readonly trajectoryRepository: TrajectoryRepository,
-
-
-        @inject(COMPUTE_TOKENS.AnalysisRepository)
-        private readonly analysisRepository: IAnalysisRepository,
-
-
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
-        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-
-
-        @inject(TRAJECTORY_TOKENS.TrajectoryNativeDaemonService)
-        private readonly trajectoryNativeDaemonService: ITrajectoryNativeDaemonService
-    ) { }
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    private get teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
 
     async getProperties(
         trajectoryId: string,
@@ -83,7 +62,6 @@ export default class ColorCodingService implements IColorCodingService {
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext({
             trajectoryId: String(trajectoryId),
-            trajectoryRepository: this.trajectoryRepository,
             teamClusterSelectionService: this.teamClusterSelectionService
         });
 
@@ -91,11 +69,11 @@ export default class ColorCodingService implements IColorCodingService {
             throw buildClusterRequiredError();
         }
 
-        const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
+        const metadata = await trajectoryNativeDaemonService.getTrajectoryMetadata({
             teamClusterId: clusterContext.computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
-            objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
+            objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
             ownerClusterId: clusterContext.storageClusterId
         });
         const headers = metadata.headers || [];
@@ -103,7 +81,7 @@ export default class ColorCodingService implements IColorCodingService {
         const modifierProps: Record<string, string[]> = {};
         const modifierTypes: Record<string, Record<string, 'number' | 'string'>> = {};
         if (resolvedAnalysisId) {
-            const configs = await this.atomProps.getAnalysisExposureAtomConfigs(
+            const configs = await atomPropertiesService.getAnalysisExposureAtomConfigs(
                 String(resolvedAnalysisId),
                 String(timestep)
             );
@@ -147,7 +125,7 @@ export default class ColorCodingService implements IColorCodingService {
                 String(timestep),
                 property
             );
-            const stats = await this.atomProps.getModifierStats(
+            const stats = await atomPropertiesService.getModifierStats(
                 String(trajectoryId),
                 String(resolvedAnalysisId),
                 String(exposureId),
@@ -161,7 +139,6 @@ export default class ColorCodingService implements IColorCodingService {
         } else {
             const clusterContext = await resolveTrajectoryNativeClusterContext({
                 trajectoryId: String(trajectoryId),
-                trajectoryRepository: this.trajectoryRepository,
                 teamClusterSelectionService: this.teamClusterSelectionService
             });
 
@@ -169,22 +146,22 @@ export default class ColorCodingService implements IColorCodingService {
                 throw buildClusterRequiredError();
             }
 
-            const metadata = await this.trajectoryNativeDaemonService.getTrajectoryMetadata({
+            const metadata = await trajectoryNativeDaemonService.getTrajectoryMetadata({
                 teamClusterId: clusterContext.computeClusterId,
                 trajectoryId: String(trajectoryId),
                 timestep: Number(timestep),
-                objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
+                objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
                 ownerClusterId: clusterContext.storageClusterId
             });
             const headers = metadata.headers || [];
             const propIdx = headers.indexOf(property.toLowerCase());
 
             if (propIdx !== -1) {
-                const stats = await this.trajectoryNativeDaemonService.getPropertyStats({
+                const stats = await trajectoryNativeDaemonService.getPropertyStats({
                     teamClusterId: clusterContext.computeClusterId,
                     trajectoryId: String(trajectoryId),
                     timestep: Number(timestep),
-                    objectKey: this.dumpStorage.getObjectName(String(trajectoryId), String(timestep)),
+                    objectKey: trajectoryDumpStorageService.getObjectName(String(trajectoryId), String(timestep)),
                     ownerClusterId: clusterContext.storageClusterId,
                     property
                 });
@@ -229,9 +206,8 @@ export default class ColorCodingService implements IColorCodingService {
             timestep: String(timestep),
             analysisId: resolvedAnalysisId,
             analysisRepository: this.analysisRepository,
-            trajectoryRepository: this.trajectoryRepository,
             teamClusterSelectionService: this.teamClusterSelectionService,
-            dumpStorage: this.dumpStorage,
+            dumpStorage: trajectoryDumpStorageService,
             buildClusterRequiredError
         });
 
@@ -244,7 +220,7 @@ export default class ColorCodingService implements IColorCodingService {
             )
             : undefined;
 
-        await this.trajectoryNativeDaemonService.exportColoredModel({
+        await trajectoryNativeDaemonService.exportColoredModel({
             teamClusterId: computeClusterId,
             trajectoryId: String(trajectoryId),
             timestep: Number(timestep),
@@ -257,7 +233,7 @@ export default class ColorCodingService implements IColorCodingService {
             ...(modifierSource ?? {})
         });
 
-        await recordSceneArtifact(this.sceneArtifactRepository, {
+        await recordSceneArtifact({
             trajectory: String(trajectoryId),
             storageClusterId,
             analysis: resolvedAnalysisId,
@@ -270,7 +246,7 @@ export default class ColorCodingService implements IColorCodingService {
                 endValue: Number(endValue),
                 gradient: String(gradient),
                 exposureId
-            },
+            } as SceneArtifactParams,
             displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
             metadata: {
                 analysisId: resolvedAnalysisId || null,
@@ -287,7 +263,7 @@ export default class ColorCodingService implements IColorCodingService {
         timestep: string,
         property: string
     ): Promise<{ analysisId: string; exposureId: string; }> {
-        const exposureConfigs = await this.atomProps.getAnalysisExposureAtomConfigs(analysisId, timestep);
+        const exposureConfigs = await atomPropertiesService.getAnalysisExposureAtomConfigs(analysisId, timestep);
         const exposureConfig = exposureConfigs.find((config) => config.exposureId === exposureId);
 
         if (!exposureConfig || !exposureConfig.perAtomProperties.includes(property)) {
@@ -332,9 +308,9 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<TrajectoryNativeObjectStreamResponse> {
-        const trajectory = await this.trajectoryRepository.findById(String(trajectoryId));
+        const trajectory = await TrajectoryModel.findById(String(trajectoryId));
         const storageClusterId = trajectory
-            ? resolveTrajectoryStorageClusterId(trajectory.props)
+            ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() })
             : undefined;
         const objectName = buildColorCodingObjectName(
             trajectoryId,
@@ -348,7 +324,7 @@ export default class ColorCodingService implements IColorCodingService {
         );
 
         if (storageClusterId) {
-            return this.trajectoryNativeDaemonService.getObjectStreamResponse(
+            return trajectoryNativeDaemonService.getObjectStreamResponse(
                 storageClusterId,
                 TEAM_CLUSTER_BUCKETS.MODELS,
                 objectName
@@ -357,4 +333,6 @@ export default class ColorCodingService implements IColorCodingService {
 
         throw buildClusterRequiredError();
     }
-};
+}
+
+export default new ColorCodingService();

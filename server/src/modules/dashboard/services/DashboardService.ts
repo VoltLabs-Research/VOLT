@@ -1,20 +1,8 @@
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { CHAT_CONTRACT_TOKENS, CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import type {
-    IAnalysisRepository,
-    IChatRepository,
-    IContainerRepository,
-    IPluginRepository,
-    ITrajectoryRepository,
-    PersistedChatDTO
-} from '@shared/contracts/ports';
-import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
+import type { PersistedChatDTO } from '@shared/contracts/ports';
 import { extractPluginId } from '@shared/application/utilities/extract-plugin-id';
 import type { Analysis, ChatParticipant } from '@shared/contracts/types';
 import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { TeamProps } from '@modules/team/entities/team/Team';
 import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
 import type {
@@ -23,15 +11,15 @@ import type {
     PersistedPluginDTO,
     TrajectoryPersistedDTO
 } from '@shared/contracts/dtos';
-import { container as diContainer } from 'tsyringe';
+import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
+import { ContainerModel } from '@modules/container/models/ContainerModel';
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
+import PluginRepository from '@modules/plugin/services/PluginRepository';
+import TeamRepository from '@modules/team/repositories/team/TeamRepository';
+import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
+import ChatModel from '@modules/chat/models/chat/ChatModel';
+import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
-/**
- * Neutral structural view of a container as surfaced by global search. Matches
- * the field set copied out of the container repository result and the
- * deep-linkable subset the UI/AI consume (`_id`, `name`). Collection-typed
- * fields are intentionally loose (`unknown[]`) — passed through, never read by
- * member.
- */
 export interface ContainerSearchView {
     _id: string;
     name: string;
@@ -55,11 +43,6 @@ export interface ContainerSearchView {
     updatedAt?: Date;
 }
 
-/**
- * Neutral structural view of the chat props global search reads: participant
- * list + last-message content (for the text match) and the group metadata the
- * UI surfaces. Binds the generic `PersistedChatDTO` contract.
- */
 export interface ChatSearchView {
     participants: ChatParticipant[];
     lastMessage: string;
@@ -149,24 +132,12 @@ const getLastMessageContent = (chat: PersistedChatDTO<ChatSearchView>): string |
     return typeof content === 'string' ? content : undefined;
 };
 
-/**
- * The single application service for the dashboard module (pollium style):
- * folds the former GetGlobalSearchUseCase verbatim. Dashboard owns no data of
- * its own — global search is a read fan-out across other modules, so the six
- * source repositories are resolved once from the DI container via their neutral
- * cross-module tokens (the same tokens their owning modules register, e.g.
- * container's `ContainerSearchRepository` / analysis's model-backed search
- * adapter). Throws typed `ApplicationError`s from the underlying repos.
- */
+const toId = (value: unknown): string | undefined => (value === undefined || value === null ? undefined : String(value));
+
 export default class DashboardService {
-    // Cross-module read repositories, resolved once from the DI container via
-    // neutral tokens (owning modules register the concrete adapters):
-    #analysisRepository = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
-    #containerRepository = diContainer.resolve<IContainerRepository<ContainerSearchView>>(CONTAINER_CONTRACT_TOKENS.ContainerRepository);
-    #trajectoryRepository = diContainer.resolve<ITrajectoryRepository>(COMPUTE_TOKENS.TrajectoryRepository);
-    #pluginRepository = diContainer.resolve<IPluginRepository<PluginEntity>>(COMPUTE_TOKENS.PluginRepository);
-    #teamRepository = diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository);
-    #chatRepository = diContainer.resolve<IChatRepository<unknown, ChatSearchView>>(CHAT_CONTRACT_TOKENS.ChatRepository);
+    #analysisRepository = new AnalysisRepository();
+    #pluginRepository = new PluginRepository();
+    #teamRepository = new TeamRepository(new TeamMemberRepository());
 
     async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult> {
         const normalizedQuery = normalizeQuery(input.query);
@@ -183,9 +154,9 @@ export default class DashboardService {
             teams,
             chats
         ] = await Promise.all([
-            this.#trajectoryRepository.searchIdsByTeamAndName(input.teamId, normalizedQuery),
+            this.#searchTrajectoryIdsByTeamAndName(input.teamId, regex),
             this.#teamRepository.findUserTeams(input.userId),
-            this.#chatRepository.findChatsByUserId(input.userId)
+            this.#findChatsByUserId(input.userId)
         ]);
 
         const [
@@ -202,7 +173,7 @@ export default class DashboardService {
                 page: 1,
                 populate: [TRAJECTORY_POPULATE]
             }),
-            this.#containerRepository.findAll({
+            this.#findContainers({
                 filter: {
                     team: input.teamId,
                     name: { $regex: regex }
@@ -211,15 +182,7 @@ export default class DashboardService {
                 limit,
                 page: 1
             }),
-            this.#trajectoryRepository.findAll({
-                filter: {
-                    team: input.teamId,
-                    name: { $regex: regex }
-                },
-                sort: { updatedAt: -1 },
-                limit,
-                page: 1
-            }),
+            this.#searchTrajectories(input.teamId, regex, limit),
             this.#pluginRepository.findAll({
                 filter: {
                     team: input.teamId,
@@ -241,7 +204,7 @@ export default class DashboardService {
                 plugin: extractPluginId(analysis.props.plugin),
                 trajectory: analysis.props.trajectory
             })),
-            containers: containersResult.data.map((container) => ({
+            containers: (containersResult.data as unknown as ContainerSearchView[]).map((container) => ({
                 _id: container._id,
                 name: container.name,
                 image: container.image,
@@ -263,7 +226,7 @@ export default class DashboardService {
                 createdAt: container.createdAt,
                 updatedAt: container.updatedAt
             })),
-            trajectories: trajectoriesResult.data.map((trajectory) => toPersistedOutput(trajectory)),
+            trajectories: trajectoriesResult,
             teams: teams
                 .filter((team) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
@@ -272,7 +235,7 @@ export default class DashboardService {
                 ))
                 .slice(0, limit),
             plugins: pluginsResult.data.map((plugin): PluginSearchDTO => mapPluginToPersistedDTO(plugin)),
-            chats: chats
+            chats: (chats as unknown as PersistedChatDTO<ChatSearchView>[])
                 .filter((chat) => matchesNormalizedQuery(
                     normalizedLowerCaseQuery,
                     getLastMessageContent(chat),
@@ -280,5 +243,76 @@ export default class DashboardService {
                 ))
                 .slice(0, limit)
         };
+    }
+
+    async #findContainers(options: {
+        filter: Record<string, unknown>;
+        sort: Record<string, 1 | -1>;
+        limit: number;
+        page: number;
+    }): Promise<PaginatedResult<Record<string, unknown>>> {
+        const { filter, sort, limit, page } = options;
+
+        const [docs, total] = await Promise.all([
+            ContainerModel.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).lean().exec(),
+            ContainerModel.countDocuments(filter)
+        ]);
+
+        const data = docs.map((doc) => ({
+            ...doc,
+            _id: String(doc._id),
+            folder: toId(doc.folder) ?? null,
+            createdBy: toId(doc.createdBy),
+            team: toId(doc.team),
+            teamCluster: toId(doc.teamCluster)
+        }));
+
+        return {
+            data,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
+        };
+    }
+
+    async #searchTrajectoryIdsByTeamAndName(teamId: string, regex: RegExp): Promise<string[]> {
+        const docs = await TrajectoryModel.find({ team: teamId, name: regex }).select('_id').lean().exec();
+        return docs.map((doc) => doc._id.toString());
+    }
+
+    async #searchTrajectories(teamId: string, regex: RegExp, limit: number): Promise<TrajectoryPersistedDTO[]> {
+        const docs = await TrajectoryModel.find({ team: teamId, name: regex })
+            .sort({ updatedAt: -1 })
+            .limit(limit)
+            .lean()
+            .exec();
+
+        return docs.map((doc) => ({
+            _id: doc._id.toString(),
+            name: doc.name,
+            team: toId(doc.team) ?? '',
+            folder: toId(doc.folder) ?? null,
+            storageClusterId: toId(doc.storageClusterId),
+            createdBy: toId(doc.createdBy) ?? '',
+            status: doc.status,
+            isPublic: doc.isPublic,
+            rasterSceneViews: doc.rasterSceneViews,
+            hasPreview: doc.hasPreview,
+            stats: doc.stats,
+            updatedAt: doc.updatedAt,
+            createdAt: doc.createdAt
+        }));
+    }
+
+    async #findChatsByUserId(userId: string): Promise<Array<Record<string, unknown>>> {
+        const chats = await ChatModel.find({ participants: userId, isActive: true })
+            .populate('lastMessage')
+            .populate('participants')
+            .sort({ lastMessageAt: -1 })
+            .lean()
+            .exec();
+
+        return chats.map((chat) => ({ ...chat, _id: String(chat._id) }));
     }
 }

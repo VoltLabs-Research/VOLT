@@ -1,4 +1,3 @@
-import { AI_TOKENS } from '@modules/ai/di/AITokens';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createCerebras } from '@ai-sdk/cerebras';
 import { createCohere } from '@ai-sdk/cohere';
@@ -15,12 +14,12 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { AIConversationMessage } from '@modules/ai/contracts/AIConversationMessage';
 import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
 import type { AIMessageToolCall, AIMessageToolResult, AIMessageToolStep } from '@modules/ai/models/AIMessageModel';
-import type AIToolService from '@modules/ai/services/AIToolService';
-import type { TeamAIProvider } from '@modules/team/entities/ai-integration/TeamAIIntegration';
-import TeamAIIntegrationRepository from '@modules/team/repositories/ai-integration/TeamAIIntegrationRepository';
-import TeamAIIntegrationSecretCipher from '@modules/team/security/ai-integration/TeamAIIntegrationSecretCipher';
+import type AIToolServiceType from '@modules/ai/services/AIToolService';
+import type { TeamAIProvider } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import TeamAIIntegrationModel from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import type { TeamAIIntegrationDocument } from '@modules/team/models/ai-integration/TeamAIIntegrationModel';
+import { decrypt } from '@shared/infrastructure/utilities/crypto';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import type {
     LanguageModel,
@@ -35,7 +34,15 @@ import {
 } from 'ai';
 import type { Response } from 'express';
 import { createOllama } from 'ollama-ai-provider-v2';
-import { inject } from 'tsyringe';
+
+// `AIToolService` transitively imports every AI tool, some of which import
+// `AiService`, which imports this module — requiring it eagerly at the top
+// level would deadlock that cycle mid-load. Resolve it lazily on first use
+// instead, once module loading has fully settled.
+let aiToolServiceCache: typeof AIToolServiceType | undefined;
+const getAiToolService = (): typeof AIToolServiceType => {
+    return aiToolServiceCache ??= (require('@modules/ai/services/AIToolService') as { default: typeof AIToolServiceType }).default;
+};
 
 interface ProviderBuildOptions {
     apiKey: string;
@@ -62,15 +69,6 @@ interface AIStreamToolResult {
     output: unknown;
 }
 
-/**
- * Builds a configured language model for a provider. Each entry adapts that
- * provider's own option shape, forwarding an optional `baseURL` so a team can
- * point any provider at a self-hosted gateway (e.g. their own Anthropic proxy),
- * not just Ollama. `baseURL: undefined` falls back to the provider's default
- * endpoint. Building per-request (rather than via a startup
- * `createProviderRegistry`) is intentional: the API key is decrypted per team
- * on each call.
- */
 type ProviderBuilder = (options: ProviderBuildOptions) => LanguageModel;
 
 type AIStreamResult = ReturnType<typeof streamText>;
@@ -157,14 +155,7 @@ class AISDKReplyStream implements AIChatReplyStream {
     }
 }
 
-@Singleton(AI_TOKENS.AIChatTransport)
-export default class AISDKChatTransport {
-    constructor(
-        @inject(AI_TOKENS.AIToolService) private readonly toolService: AIToolService,
-        private readonly integrationRepo: TeamAIIntegrationRepository,
-        private readonly secretCipher: TeamAIIntegrationSecretCipher
-    ) {}
-
+class AISDKChatTransport {
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream> {
         const modelMessages = await this.toModelMessages(input.messages);
 
@@ -172,7 +163,7 @@ export default class AISDKChatTransport {
             await this.resolveProviderConfig(input.teamId, input.provider, input.model);
 
         const languageModel = this.buildModel(providerName, modelName, apiKey, metadata);
-        const tools: ToolSet = this.toolService.createToolsForContext(input.teamId, input.userId);
+        const tools: ToolSet = getAiToolService().createToolsForContext(input.teamId, input.userId);
 
         const result = streamText({
             model: languageModel,
@@ -220,12 +211,6 @@ export default class AISDKChatTransport {
         return new AISDKReplyStream(result);
     }
 
-    /**
-     * Converts persisted/transport messages to model messages. Tool-call parts
-     * left in a non-terminal approval state (an interrupted approval flow) are
-     * dropped via the SDK's `ignoreIncompleteToolCalls` so conversion never
-     * throws — no need to fabricate synthetic tool outputs.
-     */
     private async toModelMessages(messages: GenerateAIChatReplyInput['messages']): Promise<ModelMessage[]> {
         const modelInputMessages: ModelInputMessage[] = messages.map(({ id: _id, ...message }) => message);
         return convertToModelMessages(
@@ -239,7 +224,10 @@ export default class AISDKChatTransport {
         requestedProvider?: string,
         requestedModel?: string
     ): Promise<ProviderConfig> {
-        const integrations = await this.integrationRepo.listEnabledByTeamIdWithSecrets(teamId);
+        const integrations = await TeamAIIntegrationModel.find({ team: teamId, isEnabled: true })
+            .select('+encryptedApiKey')
+            .sort({ createdAt: -1 })
+            .exec();
 
         if (!integrations.length) {
             throw ApplicationError.badRequest(
@@ -249,7 +237,7 @@ export default class AISDKChatTransport {
         }
 
         const findIntegration = (name: string) =>
-            integrations.find((integration) => integration.props.provider === name);
+            integrations.find((integration) => integration.provider === name);
 
         if (requestedProvider) {
             const integration = findIntegration(requestedProvider);
@@ -260,34 +248,29 @@ export default class AISDKChatTransport {
                 );
             }
 
-            const apiKey = integration.props.encryptedApiKey
-                ? await this.secretCipher.decrypt(integration.props.encryptedApiKey)
-                : '';
-            const model = requestedModel || integration.props.defaultModel;
-            if (!model) {
-                throw ApplicationError.badRequest(
-                    ErrorCodes.AI_PROVIDER_UNAVAILABLE,
-                    `No model specified and provider "${requestedProvider}" has no default model configured`
-                );
-            }
-
-            return { provider: integration.props.provider, model, apiKey, metadata: integration.props.metadata };
+            return this.toProviderConfig(integration, requestedModel);
         }
 
         const first = integrations[0];
-        const provider = first.props.provider;
-        const apiKey = first.props.encryptedApiKey
-            ? await this.secretCipher.decrypt(first.props.encryptedApiKey)
+        return this.toProviderConfig(first, requestedModel);
+    }
+
+    private async toProviderConfig(
+        integration: TeamAIIntegrationDocument,
+        requestedModel?: string
+    ): Promise<ProviderConfig> {
+        const apiKey = integration.encryptedApiKey
+            ? await decrypt(integration.encryptedApiKey)
             : '';
-        const model = requestedModel || first.props.defaultModel;
+        const model = requestedModel || integration.defaultModel;
         if (!model) {
             throw ApplicationError.badRequest(
                 ErrorCodes.AI_PROVIDER_UNAVAILABLE,
-                `No model specified and provider "${provider}" has no default model configured`
+                `No model specified and provider "${integration.provider}" has no default model configured`
             );
         }
 
-        return { provider, model, apiKey, metadata: first.props.metadata };
+        return { provider: integration.provider, model, apiKey, metadata: integration.metadata };
     }
 
     private buildModel(provider: AIProvider, model: string, apiKey: string, metadata?: Record<string, unknown>): LanguageModel {
@@ -307,3 +290,5 @@ export default class AISDKChatTransport {
         return builder(model)({ apiKey, baseUrl });
     }
 }
+
+export default new AISDKChatTransport();

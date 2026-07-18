@@ -3,13 +3,13 @@ import {
     resolveTrajectoryStorageClusterId
 } from '@shared/application/utilities/cluster-location';
 import type { IAnalysisRepository } from '@shared/contracts/ports';
-import type { ITrajectoryRepository } from '@modules/trajectory/ports/trajectory/ITrajectoryRepository';
+
+import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
 interface ResolveSceneArtifactStorageClusterInput {
     trajectoryId: string;
     analysisId?: string;
     analysisRepository: IAnalysisRepository;
-    trajectoryRepository: ITrajectoryRepository;
 }
 
 export const resolveSceneArtifactStorageCluster = async (
@@ -22,6 +22,6 @@ export const resolveSceneArtifactStorageCluster = async (
         }
     }
 
-    const trajectory = await input.trajectoryRepository.findById(input.trajectoryId);
-    return trajectory ? resolveTrajectoryStorageClusterId(trajectory.props) : undefined;
+    const trajectory = await TrajectoryModel.findById(input.trajectoryId);
+    return trajectory ? resolveTrajectoryStorageClusterId({ storageClusterId: trajectory.storageClusterId?.toString() }) : undefined;
 };

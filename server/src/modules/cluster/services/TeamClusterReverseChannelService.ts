@@ -3,8 +3,7 @@ import type {
     ContainerTerminalAttachment,
     ContainerTerminalSize
 } from '@shared/contracts/ports';
-import type { IContainerDeploymentProgressService } from '@shared/contracts/ports';
-import { CONTAINER_CONTRACT_TOKENS } from '@shared/contracts/tokens/ContainerTokens';
+import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/utilities/TeamClusterReverseTerminal';
 import {
@@ -40,9 +39,7 @@ import {
     type TeamClusterDaemonTunnelStatePayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import { inject } from 'tsyringe';
+import { container } from 'tsyringe';
 import type { ITeamClusterReverseChannelService } from '@modules/cluster/ports/ITeamClusterReverseChannelService';
 import type {
     TeamClusterDaemonCommandData,
@@ -79,7 +76,7 @@ import {
 } from '@shared/infrastructure/types/reverseChannelBinary';
 import { randomUUID } from 'node:crypto';
 import { PassThrough } from 'node:stream';
-import TeamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
+import teamClusterExposureRegistryService from './TeamClusterExposureRegistryService';
 
 interface TeamClusterDaemonExposureTunnelOpenMessage {
     type: 'tunnel-open';
@@ -203,8 +200,7 @@ const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
 );
 const OBJECT_GATEWAY_EXPOSURE_ID = 'daemon:object-gateway';
 
-@Singleton(CLUSTER_TOKENS.TeamClusterReverseChannelService)
-export default class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
+export class TeamClusterReverseChannelService implements ITeamClusterReverseChannelService {
     private readonly daemonSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly heartbeatSocketIdsByTeamClusterId = new Map<string, string>();
     private readonly objectGatewaySocketIdsByTeamClusterId = new Map<string, string>();
@@ -221,52 +217,33 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
     private readonly terminalTimeoutMs = 15_000;
     private readonly daemonConnectionWaitTimeoutMs = 30_000;
 
-    /**
-     * Maximum time (ms) a resolved session (terminal, websocket, tunnel) can
-     * remain idle (no data flowing) before being reaped. Prevents orphaned
-     * entries from accumulating when the daemon silently drops a session.
-     */
     private readonly sessionIdleTtlMs = 10 * 60 * 1000;
     private readonly sessionSweepIntervalMs = 60 * 1000;
 
-    /** Tracks last activity timestamp for resolved sessions. */
     private readonly sessionActivity = new Map<string, number>();
     private idleSweepTimer: ReturnType<typeof setInterval> | null = null;
 
-    /**
-     * High-water mark for PassThrough streams used in streaming responses,
-     * terminal sessions, etc.  Limits how much data can be buffered in a
-     * single stream before backpressure kicks in.
-     */
     private readonly streamHighWaterMark = 256 * 1024;
 
-    constructor(
-        private readonly socketEmitter: SocketIOEmitter,
-        private readonly exposureRegistryService: TeamClusterExposureRegistryService,
-        @inject(CONTAINER_CONTRACT_TOKENS.ContainerDeploymentProgressService)
-        private readonly containerDeploymentProgressService: IContainerDeploymentProgressService
-    ) {
+    #socketEmitterCache?: any;
+    private get socketEmitter(): any {
+        return (this.#socketEmitterCache ??= container.resolve<any>(SocketIOEmitter));
+    }
+    private readonly exposureRegistryService = teamClusterExposureRegistryService;
+    private readonly containerDeploymentProgressService = containerDeploymentProgressService;
+
+    constructor() {
         this.startIdleSweep();
     }
 
-    /**
-     * Records activity for a resolved session so its idle TTL resets.
-     */
     private touchSession(sessionId: string): void {
         this.sessionActivity.set(sessionId, Date.now());
     }
 
-    /**
-     * Removes activity tracking for a session.
-     */
     private untouchSession(sessionId: string): void {
         this.sessionActivity.delete(sessionId);
     }
 
-    /**
-     * Periodically reaps resolved sessions that have been idle beyond
-     * `sessionIdleTtlMs`.
-     */
     private startIdleSweep(): void {
         if (this.idleSweepTimer) return;
 
@@ -1319,19 +1296,10 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
         this.emitToDaemon(socketId, payload);
     }
 
-    /**
-     * Wraps a raw byte buffer into a `StreamChunk` envelope for the reverse
-     * channel. Envelope overhead is 10 B per chunk.
-     */
     private wrapEnvelopeBuffer(chunk: Buffer | Uint8Array): Uint8Array {
         return encodeEnvelope(0, EnvelopeKind.StreamChunk, chunk);
     }
 
-    /**
-     * Unwraps a binary envelope into a `Buffer` safe for stream writes.
-     * Performs a single memcpy only when the inbound value is not already a
-     * `Uint8Array` or the envelope kind does not match the carrier contract.
-     */
     private unwrapEnvelopeBuffer(chunk: Uint8Array | Buffer | ArrayBuffer): Buffer {
         const bytes = toUint8Array(chunk);
         const decoded = decodeEnvelope(bytes);
@@ -1538,3 +1506,5 @@ export default class TeamClusterReverseChannelService implements ITeamClusterRev
         }
     }
 }
+
+export default new TeamClusterReverseChannelService();

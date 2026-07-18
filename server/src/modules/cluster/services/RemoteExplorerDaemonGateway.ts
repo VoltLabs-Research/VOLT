@@ -1,13 +1,12 @@
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type {
     TeamClusterRemoteExplorerEntryDTO,
     TeamClusterRemoteExplorerNodeDTO
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelService';
+import { container } from 'tsyringe';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;
@@ -15,11 +14,11 @@ interface RemoteExplorerDaemonRequest {
     path: string;
 }
 
-@Singleton(CLUSTER_TOKENS.RemoteExplorerDaemonGateway)
-export default class RemoteExplorerDaemonGateway {
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
-    ) {}
+export class RemoteExplorerDaemonGateway {
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= container.resolve(TeamClusterDaemonClient));
+    }
 
     async listEntries(
         request: RemoteExplorerDaemonRequest
@@ -58,3 +57,5 @@ export default class RemoteExplorerDaemonGateway {
         };
     }
 }
+
+export default new RemoteExplorerDaemonGateway();

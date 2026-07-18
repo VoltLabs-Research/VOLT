@@ -2,12 +2,9 @@ import {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';
-
 
 interface CreateRemoteAccessSessionParams {
     userId: string;
@@ -40,16 +37,12 @@ const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
     return getRemoteAccessSessionExpiresAt(session) <= Date.now();
 };
 
-@Singleton(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
-export default class TeamClusterRemoteAccessSessionService {
+export class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredRemoteAccessSession>({
         getExpiresAt: getRemoteAccessSessionExpiresAt,
         sweepIntervalMs: SESSION_SWEEP_INTERVAL_MS
     });
 
-    /**
-     * Creates an ephemeral session that authorizes a single remote access flow.
-     */
     createSession(params: CreateRemoteAccessSessionParams): TeamClusterRemoteAccessSessionDTO {
         this.cleanupExpiredSessions();
 
@@ -70,9 +63,6 @@ export default class TeamClusterRemoteAccessSessionService {
         return this.toDTO(session);
     }
 
-    /**
-     * Validates that an ephemeral remote access session still belongs to the caller and target resource.
-     */
     validateSession(params: ValidateRemoteAccessSessionParams): StoredRemoteAccessSession | ApplicationError {
         this.cleanupExpiredSessions();
 
@@ -138,3 +128,5 @@ export default class TeamClusterRemoteAccessSessionService {
         };
     }
 }
+
+export default new TeamClusterRemoteAccessSessionService();

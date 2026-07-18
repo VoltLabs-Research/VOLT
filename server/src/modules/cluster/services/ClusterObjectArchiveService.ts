@@ -1,10 +1,9 @@
-import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
+import { container } from 'tsyringe';
 
 import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
@@ -46,12 +45,16 @@ interface CreateArchiveDownloadInput {
     cacheControl?: string;
 }
 
-@Singleton(CLUSTER_TOKENS.ClusterObjectArchiveService)
 export default class ClusterObjectArchiveService implements IClusterObjectArchiveService {
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly objectGatewayClient: TeamClusterObjectGatewayClient
-    ) {}
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= container.resolve(TeamClusterDaemonClient));
+    }
+
+    #objectGatewayClientCache?: TeamClusterObjectGatewayClient;
+    private get objectGatewayClient(): TeamClusterObjectGatewayClient {
+        return (this.#objectGatewayClientCache ??= container.resolve(TeamClusterObjectGatewayClient));
+    }
 
     async createArchiveDownload(input: CreateArchiveDownloadInput): Promise<ClusterArchiveDownload> {
         const bucket = input.outputBucket || TEAM_CLUSTER_BUCKETS.TRAJECTORIES;

@@ -1,21 +1,17 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import UserModel from '@modules/auth/models/UserModel';
+import UserModel, { OAuthProvider, UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
 import type { UserDocument } from '@modules/auth/models/UserModel';
-import User, { OAuthProvider, UserRole } from '@modules/auth/entities/User';
+import AuthSessionService from '@modules/auth/services/AuthSessionService';
+import AvatarService from '@modules/auth/services/AvatarService';
+import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import UserCreatedEvent from '@modules/auth/events/UserCreatedEvent';
 import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
 import { validatePassword } from '@modules/auth/domain/password-policy';
 import { getConfiguredOAuthProviders } from '@modules/auth/oauth/providers';
-import type { IAuthSessionService } from '@modules/auth/ports/IAuthSessionService';
-import type { IAvatarService } from '@modules/auth/ports/IAvatarService';
-import type { IPasswordHasher } from '@modules/auth/ports/IPasswordHasher';
-import { AUTH_TOKENS } from '@modules/auth/di/AuthTokens';
-import { SessionActivityType } from '@modules/session/entities/Session';
-import type { ISessionRepository } from '@modules/session/ports/ISessionRepository';
+import SessionModel, { SessionActivityType } from '@modules/session/models/SessionModel';
 import type { INewMemberDefaultTeamEnroller } from '@modules/team/ports/team/INewMemberDefaultTeamEnroller';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SESSION_CONTRACT_TOKENS } from '@shared/contracts/tokens/SessionTokens';
 import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
@@ -29,13 +25,11 @@ import type {
 import crypto from 'node:crypto';
 import { container as diContainer } from 'tsyringe';
 
-/** Server-derived request context attached to every credentialed entry point. */
 interface RequestContext {
     ip: string;
     userAgent: string;
 }
 
-/** OAuth login input assembled by the passport strategies (folds OAuthLoginUseCase). */
 export interface OAuthLoginInput extends RequestContext {
     email: string;
     firstName?: string;
@@ -52,48 +46,25 @@ interface AuthSessionResult {
     user: WireUser;
 }
 
-/**
- * The single application service for the auth module (pollium/container style):
- * holds ALL the auth HTTP domain logic, talks to the Mongoose {@link UserModel}
- * directly, and throws typed {@link ApplicationError}s (no Result channel) so
- * Express 5 forwards them to the global error middleware. `signIn`, `signUp`,
- * `updatePassword`, `deleteAccount`, `updateAccount` and `oauthLogin` fold the
- * exact logic of the previously separate use cases.
- *
- * It has no DI decorator and is `new`ed by the controller / AI tool / OAuth
- * composition root. Its genuinely-shared collaborators stay DI singletons and
- * are resolved once into private fields (mirroring `ContainerService`):
- *  - passwordHasher / tokenService (via authSessionService): infra singletons
- *    also consumed by the `protect` middleware.
- *  - avatarService: holds the shared MinIO storage client.
- *  - authSessionService: issues JWTs + writes the session audit row.
- *  - eventBus: the shared Redis event bus.
- *  - sessionRepository / defaultTeamEnroller: cross-module singletons (session
- *    audit rows, default-team enrolment) owned by other modules.
- * The user COLLECTION is read/written through `UserModel` here; the model-backed
- * {@link UserRepository} adapter survives only to answer the neutral
- * `AUTH_CONTRACT_TOKENS.UserRepository` token for cross-module consumers.
- */
 export default class AuthService {
     private static readonly LOCAL_USER_EMAIL = 'local@volt.local';
 
-    #passwordHasher = diContainer.resolve<IPasswordHasher>(AUTH_TOKENS.PasswordHasher);
-    #authSessionService = diContainer.resolve<IAuthSessionService>(AUTH_TOKENS.AuthSessionService);
-    #avatarService = diContainer.resolve<IAvatarService>(AUTH_TOKENS.AvatarService);
+    #passwordHasher = new BcryptPasswordHasher();
+    #authSessionService = new AuthSessionService();
+    #avatarService = new AvatarService();
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-    #sessionRepository = diContainer.resolve<ISessionRepository>(SESSION_CONTRACT_TOKENS.SessionRepository);
     #defaultTeamEnroller = diContainer.resolve<INewMemberDefaultTeamEnroller>(TEAM_CONTRACT_TOKENS.DefaultTeamEnroller);
 
     async signIn(input: SignInInput, context: RequestContext): Promise<AuthSessionResult> {
         const user = await UserModel.findOne({ email: input.email.toLowerCase() }).select('+password');
         if (!user) {
-            await this.#sessionRepository.createFailedLogin(null, context.userAgent, context.ip, 'User not found');
+            await this.#createFailedLogin(null, context.userAgent, context.ip);
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
         }
 
         const isPasswordValid = await this.#passwordHasher.compare(input.password, user.password ?? '');
         if (!isPasswordValid) {
-            await this.#sessionRepository.createFailedLogin(String(user._id), context.userAgent, context.ip, 'Invalid password');
+            await this.#createFailedLogin(String(user._id), context.userAgent, context.ip);
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
         }
 
@@ -109,11 +80,6 @@ export default class AuthService {
         return { token, user: this.#presentUser(user) };
     }
 
-    /**
-     * Credential-less sign-in for the single-tenant desktop deployment. Only
-     * active when DEPLOYMENT_MODE=local; in cloud mode this behaves as if the
-     * route does not exist (404).
-     */
     async localSignIn(context: RequestContext): Promise<AuthSessionResult> {
         if (process.env.DEPLOYMENT_MODE !== 'local') {
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Not found');
@@ -149,7 +115,7 @@ export default class AuthService {
             throw passwordError;
         }
 
-        const email = User.normalizeEmail(input.email);
+        const email = normalizeEmail(input.email);
 
         if (await this.#emailExists(email)) {
             throw ApplicationError.conflict(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Email already registered');
@@ -159,8 +125,8 @@ export default class AuthService {
 
         const newUser = await UserModel.create({
             email,
-            firstName: User.normalizeName(input.firstName),
-            lastName: User.normalizeName(input.lastName),
+            firstName: normalizeName(input.firstName),
+            lastName: normalizeName(input.lastName),
             password: hashedPassword,
             role: UserRole.User,
             teams: [],
@@ -300,11 +266,6 @@ export default class AuthService {
         return { providers: getConfiguredOAuthProviders() };
     }
 
-    /**
-     * Update the current user's profile. Folds the retained UpdateAccountUseCase
-     * (still driven by the profile-update AI tool). `file` is the multipart avatar
-     * upload, present only on the HTTP path.
-     */
     async updateAccount(
         userId: string,
         input: UpdateAccountInput,
@@ -317,7 +278,7 @@ export default class AuthService {
 
         let normalizedEmail: string | undefined;
         if (input.email) {
-            normalizedEmail = User.normalizeEmail(input.email);
+            normalizedEmail = normalizeEmail(input.email);
         }
 
         if (normalizedEmail && normalizedEmail !== user.email) {
@@ -328,13 +289,13 @@ export default class AuthService {
 
         const updateData: Record<string, unknown> = {};
         if (input.firstName) {
-            updateData.firstName = User.normalizeName(input.firstName);
+            updateData.firstName = normalizeName(input.firstName);
         }
         if (input.lastName) {
-            updateData.lastName = User.normalizeName(input.lastName);
+            updateData.lastName = normalizeName(input.lastName);
         }
         if (input.fullName) {
-            const normalizedFullName = User.splitFullName(input.fullName);
+            const normalizedFullName = splitFullName(input.fullName);
             updateData.firstName = normalizedFullName.firstName;
             updateData.lastName = normalizedFullName.lastName ?? user.lastName;
         }
@@ -353,10 +314,6 @@ export default class AuthService {
         return this.#presentAccount(updatedUser);
     }
 
-    /**
-     * OAuth login/link (folds OAuthLoginUseCase). Called by the passport
-     * strategies with a normalized (lower-cased) email.
-     */
     async oauthLogin(input: OAuthLoginInput): Promise<AuthSessionResult> {
         let user = await UserModel.findOne({ oauthProvider: input.oauthProvider, oauthId: input.oauthId });
 
@@ -407,8 +364,6 @@ export default class AuthService {
         return { user: this.#presentUser(user), token };
     }
 
-    // ---- Internal helpers -------------------------------------------------
-
     async #emailExists(email: string): Promise<boolean> {
         const existing = await UserModel.exists({ email: email.toLowerCase() });
         return !!existing;
@@ -419,12 +374,19 @@ export default class AuthService {
         await UserModel.findByIdAndUpdate(userId, { lastLoginAt: now, lastSeenAt: now });
     }
 
-    /**
-     * The client-facing user shape: `_id` as a string, ref arrays coerced to
-     * string ids, and the password field stripped — reproducing the old
-     * `toPersistedUserDTO(user)` output exactly (dates stay `Date` objects and
-     * are serialized to ISO strings by `BaseResponse`).
-     */
+    async #createFailedLogin(userId: string | null, userAgent: string, ip: string): Promise<void> {
+        await SessionModel.create({
+            user: userId,
+            token: null,
+            userAgent,
+            ip,
+            isActive: false,
+            lastActivity: new Date(),
+            action: SessionActivityType.FailedLogin,
+            success: false
+        });
+    }
+
     #presentUser(doc: UserDocument): WireUser {
         const view = doc.toObject() as Record<string, unknown>;
         delete view.password;
@@ -435,7 +397,6 @@ export default class AuthService {
         return view;
     }
 
-    /** `GET /me` / profile update add a derived `fullName` on top of the user. */
     #presentAccount(doc: UserDocument): WireUser & { fullName: string } {
         const user = this.#presentUser(doc);
         return {

@@ -4,6 +4,7 @@ import {
     type PopulatedUser,
     type SecretKeyProps
 } from '@shared/contracts/types/SecretKey';
+import { Types } from 'mongoose';
 
 export { isPopulatedSecretKeyRole };
 export type { PopulatedRole, PopulatedUser, SecretKeyProps };
@@ -23,7 +24,7 @@ export default class SecretKey {
             return this.props.role._id;
         }
 
-        return this.props.role;
+        return String(this.props.role);
     }
 
     public getRoleName(): string {
@@ -35,10 +36,13 @@ export default class SecretKey {
     }
 
     public getCreatedById(): string {
-        if (typeof this.props.createdBy !== 'string') {
-            return this.props.createdBy._id;
+        if (typeof this.props.createdBy === 'string') {
+            return this.props.createdBy;
+        }
+        if (this.props.createdBy instanceof Types.ObjectId) {
+            return this.props.createdBy.toString();
         }
 
-        return this.props.createdBy;
+        return this.props.createdBy._id;
     }
 }

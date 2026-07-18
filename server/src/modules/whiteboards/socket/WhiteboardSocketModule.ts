@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import WhiteboardRealtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
+import realtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
@@ -48,8 +48,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
     constructor(
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly realtimeStateService: WhiteboardRealtimeStateService
+        eventRegistry: SocketIOEventRegistry
     ) {
         super(emitter, roomManager, eventRegistry);
     }
@@ -71,8 +70,8 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
                 return ackError('Invalid whiteboard id');
             }
 
-            const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
-            const teamId = await this.realtimeStateService.getTeamId(payload.whiteboardId);
+            const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
+            const teamId = await realtimeStateService.getTeamId(payload.whiteboardId);
             if (!snapshot || !teamId) {
                 this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
                 return ackError('Whiteboard not found');
@@ -140,7 +139,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
                 return ackError('Socket is not subscribed to this whiteboard');
             }
 
-            const teamId = await this.realtimeStateService.getTeamId(payload.whiteboardId);
+            const teamId = await realtimeStateService.getTeamId(payload.whiteboardId);
             if (!teamId) {
                 this.emitErrorToSocket(conn.id, ErrorCodes.RESOURCE_NOT_FOUND, 'Whiteboard not found');
                 return ackError('Whiteboard not found');
@@ -151,10 +150,10 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
                 return ackError('You are not a member of this team');
             }
 
-            const previousSnapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+            const previousSnapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
             const isStalePatch = Boolean(previousSnapshot && payload.baseRevision < previousSnapshot.revision);
 
-            const mergeResult = await this.realtimeStateService.mergeScene(
+            const mergeResult = await realtimeStateService.mergeScene(
                 payload.whiteboardId,
                 Array.isArray(payload.elements) ? payload.elements : [],
                 payload.appState,
@@ -170,7 +169,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
 
             if (!mergeResult.changed) {
                 if (isStalePatch) {
-                    const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+                    const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
                     if (snapshot) {
                         return ackOk({
                             accepted: false,
@@ -204,7 +203,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
             }
 
             if (isStalePatch) {
-                const snapshot = await this.realtimeStateService.getSnapshot(payload.whiteboardId);
+                const snapshot = await realtimeStateService.getSnapshot(payload.whiteboardId);
                 if (snapshot) {
                     return ackOk({
                         accepted: true,
@@ -256,7 +255,7 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
         const room = this.buildRoomId(whiteboardId);
         const socketIds = await this.roomManager.getSocketsInRoom(room);
         if (socketIds.length === 0) {
-            await this.realtimeStateService.flushAndRelease(whiteboardId);
+            await realtimeStateService.flushAndRelease(whiteboardId);
         }
     }
 

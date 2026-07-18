@@ -1,9 +1,7 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import AnalysisService from '@modules/analysis/services/AnalysisService';
 import type { GetAnalysisByIdResult } from '@modules/analysis/services/AnalysisService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 interface ConfigDelta {
@@ -13,7 +11,6 @@ interface ConfigDelta {
     unchangedKeys: string[];
 }
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class CompareAnalysesAITool extends AITool {
     readonly name = 'compare_analyses';
     readonly description = 'Compare two analysis runs side by side (config, status, frame progress, expected artifacts, stages, child analyses, timestamps) to tell which run is more complete or cleaner — useful for resolving duplicate-run confusion.';

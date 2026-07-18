@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -22,13 +20,6 @@ const parameters = z.object({
 
 type SetPlaybackParams = z.infer<typeof parameters>;
 
-/**
- * CLIENT-EXECUTED. Configures trajectory playback settings (speed, target fps,
- * and loop range) in the 3D viewer. The browser handler (client
- * `tools/handlers/set_playback.ts`) applies them via the editor store playback
- * slice. This server class only advertises the schema; it has no server execute.
- */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class SetPlaybackAITool extends AITool<SetPlaybackParams> {
     readonly name = 'set_playback';
     readonly description = 'Configure trajectory playback settings in the open 3D viewer: playback speed '

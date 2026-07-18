@@ -7,10 +7,10 @@ import WhiteboardDeletedEvent from '@modules/whiteboards/events/WhiteboardDelete
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type {
-    IClusterObjectSignedUrlService,
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
 } from '@shared/contracts/ports';
+import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
@@ -75,7 +75,7 @@ const presentLastEditedBy = (value: unknown): WhiteboardLastEditedBy => {
  */
 export default class WhiteboardService {
     #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
-    #signedUrlService = diContainer.resolve<IClusterObjectSignedUrlService>(CLUSTER_ACCESS_TOKENS.ClusterObjectSignedUrlService);
+    #signedUrlService = new ClusterObjectSignedUrlService();
     #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
