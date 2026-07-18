@@ -1,8 +1,11 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/ai/infrastructure/http/controllers';
+import AiController from '@modules/ai/infrastructure/http/controllers/AiController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
 import express from 'express';
+
+const controller = container.resolve(AiController);
 
 export default createHttpModule({
     moduleKey: 'ai',
@@ -11,19 +14,19 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.Param,
     protected: true,
     routes: (router) => {
-        router.get('/:teamId', controllers.listConversations.handle);
+        router.get('/:teamId', controller.listConversations);
         router.post(
             '/:teamId',
-            controllers.createConversation.handle
+            controller.createConversation
         );
-        router.get('/:teamId/:conversationId/messages', controllers.listMessages.handle);
+        router.get('/:teamId/:conversationId/messages', controller.listMessages);
         router.post(
             '/:teamId/:conversationId/messages/stream',
             express.json({ limit: '5mb' }),
-            controllers.streamMessage.handle
+            controller.streamMessage
         );
         router.route('/:teamId/:conversationId')
-            .patch(controllers.updateConversation.handle)
-            .delete(controllers.deleteConversation.handle);
+            .patch(controller.updateConversation)
+            .delete(controller.deleteConversation);
     }
 });
