@@ -1,5 +1,5 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { IPluginRepository } from '@modules/plugin/services/PluginRepository';
+import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
 import { DaemonListingRow, DaemonPaginatedResult } from '@modules/plugin/utilities/listing-row/DaemonListingTypes';
 import {
     AnalysisListingExportOptionDTO,
@@ -12,7 +12,7 @@ import {
     ListingRowByAnalysisData
 } from '@modules/plugin/utilities/listing-row/listing-row-types';
 import { enrichDaemonListingRows } from '@modules/plugin/utilities/listing-row/listing-row-enrichment';
-import { Exporter } from '@modules/plugin/entities/plugin/workflow/nodes/ExportNode';
+import { Exporter } from '@modules/plugin/workflow/nodes/ExportNode';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
@@ -104,7 +104,6 @@ const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
 export class AnalysisListingExportCatalogService {
     constructor(
-        private readonly pluginRepository: IPluginRepository,
         private readonly daemonClient: ITeamClusterDaemonClient
     ) {}
 
@@ -223,7 +222,8 @@ export class AnalysisListingExportCatalogService {
             return this.emptyExcludedExposureSet();
         }
 
-        const plugin = await this.pluginRepository.findById(pluginId);
+        const pluginDoc = await PluginModel.findById(pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin || !Array.isArray(plugin.props.exposures)) {
             return this.emptyExcludedExposureSet();
         }

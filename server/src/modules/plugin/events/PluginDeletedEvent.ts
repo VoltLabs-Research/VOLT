@@ -1,4 +1,4 @@
-import Workflow from '@modules/plugin/entities/plugin/workflow/Workflow';
+import Workflow from '@modules/plugin/workflow/Workflow';
 
 import { BaseDomainEvent } from '@shared/domain/events/BaseDomainEvent';
 

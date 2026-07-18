@@ -2,10 +2,23 @@ import { ArgumentDefinitionSchema } from './workflow/nodes/ArgumentsDataSchema';
 import { ExportDataSchema } from './workflow/nodes/ExportDataSchema';
 import { ModifierDataSchema } from './workflow/nodes/ModifierDataSchema';
 import { WorkflowSchema } from './workflow/WorkflowSchema';
-import { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';
+
+/**
+ * Defined here (rather than in `PluginModel.ts`, which is where the rest of the
+ * `Plugin` domain shape now lives after the entity/repository ceremony was
+ * removed) to avoid a require cycle: `PluginModel.ts` imports this file's
+ * `PluginSchema` value to build the model, so this file cannot import back from
+ * `PluginModel.ts`. `PluginModel.ts` re-exports this enum so consumers can keep
+ * importing everything plugin-shaped from one place.
+ */
+export enum PluginStatus {
+    Draft = 'draft',
+    Published = 'published',
+    Disabled = 'disabled'
+}
 
 export const PluginSchema = new Schema({
     team: {

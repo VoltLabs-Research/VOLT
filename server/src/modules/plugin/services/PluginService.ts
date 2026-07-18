@@ -1,11 +1,10 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { PluginProps, PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
-import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
-import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
-import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
+import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
+import { ArgumentType, type ArgumentDefinition } from '@modules/plugin/workflow/nodes/ArgumentNode';
 
-import PluginRepository from '@modules/plugin/services/PluginRepository';
 import PluginStorageService, {
     type BinaryUploadResult,
     type BinaryUploadTarget
@@ -61,7 +60,6 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IStoragePlacementService,
     ITeamClusterObjectGatewayClient,
@@ -481,11 +479,9 @@ interface DaemonSubListingPaginatedResult {
 }
 
 export default class PluginService {
-    #pluginRepository = new PluginRepository();
-    #pluginDependencyResolverService = new PluginDependencyResolverService(this.#pluginRepository);
+    #pluginDependencyResolverService = new PluginDependencyResolverService();
     #workflowValidator = new WorkflowValidatorService(this.#pluginDependencyResolverService);
     #pluginStorageService = new PluginStorageService(
-        this.#pluginRepository,
         storagePlacementService,
         objectGatewayClient,
         this.#workflowValidator,
@@ -499,7 +495,6 @@ export default class PluginService {
         new ClusterObjectArchiveService()
     );
     #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
-        this.#pluginRepository,
         teamClusterDaemonClient
     );
     #listingRowsExportPresenter = new ListingRowsExportPresenter(
@@ -534,7 +529,8 @@ export default class PluginService {
     }
 
     async exportPlugin(input: ExportPluginInputDTO): Promise<ExportPluginOutputDTO> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
 
         if (!plugin) {
             throw ApplicationError.notFound(
@@ -612,20 +608,27 @@ export default class PluginService {
     }
 
     async listPlugins(input: ListPluginsInputDTO): Promise<ListPluginsOutputDTO> {
-        const result = await this.#pluginRepository.findAll({
-            filter: {
-                team: input.teamId,
-                ...(input.status ? { status: input.status as PluginStatus } : {})
-            },
-            page: input.page,
-            limit: input.limit
-        });
+        const filter: Record<string, unknown> = {
+            team: input.teamId,
+            ...(input.status ? { status: input.status as PluginStatus } : {})
+        };
+        const page = input.page ?? 1;
+        const limit = input.limit ?? 100;
+        const skip = (page - 1) * limit;
 
-        const data = result.data.map((plugin) => mapPluginToPersistedDTO(plugin));
+        const [docs, total] = await Promise.all([
+            PluginModel.find(filter).skip(skip).limit(limit).exec(),
+            PluginModel.countDocuments(filter)
+        ]);
+
+        const data = docs.map((doc) => mapPluginToPersistedDTO(toPluginLike(doc)));
 
         return {
-            ...result,
-            data
+            data,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
         };
     }
 
@@ -641,8 +644,8 @@ export default class PluginService {
         const workflow = new Workflow('', input.workflow);
         const projection = WorkflowProjectionService.project(workflow, '');
 
-        const plugin = await this.#pluginRepository.create({
-            workflow,
+        const pluginDoc = await PluginModel.create({
+            workflow: workflow.props,
             team: input.teamId,
             status: PluginStatus.Draft,
             modifier: projection.modifier,
@@ -650,6 +653,7 @@ export default class PluginService {
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
         });
+        const plugin = toPluginLike(pluginDoc);
 
         await this.#eventBus.publish(new PluginCreatedEvent({
             pluginId: plugin._id,
@@ -675,7 +679,8 @@ export default class PluginService {
     }
 
     async downloadBinary(input: DownloadPluginBinaryInputDTO): Promise<DownloadPluginBinaryOutputDTO> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -761,7 +766,8 @@ export default class PluginService {
     }
 
     async clonePlugin(input: ClonePluginInputDTO): Promise<{ plugin: PersistedPluginDTO }> {
-        const original = await this.#pluginRepository.findById(input.pluginId);
+        const originalDoc = await PluginModel.findById(input.pluginId);
+        const original = originalDoc ? toPluginLike(originalDoc) : null;
         if (!original) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -791,8 +797,8 @@ export default class PluginService {
         const workflow = new Workflow('', clonedWorkflowProps);
         const projection = WorkflowProjectionService.project(workflow, '');
 
-        const plugin = await this.#pluginRepository.create({
-            workflow,
+        const pluginDoc = await PluginModel.create({
+            workflow: workflow.props,
             team: input.teamId,
             status: PluginStatus.Draft,
             modifier: projection.modifier,
@@ -800,6 +806,7 @@ export default class PluginService {
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
         });
+        const plugin = toPluginLike(pluginDoc);
 
         await this.#eventBus.publish(new PluginCreatedEvent({
             pluginId: plugin._id,
@@ -812,7 +819,8 @@ export default class PluginService {
     }
 
     async getPluginById(input: GetPluginByIdInputDTO): Promise<PersistedPluginDTO> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -824,7 +832,8 @@ export default class PluginService {
     }
 
     async updatePluginById(input: UpdatePluginByIdInputDTO): Promise<PersistedPluginDTO> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -832,7 +841,10 @@ export default class PluginService {
             );
         }
 
-        const update: Partial<PluginProps> = {};
+        // Raw Mongo `$set` payload (not `Partial<PluginProps>`): `workflow` here
+        // is the plain persisted shape (`WorkflowProps`), not the `Workflow`
+        // domain instance `PluginProps.workflow` carries.
+        const update: Record<string, unknown> = {};
         if (input.status) update.status = input.status;
 
         if (input.workflow) {
@@ -869,7 +881,7 @@ export default class PluginService {
             const workflow = new Workflow(plugin._id, input.workflow);
             const projection = WorkflowProjectionService.project(workflow, plugin._id);
 
-            update.workflow = workflow;
+            update.workflow = workflow.props;
             update.modifier = projection.modifier;
             update.exposures = projection.exposures;
             update.arguments = projection.arguments;
@@ -886,7 +898,8 @@ export default class PluginService {
             }
         }
 
-        const updatedPlugin = await this.#pluginRepository.updateById(input.pluginId, update);
+        const updatedDoc = await PluginModel.findByIdAndUpdate(input.pluginId, { $set: update }, { new: true }).exec();
+        const updatedPlugin = updatedDoc ? toPluginLike(updatedDoc) : null;
 
         if (!updatedPlugin) {
             throw ApplicationError.notFound(
@@ -919,7 +932,8 @@ export default class PluginService {
     }
 
     async deletePluginById(input: DeletePluginByIdInputDTO): Promise<null> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -927,8 +941,8 @@ export default class PluginService {
             );
         }
 
-        const deleted = await this.#pluginRepository.deleteById(input.pluginId);
-        if (!deleted) {
+        const deletedDoc = await PluginModel.findByIdAndDelete(input.pluginId).exec();
+        if (!deletedDoc) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -945,7 +959,8 @@ export default class PluginService {
     }
 
     async describePluginArguments(input: DescribePluginArgumentsInputDTO): Promise<DescribePluginArgumentsOutputDTO> {
-        const plugin = await this.#pluginRepository.findById(input.pluginId);
+        const pluginDoc = await PluginModel.findById(input.pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -1157,7 +1172,8 @@ export default class PluginService {
             return fail(ApplicationError.badRequest(ErrorCodes.PLUGIN_NOT_FOUND, 'Pipeline plugin stage is missing a pluginId'));
         }
 
-        const plugin = await this.#pluginRepository.findById(stage.pluginId);
+        const stagePluginDoc = await PluginModel.findById(stage.pluginId);
+        const plugin = stagePluginDoc ? toPluginLike(stagePluginDoc) : null;
         if (!plugin) {
             return fail(ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, `Plugin ${stage.pluginId} not found`));
         }
@@ -1471,7 +1487,8 @@ export default class PluginService {
         }
 
         const pluginId = String(analysis.plugin);
-        const plugin = await this.#pluginRepository.findById(pluginId);
+        const exposureExportPluginDoc = await PluginModel.findById(pluginId);
+        const plugin = exposureExportPluginDoc ? toPluginLike(exposureExportPluginDoc) : null;
         let pluginName = pluginId;
 
         if (plugin?.props?.modifier?.name) {

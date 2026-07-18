@@ -6,7 +6,7 @@
  * depend on the plugin/workflow shapes without importing `@modules/plugin`.
  *
  * `WorkflowNodeType` is the CANONICAL runtime enum: it has been MOVED here from
- * `@modules/plugin/entities/plugin/workflow/WorkflowNode` and that owner
+ * `@modules/plugin/workflow/WorkflowNode` and that owner
  * file now re-exports it, so there is a single nominal enum object shared by the
  * owner module and every consumer (string-valued, used in `node.type === ...`
  * comparisons across module boundaries — a duplicate would be nominally

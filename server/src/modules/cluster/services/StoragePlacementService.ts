@@ -1,5 +1,4 @@
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import type { IPluginRepository } from '@shared/contracts/ports';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import {
     buildAnalysisPlacementBuckets,
@@ -14,7 +13,7 @@ import {
 import StoragePlacementModel, { toStoragePlacementLike, type StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import PluginRepository from '@modules/plugin/services/PluginRepository';
+import PluginModel from '@modules/plugin/models/plugin/PluginModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -23,10 +22,6 @@ import type { IStoragePlacementService } from '@shared/contracts/ports';
 import type { FilterQuery, UpdateQuery } from 'mongoose';
 import type { StoragePlacementDocument } from '@modules/cluster/models/StoragePlacementModel';
 
-interface PluginPlacementView {
-    props: { team: string };
-}
-
 interface ResolvedPlacementDefinition {
     team: string;
     primaryClusterId: string;
@@ -34,7 +29,6 @@ interface ResolvedPlacementDefinition {
 }
 
 export class StoragePlacementService implements IStoragePlacementService {
-    private readonly pluginRepository = new PluginRepository() as unknown as IPluginRepository<PluginPlacementView>;
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async findByScope(
@@ -323,15 +317,16 @@ export class StoragePlacementService implements IStoragePlacementService {
             return this.resolveAnalysisPlacementDefinition(analysis);
         }
 
-        const plugin = await this.pluginRepository.findById(scopeId);
-        if (!plugin) {
+        const pluginDoc = await PluginModel.findById(scopeId).select('team').exec();
+        if (!pluginDoc) {
             throw ApplicationError.notFound('Plugin::NotFound', 'Plugin not found for storage placement');
         }
 
-        const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(plugin.props.team);
+        const pluginTeamId = String(pluginDoc.team);
+        const storageClusterId = await this.teamClusterSelectionService.resolveStorageClusterId(pluginTeamId);
 
         return {
-            team: plugin.props.team,
+            team: pluginTeamId,
             primaryClusterId: storageClusterId,
             buckets: buildPluginBinaryPlacementBuckets(scopeId)
         };

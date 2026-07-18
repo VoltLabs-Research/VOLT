@@ -3,7 +3,7 @@ import teamClusterDaemonClient from '@shared/infrastructure/services/TeamCluster
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
-import type Plugin from '@modules/plugin/entities/plugin/Plugin';
+import type { Plugin } from '@modules/plugin/models/plugin/PluginModel';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;

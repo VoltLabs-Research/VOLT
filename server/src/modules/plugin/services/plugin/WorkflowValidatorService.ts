@@ -1,13 +1,13 @@
-import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
-import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
-import { WorkflowEdge } from '@modules/plugin/entities/plugin/workflow/WorkflowEdge';
-import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
+import { PluginStatus, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import { WorkflowEdge } from '@modules/plugin/workflow/WorkflowEdge';
+import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
 import {
     ArgumentType, ArgumentVisibilityOperators,
     type ArgumentDefinition
-} from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
-import { EntrypointNodeType } from '@modules/plugin/entities/plugin/workflow/nodes/EntrypointNode';
-import { PluginNodeExecutionMode } from '@modules/plugin/entities/plugin/workflow/nodes/PluginNode';
+} from '@modules/plugin/workflow/nodes/ArgumentNode';
+import { EntrypointNodeType } from '@modules/plugin/workflow/nodes/EntrypointNode';
+import { PluginNodeExecutionMode } from '@modules/plugin/workflow/nodes/PluginNode';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 
 export interface WorkflowValidationPluginReference {
@@ -208,13 +208,17 @@ export class WorkflowValidatorService {
 
         if (!errors.length && mode === WorkflowValidationMode.Strict) {
             const rootPluginId = currentPluginId ?? '__draft_plugin__';
-            const transientPlugin = new Plugin(rootPluginId, {
-                team: '',
-                workflow: new Workflow(rootPluginId, workflow),
-                status: PluginStatus.Draft,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
+            const transientPlugin: Plugin = {
+                _id: rootPluginId,
+                id: rootPluginId,
+                props: {
+                    team: '',
+                    workflow: new Workflow(rootPluginId, workflow),
+                    status: PluginStatus.Draft,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            };
             const dependencyValidation = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(transientPlugin);
             errors.push(...dependencyValidation.errors);
         }

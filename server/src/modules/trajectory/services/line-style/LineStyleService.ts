@@ -1,8 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ITeamClusterSelectionService, IPluginRepository } from '@shared/contracts/ports';
-import type { PluginLike } from '@shared/contracts/types';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
@@ -11,7 +9,7 @@ import { resolveSceneArtifactExecutionContext } from '@modules/trajectory/utilit
 import { buildLineStyleObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { stripTrailingZstdExtension } from '@modules/trajectory/utilities/storage/trajectory-storage-codec';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container as diContainer } from 'tsyringe';
+import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
 
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
@@ -64,11 +62,6 @@ export const hashLineStyle = (style: LineStyleSpec): string => {
 };
 
 export class LineStyleService {
-    #pluginRepositoryCache?: IPluginRepository<PluginLike>;
-    private get pluginRepository(): IPluginRepository<PluginLike> {
-        return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
-    }
-
     private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async createStyledModel(
@@ -193,7 +186,8 @@ export class LineStyleService {
             return undefined;
         }
 
-        const plugin = await this.pluginRepository.findById(analysis.plugin.toString());
+        const pluginDoc = await PluginModel.findById(analysis.plugin.toString());
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         const exposures = Array.isArray(plugin?.props.exposures) ? plugin.props.exposures : [];
         const exposure = exposures.find((candidate: { _id?: unknown }) => (
             typeof candidate === 'object'

@@ -1,5 +1,5 @@
-import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
-import Workflow from '@modules/plugin/entities/plugin/workflow/Workflow';
+import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
+import Workflow from '@modules/plugin/workflow/Workflow';
 
 const DEFAULT_PLUGIN_DISPLAY_NAME = '';
 

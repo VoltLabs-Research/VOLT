@@ -1,6 +1,6 @@
-import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
-import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
-import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
+import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import Workflow, { WorkflowProps } from '@modules/plugin/workflow/Workflow';
+import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
 import { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import WorkflowProjectionService from '@modules/plugin/utilities/plugin/WorkflowProjectionService';
 import type {
@@ -12,7 +12,6 @@ import type {
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
@@ -92,7 +91,6 @@ const normalizeBinaryFileName = (fileName: string): string => {
 
 export default class PluginStorageService {
     constructor(
-        private pluginRepo: PluginRepository,
         private readonly storagePlacementService: IStoragePlacementService,
         private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
         private readonly workflowValidator: WorkflowValidatorService,
@@ -107,15 +105,17 @@ export default class PluginStorageService {
 
     private async persistWorkflow(pluginId: string, workflow: Workflow): Promise<void> {
         const projection = WorkflowProjectionService.project(workflow, pluginId);
-        const updatedPlugin = await this.pluginRepo.updateById(pluginId, {
-            workflow,
-            modifier: projection.modifier,
-            exposures: projection.exposures,
-            arguments: projection.arguments,
-            listingExposures: projection.listingExposures
-        });
+        const updatedDoc = await PluginModel.findByIdAndUpdate(pluginId, {
+            $set: {
+                workflow: workflow.props,
+                modifier: projection.modifier,
+                exposures: projection.exposures,
+                arguments: projection.arguments,
+                listingExposures: projection.listingExposures
+            }
+        }, { new: true }).exec();
 
-        if (!updatedPlugin) {
+        if (!updatedDoc) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -124,7 +124,8 @@ export default class PluginStorageService {
     }
 
     async deleteBinary(pluginId: string): Promise<void> {
-        const plugin = await this.pluginRepo.findById(pluginId);
+        const pluginDoc = await PluginModel.findById(pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -153,9 +154,9 @@ export default class PluginStorageService {
         await this.persistWorkflow(pluginId, plugin.props.workflow);
 
         if (plugin.props.status === PluginStatus.Published) {
-            await this.pluginRepo.updateById(pluginId, {
-                status: PluginStatus.Draft
-            });
+            await PluginModel.findByIdAndUpdate(pluginId, {
+                $set: { status: PluginStatus.Draft }
+            }).exec();
             plugin.props.status = PluginStatus.Draft;
         }
 
@@ -173,8 +174,8 @@ export default class PluginStorageService {
             sha256?: string;
         }
     ): Promise<BinaryUploadTarget> {
-        const plugin = await this.pluginRepo.findById(pluginId);
-        if (!plugin) {
+        const pluginDoc = await PluginModel.findById(pluginId);
+        if (!pluginDoc) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -224,7 +225,8 @@ export default class PluginStorageService {
             sha256?: string;
         }
     ): Promise<BinaryUploadResult> {
-        const plugin = await this.pluginRepo.findById(pluginId);
+        const pluginDoc = await PluginModel.findById(pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -287,7 +289,8 @@ export default class PluginStorageService {
     }
 
     async exportPlugin(pluginId: string): Promise<Readable> {
-        const plugin = await this.pluginRepo.findById(pluginId);
+        const pluginDoc = await PluginModel.findById(pluginId);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) {
             throw ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -383,8 +386,8 @@ export default class PluginStorageService {
         });
         const projection = WorkflowProjectionService.project(workflow, '');
 
-        const newPlugin = await this.pluginRepo.create({
-            workflow,
+        const newPluginDoc = await PluginModel.create({
+            workflow: workflow.props,
             status: requestedStatus === PluginStatus.Published
                 ? PluginStatus.Draft
                 : requestedStatus,
@@ -394,6 +397,7 @@ export default class PluginStorageService {
             arguments: projection.arguments,
             listingExposures: projection.listingExposures
         });
+        const newPlugin = toPluginLike(newPluginDoc);
 
         let binaryImported = false;
         let persistedPlugin = newPlugin;
@@ -441,9 +445,10 @@ export default class PluginStorageService {
             );
 
             if (validation.isValid) {
-                persistedPlugin = await this.pluginRepo.updateById(newPlugin.id, {
-                    status: PluginStatus.Published
-                }) ?? newPlugin;
+                const publishedDoc = await PluginModel.findByIdAndUpdate(newPlugin.id, {
+                    $set: { status: PluginStatus.Published }
+                }, { new: true }).exec();
+                persistedPlugin = publishedDoc ? toPluginLike(publishedDoc) : newPlugin;
                 persistedPlugin.props.status = PluginStatus.Published;
             } else {
                 logger.warn(
@@ -479,7 +484,10 @@ export default class PluginStorageService {
             return plugin;
         }
 
-        const published = await this.pluginRepo.updateById(plugin.id, { status: PluginStatus.Published }) ?? plugin;
+        const publishedDoc = await PluginModel.findByIdAndUpdate(plugin.id, {
+            $set: { status: PluginStatus.Published }
+        }, { new: true }).exec();
+        const published = publishedDoc ? toPluginLike(publishedDoc) : plugin;
         published.props.status = PluginStatus.Published;
         return published;
     }
@@ -500,7 +508,7 @@ export default class PluginStorageService {
         const workflow = new Workflow('', workflowProps);
         const projection = WorkflowProjectionService.project(workflow, '');
         const pluginProps = {
-            workflow,
+            workflow: workflow.props,
             status: PluginStatus.Draft,
             team: teamId,
             modifier: projection.modifier,
@@ -509,13 +517,24 @@ export default class PluginStorageService {
             listingExposures: projection.listingExposures
         };
 
-        const existing = projection.modifier?.key
-            ? await this.pluginRepo.findByTeamAndModifierKey(teamId, projection.modifier.key)
+        // Inlined former `PluginRepository.findByTeamAndModifierKey` — only one
+        // call site, so it doesn't earn a shared `plugin-queries.ts` export.
+        const modifierKey = projection.modifier?.key?.trim();
+        const existingDoc = modifierKey
+            ? await PluginModel.findOne({ team: teamId, 'modifier.key': modifierKey }).exec()
             : null;
+        const existing = existingDoc ? toPluginLike(existingDoc) : null;
 
-        const newPlugin = existing
-            ? (await this.pluginRepo.updateById(existing.id, pluginProps)) ?? existing
-            : await this.pluginRepo.create(pluginProps);
+        let newPlugin: Plugin;
+        if (existing) {
+            const updatedDoc = await PluginModel.findByIdAndUpdate(existing.id, {
+                $set: pluginProps
+            }, { new: true }).exec();
+            newPlugin = updatedDoc ? toPluginLike(updatedDoc) : existing;
+        } else {
+            const createdDoc = await PluginModel.create(pluginProps);
+            newPlugin = toPluginLike(createdDoc);
+        }
 
         await this.storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
 

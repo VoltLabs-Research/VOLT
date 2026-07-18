@@ -1,6 +1,6 @@
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
-import { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
+import { PluginStatus } from '@modules/plugin/models/plugin/PluginModel';
 import { AITool } from '@shared/application/ai/AITool';
 import { z } from 'zod';
 

@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { EntrypointNodeType } from '@modules/plugin/entities/plugin/workflow/nodes/EntrypointNode';
+import { EntrypointNodeType } from '@modules/plugin/workflow/nodes/EntrypointNode';
 
 export const EntrypointDataSchema = new Schema({
     binary: {

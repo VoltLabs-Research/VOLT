@@ -14,7 +14,7 @@ import type {
 import { findByTeamAndSearch } from '@modules/analysis/models/analysis-queries';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import PluginRepository from '@modules/plugin/services/PluginRepository';
+import PluginModel, { toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import TeamService from '@modules/team/services/TeamService';
 import ChatModel from '@modules/chat/models/chat/ChatModel';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
@@ -134,7 +134,6 @@ const getLastMessageContent = (chat: PersistedChatDTO<ChatSearchView>): string |
 const toId = (value: unknown): string | undefined => (value === undefined || value === null ? undefined : String(value));
 
 export default class DashboardService {
-    #pluginRepository = new PluginRepository();
     #teamService = new TeamService();
 
     async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult> {
@@ -181,7 +180,7 @@ export default class DashboardService {
                 page: 1
             }),
             this.#searchTrajectories(input.teamId, regex, limit),
-            this.#pluginRepository.findAll({
+            this.#findPlugins({
                 filter: {
                     team: input.teamId,
                     $or: [
@@ -240,6 +239,28 @@ export default class DashboardService {
                     ...chat.participants.flatMap((participant) => getParticipantSearchTokens(participant))
                 ))
                 .slice(0, limit)
+        };
+    }
+
+    async #findPlugins(options: {
+        filter: Record<string, unknown>;
+        sort: Record<string, 1 | -1>;
+        limit: number;
+        page: number;
+    }): Promise<PaginatedResult<Plugin>> {
+        const { filter, sort, limit, page } = options;
+
+        const [docs, total] = await Promise.all([
+            PluginModel.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).exec(),
+            PluginModel.countDocuments(filter)
+        ]);
+
+        return {
+            data: docs.map((doc) => toPluginLike(doc)),
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            limit
         };
     }
 

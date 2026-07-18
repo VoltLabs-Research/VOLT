@@ -1,7 +1,7 @@
 import {
     ArgumentType,
     ArgumentVisibilityOperators
-} from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
+} from '@modules/plugin/workflow/nodes/ArgumentNode';
 
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';

@@ -1,5 +1,5 @@
 import { ValidationCodes } from '@core/constants/validation-codes';
-import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
+import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
 import { PositionSchema } from './PositionSchema';
 import { NodeDataSchema } from './NodeDataSchema';
 import { Schema } from 'mongoose';

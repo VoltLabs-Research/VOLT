@@ -2,7 +2,7 @@ import {
     ArgumentType,
     type ArgumentDefinition,
     type ArgumentVisibilityCondition
-} from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
+} from '@modules/plugin/workflow/nodes/ArgumentNode';
 
 type ArgumentValueMap = Record<string, unknown>;
 type VisibilityComparableValue = string | number | boolean;

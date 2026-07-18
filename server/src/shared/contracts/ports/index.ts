@@ -32,7 +32,6 @@ export type {
     TrajectoryDeletedCleanupInput,
     AnalysisDeletedCleanupInput
 } from './ITeamJobMaintenanceService';
-export type { IPluginRepository } from './IPluginRepository';
 export type {
     ContainerEnvironmentVariable,
     ContainerPortMapping,

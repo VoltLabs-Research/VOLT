@@ -1,4 +1,4 @@
-import { ContextSource } from '@modules/plugin/entities/plugin/workflow/nodes/ContextNode';
+import { ContextSource } from '@modules/plugin/workflow/nodes/ContextNode';
 
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { Schema } from 'mongoose';

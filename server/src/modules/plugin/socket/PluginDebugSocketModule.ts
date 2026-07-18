@@ -1,11 +1,10 @@
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
-import Workflow, { type WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
+import PluginModel, { PluginStatus, toPluginLike, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
+import Workflow, { type WorkflowProps } from '@modules/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import {
     WorkflowValidationMode
 } from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
@@ -106,26 +105,25 @@ const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => 
     workflow: plugin.props.workflow.props as NestedPluginDefinition['workflow']
 });
 
-const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin => new Plugin(plugin.id, {
-    ...plugin.props,
-    workflow: new Workflow(plugin.id, workflow),
-    status: plugin.props.status ?? PluginStatus.Draft
+const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin => ({
+    _id: plugin.id,
+    id: plugin.id,
+    props: {
+        ...plugin.props,
+        workflow: new Workflow(plugin.id, workflow),
+        status: plugin.props.status ?? PluginStatus.Draft
+    }
 });
 
 export class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
     // `PluginDependencyResolverService` and `WorkflowValidatorService` are plain
-    // classes (not DI-managed) that take explicit constructor arguments — see
-    // their usage in `PluginService.ts` — so tsyringe can't auto-wire them by
-    // type the way it does the singletons above. Construct them manually.
+    // classes (no DI, no repository indirection) constructed manually here,
+    // same as their usage in `PluginService.ts`.
     private readonly pluginDependencyResolverService: PluginDependencyResolverService;
     private readonly workflowValidator: WorkflowValidatorService;
 
-    // `PluginRepository` is still tsyringe-decorated (`@Singleton`) but its own
-    // constructor takes no runtime DI args, so `new`ing it directly here is
-    // safe and bypasses the container entirely.
-    private readonly pluginRepository = new PluginRepository();
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
     private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
 
@@ -135,7 +133,7 @@ export class PluginDebugSocketModule extends BaseSocketModule {
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
-        this.pluginDependencyResolverService = new PluginDependencyResolverService(this.pluginRepository);
+        this.pluginDependencyResolverService = new PluginDependencyResolverService();
         this.workflowValidator = new WorkflowValidatorService(this.pluginDependencyResolverService);
     }
 
@@ -176,7 +174,8 @@ export class PluginDebugSocketModule extends BaseSocketModule {
 
                 const teamClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(teamId);
 
-                const plugin = await this.pluginRepository.findById(payload.pluginId);
+                const pluginDoc = await PluginModel.findById(payload.pluginId);
+                const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
                 if (!plugin) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: 'Plugin not found'

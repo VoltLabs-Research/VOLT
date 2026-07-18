@@ -6,12 +6,10 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import type { IPluginRepository } from '@shared/contracts/ports';
-import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import PluginModel, { toPluginLike } from '@modules/plugin/models/plugin/PluginModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import AnalysisModel, { toAnalysisLike } from '@modules/analysis/models/AnalysisModel';
-import { container as diContainer } from 'tsyringe';
 
 export interface FilterExpression {
     property: string;
@@ -37,11 +35,6 @@ export interface AnalysisAllAtomsResult {
 
 export class AtomPropertiesService {
         private readonly daemonClient = teamClusterDaemonClient;
-
-    #pluginRepositoryCache?: IPluginRepository<PluginLike>;
-    private get pluginRepository(): IPluginRepository<PluginLike> {
-        return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
-    }
 
     async getModifierPerAtomProps(analysisId: string, timestep?: string): Promise<Record<string, string[]>> {
         const exposureConfigs = await this.getAnalysisExposureAtomConfigs(analysisId, timestep);
@@ -302,7 +295,8 @@ export class AtomPropertiesService {
         if (!analysisDoc) throw new ApplicationError(ErrorCodes.ANALYSIS_NOT_FOUND, ErrorCodes.ANALYSIS_NOT_FOUND, 404);
         const analysis = toAnalysisLike(analysisDoc);
 
-        const plugin = await this.pluginRepository.findById(analysis.props.plugin);
+        const pluginDoc = await PluginModel.findById(analysis.props.plugin);
+        const plugin = pluginDoc ? toPluginLike(pluginDoc) : null;
         if (!plugin) throw new ApplicationError(ErrorCodes.PLUGIN_NOT_FOUND, ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
         return { analysis, plugin };

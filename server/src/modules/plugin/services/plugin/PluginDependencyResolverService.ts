@@ -1,11 +1,11 @@
-import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
+import { PluginStatus, type Plugin } from '@modules/plugin/models/plugin/PluginModel';
 import type {
     ArgumentDefinition,
     PluginReferenceArgumentMapping
-} from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
-import { ArgumentType } from '@modules/plugin/entities/plugin/workflow/nodes/ArgumentNode';
-import { WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
-import PluginRepository from '@modules/plugin/services/PluginRepository';
+} from '@modules/plugin/workflow/nodes/ArgumentNode';
+import { ArgumentType } from '@modules/plugin/workflow/nodes/ArgumentNode';
+import { WorkflowNodeType } from '@modules/plugin/workflow/WorkflowNode';
+import { findPluginsByIds } from '@modules/plugin/models/plugin/plugin-queries';
 import { isArgumentVisible } from '@modules/plugin/utilities/plugin/argument-visibility';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
@@ -311,10 +311,6 @@ const collectArgumentPluginReferenceValidationTargets = (
 };
 
 export class PluginDependencyResolverService {
-    constructor(
-        private readonly pluginRepository: PluginRepository
-    ) {}
-
     async collectTransitivePublishedDependencies(plugin: Plugin): Promise<PluginDependencyTraversalResult> {
         const visited = new Set<string>([plugin.id]);
         const stack = new Set<string>([plugin.id]);
@@ -410,7 +406,7 @@ export class PluginDependencyResolverService {
 
         const pluginIds = Array.from(new Set(targets.map((target) => target.pluginId)));
         const plugins = pluginIds.length > 0
-            ? await this.pluginRepository.findByIds(pluginIds)
+            ? await findPluginsByIds(pluginIds)
             : [];
         const pluginsById = new Map(plugins.map((candidate) => [candidate.id, candidate]));
 
@@ -479,7 +475,7 @@ export class PluginDependencyResolverService {
         }
 
         const uniqueIds = Array.from(new Set(pluginNodeReferences.map((reference) => reference.pluginId)));
-        const referencedPlugins = await this.pluginRepository.findByIds(uniqueIds);
+        const referencedPlugins = await findPluginsByIds(uniqueIds);
         const pluginsById = new Map(referencedPlugins.map((dependencyPlugin) => [dependencyPlugin.id, dependencyPlugin]));
 
         for (const reference of pluginNodeReferences) {
