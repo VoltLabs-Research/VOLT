@@ -1,5 +1,8 @@
-import controllers from '@modules/trajectory/infrastructure/http/controllers/discover';
+import TrajectoryController from '@modules/trajectory/infrastructure/http/controllers/TrajectoryController';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(TrajectoryController);
 
 export default createHttpModule({
     moduleKey: 'trajectory',
@@ -8,7 +11,7 @@ export default createHttpModule({
     routes: (router) => {
         router.get(
             '/:teamId/trajectories',
-            controllers.listPublicTeamTrajectories.handle
+            controller.discoverListPublicTeamTrajectories
         );
     }
 });

@@ -1,7 +1,10 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/trajectory/infrastructure/http/controllers/lod';
+import TrajectoryController from '@modules/trajectory/infrastructure/http/controllers/TrajectoryController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(TrajectoryController);
 
 export default createHttpModule({
     moduleKey: 'trajectory',
@@ -9,6 +12,6 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/:trajectoryId/:analysisId/:exposureId/octree-metadata', controllers.getOctreeMetadata.handle);
+        router.get('/:trajectoryId/:analysisId/:exposureId/octree-metadata', controller.lodGetOctreeMetadata);
     }
 });

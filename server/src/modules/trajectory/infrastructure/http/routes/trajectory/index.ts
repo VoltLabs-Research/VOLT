@@ -1,12 +1,14 @@
 import { Resource } from '@core/constants/resources';
 import DeleteTrajectoryFolderUseCase from '@modules/trajectory/application/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
+import TrajectoryController from '@modules/trajectory/infrastructure/http/controllers/TrajectoryController';
 import TrajectoryFolderRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/trajectory/TrajectoryFolderRepository';
-import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container } from 'tsyringe';
+
+const controller = container.resolve(TrajectoryController);
 
 const folderHandlers = createCatalogFolderRouteHandlers({
     repository: container.resolve(TrajectoryFolderRepository),
@@ -21,30 +23,30 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/samples', controllers.listSamples.handle);
-        router.get('/samples/:filename', controllers.downloadSamples.handle);
-        router.get('/scene-artifacts', controllers.listTeamSceneArtifacts.handle);
-        router.post('/upload-sessions', controllers.createUploadSession.handle);
-        router.post('/upload-sessions/:uploadSessionId/commit', controllers.commitUploadSession.handle);
-        router.delete('/upload-sessions/:uploadSessionId', controllers.cancelUploadSession.handle);
+        router.get('/samples', controller.listSamples);
+        router.get('/samples/:filename', controller.downloadSamples);
+        router.get('/scene-artifacts', controller.listTeamSceneArtifacts);
+        router.post('/upload-sessions', controller.createUploadSession);
+        router.post('/upload-sessions/:uploadSessionId/commit', controller.commitUploadSession);
+        router.delete('/upload-sessions/:uploadSessionId', controller.cancelUploadSession);
         router.route('/')
-            .get(controllers.getByTeamId.handle);
-        router.post('/clones', controllers.cloneTrajectory.handle);
+            .get(controller.getByTeamId);
+        router.post('/clones', controller.cloneTrajectory);
         router.get('/folders', folderHandlers.list);
         router.get('/folders/:folderId', folderHandlers.get);
         router.post('/folders', folderHandlers.create);
         router.patch('/folders/:folderId', folderHandlers.update);
         router.delete('/folders/:folderId', folderHandlers.delete);
-        router.get('/metrics', controllers.getMetrics.handle);
-        router.get('/:trajectoryId/preview', controllers.getPreview.handle);
-        router.get('/:trajectoryId/analyses/download', controllers.downloadTrajectoryAnalyses.handle);
-        router.get('/:trajectoryId/download', controllers.downloadTrajectory.handle);
-        router.get('/:trajectoryId/frame/:timestep/atoms', controllers.getAtomsBinary.handle);
-        router.get('/:trajectoryId/scene-artifacts', controllers.getSceneArtifacts.handle);
-        router.patch('/:trajectoryId/folder', controllers.move.handle);
+        router.get('/metrics', controller.getMetrics);
+        router.get('/:trajectoryId/preview', controller.getPreview);
+        router.get('/:trajectoryId/analyses/download', controller.downloadTrajectoryAnalyses);
+        router.get('/:trajectoryId/download', controller.downloadTrajectory);
+        router.get('/:trajectoryId/frame/:timestep/atoms', controller.getAtomsBinary);
+        router.get('/:trajectoryId/scene-artifacts', controller.getSceneArtifacts);
+        router.patch('/:trajectoryId/folder', controller.move);
         router.route('/:trajectoryId')
-            .get(controllers.getById.handle)
-            .patch(controllers.updateById.handle)
-            .delete(controllers.deleteById.handle);
+            .get(controller.getById)
+            .patch(controller.updateById)
+            .delete(controller.deleteById);
     }
 });

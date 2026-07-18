@@ -1,8 +1,11 @@
-import controllers from '@modules/plugin/infrastructure/http/controllers/listing-row';
+import PluginController from '@modules/plugin/infrastructure/http/controllers/PluginController';
 
 import { Resource } from '@core/constants/resources';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(PluginController);
 
 export default createHttpModule({
     basePath: '/api/plugins/:teamId',
@@ -10,12 +13,12 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     moduleKey: 'plugin',
     routes: (router) => {
-        router.get('/listings/analyses/:analysisId', controllers.getListingRowsByAnalysisId.handle);
-        router.get('/listings/analyses/:analysisId/export/options', controllers.getAnalysisListingExportOptions.handle);
-        router.get('/listings/analyses/:analysisId/export', controllers.exportListingRowsByAnalysisId.handle);
-        router.get('/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controllers.getSubListing.handle);
-        router.get('/:pluginId/listings/export', controllers.exportPluginListingDocuments.handle);
-        router.get('/:pluginId/listings/trajectories/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
-        router.get('/:pluginId/listings', controllers.getPluginListingDocuments.handle);
+        router.get('/listings/analyses/:analysisId', controller.getListingRowsByAnalysisId);
+        router.get('/listings/analyses/:analysisId/export/options', controller.getAnalysisListingExportOptions);
+        router.get('/listings/analyses/:analysisId/export', controller.exportListingRowsByAnalysisId);
+        router.get('/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controller.getSubListing);
+        router.get('/:pluginId/listings/export', controller.exportPluginListingDocuments);
+        router.get('/:pluginId/listings/trajectories/:trajectoryId/export', controller.exportPluginListingDocuments);
+        router.get('/:pluginId/listings', controller.getPluginListingDocuments);
     }
 });

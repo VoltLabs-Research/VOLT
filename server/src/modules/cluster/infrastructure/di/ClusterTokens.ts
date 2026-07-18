@@ -1,4 +1,5 @@
 export const CLUSTER_TOKENS = Object.freeze({
+    ClusterHttpService: Symbol.for('ClusterHttpService'),
     TeamClusterRepository: Symbol.for('TeamClusterRepository'),
     ClusterTransferJobRepository: Symbol.for('ClusterTransferJobRepository'),
     StoragePlacementRepository: Symbol.for('StoragePlacementRepository'),

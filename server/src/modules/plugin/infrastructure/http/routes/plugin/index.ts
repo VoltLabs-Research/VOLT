@@ -1,4 +1,4 @@
-import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
+import PluginController from '@modules/plugin/infrastructure/http/controllers/PluginController';
 
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
@@ -7,7 +7,10 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import type { NextFunction, Request, Response } from 'express';
+import { container } from 'tsyringe';
 import multer from 'multer';
+
+const controller = container.resolve(PluginController);
 
 const IMPORT_MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -55,31 +58,31 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     moduleKey: 'plugin',
     routes: (router) => {
-        router.get('/node-types/schema', controllers.getNodeTypesSchema.handle);
-        router.post('/workflow-validation', controllers.validateWorkflow.handle);
-        router.get('/:pluginId/export', controllers.exportPlugin.handle);
-        router.post('/import', importUploadSingleFile('file'), controllers.importPlugin.handle);
-        router.get('/registry/search', controllers.searchRegistry.handle);
-        router.post('/registry/install', controllers.installRegistry.handle);
+        router.get('/node-types/schema', controller.getNodeTypesSchema);
+        router.post('/workflow-validation', controller.validateWorkflow);
+        router.get('/:pluginId/export', controller.exportPlugin);
+        router.post('/import', importUploadSingleFile('file'), controller.importPlugin);
+        router.get('/registry/search', controller.searchRegistry);
+        router.post('/registry/install', controller.installRegistry);
         router.route('/')
-            .get(controllers.listPlugins.handle)
-            .post(controllers.create.handle);
+            .get(controller.listPlugins)
+            .post(controller.create);
         router.post(
             '/:pluginId/binary/commit',
-            controllers.commitBinaryUpload.handle
+            controller.commitBinaryUpload
         );
         router.route('/:pluginId/binary')
-            .get(controllers.downloadBinary.handle)
-            .patch(controllers.uploadBinary.handle)
-            .delete(controllers.deleteBinary.handle);
-        router.post('/:pluginId/clones', controllers.clone.handle);
+            .get(controller.downloadBinary)
+            .patch(controller.uploadBinary)
+            .delete(controller.deleteBinary);
+        router.post('/:pluginId/clones', controller.clone);
         router.route('/:pluginId')
-            .get(controllers.getPluginById.handle)
-            .patch(controllers.updatePluginById.handle)
-            .delete(controllers.deleteById.handle);
+            .get(controller.getPluginById)
+            .patch(controller.updatePluginById)
+            .delete(controller.deleteById);
         router.post(
             '/trajectories/:trajectoryId/pipeline-executions',
-            controllers.executePipeline.handle
+            controller.executePipeline
         );
     }
 });

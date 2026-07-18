@@ -1,7 +1,10 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/trajectory/infrastructure/http/controllers/color-coding';
+import TrajectoryController from '@modules/trajectory/infrastructure/http/controllers/TrajectoryController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(TrajectoryController);
 
 export default createHttpModule({
     moduleKey: 'trajectory',
@@ -9,16 +12,16 @@ export default createHttpModule({
     resource: Resource.TRAJECTORY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/:trajectoryId/properties', controllers.getProperties.handle);
-        router.get('/:trajectoryId/stats', controllers.getStats.handle);
-        router.get('/:trajectoryId', controllers.get.handle);
-        router.post('/:trajectoryId', controllers.create.handle);
-        router.get('/:trajectoryId/properties/:analysisId', controllers.getProperties.handle);
-        router.get('/:trajectoryId/stats/:analysisId', controllers.getStats.handle);
-        router.get('/:trajectoryId/:analysisId', controllers.get.handle);
+        router.get('/:trajectoryId/properties', controller.colorCodingGetProperties);
+        router.get('/:trajectoryId/stats', controller.colorCodingGetStats);
+        router.get('/:trajectoryId', controller.colorCodingGet);
+        router.post('/:trajectoryId', controller.colorCodingCreate);
+        router.get('/:trajectoryId/properties/:analysisId', controller.colorCodingGetProperties);
+        router.get('/:trajectoryId/stats/:analysisId', controller.colorCodingGetStats);
+        router.get('/:trajectoryId/:analysisId', controller.colorCodingGet);
         router.post(
             '/:trajectoryId/:analysisId',
-            controllers.create.handle
+            controller.colorCodingCreate
         );
     }
 });

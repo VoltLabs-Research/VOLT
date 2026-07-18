@@ -1,6 +1,9 @@
-import controllers from '@modules/trajectory/infrastructure/http/controllers/canvas';
+import TrajectoryController from '@modules/trajectory/infrastructure/http/controllers/TrajectoryController';
 import { authenticateOptional } from '@shared/infrastructure/http/middleware/authentication';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(TrajectoryController);
 
 export default createHttpModule({
     moduleKey: 'trajectory',
@@ -8,40 +11,40 @@ export default createHttpModule({
     routes: (router) => {
         router.use(authenticateOptional);
 
-        router.get('/:trajectoryId/bootstrap', controllers.bootstrap.handle);
-        router.get('/:trajectoryId', controllers.trajectory.handle);
-        router.get('/:trajectoryId/preview', controllers.preview.handle);
-        router.get('/:trajectoryId/analyses', controllers.analyses.handle);
-        router.get('/:trajectoryId/dumps/:timestep', controllers.dump.handle);
-        router.get('/:trajectoryId/glb/:timestep/:analysisId', controllers.glb.handle);
-        router.get('/:trajectoryId/frames/:timestep', controllers.rasterFrame.handle);
-        router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', controllers.analysisRasterFrame.handle);
+        router.get('/:trajectoryId/bootstrap', controller.canvasBootstrap);
+        router.get('/:trajectoryId', controller.canvasTrajectory);
+        router.get('/:trajectoryId/preview', controller.canvasPreview);
+        router.get('/:trajectoryId/analyses', controller.canvasAnalyses);
+        router.get('/:trajectoryId/dumps/:timestep', controller.canvasDump);
+        router.get('/:trajectoryId/glb/:timestep/:analysisId', controller.canvasGlb);
+        router.get('/:trajectoryId/frames/:timestep', controller.canvasRasterFrame);
+        router.get('/:trajectoryId/frames/:timestep/:analysisId/:model', controller.canvasRasterFrame);
 
-        router.get('/:trajectoryId/frame/:timestep/atoms', controllers.atomsBinary.handle);
-        router.get('/:trajectoryId/simulation-cell', controllers.simulationCell.handle);
-        router.get('/:trajectoryId/scene-artifacts', controllers.sceneArtifacts.handle);
+        router.get('/:trajectoryId/frame/:timestep/atoms', controller.canvasAtomsBinary);
+        router.get('/:trajectoryId/simulation-cell', controller.canvasSimulationCell);
+        router.get('/:trajectoryId/scene-artifacts', controller.canvasSceneArtifacts);
 
-        router.get('/:trajectoryId/color-coding/properties', controllers.colorCodingProperties.handle);
-        router.get('/:trajectoryId/color-coding/properties/:analysisId', controllers.colorCodingPropertiesByAnalysis.handle);
-        router.get('/:trajectoryId/color-coding/stats', controllers.colorCodingStats.handle);
-        router.get('/:trajectoryId/color-coding/stats/:analysisId', controllers.colorCodingStatsByAnalysis.handle);
-        router.get('/:trajectoryId/color-coding/model', controllers.colorCodingModel.handle);
-        router.get('/:trajectoryId/color-coding/model/:analysisId', controllers.colorCodingModelByAnalysis.handle);
+        router.get('/:trajectoryId/color-coding/properties', controller.canvasColorCodingProperties);
+        router.get('/:trajectoryId/color-coding/properties/:analysisId', controller.canvasColorCodingProperties);
+        router.get('/:trajectoryId/color-coding/stats', controller.canvasColorCodingStats);
+        router.get('/:trajectoryId/color-coding/stats/:analysisId', controller.canvasColorCodingStats);
+        router.get('/:trajectoryId/color-coding/model', controller.canvasColorCodingModel);
+        router.get('/:trajectoryId/color-coding/model/:analysisId', controller.canvasColorCodingModel);
 
-        router.get('/:trajectoryId/particle-filter/properties', controllers.particleFilterProperties.handle);
-        router.get('/:trajectoryId/particle-filter/properties/:analysisId', controllers.particleFilterPropertiesByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/unique-values', controllers.particleFilterUniqueValues.handle);
-        router.get('/:trajectoryId/particle-filter/unique-values/:analysisId', controllers.particleFilterUniqueValuesByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/preview', controllers.particleFilterPreview.handle);
-        router.get('/:trajectoryId/particle-filter/preview/:analysisId', controllers.particleFilterPreviewByAnalysis.handle);
-        router.get('/:trajectoryId/particle-filter/model', controllers.particleFilterModel.handle);
-        router.get('/:trajectoryId/particle-filter/model/:analysisId', controllers.particleFilterModelByAnalysis.handle);
+        router.get('/:trajectoryId/particle-filter/properties', controller.canvasParticleFilterProperties);
+        router.get('/:trajectoryId/particle-filter/properties/:analysisId', controller.canvasParticleFilterProperties);
+        router.get('/:trajectoryId/particle-filter/unique-values', controller.canvasParticleFilterUniqueValues);
+        router.get('/:trajectoryId/particle-filter/unique-values/:analysisId', controller.canvasParticleFilterUniqueValues);
+        router.get('/:trajectoryId/particle-filter/preview', controller.canvasParticleFilterPreview);
+        router.get('/:trajectoryId/particle-filter/preview/:analysisId', controller.canvasParticleFilterPreview);
+        router.get('/:trajectoryId/particle-filter/model', controller.canvasParticleFilterModel);
+        router.get('/:trajectoryId/particle-filter/model/:analysisId', controller.canvasParticleFilterModel);
 
-        router.get('/:trajectoryId/plugins/:pluginId', controllers.plugin.handle);
-        router.get('/:trajectoryId/plugins/:pluginId/listings', controllers.pluginListing.handle);
-        router.get('/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controllers.subListing.handle);
-        router.get('/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb', controllers.exposureGlb.handle);
-        router.get('/:trajectoryId/analyses/:analysisId/logs/:timestep', controllers.frameLog.handle);
-        router.get('/:trajectoryId/raster-metadata', controllers.rasterMetadata.handle);
+        router.get('/:trajectoryId/plugins/:pluginId', controller.canvasPlugin);
+        router.get('/:trajectoryId/plugins/:pluginId/listings', controller.canvasPluginListing);
+        router.get('/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName', controller.canvasSubListing);
+        router.get('/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb', controller.canvasExposureGlb);
+        router.get('/:trajectoryId/analyses/:analysisId/logs/:timestep', controller.canvasFrameLog);
+        router.get('/:trajectoryId/raster-metadata', controller.canvasRasterMetadata);
     }
 });

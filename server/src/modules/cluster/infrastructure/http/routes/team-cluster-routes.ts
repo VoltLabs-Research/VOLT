@@ -1,8 +1,11 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/cluster/infrastructure/http/controllers';
+import ClusterController from '@modules/cluster/infrastructure/http/controllers/ClusterController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(ClusterController);
 
 export default createHttpModule({
     basePath: '/api/teams/:teamId/clusters',
@@ -11,59 +14,59 @@ export default createHttpModule({
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
         router.route('/')
-            .get(controllers.listByTeamId.handle)
-            .post(controllers.create.handle);
+            .get(controller.listByTeamId)
+            .post(controller.create);
         router.route('/demo')
-            .post(controllers.provisionDemo.handle)
-            .delete(controllers.deleteDemo.handle);
-        router.get('/demo/status', controllers.getDemoStatus.handle);
-        router.get('/:teamClusterId', controllers.getById.handle);
-        router.get('/:teamClusterId/runtime-snapshot', controllers.getRuntimeSnapshot.handle);
+            .post(controller.provisionDemo)
+            .delete(controller.deleteDemo);
+        router.get('/demo/status', controller.getDemoStatus);
+        router.get('/:teamClusterId', controller.getById);
+        router.get('/:teamClusterId/runtime-snapshot', controller.getRuntimeSnapshot);
         router.patch(
             '/:teamClusterId/queue-concurrency',
-            controllers.updateQueueConcurrency.handle
+            controller.updateQueueConcurrency
         );
         router.patch(
             '/:teamClusterId/role',
-            controllers.updateRole.handle
+            controller.updateRole
         );
         router.route('/:teamClusterId/transfers')
-            .get(controllers.listTransferJobs.handle)
-            .post(controllers.createTransferRequest.handle);
+            .get(controller.listTransferJobs)
+            .post(controller.createTransferRequest);
         router.get(
             '/:teamClusterId/resource-limits',
-            controllers.getResourceLimits.handle
+            controller.getResourceLimits
         );
         router.post(
             '/:teamClusterId/credentials/reveal',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            controllers.revealCredentials.handle
+            controller.revealCredentials
         );
         router.post(
             '/:teamClusterId/remote-access/sessions',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            controllers.createRemoteAccessSession.handle
+            controller.createRemoteAccessSession
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/entries',
-            controllers.listRemoteExplorerEntries.handle
+            controller.listRemoteExplorerEntries
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/node',
-            controllers.getRemoteExplorerNode.handle
+            controller.getRemoteExplorerNode
         );
         router.post(
             '/:teamClusterId/remote-access/explorer/download',
-            controllers.downloadRemoteExplorerObject.handle
+            controller.downloadRemoteExplorerObject
         );
         router.post(
             '/:teamClusterId/enrollment-token/regenerate',
-            controllers.regenerateEnrollmentToken.handle
+            controller.regenerateEnrollmentToken
         );
         router.post(
             '/:teamClusterId/delete-requests',
             RATE_LIMIT_POLICIES.passwordConfirmedClusterAction,
-            controllers.deleteById.handle
+            controller.deleteById
         );
     }
 });

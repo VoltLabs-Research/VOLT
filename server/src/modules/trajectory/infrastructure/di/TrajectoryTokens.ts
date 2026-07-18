@@ -1,4 +1,5 @@
 export const TRAJECTORY_TOKENS = Object.freeze({
+    TrajectoryService: Symbol.for('TrajectoryService'),
     TrajectoryRepository: Symbol.for('TrajectoryRepository'),
     TrajectoryFolderRepository: Symbol.for('TrajectoryFolderRepository'),
     TrajectoryFrameRepository: Symbol.for('TrajectoryFrameRepository'),
