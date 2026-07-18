@@ -2,8 +2,6 @@ import DeploymentSettingsModel, {
     DeploymentSettingsDocument,
     DeploymentSettingsProps
 } from '@modules/system/models/DeploymentSettingsModel';
-import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 export interface DeploymentSettings {
     _id: string;
@@ -20,7 +18,6 @@ const toDomain = (doc: DeploymentSettingsDocument): DeploymentSettings => ({
     }
 });
 
-@Singleton(SYSTEM_CONTRACT_TOKENS.DeploymentSettingsRepository)
 export default class DeploymentSettingsRepository {
     async getSettings(): Promise<DeploymentSettings> {
         const doc = await DeploymentSettingsModel.findOne({});
