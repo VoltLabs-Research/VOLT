@@ -1,6 +1,4 @@
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { inject } from 'tsyringe';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
 import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
@@ -14,10 +12,7 @@ import logger from '@shared/infrastructure/logger';
 export default class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
     private readonly storagePlacementRepository = new StoragePlacementRepository();
     private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
-
-    constructor(
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    private readonly objectGatewayClient = objectGatewayClient;
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { trajectoryId, storageClusterId } = event.payload;

@@ -1,8 +1,6 @@
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import TeamJobsService, { type TeamJobsInitialPayload } from './TeamJobsService';
 
-@Singleton()
 export default class TeamJobsRealtimeSyncService {
     constructor(
         private readonly teamJobsService: TeamJobsService,

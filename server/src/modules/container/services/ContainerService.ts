@@ -72,9 +72,17 @@ export default class ContainerService {
     #runtime = daemonContainerRuntimeService;
     #portAllocator = containerPublicPortAllocator;
     #relay = containerPortProxyRelayService;
-    #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
     #systemMetrics = new SystemMetricsRedisRepository();
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+
+    #clusterSelectionCache?: ITeamClusterSelectionService;
+    get #clusterSelection(): ITeamClusterSelectionService {
+        return (this.#clusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async create(teamId: string, userId: string, input: CreateContainerInput): Promise<{ container: ContainerDoc }> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;

@@ -3,14 +3,13 @@ import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
-import { NotebookRuntimeTerminator } from '@modules/scripting/services/NotebookRuntimeTerminator';
+import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
@@ -68,23 +67,20 @@ interface DaemonNotebookSessionRequest {
     notebook: DaemonNotebookSessionSnapshot;
 }
 
-/**
- * Shared singleton (stateful daemon collaborator): starts/tears-down remote
- * Jupyter notebook sessions over the {@link ITeamClusterDaemonClient}. Talks to
- * the Mongoose {@link ScriptingNotebookModel} directly (no repository) and injects
- * its stateless sibling collaborators by class. Consumed both by
- * {@link ScriptingService} (create-session flow) and the trajectory-deleted event
- * handler, so it stays a `@Singleton()` resolved once.
- */
-@Singleton()
 export class DaemonScriptingSessionOrchestrator {
-    constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService) private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly notebookService: JupyterNotebookService,
-        private readonly accessTokenService: ScriptingJupyterAccessTokenService,
-        private readonly notebookRuntimeTerminator: NotebookRuntimeTerminator
-    ) {}
+    private readonly notebookService = new JupyterNotebookService();
+    private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
+    private readonly notebookRuntimeTerminator = notebookRuntimeTerminator;
+
+    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
+
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    private get teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
         const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
@@ -169,3 +165,5 @@ export class DaemonScriptingSessionOrchestrator {
         throw ApplicationError.internalServerError('Daemon returned an invalid Jupyter session response');
     }
 }
+
+export default new DaemonScriptingSessionOrchestrator();

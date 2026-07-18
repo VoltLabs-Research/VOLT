@@ -3,8 +3,8 @@ import { extractPluginId } from '@shared/application/utilities/extract-plugin-id
 import type { Analysis, ChatParticipant } from '@shared/contracts/types';
 import { mapPluginToPersistedDTO } from '@shared/application/utilities/mapPluginToPersistedDTO';
 import { TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import type { TeamProps } from '@modules/team/entities/team/Team';
-import type { PersistedEntityOutput } from '@shared/domain/persisted/to-persisted-entity';
+import type { TeamProps } from '@modules/team/models/team/TeamModel';
+import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type {
     GetAnalysesByTeamIdItemDTO,
     ListContainersOutputDTO,
@@ -15,8 +15,7 @@ import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepositor
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
-import TeamRepository from '@modules/team/repositories/team/TeamRepository';
-import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
+import TeamService from '@modules/team/services/TeamService';
 import ChatModel from '@modules/chat/models/chat/ChatModel';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 
@@ -70,7 +69,7 @@ export interface GetGlobalSearchResult {
     analyses: GetAnalysesByTeamIdItemDTO[];
     containers: ListContainersOutputDTO<ContainerSearchView>['data'];
     trajectories: TrajectoryPersistedDTO[];
-    teams: PersistedEntityOutput<TeamProps>[];
+    teams: PersistedOutput<TeamProps>[];
     plugins: PluginSearchDTO[];
     chats: PersistedChatDTO<ChatSearchView>[];
 }
@@ -137,7 +136,7 @@ const toId = (value: unknown): string | undefined => (value === undefined || val
 export default class DashboardService {
     #analysisRepository = new AnalysisRepository();
     #pluginRepository = new PluginRepository();
-    #teamRepository = new TeamRepository(new TeamMemberRepository());
+    #teamService = new TeamService();
 
     async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult> {
         const normalizedQuery = normalizeQuery(input.query);
@@ -155,7 +154,7 @@ export default class DashboardService {
             chats
         ] = await Promise.all([
             this.#searchTrajectoryIdsByTeamAndName(input.teamId, regex),
-            this.#teamRepository.findUserTeams(input.userId),
+            this.#teamService.listUserTeams(input.userId),
             this.#findChatsByUserId(input.userId)
         ]);
 

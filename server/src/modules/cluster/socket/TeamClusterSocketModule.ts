@@ -1,12 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import analysisExecutionLogServiceInstance from '@modules/analysis/services/AnalysisExecutionLogService';
-import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
-import type { IPluginDebugSessionRegistryService } from '@shared/contracts/ports';
+import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 import {
@@ -43,10 +41,8 @@ import {
     type TeamClusterDaemonRegisterPayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import type ApplicationError from '@shared/application/errors/ApplicationError';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { inject, container } from 'tsyringe';
 import type { TeamClusterDaemonExecutionLogSegment } from '@modules/cluster/utilities/teamClusterSocket';
 
 interface DaemonAppendFrameSegmentsService {
@@ -128,28 +124,34 @@ interface DaemonSceneArtifactUpsertBatchStreamPayload {
     items: DaemonSceneArtifactUpsertItem[];
 }
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class TeamClusterSocketModule extends BaseSocketModule {
+export class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
-    private readonly clusterService = new ClusterService();
+
+    // `ClusterService` eagerly resolves `TeamClusterDaemonClient` and
+    // `EventBus` from the tsyringe container in its own field initializers.
+    // Those tokens are registered in `registerAllDependencies`, which hasn't
+    // run yet when this module is constructed at import time, so
+    // `ClusterService` itself must be constructed lazily — on first actual
+    // use — to avoid the eager-singleton DI boot race that already crashed
+    // the server once this session.
+    #clusterServiceCache?: ClusterService;
+    private get clusterService(): ClusterService {
+        return (this.#clusterServiceCache ??= new ClusterService());
+    }
+
     private readonly teamClusterHeartbeatMonitor = teamClusterHeartbeatMonitor;
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
     private readonly teamClusterReverseChannelService = teamClusterReverseChannelService;
     private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService = analysisExecutionLogServiceInstance;
-    private readonly pluginDebugSessionRegistry = container.resolve<IPluginDebugSessionRegistryService>(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService);
+    private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
     private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
     private readonly provenanceService = new ProvenanceService();
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     async onInit(): Promise<void> {
@@ -657,3 +659,5 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         });
     }
 }
+
+export default new TeamClusterSocketModule();

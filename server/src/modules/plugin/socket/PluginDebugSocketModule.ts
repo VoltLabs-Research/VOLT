@@ -7,22 +7,20 @@ import {
 import PluginRepository from '@modules/plugin/services/PluginRepository';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import PluginDebugSessionRegistryService from '@modules/plugin/services/PluginDebugSessionRegistryService';
+import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
 import { sanitizeVisibleArgumentConfig } from '@modules/plugin/utilities/plugin/argument-visibility';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
@@ -115,9 +113,7 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
     status: plugin.props.status ?? PluginStatus.Draft
 });
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class PluginDebugSocketModule extends BaseSocketModule {
+export class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
     // `PluginDependencyResolverService` and `WorkflowValidatorService` are plain
@@ -127,19 +123,32 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
     private readonly pluginDependencyResolverService: PluginDependencyResolverService;
     private readonly workflowValidator: WorkflowValidatorService;
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly daemonClient: TeamClusterDaemonClient,
-        private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        private readonly pluginRepository: PluginRepository,
-        @inject(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
-        private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly pluginDebugSessionRegistry: PluginDebugSessionRegistryService
-    ) {
-        super(emitter, roomManager, eventRegistry);
-        this.pluginDependencyResolverService = new PluginDependencyResolverService(pluginRepository);
+    // `PluginRepository` is still tsyringe-decorated (`@Singleton`) but its own
+    // constructor takes no runtime DI args, so `new`ing it directly here is
+    // safe and bypasses the container entirely.
+    private readonly pluginRepository = new PluginRepository();
+    private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
+    private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
+
+    // `TeamClusterDaemonClient` and `ITeamClusterSelectionService` are still
+    // resolved from the tsyringe container (registered in
+    // `registerAllDependencies`, which hasn't run yet when this module is
+    // constructed at import time), so both must stay lazy — resolved on first
+    // actual use — to avoid the eager-singleton DI boot race that already
+    // crashed the server once this session.
+    #daemonClientCache?: TeamClusterDaemonClient;
+    private get daemonClient(): TeamClusterDaemonClient {
+        return (this.#daemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
+
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    private get teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
+        this.pluginDependencyResolverService = new PluginDependencyResolverService(this.pluginRepository);
         this.workflowValidator = new WorkflowValidatorService(this.pluginDependencyResolverService);
     }
 
@@ -460,3 +469,5 @@ export default class PluginDebugSocketModule extends BaseSocketModule {
         }
     }
 }
+
+export default new PluginDebugSocketModule();

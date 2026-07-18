@@ -1,13 +1,10 @@
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
 import type { IPluginDebugSessionRegistryService as IPluginDebugSessionRegistryServicePort } from '@shared/contracts/ports';
 import type { PluginDebugSessionRegistryEntry } from '@modules/plugin/contracts/plugin/PluginDebugSessionRegistry';
-import { PLUGIN_CONTRACT_TOKENS } from '@shared/contracts/tokens/PluginTokens';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 
-@Singleton()
-@AliasOf(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService)
-export default class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryServicePort {
+export class PluginDebugSessionRegistryService implements IPluginDebugSessionRegistryServicePort {
     private readonly sessions = new Map<string, PluginDebugSessionRegistryEntry>();
 
     constructor(
@@ -67,3 +64,5 @@ export default class PluginDebugSessionRegistryService implements IPluginDebugSe
         return true;
     }
 }
+
+export default new PluginDebugSessionRegistryService(socketIOEmitter);

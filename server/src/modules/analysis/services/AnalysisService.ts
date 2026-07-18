@@ -84,11 +84,19 @@ interface TrajectoryAnalysesFilter extends Partial<AnalysisProps> {
 }
 
 export default class AnalysisService {
-    #analysisRepo = diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
     #executionLogService = analysisExecutionLogService;
     #teamJobMaintenanceService: ITeamJobMaintenanceService = teamJobMaintenanceService;
-    #teamJobsService = diContainer.resolve(TeamJobsService);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #teamJobsService = new TeamJobsService();
+
+    #analysisRepoCache?: AnalysisRepository;
+    get #analysisRepo(): AnalysisRepository {
+        return (this.#analysisRepoCache ??= diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]> {
         const normalizedSearch = search.trim();

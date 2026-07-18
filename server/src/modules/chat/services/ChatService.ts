@@ -8,9 +8,8 @@ import ChatDeletedEvent from '@modules/chat/events/ChatDeletedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
+import TeamModel from '@modules/team/models/team/TeamModel';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import logger from '@shared/infrastructure/logger';
@@ -60,16 +59,6 @@ const toParticipantId = (participant: unknown): string => {
 export default class ChatService {
     #socketEmitter = socketIOEmitter;
 
-    #teamMemberRepoCache?: ITeamMemberRepository;
-    get #teamMemberRepo(): ITeamMemberRepository {
-        return (this.#teamMemberRepoCache ??= diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository));
-    }
-
-    #teamRepoCache?: ITeamRepository;
-    get #teamRepo(): ITeamRepository {
-        return (this.#teamRepoCache ??= diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository));
-    }
-
     #eventBusCache?: IEventBus;
     get #eventBus(): IEventBus {
         return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
@@ -113,7 +102,7 @@ export default class ChatService {
     async createGroupChat(userId: string, input: CreateGroupChatInput): Promise<ChatView> {
         const { teamId, participantIds, groupName, groupDescription } = input;
 
-        const team = await this.#teamRepo.findById(teamId);
+        const team = await TeamModel.findById(teamId);
         if (!team) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
@@ -456,7 +445,7 @@ export default class ChatService {
 
     async #ensureTeamMembersExist(teamId: string, userIds: string[]): Promise<void> {
         const memberChecks = await Promise.all(
-            userIds.map((userId) => this.#teamMemberRepo.findOne({ team: teamId, user: userId }))
+            userIds.map((userId) => TeamMemberModel.findOne({ team: teamId, user: userId }))
         );
         const invalidIndex = memberChecks.findIndex((member) => !member);
         if (invalidIndex !== -1) {

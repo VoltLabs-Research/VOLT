@@ -7,17 +7,17 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
 import type IORedis from 'ioredis';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        private readonly redis: IORedis
-    ) {}
+    #redisCache?: IORedis;
+    private get redis(): IORedis {
+        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
+    }
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
         const { analysisId, teamId } = event.payload;

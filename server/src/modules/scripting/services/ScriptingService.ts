@@ -1,13 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import type { ScriptingNotebookDocument } from '@modules/scripting/models/ScriptingNotebookModel';
-import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
+import daemonScriptingSessionOrchestrator from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
 import type { ScriptingSessionJupyterInfo, ScriptingSessionStartInput } from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
-import { RedisScriptingSessionLock } from '@modules/scripting/services/RedisScriptingSessionLock';
+import redisScriptingSessionLock from '@modules/scripting/services/RedisScriptingSessionLock';
 import type { ScriptingSessionLockLease } from '@modules/scripting/services/RedisScriptingSessionLock';
-import { NotebookCredentialService } from '@modules/scripting/services/NotebookCredentialService';
+import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
-import { NotebookRuntimeTerminator } from '@modules/scripting/services/NotebookRuntimeTerminator';
+import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import NotebookDeletedEvent from '@modules/scripting/events/NotebookDeletedEvent';
 import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/utilities/build-scripting-notebook';
@@ -123,36 +123,24 @@ const resolveRef = (doc: ScriptingNotebookDocument, key: string): unknown => {
 const getSortTimestamp = (doc: ScriptingNotebookDocument): number =>
     doc.lastOpenedAt?.getTime() ?? doc.updatedAt.getTime();
 
-/**
- * The single application service for the scripting module (pollium style): folds
- * ALL seven former use cases verbatim onto the thrown-`ApplicationError` channel
- * and talks to the Mongoose {@link ScriptingNotebookModel} directly (no
- * repository, entity, mapper or DI on the service). Its collaborators are
- * genuinely-shared/stateful singletons resolved once from the DI container:
- *  - orchestrator (daemon session lifecycle, also used by the trajectory-deleted handler)
- *  - lock (Redis session lock)
- *  - credential (per-notebook `vsk_` key minting)
- *  - notebookTemplate (Jupyter template loader)
- *  - terminator (daemon container teardown)
- *  - teamClusterSelection / exposureRegistry (cross-module cluster services)
- *  - eventBus (notebook-deleted publish)
- * The stateless {@link ScriptingJupyterAccessTokenService} is `new`ed. The live
- * Jupyter HTTP/WS proxy stays a separate stateful `@Singleton`
- * ({@link ScriptingJupyterProxyService}) driven by the proxy route + the server
- * upgrade handler.
- */
 export default class ScriptingService {
-    #orchestrator = diContainer.resolve(DaemonScriptingSessionOrchestrator);
-    #lock = diContainer.resolve(RedisScriptingSessionLock);
-    #credential = diContainer.resolve(NotebookCredentialService);
-    #notebookTemplate = diContainer.resolve(JupyterNotebookService);
-    #terminator = diContainer.resolve(NotebookRuntimeTerminator);
-    #teamClusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
+    #orchestrator = daemonScriptingSessionOrchestrator;
+    #lock = redisScriptingSessionLock;
+    #credential = notebookCredentialService;
+    #notebookTemplate = new JupyterNotebookService();
+    #terminator = notebookRuntimeTerminator;
     #exposureRegistry = teamClusterExposureRegistryService;
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     #accessToken = new ScriptingJupyterAccessTokenService();
 
-    // ---- Notebooks --------------------------------------------------------
+    #teamClusterSelectionCache?: ITeamClusterSelectionService;
+    get #teamClusterSelection(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async listNotebooks(input: ListNotebooksInput): Promise<PaginatedResult<ScriptingNotebookView>> {
         const page = Math.max(1, input.page ?? 1);
@@ -308,8 +296,6 @@ export default class ScriptingService {
         }
     }
 
-    // ---- Sessions ---------------------------------------------------------
-
     async getSessionStatus(input: NotebookIdentityInput & { userId?: string }): Promise<GetSessionStatusResult> {
         if (!input.userId) {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, ErrorCodes.AUTHENTICATION_REQUIRED);
@@ -418,8 +404,6 @@ export default class ScriptingService {
             await lease?.release();
         }
     }
-
-    // ---- Internal helpers -------------------------------------------------
 
     async #resolveNotebookForSession(input: CreateJupyterSessionInput, userId: string): Promise<ScriptingNotebookDocument> {
         if (input.notebookId) {

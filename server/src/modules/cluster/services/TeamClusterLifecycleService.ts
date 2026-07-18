@@ -1,4 +1,4 @@
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
@@ -17,7 +17,6 @@ import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/clust
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';
-import { container } from 'tsyringe';
 
 const BYTES_PER_GB = 1024 ** 3;
 const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
@@ -124,10 +123,7 @@ interface TeamClusterLifecycleEventPayload {
 export class TeamClusterLifecycleService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
     private readonly teamClusterRepository = new TeamClusterRepository();
-    #socketEmitterCache?: any;
-    private get socketEmitter(): any {
-        return (this.#socketEmitterCache ??= container.resolve<any>(SocketIOEmitter));
-    }
+    private readonly socketEmitter = socketIOEmitter;
     private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
 
     async processHealthcheck(teamClusterId: string, enrollmentToken: string, installedVersion?: string): Promise<{

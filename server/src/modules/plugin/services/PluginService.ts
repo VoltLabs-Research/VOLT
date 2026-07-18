@@ -70,6 +70,7 @@ import type {
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
@@ -486,7 +487,7 @@ export default class PluginService {
     #pluginStorageService = new PluginStorageService(
         this.#pluginRepository,
         storagePlacementService,
-        diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient),
+        objectGatewayClient,
         this.#workflowValidator,
         new ClusterObjectSignedUrlService(),
         new ClusterObjectArchiveService()
@@ -494,7 +495,7 @@ export default class PluginService {
     #pluginExecutionRouter = pluginExecutionRouter;
     #registryGateway = new RegistryGateway();
     #pluginExposureExportService = new PluginExposureExportService(
-        diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient),
+        objectGatewayClient,
         new ClusterObjectArchiveService()
     );
     #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
@@ -506,13 +507,29 @@ export default class PluginService {
         new ClusterObjectArchiveService()
     );
 
-    #analysisRepository = diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository);
     #storagePlacementService: IStoragePlacementService = storagePlacementService;
-    #teamClusterSelectionService = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient);
-    #sharedObjectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
-    #daemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
+    #sharedObjectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
+
+    #analysisRepositoryCache?: IAnalysisRepository;
+    get #analysisRepository(): IAnalysisRepository {
+        return (this.#analysisRepositoryCache ??= diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
+
+    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
+    get #teamClusterSelectionService(): ITeamClusterSelectionService {
+        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    #daemonClientCache?: ITeamClusterDaemonClient;
+    get #daemonClient(): ITeamClusterDaemonClient {
+        return (this.#daemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
 
     async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutputDTO> {

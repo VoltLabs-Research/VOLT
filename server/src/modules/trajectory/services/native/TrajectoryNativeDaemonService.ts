@@ -1,5 +1,5 @@
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
+import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/contracts/trajectory';
 import type {
     LineExportBaseOptions,
@@ -109,7 +109,7 @@ export class TrajectoryNativeDaemonService {
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
     async preprocessTrajectory(input: TrajectoryNativeRequest): Promise<void> {

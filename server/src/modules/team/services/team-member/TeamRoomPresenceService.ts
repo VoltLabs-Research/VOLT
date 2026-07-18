@@ -1,8 +1,7 @@
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
-import { container as diContainer } from 'tsyringe';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 
 export default class TeamRoomPresenceService {
-    #roomManager = diContainer.resolve(SocketIORoomManager);
+    #roomManager = socketIORoomManager;
 
     async getOnlineUserIds(teamId: string): Promise<string[]> {
         const users = await this.#roomManager.collectPresence(

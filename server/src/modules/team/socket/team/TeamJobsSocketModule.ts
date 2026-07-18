@@ -1,30 +1,21 @@
 import type { SubscribeToTeamSocketPayload } from '@modules/socket/contracts/team-subscription';
 import { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
+import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import logger from '@shared/infrastructure/logger';
 import TeamJobsService from './TeamJobsService';
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class TeamJobsSocketModule extends BaseSocketModule {
+export class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;
+    private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
+    private readonly teamJobsService = new TeamJobsService();
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly teamJobsService: TeamJobsService,
-        
-        private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     async onInit(): Promise<void> {
@@ -62,4 +53,6 @@ export default class TeamJobsSocketModule extends BaseSocketModule {
             logger.error(error, `[TeamJobsSocketModule] Failed to fetch jobs for team ${payload.teamId}`);
         }
     }
-};
+}
+
+export default new TeamJobsSocketModule();

@@ -25,6 +25,7 @@ import ClusterTransferJob, {
 import StoragePlacement from '@modules/cluster/entities/StoragePlacement';
 import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
+import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -195,7 +196,7 @@ export class ClusterTransferCoordinator {
     }
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= container.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
+        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
     #eventBusCache?: IEventBus;
     private get eventBus(): IEventBus {

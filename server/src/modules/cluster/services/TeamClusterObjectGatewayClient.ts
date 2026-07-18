@@ -1,4 +1,3 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -9,12 +8,12 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
+import { container as diContainer } from 'tsyringe';
 import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
 
 type ObjectGatewayOperationName =
@@ -252,18 +251,24 @@ const resolveOperationTimeouts = (operation: ObjectGatewayOperationName): Object
     }
 };
 
-@Singleton(SHARED_TOKENS.TeamClusterObjectGatewayClient)
-export default class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
+export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
     private readonly cachedTokens = new Map<string, CachedAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
 
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly daemonCredentialGuard: DaemonCredentialGuard,
-        private readonly directAccessTokenService: TeamClusterDirectAccessTokenService
-    ) {}
+    private readonly teamClusterRepository = new TeamClusterRepository();
+    private readonly daemonCredentialGuard = new DaemonCredentialGuard();
+    private readonly directAccessTokenService = new TeamClusterDirectAccessTokenService();
+
+    // `TeamClusterDaemonClient` is still tsyringe-managed (registered in
+    // `registerAllDependencies`). This client is now a plain module-scope
+    // singleton constructed at import time — potentially before that
+    // registration runs — so the daemon client reference must stay lazy,
+    // resolved on first actual use, to avoid the eager-singleton DI boot race.
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
 
     async list(
         teamClusterId: string,
@@ -779,6 +784,8 @@ export default class TeamClusterObjectGatewayClient implements ITeamClusterObjec
         return Object.keys(headers).length > 0 ? headers : undefined;
     }
 }
+
+export default new TeamClusterObjectGatewayClient();
 
 export type {
     TeamClusterObjectGatewayListRequest,

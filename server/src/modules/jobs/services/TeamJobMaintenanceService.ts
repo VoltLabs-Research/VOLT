@@ -87,7 +87,7 @@ export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
 
     #teamJobsServiceCache?: TeamJobsService;
     private get teamJobsService(): TeamJobsService {
-        return (this.#teamJobsServiceCache ??= new TeamJobsService(this.redis));
+        return (this.#teamJobsServiceCache ??= new TeamJobsService());
     }
 
     private async removeResolvedJobs(teamId: string, targetJobs: TeamJobSummary[]): Promise<RemoveTeamJobsResult> {

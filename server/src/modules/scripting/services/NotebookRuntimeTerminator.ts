@@ -1,29 +1,18 @@
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/utilities/jupyter-proxy';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-/**
- * Tears down a notebook's runtime by deleting its `volt.managed` container
- * (resolved from the cluster exposure snapshot) via the generic
- * `container.delete` command. Replaces the former bespoke `notebook.delete` RPC
- * — a notebook is just a container, so it is deleted like any other.
- *
- * Best-effort: failures (daemon offline, container already gone, no exposure
- * published yet) are logged and swallowed, matching the previous behaviour where
- * session teardown never blocked notebook/trajectory deletion.
- */
-@Singleton()
 export class NotebookRuntimeTerminator {
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
-    constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
-    ) {}
+    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
 
     async terminate(teamClusterId: string, runtimeNotebookId: string): Promise<boolean> {
         const exposures = this.exposureRegistryService.listTeamClusterExposures(teamClusterId);
@@ -50,3 +39,5 @@ export class NotebookRuntimeTerminator {
         }
     }
 }
+
+export default new NotebookRuntimeTerminator();

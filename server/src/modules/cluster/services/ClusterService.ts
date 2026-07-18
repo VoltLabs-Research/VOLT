@@ -335,9 +335,17 @@ export default class ClusterService {
     };
     #passwordHasher = new BcryptPasswordHasher();
     #systemMetricsRepository = new SystemMetricsRedisRepository();
-    #teamClusterDaemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     #analysisRepository: IAnalysisRepository = new AnalysisRepository();
+
+    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
+    get #teamClusterDaemonClient(): ITeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     #toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
         return {

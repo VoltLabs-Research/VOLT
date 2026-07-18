@@ -6,7 +6,7 @@ import {
 import { TeamClusterStatus } from '@shared/contracts/types';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { injectable } from 'tsyringe';
+import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
@@ -110,7 +110,7 @@ const supportsCapability = (
     return derivedCapabilities.acceptsComputeJobs;
 };
 
-@injectable()
+@Singleton()
 export class ClusterRoleAwareSelectionService {
     private readonly teamClusterRepository = new TeamClusterRepository();
 

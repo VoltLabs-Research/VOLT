@@ -1,31 +1,22 @@
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
-import { DaemonScriptingSessionOrchestrator } from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
-import { NotebookCredentialService } from '@modules/scripting/services/NotebookCredentialService';
+import scriptingSessionOrchestrator from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
+import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
 import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
-/**
- * On trajectory deletion, tears down every notebook session bound to that
- * trajectory, revokes each notebook's `vsk_` credential, then detaches/prunes
- * the notebooks. Talks to the Mongoose {@link ScriptingNotebookModel} directly
- * (folds the former repository's `findAllWithTrajectory` + `removeTrajectory`)
- * and injects the shared orchestrator/credential singletons by class.
- */
 @Subscribe('trajectory.deleted')
 export default class TrajectoryDeletedEventHandler implements IEventHandler<IDomainEvent<TrajectoryDeletedEventPayload>> {
-    constructor(
-        private readonly scriptingSessionOrchestrator: DaemonScriptingSessionOrchestrator,
-        private readonly notebookCredentialService: NotebookCredentialService
-    ) {}
+    #scriptingSessionOrchestrator = scriptingSessionOrchestrator;
+    #notebookCredentialService = notebookCredentialService;
 
     async handle(event: IDomainEvent<TrajectoryDeletedEventPayload>): Promise<void> {
         const { trajectoryId } = event.payload;
         const notebooks = await ScriptingNotebookModel.find({ trajectory: trajectoryId }).exec();
-        await this.scriptingSessionOrchestrator.deleteSession(trajectoryId);
+        await this.#scriptingSessionOrchestrator.deleteSession(trajectoryId);
         for (const notebook of notebooks) {
-            await this.notebookCredentialService.revokeSecretKey(notebook);
+            await this.#notebookCredentialService.revokeSecretKey(notebook);
         }
         await this.#removeTrajectory(trajectoryId);
     }

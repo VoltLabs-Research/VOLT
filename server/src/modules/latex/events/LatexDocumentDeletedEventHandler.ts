@@ -1,7 +1,5 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import LatexAssetModel from '@modules/latex/models/LatexAssetModel';
 import LatexFileModel from '@modules/latex/models/LatexFileModel';
 import type LatexDocumentDeletedEvent from '@modules/latex/events/LatexDocumentDeletedEvent';
@@ -11,7 +9,7 @@ import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 
 @Subscribe('latex-document.deleted')
 export default class LatexDocumentDeletedEventHandler implements IEventHandler<LatexDocumentDeletedEvent> {
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
+    #objectGatewayClient = objectGatewayClient;
 
     async handle(event: LatexDocumentDeletedEvent): Promise<void> {
         const { documentId, teamId } = event.payload;

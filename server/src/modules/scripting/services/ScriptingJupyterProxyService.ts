@@ -17,12 +17,9 @@ import {
     TeamClusterServiceExposureAccessMode
 } from '@shared/contracts/types';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
-import { getTeamMemberRolePermissions } from '@modules/team/entities/team-member/TeamMember';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
+import TeamMemberModel, { getTeamMemberRolePermissions } from '@modules/team/models/team-member/TeamMemberModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
@@ -50,11 +47,6 @@ interface AuthorizedProxyContext {
     userId: string;
 }
 
-/**
- * Resolved tunnel target for a notebook's runtime container, read from the
- * cluster exposure snapshot (a notebook is a `volt.managed` container exposure).
- * Replaces the former daemon `notebook.runtime.get` RPC response shape.
- */
 interface NotebookRuntimeTarget {
     tunnelTargetHost: string;
     tunnelTargetPort: number;
@@ -132,7 +124,6 @@ const pruneExpiredCacheEntries = <T extends { expiresAt: number }>(cache: Map<st
     }
 };
 
-@Singleton()
 export class ScriptingJupyterProxyService {
     private readonly jupyterNativeToken = readJupyterNativeToken();
     private readonly authorizedProxyContextCache = new Map<string, AuthorizedProxyCacheEntry>();
@@ -140,11 +131,17 @@ export class ScriptingJupyterProxyService {
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
-        @inject(TEAM_CONTRACT_TOKENS.TeamMemberRepository) private readonly teamMemberRepository: ITeamMemberRepository,
-        private readonly reverseWsHttpRelay: ReverseWsHttpRelay
-    ) {
+    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
+    }
+
+    #reverseWsHttpRelayCache?: ReverseWsHttpRelay;
+    private get reverseWsHttpRelay(): ReverseWsHttpRelay {
+        return (this.#reverseWsHttpRelayCache ??= diContainer.resolve(ReverseWsHttpRelay));
+    }
+
+    constructor() {
         this.startHttpProxySessionSweep();
     }
 
@@ -343,21 +340,19 @@ export class ScriptingJupyterProxyService {
         userId: string,
         action: Action
     ): Promise<AuthorizedProxyContext> {
-        const member = await this.teamMemberRepository.findOne({
+        const member = await TeamMemberModel.findOne({
             user: userId,
             team: teamId
-        }, {
-            populate: {
-                path: 'role',
-                select: ['permissions']
-            } satisfies TeamMemberRolePopulate
-        });
+        }).populate({
+            path: 'role',
+            select: ['permissions']
+        } satisfies TeamMemberRolePopulate);
 
         if (!member) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN);
         }
 
-        const permissions = getTeamMemberRolePermissions(member.props.role);
+        const permissions = getTeamMemberRolePermissions(member.role);
         const permission = `${Resource.SCRIPTING}:${action}`;
         if (!permissions.includes('*') && !permissions.includes(permission)) {
             throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, `Missing permission: ${permission}`);
@@ -761,3 +756,5 @@ export class ScriptingJupyterProxyService {
         return [value];
     }
 }
+
+export default new ScriptingJupyterProxyService();

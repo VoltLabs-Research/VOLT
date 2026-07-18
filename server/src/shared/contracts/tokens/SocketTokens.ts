@@ -8,6 +8,5 @@
  * socket module without importing `@modules/socket`.
  */
 export const SOCKET_CONTRACT_TOKENS = Object.freeze({
-    SocketModule: Symbol.for('SocketModule'),
     SocketEmitter: Symbol.for('SocketEmitter')
 });

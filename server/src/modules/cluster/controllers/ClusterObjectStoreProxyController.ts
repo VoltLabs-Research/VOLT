@@ -1,5 +1,5 @@
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
-import TeamClusterObjectGatewayClient, {
+import objectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
 } from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -14,7 +14,6 @@ import {
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';
-import { container } from 'tsyringe';
 
 const readHeader = (request: Request, headerName: string): string | undefined => {
     const value = request.header(headerName);
@@ -222,7 +221,7 @@ const sendError = (response: Response, error: unknown): void => {
 };
 
 export default class ClusterObjectStoreProxyController {
-    #objectGatewayClient = container.resolve(TeamClusterObjectGatewayClient);
+    #objectGatewayClient = objectGatewayClient;
     #daemonCredentialGuard = new DaemonCredentialGuard();
     #teamClusterRepository = new TeamClusterRepository();
 

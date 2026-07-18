@@ -1,4 +1,3 @@
-import { injectable } from 'tsyringe';
 import logger from '@shared/infrastructure/logger';
 import AnalysisProvenanceModel from '@modules/analysis/models/AnalysisProvenanceModel';
 import type { AnalysisProvenance } from '@modules/analysis/schemas/AnalysisMetadata';
@@ -20,7 +19,6 @@ export interface RecordProvenanceInput {
     outputArtifactIds: string[];
 }
 
-@injectable()
 export class ProvenanceService {
     static computeHash(data: Buffer | string): string {
         return crypto.createHash('sha256').update(data).digest('hex');

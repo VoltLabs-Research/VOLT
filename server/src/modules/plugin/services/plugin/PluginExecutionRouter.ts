@@ -47,9 +47,9 @@ export interface RoutePipelineExecutionInput {
     timestep?: number;
     stages: PipelineStageExecutionInput[];
 }
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
+import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type {
     IDaemonAnalysisCompletionService,
     IStoragePlacementService,
@@ -311,7 +311,7 @@ export class PluginExecutionRouter {
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
     #teamClusterDaemonClientCache?: TeamClusterDaemonClient;

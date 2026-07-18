@@ -1,11 +1,9 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { inject } from 'tsyringe';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
 import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import type { AnalysisStorageCleanupTarget } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
@@ -14,10 +12,7 @@ import logger from '@shared/infrastructure/logger';
 export default class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
     private readonly storagePlacementRepository = new StoragePlacementRepository();
     private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
-
-    constructor(
-        @inject(SHARED_TOKENS.TeamClusterObjectGatewayClient) private readonly objectGatewayClient: ITeamClusterObjectGatewayClient
-    ) {}
+    private readonly objectGatewayClient = objectGatewayClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
         const { analysisId, trajectoryId, teamClusterId } = event.payload;

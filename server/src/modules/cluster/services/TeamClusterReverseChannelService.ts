@@ -4,7 +4,7 @@ import type {
     ContainerTerminalSize
 } from '@shared/contracts/ports';
 import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { TeamClusterReverseTerminalExec, TeamClusterReverseTerminalStream } from '@modules/cluster/utilities/TeamClusterReverseTerminal';
 import {
     TeamClusterReverseTunnelStream,
@@ -39,7 +39,6 @@ import {
     type TeamClusterDaemonTunnelStatePayload
 } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container } from 'tsyringe';
 import type { ITeamClusterReverseChannelService } from '@modules/cluster/ports/ITeamClusterReverseChannelService';
 import type {
     TeamClusterDaemonCommandData,
@@ -225,10 +224,7 @@ export class TeamClusterReverseChannelService implements ITeamClusterReverseChan
 
     private readonly streamHighWaterMark = 256 * 1024;
 
-    #socketEmitterCache?: any;
-    private get socketEmitter(): any {
-        return (this.#socketEmitterCache ??= container.resolve<any>(SocketIOEmitter));
-    }
+    private readonly socketEmitter = socketIOEmitter;
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
     private readonly containerDeploymentProgressService = containerDeploymentProgressService;
 

@@ -8,7 +8,7 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import TeamMemberRepository from '@modules/team/repositories/team-member/TeamMemberRepository';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 
 interface SocketAck<T = unknown> {
     ok: boolean;
@@ -21,8 +21,6 @@ const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
 class TeamSubscriptionSocketModule extends BaseSocketModule {
     public readonly name = 'TeamSubscriptionSocketModule';
-
-    #teamMemberRepository = new TeamMemberRepository();
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
@@ -40,10 +38,10 @@ class TeamSubscriptionSocketModule extends BaseSocketModule {
                 return ackError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
             }
 
-            const isMember = await this.#teamMemberRepository.exists({
+            const isMember = Boolean(await TeamMemberModel.exists({
                 user: currentUserId,
                 team: payload.teamId
-            });
+            }));
 
             if (!isMember) {
                 this.emitErrorToSocket(

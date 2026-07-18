@@ -1,8 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container as diContainer } from 'tsyringe';
 
 import WhiteboardModel from '@modules/whiteboards/models/WhiteboardModel';
 
@@ -171,7 +170,7 @@ export class WhiteboardRealtimeStateService {
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient));
+        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
     async getSnapshot(whiteboardId: string): Promise<WhiteboardSceneSnapshot | null> {

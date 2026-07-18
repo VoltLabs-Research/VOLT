@@ -58,12 +58,12 @@ import type { Analysis, DownloadStreamOutputDTO } from '@shared/contracts/types'
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type {
     IAnalysisRepository,
     ITeamClusterObjectGatewayClient,
@@ -79,8 +79,8 @@ import analysisExecutionLogService from '@modules/analysis/services/AnalysisExec
 import PluginService from '@modules/plugin/services/PluginService';
 import SimulationCellRepositoryAdapter from '@modules/simulation-cell/services/SimulationCellRepositoryAdapter';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { ITeamMemberRepository } from '@modules/team/ports/team-member/ITeamMemberRepository';
-import type { ITeamRepository } from '@modules/team/ports/team/ITeamRepository';
+import TeamModel from '@modules/team/models/team/TeamModel';
+import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { StreamableOutput } from '@shared/infrastructure/http/controllers/BaseStreamController';
 
@@ -370,7 +370,7 @@ const mapFrameLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFram
 
 export default class TrajectoryService {
     #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
+    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
     #teamClusterDaemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
     #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
     #storagePlacement = storagePlacementService;
@@ -380,8 +380,6 @@ export default class TrajectoryService {
     #daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
     #simulationCellRepository = new SimulationCellRepositoryAdapter();
     #analysisRepository: IAnalysisRepository = new AnalysisRepository();
-    #teamRepository = diContainer.resolve<ITeamRepository>(TEAM_CONTRACT_TOKENS.TeamRepository);
-    #teamMemberRepository = diContainer.resolve<ITeamMemberRepository>(TEAM_CONTRACT_TOKENS.TeamMemberRepository);
     #pluginService = new PluginService();
     #analysisService = new AnalysisService();
 
@@ -1352,7 +1350,7 @@ export default class TrajectoryService {
 
     async listPublicTeamTrajectories(input: ListPublicTeamTrajectoriesInputDTO): Promise<ListPublicTeamTrajectoriesOutputDTO> {
         const { teamId, page = 1, limit = 20 } = input;
-        const team = await this.#teamRepository.findById(teamId);
+        const team = await TeamModel.findById(teamId);
         if (!team) {
             throw ApplicationError.notFound(ErrorCodes.TEAM_NOT_FOUND, 'Team not found');
         }
@@ -1384,7 +1382,7 @@ export default class TrajectoryService {
             return view;
         });
 
-        const teamDiscovery: PublicTeamDiscoveryDTO = { _id: team.id, name: team.props.name };
+        const teamDiscovery: PublicTeamDiscoveryDTO = { _id: String(team._id), name: team.name };
 
         return {
             data,
@@ -1402,7 +1400,7 @@ export default class TrajectoryService {
 
         let hasTeamMembership = false;
         if (input.userId) {
-            const membership = await this.#teamMemberRepository.findOne({
+            const membership = await TeamMemberModel.findOne({
                 team: String(trajectory.team),
                 user: input.userId
             });
@@ -1752,7 +1750,7 @@ export default class TrajectoryService {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'Team membership required to access this trajectory');
         }
 
-        const membership = await this.#teamMemberRepository.findOne({ team: String(trajectory.team), user: userId });
+        const membership = await TeamMemberModel.findOne({ team: String(trajectory.team), user: userId });
         if (!membership) {
             throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'Team membership required to access this trajectory');
         }

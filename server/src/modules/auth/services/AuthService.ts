@@ -9,10 +9,9 @@ import UserDeletedEvent from '@modules/auth/events/UserDeletedEvent';
 import { validatePassword } from '@modules/auth/domain/password-policy';
 import { getConfiguredOAuthProviders } from '@modules/auth/oauth/providers';
 import SessionModel, { SessionActivityType } from '@modules/session/models/SessionModel';
-import type { INewMemberDefaultTeamEnroller } from '@modules/team/ports/team/INewMemberDefaultTeamEnroller';
+import DefaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { TEAM_CONTRACT_TOKENS } from '@shared/contracts/tokens/TeamTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
@@ -52,8 +51,13 @@ export default class AuthService {
     #passwordHasher = new BcryptPasswordHasher();
     #authSessionService = new AuthSessionService();
     #avatarService = new AvatarService();
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-    #defaultTeamEnroller = diContainer.resolve<INewMemberDefaultTeamEnroller>(TEAM_CONTRACT_TOKENS.DefaultTeamEnroller);
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
+
+    #defaultTeamEnroller = new DefaultTeamEnroller();
 
     async signIn(input: SignInInput, context: RequestContext): Promise<AuthSessionResult> {
         const user = await UserModel.findOne({ email: input.email.toLowerCase() }).select('+password');

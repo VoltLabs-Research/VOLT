@@ -2,43 +2,42 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/contracts/team-subscription';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/services/team-member/TeamPresenceService';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class TeamPresenceSocketModule extends BaseSocketModule {
+export class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 
     private unsubscribeFromTeamSubscription?: () => void;
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
+    // `TeamPresenceService` and `TeamRoomPresenceService` have no runtime DI
+    // dependencies of their own, so they're safe to construct eagerly here.
+    private readonly teamPresenceService = new TeamPresenceService();
+    private readonly teamRoomPresenceService = new TeamRoomPresenceService();
+    private readonly teamSubscriptionService = socketTeamSubscriptionCoordinator;
 
-        private readonly teamPresenceService: TeamPresenceService,
-        private readonly teamRoomPresenceService: TeamRoomPresenceService,
+    // `EventBus` is registered in `registerAllDependencies` (which hasn't run
+    // yet when this module is constructed at import time), so it must be
+    // resolved lazily — on first actual use — to avoid the eager-singleton DI
+    // boot race.
+    #eventBusCache?: IEventBus;
+    private get eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
-        @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus,
-
-        private readonly teamSubscriptionService: SocketTeamSubscriptionCoordinator
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     async onInit(): Promise<void> {
@@ -174,4 +173,6 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
             await this.updateUserActivity(session.teamId, session.userId, session.minutesToPersist);
         }
     }
-};
+}
+
+export default new TeamPresenceSocketModule();

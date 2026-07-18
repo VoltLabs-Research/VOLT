@@ -13,6 +13,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type {
     IDaemonAnalysisCompletionService,
@@ -45,17 +46,21 @@ interface GetRasterFramePNGInput {
 }
 
 export default class RasterService {
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(CLUSTER_ACCESS_TOKENS.TeamClusterObjectGatewayClient);
+    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
     #analysisRepository = new AnalysisRepository();
     #frameReader = new RasterFrameService(
         new RasterStorageService(this.#objectGatewayClient),
         this.#analysisRepository
     );
-    #enqueuer = new RasterJobEnqueuerService(
-        diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService),
-        diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient),
-        daemonAnalysisCompletionService
-    );
+    #enqueuerCache?: RasterJobEnqueuerService;
+    get #enqueuer(): RasterJobEnqueuerService {
+        return (this.#enqueuerCache ??= new RasterJobEnqueuerService(
+            diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService),
+            diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient),
+            daemonAnalysisCompletionService
+        ));
+    }
+
     #metadata = new RasterMetadataService(
         new RasterStorageService(this.#objectGatewayClient),
         this.#analysisRepository

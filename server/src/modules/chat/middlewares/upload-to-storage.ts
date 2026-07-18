@@ -8,9 +8,14 @@ import { v4 } from 'uuid';
 import path from 'node:path';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 
-const storageService = container.resolve<IStorageService>(SHARED_TOKENS.StorageService);
+let storageServiceCache: IStorageService | undefined;
+const getStorageService = (): IStorageService => {
+    return (storageServiceCache ??= container.resolve<IStorageService>(SHARED_TOKENS.StorageService));
+};
 
 export const uploadToStorage = async (req: Request, _res: Response, next: NextFunction) => {
+    const storageService = getStorageService();
+
     if(!req.file){
         throw ApplicationError.badRequest(
             ErrorCodes.FILE_READ_ERROR,

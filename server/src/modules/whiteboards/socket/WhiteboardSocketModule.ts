@@ -1,15 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import realtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { PresenceUser } from '@modules/socket/ports/ISocketRoomManager';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 
 interface SubscribePayload {
     whiteboardId: string;
@@ -40,17 +38,11 @@ interface WhiteboardPatchAck {
 const ackOk = <T>(data: T): SocketAck<T> => ({ ok: true, data });
 const ackError = (error: string): SocketAck<never> => ({ ok: false, error });
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class WhiteboardSocketModule extends BaseSocketModule {
+export class WhiteboardSocketModule extends BaseSocketModule {
     public readonly name = 'WhiteboardSocketModule';
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -270,3 +262,5 @@ export default class WhiteboardSocketModule extends BaseSocketModule {
         isAnonymous: !connection.user
     });
 }
+
+export default new WhiteboardSocketModule();

@@ -3,8 +3,8 @@ import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import TeamService from '@modules/team/services/TeamService';
 import TeamMemberService from '@modules/team/services/TeamMemberService';
 import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
-import { isPopulatedTeamMemberUser } from '@modules/team/entities/team-member/TeamMember';
-import type { TeamMemberProps } from '@modules/team/entities/team-member/TeamMember';
+import { isPopulatedTeamMemberUser } from '@modules/team/models/team-member/TeamMemberModel';
+import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -15,8 +15,6 @@ export class GetTeamContextAITool extends AITool {
     readonly description = 'Get a snapshot of the current team: team info, its members with their roles and online presence, and the configured AI provider integrations plus which models are available. Use this to understand who is on the team and what AI capabilities are set up.';
     readonly parameters = z.object({});
 
-    // Pollium style: the tool `new`s the resource services directly instead of
-    // injecting the former use cases.
     #team = new TeamService();
     #members = new TeamMemberService();
     #aiIntegrations = new TeamAIIntegrationService();

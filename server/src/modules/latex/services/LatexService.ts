@@ -33,6 +33,7 @@ import type {
 } from '@shared/contracts/ports';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
@@ -110,10 +111,7 @@ export default class LatexService {
     #signedUrlService = new ClusterObjectSignedUrlService();
     #archiveService = new ClusterObjectArchiveService();
 
-    #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
-    get #objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
-    }
+    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
 
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     get #teamClusterSelectionService(): ITeamClusterSelectionService {

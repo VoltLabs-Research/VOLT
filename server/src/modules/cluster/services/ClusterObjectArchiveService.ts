@@ -2,7 +2,7 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
+import objectGatewayClient from './TeamClusterObjectGatewayClient';
 import { container } from 'tsyringe';
 
 import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
@@ -51,10 +51,7 @@ export default class ClusterObjectArchiveService implements IClusterObjectArchiv
         return (this.#teamClusterDaemonClientCache ??= container.resolve(TeamClusterDaemonClient));
     }
 
-    #objectGatewayClientCache?: TeamClusterObjectGatewayClient;
-    private get objectGatewayClient(): TeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= container.resolve(TeamClusterObjectGatewayClient));
-    }
+    private readonly objectGatewayClient = objectGatewayClient;
 
     async createArchiveDownload(input: CreateArchiveDownloadInput): Promise<ClusterArchiveDownload> {
         const bucket = input.outputBucket || TEAM_CLUSTER_BUCKETS.TRAJECTORIES;

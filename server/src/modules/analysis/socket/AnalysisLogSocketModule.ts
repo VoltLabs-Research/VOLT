@@ -7,14 +7,12 @@ import analysisExecutionLogService, {
     type AnalysisLogChunkEventPayload
 } from '@modules/analysis/services/AnalysisExecutionLogService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
-import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
+import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import SocketTeamSubscriptionCoordinator from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
-import { inject } from 'tsyringe';
+import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
+import { container as diContainer } from 'tsyringe';
 
 interface SubscribePayload {
     analysisId: string;
@@ -27,19 +25,22 @@ interface UnsubscribePayload {
     timestep: number;
 }
 
-@Singleton()
-@AliasOf(SOCKET_CONTRACT_TOKENS.SocketModule)
-export default class AnalysisLogSocketModule extends BaseSocketModule {
+export class AnalysisLogSocketModule extends BaseSocketModule {
     public readonly name = 'AnalysisLogSocketModule';
 
-    constructor(
-        emitter: SocketIOEmitter,
-        roomManager: SocketIORoomManager,
-        eventRegistry: SocketIOEventRegistry,
-        private readonly teamSubscriptionCoordinator: SocketTeamSubscriptionCoordinator,
-        @inject(COMPUTE_TOKENS.AnalysisRepository) private readonly analysisRepository: AnalysisRepository
-    ) {
-        super(emitter, roomManager, eventRegistry);
+    private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
+
+    // `AnalysisRepository` is still resolved from the tsyringe container
+    // (registered in `registerAllDependencies`, which hasn't run yet when
+    // this module is constructed at import time), so it must stay lazy —
+    // resolved on first actual use — to avoid the eager-singleton DI boot race.
+    #analysisRepositoryCache?: AnalysisRepository;
+    private get analysisRepository(): AnalysisRepository {
+        return (this.#analysisRepositoryCache ??= diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
+    }
+
+    constructor() {
+        super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -104,3 +105,5 @@ export default class AnalysisLogSocketModule extends BaseSocketModule {
         });
     }
 }
+
+export default new AnalysisLogSocketModule();

@@ -1,6 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { inject } from 'tsyringe';
+import { container as diContainer } from 'tsyringe';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
@@ -30,9 +30,10 @@ export default class PluginPublishedEventHandler implements IEventHandler<Plugin
     private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
-    constructor(
-        @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient
-    ) {}
+    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
+    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
+        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
+    }
 
     async handle(event: PluginPublishedEvent): Promise<void> {
         const { pluginId, teamId, binaryObjectPath, requirementsFile, entrypointScript, binaryHash } = event.payload;

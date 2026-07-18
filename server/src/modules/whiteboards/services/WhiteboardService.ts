@@ -11,6 +11,7 @@ import type {
     ITeamClusterSelectionService
 } from '@shared/contracts/ports';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
+import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
@@ -61,25 +62,20 @@ const presentLastEditedBy = (value: unknown): WhiteboardLastEditedBy => {
     return String(value);
 };
 
-/**
- * The single application service for the whiteboards module (pollium style):
- * holds every whiteboard HTTP use case + the catalog-folder CRUD, `new`s nothing
- * stateful of its own, and talks to the Mongoose {@link WhiteboardModel} /
- * shared CatalogFolderModel directly — no repository, entity, mapper, use case
- * or DI on the service. The genuinely-shared collaborators (object-storage
- * gateway, signed-url service, cluster selection, event bus) are resolved once
- * from the DI container via their neutral tokens. Throws typed
- * {@link ApplicationError}s (no Result channel). The live collaborative-editing
- * state lives in the separate stateful `WhiteboardRealtimeStateService`
- * singleton (driven by the socket module), not here.
- */
 export default class WhiteboardService {
-    #objectGatewayClient = diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient);
     #signedUrlService = new ClusterObjectSignedUrlService();
-    #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
 
-    // ---- Whiteboards ------------------------------------------------------
+    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
+
+    #clusterSelectionCache?: ITeamClusterSelectionService;
+    get #clusterSelection(): ITeamClusterSelectionService {
+        return (this.#clusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
+    }
+
+    #eventBusCache?: IEventBus;
+    get #eventBus(): IEventBus {
+        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
+    }
 
     async createWhiteboard(teamId: string, userId: string, input: { title: string; folderId?: string | null }) {
         if (input.folderId) {
@@ -207,7 +203,6 @@ export default class WhiteboardService {
         try {
             await this.#objectGatewayClient.deleteByPrefix(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, prefix);
         } catch {
-            // best-effort storage cleanup
         }
 
         await this.#eventBus.publish(new WhiteboardDeletedEvent({
@@ -320,8 +315,6 @@ export default class WhiteboardService {
         };
     }
 
-    // ---- Whiteboard folders ----------------------------------------------
-
     async listFolders(teamId: string, query: { parentId?: string | null; page?: number; limit?: number }): Promise<PaginatedResult<WhiteboardFolderView>> {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 500;
@@ -380,8 +373,6 @@ export default class WhiteboardService {
         await this.#deleteFolderTree(teamId, folderId, userId);
         return null;
     }
-
-    // ---- Internal helpers -------------------------------------------------
 
     async #getOwned(teamId: string, whiteboardId: string): Promise<WhiteboardDocument> {
         const whiteboard = await WhiteboardModel.findOne({ _id: whiteboardId, team: teamId }).exec();

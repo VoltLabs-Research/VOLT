@@ -1,12 +1,11 @@
 import Controller from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import TeamClusterObjectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import objectGatewayClient, { type TeamClusterObjectGatewayClient } from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { clusterObjectRoutes } from '@volt/contracts/modules/cluster/routes';
 import { pipeline } from 'node:stream/promises';
-import { container } from 'tsyringe';
 
 import type { Request, Response } from 'express';
 import type { ClusterObjectAccessClaims, ClusterObjectOperation } from '@modules/cluster/contracts/ClusterObjectGateway';
@@ -83,7 +82,7 @@ const applyReadHeaders = (
 
 export default class ClusterObjectController extends Controller {
     #signedUrlService = new ClusterObjectSignedUrlService();
-    #objectGatewayClient = container.resolve(TeamClusterObjectGatewayClient);
+    #objectGatewayClient = objectGatewayClient;
 
     #resolveClaims(request: Request, operation: ClusterObjectOperation): ClusterObjectAccessClaims {
         const token = Array.isArray(request.params.token) ? request.params.token[0] : request.params.token;

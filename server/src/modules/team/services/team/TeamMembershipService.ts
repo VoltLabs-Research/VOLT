@@ -5,11 +5,9 @@ import TeamModel from '@modules/team/models/team/TeamModel';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import TeamRoleModel from '@modules/team/models/team-role/TeamRoleModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
-import { TEAM_TOKENS } from '@modules/team/di/TeamTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import { container as diContainer } from 'tsyringe';
 
@@ -17,7 +15,6 @@ const logMembershipWarning = (context: Record<string, string>, message: string) 
     logger.warn(context, `[TeamMembershipService] ${message}`);
 };
 
-@Singleton(TEAM_TOKENS.TeamMembershipService)
 export default class TeamMembershipService {
     #users = {
         addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }),

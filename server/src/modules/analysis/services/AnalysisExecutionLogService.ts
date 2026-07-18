@@ -1,5 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
@@ -133,7 +134,7 @@ class AnalysisExecutionLogService {
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
-        return (this.#objectGatewayClientCache ??= diContainer.resolve<ITeamClusterObjectGatewayClient>(SHARED_TOKENS.TeamClusterObjectGatewayClient));
+        return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
     private async requireStorageClusterId(trajectoryId: string): Promise<string> {
