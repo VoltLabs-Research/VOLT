@@ -1,12 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
-import type { IContainerPublicPortAllocator } from '@modules/container/ports/IContainerPublicPortAllocator';
-import type { ContainerPortMapping } from '@modules/container/ports/IContainerService';
-import type { IContainerRepository } from '@modules/container/ports/IContainerRepository';
+import type { ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
+import { ContainerModel } from '@modules/container/models/ContainerModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { readRelayHostValue, readRelayPortRangeValue } from '@shared/infrastructure/utilities/relay-network';
-import { inject } from 'tsyringe';
+import mongoose from 'mongoose';
 import net from 'node:net';
 
 const DEFAULT_PUBLIC_PORT_START = 24000;
@@ -22,14 +20,20 @@ interface ReservedPortMappings {
     reservedPublicPorts: number[];
 }
 
-@Singleton(CONTAINER_TOKENS.ContainerPublicPortAllocator)
-export class ContainerPublicPortAllocator implements IContainerPublicPortAllocator {
+/**
+ * Shared singleton (stateful): the in-memory `reservedPorts` set guards
+ * concurrent allocations against double-assigning a public port before it is
+ * committed. Talks to the Mongoose {@link ContainerModel} directly to check
+ * DB-level assignment — no repository.
+ */
+@Singleton()
+export class ContainerPublicPortAllocator {
     private readonly portStart = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_START', DEFAULT_PUBLIC_PORT_START);
     private readonly portEnd = readRelayPortRangeValue('TEAM_CLUSTER_APP_PROXY_PORT_END', DEFAULT_PUBLIC_PORT_END);
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_BIND_HOST);
     private readonly reservedPorts = new Set<number>();
 
-    constructor(@inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository) {
+    constructor() {
         if (this.portEnd < this.portStart) {
             throw new Error('TEAM_CLUSTER_APP_PROXY_PORT_END must be greater than or equal to TEAM_CLUSTER_APP_PROXY_PORT_START');
         }
@@ -88,6 +92,20 @@ export class ContainerPublicPortAllocator implements IContainerPublicPortAllocat
         return Number.isInteger(port) && port >= this.portStart && port <= this.portEnd;
     }
 
+    private async isPublicPortAssigned(publicPort: number, excludeContainerId?: string): Promise<boolean> {
+        const filter: Record<string, unknown> = {
+            'ports.public': publicPort
+        };
+
+        if (excludeContainerId) {
+            filter._id = {
+                $ne: new mongoose.Types.ObjectId(excludeContainerId)
+            };
+        }
+
+        return Boolean(await ContainerModel.exists(filter));
+    }
+
     private async reservePublicPort(
         requestedPublicPort: number | undefined,
         options: ReservePortMappingsOptions
@@ -138,7 +156,7 @@ export class ContainerPublicPortAllocator implements IContainerPublicPortAllocat
             return false;
         }
 
-        const assigned = await this.containerRepository.isPublicPortAssigned(publicPort, options.excludeContainerId);
+        const assigned = await this.isPublicPortAssigned(publicPort, options.excludeContainerId);
         if (assigned) {
             return false;
         }

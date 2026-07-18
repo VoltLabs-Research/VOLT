@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
-import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@modules/container/ports/IContainerService';
+import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
 import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 interface ContainerEnvironmentVariableDocument extends ContainerEnvironmentVariable {}

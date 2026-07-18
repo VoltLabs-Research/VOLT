@@ -1,6 +1,6 @@
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
-import type { ContainerTerminalAttachment } from '@modules/container/ports/IContainerService';
+import type { ContainerTerminalAttachment } from '@shared/contracts/ports/IContainerService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
     TeamClusterTunnelOpenOptions,

@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { CreateContainerPortAccessUrlUseCase } from '@modules/container/use-cases/CreateContainerPortAccessUrlUseCase';
+import ContainerService from '@modules/container/services/ContainerService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -11,19 +11,10 @@ export class GetContainerPortAccessUrlAITool extends AITool {
     readonly description = 'Generate a temporary browser-accessible URL for an exposed port of a running container.';
     readonly parameters = z.object({ containerId: z.string(), port: z.number() });
 
-    constructor(
-        protected readonly useCase: CreateContainerPortAccessUrlUseCase
-    ) {
-        super();
-    }
+    #service = new ContainerService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
-            containerId: params.containerId,
-            privatePort: params.port,
-            teamId: scope.teamId,
-            userId: scope.userId
-        });
+        const result = await this.#service.createPortAccessUrl(scope.teamId, params.containerId, params.port, scope.userId);
         return { summary: `Generated a temporary access URL for port ${params.port}.`, data: result };
     }
 }

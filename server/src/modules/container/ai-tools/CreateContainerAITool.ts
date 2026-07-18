@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { CreateContainerUseCase } from '@modules/container/use-cases/CreateContainerUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ContainerService from '@modules/container/services/ContainerService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -19,9 +20,13 @@ export class CreateContainerAITool extends AITool {
         reason: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: CreateContainerUseCase
-    ) {
-        super();
+    #service = new ContainerService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.create(scope.teamId, scope.userId, {
+            name: params.name,
+            image: params.image,
+            ports: params.ports?.map((port) => ({ private: port.container, public: port.host }))
+        });
     }
 }

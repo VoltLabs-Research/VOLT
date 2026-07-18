@@ -12,7 +12,7 @@ import ProvenanceHttpModule from '@modules/analysis/routes/provenance-routes';
 import AuthHttpModule from '@modules/auth/routes/auth-routes';
 import ChatMessageHttpModule from '@modules/chat/routes/chat-message/chat-message-routes';
 import ChatHttpModule from '@modules/chat/routes/chat/chat-routes';
-import ContainerHttpModule from '@modules/container/routes/container-routes';
+import ContainerController from '@modules/container/controllers/ContainerController';
 import DashboardHttpModule from '@modules/dashboard/routes/dashboard-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/routes/daily-activity-routes';
 import EarlyAccessHttpModule from '@modules/early-access/routes/early-access-routes';
@@ -97,7 +97,6 @@ const HTTP_MODULES: HttpModule[] = [
     PluginExposureHttpModule,
     ScriptingHttpModule,
     ScriptingJupyterHttpModule,
-    ContainerHttpModule,
     TrajectoryHttpModule,
     JobsHttpModule,
     AnalysisHttpModule,
@@ -232,6 +231,13 @@ const mountHttpRoutes = (): Router => {
 
     for (const module of modulesToMount) {
         mountModule(router, module);
+    }
+
+    // Pollium-style controller: guards live on the controller class
+    // (@Middleware(protect, teamScoped)) and the contract paths are absolute, so
+    // it mounts directly onto the root router with no basePath / teamScope layer.
+    if (enabled.has('container')) {
+        router.use(new ContainerController().buildRouter());
     }
 
     logger.info(`@http-bootstrap: mounted-routes moduleCount=${modulesToMount.length} skipped=${HTTP_MODULES.length - modulesToMount.length} durationMs=${Date.now() - startedAt}`);

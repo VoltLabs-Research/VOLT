@@ -1,26 +1,32 @@
-import { DeleteContainerUseCase } from '@modules/container/use-cases/DeleteContainerUseCase';
-import type { Container } from '@modules/container/entities/Container';
-import type { IContainerRepository } from '@modules/container/ports/IContainerRepository';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
+import ContainerService from '@modules/container/services/ContainerService';
+import { ContainerModel } from '@modules/container/models/ContainerModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import { CascadeDeleteEachOnTeamDeletedHandler } from '@shared/application/events/CascadeDeleteEachOnTeamDeletedHandler';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
-import { inject } from 'tsyringe';
 
+interface ContainerIdRecord {
+    readonly _id: string;
+}
+
+/**
+ * On team deletion, cascade-delete every container belonging to the team.
+ * Enumerates ids straight from the Mongoose {@link ContainerModel} and delegates
+ * the real teardown (docker + relays) to a `new ContainerService()` — no
+ * use case, no repository, no DI.
+ */
 @Subscribe('team.deleted')
-export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<Container> {
-    constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository) protected readonly repository: IContainerRepository,
-        private readonly deleteContainerUseCase: DeleteContainerUseCase
-    ) {
-        super();
-    }
+export default class TeamDeletedEventHandler extends CascadeDeleteEachOnTeamDeletedHandler<ContainerIdRecord> {
+    protected readonly repository = {
+        export: async ({ filter }: { filter: Record<string, string>; select?: string[] }): Promise<ContainerIdRecord[]> => {
+            const docs = await ContainerModel.find(filter).select('_id').exec();
+            return docs.map((doc) => ({ _id: String(doc._id) }));
+        }
+    };
+
+    #service?: ContainerService;
 
     protected async deleteOne(containerId: string, event: TeamDeletedEvent): Promise<void> {
-        await this.deleteContainerUseCase.execute({
-            containerId,
-            teamId: event.payload.teamId,
-            userId: event.payload.userId ?? ''
-        });
+        this.#service ??= new ContainerService();
+        await this.#service.delete(event.payload.teamId, containerId, event.payload.userId ?? '');
     }
 }

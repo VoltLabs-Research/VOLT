@@ -1,9 +1,9 @@
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
+import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import { ClusterRoleAwareSelectionService } from './ClusterRoleAwareSelectionService';
 
-@Singleton(CONTAINER_TOKENS.TeamClusterSelectionService)
+@Singleton(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
 export class TeamClusterSelectionService implements ITeamClusterSelectionService {
     constructor(
         private readonly clusterRoleAwareSelectionService: ClusterRoleAwareSelectionService

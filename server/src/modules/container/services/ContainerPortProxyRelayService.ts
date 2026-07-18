@@ -1,6 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
-import type { IContainerPortProxyRelayService } from '@modules/container/ports/IContainerPortProxyRelayService';
 import {
     CONTAINER_PORT_PROXY_ACCESS_TOKEN_COOKIE_NAME,
     CONTAINER_PORT_PROXY_ACCESS_TOKEN_QUERY_PARAM,
@@ -62,8 +60,14 @@ const readCookies = (rawCookieHeader?: string): Record<string, string | undefine
     return parseCookie(rawCookieHeader);
 };
 
-@Singleton(CONTAINER_TOKENS.ContainerPortProxyRelayService)
-export class ContainerPortProxyRelayService implements IContainerPortProxyRelayService {
+/**
+ * Shared singleton (stateful): owns the live `http.Server` port-proxy relay pool
+ * (`relaysByPublicPort`). The same instance is driven by the container service,
+ * the terminal socket module and the bootstrap relay-lifecycle service, so it is
+ * resolved from DI rather than `new`ed per request.
+ */
+@Singleton()
+export class ContainerPortProxyRelayService {
     private readonly bindHost = readRelayHostValue('TEAM_CLUSTER_APP_PROXY_BIND_HOST', DEFAULT_RELAY_BIND_HOST);
     private readonly advertisedHost = resolveRelayAdvertisedHost(this.bindHost, 'TEAM_CLUSTER_APP_PROXY_ADVERTISED_HOST');
     private readonly publicProtocol = resolveContainerPortProxyRelayProtocol();

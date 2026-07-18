@@ -5,15 +5,16 @@ import type {
     ContainerTerminalAttachment,
     CreateRuntimeContainerOptions,
     RuntimeContainerInfo
-} from '@modules/container/ports/IContainerService';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
-import type {
-    ITeamClusterContainerRuntimeService,
-    RuntimeContainerSummary
-} from '@modules/container/ports/ITeamClusterContainerRuntimeService';
+} from '@shared/contracts/ports/IContainerService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { Singleton } from '@shared/infrastructure/di/decorators';
+
+export interface RuntimeContainerSummary {
+    Id: string;
+    State?: string;
+    Status?: string;
+}
 
 type ContainerRuntimeAction = 'start' | 'stop' | 'restart';
 
@@ -24,8 +25,14 @@ interface ReadContainerFileResponse {
 const CONTAINER_STATS_CACHE_TTL_MS = 3_000;
 const CONTAINER_PROCESSES_CACHE_TTL_MS = 5_000;
 
-@Singleton(CONTAINER_TOKENS.ContainerRuntimeService)
-export class DaemonContainerRuntimeService implements ITeamClusterContainerRuntimeService {
+/**
+ * Shared singleton (stateful): holds the stats/processes caches and wraps the
+ * shared {@link TeamClusterDaemonClient}. The container service and the terminal
+ * socket module resolve the same instance so caches and the daemon connection
+ * are shared.
+ */
+@Singleton()
+export class DaemonContainerRuntimeService {
     private readonly statsCache = new Map<string, {
         expiresAt: number;
         value: ContainerStats;

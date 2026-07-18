@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { GetContainerByIdUseCase } from '@modules/container/use-cases/GetContainerByIdUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ContainerService from '@modules/container/services/ContainerService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -10,9 +11,9 @@ export class GetContainerByIdAITool extends AITool {
     readonly description = 'Get detailed information about a specific container.';
     readonly parameters = z.object({ containerId: z.string() });
 
-    constructor(
-        protected readonly useCase: GetContainerByIdUseCase
-    ) {
-        super();
+    #service = new ContainerService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.getById(scope.teamId, params.containerId);
     }
 }

@@ -1,105 +1,116 @@
-import type ContainerService from '@modules/container/services/ContainerService';
-import type { CreateContainerInputDTO } from '@modules/container/dtos/CreateContainerDTO';
-import type { DeleteContainerInputDTO } from '@modules/container/dtos/DeleteContainerDTO';
+import Controller, { Middleware } from '@shared/http/Controller';
+import { Route, Status } from '@shared/http/route';
+import { Body, Param, Query, CurrentUser } from '@shared/http/params';
+import { teamScoped } from '@shared/http/guards';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
+import ContainerService from '@modules/container/services/ContainerService';
+import { containerRoutes } from '@volt/contracts/modules/container/routes';
 import type {
-    CreateContainerPortAccessUrlInputDTO,
-    GetContainerByIdInputDTO
-} from '@modules/container/dtos/GetContainerByIdDTO';
-import type { GetContainerFilesInputDTO } from '@modules/container/dtos/GetContainerFilesDTO';
-import type { GetContainerProcessesInputDTO } from '@modules/container/dtos/GetContainerProcessesDTO';
-import type { GetContainerStatsInputDTO } from '@modules/container/dtos/GetContainerStatsDTO';
-import type { ListContainersInputDTO } from '@modules/container/dtos/ListContainersDTO';
-import type { MoveContainerInputDTO } from '@modules/container/dtos/MoveContainerDTO';
-import type { ReadContainerFileInputDTO } from '@modules/container/dtos/ReadContainerFileDTO';
-import type { UpdateContainerInputDTO } from '@modules/container/dtos/UpdateContainerDTO';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import { inject, injectable } from 'tsyringe';
-import type { Response } from 'express';
+    CreateContainerInput,
+    UpdateContainerInput,
+    MoveContainerInput,
+    CreateContainerFolderInput,
+    UpdateContainerFolderInput
+} from '@volt/contracts/modules/container/http';
 
 /**
- * The single HTTP controller for the container module. One Express handler per
- * route, assembling the use-case input exactly as `buildControllerParams` did
- * for the generated controllers, delegating to {@link ContainerService}, and
- * responding via {@link BaseResponse}. Handlers are arrow-function properties so
- * `this` stays bound when passed by reference to the router. Thrown
- * `ApplicationError`s propagate to `httpErrorMiddleware` via Express 5 async
- * forwarding. Per-endpoint status codes and the paginated list variant are
- * preserved verbatim from the previous generated controllers.
+ * The single HTTP controller for the container module (pollium style): every
+ * route is bound with `@Route(containerRoutes.x)` and delegates to a
+ * {@link ContainerService} the controller `new`s itself. The class-level
+ * `@Middleware(protect, teamScoped(...))` replaces the old mount-time auth +
+ * team-scope layer. `buildRouter()` turns the decorated methods into the Express
+ * router mounted directly in `mount-http-routes`.
  */
-@injectable()
-export default class ContainerController {
-    constructor(
-        @inject(CONTAINER_TOKENS.ContainerService) private readonly containerService: ContainerService
-    ) {}
+@Middleware(protect, teamScoped(Resource.CONTAINER))
+export default class ContainerController extends Controller {
+    #service = new ContainerService();
 
-    create = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateContainerInputDTO;
-        const value = await this.containerService.create(input);
-        BaseResponse.success(res, value, HttpStatus.Created);
-    };
+    @Route(containerRoutes.create)
+    @Status(201)
+    create(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateContainerInput) {
+        return this.#service.create(teamId, userId, body);
+    }
 
-    listByTeamId = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ListContainersInputDTO;
-        const value = await this.containerService.list(input);
-        BaseResponse.paginated(res, value, value._meta);
-    };
+    @Route(containerRoutes.list)
+    list(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Query() query: Record<string, string>) {
+        return this.#service.list(teamId, userId, query);
+    }
 
-    getById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetContainerByIdInputDTO;
-        const value = await this.containerService.getById(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.listFolders)
+    listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>) {
+        return this.#service.listFolders(teamId, query);
+    }
 
-    updateById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as UpdateContainerInputDTO;
-        const value = await this.containerService.update(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.getFolder)
+    getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string) {
+        return this.#service.getFolder(teamId, folderId);
+    }
 
-    deleteById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as DeleteContainerInputDTO;
-        await this.containerService.delete(input);
-        // Preserves the generated controller's NoContent behaviour: empty body.
-        res.status(HttpStatus.NoContent).send();
-    };
+    @Route(containerRoutes.createFolder)
+    @Status(201)
+    createFolder(@Param('teamId') teamId: string, @CurrentUser() userId: string, @Body() body: CreateContainerFolderInput) {
+        return this.#service.createFolder(teamId, userId, body);
+    }
 
-    createPortAccessUrl = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as CreateContainerPortAccessUrlInputDTO;
-        const value = await this.containerService.createPortAccessUrl(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.updateFolder)
+    updateFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Body() body: UpdateContainerFolderInput) {
+        return this.#service.updateFolder(teamId, folderId, body);
+    }
 
-    move = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as MoveContainerInputDTO;
-        const value = await this.containerService.move(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.removeFolder)
+    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @CurrentUser() userId: string) {
+        await this.#service.deleteFolder(teamId, folderId, userId);
+    }
 
-    getFilesById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetContainerFilesInputDTO;
-        const value = await this.containerService.getFiles(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.get)
+    getById(@Param('teamId') teamId: string, @Param('containerId') containerId: string) {
+        return this.#service.getById(teamId, containerId);
+    }
 
-    getProcessesById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetContainerProcessesInputDTO;
-        const value = await this.containerService.getProcesses(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.update)
+    updateById(@Param('teamId') teamId: string, @Param('containerId') containerId: string, @Body() body: UpdateContainerInput) {
+        return this.#service.update(teamId, containerId, body);
+    }
 
-    getStatsById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as GetContainerStatsInputDTO;
-        const value = await this.containerService.getStats(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.remove)
+    async deleteById(@Param('teamId') teamId: string, @Param('containerId') containerId: string, @CurrentUser() userId: string) {
+        await this.#service.delete(teamId, containerId, userId);
+    }
 
-    readFileById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-        const input = buildControllerParams(req) as unknown as ReadContainerFileInputDTO;
-        const value = await this.containerService.readFile(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    };
+    @Route(containerRoutes.createPortAccessUrl)
+    createPortAccessUrl(
+        @Param('teamId') teamId: string,
+        @Param('containerId') containerId: string,
+        @Param('privatePort') privatePort: string,
+        @CurrentUser() userId: string
+    ) {
+        return this.#service.createPortAccessUrl(teamId, containerId, Number(privatePort), userId);
+    }
+
+    @Route(containerRoutes.move)
+    @Status(200)
+    async move(@Param('teamId') teamId: string, @Param('containerId') containerId: string, @Body() body: MoveContainerInput) {
+        return this.#service.move(teamId, containerId, body.folderId);
+    }
+
+    @Route(containerRoutes.getFiles)
+    getFilesById(@Param('teamId') teamId: string, @Param('containerId') containerId: string, @Query('path') path: string) {
+        return this.#service.getFiles(teamId, containerId, path);
+    }
+
+    @Route(containerRoutes.getProcesses)
+    getProcessesById(@Param('teamId') teamId: string, @Param('containerId') containerId: string) {
+        return this.#service.getProcesses(teamId, containerId);
+    }
+
+    @Route(containerRoutes.getStats)
+    getStatsById(@Param('teamId') teamId: string, @Param('containerId') containerId: string) {
+        return this.#service.getStats(teamId, containerId);
+    }
+
+    @Route(containerRoutes.readFile)
+    readFileById(@Param('teamId') teamId: string, @Param('containerId') containerId: string, @Query('path') path: string) {
+        return this.#service.readFile(teamId, containerId, path);
+    }
 }

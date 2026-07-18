@@ -1,7 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@modules/container/ports/IContainerService';
-import type { IContainerRepository } from '@modules/container/ports/IContainerRepository';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
+import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
+import { ContainerModel } from '@modules/container/models/ContainerModel';
 import { DaemonContainerRuntimeService } from '@modules/container/services/DaemonContainerRuntimeService';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import { SOCKET_CONTRACT_TOKENS } from '@shared/contracts/tokens/SocketTokens';
@@ -11,7 +10,6 @@ import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { AliasOf, Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
 interface ContainerTerminalAttachPayload {
     containerId: string;
@@ -66,7 +64,6 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
         emitter: SocketIOEmitter,
         roomManager: SocketIORoomManager,
         eventRegistry: SocketIOEventRegistry,
-        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         private readonly containerRuntimeService: DaemonContainerRuntimeService
     ) {
         super(emitter, roomManager, eventRegistry);
@@ -138,14 +135,15 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
         this.pendingAttachTokens.set(conn.id, attachToken);
 
         try {
-            const container = await this.containerRepository.findById(payload.containerId);
+            const container = await ContainerModel.findById(payload.containerId);
             if (!container) {
                 this.emitTerminalError(conn.id, 'CONTAINER_NOT_FOUND', 'Container not found');
                 return;
             }
 
             const userTeams = new Set(conn.user?.teams ?? []);
-            if (!container.team || !userTeams.has(container.team)) {
+            const containerTeamId = container.team ? String(container.team) : undefined;
+            if (!containerTeamId || !userTeams.has(containerTeamId)) {
                 this.emitTerminalError(conn.id, ErrorCodes.TEAM_ACCESS_DENIED, 'You do not have access to this container');
                 return;
             }
@@ -155,8 +153,9 @@ export default class ContainerTerminalSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const containerKey = this.buildContainerKey(container.teamCluster, container.containerId);
-            const session = await this.getOrCreateSharedSession(containerKey, container.teamCluster, container.containerId);
+            const teamClusterId = String(container.teamCluster);
+            const containerKey = this.buildContainerKey(teamClusterId, container.containerId);
+            const session = await this.getOrCreateSharedSession(containerKey, teamClusterId, container.containerId);
 
             if (this.pendingAttachTokens.get(conn.id) !== attachToken || session.closing) {
                 await this.teardownSharedSessionIfUnused(containerKey);

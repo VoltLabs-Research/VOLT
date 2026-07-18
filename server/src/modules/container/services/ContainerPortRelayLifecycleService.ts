@@ -1,19 +1,23 @@
-import type { IContainerRepository } from '@modules/container/ports/IContainerRepository';
-import { CONTAINER_TOKENS } from '@modules/container/di/ContainerTokens';
+import { ContainerModel } from '@modules/container/models/ContainerModel';
 import { ContainerPortProxyRelayService } from '@modules/container/services/ContainerPortProxyRelayService';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import { inject } from 'tsyringe';
 
+/**
+ * Boots (and tears down) the public-port relays for every container that already
+ * has a public port when the server starts. Reads the Mongoose
+ * {@link ContainerModel} directly and drives the shared
+ * {@link ContainerPortProxyRelayService} singleton. Resolved by `server.ts` at
+ * startup/shutdown.
+ */
 @Singleton()
 export class ContainerPortRelayLifecycleService {
     constructor(
-        @inject(CONTAINER_TOKENS.ContainerRepository) private readonly containerRepository: IContainerRepository,
         private readonly relayService: ContainerPortProxyRelayService
     ) {}
 
     async start(): Promise<void> {
-        const containers = await this.containerRepository.findWithPublicPorts();
+        const containers = await ContainerModel.find({ 'ports.public': { $gt: 0 } }).exec();
         const relays = containers.flatMap((container) => {
             if (!container.team || !container.teamCluster || !container.internalIp) {
                 return [];
@@ -23,7 +27,7 @@ export class ContainerPortRelayLifecycleService {
                 .filter((port) => typeof port.public === 'number' && port.public > 0)
                 .map((port) => ({
                     teamId: String(container.team),
-                    containerId: container._id,
+                    containerId: String(container._id),
                     teamClusterId: String(container.teamCluster),
                     internalIp: container.internalIp as string,
                     privatePort: port.private,

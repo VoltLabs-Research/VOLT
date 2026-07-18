@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { MoveContainerUseCase } from '@modules/container/use-cases/MoveContainerUseCase';
+import ContainerService from '@modules/container/services/ContainerService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -12,18 +12,10 @@ export class MoveContainerAITool extends AITool {
     readonly parameters = z.object({ containerId: z.string(), folderId: z.string().nullable() });
     protected readonly needsApproval = true;
 
-    constructor(
-        protected readonly useCase: MoveContainerUseCase
-    ) {
-        super();
-    }
+    #service = new ContainerService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        await this.useCase.execute({
-            containerId: params.containerId,
-            folderId: params.folderId,
-            teamId: scope.teamId
-        });
+        await this.#service.move(scope.teamId, params.containerId, params.folderId);
         return {
             summary: params.folderId === null
                 ? 'Moved the container to the root folder.'
