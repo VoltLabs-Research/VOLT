@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret, SignOptions } from 'jsonwebtoken';
 import ms from 'ms';
 import type { StringValue } from 'ms';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 interface ScriptingJupyterAccessTokenClaims extends JwtPayload {
     type: 'scripting-jupyter';
@@ -89,7 +88,6 @@ const resolveCookieMaxAgeMs = (expiresIn: SignOptions['expiresIn']): number => {
         : DEFAULT_SCRIPTING_JUPYTER_ACCESS_TOKEN_MAX_AGE_MS;
 };
 
-@Singleton()
 export class ScriptingJupyterAccessTokenService {
     private readonly expiresIn = resolveExpiresIn();
     private readonly cookieMaxAgeMs = resolveCookieMaxAgeMs(this.expiresIn);

@@ -2,7 +2,6 @@ import type {
     AttachTeamPresenceResult,
     DetachedTeamPresenceSession
 } from '@modules/team/contracts/team-member/TeamPresenceTypes';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 
 interface TeamPresenceSession {
@@ -26,7 +25,6 @@ export type {
     DetachedTeamPresenceSession
 } from '@modules/team/contracts/team-member/TeamPresenceTypes';
 
-@Singleton()
 export default class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();

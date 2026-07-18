@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { mergeScriptingNotebookContents } from '@modules/scripting/utilities/build-scripting-notebook';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 
 const DEFAULT_NOTEBOOK_TEMPLATE_PATH = path.join(
     __dirname,
@@ -15,7 +14,6 @@ const OVITO_NOTEBOOK_TEMPLATE_PATH = path.join(
     'ovito-usage-example.ipynb'
 );
 
-@Singleton()
 export class JupyterNotebookService {
     async resolveNotebookTemplateContent(): Promise<Record<string, unknown>> {
         const [defaultTemplateRaw, ovitoTemplateRaw] = await Promise.all([
