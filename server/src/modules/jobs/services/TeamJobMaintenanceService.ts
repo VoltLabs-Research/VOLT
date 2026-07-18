@@ -1,3 +1,6 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import redisClient from '@shared/infrastructure/redis/redisClient';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import JobStatusChangedEvent from '@modules/jobs/events/JobStatusChangedEvent';
 import type {
@@ -13,11 +16,8 @@ import type {
     TrajectoryDeletedEventPayload
 } from '@shared/contracts/events';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type IORedis from 'ioredis';
-import { container as diContainer } from 'tsyringe';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
@@ -70,20 +70,11 @@ interface GlbFrameDescriptor {
 export class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
     private readonly dumpStorage: MaintenanceTrajectoryDumpStorage = trajectoryDumpStorageService;
 
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
-    #eventBusCache?: IEventBus;
-    private get eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        private readonly eventBus = eventBus;
 
     #teamJobsServiceCache?: TeamJobsService;
     private get teamJobsService(): TeamJobsService {

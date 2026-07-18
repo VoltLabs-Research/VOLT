@@ -1,9 +1,8 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import objectGatewayClient from './TeamClusterObjectGatewayClient';
-import { container } from 'tsyringe';
 
 import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
@@ -46,10 +45,7 @@ interface CreateArchiveDownloadInput {
 }
 
 export default class ClusterObjectArchiveService implements IClusterObjectArchiveService {
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= container.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     private readonly objectGatewayClient = objectGatewayClient;
 

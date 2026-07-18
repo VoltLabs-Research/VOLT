@@ -19,11 +19,10 @@ import {
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import TeamMemberModel, { getTeamMemberRolePermissions } from '@modules/team/models/team-member/TeamMemberModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container as diContainer } from 'tsyringe';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { ReverseWsHttpRelay } from '@shared/infrastructure/services/ReverseWsHttpRelay';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import reverseWsHttpRelay from '@shared/infrastructure/services/ReverseWsHttpRelay';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     applyEmbeddableHeadersToProxyResponse,
@@ -131,15 +130,9 @@ export class ScriptingJupyterProxyService {
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #reverseWsHttpRelayCache?: ReverseWsHttpRelay;
-    private get reverseWsHttpRelay(): ReverseWsHttpRelay {
-        return (this.#reverseWsHttpRelayCache ??= diContainer.resolve(ReverseWsHttpRelay));
-    }
+    private readonly reverseWsHttpRelay = reverseWsHttpRelay;
 
     constructor() {
         this.startHttpProxySessionSweep();

@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import UserModel from '@modules/auth/models/UserModel';
@@ -7,9 +8,7 @@ import TeamRoleModel from '@modules/team/models/team-role/TeamRoleModel';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 
 const logMembershipWarning = (context: Record<string, string>, message: string) => {
     logger.warn(context, `[TeamMembershipService] ${message}`);
@@ -20,7 +19,7 @@ export default class TeamMembershipService {
         addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }),
         removeTeamFromUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $pull: { teams: teamId } })
     };
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async addMemberToTeam(userId: string, teamId: string, roleName: string = SystemRoleNames.MEMBER): Promise<void> {
         const existing = await TeamMemberModel.findOne({ team: teamId, user: userId });

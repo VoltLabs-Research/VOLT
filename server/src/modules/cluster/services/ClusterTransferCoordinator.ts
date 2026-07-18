@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
@@ -40,10 +42,8 @@ import {
     type TeamClusterDaemonPluginMongoImportResult,
     type TeamClusterDaemonPluginMongoPurgeResult
 } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
-import { container } from 'tsyringe';
 import storagePlacementService from './StoragePlacementService';
 
 interface ObjectHeadSnapshot {
@@ -190,18 +190,12 @@ export class ClusterTransferCoordinator {
     private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
     private readonly analysisRepository: IAnalysisRepository = new AnalysisRepository();
     private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= container.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
-    #eventBusCache?: IEventBus;
-    private get eventBus(): IEventBus {
-        return (this.#eventBusCache ??= container.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        private readonly eventBus = eventBus;
 
     async requestTransfer(input: TransferRequestInput): Promise<ClusterTransferJob> {
         const placement = await this.storagePlacementService.ensurePlacement(input.scopeType, input.scopeId);

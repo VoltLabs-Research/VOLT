@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { JobStatus } from '@shared/contracts/types';
@@ -7,9 +9,7 @@ import storagePlacementService, { StoragePlacementService } from '@modules/clust
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import TrajectoryFrameModel from '@modules/trajectory/models/trajectory/TrajectoryFrameModel';
@@ -66,15 +66,9 @@ const getCloneJobMessage = (job: TrajectoryCloneJobDocument): string => {
 export class TrajectoryCloneCoordinator {
     private readonly storagePlacementService: StoragePlacementService = storagePlacementService;
 
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #eventBusCache?: IEventBus;
-    private get eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        private readonly eventBus = eventBus;
 
     async runPendingJobs(limit = 1): Promise<number> {
         let processed = 0;

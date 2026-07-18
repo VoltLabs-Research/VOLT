@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamRoleModel from '@modules/team/models/team-role/TeamRoleModel';
 import SecretKeyModel, {
@@ -16,9 +17,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { ROLE_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import crypto from 'node:crypto';
-import { container as diContainer } from 'tsyringe';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
 const MAX_KEYS_PER_TEAM = 500;
@@ -37,7 +36,7 @@ interface EnrichedSecretKeyMetric {
 
 export default class SecretKeyService {
     #metricsMapper = new SecretKeyUsageMetricsMapper();
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async create(teamId: string, userId: string, input: CreateSecretKeyInput): Promise<{
         secretKeyId: string;

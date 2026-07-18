@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import UserModel from '@modules/auth/models/UserModel';
@@ -17,9 +18,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import crypto from 'crypto';
-import { container as diContainer } from 'tsyringe';
 import type { SendTeamInvitationInput, UpdateTeamInvitationInput } from '@volt/contracts/modules/team/http';
 
 const INVITATION_RELATIONS = ['team', 'invitedBy', 'invitedUser', 'role'];
@@ -29,7 +28,7 @@ export default class TeamInvitationService {
         findByEmail: (email: string) => UserModel.findOne({ email: email.toLowerCase() }),
         addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } })
     };
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async send(teamId: string, userId: string, input: SendTeamInvitationInput): Promise<PersistedOutput<TeamInvitationProps>> {
         const normalizedEmail = normalizeInvitationEmail(input.email);

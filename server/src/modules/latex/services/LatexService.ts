@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import tempFileService from '@shared/infrastructure/services/TempFileService';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
@@ -35,7 +37,6 @@ import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObject
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createDownloadStreamResponse, sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 import { LAST_EDITED_BY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
@@ -118,15 +119,9 @@ export default class LatexService {
         return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
     }
 
-    #tempFileServiceCache?: ITempFileService;
-    get #tempFileService(): ITempFileService {
-        return (this.#tempFileServiceCache ??= diContainer.resolve<ITempFileService>(SHARED_TOKENS.TempFileService));
-    }
+        #tempFileService = tempFileService;
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async listDocuments(input: TeamScoped & { page?: number; limit?: number; search?: string; folderId?: string }): Promise<PaginatedResult<LatexDocumentView>> {
         const page = Math.max(1, Number(input.page) || 1);

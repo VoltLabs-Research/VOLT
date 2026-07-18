@@ -1,9 +1,7 @@
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import type { TeamJobSnapshot, TeamJobStatus } from '@shared/contracts/types/TeamJobSnapshot';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import type IORedis from 'ioredis';
-import { container as diContainer } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
@@ -55,10 +53,7 @@ export interface TeamJobsInitialPayload {
 };
 
 export default class TeamJobsService {
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     private async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));

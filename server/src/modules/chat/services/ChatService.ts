@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ChatModel from '@modules/chat/models/chat/ChatModel';
 import type { ChatDocument } from '@modules/chat/models/chat/ChatModel';
@@ -10,11 +11,9 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import TeamModel from '@modules/team/models/team/TeamModel';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import logger from '@shared/infrastructure/logger';
 import type { HydratedDocument } from 'mongoose';
-import { container as diContainer } from 'tsyringe';
 import type {
     CreateGroupChatInput,
     UpdateGroupInfoInput,
@@ -59,10 +58,7 @@ const toParticipantId = (participant: unknown): string => {
 export default class ChatService {
     #socketEmitter = socketIOEmitter;
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async getUserChats(userId: string): Promise<ChatView[]> {
         const chats = await ChatModel.find({ participants: userId, isActive: true })

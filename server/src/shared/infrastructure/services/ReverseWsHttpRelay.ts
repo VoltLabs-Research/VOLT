@@ -1,7 +1,6 @@
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/utilities/teamClusterReverseWebSocket';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import {
     normalizeWebSocketCloseCode,
     normalizeWebSocketPayload,
@@ -70,11 +69,8 @@ export interface ReverseWsWebSocketUpgradeOptions {
  * single behavioral path for the delicate Jupyter kernel websocket while letting
  * the container proxy share it.
  */
-@Singleton()
-export class ReverseWsHttpRelay {
-    constructor(
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient
-    ) {}
+class ReverseWsHttpRelay {
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     /** Builds an HTTP agent whose single connection IS the provided reverse-channel tunnel duplex. */
     createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
@@ -266,3 +262,5 @@ export class ReverseWsHttpRelay {
         });
     }
 }
+
+export default new ReverseWsHttpRelay();

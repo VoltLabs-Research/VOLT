@@ -1,10 +1,9 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import logger from '@shared/infrastructure/logger';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
 import type { ISocketConnection } from '@modules/socket/ports/ISocketModule';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
@@ -48,7 +47,6 @@ class EventBroadcastSocketModule extends BaseSocketModule {
     async onInit(): Promise<void> {
         logger.info('[EventBroadcastSocketModule] Starting initialization...');
 
-        const eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
         const handler = this.createGenericBroadcastHandler();
         for (const eventName of this.eventsToBroadcast) {
             await eventBus.subscribe(eventName, handler);

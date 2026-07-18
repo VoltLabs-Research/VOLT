@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
@@ -19,8 +20,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import DeploymentSettingsRepository from '@modules/system/repositories/DeploymentSettingsRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
 import type {
     CreateTeamInput,
     UpdateTeamInput
@@ -49,7 +48,7 @@ export default class TeamService {
     #membership = new TeamMembershipService();
     #users = { addTeamToUser: (userId: string, teamId: string) => UserModel.findByIdAndUpdate(userId, { $addToSet: { teams: teamId } }) };
     #deploymentSettings = new DeploymentSettingsRepository();
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async create(userId: string, input: CreateTeamInput): Promise<PersistedOutput<TeamProps>> {
         const { name, description } = input;

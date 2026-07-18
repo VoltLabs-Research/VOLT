@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import Plugin, { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 import Workflow, { type WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
@@ -19,7 +20,6 @@ import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTok
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { container as diContainer } from 'tsyringe';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
@@ -136,10 +136,7 @@ export class PluginDebugSocketModule extends BaseSocketModule {
     // constructed at import time), so both must stay lazy — resolved on first
     // actual use — to avoid the eager-singleton DI boot race that already
     // crashed the server once this session.
-    #daemonClientCache?: TeamClusterDaemonClient;
-    private get daemonClient(): TeamClusterDaemonClient {
-        return (this.#daemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly daemonClient = teamClusterDaemonClient;
 
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     private get teamClusterSelectionService(): ITeamClusterSelectionService {

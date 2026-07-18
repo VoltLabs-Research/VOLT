@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMemberModel from '@modules/team/models/team-member/TeamMemberModel';
 import TeamRoleModel, {
@@ -14,12 +15,10 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
 export default class TeamRoleService {
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async listByTeamId(teamId: string, page = 1, limit = 10): Promise<PaginatedResult<PersistedOutput<TeamRoleProps>>> {
         const filter = { team: teamId };

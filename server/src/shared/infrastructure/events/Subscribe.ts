@@ -1,5 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { container, injectable } from 'tsyringe';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import type { InjectionToken } from 'tsyringe';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
@@ -49,8 +49,6 @@ export const subscribeHandlerClass = (
 };
 
 export const flushPendingSubscriptions = async (): Promise<void> => {
-    const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);
-
     logger.info(`@event-bus: subscribing ${pendingSubscriptions.length} handlers`);
 
     for (const { eventName, handler } of pendingSubscriptions) {

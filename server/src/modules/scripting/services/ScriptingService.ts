@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import type { ScriptingNotebookDocument } from '@modules/scripting/models/ScriptingNotebookModel';
@@ -18,7 +19,6 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import { container as diContainer } from 'tsyringe';
@@ -137,10 +137,7 @@ export default class ScriptingService {
         return (this.#teamClusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
     }
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async listNotebooks(input: ListNotebooksInput): Promise<PaginatedResult<ScriptingNotebookView>> {
         const page = Math.max(1, input.page ?? 1);

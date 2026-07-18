@@ -1,5 +1,4 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
@@ -13,10 +12,7 @@ const DAEMON_LISTING_DOCUMENT_TYPES: DaemonListingDocumentType[] = ['listing', '
 
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedDaemonListingPurgeEventHandler implements IEventHandler<AnalysisDeletedEvent> {
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
         const { analysisId, teamClusterId } = event.payload;

@@ -1,7 +1,6 @@
 import type { ITempStorageLifecycleService } from '@shared/domain/port/ITempStorageLifecycleService';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import logger from '@shared/infrastructure/logger';
-import TempFileService from '@shared/infrastructure/services/TempFileService';
+import tempFileService from '@shared/infrastructure/services/TempFileService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -34,19 +33,13 @@ const toMilliseconds = (value: number | bigint): number => {
         : value;
 };
 
-/**
- * Manages startup and periodic cleanup for known temp-storage producers.
- */
-@Singleton()
-export default class TempStorageLifecycleService implements ITempStorageLifecycleService {
+class TempStorageLifecycleService implements ITempStorageLifecycleService {
+    private readonly tempFileService = tempFileService;
     private readonly tempRootPath: string;
     private readonly policies: TempStorageCleanupPolicy[];
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-    constructor(
-        
-        private readonly tempFileService: TempFileService
-    ) {
+    constructor() {
         this.tempRootPath = this.tempFileService.rootPath;
         this.policies = [
             {
@@ -254,3 +247,5 @@ export default class TempStorageLifecycleService implements ITempStorageLifecycl
         }
     }
 }
+
+export default new TempStorageLifecycleService();

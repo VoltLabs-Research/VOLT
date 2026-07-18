@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { RasterFrameService } from '@modules/raster/services/RasterFrameService';
 import { RasterJobEnqueuerService } from '@modules/raster/services/RasterJobEnqueuerService';
@@ -14,7 +15,6 @@ import AnalysisRepository from '@modules/analysis/repositories/AnalysisRepositor
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type {
     IDaemonAnalysisCompletionService,
     ITeamClusterObjectGatewayClient,
@@ -56,7 +56,7 @@ export default class RasterService {
     get #enqueuer(): RasterJobEnqueuerService {
         return (this.#enqueuerCache ??= new RasterJobEnqueuerService(
             diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService),
-            diContainer.resolve<TeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient),
+            teamClusterDaemonClient,
             daemonAnalysisCompletionService
         ));
     }

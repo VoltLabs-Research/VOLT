@@ -1,6 +1,4 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
-import type IORedis from 'ioredis';
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import type { JobStatusChangedEventPayload } from '@modules/jobs/events/JobStatusChangedEvent';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
@@ -124,10 +122,7 @@ const resolveProjectedError = (
 };
 
 export class TeamJobProjectionService {
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {

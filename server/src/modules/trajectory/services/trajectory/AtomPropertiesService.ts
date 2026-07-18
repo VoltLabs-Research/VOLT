@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, PluginLike, WorkflowNodeLike } from '@shared/contracts/types';
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
@@ -9,7 +10,6 @@ import type { IAnalysisRepository, IPluginRepository } from '@shared/contracts/p
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { container as diContainer } from 'tsyringe';
 
 export interface FilterExpression {
@@ -35,10 +35,7 @@ export interface AnalysisAllAtomsResult {
 }
 
 export class AtomPropertiesService {
-    #daemonClientCache?: TeamClusterDaemonClient;
-    private get daemonClient(): TeamClusterDaemonClient {
-        return (this.#daemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly daemonClient = teamClusterDaemonClient;
 
     #analysisRepositoryCache?: IAnalysisRepository;
     private get analysisRepository(): IAnalysisRepository {

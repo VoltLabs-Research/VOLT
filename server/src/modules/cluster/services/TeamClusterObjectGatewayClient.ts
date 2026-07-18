@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -9,11 +10,9 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import { container as diContainer } from 'tsyringe';
 import TeamClusterDirectAccessTokenService from './TeamClusterDirectAccessTokenService';
 
 type ObjectGatewayOperationName =
@@ -265,10 +264,7 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
     // singleton constructed at import time — potentially before that
     // registration runs — so the daemon client reference must stay lazy,
     // resolved on first actual use, to avoid the eager-singleton DI boot race.
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async list(
         teamClusterId: string,

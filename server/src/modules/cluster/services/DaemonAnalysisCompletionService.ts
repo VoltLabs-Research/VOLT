@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import type {
     Analysis,
     AnalysisArtifactStatus,
@@ -20,10 +22,7 @@ import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/mo
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import type IORedis from 'ioredis';
-import { container } from 'tsyringe';
 
 interface DaemonExecutionLogService {
     markFrameRunning(input: {
@@ -219,14 +218,8 @@ interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
 }
 
 export class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= container.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
-    #eventBusCache?: IEventBus;
-    private get eventBus(): IEventBus {
-        return (this.#eventBusCache ??= container.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        private readonly redis = redisClient;
+        private readonly eventBus = eventBus;
     private readonly analysisRepo: IAnalysisRepository = new AnalysisRepository();
     private readonly analysisExecutionLogService: DaemonExecutionLogService = analysisExecutionLogService;
 

@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { FrameMetadata } from '@modules/trajectory/contracts/trajectory';
@@ -9,8 +10,6 @@ import type {
     TrajectoryNativeObjectStreamResponse
 } from '@modules/trajectory/contracts/native';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { container as diContainer } from 'tsyringe';
 
 import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
 import { Readable } from 'node:stream';
@@ -102,10 +101,7 @@ interface TrajectoryNativeFilterPreviewResponse {
 }
 
 export class TrajectoryNativeDaemonService {
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {

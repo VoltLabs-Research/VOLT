@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/contracts/team-subscription';
@@ -12,9 +13,7 @@ import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoom
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 
 export class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
@@ -31,10 +30,7 @@ export class TeamPresenceSocketModule extends BaseSocketModule {
     // yet when this module is constructed at import time), so it must be
     // resolved lazily — on first actual use — to avoid the eager-singleton DI
     // boot race.
-    #eventBusCache?: IEventBus;
-    private get eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        private readonly eventBus = eventBus;
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);

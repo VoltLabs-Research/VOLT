@@ -1,3 +1,5 @@
+import redisClient from '@shared/infrastructure/redis/redisClient';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types';
@@ -60,13 +62,9 @@ import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepo
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type IORedis from 'ioredis';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
-import { container as diContainer } from 'tsyringe';
 
 const gzipAsync = promisify(zlib.gzip);
 
@@ -314,15 +312,9 @@ export class PluginExecutionRouter {
         return (this.#objectGatewayClientCache ??= objectGatewayClientSingleton);
     }
 
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     private async cachedEncode<T>(cacheKey: string, value: T): Promise<EncodedDispatchSection> {
         try {

@@ -1,16 +1,15 @@
+import storageService from '@shared/infrastructure/services/MinioStorageService';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SYS_BUCKETS } from '@core/config/minio';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Request, Response, NextFunction } from 'express';
-import { container } from 'tsyringe';
 import { v4 } from 'uuid';
 import path from 'node:path';
 import type { IStorageService } from '@shared/domain/port/IStorageService';
 
 let storageServiceCache: IStorageService | undefined;
 const getStorageService = (): IStorageService => {
-    return (storageServiceCache ??= container.resolve<IStorageService>(SHARED_TOKENS.StorageService));
+    return (storageServiceCache ??= storageService);
 };
 
 export const uploadToStorage = async (req: Request, _res: Response, next: NextFunction) => {

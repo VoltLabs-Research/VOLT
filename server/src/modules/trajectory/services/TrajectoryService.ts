@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { STATIC_ROOT } from '@core/config/paths';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
@@ -56,7 +58,6 @@ import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import type { Analysis, DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
@@ -369,9 +370,9 @@ const mapFrameLean = (doc: TrajectoryFrameLeanWithPopulatedCell): TrajectoryFram
 });
 
 export default class TrajectoryService {
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
-    #teamClusterDaemonClient = diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient);
+    #teamClusterDaemonClient = teamClusterDaemonClient;
     #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
     #storagePlacement = storagePlacementService;
     #signedUrlService = new ClusterObjectSignedUrlService();

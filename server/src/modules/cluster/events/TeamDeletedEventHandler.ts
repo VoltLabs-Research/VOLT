@@ -1,10 +1,9 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type {
     IStoragePlacementRepository,
     ITeamClusterRepository,
     IClusterTransferJobRepository
 } from '@shared/contracts/ports';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { container as diContainer } from 'tsyringe';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
@@ -24,10 +23,7 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
     private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
     private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
 
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async handle(event: TeamDeletedEvent): Promise<void> {
         const { teamId, userId } = event.payload;

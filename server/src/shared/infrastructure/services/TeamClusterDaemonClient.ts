@@ -1,4 +1,3 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ContainerTerminalAttachment } from '@shared/contracts/ports/IContainerService';
 import teamClusterReverseChannelService from '@modules/cluster/services/TeamClusterReverseChannelService';
 import type {
@@ -12,7 +11,6 @@ import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/typ
 import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -122,8 +120,7 @@ const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined
     }
 };
 
-@Singleton(SHARED_TOKENS.TeamClusterDaemonClient)
-export default class TeamClusterDaemonClient {
+class TeamClusterDaemonClient {
     private static readonly TIMEOUT_BY_CLASS: Record<NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>, number> = {
         default: 30_000,
         interactive: 10_000,
@@ -444,3 +441,5 @@ export default class TeamClusterDaemonClient {
         );
     }
 }
+
+export default new TeamClusterDaemonClient();

@@ -1,12 +1,11 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type {
     TeamClusterRemoteExplorerEntryDTO,
     TeamClusterRemoteExplorerNodeDTO
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/TeamClusterReverseChannelService';
-import { container } from 'tsyringe';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;
@@ -15,10 +14,7 @@ interface RemoteExplorerDaemonRequest {
 }
 
 export class RemoteExplorerDaemonGateway {
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= container.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async listEntries(
         request: RemoteExplorerDaemonRequest

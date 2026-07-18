@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import WhiteboardModel, { requireWhiteboardStorageClusterId } from '@modules/whiteboards/models/WhiteboardModel';
@@ -17,7 +18,6 @@ import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { LAST_EDITED_BY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { container as diContainer } from 'tsyringe';
 import { Readable } from 'node:stream';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,10 +72,7 @@ export default class WhiteboardService {
         return (this.#clusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
     }
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async createWhiteboard(teamId: string, userId: string, input: { title: string; folderId?: string | null }) {
         if (input.folderId) {

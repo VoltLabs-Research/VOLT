@@ -1,3 +1,4 @@
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -6,10 +7,7 @@ import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type IORedis from 'ioredis';
 import { Buffer } from 'node:buffer';
-import { container as diContainer } from 'tsyringe';
 
 export const ANALYSIS_LOG_SOCKET_EVENTS = {
     SUBSCRIBE: 'subscribe_to_analysis_log',
@@ -127,10 +125,7 @@ class AnalysisExecutionLogService {
     private readonly frameStates = new Map<string, FrameLogRuntimeState>();
     private readonly emitter: SocketIOEmitter = socketIOEmitter;
 
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {

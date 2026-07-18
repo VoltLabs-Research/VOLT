@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel, { OAuthProvider, UserRole, normalizeEmail, normalizeName, splitFullName } from '@modules/auth/models/UserModel';
 import type { UserDocument } from '@modules/auth/models/UserModel';
@@ -12,7 +13,6 @@ import SessionModel, { SessionActivityType } from '@modules/session/models/Sessi
 import DefaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
 import type {
@@ -22,7 +22,6 @@ import type {
     UpdateAccountInput
 } from '@volt/contracts/modules/auth/http';
 import crypto from 'node:crypto';
-import { container as diContainer } from 'tsyringe';
 
 interface RequestContext {
     ip: string;
@@ -52,10 +51,7 @@ export default class AuthService {
     #authSessionService = new AuthSessionService();
     #avatarService = new AvatarService();
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     #defaultTeamEnroller = new DefaultTeamEnroller();
 

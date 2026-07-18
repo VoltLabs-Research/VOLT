@@ -3,7 +3,7 @@ import type { IDaemonAnalysisCompletionService, ITeamClusterSelectionService } f
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
+import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
@@ -33,7 +33,7 @@ export interface RasterJobEnqueueResult {
 export class RasterJobEnqueuerService {
     constructor(
         private readonly teamClusterSelectionService: ITeamClusterSelectionService,
-        private readonly teamClusterDaemonClient: TeamClusterDaemonClient,
+        private readonly teamClusterDaemonClient: ITeamClusterDaemonClient,
         private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService
     ) {}
 

@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, AnalysisProps } from '@modules/analysis/entities/Analysis';
 import type AnalysisRepository from '@modules/analysis/repositories/AnalysisRepository';
@@ -23,7 +24,6 @@ import type {
     GetAnalysisFrameLogOutputDTO
 } from '@shared/contracts/dtos/GetAnalysisFrameLogDTO';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import {
@@ -93,10 +93,7 @@ export default class AnalysisService {
         return (this.#analysisRepoCache ??= diContainer.resolve<AnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository));
     }
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]> {
         const normalizedSearch = search.trim();

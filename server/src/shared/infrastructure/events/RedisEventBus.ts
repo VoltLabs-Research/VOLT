@@ -1,13 +1,11 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import logger from '@shared/infrastructure/logger';
 import { Redis } from 'ioredis';
-import { inject, singleton } from 'tsyringe';
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
-@singleton()
-export default class RedisEventBus implements IEventBus {
+class RedisEventBus implements IEventBus {
     private publisher: Redis;
     private subscriber: Redis;
 
@@ -15,10 +13,7 @@ export default class RedisEventBus implements IEventBus {
     private subscribedChannels: Set<string> = new Set();
     private pendingSubscriptions: Map<string, Promise<void>> = new Map();
 
-    constructor(
-        @inject(SHARED_TOKENS.RedisClient)
-        redisClient: Redis
-    ) {
+    constructor() {
         this.publisher = redisClient.duplicate();
         this.subscriber = redisClient.duplicate();
 
@@ -97,3 +92,5 @@ export default class RedisEventBus implements IEventBus {
         });
     }
 }
+
+export default new RedisEventBus();

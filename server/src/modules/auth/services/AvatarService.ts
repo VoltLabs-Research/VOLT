@@ -1,5 +1,5 @@
 import { SYS_BUCKETS } from '@core/config/minio';
-import MinioStorageService from '@shared/infrastructure/services/MinioStorageService';
+import storageService from '@shared/infrastructure/services/MinioStorageService';
 import logger from '@shared/infrastructure/logger';
 import type { IdenticonOptions } from 'identicon.js';
 import Identicon from 'identicon.js';
@@ -21,7 +21,7 @@ export default class AvatarService {
         margin: 0.08
     };
 
-    #storageService = new MinioStorageService();
+    #storageService = storageService;
 
     generateIdenticon(seed: string): AvatarResult {
         const hash = crypto.createHash('md5').update(seed).digest('hex');

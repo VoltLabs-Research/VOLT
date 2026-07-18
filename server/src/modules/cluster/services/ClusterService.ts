@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { ErrorCodes } from '@core/constants/error-codes';
 import UserModel from '@modules/auth/models/UserModel';
 import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
@@ -15,7 +17,6 @@ import {
     resolveAnalysisComputeClusterId,
     resolveAnalysisStorageClusterId
 } from '@shared/application/utilities/cluster-location';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { TeamClusterDaemonSemanticCommandResult } from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { IEventBus } from '@shared/application/events/IEventBus';
@@ -41,7 +42,6 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 import type { Readable } from 'node:stream';
 import type { HydratedDocument } from 'mongoose';
 
@@ -337,15 +337,9 @@ export default class ClusterService {
     #systemMetricsRepository = new SystemMetricsRedisRepository();
     #analysisRepository: IAnalysisRepository = new AnalysisRepository();
 
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    get #teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        #teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     #toTrajectoryLike(doc: TrajectoryDocument): TrajectoryLike {
         return {

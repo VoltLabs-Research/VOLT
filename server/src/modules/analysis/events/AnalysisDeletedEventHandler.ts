@@ -1,23 +1,18 @@
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
 import logger from '@shared/infrastructure/logger';
-import type IORedis from 'ioredis';
-import { container as diContainer } from 'tsyringe';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
 
 @Subscribe('analysis.deleted')
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent> {
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
         const { analysisId, teamId } = event.payload;

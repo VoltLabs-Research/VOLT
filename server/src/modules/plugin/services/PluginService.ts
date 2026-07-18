@@ -1,3 +1,5 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { PluginProps, PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 import Workflow, { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/entities/plugin/workflow/WorkflowNode';
@@ -58,7 +60,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
@@ -501,7 +502,7 @@ export default class PluginService {
     #analysisListingExportCatalogService = new AnalysisListingExportCatalogService(
         diContainer.resolve<IAnalysisRepository>(COMPUTE_TOKENS.AnalysisRepository),
         this.#pluginRepository,
-        diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient)
+        teamClusterDaemonClient
     );
     #listingRowsExportPresenter = new ListingRowsExportPresenter(
         new ClusterObjectArchiveService()
@@ -521,15 +522,9 @@ export default class PluginService {
         return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
     }
 
-    #daemonClientCache?: ITeamClusterDaemonClient;
-    get #daemonClient(): ITeamClusterDaemonClient {
-        return (this.#daemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        #daemonClient = teamClusterDaemonClient;
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
 
     async getNodeTypesSchema(): Promise<GetNodeTypesSchemaOutputDTO> {

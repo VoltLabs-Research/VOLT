@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type {
     ContainerFileEntry,
     ContainerProcessInfo,
@@ -7,8 +8,6 @@ import type {
     RuntimeContainerInfo
 } from '@shared/contracts/ports/IContainerService';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { container as diContainer } from 'tsyringe';
 
 export interface RuntimeContainerSummary {
     Id: string;
@@ -37,10 +36,7 @@ export class DaemonContainerRuntimeService {
     private readonly pendingStats = new Map<string, Promise<ContainerStats>>();
     private readonly pendingProcesses = new Map<string, Promise<ContainerProcessInfo[]>>();
 
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async listContainers(teamClusterId: string): Promise<RuntimeContainerSummary[]> {
         return this.teamClusterDaemonClient.command<RuntimeContainerSummary[]>(teamClusterId, ChannelCommands.ContainerList);

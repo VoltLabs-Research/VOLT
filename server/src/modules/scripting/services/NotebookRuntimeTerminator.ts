@@ -1,18 +1,14 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import logger from '@shared/infrastructure/logger';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/utilities/jupyter-proxy';
-import { container as diContainer } from 'tsyringe';
 
 export class NotebookRuntimeTerminator {
     private readonly exposureRegistryService = teamClusterExposureRegistryService;
 
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async terminate(teamClusterId: string, runtimeNotebookId: string): Promise<boolean> {
         const exposures = this.exposureRegistryService.listTeamClusterExposures(teamClusterId);

@@ -6,7 +6,6 @@ import { stat } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import { pipeline } from 'node:stream/promises';
-import { injectable } from 'tsyringe';
 import type { FileMetadata, IStorageService, UploadSource } from '@shared/domain/port/IStorageService';
 import type { MinioClientConfig } from '@core/config/minio';
 
@@ -18,8 +17,7 @@ const isMinioError = (error: unknown): error is MinioError => {
     return typeof error === 'object' && error !== null && 'code' in error;
 };
 
-@injectable()
-export default class MinioStorageService implements IStorageService {
+class MinioStorageService implements IStorageService {
     private readonly client: Client;
     private urlBase: string;
 
@@ -128,3 +126,5 @@ export default class MinioStorageService implements IStorageService {
         await this.client.removeObjects(bucket, keys);
     }
 }
+
+export default new MinioStorageService();

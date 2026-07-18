@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { JobStatus } from '@shared/contracts/types/JobStatus';
 import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
@@ -6,9 +7,7 @@ import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryMod
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { Subscribe } from '@shared/infrastructure/events/Subscribe';
-import { container as diContainer } from 'tsyringe';
 
 const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
     'trajectory_glb_conversion',
@@ -17,7 +16,7 @@ const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
 
 @Subscribe('job.status.changed')
 export default class JobStatusChangedEventHandler implements IEventHandler<IDomainEvent<JobStatusChangedEventPayload>> {
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
 
     async handle(event: IDomainEvent<JobStatusChangedEventPayload>): Promise<void> {
         const { status, queueType, teamId, trajectoryId } = event.payload;

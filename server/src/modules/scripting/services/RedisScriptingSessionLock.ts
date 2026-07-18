@@ -1,7 +1,5 @@
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import type IORedis from 'ioredis';
+import redisClient from '@shared/infrastructure/redis/redisClient';
 import { randomUUID } from 'node:crypto';
-import { container as diContainer } from 'tsyringe';
 
 export interface ScriptingSessionLockLease {
     release(): Promise<void>;
@@ -15,10 +13,7 @@ return 0
 `;
 
 export class RedisScriptingSessionLock {
-    #redisCache?: IORedis;
-    private get redis(): IORedis {
-        return (this.#redisCache ??= diContainer.resolve<IORedis>(SHARED_TOKENS.RedisClient));
-    }
+        private readonly redis = redisClient;
 
     async acquire(key: string, ttlMs: number): Promise<ScriptingSessionLockLease | null> {
         const token = randomUUID();

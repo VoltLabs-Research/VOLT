@@ -1,3 +1,4 @@
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
@@ -7,7 +8,6 @@ import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRunti
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl } from '@modules/scripting/utilities/jupyter-proxy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import { container as diContainer } from 'tsyringe';
 
@@ -72,10 +72,7 @@ export class DaemonScriptingSessionOrchestrator {
     private readonly accessTokenService = new ScriptingJupyterAccessTokenService();
     private readonly notebookRuntimeTerminator = notebookRuntimeTerminator;
 
-    #teamClusterDaemonClientCache?: ITeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): ITeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve<ITeamClusterDaemonClient>(SHARED_TOKENS.TeamClusterDaemonClient));
-    }
+        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
     private get teamClusterSelectionService(): ITeamClusterSelectionService {

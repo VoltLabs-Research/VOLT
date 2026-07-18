@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ContainerModel } from '@modules/container/models/ContainerModel';
 import type { IContainer } from '@modules/container/models/ContainerModel';
@@ -31,7 +32,6 @@ import type {
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
 import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { USER_POPULATE, CLUSTER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import logger from '@shared/infrastructure/logger';
@@ -79,10 +79,7 @@ export default class ContainerService {
         return (this.#clusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
     }
 
-    #eventBusCache?: IEventBus;
-    get #eventBus(): IEventBus {
-        return (this.#eventBusCache ??= diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus));
-    }
+        #eventBus = eventBus;
 
     async create(teamId: string, userId: string, input: CreateContainerInput): Promise<{ container: ContainerDoc }> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd, memory, cpus } = input;

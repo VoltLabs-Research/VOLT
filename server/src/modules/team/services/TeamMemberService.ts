@@ -1,3 +1,4 @@
+import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMemberModel, { getTeamMemberUserId, isPopulatedTeamMemberUser } from '@modules/team/models/team-member/TeamMemberModel';
 import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
@@ -10,7 +11,6 @@ import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
 import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { container as diContainer } from 'tsyringe';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
 
@@ -26,7 +26,7 @@ interface TeamMemberStatsProps extends TeamMemberProps {
 export default class TeamMemberService {
     #presence = new TeamRoomPresenceService();
     #membership = new TeamMembershipService();
-    #eventBus = diContainer.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+    #eventBus = eventBus;
     #contentCounters: IMemberContentCounter[] = diContainer.isRegistered(MEMBER_CONTENT_COUNTER_TOKEN)
         ? diContainer.resolveAll<IMemberContentCounter>(MEMBER_CONTENT_COUNTER_TOKEN)
         : [];

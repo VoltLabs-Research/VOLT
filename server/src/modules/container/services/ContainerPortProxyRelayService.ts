@@ -10,9 +10,8 @@ import {
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
-import { ReverseWsHttpRelay } from '@shared/infrastructure/services/ReverseWsHttpRelay';
-import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { container as diContainer } from 'tsyringe';
+import reverseWsHttpRelay from '@shared/infrastructure/services/ReverseWsHttpRelay';
+import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import {
     readRelayHostValue,
@@ -67,15 +66,9 @@ export class ContainerPortProxyRelayService {
     private readonly relaysByPublicPort = new Map<number, ContainerPortProxyRelay>();
     private readonly accessTokenService: ContainerPortProxyAccessTokenService = new ContainerPortProxyAccessTokenService();
 
-    #teamClusterDaemonClientCache?: TeamClusterDaemonClient;
-    private get teamClusterDaemonClient(): TeamClusterDaemonClient {
-        return (this.#teamClusterDaemonClientCache ??= diContainer.resolve(TeamClusterDaemonClient));
-    }
+    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #reverseWsHttpRelayCache?: ReverseWsHttpRelay;
-    private get reverseWsHttpRelay(): ReverseWsHttpRelay {
-        return (this.#reverseWsHttpRelayCache ??= diContainer.resolve(ReverseWsHttpRelay));
-    }
+    private readonly reverseWsHttpRelay = reverseWsHttpRelay;
 
     async createAccessUrl(input: CreateContainerPortAccessUrlInput): Promise<{ url: string; expiresAt: string; }> {
         await this.ensureRelay(input);
