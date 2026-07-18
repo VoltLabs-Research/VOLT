@@ -1,14 +1,13 @@
 import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/dtos/RecordTeamClusterHeartbeatDTO';
+import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
 import { TeamClusterDTO, toTeamClusterDTO } from '@modules/cluster/dtos/TeamClusterDTO';
 import TeamCluster, {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
 } from '@modules/cluster/entities/TeamCluster';
-import type { ITeamClusterLifecycleService } from '@modules/cluster/ports/ITeamClusterLifecycleService';
-import type { TeamClusterLifecycleUpdatePreconditions } from '@modules/cluster/ports/ITeamClusterRepository';
+import type { TeamClusterLifecycleUpdatePreconditions } from '@shared/contracts/ports';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import {
@@ -124,7 +123,7 @@ interface TeamClusterLifecycleEventPayload {
 }
 
 @Singleton(CLUSTER_TOKENS.TeamClusterLifecycleService)
-export default class TeamClusterLifecycleService implements ITeamClusterLifecycleService {
+export default class TeamClusterLifecycleService {
     constructor(
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
         private readonly teamClusterRepository: TeamClusterRepository,

@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetPluginListingDocumentsUseCase } from '@modules/plugin/use-cases/listing-row/GetPluginListingDocumentsUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -20,14 +20,10 @@ export class ListPluginListingDocumentsAITool extends AITool {
         sortAsc: z.boolean().optional()
     });
 
-    constructor(
-        protected readonly useCase: GetPluginListingDocumentsUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.getPluginListingDocuments({
             teamId: scope.teamId,
             pluginId: params.pluginId,
             analysisId: params.analysisId,

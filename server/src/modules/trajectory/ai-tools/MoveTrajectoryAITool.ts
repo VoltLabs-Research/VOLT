@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import MoveTrajectoryUseCase from '@modules/trajectory/use-cases/trajectory/MoveTrajectoryUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -13,9 +14,9 @@ export class MoveTrajectoryAITool extends AITool {
         folderId: z.string().nullable()
     });
 
-    constructor(
-        protected readonly useCase: MoveTrajectoryUseCase
-    ) {
-        super();
+    #service = new TrajectoryService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.move({ ...params, ...scope });
     }
 }

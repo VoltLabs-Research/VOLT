@@ -2,7 +2,7 @@ import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { Singleton } from '@shared/infrastructure/di/decorators';
 import jwt from 'jsonwebtoken';
 import type { Secret, SignOptions } from 'jsonwebtoken';
-import type { IClusterObjectSignedUrlService } from '@modules/cluster/ports/IClusterObjectSignedUrlService';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation,

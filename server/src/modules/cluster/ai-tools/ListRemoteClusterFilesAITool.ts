@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import ListTeamClusterRemoteExplorerEntriesUseCase from '@modules/cluster/use-cases/ListTeamClusterRemoteExplorerEntriesUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
@@ -17,14 +17,10 @@ export class ListRemoteClusterFilesAITool extends AITool {
         path: z.string().describe('The path within the target to list. Use an empty string for the root.')
     });
 
-    constructor(
-        protected readonly useCase: ListTeamClusterRemoteExplorerEntriesUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.listRemoteExplorerEntries({
             teamId: scope.teamId,
             userId: scope.userId,
             teamClusterId: params.clusterId,

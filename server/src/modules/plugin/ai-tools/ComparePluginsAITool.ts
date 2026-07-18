@@ -1,7 +1,7 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetPluginByIdUseCase } from '@modules/plugin/use-cases/plugin/GetPluginByIdUseCase';
-import type { PersistedPluginDTO } from '@modules/plugin/dtos/plugin/PersistedPluginDTO';
+import PluginService from '@modules/plugin/services/PluginService';
+import type { PersistedPluginDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -50,16 +50,12 @@ export class ComparePluginsAITool extends AITool {
         pluginIdB: z.string()
     });
 
-    constructor(
-        protected readonly useCase: GetPluginByIdUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
         const [resultA, resultB] = await Promise.all([
-            this.useCase.execute({ pluginId: params.pluginIdA }),
-            this.useCase.execute({ pluginId: params.pluginIdB })
+            this.#service.getPluginById({ pluginId: params.pluginIdA }),
+            this.#service.getPluginById({ pluginId: params.pluginIdB })
         ]);
 
         const a = summarize(resultA);

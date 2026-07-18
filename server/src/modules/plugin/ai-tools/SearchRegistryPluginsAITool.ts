@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { SearchRegistryPluginsUseCase } from '@modules/plugin/use-cases/plugin/SearchRegistryPluginsUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -15,14 +15,10 @@ export class SearchRegistryPluginsAITool extends AITool {
         limit: z.number().optional().default(20)
     });
 
-    constructor(
-        protected readonly useCase: SearchRegistryPluginsUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.searchRegistry({
             teamId: scope.teamId,
             q: params.q,
             page: params.page,

@@ -10,7 +10,7 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
 } from '@shared/infrastructure/contracts/team-cluster';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import type { ITeamClusterObjectGatewayClient } from '@modules/cluster/ports/ITeamClusterObjectGatewayClient';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import http from 'node:http';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';

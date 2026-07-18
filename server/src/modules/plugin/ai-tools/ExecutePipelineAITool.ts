@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { ExecutePipelineUseCase } from '@modules/plugin/use-cases/plugin/ExecutePipelineUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -22,14 +22,10 @@ export class ExecutePipelineAITool extends AITool {
 
     readonly needsApproval = true;
 
-    constructor(
-        protected readonly useCase: ExecutePipelineUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.executePipeline({
             trajectoryId: params.trajectoryId,
             teamId: scope.teamId,
             userId: scope.userId,

@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetTeamClusterRuntimeSnapshotUseCase from '@modules/cluster/use-cases/GetTeamClusterRuntimeSnapshotUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -11,14 +11,10 @@ export class GetClusterRuntimeSnapshotAITool extends AITool {
     readonly description = 'Get the live queue runtime snapshot for a cluster.';
     readonly parameters = z.object({ teamClusterId: z.string() });
 
-    constructor(
-        protected readonly useCase: GetTeamClusterRuntimeSnapshotUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.getRuntimeSnapshot({
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId
         });

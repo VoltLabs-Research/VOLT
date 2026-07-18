@@ -2,7 +2,7 @@ import TeamCluster, { TeamClusterProps, TeamClusterStatus } from '@modules/clust
 import type {
     ITeamClusterRepository,
     TeamClusterLifecycleUpdatePreconditions
-} from '@modules/cluster/ports/ITeamClusterRepository';
+} from '@shared/contracts/ports';
 import teamClusterMapper from '@modules/cluster/mappers/TeamClusterMapper';
 import TeamClusterModel, { TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';

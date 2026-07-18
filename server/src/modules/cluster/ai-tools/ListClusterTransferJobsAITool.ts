@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import ListTeamClusterTransferJobsUseCase from '@modules/cluster/use-cases/ListTeamClusterTransferJobsUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import type { ClusterTransferJobState } from '@modules/cluster/entities/ClusterTransferJob';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
@@ -27,14 +27,10 @@ export class ListClusterTransferJobsAITool extends AITool {
         ]).optional()
     });
 
-    constructor(
-        protected readonly useCase: ListTeamClusterTransferJobsUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.listTransferJobs({
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId,
             page: params.page,

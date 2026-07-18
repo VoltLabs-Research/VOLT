@@ -2,7 +2,6 @@ import {
     TeamClusterRemoteAccessSessionDTO,
     TeamClusterRemoteAccessTargetDTO
 } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
-import type { ITeamClusterRemoteAccessSessionService } from '@modules/cluster/ports/ITeamClusterRemoteAccessSessionService';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { Singleton } from '@shared/infrastructure/di/decorators';
@@ -42,7 +41,7 @@ const isExpiredSession = (session: StoredRemoteAccessSession): boolean => {
 };
 
 @Singleton(CLUSTER_TOKENS.TeamClusterRemoteAccessSessionService)
-export default class TeamClusterRemoteAccessSessionService implements ITeamClusterRemoteAccessSessionService {
+export default class TeamClusterRemoteAccessSessionService {
     private readonly sessions = new InMemoryAbsoluteExpiryStore<string, StoredRemoteAccessSession>({
         getExpiresAt: getRemoteAccessSessionExpiresAt,
         sweepIntervalMs: SESSION_SWEEP_INTERVAL_MS

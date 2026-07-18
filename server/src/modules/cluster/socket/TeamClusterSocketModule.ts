@@ -13,12 +13,9 @@ import {
     toTeamClusterQueueConcurrencyDTO,
     toTeamClusterQueueScopeLimitsDTO
 } from '@modules/cluster/dtos/TeamClusterDTO';
-import CompleteTeamClusterDeletionUseCase from '@modules/cluster/use-cases/CompleteTeamClusterDeletionUseCase';
-import ProcessDaemonJobCompletionUseCase from '@modules/cluster/use-cases/ProcessDaemonJobCompletionUseCase';
-import type { ProcessDaemonSceneArtifactUpsertInputDTO } from '@modules/cluster/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import ProcessDaemonSceneArtifactUpsertUseCase from '@modules/cluster/use-cases/ProcessDaemonSceneArtifactUpsertUseCase';
-import RecordTeamClusterHeartbeatUseCase from '@modules/cluster/use-cases/RecordTeamClusterHeartbeatUseCase';
-import UpdateTeamClusterLifecycleUseCase from '@modules/cluster/use-cases/UpdateTeamClusterLifecycleUseCase';
+import ClusterService, {
+    type ProcessDaemonSceneArtifactUpsertInputDTO
+} from '@modules/cluster/services/ClusterService';
 import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import TeamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
@@ -145,6 +142,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
     public readonly name = 'TeamClusterSocketModule';
     private readonly daemonStreamUnsubscribeFns: Array<() => void> = [];
     private readonly pendingDaemonDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    private readonly clusterService = new ClusterService();
 
     constructor(
         emitter: SocketIOEmitter,
@@ -155,11 +153,6 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         @inject(CLUSTER_TOKENS.TeamClusterReverseChannelService)
         private readonly teamClusterReverseChannelService: TeamClusterReverseChannelService,
         private readonly teamClusterRepository: TeamClusterRepository,
-        private readonly updateTeamClusterLifecycleUseCase: UpdateTeamClusterLifecycleUseCase,
-        private readonly recordTeamClusterHeartbeatUseCase: RecordTeamClusterHeartbeatUseCase,
-        private readonly completeTeamClusterDeletionUseCase: CompleteTeamClusterDeletionUseCase,
-        private readonly processDaemonJobCompletionUseCase: ProcessDaemonJobCompletionUseCase,
-        private readonly processDaemonSceneArtifactUpsertUseCase: ProcessDaemonSceneArtifactUpsertUseCase,
         @inject(COMPUTE_TOKENS.AnalysisExecutionLogService) private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService,
         @inject(PLUGIN_CONTRACT_TOKENS.PluginDebugSessionRegistryService) private readonly pluginDebugSessionRegistry: IPluginDebugSessionRegistryService,
         private readonly systemMetricsRepository: SystemMetricsRedisRepository,
@@ -399,7 +392,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             metadata: item.metadata
         }));
         try {
-            await this.processDaemonSceneArtifactUpsertUseCase.executeBatch(inputs);
+            await this.clusterService.processDaemonSceneArtifactUpsertBatch(inputs);
         } catch (error: unknown) {
             const appError = error as ApplicationError;
             logger.warn(`Failed to process daemon scene artifact batch streamId=${message.streamId} batchSize=${payload.items.length} statusCode=${appError.statusCode} message=${appError.message}`);
@@ -493,7 +486,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'runtime.heartbeat') {
             try {
-                const value = await this.recordTeamClusterHeartbeatUseCase.execute(payload.payload as never);
+                const value = await this.clusterService.recordHeartbeat(payload.payload as never);
                 this.emitUseCaseSuccess(socketId, payload.requestId, value);
             } catch (error: unknown) {
                 this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
@@ -503,7 +496,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'runtime.lifecycle') {
             try {
-                const value = await this.updateTeamClusterLifecycleUseCase.execute(payload.payload as never);
+                const value = await this.clusterService.updateLifecycle(payload.payload as never);
                 this.emitUseCaseSuccess(socketId, payload.requestId, value);
             } catch (error: unknown) {
                 this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
@@ -513,7 +506,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
 
         if (payload.command === 'runtime.delete-completed') {
             try {
-                const value = await this.completeTeamClusterDeletionUseCase.execute(payload.payload as never);
+                const value = await this.clusterService.completeDeletion(payload.payload as never);
                 this.emitUseCaseSuccess(socketId, payload.requestId, value);
             } catch (error: unknown) {
                 this.emitUseCaseError(socketId, payload.requestId, error as ApplicationError);
@@ -547,7 +540,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
             || payload.type === 'artifact-upload-job-status'
         ) {
             try {
-                await this.processDaemonJobCompletionUseCase.execute(payload as never);
+                await this.clusterService.processDaemonJobCompletion(payload as never);
             } catch (error: unknown) {
                 const appError = error as ApplicationError;
                 logger.warn(`Failed to process daemon job event type=${payload.type} statusCode=${appError.statusCode} message=${appError.message}`);
@@ -559,7 +552,7 @@ export default class TeamClusterSocketModule extends BaseSocketModule {
         if (payload.type === 'runtime-heartbeat') {
             this.clearPendingDaemonDisconnect(payload.teamClusterId);
             try {
-                await this.recordTeamClusterHeartbeatUseCase.execute(payload as never);
+                await this.clusterService.recordHeartbeat(payload as never);
             } catch (error: unknown) {
                 const appError = error as ApplicationError;
                 logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${appError.statusCode} message=${appError.message}`);

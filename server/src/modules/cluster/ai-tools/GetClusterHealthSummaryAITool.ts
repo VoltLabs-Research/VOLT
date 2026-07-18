@@ -1,7 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetTeamClusterByIdUseCase from '@modules/cluster/use-cases/GetTeamClusterByIdUseCase';
-import GetTeamClusterRuntimeSnapshotUseCase from '@modules/cluster/use-cases/GetTeamClusterRuntimeSnapshotUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -12,20 +11,15 @@ export class GetClusterHealthSummaryAITool extends AITool {
     readonly description = 'Summarize a cluster\'s health: connectivity status, installed version, heartbeat, capabilities, and live queue runtime.';
     readonly parameters = z.object({ clusterId: z.string() });
 
-    constructor(
-        protected readonly clusterUseCase: GetTeamClusterByIdUseCase,
-        protected readonly snapshotUseCase: GetTeamClusterRuntimeSnapshotUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const clusterResult = await this.clusterUseCase.execute({
+        const clusterResult = await this.#service.getById({
             teamId: scope.teamId,
             teamClusterId: params.clusterId
         });
 
-        const snapshotResult = await this.snapshotUseCase.execute({
+        const snapshotResult = await this.#service.getRuntimeSnapshot({
             teamId: scope.teamId,
             teamClusterId: params.clusterId
         });

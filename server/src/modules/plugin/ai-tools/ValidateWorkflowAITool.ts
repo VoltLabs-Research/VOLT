@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { ValidateWorkflowUseCase } from '@modules/plugin/use-cases/plugin/ValidateWorkflowUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import type { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
@@ -23,14 +23,10 @@ export class ValidateWorkflowAITool extends AITool {
         pluginId: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: ValidateWorkflowUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.validateWorkflow({
             workflow: params.workflow as unknown as WorkflowProps,
             pluginId: params.pluginId
         });

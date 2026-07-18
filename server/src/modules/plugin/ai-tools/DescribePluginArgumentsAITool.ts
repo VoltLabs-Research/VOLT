@@ -1,5 +1,5 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { DescribePluginArgumentsUseCase } from '@modules/plugin/use-cases/plugin/DescribePluginArgumentsUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -12,14 +12,10 @@ export class DescribePluginArgumentsAITool extends AITool {
         pluginId: z.string()
     });
 
-    constructor(
-        protected readonly useCase: DescribePluginArgumentsUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>) {
-        const result = await this.useCase.execute({ pluginId: params.pluginId });
+        const result = await this.#service.describePluginArguments({ pluginId: params.pluginId });
 
         const value = result;
         return {

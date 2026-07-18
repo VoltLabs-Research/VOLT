@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { UpdatePluginByIdUseCase } from '@modules/plugin/use-cases/plugin/UpdatePluginByIdUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { PluginStatus } from '@modules/plugin/entities/plugin/Plugin';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
@@ -14,14 +14,10 @@ export class PublishPluginAITool extends AITool {
 
     readonly needsApproval = true;
 
-    constructor(
-        protected readonly useCase: UpdatePluginByIdUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.updatePluginById({
             pluginId: params.pluginId,
             status: PluginStatus.Published
         });

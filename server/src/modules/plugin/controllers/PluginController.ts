@@ -14,34 +14,37 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import multer from 'multer';
 
-import type { ClonePluginInputDTO } from '@modules/plugin/dtos/plugin/ClonePluginDTO';
-import type { CreatePluginInputDTO } from '@modules/plugin/dtos/plugin/CreatePluginDTO';
-import type { DeleteBinaryInputDTO } from '@modules/plugin/dtos/plugin/DeleteBinaryDTO';
-import type { DeletePluginByIdInputDTO } from '@modules/plugin/dtos/plugin/DeletePluginByIdDTO';
-import type { DownloadPluginBinaryInputDTO } from '@modules/plugin/dtos/plugin/DownloadPluginBinaryDTO';
-import type { ExecutePipelineInputDTO } from '@modules/plugin/dtos/plugin/ExecutePipelineDTO';
-import type { ExportPluginInputDTO } from '@modules/plugin/dtos/plugin/ExportPluginDTO';
-import type { GetPluginByIdInputDTO } from '@modules/plugin/dtos/plugin/GetPluginByIdDTO';
-import type { ImportPluginInputDTO } from '@modules/plugin/dtos/plugin/ImportPluginDTO';
-import type { ListPluginsInputDTO } from '@modules/plugin/dtos/plugin/ListPluginsDTO';
-import type { RegistryInstallPluginInputDTO } from '@modules/plugin/dtos/plugin/RegistryInstallPluginDTO';
-import type { SearchRegistryPluginsInputDTO } from '@modules/plugin/dtos/plugin/SearchRegistryPluginsDTO';
-import type { UpdatePluginByIdInputDTO } from '@modules/plugin/dtos/plugin/UpdatePluginByIdDTO';
-import type { CommitBinaryUploadInputDTO, UploadBinaryInputDTO } from '@modules/plugin/dtos/plugin/UploadBinaryDTO';
-import type { ValidateWorkflowInputDTO } from '@modules/plugin/dtos/plugin/ValidateWorkflowDTO';
-import type { GetPluginExposureChartInputDTO } from '@modules/plugin/dtos/exposure/GetPluginExposureChartDTO';
-import type { GetPluginExposureExportInputDTO } from '@modules/plugin/dtos/exposure/GetPluginExposureExportDTO';
-import type { GetPluginExposureGLBInputDTO } from '@modules/plugin/dtos/exposure/GetPluginExposureGLBDTO';
-import type { GetAnalysisListingExportOptionsInputDTO } from '@modules/plugin/dtos/listing-row/GetAnalysisListingExportOptionsDTO';
 import type {
+    ClonePluginInputDTO,
+    CreatePluginInputDTO,
+    DeleteBinaryInputDTO,
+    DeletePluginByIdInputDTO,
+    DownloadPluginBinaryInputDTO,
+    ExecutePipelineInputDTO,
+    ExportPluginInputDTO,
+    ImportPluginInputDTO,
+    ListPluginsInputDTO,
+    RegistryInstallPluginInputDTO,
+    SearchRegistryPluginsInputDTO,
+    UpdatePluginByIdInputDTO,
+    CommitBinaryUploadInputDTO,
+    UploadBinaryInputDTO,
+    ValidateWorkflowInputDTO,
+    GetPluginExposureChartInputDTO
+} from '@modules/plugin/services/PluginService';
+import type { GetPluginByIdInputDTO } from '@shared/contracts/dtos/GetPluginByIdDTO';
+import type { GetPluginExposureExportInputDTO } from '@shared/contracts/dtos/GetPluginExposureExportDTO';
+import type { GetPluginExposureGLBInputDTO } from '@shared/contracts/dtos/GetPluginExposureGLBDTO';
+import type {
+    GetAnalysisListingExportOptionsInputDTO,
     ExportListingRowsByAnalysisIdInputDTO,
     GetListingRowsByAnalysisIdInputDTO
-} from '@modules/plugin/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+} from '@modules/plugin/utilities/listing-row/listing-row-types';
 import type {
     ExportPluginListingDocumentsInputDTO,
     GetPluginListingDocumentsInputDTO
-} from '@modules/plugin/dtos/listing-row/GetPluginListingDocumentsDTO';
-import type { GetSubListingInputDTO } from '@modules/plugin/dtos/listing-row/GetSubListingDTO';
+} from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
+import type { GetSubListingInputDTO } from '@shared/contracts/dtos/GetSubListingDTO';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { NextFunction, Request, Response } from 'express';
 import type { Readable } from 'node:stream';

@@ -1,7 +1,7 @@
 import archiver from 'archiver';
 import { PassThrough } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
-import type { TeamClusterInstallManifestFileDTO } from '@modules/cluster/dtos/GenerateTeamClusterInstallManifestDTO';
+import type { TeamClusterInstallManifestFileDTO } from '@modules/cluster/contracts/TeamClusterInstallManifest';
 
 const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster-daemon/';
 

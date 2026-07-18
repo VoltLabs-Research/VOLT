@@ -1,6 +1,16 @@
-import type { PersistedPluginDTO } from '@modules/plugin/dtos/plugin/PersistedPluginDTO';
+import type { PersistedPluginDTO as PersistedPluginDTOContract } from '@shared/contracts/dtos/PersistedPluginDTO';
+import type { PluginProps } from '@modules/plugin/entities/plugin/Plugin';
 import type Plugin from '@modules/plugin/entities/plugin/Plugin';
+import type { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import { mapPluginToPersistedDTO as mapPluginToPersistedDTONeutral } from '@shared/application/utilities/mapPluginToPersistedDTO';
+
+/**
+ * Plugin-typed binding of the neutral, generic `PersistedPluginDTO` contract
+ * (`@shared/contracts/dtos/PersistedPluginDTO`) to this module's concrete
+ * `PluginProps`/`WorkflowProps`. Replaces the deleted
+ * `dtos/plugin/PersistedPluginDTO.ts` re-export shim.
+ */
+export type PersistedPluginDTO = PersistedPluginDTOContract<PluginProps, WorkflowProps>;
 
 /**
  * Plugin-typed binding over the neutral mapper

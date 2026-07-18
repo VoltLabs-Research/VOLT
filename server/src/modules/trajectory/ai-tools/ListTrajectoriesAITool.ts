@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/use-cases/trajectory/GetTrajectoriesByTeamIdUseCase';
+import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -16,14 +16,10 @@ export class ListTrajectoriesAITool extends AITool {
         search: z.string().optional()
     });
 
-    constructor(
-        protected readonly useCase: GetTrajectoriesByTeamIdUseCase
-    ) {
-        super();
-    }
+    #service = new TrajectoryService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const value = await this.useCase.execute({
+        const value = await this.#service.getByTeamId({
             teamId: scope.teamId,
             page: params.page,
             limit: params.limit,

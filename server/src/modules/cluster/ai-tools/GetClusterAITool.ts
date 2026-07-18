@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GetTeamClusterByIdUseCase from '@modules/cluster/use-cases/GetTeamClusterByIdUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -11,14 +11,10 @@ export class GetClusterAITool extends AITool {
     readonly description = 'Get detailed information about a specific cluster.';
     readonly parameters = z.object({ teamClusterId: z.string() });
 
-    constructor(
-        protected readonly useCase: GetTeamClusterByIdUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.getById({
             teamId: scope.teamId,
             teamClusterId: params.teamClusterId
         });

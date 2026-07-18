@@ -1,5 +1,4 @@
 import TeamCluster from '@modules/cluster/entities/TeamCluster';
-import type { ITeamClusterInstallManifestService } from '@modules/cluster/ports/ITeamClusterInstallManifestService';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
@@ -22,11 +21,11 @@ import type {
     TeamClusterInstallManifestDTO,
     TeamClusterInstallManifestFileDTO,
     TeamClusterInstallManifestPortsDTO
-} from '@modules/cluster/dtos/GenerateTeamClusterInstallManifestDTO';
+} from '@modules/cluster/contracts/TeamClusterInstallManifest';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 
 @Singleton(CLUSTER_TOKENS.TeamClusterInstallManifestService)
-export default class TeamClusterInstallManifestService implements ITeamClusterInstallManifestService {
+export default class TeamClusterInstallManifestService {
     constructor(
         private readonly daemonCredentialGuard: DaemonCredentialGuard,
         private readonly teamClusterRepository: TeamClusterRepository

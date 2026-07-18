@@ -1,10 +1,12 @@
-import type { IStoragePlacementRepository } from '@modules/cluster/ports/IStoragePlacementRepository';
-import type { ITeamClusterRepository } from '@modules/cluster/ports/ITeamClusterRepository';
+import type {
+    IStoragePlacementRepository,
+    ITeamClusterRepository,
+    IClusterTransferJobRepository
+} from '@shared/contracts/ports';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { inject } from 'tsyringe';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { IClusterTransferJobRepository } from '@modules/cluster/ports/IClusterTransferJobRepository';
-import type { ITeamClusterLifecycleService } from '@modules/cluster/ports/ITeamClusterLifecycleService';
+import type TeamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
 import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
@@ -17,7 +19,7 @@ import logger from '@shared/infrastructure/logger';
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
     constructor(
         @inject(CLUSTER_TOKENS.TeamClusterRepository) private readonly teamClusterRepository: ITeamClusterRepository,
-        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: ITeamClusterLifecycleService,
+        @inject(CLUSTER_TOKENS.TeamClusterLifecycleService) private readonly teamClusterLifecycleService: TeamClusterLifecycleService,
         @inject(CLUSTER_TOKENS.StoragePlacementRepository) private readonly storagePlacementRepository: IStoragePlacementRepository,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,
         @inject(SHARED_TOKENS.TeamClusterDaemonClient) private readonly teamClusterDaemonClient: ITeamClusterDaemonClient

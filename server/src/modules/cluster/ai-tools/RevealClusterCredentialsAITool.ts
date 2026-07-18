@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import RevealTeamClusterCredentialsUseCase from '@modules/cluster/use-cases/RevealTeamClusterCredentialsUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -17,14 +17,10 @@ export class RevealClusterCredentialsAITool extends AITool {
     });
     protected readonly needsApproval = true;
 
-    constructor(
-        protected readonly useCase: RevealTeamClusterCredentialsUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.revealCredentials({
             teamId: scope.teamId,
             userId: scope.userId,
             teamClusterId: params.clusterId,

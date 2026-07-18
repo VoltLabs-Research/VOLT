@@ -1,5 +1,5 @@
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import type { IStoragePlacementRepository } from '@modules/cluster/ports/IStoragePlacementRepository';
+import type { IStoragePlacementRepository } from '@shared/contracts/ports';
 import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
 import type { StoragePlacementProps } from '@modules/cluster/entities/StoragePlacement';
 import storagePlacementMapper from '@modules/cluster/mappers/StoragePlacementMapper';

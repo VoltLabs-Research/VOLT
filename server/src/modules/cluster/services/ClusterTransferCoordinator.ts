@@ -1,12 +1,12 @@
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { IClusterTransferJobRepository } from '@modules/cluster/ports/IClusterTransferJobRepository';
+import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
 import { SYSTEM_CONTRACT_TOKENS } from '@shared/contracts/tokens/SystemTokens';
 import type { ISystemMetricsRepository } from '@modules/system/ports/ISystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type { ITrajectoryRepository, IAnalysisRepository } from '@shared/contracts/ports';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import type { ITeamClusterRepository } from '@modules/cluster/ports/ITeamClusterRepository';
+import type { ITeamClusterRepository } from '@shared/contracts/ports';
 import { JobStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -24,9 +24,7 @@ import ClusterTransferJob, {
 import StoragePlacement from '@modules/cluster/entities/StoragePlacement';
 import type TeamCluster from '@modules/cluster/entities/TeamCluster';
 import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
-import type { ITeamClusterObjectGatewayClient } from '@modules/cluster/ports/ITeamClusterObjectGatewayClient';
-import type { IClusterTransferCoordinator } from '@modules/cluster/ports/IClusterTransferCoordinator';
-import type { TransferRequestInput } from '@modules/cluster/ports/IClusterTransferCoordinator';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type {
@@ -176,8 +174,17 @@ const compareObjectListingEntries = (
     return 'inconclusive';
 };
 
+interface TransferRequestInput {
+    teamId: string;
+    scopeType: StoragePlacementScopeType;
+    scopeId: string;
+    destinationClusterId: string;
+    requestedBy: string;
+    reason?: ClusterTransferJobReason;
+}
+
 @Singleton()
-export default class ClusterTransferCoordinator implements IClusterTransferCoordinator {
+export default class ClusterTransferCoordinator {
     constructor(
         private readonly storagePlacementService: StoragePlacementService,
         @inject(CLUSTER_TOKENS.ClusterTransferJobRepository) private readonly clusterTransferJobRepository: IClusterTransferJobRepository,

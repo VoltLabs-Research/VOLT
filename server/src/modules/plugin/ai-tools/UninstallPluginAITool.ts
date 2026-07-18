@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import { DeletePluginByIdUseCase } from '@modules/plugin/use-cases/plugin/DeletePluginByIdUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -10,9 +11,9 @@ export class UninstallPluginAITool extends AITool {
     readonly description = 'Remove a plugin from the team.';
     readonly parameters = z.object({ pluginId: z.string(), reason: z.string().optional() });
 
-    constructor(
-        protected readonly useCase: DeletePluginByIdUseCase
-    ) {
-        super();
+    #service = new PluginService();
+
+    async execute(params: z.infer<typeof this.parameters>, _scope: AIToolScope) {
+        return this.#service.deletePluginById({ pluginId: params.pluginId });
     }
 }

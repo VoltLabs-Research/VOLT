@@ -1,8 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import DeleteDemoTeamClusterUseCase from '@modules/cluster/use-cases/DeleteDemoTeamClusterUseCase';
-import GetDemoTeamClusterStatusUseCase from '@modules/cluster/use-cases/GetDemoTeamClusterStatusUseCase';
-import ProvisionDemoTeamClusterUseCase from '@modules/cluster/use-cases/ProvisionDemoTeamClusterUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -20,17 +18,11 @@ export class ManageDemoClusterAITool extends AITool<ManageDemoClusterParams> {
     readonly parameters = parameters;
     protected readonly needsApproval = (input: ManageDemoClusterParams): boolean => input.action === 'delete';
 
-    constructor(
-        protected readonly provisionUseCase: ProvisionDemoTeamClusterUseCase,
-        protected readonly statusUseCase: GetDemoTeamClusterStatusUseCase,
-        protected readonly deleteUseCase: DeleteDemoTeamClusterUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: ManageDemoClusterParams, scope: AIToolScope) {
         if (params.action === 'provision') {
-            const result = await this.provisionUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
+            const result = await this.#service.provisionDemo({ teamId: scope.teamId, userId: scope.userId });
             return {
                 summary: `Demo cluster "${result.teamCluster.name}" provisioned.`,
                 data: result
@@ -38,7 +30,7 @@ export class ManageDemoClusterAITool extends AITool<ManageDemoClusterParams> {
         }
 
         if (params.action === 'delete') {
-            const result = await this.deleteUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
+            const result = await this.#service.deleteDemo({ teamId: scope.teamId, userId: scope.userId });
             return {
                 summary: result.teardownScheduled
                     ? 'Demo cluster teardown scheduled.'
@@ -47,7 +39,7 @@ export class ManageDemoClusterAITool extends AITool<ManageDemoClusterParams> {
             };
         }
 
-        const result = await this.statusUseCase.execute({ teamId: scope.teamId, userId: scope.userId });
+        const result = await this.#service.getDemoStatus({ teamId: scope.teamId, userId: scope.userId });
         return {
             summary: result.hasActiveDemo
                 ? `Active demo cluster${result.remainingMs !== null ? ` (${Math.max(0, Math.round(result.remainingMs / 60000))} min remaining)` : ''}.`

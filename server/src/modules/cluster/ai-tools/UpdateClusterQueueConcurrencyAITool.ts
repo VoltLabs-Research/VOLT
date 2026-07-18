@@ -1,5 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
-import UpdateTeamClusterQueueConcurrencyUseCase from '@modules/cluster/use-cases/UpdateTeamClusterQueueConcurrencyUseCase';
+import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -27,9 +28,14 @@ export class UpdateClusterQueueConcurrencyAITool extends AITool {
         })
     });
 
-    constructor(
-        protected readonly useCase: UpdateTeamClusterQueueConcurrencyUseCase
-    ) {
-        super();
+    #service = new ClusterService();
+
+    async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
+        return this.#service.updateQueueConcurrency({
+            teamId: scope.teamId,
+            teamClusterId: params.teamClusterId,
+            queueConcurrency: params.queueConcurrency,
+            queueScopeLimits: params.queueScopeLimits
+        });
     }
 }

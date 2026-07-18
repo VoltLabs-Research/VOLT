@@ -6,7 +6,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 import TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import TeamClusterObjectGatewayClient from './TeamClusterObjectGatewayClient';
 
-import type { IClusterObjectArchiveService } from '@modules/cluster/ports/IClusterObjectArchiveService';
+import type { IClusterObjectArchiveService } from '@shared/contracts/ports';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 
 export interface ClusterArchiveObjectEntry {

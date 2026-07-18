@@ -15,7 +15,7 @@ import { TrajectoryStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
-import type { IDaemonAnalysisCompletionService } from '@modules/cluster/ports/IDaemonAnalysisCompletionService';
+import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
 import { CLUSTER_SERVICE_TOKENS } from '@shared/contracts/tokens/ClusterServiceTokens';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';

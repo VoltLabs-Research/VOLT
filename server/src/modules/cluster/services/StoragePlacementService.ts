@@ -19,11 +19,11 @@ import StoragePlacement, {
     createStoragePlacementProps
 } from '@modules/cluster/entities/StoragePlacement';
 import { CLUSTER_TOKENS } from '@modules/cluster/di/ClusterTokens';
-import type { IStoragePlacementRepository } from '@modules/cluster/ports/IStoragePlacementRepository';
+import type { IStoragePlacementRepository } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
 import { Singleton, AliasOf } from '@shared/infrastructure/di/decorators';
-import type { IStoragePlacementService } from '@modules/cluster/ports/IStoragePlacementService';
+import type { IStoragePlacementService } from '@shared/contracts/ports';
 import { inject } from 'tsyringe';
 
 interface PluginPlacementView {

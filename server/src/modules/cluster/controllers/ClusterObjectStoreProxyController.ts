@@ -1,4 +1,4 @@
-import type { ITeamClusterRepository } from '@modules/cluster/ports/ITeamClusterRepository';
+import type { ITeamClusterRepository } from '@shared/contracts/ports';
 import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 import TeamClusterObjectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse

@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { GetSubListingUseCase } from '@modules/plugin/use-cases/listing-row/GetSubListingUseCase';
+import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -18,14 +18,10 @@ export class GetSubListingAITool extends AITool {
         limit: z.number().optional()
     });
 
-    constructor(
-        protected readonly useCase: GetSubListingUseCase
-    ) {
-        super();
-    }
+    #service = new PluginService();
 
     async execute(params: z.infer<typeof this.parameters>, scope: AIToolScope) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.getSubListing({
             analysisId: params.analysisId,
             exposureId: params.exposureId,
             timestep: params.timestep,

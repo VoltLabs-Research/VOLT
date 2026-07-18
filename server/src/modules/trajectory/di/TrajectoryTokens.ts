@@ -4,10 +4,8 @@ import { TRAJECTORY_CONTRACT_TOKENS } from '@shared/contracts/tokens/TrajectoryT
 export const TRAJECTORY_TOKENS = Object.freeze({
     TrajectoryService: Symbol.for('TrajectoryService'),
     TrajectoryRepository: COMPUTE_TOKENS.TrajectoryRepository,
-    TrajectoryFolderRepository: Symbol.for('TrajectoryFolderRepository'),
     TrajectoryFrameRepository: COMPUTE_TOKENS.TrajectoryFrameRepository,
     TrajectoryCloneJobRepository: Symbol.for('TrajectoryCloneJobRepository'),
-    TrajectoryUploadSessionRepository: Symbol.for('TrajectoryUploadSessionRepository'),
     SceneArtifactRepository: COMPUTE_TOKENS.SceneArtifactRepository,
     TrajectoryReader: Symbol.for('TrajectoryReader'),
     TrajectoryDumpStorageService: TRAJECTORY_CONTRACT_TOKENS.TrajectoryDumpStorageService,

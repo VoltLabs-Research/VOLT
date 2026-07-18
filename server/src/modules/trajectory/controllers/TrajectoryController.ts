@@ -1,23 +1,19 @@
 import { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Req, Res } from '@shared/http/params';
+import { Req, Res, Param, Query, Body, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@shared/http/guards';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
-import DeleteTrajectoryFolderUseCase from '@modules/trajectory/use-cases/trajectory/DeleteTrajectoryFolderUseCase';
-import TrajectoryFolderRepository from '@modules/trajectory/repositories/trajectory/TrajectoryFolderRepository';
 import { presentTeamMetrics } from '@modules/trajectory/presenters/trajectory';
 import {
     sendTrajectoryPreview,
     sendTrajectoryPreviewError
 } from '@modules/trajectory/controllers/trajectory-preview-response';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { createCatalogFolderRouteHandlers } from '@shared/infrastructure/http/routing/catalog-folder-route-handlers';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import logger from '@shared/infrastructure/logger';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
-import { container } from 'tsyringe';
 
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import type { Response } from 'express';
@@ -31,17 +27,13 @@ import type { Response } from 'express';
  * handler writes the response itself (`@Res()`), reproducing the previous
  * controllers' `BaseResponse` envelopes, status codes and stream headers
  * verbatim. `@Route` methods are declared in the old route-file order so Express
- * matches literal segments before `/:trajectoryId` / `/:analysisId`.
+ * matches literal segments before `/:trajectoryId` / `/:analysisId`. The folder
+ * routes delegate directly to `TrajectoryService`'s folded folder methods
+ * (pollium style, replacing the old generic `createCatalogFolderRouteHandlers`
+ * + `TrajectoryFolderRepository` + `DeleteTrajectoryFolderUseCase` wiring).
  */
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))
 export default class TrajectoryController extends TrajectoryControllerBase {
-    #folderHandlers = createCatalogFolderRouteHandlers({
-        repository: container.resolve(TrajectoryFolderRepository),
-        folderLabel: 'Trajectory folder',
-        deleteFolder: (input) => container.resolve(DeleteTrajectoryFolderUseCase).execute(input),
-        deleteStatusCode: HttpStatus.NoContent
-    });
-
     // --- Trajectory (/api/trajectories/:teamId) ---------------------------
 
     @Route(trajectoryRoutes.listSamples)
@@ -94,28 +86,47 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     }
 
     @Route(trajectoryRoutes.listFolders)
-    listFolders(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        return this.#folderHandlers.list(req, res);
+    async listFolders(@Param('teamId') teamId: string, @Query() query: Record<string, string>, @Res() res: Response): Promise<void> {
+        const result = await this.service.listFolders(teamId, {
+            page: query.page ? Number(query.page) : undefined,
+            limit: query.limit ? Number(query.limit) : undefined,
+            parentId: query.parentId
+        });
+        BaseResponse.paginated(res, result);
     }
 
     @Route(trajectoryRoutes.getFolder)
-    getFolder(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        return this.#folderHandlers.get(req, res);
+    async getFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Res() res: Response): Promise<void> {
+        const folder = await this.service.getFolder(teamId, folderId);
+        BaseResponse.success(res, folder);
     }
 
     @Route(trajectoryRoutes.createFolder)
-    createFolder(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        return this.#folderHandlers.create(req, res);
+    async createFolder(
+        @Param('teamId') teamId: string,
+        @CurrentUser() userId: string,
+        @Body() body: { title: string; parentId?: string | null },
+        @Res() res: Response
+    ): Promise<void> {
+        const folder = await this.service.createFolder(teamId, userId, body);
+        BaseResponse.success(res, folder, HttpStatus.Created);
     }
 
     @Route(trajectoryRoutes.updateFolder)
-    updateFolder(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        return this.#folderHandlers.update(req, res);
+    async updateFolder(
+        @Param('teamId') teamId: string,
+        @Param('folderId') folderId: string,
+        @Body() body: { title: string },
+        @Res() res: Response
+    ): Promise<void> {
+        const folder = await this.service.updateFolder(teamId, folderId, body);
+        BaseResponse.success(res, folder);
     }
 
     @Route(trajectoryRoutes.removeFolder)
-    removeFolder(@Req() req: AuthenticatedRequest, @Res() res: Response): Promise<void> {
-        return this.#folderHandlers.delete(req, res);
+    async removeFolder(@Param('teamId') teamId: string, @Param('folderId') folderId: string, @Res() res: Response): Promise<void> {
+        await this.service.deleteFolder(teamId, folderId);
+        res.status(HttpStatus.NoContent).send();
     }
 
     @Route(trajectoryRoutes.getMetrics)

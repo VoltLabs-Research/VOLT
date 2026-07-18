@@ -1,6 +1,6 @@
 import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import GenerateTeamClusterInstallManifestUseCase from '@modules/cluster/use-cases/GenerateTeamClusterInstallManifestUseCase';
+import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
 import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
@@ -21,14 +21,10 @@ export class GenerateClusterInstallManifestAITool extends AITool {
         }).describe('Host ports to bind each cluster service to.')
     });
 
-    constructor(
-        protected readonly useCase: GenerateTeamClusterInstallManifestUseCase
-    ) {
-        super();
-    }
+    #service = new ClusterService();
 
     async execute(params: z.infer<typeof this.parameters>) {
-        const result = await this.useCase.execute({
+        const result = await this.#service.generateInstallManifest({
             teamClusterId: params.clusterId,
             daemonPassword: params.daemonPassword,
             installRoot: params.installRoot,

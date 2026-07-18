@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { Singleton } from '@shared/infrastructure/di/decorators';
-import type { ITeamClusterDirectAccessTokenService } from '@modules/cluster/ports/ITeamClusterDirectAccessTokenService';
 import type { Secret, SignOptions } from 'jsonwebtoken';
 import type {
     DirectAccessRequesterKind,
@@ -13,7 +12,7 @@ const SIGN_OPTIONS: SignOptions = {
 };
 
 @Singleton()
-export default class TeamClusterDirectAccessTokenService implements ITeamClusterDirectAccessTokenService {
+export default class TeamClusterDirectAccessTokenService {
     create(secret: string, claims: TeamClusterDirectAccessTokenClaims): string {
         return jwt.sign(claims, secret as Secret, SIGN_OPTIONS);
     }
