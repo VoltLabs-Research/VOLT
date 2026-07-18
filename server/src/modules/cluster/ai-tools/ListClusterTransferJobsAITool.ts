@@ -1,12 +1,9 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import type { ClusterTransferJobState } from '@modules/cluster/entities/ClusterTransferJob';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListClusterTransferJobsAITool extends AITool {
     readonly name = 'list_cluster_transfer_jobs';
     readonly description = 'List data transfer jobs for a cluster.';

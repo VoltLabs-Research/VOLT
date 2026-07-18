@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import LatexService from '@modules/latex/services/LatexService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import type { LatexFileView } from '@volt/contracts/modules/latex/domain';
 import { z } from 'zod';
 
@@ -16,7 +14,6 @@ const parameters = z.object({
 
 type UpdateLatexFileParams = z.infer<typeof parameters>;
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class UpdateLatexFileAITool extends AITool<UpdateLatexFileParams, LatexFileView> {
     readonly name = 'update_latex_file';
     readonly description = 'Update a source file inside a LaTeX document.';

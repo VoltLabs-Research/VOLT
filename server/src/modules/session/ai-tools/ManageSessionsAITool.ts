@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import SessionService from '@modules/session/services/SessionService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -12,7 +10,6 @@ const parameters = z.object({
 
 type ManageSessionsParams = z.infer<typeof parameters>;
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ManageSessionsAITool extends AITool<ManageSessionsParams> {
     readonly name = 'manage_sessions';
     readonly description = 'Manage the current user\'s active login sessions: list active sessions, revoke a specific session by id, or revoke all other active sessions. Use action to pick the operation; sessionId is required for action "revoke".';

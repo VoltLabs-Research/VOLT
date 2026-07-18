@@ -1,12 +1,9 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import { ExportType } from '@shared/domain/port/IBaseRepository';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ExportAnalysisResultAITool extends AITool {
     readonly name = 'export_analysis_result';
     readonly description = 'Produce a downloadable export (JSON or CSV) of all listing rows for an analysis. Returns export metadata (filename, format, headers); it does not stream the file contents into the chat.';

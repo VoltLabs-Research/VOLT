@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -11,7 +9,6 @@ const parameters = z.object({
 
 type ManageDemoClusterParams = z.infer<typeof parameters>;
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ManageDemoClusterAITool extends AITool<ManageDemoClusterParams> {
     readonly name = 'manage_demo_cluster';
     readonly description = 'Provision, check the status of, or delete the team\'s ephemeral demo cluster.';

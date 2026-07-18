@@ -1,6 +1,4 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const drawElement = z.object({
@@ -49,7 +47,6 @@ type DrawOnWhiteboardParams = z.infer<typeof parameters>;
  * through the existing whiteboard sync path. This server class only advertises
  * the schema to the model; it has no server execute (`clientExecuted = true`).
  */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class DrawOnWhiteboardAITool extends AITool<DrawOnWhiteboardParams> {
     readonly name = 'draw_on_whiteboard';
     readonly description = 'Draw actual content (boxes, text, arrows, lines, ellipses, diamonds) onto a '

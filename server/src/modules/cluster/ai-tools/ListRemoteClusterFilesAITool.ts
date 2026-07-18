@@ -1,12 +1,9 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import { TeamClusterRemoteAccessTargetDTO } from '@modules/cluster/contracts/TeamClusterRemoteAccess';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ListRemoteClusterFilesAITool extends AITool {
     readonly name = 'list_remote_cluster_files';
     readonly description = 'List the entries at a path inside a cluster\'s remote storage target (minio buckets, mongo collections, or redis data). Requires an active password-confirmed remote-access session id.';

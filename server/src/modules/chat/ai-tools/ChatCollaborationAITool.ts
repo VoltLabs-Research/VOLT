@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ChatService from '@modules/chat/services/ChatService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -15,7 +13,6 @@ const parameters = z.object({
 
 type ChatCollaborationParams = z.infer<typeof parameters>;
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ChatCollaborationAITool extends AITool<ChatCollaborationParams> {
     readonly name = 'chat_collaboration';
     readonly description = 'Collaborate over team chats: list the user\'s chats, read a chat\'s messages to summarize it, post a text message to a chat, or create a new group chat. Use action to pick the operation.';

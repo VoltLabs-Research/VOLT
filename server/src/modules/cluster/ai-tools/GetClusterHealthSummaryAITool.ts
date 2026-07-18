@@ -1,11 +1,8 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class GetClusterHealthSummaryAITool extends AITool {
     readonly name = 'get_cluster_health_summary';
     readonly description = 'Summarize a cluster\'s health: connectivity status, installed version, heartbeat, capabilities, and live queue runtime.';

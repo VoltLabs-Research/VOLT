@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import LatexService from '@modules/latex/services/LatexService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -11,7 +9,6 @@ const parameters = z.object({
 });
 type Params = z.infer<typeof parameters>;
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class MoveLatexDocumentAITool extends AITool<Params> {
     readonly name = 'move_latex_document';
     readonly description = 'Move a LaTeX document to a different folder.';

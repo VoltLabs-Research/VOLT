@@ -1,11 +1,8 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class GetSubListingAITool extends AITool {
     readonly name = 'get_sub_listing';
     readonly description = 'Fetch the rows of a nested sub-listing within a plugin exposure for a specific trajectory timestep (paginated). Use when a result row drills down into a secondary table.';

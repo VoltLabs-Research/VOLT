@@ -1,13 +1,10 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const queueScopeLimit = z.object({ maxRunningPerTrajectory: z.number() });
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class UpdateClusterQueueConcurrencyAITool extends AITool {
     readonly name = 'update_cluster_queue_concurrency';
     readonly description = 'Update the queue concurrency and scope limits of a cluster.';

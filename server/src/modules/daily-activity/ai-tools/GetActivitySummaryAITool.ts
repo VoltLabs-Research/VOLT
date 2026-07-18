@@ -1,8 +1,6 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import DailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const parameters = z.object({
@@ -16,7 +14,6 @@ type GetActivitySummaryParams = z.infer<typeof parameters>;
  * Summarizes team (or self) daily activity over a day range. Delegates to a
  * `new DailyActivityService()` (no use case, no DI).
  */
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class GetActivitySummaryAITool extends AITool<GetActivitySummaryParams> {
     readonly name = 'get_activity_summary';
     readonly description = 'Summarize recent team activity (or just your own) over the last N days — '

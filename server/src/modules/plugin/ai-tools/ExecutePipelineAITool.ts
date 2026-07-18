@@ -1,11 +1,8 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ExecutePipelineAITool extends AITool {
     readonly name = 'execute_pipeline';
     readonly description = 'Run an analysis pipeline on a trajectory: an ORDERED list of plugin stages executed sequentially on the team cluster. This is the ONLY way to run analysis — there is no single-plugin path. To run just one plugin, pass a one-stage pipeline. Stages run in array order against one evolving frame, so a stage that requiresExposures (see list_plugins) must come AFTER a stage whose producesExposures includes those ids (e.g. a reconstruction stage that emits a cluster table before a dislocation stage that consumes it). Call describe_plugin_arguments per plugin first to build each stage config. Returns the analysisId of every computed stage, in order, to track with get_analysis.';

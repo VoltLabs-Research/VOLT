@@ -1,10 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import RasterService from '@modules/raster/services/RasterService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 /**
@@ -23,7 +21,6 @@ const resolveServerBaseUrl = (): string => {
     return `${protocol}://${host}`;
 };
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class RenderSceneScreenshotAITool extends AITool {
     readonly name = 'render_scene_screenshot';
     readonly description =

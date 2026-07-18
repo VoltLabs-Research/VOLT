@@ -1,9 +1,7 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import type { PersistedPluginDTO } from '@modules/plugin/utilities/mappers/plugin/mapPluginToPersistedDTO';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 interface PluginTopology {
@@ -41,7 +39,6 @@ const diffSets = (a: string[], b: string[]) => ({
     shared: a.filter((item) => b.includes(item))
 });
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ComparePluginsAITool extends AITool {
     readonly name = 'compare_plugins';
     readonly description = 'Compare two plugins side by side: their arguments, exposures, and workflow topology (node/edge counts and node-type composition). Useful for explaining how two analysis plugins differ.';

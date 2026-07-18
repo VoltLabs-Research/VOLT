@@ -1,13 +1,10 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import ClusterService from '@modules/cluster/services/ClusterService';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
 const MASKED = '••••••••';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class RevealClusterCredentialsAITool extends AITool {
     readonly name = 'reveal_cluster_credentials';
     readonly description = 'Reveal which service credentials a cluster holds. Requires the requesting user\'s account password for confirmation. Secret values are NEVER returned in plaintext — only key names and masked references.';

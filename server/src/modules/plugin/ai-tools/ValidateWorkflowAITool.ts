@@ -1,12 +1,9 @@
-import { AI_TOOL_TOKENS } from '@shared/contracts/tokens/AiToolTokens';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import PluginService from '@modules/plugin/services/PluginService';
 import type { WorkflowProps } from '@modules/plugin/entities/plugin/workflow/Workflow';
 import { AITool } from '@shared/application/ai/AITool';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import { z } from 'zod';
 
-@CollectionMember(AI_TOOL_TOKENS.AITool)
 export class ValidateWorkflowAITool extends AITool {
     readonly name = 'validate_workflow';
     readonly description = 'Validate a plugin workflow graph (nodes + edges) in strict mode and report whether it is publishable, listing any structural errors. Pass pluginId to validate an existing plugin\'s draft graph.';
