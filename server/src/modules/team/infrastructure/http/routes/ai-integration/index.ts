@@ -1,7 +1,10 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/team/infrastructure/http/controllers/ai-integration';
+import TeamAIIntegrationController from '@modules/team/infrastructure/http/controllers/ai-integration/TeamAIIntegrationController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(TeamAIIntegrationController);
 
 export default createHttpModule({
     moduleKey: 'team',
@@ -9,11 +12,11 @@ export default createHttpModule({
     resource: Resource.TEAM,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/models', controllers.listModels.handle);
-        router.route('/').get(controllers.listByTeamId.handle);
+        router.get('/models', controller.listModels);
+        router.route('/').get(controller.listByTeamId);
         router.route('/:provider')
-            .post(controllers.createByProvider.handle)
-            .patch(controllers.updateByProvider.handle)
-            .delete(controllers.deleteByProvider.handle);
+            .post(controller.createByProvider)
+            .patch(controller.updateByProvider)
+            .delete(controller.deleteByProvider);
     }
 });

@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
 import type { TeamRoleProps } from '@modules/team/domain/entities/team-role/TeamRole';
-import controllers from '@modules/team/infrastructure/http/controllers/team-role';
+import TeamRoleController from '@modules/team/infrastructure/http/controllers/team-role/TeamRoleController';
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-role/TeamRoleRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -9,6 +9,8 @@ import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container } from 'tsyringe';
+
+const controller = container.resolve(TeamRoleController);
 
 export default createHttpModule({
     moduleKey: 'team',
@@ -37,10 +39,10 @@ export default createHttpModule({
                     data: result.data.map((role) => toPersistedOutput(role))
                 });
             })
-            .post(controllers.create.handle);
+            .post(controller.create);
 
         router.route('/:roleId')
-            .delete(controllers.deleteById.handle)
+            .delete(controller.deleteById)
             .get(async (req, res) => {
                 const { roleId } = req.params as { roleId: string };
                 const repository = container.resolve(TeamRoleRepository);
@@ -58,6 +60,6 @@ export default createHttpModule({
 
                 BaseResponse.success(res, toPersistedOutput(role));
             })
-            .patch(controllers.updateById.handle);
+            .patch(controller.updateById);
     }
 });

@@ -1,4 +1,10 @@
 export const TEAM_TOKENS = Object.freeze({
+    TeamHttpService: Symbol.for('TeamHttpService'),
+    TeamMemberHttpService: Symbol.for('TeamMemberHttpService'),
+    TeamRoleHttpService: Symbol.for('TeamRoleHttpService'),
+    TeamInvitationHttpService: Symbol.for('TeamInvitationHttpService'),
+    SecretKeyHttpService: Symbol.for('SecretKeyHttpService'),
+    TeamAIIntegrationHttpService: Symbol.for('TeamAIIntegrationHttpService'),
     TeamRepository: Symbol.for('TeamRepository'),
     TeamMemberRepository: Symbol.for('TeamMemberRepository'),
     TeamRoleRepository: Symbol.for('TeamRoleRepository'),

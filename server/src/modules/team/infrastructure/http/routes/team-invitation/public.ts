@@ -1,11 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import controllers from '@modules/team/infrastructure/http/controllers/team-invitation';
+import TeamInvitationController from '@modules/team/infrastructure/http/controllers/team-invitation/TeamInvitationController';
 import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-invitation/TeamInvitationRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container } from 'tsyringe';
+
+const controller = container.resolve(TeamInvitationController);
 
 export default createHttpModule({
     moduleKey: 'team',
@@ -37,10 +39,10 @@ export default createHttpModule({
         router.patch('/:invitationId/status', (req, res) => {
             const status = req.body?.status;
             if (status === 'accepted') {
-                return controllers.accept.handle(req, res);
+                return controller.accept(req, res);
             }
             if (status === 'rejected') {
-                return controllers.reject.handle(req, res);
+                return controller.reject(req, res);
             }
             return res.status(400).json({ message: 'Invalid status. Must be "accepted" or "rejected".' });
         });

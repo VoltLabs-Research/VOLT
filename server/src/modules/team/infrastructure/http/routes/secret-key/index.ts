@@ -1,7 +1,10 @@
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/team/infrastructure/http/controllers/secret-key';
+import SecretKeyController from '@modules/team/infrastructure/http/controllers/secret-key/SecretKeyController';
 import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpModule';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(SecretKeyController);
 
 export default createHttpModule({
     moduleKey: 'team',
@@ -9,12 +12,12 @@ export default createHttpModule({
     resource: Resource.TEAM_SECRET_KEY,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/metrics', controllers.teamMetrics.handle);
-        router.get('/:secretKeyId/usage', controllers.keyUsage.handle);
+        router.get('/metrics', controller.teamMetrics);
+        router.get('/:secretKeyId/usage', controller.keyUsage);
         router.route('/')
-            .get(controllers.listByTeamId.handle)
-            .post(controllers.create.handle);
-        router.patch('/:secretKeyId', controllers.revokeById.handle);
-        router.delete('/:secretKeyId', controllers.deleteById.handle);
+            .get(controller.listByTeamId)
+            .post(controller.create);
+        router.patch('/:secretKeyId', controller.revokeById);
+        router.delete('/:secretKeyId', controller.deleteById);
     }
 });

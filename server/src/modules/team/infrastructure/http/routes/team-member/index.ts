@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Resource } from '@core/constants/resources';
-import controllers from '@modules/team/infrastructure/http/controllers/team-member';
+import TeamMemberController from '@modules/team/infrastructure/http/controllers/team-member/TeamMemberController';
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/team-member/TeamMemberRepository';
 import { toPersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
@@ -9,13 +9,15 @@ import { HttpModuleTeamScope } from '@shared/infrastructure/http/routing/HttpMod
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
 import { container } from 'tsyringe';
 
+const controller = container.resolve(TeamMemberController);
+
 export default createHttpModule({
     moduleKey: 'team',
     basePath: '/api/teams/:teamId/members',
     resource: Resource.TEAM_MEMBER,
     teamScope: HttpModuleTeamScope.BasePath,
     routes: (router) => {
-        router.get('/', controllers.listByTeamId.handle);
+        router.get('/', controller.listByTeamId);
 
         router.route('/:teamMemberId')
             .get(async (req, res) => {
@@ -35,8 +37,8 @@ export default createHttpModule({
 
                 BaseResponse.success(res, toPersistedOutput(member));
             })
-            .patch(controllers.updateById.handle);
+            .patch(controller.updateById);
 
-        router.delete('/:memberId', controllers.deleteById.handle);
+        router.delete('/:memberId', controller.deleteById);
     }
 });

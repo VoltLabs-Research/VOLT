@@ -1,14 +1,17 @@
-import controllers from '@modules/session/infrastructure/http/controllers';
+import SessionController from '@modules/session/infrastructure/http/controllers/SessionController';
 import { createHttpModule } from '@shared/infrastructure/http/routing/create-http-module';
+import { container } from 'tsyringe';
+
+const controller = container.resolve(SessionController);
 
 export default createHttpModule({
     moduleKey: 'session',
     basePath: '/api/sessions',
     protected: true,
     routes: (router) => {
-        router.get('/', controllers.getActiveSessions.handle);
-        router.delete('/:sessionId', controllers.revokeSessionById.handle);
-        router.get('/activity', controllers.getMyLoginActivity.handle);
-        router.delete('/', controllers.revokeAllSessions.handle);
+        router.get('/', controller.getActiveSessions);
+        router.delete('/:sessionId', controller.revokeSessionById);
+        router.get('/activity', controller.getMyLoginActivity);
+        router.delete('/', controller.revokeAllSessions);
     }
 });
