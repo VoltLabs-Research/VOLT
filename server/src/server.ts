@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import './core/config/env';
 import './shared/infrastructure/logging/installOutputDuplicateGuard';
 

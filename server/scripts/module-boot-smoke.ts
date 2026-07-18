@@ -20,7 +20,6 @@
  * registration against the already-populated singleton and throw.
  */
 
-import 'reflect-metadata';
 import { resolveEnabledModules } from '@core/bootstrap/module-state';
 
 const KERNEL = ['auth', 'session', 'socket', 'team'] as const;

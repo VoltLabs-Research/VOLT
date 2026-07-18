@@ -11,7 +11,6 @@
     "baseUrl": "./",
     "verbatimModuleSyntax": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "paths": {
       "@core/*": [
         "src/core/*"
