@@ -55,10 +55,9 @@ import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterO
 import type {
     IDaemonAnalysisCompletionService,
     IStoragePlacementService,
-    ITeamClusterObjectGatewayClient,
-    ITeamClusterRepository
+    ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
@@ -300,7 +299,6 @@ const encodeDispatchSection = async <T>(value: T): Promise<EncodedDispatchSectio
 };
 
 export class PluginExecutionRouter {
-    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
     private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
@@ -385,11 +383,10 @@ export class PluginExecutionRouter {
             return currentOwnerClusterId;
         }
 
-        const teamClusters = await this.teamClusterRepository.export({
-            filter: {
-                team: plugin.props.team
-            }
-        });
+        const teamClusterDocuments = await TeamClusterModel.find({
+            team: plugin.props.team
+        }).exec();
+        const teamClusters = teamClusterDocuments.map(toTeamClusterLike);
 
         for (const candidateCluster of teamClusters) {
             if (candidateCluster.id === currentOwnerClusterId) {

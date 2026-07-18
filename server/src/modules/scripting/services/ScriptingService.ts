@@ -18,10 +18,9 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import teamClusterExposureRegistryService from '@modules/cluster/services/TeamClusterExposureRegistryService';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import { CLUSTER_POPULATE, TRAJECTORY_POPULATE, USER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { container as diContainer } from 'tsyringe';
 import { randomUUID } from 'node:crypto';
 import pRetry from 'p-retry';
 
@@ -132,10 +131,7 @@ export default class ScriptingService {
     #exposureRegistry = teamClusterExposureRegistryService;
     #accessToken = new ScriptingJupyterAccessTokenService();
 
-    #teamClusterSelectionCache?: ITeamClusterSelectionService;
-    get #teamClusterSelection(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    #teamClusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
 
         #eventBus = eventBus;
 

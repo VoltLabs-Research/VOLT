@@ -11,16 +11,14 @@ import type {
 } from '@shared/contracts/dtos/GetRasterMetadataDTO';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type {
     IDaemonAnalysisCompletionService,
-    ITeamClusterObjectGatewayClient,
-    ITeamClusterSelectionService
+    ITeamClusterObjectGatewayClient
 } from '@shared/contracts/ports';
 import type TeamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { container as diContainer } from 'tsyringe';
 
 interface TriggerRasterizationInput {
     trajectoryId: string;
@@ -52,7 +50,7 @@ export default class RasterService {
     #enqueuerCache?: RasterJobEnqueuerService;
     get #enqueuer(): RasterJobEnqueuerService {
         return (this.#enqueuerCache ??= new RasterJobEnqueuerService(
-            diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService),
+            teamClusterSelectionService,
             teamClusterDaemonClient,
             daemonAnalysisCompletionService
         ));

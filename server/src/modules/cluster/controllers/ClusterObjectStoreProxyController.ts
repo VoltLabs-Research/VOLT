@@ -1,4 +1,4 @@
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
 import objectGatewayClient, {
     TeamClusterObjectGatewayHeadResponse
 } from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -223,7 +223,6 @@ const sendError = (response: Response, error: unknown): void => {
 export default class ClusterObjectStoreProxyController {
     #objectGatewayClient = objectGatewayClient;
     #daemonCredentialGuard = new DaemonCredentialGuard();
-    #teamClusterRepository = new TeamClusterRepository();
 
     async #assertOwnerAccess(
         requesterClusterId: string,
@@ -235,7 +234,8 @@ export default class ClusterObjectStoreProxyController {
             daemonPassword
         );
 
-        const ownerCluster = await this.#teamClusterRepository.findById(ownerClusterId);
+        const ownerClusterDocument = await TeamClusterModel.findById(ownerClusterId).exec();
+        const ownerCluster = ownerClusterDocument ? toTeamClusterLike(ownerClusterDocument) : null;
         if (!ownerCluster) {
             throw ApplicationError.notFound(
                 'TeamCluster::ObjectStoreProxyOwnerNotFound',

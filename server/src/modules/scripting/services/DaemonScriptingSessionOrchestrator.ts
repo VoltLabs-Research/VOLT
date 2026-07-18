@@ -1,5 +1,5 @@
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import ScriptingNotebookModel from '@modules/scripting/models/ScriptingNotebookModel';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
@@ -9,7 +9,6 @@ import { buildJupyterProxyBasePath, buildJupyterProxyUrl, resolveServerBaseUrl }
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import { container as diContainer } from 'tsyringe';
 
 export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
@@ -74,10 +73,7 @@ export class DaemonScriptingSessionOrchestrator {
 
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    private get teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
         const teamClusterId = await this.teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);

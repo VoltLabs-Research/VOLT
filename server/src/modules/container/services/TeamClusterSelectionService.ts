@@ -1,13 +1,8 @@
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
-import { Singleton } from '@shared/infrastructure/di/decorators';
-import { ClusterRoleAwareSelectionService } from './ClusterRoleAwareSelectionService';
+import clusterRoleAwareSelectionService from './ClusterRoleAwareSelectionService';
 
-@Singleton(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService)
 export class TeamClusterSelectionService implements ITeamClusterSelectionService {
-    constructor(
-        private readonly clusterRoleAwareSelectionService: ClusterRoleAwareSelectionService
-    ) {}
+    private readonly clusterRoleAwareSelectionService = clusterRoleAwareSelectionService;
 
     async resolveConnectedClusterId(teamId: string, requestedTeamClusterId?: string): Promise<string> {
         return this.clusterRoleAwareSelectionService.resolveConnectedClusterId({
@@ -40,3 +35,5 @@ export class TeamClusterSelectionService implements ITeamClusterSelectionService
         });
     }
 }
+
+export default new TeamClusterSelectionService();

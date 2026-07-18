@@ -1,4 +1,5 @@
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import demoClusterDeploymentService from '@modules/cluster/services/DemoClusterDeploymentService';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import logger from '@shared/infrastructure/logger';
@@ -10,7 +11,6 @@ const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOU
 export class TeamClusterHeartbeatMonitor {
     private interval?: NodeJS.Timeout;
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly demoClusterDeploymentService = demoClusterDeploymentService;
 
     start(): void {
@@ -45,7 +45,18 @@ export class TeamClusterHeartbeatMonitor {
     }
 
     private async cleanupExpiredDemos(): Promise<void> {
-        const expiredDemos = await this.teamClusterRepository.findExpiredDemos(new Date());
+        const now = new Date();
+        const expiredDemoDocuments = await TeamClusterModel.find({
+            isDemo: true,
+            demoExpiresAt: {
+                $ne: null,
+                $lte: now
+            },
+            status: {
+                $nin: [TeamClusterStatus.Deleting, TeamClusterStatus.DeleteFailed]
+            }
+        }).exec();
+        const expiredDemos = expiredDemoDocuments.map(toTeamClusterLike);
         if (expiredDemos.length === 0) {
             return;
         }
@@ -57,8 +68,8 @@ export class TeamClusterHeartbeatMonitor {
                 logger.warn(`[TeamClusterHeartbeatMonitor] markDeleting failed for expired demo teamClusterId=${demo.id} error=${(error as Error).message}`);
             }
 
-            const refreshed = await this.teamClusterRepository.findById(demo.id);
-            const target = refreshed ?? demo;
+            const refreshedDocument = await TeamClusterModel.findById(demo.id).exec();
+            const target = refreshedDocument ? toTeamClusterLike(refreshedDocument) : demo;
 
             try {
                 await this.demoClusterDeploymentService.teardownDemoStack(target);

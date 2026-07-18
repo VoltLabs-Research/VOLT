@@ -1,6 +1,6 @@
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
-import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
+import StoragePlacementModel from '@modules/cluster/models/StoragePlacementModel';
+import ClusterTransferJobModel from '@modules/cluster/models/ClusterTransferJobModel';
 import AnalysisDeletedEvent from '@modules/analysis/events/AnalysisDeletedEvent';
 import type { AnalysisStorageCleanupTarget } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
@@ -9,8 +9,6 @@ import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
 class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<AnalysisDeletedEvent> {
-    private readonly storagePlacementRepository = new StoragePlacementRepository();
-    private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
     private readonly objectGatewayClient = objectGatewayClient;
 
     async handle(event: AnalysisDeletedEvent): Promise<void> {
@@ -27,14 +25,14 @@ class AnalysisDeletedStorageCleanupEventHandler implements IEventHandler<Analysi
             teamClusterId
                 ? this.cleanupRemoteStorage(teamClusterId, targets)
                 : Promise.resolve(),
-            this.storagePlacementRepository.deleteMany({
+            StoragePlacementModel.deleteMany({
                 scopeType: 'analysis',
                 scopeId: analysisId
-            }),
-            this.clusterTransferJobRepository.deleteMany({
+            }).exec(),
+            ClusterTransferJobModel.deleteMany({
                 scopeType: 'analysis',
                 scopeId: analysisId
-            })
+            }).exec()
         ]);
     }
 

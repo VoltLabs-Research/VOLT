@@ -18,7 +18,7 @@
  * layer. Replacing the class with a structural `StoragePlacement` contract is
  * deferred.
  */
-import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
+import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 import type {
     StoragePlacementScopeType,
     StoragePlacementState

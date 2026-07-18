@@ -1,15 +1,10 @@
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import type {
-    IStoragePlacementRepository,
-    ITeamClusterRepository,
-    IClusterTransferJobRepository
-} from '@shared/contracts/ports';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
-import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
-import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
-import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import StoragePlacementModel from '@modules/cluster/models/StoragePlacementModel';
+import ClusterTransferJobModel from '@modules/cluster/models/ClusterTransferJobModel';
+import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import TeamDeletedEvent from '@modules/team/events/team/TeamDeletedEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
@@ -17,19 +12,15 @@ import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
 class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
-    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
-    private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
-    private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
 
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
 
     async handle(event: TeamDeletedEvent): Promise<void> {
         const { teamId, userId } = event.payload;
 
-        const teamClusters = await this.teamClusterRepository.export({
-            filter: { team: teamId }
-        });
+        const teamClusterDocuments = await TeamClusterModel.find({ team: teamId }).exec();
+        const teamClusters = teamClusterDocuments.map(toTeamClusterLike);
 
         for (const teamCluster of teamClusters) {
             if (teamCluster.props.status === TeamClusterStatus.Connected) {
@@ -63,8 +54,8 @@ class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
         }
 
         await Promise.all([
-            this.storagePlacementRepository.deleteMany({ team: teamId }),
-            this.clusterTransferJobRepository.deleteMany({ team: teamId })
+            StoragePlacementModel.deleteMany({ team: teamId }).exec(),
+            ClusterTransferJobModel.deleteMany({ team: teamId }).exec()
         ]);
     }
 }

@@ -1,6 +1,6 @@
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
-import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
-import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
+import StoragePlacementModel from '@modules/cluster/models/StoragePlacementModel';
+import ClusterTransferJobModel from '@modules/cluster/models/ClusterTransferJobModel';
 import TrajectoryDeletedEvent from '@modules/trajectory/events/trajectory/TrajectoryDeletedEvent';
 import type { TrajectoryStorageCleanupTarget } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@modules/trajectory/utilities/trajectory/storage-cleanup-prefixes';
@@ -9,8 +9,6 @@ import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
 import logger from '@shared/infrastructure/logger';
 
 class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
-    private readonly storagePlacementRepository = new StoragePlacementRepository();
-    private readonly clusterTransferJobRepository = new ClusterTransferJobRepository();
     private readonly objectGatewayClient = objectGatewayClient;
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
@@ -27,14 +25,14 @@ class TrajectoryDeletedStorageCleanupEventHandler implements IEventHandler<Traje
             storageClusterId
                 ? this.cleanupRemoteStorage(storageClusterId, targets)
                 : Promise.resolve(),
-            this.storagePlacementRepository.deleteMany({
+            StoragePlacementModel.deleteMany({
                 scopeType: 'trajectory',
                 scopeId: trajectoryId
-            }),
-            this.clusterTransferJobRepository.deleteMany({
+            }).exec(),
+            ClusterTransferJobModel.deleteMany({
                 scopeType: 'trajectory',
                 scopeId: trajectoryId
-            })
+            }).exec()
         ]);
     }
 

@@ -11,8 +11,5 @@
 export const CLUSTER_SERVICE_TOKENS = Object.freeze({
     DaemonAnalysisCompletionService: Symbol.for('DaemonAnalysisCompletionService'),
     TeamClusterExposureRegistryService: Symbol.for('TeamClusterExposureRegistryService'),
-    TeamClusterRepository: Symbol.for('TeamClusterRepository'),
-    StoragePlacementRepository: Symbol.for('StoragePlacementRepository'),
-    ClusterTransferJobRepository: Symbol.for('ClusterTransferJobRepository'),
     TeamClusterReverseChannelService: Symbol.for('TeamClusterReverseChannelService')
 });

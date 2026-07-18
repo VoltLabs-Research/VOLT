@@ -1,14 +1,12 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
-import type { IClusterTransferJobRepository } from '@shared/contracts/ports';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
-import ClusterTransferJobRepository from '@modules/cluster/repositories/ClusterTransferJobRepository';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
-import type { ITeamClusterRepository } from '@shared/contracts/ports';
+import ClusterTransferJobModel, { toClusterTransferJobLike, type ClusterTransferJob } from '@modules/cluster/models/ClusterTransferJobModel';
+import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 import { JobStatus } from '@shared/contracts/types';
 import { GenericDomainEvent } from '@shared/domain/events/GenericDomainEvent';
 import { DOMAIN_EVENTS } from '@shared/contracts/events';
@@ -18,14 +16,13 @@ import {
     SOFT_STORAGE_LIMIT_PCT
 } from '@shared/application/utilities/cluster-storage-policy';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
-import ClusterTransferJob, {
-    ClusterTransferJobReason,
-    ClusterTransferJobState,
+import {
+    type ClusterTransferJobReason,
+    type ClusterTransferJobState,
     createClusterTransferJobProps
-} from '@modules/cluster/entities/ClusterTransferJob';
-import StoragePlacement from '@modules/cluster/entities/StoragePlacement';
-import type TeamCluster from '@modules/cluster/entities/TeamCluster';
-import { TeamClusterStatus } from '@modules/cluster/entities/TeamCluster';
+} from '@modules/cluster/utilities/cluster-transfer-job';
+import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
+import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import objectGatewayClientSingleton from '@modules/cluster/services/TeamClusterObjectGatewayClient';
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
 import ApplicationError from '@shared/application/errors/ApplicationError';
@@ -185,9 +182,7 @@ interface TransferRequestInput {
 
 export class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
-    private readonly clusterTransferJobRepository: IClusterTransferJobRepository = new ClusterTransferJobRepository();
-    private readonly teamClusterRepository: ITeamClusterRepository = new TeamClusterRepository();
-    private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
+    private readonly systemMetricsRepository = systemMetricsRepository;
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
     #objectGatewayClientCache?: ITeamClusterObjectGatewayClient;
     private get objectGatewayClient(): ITeamClusterObjectGatewayClient {
@@ -212,7 +207,7 @@ export class ClusterTransferCoordinator {
                 }
             );
 
-            const completedJob = await this.clusterTransferJobRepository.create(createClusterTransferJobProps({
+            const completedJob = await this.createTransferJob(createClusterTransferJobProps({
                 team: input.teamId,
                 scopeType: input.scopeType,
                 scopeId: input.scopeId,
@@ -232,7 +227,7 @@ export class ClusterTransferCoordinator {
             return completedJob;
         }
 
-        const openTransferJob = await this.clusterTransferJobRepository.findOpenByScope(input.scopeType, input.scopeId);
+        const openTransferJob = await this.findOpenTransferJobByScope(input.scopeType, input.scopeId);
         if (openTransferJob && openTransferJob.props.destinationClusterId === input.destinationClusterId) {
             await this.publishTransferJobProjection(openTransferJob);
             return openTransferJob;
@@ -242,7 +237,7 @@ export class ClusterTransferCoordinator {
 
         let queuedJob: ClusterTransferJob;
         try {
-            queuedJob = await this.clusterTransferJobRepository.create(createClusterTransferJobProps({
+            queuedJob = await this.createTransferJob(createClusterTransferJobProps({
                 team: input.teamId,
                 scopeType: input.scopeType,
                 scopeId: input.scopeId,
@@ -254,7 +249,7 @@ export class ClusterTransferCoordinator {
                 reason: input.reason ?? 'manual'
             }));
         } catch (error) {
-            const duplicate = await this.clusterTransferJobRepository.findOpenByScope(input.scopeType, input.scopeId);
+            const duplicate = await this.findOpenTransferJobByScope(input.scopeType, input.scopeId);
             if (duplicate) {
                 await this.publishTransferJobProjection(duplicate);
                 return duplicate;
@@ -271,18 +266,14 @@ export class ClusterTransferCoordinator {
         let processedJobs = 0;
 
         while (processedJobs < limit) {
-            const claimedJob = await this.clusterTransferJobRepository.claimNextRunnable(
-                CLUSTER_TRANSFER_WORKER_ID,
-                CLUSTER_TRANSFER_CLAIM_TTL_MS
-            );
+            const claimedJob = await this.claimNextRunnable();
             if (!claimedJob) {
                 break;
             }
 
             const renewTimer = setInterval(() => {
-                void this.clusterTransferJobRepository.renewClaim(
+                void this.renewClaim(
                     claimedJob.id,
-                    CLUSTER_TRANSFER_WORKER_ID,
                     CLUSTER_TRANSFER_CLAIM_TTL_MS
                 ).catch((error) => {
                     logger.warn({ error, jobId: claimedJob.id }, '[ClusterTransferCoordinator] Failed to renew claim');
@@ -294,7 +285,7 @@ export class ClusterTransferCoordinator {
                 await this.executeJob(claimedJob.id);
             } finally {
                 clearInterval(renewTimer);
-                await this.clusterTransferJobRepository.releaseClaim(claimedJob.id, CLUSTER_TRANSFER_WORKER_ID).catch(() => undefined);
+                await this.releaseClaim(claimedJob.id).catch(() => undefined);
             }
             processedJobs += 1;
         }
@@ -303,11 +294,10 @@ export class ClusterTransferCoordinator {
     }
 
     async planAutomaticRebalance(): Promise<number> {
-        const teamClusters = await this.teamClusterRepository.export({
-            filter: {
-                status: TeamClusterStatus.Connected
-            }
-        });
+        const teamClusterDocuments = await TeamClusterModel.find({
+            status: TeamClusterStatus.Connected
+        }).exec();
+        const teamClusters = teamClusterDocuments.map(toTeamClusterLike);
         const storageClusters = teamClusters.filter((cluster) => cluster.effectiveCapabilities.acceptsStorageWrites);
         let createdJobs = 0;
 
@@ -332,7 +322,7 @@ export class ClusterTransferCoordinator {
                 continue;
             }
 
-            const existingJob = await this.clusterTransferJobRepository.findOpenByScope(
+            const existingJob = await this.findOpenTransferJobByScope(
                 candidatePlacement.props.scopeType,
                 candidatePlacement.props.scopeId
             );
@@ -355,7 +345,8 @@ export class ClusterTransferCoordinator {
     }
 
     async executeJob(jobId: string): Promise<ClusterTransferJob> {
-        const job = await this.clusterTransferJobRepository.findById(jobId);
+        const jobDocument = await ClusterTransferJobModel.findById(jobId).exec();
+        const job = jobDocument ? toClusterTransferJobLike(jobDocument) : null;
         if (!job) {
             throw ApplicationError.notFound('ClusterTransferJob::NotFound', 'Cluster transfer job not found');
         }
@@ -879,7 +870,7 @@ export class ClusterTransferCoordinator {
     }
 
     private async assertSourceReadableCluster(teamId: string, clusterId: string): Promise<void> {
-        const cluster = await this.teamClusterRepository.findById(clusterId);
+        const cluster = await this.findTeamClusterById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::SourceClusterUnavailable',
@@ -896,7 +887,7 @@ export class ClusterTransferCoordinator {
     }
 
     private async assertDestinationWritableCluster(teamId: string, clusterId: string): Promise<void> {
-        const cluster = await this.teamClusterRepository.findById(clusterId);
+        const cluster = await this.findTeamClusterById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(
                 'ClusterTransfer::DestinationClusterUnavailable',
@@ -1094,21 +1085,101 @@ export class ClusterTransferCoordinator {
             publishUpdate?: boolean;
         } = {}
     ): Promise<ClusterTransferJob> {
-        const updatedJob = await this.clusterTransferJobRepository.updateRuntimeState(jobId, {
-            ...data,
-            state,
-            updatedAt: new Date()
-        });
+        const updatedJobDocument = await ClusterTransferJobModel.findByIdAndUpdate(
+            jobId,
+            {
+                $set: {
+                    ...data,
+                    state,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        ).exec();
 
-        if (!updatedJob) {
+        if (!updatedJobDocument) {
             throw ApplicationError.notFound('ClusterTransferJob::NotFound', 'Cluster transfer job not found during update');
         }
+
+        const updatedJob = toClusterTransferJobLike(updatedJobDocument);
 
         if (options.publishUpdate) {
             await this.publishTransferJobProjection(updatedJob);
         }
 
         return updatedJob;
+    }
+
+    private async createTransferJob(props: Partial<ClusterTransferJob['props']>): Promise<ClusterTransferJob> {
+        return toClusterTransferJobLike(await ClusterTransferJobModel.create(props));
+    }
+
+    private async findOpenTransferJobByScope(
+        scopeType: StoragePlacementScopeType,
+        scopeId: string
+    ): Promise<ClusterTransferJob | null> {
+        const document = await ClusterTransferJobModel.findOne({
+            scopeType,
+            scopeId,
+            state: {
+                $in: OPEN_TRANSFER_JOB_STATES
+            }
+        }).sort({
+            createdAt: -1
+        }).exec();
+
+        return document ? toClusterTransferJobLike(document) : null;
+    }
+
+    private async claimNextRunnable(): Promise<ClusterTransferJob | null> {
+        const now = new Date();
+        const claimExpiresAt = new Date(now.getTime() + CLUSTER_TRANSFER_CLAIM_TTL_MS);
+
+        const document = await ClusterTransferJobModel.findOneAndUpdate(
+            {
+                state: { $in: OPEN_TRANSFER_JOB_STATES },
+                $or: [
+                    { claimedBy: null },
+                    { claimedBy: { $exists: false } },
+                    { claimExpiresAt: null },
+                    { claimExpiresAt: { $lte: now } }
+                ]
+            },
+            {
+                $set: {
+                    claimedBy: CLUSTER_TRANSFER_WORKER_ID,
+                    claimExpiresAt
+                }
+            },
+            {
+                new: true,
+                sort: { updatedAt: 1, createdAt: 1 }
+            }
+        ).exec();
+
+        return document ? toClusterTransferJobLike(document) : null;
+    }
+
+    private async renewClaim(jobId: string, claimTtlMs: number): Promise<boolean> {
+        const claimExpiresAt = new Date(Date.now() + claimTtlMs);
+        const result = await ClusterTransferJobModel.updateOne(
+            { _id: jobId, claimedBy: CLUSTER_TRANSFER_WORKER_ID },
+            { $set: { claimExpiresAt } }
+        ).exec();
+
+        return result.modifiedCount > 0;
+    }
+
+    private async releaseClaim(jobId: string): Promise<void> {
+        await ClusterTransferJobModel.updateOne(
+            { _id: jobId, claimedBy: CLUSTER_TRANSFER_WORKER_ID },
+            { $set: { claimedBy: null, claimExpiresAt: null } }
+        ).exec();
+    }
+
+    private async findTeamClusterById(clusterId: string): Promise<TeamCluster | null> {
+        const document = await TeamClusterModel.findById(clusterId).exec();
+        return document ? toTeamClusterLike(document) : null;
     }
 }
 

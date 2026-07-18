@@ -1,4 +1,5 @@
-import TeamCluster from '@modules/cluster/entities/TeamCluster';
+import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterModel from '@modules/cluster/models/TeamClusterModel';
 import { createTeamClusterDaemonBuildContextArchiveBase64 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonBuildContextArchive';
 import {
     DaemonDistributionMode,
@@ -20,11 +21,9 @@ import type {
     TeamClusterInstallManifestFileDTO,
     TeamClusterInstallManifestPortsDTO
 } from '@modules/cluster/contracts/TeamClusterInstallManifest';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
 
 export class TeamClusterInstallManifestService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
-    private readonly teamClusterRepository = new TeamClusterRepository();
 
     async generateInstallManifest(
         teamClusterId: string,
@@ -98,27 +97,29 @@ export class TeamClusterInstallManifestService {
         installRoot: string,
         ports: TeamClusterInstallManifestPortsDTO
     ): Promise<void> {
-        const updatedTeamCluster = await this.teamClusterRepository.updateById(teamCluster.id, {
-            installRoot,
-            services: {
-                minio: {
-                    ...teamCluster.props.services.minio,
-                    port: ports.minio
-                },
-                redis: {
-                    ...teamCluster.props.services.redis,
-                    port: ports.redis
-                },
-                mongodb: {
-                    ...teamCluster.props.services.mongodb,
-                    port: ports.mongodb
-                },
-                daemon: {
-                    ...teamCluster.props.services.daemon,
-                    port: ports.daemon
+        const updatedTeamCluster = await TeamClusterModel.findByIdAndUpdate(teamCluster.id, {
+            $set: {
+                installRoot,
+                services: {
+                    minio: {
+                        ...teamCluster.props.services.minio,
+                        port: ports.minio
+                    },
+                    redis: {
+                        ...teamCluster.props.services.redis,
+                        port: ports.redis
+                    },
+                    mongodb: {
+                        ...teamCluster.props.services.mongodb,
+                        port: ports.mongodb
+                    },
+                    daemon: {
+                        ...teamCluster.props.services.daemon,
+                        port: ports.daemon
+                    }
                 }
             }
-        });
+        }, { new: true }).exec();
 
         if (!updatedTeamCluster) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');

@@ -1,5 +1,5 @@
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/team-cluster-queries';
 import { TeamClusterServiceExposureAccessMode } from '@modules/cluster/utilities/teamClusterSocket';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
@@ -255,7 +255,6 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
     private readonly pendingTokens = new Map<string, Promise<CachedAccessToken>>();
     private readonly httpSessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
 
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
     private readonly directAccessTokenService = new TeamClusterDirectAccessTokenService();
 
@@ -525,7 +524,7 @@ export class TeamClusterObjectGatewayClient implements ITeamClusterObjectGateway
     }
 
     private async issueAccessToken(teamClusterId: string): Promise<CachedAccessToken> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
+        const teamCluster = await findTeamClusterByIdWithSensitiveData(teamClusterId);
         if (!teamCluster) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }

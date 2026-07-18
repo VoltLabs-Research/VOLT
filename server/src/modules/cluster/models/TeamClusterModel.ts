@@ -264,4 +264,57 @@ TeamClusterSchema.virtual('effectiveCapabilities').get(function (this: TeamClust
 
 const TeamClusterModel: Model<TeamClusterDocument> = mongoose.model<TeamClusterDocument>('TeamCluster', TeamClusterSchema);
 
+/**
+ * Relation fields that get ObjectId<->string normalization when converting a
+ * raw document into the flat `TeamCluster` ({ _id, props }) shape below — the
+ * same list the deleted TeamClusterMapper used to carry.
+ */
+const TEAM_CLUSTER_RELATION_KEYS = [
+    'team',
+    'createdBy'
+] as const;
+
+/**
+ * Neutral, flat `{ _id, props }` shape replacing the deleted `TeamCluster`
+ * entity class. Keeps the `id` and `effectiveCapabilities` convenience
+ * accessors the old entity exposed as getters (here as plain fields) so the
+ * ~20 existing consumers that read `teamCluster.id` /
+ * `teamCluster.effectiveCapabilities` keep compiling unchanged.
+ */
+export interface TeamCluster {
+    readonly _id: string;
+    readonly id: string;
+    props: TeamClusterProps;
+    readonly effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+}
+
+/**
+ * Converts a raw TeamClusterModel document into the neutral `TeamCluster`
+ * shape. Unpopulated relation fields (plain `Types.ObjectId`) are
+ * stringified; populated sub-documents are left as-is, matching the previous
+ * TeamClusterMapper behavior exactly.
+ */
+export const toTeamClusterLike = (doc: TeamClusterDocument): TeamCluster => {
+    const documentProps = doc.toObject({ flattenMaps: true }) as Record<string, unknown>;
+    const { _id, __v: _ignoredVersion, effectiveCapabilities: _ignoredVirtual, ...rest } = documentProps;
+
+    for (const key of TEAM_CLUSTER_RELATION_KEYS) {
+        const value = Reflect.get(doc, key);
+
+        if (!value) continue;
+        if (doc.populated(key)) continue;
+
+        rest[key] = String(value);
+    }
+
+    const id = String(_id);
+
+    return {
+        _id: id,
+        id,
+        props: rest as unknown as TeamClusterProps,
+        effectiveCapabilities: resolveEffectiveCapabilitiesFromRoleConfig(rest.roleConfig as TeamClusterProps['roleConfig'])
+    };
+};
+
 export default TeamClusterModel;

@@ -28,7 +28,7 @@ import {
 import { sanitizeAssetPath } from '@modules/latex/utilities/sanitize-asset-path';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type {
     ITeamClusterObjectGatewayClient,
     ITeamClusterSelectionService
@@ -47,7 +47,6 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
-import { container as diContainer } from 'tsyringe';
 import type {
     CreateLatexDocumentInput,
     UpdateLatexDocumentInput,
@@ -114,10 +113,7 @@ export default class LatexService {
 
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
 
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    get #teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
         #tempFileService = tempFileService;
 

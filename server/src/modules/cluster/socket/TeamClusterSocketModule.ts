@@ -6,7 +6,7 @@ import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import type TeamCluster from '@modules/cluster/entities/TeamCluster';
+import TeamClusterModel, { toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 import {
     toTeamClusterQueueConcurrencyDTO,
     toTeamClusterQueueScopeLimitsDTO
@@ -14,8 +14,7 @@ import {
 import ClusterService, {
     type ProcessDaemonSceneArtifactUpsertInputDTO
 } from '@modules/cluster/services/ClusterService';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import teamClusterHeartbeatMonitor from '@modules/cluster/services/TeamClusterHeartbeatMonitor';
 import teamClusterLifecycleService from '@modules/cluster/services/TeamClusterLifecycleService';
 import teamClusterReverseChannelService, {
@@ -144,10 +143,9 @@ export class TeamClusterSocketModule extends BaseSocketModule {
     private readonly teamClusterHeartbeatMonitor = teamClusterHeartbeatMonitor;
     private readonly teamClusterLifecycleService = teamClusterLifecycleService;
     private readonly teamClusterReverseChannelService = teamClusterReverseChannelService;
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly analysisExecutionLogService: DaemonAppendFrameSegmentsService = analysisExecutionLogServiceInstance;
     private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
-    private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
+    private readonly systemMetricsRepository = systemMetricsRepository;
     private readonly provenanceService = new ProvenanceService();
 
     constructor() {
@@ -189,7 +187,7 @@ export class TeamClusterSocketModule extends BaseSocketModule {
                 }
 
                 for (const teamClusterId of requestedIds) {
-                    const teamCluster = await this.teamClusterRepository.findById(teamClusterId);
+                    const teamCluster = await this.findTeamClusterById(teamClusterId);
 
                     if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
                         this.emitErrorToSocket(
@@ -214,7 +212,7 @@ export class TeamClusterSocketModule extends BaseSocketModule {
             connection.id,
             TEAM_CLUSTER_METRICS_HISTORY_EVENT,
             async (conn, payload) => {
-                const teamCluster = await this.teamClusterRepository.findById(payload.clusterId);
+                const teamCluster = await this.findTeamClusterById(payload.clusterId);
                 const authorizedTeamIds = new Set(conn.user?.teams ?? []);
 
                 if (!teamCluster || !authorizedTeamIds.has(teamCluster.props.team)) {
@@ -301,6 +299,11 @@ export class TeamClusterSocketModule extends BaseSocketModule {
                 this.scheduleDaemonDisconnect(registration.teamClusterId, registration.channel);
             }
         });
+    }
+
+    private async findTeamClusterById(teamClusterId: string): Promise<TeamCluster | null> {
+        const document = await TeamClusterModel.findById(teamClusterId).exec();
+        return document ? toTeamClusterLike(document) : null;
     }
 
     private registerDaemonStreamConsumers(): void {
@@ -447,7 +450,7 @@ export class TeamClusterSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const teamCluster = await this.teamClusterRepository.findById(teamClusterId);
+            const teamCluster = await this.findTeamClusterById(teamClusterId);
             if (!teamCluster) {
                 this.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
                     type: 'response',

@@ -7,7 +7,7 @@ import type {
     ClusterTransferJobReason,
     ClusterTransferJobState,
     ClusterTransferJobStats
-} from '@modules/cluster/entities/ClusterTransferJob';
+} from '@modules/cluster/utilities/cluster-transfer-job';
 
 /**
  * Read projection of a {@link ClusterTransferJob} aggregate.

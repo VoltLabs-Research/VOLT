@@ -1,7 +1,7 @@
 import teamClusterDaemonClient from '@shared/infrastructure/services/TeamClusterDaemonClient';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import PluginPublishedEvent from '@modules/plugin/events/PluginPublishedEvent';
 import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
@@ -25,7 +25,6 @@ interface PluginWarmupCommandResponse {
 }
 
 class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent> {
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 
         private readonly teamClusterDaemonClient = teamClusterDaemonClient;
@@ -38,9 +37,8 @@ class PluginPublishedEventHandler implements IEventHandler<PluginPublishedEvent>
             return;
         }
 
-        const teamClusters = await this.teamClusterRepository.export({
-            filter: { team: teamId } as Record<string, unknown>
-        });
+        const teamClusterDocuments = await TeamClusterModel.find({ team: teamId }).exec();
+        const teamClusters = teamClusterDocuments.map(toTeamClusterLike);
 
         if (!teamClusters.length) {
             logger.info({ pluginId, teamId }, '@plugin-published-event-handler: no clusters attached to team yet');

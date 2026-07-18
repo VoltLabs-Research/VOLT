@@ -1,14 +1,13 @@
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { TeamClusterHeartbeatMetricsDTO } from '@modules/cluster/contracts/TeamClusterHeartbeat';
 import { TeamClusterDTO, toTeamClusterDTO } from '@modules/cluster/dtos/TeamClusterDTO';
-import TeamCluster, {
+import TeamClusterModel, { toTeamClusterLike, type TeamCluster, type TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
+import {
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterStatus
-} from '@modules/cluster/entities/TeamCluster';
-import type { TeamClusterLifecycleUpdatePreconditions } from '@shared/contracts/ports';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+} from '@shared/contracts/types/TeamCluster';
 import {
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     toTeamClusterClientMetrics
@@ -17,6 +16,17 @@ import { getTeamClusterRoom, TEAM_CLUSTER_LIFECYCLE_EVENT } from '@modules/clust
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import DaemonCredentialGuard from '@modules/cluster/services/DaemonCredentialGuard';
 import logger from '@shared/infrastructure/logger';
+import type { FilterQuery } from 'mongoose';
+
+/**
+ * Preconditions the previous TeamClusterRepository.updateLifecycleById used to
+ * accept. Kept local now that the repository is gone — only this service's
+ * own `persistLifecycleUpdate` builds/consumes it.
+ */
+export interface TeamClusterLifecycleUpdatePreconditions {
+    allowedCurrentStatuses?: TeamClusterStatus[];
+    requireUpdatedBefore?: Date;
+}
 
 const BYTES_PER_GB = 1024 ** 3;
 const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
@@ -122,9 +132,8 @@ interface TeamClusterLifecycleEventPayload {
 
 export class TeamClusterLifecycleService {
     private readonly daemonCredentialGuard = new DaemonCredentialGuard();
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly socketEmitter = socketIOEmitter;
-    private readonly systemMetricsRepository = new SystemMetricsRedisRepository();
+    private readonly systemMetricsRepository = systemMetricsRepository;
 
     async processHealthcheck(teamClusterId: string, enrollmentToken: string, installedVersion?: string): Promise<{
         teamCluster: TeamClusterDTO;
@@ -334,7 +343,14 @@ export class TeamClusterLifecycleService {
     }
 
     async finalizeDeletingClustersByEvidence(cutoff: Date): Promise<number> {
-        const deletingClusters = await this.teamClusterRepository.findDeletingClustersDisconnectedBefore(cutoff);
+        const deletingClusterDocuments = await TeamClusterModel.find({
+            status: TeamClusterStatus.Deleting,
+            lastDisconnectAt: {
+                $ne: null,
+                $lt: cutoff
+            }
+        }).exec();
+        const deletingClusters = deletingClusterDocuments.map(toTeamClusterLike);
 
         return this.countTrue(deletingClusters, async (teamCluster) => {
             const currentTeamCluster = await this.requireTeamClusterById(teamCluster.id);
@@ -348,7 +364,13 @@ export class TeamClusterLifecycleService {
     }
 
     async markDeletingTimeouts(cutoff: Date): Promise<number> {
-        const timedOutClusters = await this.teamClusterRepository.findDeletingTimedOutClusters(cutoff);
+        const timedOutClusterDocuments = await TeamClusterModel.find({
+            status: TeamClusterStatus.Deleting,
+            updatedAt: {
+                $lt: cutoff
+            }
+        }).exec();
+        const timedOutClusters = timedOutClusterDocuments.map(toTeamClusterLike);
 
         return this.countTrue(timedOutClusters, async (teamCluster) => {
             const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
@@ -370,7 +392,7 @@ export class TeamClusterLifecycleService {
     }
 
     async deleteTeamCluster(teamCluster: TeamCluster): Promise<void> {
-        const deleted = await this.teamClusterRepository.deleteById(teamCluster.id);
+        const deleted = await TeamClusterModel.findByIdAndDelete(teamCluster.id).exec();
         if (!deleted) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
@@ -382,8 +404,13 @@ export class TeamClusterLifecycleService {
         this.emitLifecycleUpdate(teamCluster);
     }
 
+    private async findTeamClusterById(teamClusterId: string): Promise<TeamCluster | null> {
+        const document = await TeamClusterModel.findById(teamClusterId).exec();
+        return document ? toTeamClusterLike(document) : null;
+    }
+
     private async requireTeamClusterById(teamClusterId: string): Promise<TeamCluster> {
-        const teamCluster = await this.teamClusterRepository.findById(teamClusterId);
+        const teamCluster = await this.findTeamClusterById(teamClusterId);
         if (!teamCluster) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
@@ -402,21 +429,45 @@ export class TeamClusterLifecycleService {
             return teamCluster;
         }
 
-        const updatedTeamCluster = await this.teamClusterRepository.updateLifecycleById(teamCluster.id, {
-            status: update.status,
-            installedVersion: update.installedVersion ?? teamCluster.props.installedVersion,
-            enrollmentTokenHash: update.clearEnrollmentToken ? null : teamCluster.props.enrollmentTokenHash,
-            lastHeartbeatAt: update.lastHeartbeatAt === undefined
-                ? teamCluster.props.lastHeartbeatAt
-                : update.lastHeartbeatAt,
-            lastDisconnectAt: update.lastDisconnectAt === undefined
-                ? teamCluster.props.lastDisconnectAt
-                : update.lastDisconnectAt,
-            roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
-        }, options.preconditions);
+        const filter: FilterQuery<TeamClusterDocument> = {
+            _id: teamCluster.id
+        };
+        const preconditions = options.preconditions;
+
+        if (preconditions?.allowedCurrentStatuses?.length) {
+            filter.status = {
+                $in: preconditions.allowedCurrentStatuses
+            };
+        }
+
+        if (preconditions?.requireUpdatedBefore) {
+            filter.updatedAt = {
+                $lt: preconditions.requireUpdatedBefore
+            };
+        }
+
+        const updatedTeamClusterDocument = await TeamClusterModel.findOneAndUpdate(
+            filter,
+            {
+                $set: {
+                    status: update.status,
+                    installedVersion: update.installedVersion ?? teamCluster.props.installedVersion,
+                    enrollmentTokenHash: update.clearEnrollmentToken ? null : teamCluster.props.enrollmentTokenHash,
+                    lastHeartbeatAt: update.lastHeartbeatAt === undefined
+                        ? teamCluster.props.lastHeartbeatAt
+                        : update.lastHeartbeatAt,
+                    lastDisconnectAt: update.lastDisconnectAt === undefined
+                        ? teamCluster.props.lastDisconnectAt
+                        : update.lastDisconnectAt,
+                    roleConfig: update.roleConfig ?? teamCluster.props.roleConfig
+                }
+            },
+            { new: true }
+        ).exec();
+        const updatedTeamCluster = updatedTeamClusterDocument ? toTeamClusterLike(updatedTeamClusterDocument) : null;
 
         if (!updatedTeamCluster) {
-            const latestTeamCluster = await this.teamClusterRepository.findById(teamCluster.id);
+            const latestTeamCluster = await this.findTeamClusterById(teamCluster.id);
             if (!latestTeamCluster) {
                 throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
             }

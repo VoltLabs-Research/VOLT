@@ -58,10 +58,11 @@ import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import { TeamClusterStatus } from '@shared/contracts/types';
 import type { DownloadStreamOutputDTO } from '@shared/contracts/types';
 import { USER_POPULATE, STORAGE_CLUSTER_POPULATE, TRAJECTORY_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
-import { CLUSTER_ACCESS_TOKENS, CLUSTER_SERVICE_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
 import ClusterObjectSignedUrlService from '@modules/cluster/services/ClusterObjectSignedUrlService';
 import ClusterObjectArchiveService from '@modules/cluster/services/ClusterObjectArchiveService';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import storagePlacementService from '@modules/cluster/services/StoragePlacementService';
 import daemonAnalysisCompletionService from '@modules/cluster/services/DaemonAnalysisCompletionService';
 import objectGatewayClient from '@modules/cluster/services/TeamClusterObjectGatewayClient';
@@ -95,7 +96,6 @@ import { createReadStream } from 'node:fs';
 import { access } from 'node:fs/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { container as diContainer } from 'tsyringe';
 
 import type {
     CreateTrajectoryOutputDTO,
@@ -373,11 +373,10 @@ export default class TrajectoryService {
     #eventBus = eventBus;
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
     #teamClusterDaemonClient = teamClusterDaemonClient;
-    #clusterSelection = diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService);
+    #clusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
     #storagePlacement = storagePlacementService;
     #signedUrlService = new ClusterObjectSignedUrlService();
     #archiveService = new ClusterObjectArchiveService();
-    #teamClusterRepository = new TeamClusterRepository();
     #daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
     #simulationCellRepository = new SimulationCellRepositoryAdapter();
     #pluginService = new PluginService();
@@ -1868,7 +1867,8 @@ export default class TrajectoryService {
             return this.#clusterSelection.resolveStorageClusterId(teamId);
         }
 
-        const requestedCluster = await this.#teamClusterRepository.findById(requestedClusterId);
+        const requestedClusterDocument = await TeamClusterModel.findById(requestedClusterId).exec();
+        const requestedCluster = requestedClusterDocument ? toTeamClusterLike(requestedClusterDocument) : null;
         if (!requestedCluster || requestedCluster.props.team !== teamId) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found for the requested team');
         }

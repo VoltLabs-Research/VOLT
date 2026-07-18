@@ -1,11 +1,12 @@
-import TeamCluster, {
-    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/utilities/team-cluster-defaults';
+import type {
     TeamClusterDaemonServiceProps,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterServiceProps,
     TeamClusterServicesProps
-} from '@modules/cluster/entities/TeamCluster';
+} from '@shared/contracts/types/TeamCluster';
 import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
 import type {
     TeamClusterServiceDTO,

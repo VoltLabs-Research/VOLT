@@ -2,7 +2,8 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService, IPluginRepository } from '@shared/contracts/ports';
 import type { PluginLike } from '@shared/contracts/types';
-import { CLUSTER_ACCESS_TOKENS, COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import { COMPUTE_TOKENS } from '@shared/contracts/tokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { recordSceneArtifact } from '@modules/trajectory/utilities/scene-artifacts/record-scene-artifact';
@@ -68,10 +69,7 @@ export class LineStyleService {
         return (this.#pluginRepositoryCache ??= diContainer.resolve<IPluginRepository<PluginLike>>(COMPUTE_TOKENS.PluginRepository));
     }
 
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    private get teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async createStyledModel(
         trajectoryId: string,

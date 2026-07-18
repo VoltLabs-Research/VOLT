@@ -16,11 +16,10 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import { getTrajectoryFrames } from '@modules/trajectory/utilities/trajectory/get-trajectory-frames';
@@ -130,18 +129,9 @@ export class PluginDebugSocketModule extends BaseSocketModule {
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
     private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
 
-    // `TeamClusterDaemonClient` and `ITeamClusterSelectionService` are still
-    // resolved from the tsyringe container (registered in
-    // `registerAllDependencies`, which hasn't run yet when this module is
-    // constructed at import time), so both must stay lazy — resolved on first
-    // actual use — to avoid the eager-singleton DI boot race that already
-    // crashed the server once this session.
         private readonly daemonClient = teamClusterDaemonClient;
 
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    private get teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);

@@ -3,7 +3,7 @@ import type {
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps
-} from '@modules/cluster/entities/TeamCluster';
+} from '@shared/contracts/types/TeamCluster';
 
 export const TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH = '/internal/team-cluster/object-store/v1';
 export const TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER = 'x-team-cluster-id';

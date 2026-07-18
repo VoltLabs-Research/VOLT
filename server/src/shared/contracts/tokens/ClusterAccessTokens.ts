@@ -12,6 +12,5 @@ export const CLUSTER_ACCESS_TOKENS = Object.freeze({
     TeamClusterDaemonClient: Symbol.for('TeamClusterDaemonClient'),
     TeamClusterObjectGatewayClient: Symbol.for('TeamClusterObjectGatewayClient'),
     ClusterObjectArchiveService: Symbol.for('ClusterObjectArchiveService'),
-    ClusterObjectSignedUrlService: Symbol.for('ClusterObjectSignedUrlService'),
-    TeamClusterSelectionService: Symbol.for('TeamClusterSelectionService')
+    ClusterObjectSignedUrlService: Symbol.for('ClusterObjectSignedUrlService')
 });

@@ -1,7 +1,4 @@
-import type {
-    ITeamClusterSelectionService,
-    IStoragePlacementRepository
-} from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
 import type { IPluginRepository } from '@shared/contracts/ports';
 import { resolveAnalysisStorageClusterId } from '@shared/application/utilities/cluster-location';
 import {
@@ -9,20 +6,22 @@ import {
     buildPluginBinaryPlacementBuckets,
     buildTrajectoryPlacementBuckets
 } from '@modules/cluster/utilities/storage-placement-targets';
-import StoragePlacement, {
+import {
     DEFAULT_STORAGE_PLACEMENT_STATE,
-    createStoragePlacementProps
-} from '@modules/cluster/entities/StoragePlacement';
-import StoragePlacementRepository from '@modules/cluster/repositories/StoragePlacementRepository';
+    createStoragePlacementProps,
+    type StoragePlacementProps
+} from '@modules/cluster/utilities/storage-placement';
+import StoragePlacementModel, { toStoragePlacementLike, type StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 import AnalysisModel, { type AnalysisDocument } from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import PluginRepository from '@modules/plugin/services/PluginRepository';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import { TeamClusterSelectionService } from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { StoragePlacementBucketRef, StoragePlacementScopeType, StoragePlacementState } from '@shared/domain/contracts/team-cluster';
 import type { IStoragePlacementService } from '@shared/contracts/ports';
-import { container } from 'tsyringe';
+import type { FilterQuery, UpdateQuery } from 'mongoose';
+import type { StoragePlacementDocument } from '@modules/cluster/models/StoragePlacementModel';
 
 interface PluginPlacementView {
     props: { team: string };
@@ -35,27 +34,58 @@ interface ResolvedPlacementDefinition {
 }
 
 export class StoragePlacementService implements IStoragePlacementService {
-    private readonly storagePlacementRepository: IStoragePlacementRepository = new StoragePlacementRepository();
     private readonly pluginRepository = new PluginRepository() as unknown as IPluginRepository<PluginPlacementView>;
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    private get teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= container.resolve<ITeamClusterSelectionService>(TeamClusterSelectionService));
-    }
+    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async findByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string
     ): Promise<StoragePlacement | null> {
-        return this.storagePlacementRepository.findByScope(scopeType, scopeId);
+        return this.findPlacementByScope(scopeType, scopeId);
     }
 
     async ensurePlacement(
         scopeType: StoragePlacementScopeType,
         scopeId: string
     ): Promise<StoragePlacement> {
-        const existingPlacement = await this.storagePlacementRepository.findByScope(scopeType, scopeId);
+        const existingPlacement = await this.findPlacementByScope(scopeType, scopeId);
         const resolved = await this.resolvePlacementDefinition(scopeType, scopeId);
         return this.persistResolvedPlacement(scopeType, scopeId, existingPlacement, resolved);
+    }
+
+    private async findPlacementByScope(
+        scopeType: StoragePlacementScopeType,
+        scopeId: string
+    ): Promise<StoragePlacement | null> {
+        const document = await StoragePlacementModel.findOne({
+            scopeType,
+            scopeId
+        }).exec();
+
+        return document ? toStoragePlacementLike(document) : null;
+    }
+
+    private async upsertPlacementByScope(
+        scopeType: StoragePlacementScopeType,
+        scopeId: string,
+        data: Partial<StoragePlacementProps>
+    ): Promise<StoragePlacement> {
+        const document = await StoragePlacementModel.findOneAndUpdate(
+            {
+                scopeType,
+                scopeId
+            },
+            {
+                $set: data
+            } as UpdateQuery<StoragePlacementDocument>,
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        ).exec();
+
+        return toStoragePlacementLike(document);
     }
 
     private async persistResolvedPlacement(
@@ -79,7 +109,7 @@ export class StoragePlacementService implements IStoragePlacementService {
             updatedAt: new Date()
         });
 
-        return this.storagePlacementRepository.upsertByScope(scopeType, scopeId, nextPlacementProps);
+        return this.upsertPlacementByScope(scopeType, scopeId, nextPlacementProps);
     }
 
     async assignPluginBinaryPlacement(
@@ -87,7 +117,7 @@ export class StoragePlacementService implements IStoragePlacementService {
         team: string,
         primaryClusterId: string
     ): Promise<StoragePlacement> {
-        return this.storagePlacementRepository.upsertByScope('plugin-binary', pluginId, createStoragePlacementProps({
+        return this.upsertPlacementByScope('plugin-binary', pluginId, createStoragePlacementProps({
             team,
             scopeType: 'plugin-binary',
             scopeId: pluginId,
@@ -111,7 +141,7 @@ export class StoragePlacementService implements IStoragePlacementService {
     ): Promise<StoragePlacement> {
         const placement = await this.ensurePlacement(scopeType, scopeId);
 
-        return this.storagePlacementRepository.upsertByScope(scopeType, scopeId, {
+        return this.upsertPlacementByScope(scopeType, scopeId, {
             ...placement.props,
             primaryClusterId,
             replicaClusterIds: options.replicaClusterIds ?? placement.props.replicaClusterIds,
@@ -130,7 +160,7 @@ export class StoragePlacementService implements IStoragePlacementService {
     ): Promise<StoragePlacement> {
         const placement = await this.ensurePlacement(scopeType, scopeId);
 
-        return this.storagePlacementRepository.upsertByScope(scopeType, scopeId, {
+        return this.upsertPlacementByScope(scopeType, scopeId, {
             ...placement.props,
             state,
             updatedAt: new Date()
@@ -180,7 +210,14 @@ export class StoragePlacementService implements IStoragePlacementService {
     }
 
     async listByPrimaryClusterId(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]> {
-        return this.storagePlacementRepository.listByPrimaryClusterId(teamId, primaryClusterId);
+        const documents = await StoragePlacementModel.find({
+            team: teamId,
+            primaryClusterId
+        }).sort({
+            updatedAt: 1
+        }).exec();
+
+        return documents.map(toStoragePlacementLike);
     }
 
     async resolveTransferPlacementsForCluster(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]> {
@@ -253,14 +290,13 @@ export class StoragePlacementService implements IStoragePlacementService {
             return new Map();
         }
 
-        const placements = await this.storagePlacementRepository.export({
-            filter: {
-                scopeType,
-                scopeId: {
-                    $in: scopeIds
-                }
+        const documents = await StoragePlacementModel.find({
+            scopeType,
+            scopeId: {
+                $in: scopeIds
             }
-        });
+        } as FilterQuery<StoragePlacementDocument>).exec();
+        const placements = documents.map(toStoragePlacementLike);
 
         return new Map(placements.map((placement) => [placement.props.scopeId, placement]));
     }
@@ -340,10 +376,10 @@ export class StoragePlacementService implements IStoragePlacementService {
     ): Promise<void> {
         for (const analysis of analyses) {
             const analysisId = analysis._id.toString();
-            const existingPlacement = await this.storagePlacementRepository.findByScope('analysis', analysisId);
+            const existingPlacement = await this.findPlacementByScope('analysis', analysisId);
             const existingPrimaryClusterId = existingPlacement?.props.primaryClusterId;
 
-            await this.storagePlacementRepository.upsertByScope('analysis', analysisId, createStoragePlacementProps({
+            await this.upsertPlacementByScope('analysis', analysisId, createStoragePlacementProps({
                 team: analysis.team.toString(),
                 scopeType: 'analysis',
                 scopeId: analysisId,

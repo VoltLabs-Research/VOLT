@@ -6,11 +6,10 @@ import {
 import { TeamClusterStatus } from '@shared/contracts/types';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { Singleton } from '@shared/infrastructure/di/decorators';
 import type { SystemMetrics } from '@modules/system/value-objects/SystemMetrics';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { TeamClusterLike } from '@shared/contracts/types';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import TeamClusterModel, { toTeamClusterLike } from '@modules/cluster/models/TeamClusterModel';
 
 type SelectionCapability = 'compute' | 'storage';
 
@@ -110,13 +109,8 @@ const supportsCapability = (
     return derivedCapabilities.acceptsComputeJobs;
 };
 
-@Singleton()
 export class ClusterRoleAwareSelectionService {
-    private readonly teamClusterRepository = new TeamClusterRepository();
-
-    constructor(
-        private readonly systemMetricsRepository: SystemMetricsRedisRepository
-    ) {}
+    private readonly systemMetricsRepository = systemMetricsRepository;
 
     async resolveStorageCluster(
         input: ResolveRoleAwareClusterInput
@@ -210,7 +204,8 @@ export class ClusterRoleAwareSelectionService {
             return null;
         }
 
-        const requestedCluster = await this.teamClusterRepository.findById(input.requestedTeamClusterId);
+        const requestedClusterDocument = await TeamClusterModel.findById(input.requestedTeamClusterId).exec();
+        const requestedCluster = requestedClusterDocument ? toTeamClusterLike(requestedClusterDocument) : null;
         if (!requestedCluster || requestedCluster.props.team !== input.teamId) {
             throw ApplicationError.notFound(
                 'TeamCluster::NotFound',
@@ -231,15 +226,14 @@ export class ClusterRoleAwareSelectionService {
     }
 
     private async listConnectedClusters(teamId: string): Promise<TeamClusterLike[]> {
-        return this.teamClusterRepository.export({
-            filter: {
-                team: teamId,
-                status: TeamClusterStatus.Connected
-            },
-            sort: {
-                createdAt: 1
-            }
-        });
+        const documents = await TeamClusterModel.find({
+            team: teamId,
+            status: TeamClusterStatus.Connected
+        }).sort({
+            createdAt: 1
+        }).exec();
+
+        return documents.map(toTeamClusterLike);
     }
 
     private async selectBestCluster(
@@ -327,3 +321,5 @@ export class ClusterRoleAwareSelectionService {
         return score;
     }
 }
+
+export default new ClusterRoleAwareSelectionService();

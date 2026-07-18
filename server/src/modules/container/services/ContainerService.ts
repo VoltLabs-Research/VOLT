@@ -10,7 +10,7 @@ import ContainerDeletedEvent from '@modules/container/events/ContainerDeletedEve
 import ContainerUpdatedEvent from '@modules/container/events/ContainerUpdatedEvent';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import type {
     ContainerAccessiblePort
@@ -31,13 +31,12 @@ import type {
 } from '@volt/contracts/modules/container/http';
 import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderModel from '@shared/infrastructure/persistence/mongo/models/CatalogFolderModel';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { USER_POPULATE, CLUSTER_POPULATE } from '@shared/infrastructure/persistence/mongo/PopulatePresets';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
 import logger from '@shared/infrastructure/logger';
 import mongoose from 'mongoose';
 import type { HydratedDocument } from 'mongoose';
-import { container as diContainer } from 'tsyringe';
 
 type ContainerDoc = HydratedDocument<IContainer>;
 
@@ -72,12 +71,9 @@ export default class ContainerService {
     #runtime = daemonContainerRuntimeService;
     #portAllocator = containerPublicPortAllocator;
     #relay = containerPortProxyRelayService;
-    #systemMetrics = new SystemMetricsRedisRepository();
+    #systemMetrics = systemMetricsRepository;
 
-    #clusterSelectionCache?: ITeamClusterSelectionService;
-    get #clusterSelection(): ITeamClusterSelectionService {
-        return (this.#clusterSelectionCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    #clusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
 
         #eventBus = eventBus;
 

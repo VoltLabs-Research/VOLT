@@ -1,7 +1,7 @@
 import type {
     TeamClusterStatus,
     TeamClusterRuntimeRoleConfigProps
-} from '@modules/cluster/entities/TeamCluster';
+} from '@shared/contracts/types/TeamCluster';
 import type { ClusterTransferJobDTO } from '@modules/cluster/contracts/ClusterTransferJobView';
 
 /**

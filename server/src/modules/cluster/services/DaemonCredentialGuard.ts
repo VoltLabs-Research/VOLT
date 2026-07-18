@@ -1,5 +1,5 @@
-import TeamCluster from '@modules/cluster/entities/TeamCluster';
-import TeamClusterRepository from '@modules/cluster/repositories/TeamClusterRepository';
+import type { TeamCluster } from '@modules/cluster/models/TeamClusterModel';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/models/team-cluster-queries';
 import TeamClusterCredentialsCipher from '@modules/cluster/services/TeamClusterCredentialsCipher';
 import { hashEnrollmentToken } from '@modules/cluster/utilities/enrollmentToken';
 import { secureCompare } from '@modules/cluster/utilities/secureCompare';
@@ -16,7 +16,6 @@ export interface DecryptedTeamClusterServiceCredentials {
 }
 
 export default class DaemonCredentialGuard {
-    private readonly teamClusterRepository = new TeamClusterRepository();
     private readonly teamClusterCredentialsCipher = new TeamClusterCredentialsCipher();
 
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
@@ -80,7 +79,7 @@ export default class DaemonCredentialGuard {
     }
 
     private async requireSensitiveCluster(teamClusterId: string): Promise<TeamCluster> {
-        const teamCluster = await this.teamClusterRepository.findByIdWithSensitiveData(teamClusterId);
+        const teamCluster = await findTeamClusterByIdWithSensitiveData(teamClusterId);
         if (!teamCluster) {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }

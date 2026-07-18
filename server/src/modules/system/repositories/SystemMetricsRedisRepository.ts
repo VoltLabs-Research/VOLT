@@ -17,7 +17,7 @@ const deserializeSystemMetrics = (payload: string): SystemMetrics => {
     };
 };
 
-export default class SystemMetricsRedisRepository {
+class SystemMetricsRedisRepository {
     private readonly metricsHistoryKey = 'metrics-history';
     private readonly clusterId: string;
 
@@ -79,3 +79,5 @@ export default class SystemMetricsRedisRepository {
         }
     }
 }
+
+export default new SystemMetricsRedisRepository();

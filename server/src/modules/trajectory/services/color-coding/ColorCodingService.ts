@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { resolveTrajectoryStorageClusterId } from '@shared/application/utilities/cluster-location';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
@@ -12,7 +12,6 @@ import { resolveTrajectoryNativeClusterContext } from '@modules/trajectory/utili
 import { buildColorCodingObjectName } from '@modules/trajectory/utilities/trajectory/minio-path-builder';
 import { normalizeAnalysisId } from '@modules/trajectory/utilities/trajectory/modifier-data';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { container as diContainer } from 'tsyringe';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
@@ -40,10 +39,7 @@ const buildPluginPropertyUnavailableError = (
 };
 
 export class ColorCodingService {
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    private get teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
     async getProperties(
         trajectoryId: string,

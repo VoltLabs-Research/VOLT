@@ -13,7 +13,6 @@ export type {
 export type { IClusterObjectSignedUrlService } from './IClusterObjectSignedUrlService';
 export type { IMemberContentCounter, MemberContentCountResult } from './IMemberContentCounter';
 export type { IStoragePlacementService } from './IStoragePlacementService';
-export type { ITeamClusterRepository, TeamClusterLifecycleUpdatePreconditions } from './ITeamClusterRepository';
 export type {
     IDaemonAnalysisCompletionService,
     DaemonJobCompletionInput,
@@ -49,7 +48,5 @@ export type {
 } from './IContainerService';
 export type { PersistedChatDTO } from './IChatRepository';
 export type { IDeploymentSettingsRepository, DeploymentSettingsView } from './IDeploymentSettingsRepository';
-export type { IStoragePlacementRepository } from './IStoragePlacementRepository';
-export type { IClusterTransferJobRepository } from './IClusterTransferJobRepository';
 export type { IPluginDebugSessionRegistryService } from './IPluginDebugSessionRegistryService';
 export type { IGetAnalysisFrameLogUseCase } from './IGetAnalysisFrameLogUseCase';

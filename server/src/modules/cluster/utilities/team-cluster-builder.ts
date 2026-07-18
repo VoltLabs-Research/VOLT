@@ -1,10 +1,9 @@
-import TeamCluster, {
+import {
     createDefaultTeamClusterRoleConfig,
     DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
-    TeamClusterProps,
-    TeamClusterStatus
-} from '@modules/cluster/entities/TeamCluster';
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
+} from '@modules/cluster/utilities/team-cluster-defaults';
+import { TeamClusterStatus, type TeamClusterProps } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
 
 export interface GeneratedServiceCredentials {
@@ -83,7 +82,7 @@ export const encryptTeamClusterServices = async (
     };
 };
 
-export const buildTeamClusterEntity = (params: {
+export const buildTeamClusterProps = (params: {
     name: string;
     teamId: string;
     createdBy: string;
@@ -92,10 +91,10 @@ export const buildTeamClusterEntity = (params: {
     isDemo: boolean;
     demoExpiresAt: Date | null;
     now?: Date;
-}): TeamCluster => {
+}): TeamClusterProps => {
     const now = params.now ?? new Date();
 
-    return new TeamCluster('', {
+    return {
         name: params.name,
         team: params.teamId,
         createdBy: params.createdBy,
@@ -113,5 +112,5 @@ export const buildTeamClusterEntity = (params: {
         demoExpiresAt: params.demoExpiresAt,
         createdAt: now,
         updatedAt: now
-    });
+    };
 };

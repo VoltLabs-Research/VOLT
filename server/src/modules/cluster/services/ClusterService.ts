@@ -6,7 +6,7 @@ import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import AnalysisModel from '@modules/analysis/models/AnalysisModel';
 import TrajectoryModel, { type TrajectoryDocument } from '@modules/trajectory/models/trajectory/TrajectoryModel';
 import SceneArtifactModel from '@modules/trajectory/models/scene-artifacts/SceneArtifactModel';
-import SystemMetricsRedisRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
+import systemMetricsRepository from '@modules/system/repositories/SystemMetricsRedisRepository';
 import type { SystemStatus } from '@modules/system/value-objects/SystemMetrics';
 import type { TrajectoryLike } from '@shared/contracts/types';
 import {
@@ -41,24 +41,23 @@ import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';
 import type { HydratedDocument } from 'mongoose';
 
-import TeamClusterModel, { TeamClusterDocument } from '@modules/cluster/models/TeamClusterModel';
+import TeamClusterModel, { TeamClusterDocument, toTeamClusterLike, type TeamCluster } from '@modules/cluster/models/TeamClusterModel';
 import ClusterTransferJobModel, { ClusterTransferJobDocument } from '@modules/cluster/models/ClusterTransferJobModel';
-import teamClusterMapper from '@modules/cluster/mappers/TeamClusterMapper';
-import TeamCluster, {
-    TeamClusterStatus,
-    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
-    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
-    resolveEffectiveCapabilitiesFromRoleConfig
-} from '@modules/cluster/entities/TeamCluster';
+import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
 import type {
     TeamClusterRole,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps
-} from '@modules/cluster/entities/TeamCluster';
-import type ClusterTransferJob from '@modules/cluster/entities/ClusterTransferJob';
-import type { ClusterTransferJobState } from '@modules/cluster/entities/ClusterTransferJob';
-import type StoragePlacement from '@modules/cluster/entities/StoragePlacement';
+} from '@shared/contracts/types/TeamCluster';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS
+} from '@modules/cluster/utilities/team-cluster-defaults';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
+import type { ClusterTransferJob } from '@modules/cluster/models/ClusterTransferJobModel';
+import type { ClusterTransferJobState } from '@modules/cluster/utilities/cluster-transfer-job';
+import type { StoragePlacement } from '@modules/cluster/models/StoragePlacementModel';
 
 import type {
     TeamClusterDTO,
@@ -96,7 +95,7 @@ import {
     hashEnrollmentToken
 } from '@modules/cluster/utilities/enrollmentToken';
 import {
-    buildTeamClusterEntity,
+    buildTeamClusterProps,
     createServiceCredentials,
     createDaemonPassword,
     encryptTeamClusterServices
@@ -330,7 +329,7 @@ export default class ClusterService {
         findByIdWithPassword: (userId: string) => UserModel.findById(userId).select('+password')
     };
     #passwordHasher = new BcryptPasswordHasher();
-    #systemMetricsRepository = new SystemMetricsRedisRepository();
+    #systemMetricsRepository = systemMetricsRepository;
 
         #teamClusterDaemonClient = teamClusterDaemonClient;
 
@@ -411,7 +410,7 @@ export default class ClusterService {
             }
         });
 
-        const teamClusterProps = buildTeamClusterEntity({
+        const teamClusterProps = buildTeamClusterProps({
             name: input.name.trim(),
             teamId: input.teamId,
             createdBy: input.userId,
@@ -419,7 +418,7 @@ export default class ClusterService {
             services: encryptedServices,
             isDemo: false,
             demoExpiresAt: null
-        }).props;
+        });
 
         let created: HydratedDocument<TeamClusterDocument>;
         try {
@@ -441,10 +440,10 @@ export default class ClusterService {
                     logger.warn(`[ClusterService.create] markDeleting on existing demo failed teamClusterId=${existingDemo._id} error=${(error as Error).message}`);
                 }
                 try {
-                    await this.#demoDeploymentService.teardownDemoStack(teamClusterMapper.toDomain(existingDemo));
+                    await this.#demoDeploymentService.teardownDemoStack(toTeamClusterLike(existingDemo));
                     const refreshed = await TeamClusterModel.findById(existingDemo._id);
                     if (refreshed) {
-                        await this.#lifecycleService.deleteTeamCluster(teamClusterMapper.toDomain(refreshed));
+                        await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(refreshed));
                     }
                     logger.info(`[ClusterService.create] Auto-removed demo after real cluster creation teamClusterId=${existingDemo._id} teamId=${input.teamId}`);
                 } catch (error: unknown) {
@@ -540,7 +539,7 @@ export default class ClusterService {
             daemon: { password: credentials.daemonPassword }
         });
 
-        const teamClusterProps = buildTeamClusterEntity({
+        const teamClusterProps = buildTeamClusterProps({
             name: `Demo Cluster ${now.toISOString().slice(0, 16).replace('T', ' ')}`,
             teamId: input.teamId,
             createdBy: input.userId,
@@ -549,7 +548,7 @@ export default class ClusterService {
             isDemo: true,
             demoExpiresAt: expiresAt,
             now
-        }).props;
+        });
 
         let created: HydratedDocument<TeamClusterDocument>;
         try {
@@ -568,7 +567,7 @@ export default class ClusterService {
 
         logger.info(`[ClusterService.provisionDemo] Demo cluster persisted teamClusterId=${created._id} teamId=${input.teamId} expiresAt=${expiresAt.toISOString()}`);
 
-        void this.#demoDeploymentService.deployDemoStack(teamClusterMapper.toDomain(created), credentials).catch((error: unknown) => {
+        void this.#demoDeploymentService.deployDemoStack(toTeamClusterLike(created), credentials).catch((error: unknown) => {
             logger.error(error, `[ClusterService.provisionDemo] Demo stack deploy failed teamClusterId=${created._id} teamId=${input.teamId}`);
         });
 
@@ -592,8 +591,8 @@ export default class ClusterService {
 
         void (async () => {
             try {
-                await this.#demoDeploymentService.teardownDemoStack(teamClusterMapper.toDomain(target));
-                await this.#lifecycleService.deleteTeamCluster(teamClusterMapper.toDomain(target));
+                await this.#demoDeploymentService.teardownDemoStack(toTeamClusterLike(target));
+                await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(target));
                 logger.info(`[ClusterService.deleteDemo] Demo deleted teamClusterId=${target._id} teamId=${input.teamId}`);
             } catch (error: unknown) {
                 logger.error(error, `[ClusterService.deleteDemo] Demo teardown failed teamClusterId=${target._id} teamId=${input.teamId}`);
@@ -688,7 +687,7 @@ export default class ClusterService {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
 
-        this.#lifecycleService.publishTeamClusterUpdate(teamClusterMapper.toDomain(updated));
+        this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
 
         if (updated.status === TeamClusterStatus.Connected) {
             try {
@@ -731,7 +730,7 @@ export default class ClusterService {
             throw ApplicationError.notFound('TeamCluster::NotFound', 'Team cluster not found');
         }
 
-        this.#lifecycleService.publishTeamClusterUpdate(teamClusterMapper.toDomain(updated));
+        this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
 
         if (updated.status === TeamClusterStatus.Connected) {
             try {
@@ -747,7 +746,7 @@ export default class ClusterService {
                     const roleResult = liveApplyResult.data;
                     const reUpdated = await TeamClusterModel.findByIdAndUpdate(updated._id, { $set: { roleConfig: roleResult.roleConfig } }, { new: true });
                     updated = reUpdated ?? updated;
-                    this.#lifecycleService.publishTeamClusterUpdate(teamClusterMapper.toDomain(updated));
+                    this.#lifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
                 } else {
                     logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updated._id} teamId=${input.teamId} role=${input.role} reason=${liveApplyResult.reason}`);
                 }
@@ -1107,7 +1106,7 @@ export default class ClusterService {
             ? buildManualTeamClusterUninstallCommand(String(doc._id), doc.installRoot)
             : undefined;
 
-        await this.#lifecycleService.deleteTeamCluster(teamClusterMapper.toDomain(doc));
+        await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(doc));
 
         logger.info(`Team cluster deleted without remote uninstall confirmation teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId} manualUninstallRequired=${manualUninstallRequired}`);
 
@@ -1442,8 +1441,8 @@ export default class ClusterService {
         }
 
         try {
-            await this.#demoDeploymentService.teardownDemoStack(teamClusterMapper.toDomain(teamCluster));
-            await this.#lifecycleService.deleteTeamCluster(teamClusterMapper.toDomain(teamCluster));
+            await this.#demoDeploymentService.teardownDemoStack(toTeamClusterLike(teamCluster));
+            await this.#lifecycleService.deleteTeamCluster(toTeamClusterLike(teamCluster));
             logger.info(`[ClusterService.getDemoStatus] Expired demo cleaned up teamClusterId=${teamClusterId} teamId=${teamId}`);
         } catch (error: unknown) {
             logger.error(error, `[ClusterService.getDemoStatus] Expired demo cleanup failed teamClusterId=${teamClusterId} teamId=${teamId}`);

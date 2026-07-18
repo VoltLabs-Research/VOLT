@@ -60,7 +60,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import { resolveAnalysisComputeClusterId } from '@shared/application/utilities/cluster-location';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
-import { CLUSTER_ACCESS_TOKENS } from '@shared/contracts/tokens/ClusterAccessTokens';
+import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import { COMPUTE_TOKENS } from '@shared/contracts/tokens/ComputeTokens';
 import type {
     IStoragePlacementService,
@@ -94,7 +94,6 @@ import type {
 } from '@shared/contracts/dtos/GetPluginListingDocumentsDTO';
 import type { GetSubListingInputDTO, GetSubListingOutputDTO, SubListingColumn } from '@shared/contracts/dtos/GetSubListingDTO';
 import logger from '@shared/infrastructure/logger';
-import { container as diContainer } from 'tsyringe';
 import { Readable } from 'node:stream';
 
 export interface ClonePluginInputDTO {
@@ -511,10 +510,7 @@ export default class PluginService {
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
     #sharedObjectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClient;
 
-    #teamClusterSelectionServiceCache?: ITeamClusterSelectionService;
-    get #teamClusterSelectionService(): ITeamClusterSelectionService {
-        return (this.#teamClusterSelectionServiceCache ??= diContainer.resolve<ITeamClusterSelectionService>(CLUSTER_ACCESS_TOKENS.TeamClusterSelectionService));
-    }
+    #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
         #daemonClient = teamClusterDaemonClient;
 
