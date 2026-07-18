@@ -1,6 +1,4 @@
-import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 import LatexDocumentModel from '@modules/latex/models/LatexDocumentModel';
 
 interface GroupedCountRow {
@@ -8,8 +6,7 @@ interface GroupedCountRow {
     count: number;
 }
 
-@CollectionMember(MEMBER_CONTENT_COUNTER_TOKEN)
-export class LatexMemberContentCounter implements IMemberContentCounter {
+class LatexMemberContentCounter implements IMemberContentCounter {
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
         const rows = await LatexDocumentModel.aggregate<GroupedCountRow>([
             { $match: { team: teamId, createdBy: { $in: userIds } } },
@@ -24,3 +21,5 @@ export class LatexMemberContentCounter implements IMemberContentCounter {
         return { key: 'latexCount', counts };
     }
 }
+
+export default new LatexMemberContentCounter();

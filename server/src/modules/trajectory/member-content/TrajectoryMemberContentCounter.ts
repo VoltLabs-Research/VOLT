@@ -1,6 +1,4 @@
-import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
-import { CollectionMember } from '@shared/infrastructure/di/decorators';
 
 import TrajectoryModel from '@modules/trajectory/models/trajectory/TrajectoryModel';
 
@@ -9,8 +7,7 @@ interface GroupedCountResult {
     count: number;
 }
 
-@CollectionMember(MEMBER_CONTENT_COUNTER_TOKEN)
-export class TrajectoryMemberContentCounter implements IMemberContentCounter {
+class TrajectoryMemberContentCounter implements IMemberContentCounter {
     async countForTeamMembers(teamId: string, userIds: string[]): Promise<MemberContentCountResult> {
         const results = await TrajectoryModel.aggregate<GroupedCountResult>([
             {
@@ -35,3 +32,5 @@ export class TrajectoryMemberContentCounter implements IMemberContentCounter {
         return { key: 'trajectoriesCount', counts };
     }
 }
+
+export default new TrajectoryMemberContentCounter();

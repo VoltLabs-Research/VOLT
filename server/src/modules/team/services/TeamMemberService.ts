@@ -1,5 +1,6 @@
 import eventBus from '@shared/infrastructure/events/RedisEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { isModuleEnabled } from '@core/bootstrap/module-state';
 import TeamMemberModel, { getTeamMemberUserId, isPopulatedTeamMemberUser } from '@modules/team/models/team-member/TeamMemberModel';
 import type { TeamMemberProps } from '@modules/team/models/team-member/TeamMemberModel';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
@@ -9,10 +10,21 @@ import TeamMemberDeletedEvent from '@modules/team/events/team-member/TeamMemberD
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { IEventBus } from '@shared/application/events/IEventBus';
 import type { IMemberContentCounter } from '@shared/contracts/ports';
-import { MEMBER_CONTENT_COUNTER_TOKEN } from '@shared/contracts/tokens/CollectionTokens';
 import type { PaginatedResult } from '@shared/domain/port/IBaseRepository';
-import { container as diContainer } from 'tsyringe';
+import analysisMemberContentCounter from '@modules/analysis/member-content/AnalysisMemberContentCounter';
+import latexMemberContentCounter from '@modules/latex/member-content/LatexMemberContentCounter';
+import trajectoryMemberContentCounter from '@modules/trajectory/member-content/TrajectoryMemberContentCounter';
+import whiteboardMemberContentCounter from '@modules/whiteboards/member-content/WhiteboardMemberContentCounter';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
+
+const buildContentCounters = (): IMemberContentCounter[] => {
+    const counters: IMemberContentCounter[] = [];
+    if (isModuleEnabled('trajectory')) counters.push(trajectoryMemberContentCounter);
+    if (isModuleEnabled('analysis')) counters.push(analysisMemberContentCounter);
+    if (isModuleEnabled('latex')) counters.push(latexMemberContentCounter);
+    if (isModuleEnabled('whiteboards')) counters.push(whiteboardMemberContentCounter);
+    return counters;
+};
 
 const TEAM_MEMBER_RELATIONS = ['team', 'user', 'role'];
 
@@ -27,9 +39,7 @@ export default class TeamMemberService {
     #presence = new TeamRoomPresenceService();
     #membership = new TeamMembershipService();
     #eventBus = eventBus;
-    #contentCounters: IMemberContentCounter[] = diContainer.isRegistered(MEMBER_CONTENT_COUNTER_TOKEN)
-        ? diContainer.resolveAll<IMemberContentCounter>(MEMBER_CONTENT_COUNTER_TOKEN)
-        : [];
+    #contentCounters: IMemberContentCounter[] = buildContentCounters();
 
     async listByTeamId(teamId: string, page?: number, limit?: number): Promise<PaginatedResult<Record<string, unknown>>> {
         const resolvedPage = page ?? 1;
